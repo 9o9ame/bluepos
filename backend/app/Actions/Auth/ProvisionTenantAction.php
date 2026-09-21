@@ -64,6 +64,12 @@ class ProvisionTenantAction
                     ? strtolower(trim((string) $data['recovery_email']))
                     : null;
 
+                if ($recovery && User::query()->where('email', $recovery)->orWhere('recovery_email', $recovery)->exists()) {
+                    throw ValidationException::withMessages([
+                        'recovery_email' => 'This recovery email is already used by another account. Use a different email for this tenant.',
+                    ]);
+                }
+
                 $user = User::query()->create([
                     'name' => $data['name'],
                     'email' => $recovery,

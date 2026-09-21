@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Platform;
 
 use App\Actions\Platform\ActivateTenantAction;
 use App\Actions\Platform\AssignTenantSubscriptionAction;
+use App\Actions\Platform\CancelTenantAction;
 use App\Actions\Platform\CreatePlatformTenantAction;
+use App\Actions\Platform\DeactivateTenantAdminAction;
+use App\Actions\Platform\ForceLogoutTenantAdminAction;
 use App\Actions\Platform\ResetTenantAdminAccessAction;
 use App\Actions\Platform\SuspendTenantAction;
 use App\Actions\Platform\UpsertTenantFeatureOverrideAction;
@@ -32,7 +35,7 @@ class PlatformTenantController extends Controller
         $perPage = min(max($request->integer('per_page', 25), 1), 100);
 
         $query = Tenant::query()
-            ->with(['subscription.plan'])
+            ->with(['subscription.plan', 'ownerMembership'])
             ->withCount(['memberships', 'branches', 'warehouses'])
             ->withCount([
                 'devices as active_devices_count' => fn ($devices) => $devices->where('status', DeviceStatus::Active),
@@ -58,7 +61,9 @@ class PlatformTenantController extends Controller
     public function store(StorePlatformTenantRequest $request, CreatePlatformTenantAction $create): JsonResponse
     {
         $result = $create->execute($request->validated());
-        $payload = (new PlatformTenantResource($result['tenant']))->resolve();
+        $payload = (new PlatformTenantResource(
+            $result['tenant']->load(['subscription.plan', 'ownerMembership'])
+        ))->resolve();
         $payload['initial_admin'] = [
             'username' => $result['username'],
             'must_change_password' => true,
@@ -79,6 +84,7 @@ class PlatformTenantController extends Controller
             'limitOverrides',
             'memberships.user',
             'memberships.roles',
+            'ownerMembership',
         ]);
         $tenant->loadCount(['memberships', 'branches', 'warehouses']);
         $tenant->loadCount([
@@ -107,6 +113,17 @@ class PlatformTenantController extends Controller
         $tenant->save();
 
         return new PlatformTenantResource($tenant->fresh(['subscription.plan']) ?? $tenant);
+    }
+
+    public function destroy(Request $request, string $tenantUlid, CancelTenantAction $cancel): PlatformTenantResource
+    {
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        return new PlatformTenantResource(
+            $cancel->execute($this->findTenant($tenantUlid), $data['reason'] ?? null)
+        );
     }
 
     public function activate(string $tenantUlid, ActivateTenantAction $activate): PlatformTenantResource
@@ -249,6 +266,26 @@ class PlatformTenantController extends Controller
             'must_change_password' => true,
             'temporary_password' => $result['temporary_password'],
         ]);
+    }
+
+    public function forceLogoutAdmin(
+        string $tenantUlid,
+        string $membershipUlid,
+        ForceLogoutTenantAdminAction $force,
+    ): JsonResponse {
+        $force->execute($this->findTenant($tenantUlid), $membershipUlid);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function deactivateAdmin(
+        string $tenantUlid,
+        string $membershipUlid,
+        DeactivateTenantAdminAction $deactivate,
+    ): JsonResponse {
+        $deactivate->execute($this->findTenant($tenantUlid), $membershipUlid);
+
+        return response()->json(['ok' => true]);
     }
 
     private function findTenant(string $tenantUlid): Tenant

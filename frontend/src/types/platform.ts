@@ -4,10 +4,55 @@ export type PlatformUser = {
   email: string
   status: string
   must_change_password: boolean
+  password_changed_at?: string | null
   last_login_at: string | null
+  last_seen_at?: string | null
   last_mfa_verified_at: string | null
   permissions: string[]
+  mfa?: { method: string; enabled: boolean }
   roles?: Array<{ ulid: string; code: string; name: string }>
+  temporary_password?: string | null
+}
+
+export type PlatformRole = {
+  ulid: string
+  code: string
+  name: string
+  description: string | null
+  is_system: boolean
+  is_active: boolean
+  type: 'system' | 'custom'
+  users_assigned?: number
+  updated_at?: string | null
+  permissions?: PlatformPermission[]
+}
+
+export type PlatformPermission = {
+  ulid: string
+  key: string
+  name: string
+  module: string
+  description: string | null
+}
+
+export type PlatformSession = {
+  ulid: string
+  ip_address: string | null
+  user_agent: string | null
+  current: boolean
+  last_seen_at: string | null
+  revoked_at: string | null
+  created_at: string | null
+}
+
+export type PlatformDevice = {
+  ulid: string
+  name: string | null
+  status: string
+  trusted: boolean
+  trusted_until: string | null
+  last_seen_at: string | null
+  registered_at: string | null
 }
 
 export type PlatformPlan = {
@@ -43,6 +88,7 @@ export type PlatformTenant = {
   branches_count?: number
   devices_count?: number
   warehouses_count?: number
+  admin_username?: string | null
   entitlements?: {
     features: string[]
     limits: Record<string, number | null>
@@ -60,6 +106,7 @@ export type PlatformTenant = {
       name: string
       recovery_email: string | null
       must_change_password: boolean
+      last_login_at?: string | null
       status: string
     } | null
     roles: Array<{ ulid: string; code: string; name: string }>
@@ -92,6 +139,19 @@ export type PlatformAuditEvent = {
   metadata: Record<string, unknown> | null
   occurred_at: string | null
   actor: { ulid: string; name: string; email: string } | null
+}
+
+export type PlatformSettings = {
+  general: { product: string }
+  security: {
+    mfa: {
+      method: string
+      required: boolean
+      totp_enabled: boolean
+      passkey_enabled: boolean
+    }
+    session: { recent_mfa_minutes: number }
+  }
 }
 
 export type Paginated<T> = {

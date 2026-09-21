@@ -3,6 +3,8 @@
 namespace Tests;
 
 use App\Actions\Auth\ProvisionTenantAction;
+use App\Actions\Platform\AssignTenantPlanAction;
+use App\Auth\AuthenticatedSession;
 use App\Enums\DeviceStatus;
 use App\Models\Device;
 use App\Models\Tenant;
@@ -117,9 +119,9 @@ abstract class TestCase extends BaseTestCase
         return IdentityNormalizer::username('cashier-'.$suffix);
     }
 
-    protected function provisionOwner(string $suffix = 'aa'): \App\Auth\AuthenticatedSession
+    protected function provisionOwner(string $suffix = 'aa', bool $assignPlan = true): AuthenticatedSession
     {
-        return app(ProvisionTenantAction::class)->execute([
+        $session = app(ProvisionTenantAction::class)->execute([
             'name' => 'Owner '.$suffix,
             'username' => 'owner',
             'recovery_email' => "owner-{$suffix}@example.com",
@@ -130,6 +132,23 @@ abstract class TestCase extends BaseTestCase
             'currency_code' => 'PKR',
             'must_change_password' => false,
         ]);
+
+        if ($assignPlan) {
+            $this->assignExplicitPlan($session->tenant);
+        }
+
+        return $session;
+    }
+
+    protected function provisionOwnerWithoutSubscription(string $suffix = 'aa'): AuthenticatedSession
+    {
+        return $this->provisionOwner($suffix, false);
+    }
+
+    protected function assignExplicitPlan(Tenant $tenant, string $planCode = 'ENTERPRISE'): void
+    {
+        $subscription = app(AssignTenantPlanAction::class)->execute($tenant, $planCode);
+        $tenant->setRelation('subscription', $subscription);
     }
 
     protected function attachTrustedDevice(int $tenantId): string
@@ -196,6 +215,69 @@ abstract class TestCase extends BaseTestCase
             'password' => 'platform-pass-123',
             'must_change_password' => $mustChange,
         ]);
+    }
+
+    /**
+     * @param  list<string>  $permissionKeys
+     */
+    protected function createPlatformStaff(string $suffix, array $permissionKeys): \App\Models\Platform\PlatformUser
+    {
+        app(\App\Platform\PlatformCatalogSync::class)->ensure();
+
+        $role = \App\Models\Platform\PlatformRole::query()->create([
+            'code' => \App\Support\IdentityNormalizer::platformRoleCode('STAFF_'.$suffix),
+            'name' => 'Staff '.$suffix,
+            'is_system' => false,
+            'is_active' => true,
+        ]);
+        $permissionIds = \App\Models\Platform\PlatformPermission::query()
+            ->whereIn('key', $permissionKeys)
+            ->pluck('id');
+        foreach ($permissionIds as $permissionId) {
+            $role->permissions()->attach($permissionId, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
+        }
+
+        $user = \App\Models\Platform\PlatformUser::query()->create([
+            'name' => 'Staff '.$suffix,
+            'email' => "staff-{$suffix}@example.com",
+            'password' => 'platform-pass-123',
+            'status' => \App\Enums\PlatformUserStatus::Active,
+            'must_change_password' => false,
+            'security_version' => 1,
+        ]);
+        $user->roles()->attach($role->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
+
+        return $user->fresh(['roles']) ?? $user;
+    }
+
+    protected function signInPlatformUser(\App\Models\Platform\PlatformUser $user, string $password = 'platform-pass-123'): \App\Models\Platform\PlatformUser
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+
+        $login = $this->postJson('/api/platform/auth/login', [
+            'email' => $user->email,
+            'password' => $password,
+        ]);
+        $login->assertForbidden()->assertJsonPath('error.key', 'MFA_REQUIRED');
+        $challengeUlid = $login->json('error.challenge_ulid');
+
+        $code = null;
+        \Illuminate\Support\Facades\Notification::assertSentOnDemand(
+            \App\Notifications\SecurityCodeNotification::class,
+            function ($notification) use (&$code): bool {
+                $code = $notification->code;
+
+                return true;
+            },
+        );
+
+        $this->postJson('/api/platform/auth/mfa/verify', [
+            'challenge_ulid' => $challengeUlid,
+            'code' => $code,
+            'trust_device' => true,
+        ])->assertOk();
+
+        return $user->fresh(['roles']) ?? $user;
     }
 
     protected function signInPlatformAdmin(string $suffix = 'sa'): \App\Models\Platform\PlatformUser

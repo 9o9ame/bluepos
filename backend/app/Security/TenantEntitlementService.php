@@ -30,8 +30,8 @@ class TenantEntitlementService
         }
 
         $subscription = $this->subscription($tenant);
-        if ($subscription === null) {
-            return true;
+        if ($subscription === null || $subscription->plan === null) {
+            return false;
         }
 
         return $subscription->isOperational();
@@ -39,8 +39,17 @@ class TenantEntitlementService
 
     public function assertOperational(Tenant $tenant): void
     {
-        if (! $this->isTenantOperational($tenant)) {
+        if (! in_array($tenant->status, [TenantStatus::Trial, TenantStatus::Active], true)) {
             throw new ApiException('TENANT_DISABLED', 'This tenant is not active.', 403);
+        }
+
+        $subscription = $this->subscription($tenant);
+        if ($subscription === null || $subscription->plan === null) {
+            throw new ApiException('SUBSCRIPTION_REQUIRED', 'A valid subscription is required.', 403);
+        }
+
+        if (! $subscription->isOperational()) {
+            throw new ApiException('SUBSCRIPTION_INACTIVE', 'The tenant subscription is not active.', 403);
         }
     }
 
@@ -60,11 +69,7 @@ class TenantEntitlementService
         }
 
         $subscription = $this->subscription($tenant);
-        if ($subscription === null) {
-            return true;
-        }
-
-        $planFeature = $subscription->plan?->features?->firstWhere('feature_key', $feature);
+        $planFeature = $subscription?->plan?->features?->firstWhere('feature_key', $feature);
 
         return (bool) ($planFeature?->enabled);
     }
@@ -93,11 +98,11 @@ class TenantEntitlementService
         }
 
         $subscription = $this->subscription($tenant);
-        if ($subscription === null) {
-            return null;
+        if ($subscription === null || $subscription->plan === null || ! $subscription->isOperational()) {
+            return 0;
         }
 
-        $planLimit = $subscription->plan?->limits?->firstWhere('limit_key', $limitKey);
+        $planLimit = $subscription->plan->limits?->firstWhere('limit_key', $limitKey);
 
         return $planLimit?->value;
     }

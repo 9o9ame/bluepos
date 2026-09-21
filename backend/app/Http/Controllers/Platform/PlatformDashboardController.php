@@ -15,7 +15,7 @@ class PlatformDashboardController extends Controller
     public function show(): JsonResponse
     {
         $recentTenants = Tenant::query()
-            ->with('subscription.plan')
+            ->with(['subscription.plan', 'ownerMembership'])
             ->withCount(['memberships', 'branches'])
             ->orderByDesc('id')
             ->limit(8)

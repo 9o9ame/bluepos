@@ -17,7 +17,7 @@ export function PlatformLoginPage() {
   const [resending, setResending] = useState(false)
 
   if (!isLoading && user) {
-    return <Navigate to="/platform" replace />
+    return <Navigate to={user.must_change_password ? '/platform/change-password' : '/platform'} replace />
   }
 
   function applyMfaChallenge(err: ApiClientError): void {
@@ -34,8 +34,8 @@ export function PlatformLoginPage() {
     setSubmitting(true)
     try {
       if (challengeUlid) {
-        await verifyMfa({ challenge_ulid: challengeUlid, code: mfaCode, trust_device: true })
-        navigate('/platform', { replace: true })
+        const signedIn = await verifyMfa({ challenge_ulid: challengeUlid, code: mfaCode, trust_device: true })
+        navigate(signedIn.must_change_password ? '/platform/change-password' : '/platform', { replace: true })
         return
       }
       await login({ email, password })

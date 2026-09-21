@@ -55,7 +55,8 @@ export function PlatformDashboardPage() {
             <tr className="border-b border-slate-200 text-slate-500">
               <th className="py-1">Code</th>
               <th>Name</th>
-              <th>Status</th>
+              <th>Admin Username</th>
+              <th>Tenant Status</th>
               <th>Plan</th>
             </tr>
           </thead>
@@ -68,6 +69,7 @@ export function PlatformDashboardPage() {
                   </Link>
                 </td>
                 <td>{tenant.name}</td>
+                <td className="font-mono">{tenant.admin_username ?? '—'}</td>
                 <td>{tenant.status}</td>
                 <td>{tenant.plan?.code ?? '—'}</td>
               </tr>

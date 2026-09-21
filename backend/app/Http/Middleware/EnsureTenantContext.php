@@ -62,9 +62,7 @@ class EnsureTenantContext
             throw new ApiException('ACCOUNT_DISABLED', 'This account is disabled.', 403);
         }
 
-        if (! $this->entitlements->tenantIsLicensed($membership->tenant)) {
-            throw new ApiException('TENANT_DISABLED', 'This tenant is not active.', 403);
-        }
+        $this->entitlements->assertOperational($membership->tenant);
 
         $sessionVersion = (int) $request->session()->get(EstablishAuthSessionAction::SECURITY_VERSION, 0);
         if ($sessionVersion !== $membership->currentSecurityVersion()) {

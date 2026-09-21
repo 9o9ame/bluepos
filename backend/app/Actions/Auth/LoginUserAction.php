@@ -55,9 +55,7 @@ class LoginUserAction
             $fail();
         }
 
-        if (! $this->entitlements->tenantIsLicensed($tenant)) {
-            throw new ApiException('TENANT_DISABLED', 'This tenant is not active.', 403);
-        }
+        $this->entitlements->assertOperational($tenant);
 
         $membership = Membership::query()
             ->with('user', 'tenant')

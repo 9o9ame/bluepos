@@ -3,7 +3,12 @@ import type {
   Paginated,
   PlatformAuditEvent,
   PlatformDashboard,
+  PlatformDevice,
+  PlatformPermission,
   PlatformPlan,
+  PlatformRole,
+  PlatformSession,
+  PlatformSettings,
   PlatformTenant,
   PlatformUser,
 } from '../types/platform'
@@ -44,9 +49,27 @@ export function platformVerifyMfa(input: PlatformMfaInput): Promise<PlatformUser
   })
 }
 
+export function platformConfirmMfa(input: PlatformMfaInput): Promise<PlatformUser> {
+  return apiFetch<PlatformUser>('/api/platform/auth/mfa/confirm', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
 export async function platformLogout(): Promise<void> {
   await apiFetch<{ ok: boolean }>('/api/platform/auth/logout', { method: 'POST' })
   resetCsrf()
+}
+
+export function platformChangePassword(input: {
+  current_password: string
+  password: string
+  password_confirmation: string
+}): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>('/api/platform/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
 }
 
 export function fetchPlatformDashboard(): Promise<PlatformDashboard> {
@@ -65,6 +88,20 @@ export function createPlatformTenant(input: Record<string, unknown>): Promise<Pl
   return apiFetch<PlatformTenant>('/api/platform/tenants', {
     method: 'POST',
     body: JSON.stringify(input),
+  })
+}
+
+export function updatePlatformTenant(ulid: string, input: Record<string, unknown>): Promise<PlatformTenant> {
+  return apiFetch<PlatformTenant>(`/api/platform/tenants/${ulid}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deletePlatformTenant(ulid: string, reason?: string): Promise<PlatformTenant> {
+  return apiFetch<PlatformTenant>(`/api/platform/tenants/${ulid}`, {
+    method: 'DELETE',
+    body: JSON.stringify({ reason }),
   })
 }
 
@@ -159,24 +196,170 @@ export function fetchPlatformAudit(page = 1): Promise<Paginated<PlatformAuditEve
   return apiFetch<Paginated<PlatformAuditEvent>>(`/api/platform/security/audit?page=${page}`)
 }
 
-export function fetchPlatformAdmins(): Promise<PlatformUser[]> {
-  return apiFetch<PlatformUser[]>('/api/platform/admins')
+export function fetchPlatformUsers(): Promise<PlatformUser[]> {
+  return apiFetch<PlatformUser[]>('/api/platform/users')
 }
 
-export function createPlatformAdmin(input: {
+export function fetchPlatformUser(ulid: string): Promise<PlatformUser> {
+  return apiFetch<PlatformUser>(`/api/platform/users/${ulid}`)
+}
+
+export function createPlatformUser(input: {
   name: string
   email: string
   password?: string
-}): Promise<PlatformUser & { temporary_password: string | null }> {
-  return apiFetch('/api/platform/admins', {
+  must_change_password?: boolean
+  status?: string
+  role_ulids?: string[]
+  reason?: string
+}): Promise<PlatformUser> {
+  return apiFetch('/api/platform/users', {
     method: 'POST',
     body: JSON.stringify(input),
   })
 }
 
-export function resetTenantAdmin(tenantUlid: string): Promise<{
+export function updatePlatformUser(ulid: string, input: Record<string, unknown>): Promise<PlatformUser> {
+  return apiFetch(`/api/platform/users/${ulid}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
+}
+
+export function syncPlatformUserRoles(
+  ulid: string,
+  roleUlids: string[],
+  reason?: string,
+): Promise<PlatformUser> {
+  return apiFetch(`/api/platform/users/${ulid}/roles`, {
+    method: 'PUT',
+    body: JSON.stringify({ role_ulids: roleUlids, reason }),
+  })
+}
+
+export function activatePlatformUser(ulid: string): Promise<PlatformUser> {
+  return apiFetch(`/api/platform/users/${ulid}/activate`, { method: 'POST' })
+}
+
+export function deactivatePlatformUser(ulid: string): Promise<PlatformUser> {
+  return apiFetch(`/api/platform/users/${ulid}/deactivate`, { method: 'POST' })
+}
+
+export function resetPlatformUserPassword(ulid: string): Promise<PlatformUser> {
+  return apiFetch(`/api/platform/users/${ulid}/reset-password`, { method: 'POST' })
+}
+
+export function forceLogoutPlatformUser(ulid: string): Promise<PlatformUser> {
+  return apiFetch(`/api/platform/users/${ulid}/force-logout`, { method: 'POST' })
+}
+
+export function fetchPlatformRoles(): Promise<PlatformRole[]> {
+  return apiFetch<PlatformRole[]>('/api/platform/roles')
+}
+
+export function fetchPlatformRole(ulid: string): Promise<PlatformRole> {
+  return apiFetch<PlatformRole>(`/api/platform/roles/${ulid}`)
+}
+
+export function createPlatformRole(input: {
+  code: string
+  name: string
+  description?: string
+}): Promise<PlatformRole> {
+  return apiFetch('/api/platform/roles', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export function updatePlatformRole(ulid: string, input: Record<string, unknown>): Promise<PlatformRole> {
+  return apiFetch(`/api/platform/roles/${ulid}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deletePlatformRole(ulid: string): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/platform/roles/${ulid}`, { method: 'DELETE' })
+}
+
+export function syncPlatformRolePermissions(ulid: string, permissions: string[]): Promise<PlatformRole> {
+  return apiFetch(`/api/platform/roles/${ulid}/permissions`, {
+    method: 'PUT',
+    body: JSON.stringify({ permissions }),
+  })
+}
+
+export function fetchPlatformPermissions(query?: { q?: string; module?: string }): Promise<PlatformPermission[]> {
+  const params = new URLSearchParams()
+  if (query?.q) {
+    params.set('q', query.q)
+  }
+  if (query?.module) {
+    params.set('module', query.module)
+  }
+  const suffix = params.size > 0 ? `?${params.toString()}` : ''
+  return apiFetch<PlatformPermission[]>(`/api/platform/permissions${suffix}`)
+}
+
+export function fetchPlatformSettings(): Promise<PlatformSettings> {
+  return apiFetch<PlatformSettings>('/api/platform/settings')
+}
+
+export function updatePlatformProfile(input: {
+  name?: string
+  email?: string
+  current_password?: string
+}): Promise<PlatformUser> {
+  return apiFetch('/api/platform/auth/profile', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
+}
+
+export function fetchPlatformSessions(): Promise<PlatformSession[]> {
+  return apiFetch<PlatformSession[]>('/api/platform/auth/sessions')
+}
+
+export function revokePlatformSession(ulid: string): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/platform/auth/sessions/${ulid}`, { method: 'DELETE' })
+}
+
+export function revokeOtherPlatformSessions(): Promise<{ ok: boolean }> {
+  return apiFetch('/api/platform/auth/sessions/others', { method: 'DELETE' })
+}
+
+export function fetchPlatformDevices(): Promise<PlatformDevice[]> {
+  return apiFetch<PlatformDevice[]>('/api/platform/auth/devices')
+}
+
+export function revokePlatformDevice(ulid: string): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/platform/auth/devices/${ulid}`, { method: 'DELETE' })
+}
+
+export function resetTenantAdmin(
+  tenantUlid: string,
+  membershipUlid?: string,
+): Promise<{
+  membership_ulid: string
   username: string
+  must_change_password: boolean
   temporary_password: string
 }> {
-  return apiFetch(`/api/platform/tenants/${tenantUlid}/admins/reset`, { method: 'POST' })
+  return apiFetch(`/api/platform/tenants/${tenantUlid}/admins/reset`, {
+    method: 'POST',
+    body: JSON.stringify(membershipUlid ? { membership_ulid: membershipUlid } : {}),
+  })
+}
+
+export function forceLogoutTenantAdmin(tenantUlid: string, membershipUlid: string): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/platform/tenants/${tenantUlid}/admins/${membershipUlid}/force-logout`, {
+    method: 'POST',
+  })
+}
+
+export function deactivateTenantAdmin(tenantUlid: string, membershipUlid: string): Promise<{ ok: boolean }> {
+  return apiFetch(`/api/platform/tenants/${tenantUlid}/admins/${membershipUlid}/deactivate`, {
+    method: 'POST',
+  })
 }

@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Actions\Auth\ProvisionTenantAction;
+use App\Actions\Platform\AssignTenantPlanAction;
 use App\Support\IdentityNormalizer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
@@ -17,11 +18,12 @@ class CreateTenantCommand extends Command
         {--email= : Admin recovery email}
         {--password= : Temporary password (omit to generate once)}
         {--timezone=Asia/Karachi}
-        {--currency=PKR}';
+        {--currency=PKR}
+        {--plan=ENTERPRISE : Explicit plan code to assign}';
 
-    protected $description = 'Provision a tenant and first Tenant Admin (no public registration).';
+    protected $description = 'Provision a tenant and first Tenant Admin with an explicit plan (no public registration).';
 
-    public function handle(ProvisionTenantAction $provision): int
+    public function handle(ProvisionTenantAction $provision, AssignTenantPlanAction $assignPlan): int
     {
         $name = (string) ($this->option('name') ?: $this->ask('Business name'));
         $code = IdentityNormalizer::tenantCode((string) ($this->option('code') ?: $this->ask('Tenant code')));
@@ -47,10 +49,13 @@ class CreateTenantCommand extends Command
             'must_change_password' => true,
         ]);
 
+        $subscription = $assignPlan->execute($session->tenant, (string) $this->option('plan'));
+
         $this->info('Tenant provisioned.');
         $this->line('Tenant code: '.$session->tenant->code);
         $this->line('Admin username: '.$session->membership->username);
         $this->line('Tenant ULID: '.$session->tenant->ulid);
+        $this->line('Plan: '.$subscription->plan?->code);
 
         if ($generated) {
             $this->line('Temporary password (shown once): '.$password);

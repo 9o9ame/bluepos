@@ -22,7 +22,13 @@ class StorePlatformTenantRequest extends FormRequest
             'tenant_name' => ['required', 'string', 'max:160'],
             'tenant_code' => ['required', 'string', 'max:32'],
             'legal_name' => ['nullable', 'string', 'max:160'],
-            'recovery_email' => ['required', 'email', 'max:255'],
+            'recovery_email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email'),
+                Rule::unique('users', 'recovery_email'),
+            ],
             'admin_name' => ['required', 'string', 'max:120'],
             'admin_username' => ['required', 'string', 'max:63'],
             'timezone' => ['required', 'string', 'max:64'],
@@ -33,7 +39,26 @@ class StorePlatformTenantRequest extends FormRequest
             'trial_ends_at' => ['nullable', 'date', 'after_or_equal:trial_starts_at'],
             'starts_at' => ['nullable', 'date'],
             'ends_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
-            'password' => ['nullable', 'string', 'min:8'],
+            'password' => ['nullable', 'string', \Illuminate\Validation\Rules\Password::min(8)],
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'recovery_email.unique' => 'This recovery email is already used by another account. Use a different email for this tenant.',
+        ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->filled('recovery_email')) {
+            $this->merge([
+                'recovery_email' => strtolower(trim((string) $this->input('recovery_email'))),
+            ]);
+        }
     }
 }

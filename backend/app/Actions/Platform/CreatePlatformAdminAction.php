@@ -50,6 +50,11 @@ class CreatePlatformAdminAction
                 'resource_type' => 'platform_user',
                 'resource_ulid' => $user->ulid,
             ], null, $user);
+            $this->audit->record('PLATFORM_USER_CREATED', [
+                'resource_type' => 'platform_user',
+                'resource_ulid' => $user->ulid,
+                'role_codes' => [PlatformPermissionCatalogue::SUPER_ADMIN],
+            ], null, $user);
 
             return $user->fresh(['roles']) ?? $user;
         });

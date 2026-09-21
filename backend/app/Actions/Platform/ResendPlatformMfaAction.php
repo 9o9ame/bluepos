@@ -26,6 +26,6 @@ class ResendPlatformMfaAction
             $previous->save();
         }
 
-        $this->issue->execute($previous->user, $previous->device);
+        $this->issue->execute($previous->user, $previous->device, (string) ($previous->purpose ?: 'login'));
     }
 }

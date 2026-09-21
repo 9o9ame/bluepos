@@ -49,6 +49,12 @@ class CreateMembershipAction
                 ]);
             }
 
+            if ($recovery && User::query()->where('email', $recovery)->orWhere('recovery_email', $recovery)->exists()) {
+                throw ValidationException::withMessages([
+                    'recovery_email' => 'This recovery email is already used by another account. Use a different email.',
+                ]);
+            }
+
             $user = User::query()->create([
                 'name' => $data['name'],
                 'email' => $recovery,

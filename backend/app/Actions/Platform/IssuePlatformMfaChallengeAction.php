@@ -13,21 +13,22 @@ use Illuminate\Support\Facades\Notification;
 
 class IssuePlatformMfaChallengeAction
 {
-    public function execute(PlatformUser $user, ?PlatformDevice $device): never
+    public function execute(PlatformUser $user, ?PlatformDevice $device, string $purpose = 'login'): never
     {
         $code = (string) random_int(100000, 999999);
         $challenge = PlatformMfaChallenge::query()->create([
             'platform_user_id' => $user->id,
             'platform_device_id' => $device?->id,
             'method' => MfaMethod::EmailOtp,
-            'purpose' => 'login',
+            'purpose' => $purpose,
             'code_hash' => Hash::make($code),
             'attempts' => 0,
             'expires_at' => now()->addMinutes(10),
         ]);
 
+        $label = $purpose === 'step_up' ? 'platform verification' : 'platform login';
         Notification::route('mail', $user->email)
-            ->notify(new SecurityCodeNotification($code, 'platform login'));
+            ->notify(new SecurityCodeNotification($code, $label));
 
         $extra = [
             'challenge_ulid' => $challenge->ulid,

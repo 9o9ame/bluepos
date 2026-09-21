@@ -233,6 +233,7 @@ class PlatformTest extends TestCase
             ->assertJsonPath('code', $this->tenantCode('created'))
             ->assertJsonPath('status', 'active')
             ->assertJsonPath('initial_admin.username', 'owner')
+            ->assertJsonPath('admin_username', 'owner')
             ->assertJsonPath('initial_admin.must_change_password', true);
         $this->assertNotEmpty($response->json('initial_admin.temporary_password'));
         $this->assertNoInternalIds($response->json());
@@ -249,6 +250,9 @@ class PlatformTest extends TestCase
         $this->assertTrue(
             Membership::query()->where('tenant_id', $tenant->id)->first()?->hasRoleCode(PermissionCatalogue::OWNER)
         );
+        $this->getJson('/api/platform/tenants')
+            ->assertOk()
+            ->assertJsonFragment(['ulid' => $response->json('ulid'), 'admin_username' => 'owner']);
     }
 
     public function test_tenant_code_must_be_unique(): void
@@ -258,6 +262,22 @@ class PlatformTest extends TestCase
         $this->postJson('/api/platform/tenants', $this->tenantPayload('dupcode', $plan->ulid))->assertCreated();
         $this->postJson('/api/platform/tenants', $this->tenantPayload('dupcode', $plan->ulid))
             ->assertUnprocessable();
+    }
+
+    public function test_recovery_email_must_be_unique_across_tenants(): void
+    {
+        $this->signInPlatformAdmin('uniq-email');
+        $plan = $this->starterPlan();
+        $first = $this->tenantPayload('email-a', $plan->ulid);
+        $second = $this->tenantPayload('email-b', $plan->ulid);
+        $second['recovery_email'] = $first['recovery_email'];
+
+        $this->postJson('/api/platform/tenants', $first)->assertCreated();
+        $this->postJson('/api/platform/tenants', $second)
+            ->assertUnprocessable()
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonPath('error.message', 'This recovery email is already used by another account. Use a different email for this tenant.');
+        $this->assertNull(Tenant::query()->where('code', $this->tenantCode('email-b'))->first());
     }
 
     public function test_provisioning_rollback_works(): void
@@ -422,7 +442,14 @@ class PlatformTest extends TestCase
         ])->assertOk();
 
         $tenant = Tenant::query()->where('ulid', $created->json('ulid'))->firstOrFail();
-        $this->assertFalse(app(TenantEntitlementService::class)->isTenantOperational($tenant));
+        $service = app(TenantEntitlementService::class);
+        $this->assertFalse($service->isTenantOperational($tenant));
+        try {
+            $service->assertOperational($tenant);
+            $this->fail('Expected SUBSCRIPTION_INACTIVE.');
+        } catch (\App\Exceptions\ApiException $e) {
+            $this->assertSame('SUBSCRIPTION_INACTIVE', $e->errorKey);
+        }
     }
 
     public function test_feature_override_enable_disable_and_wins_over_plan(): void
@@ -616,6 +643,32 @@ class PlatformTest extends TestCase
         $this->getJson('/api/products')
             ->assertForbidden()
             ->assertJsonPath('error.key', 'FEATURE_DISABLED');
+    }
+
+    public function test_operator_can_reset_platform_admin_password(): void
+    {
+        $user = $this->createPlatformAdmin('pw-reset');
+
+        $this->artisan('bluepos:platform-admin-reset-password', [
+            '--email' => $user->email,
+            '--password' => 'NewPlatformPass!1',
+        ])->assertSuccessful();
+
+        $user = $user->fresh() ?? $user;
+        $this->assertTrue(Hash::check('NewPlatformPass!1', $user->password));
+        $this->assertTrue((bool) $user->must_change_password);
+        $this->assertTrue(
+            PlatformAuditLog::query()->where('event', 'PLATFORM_USER_PASSWORD_RESET')->where('resource_ulid', $user->ulid)->exists()
+        );
+
+        $this->postJson('/api/platform/auth/login', [
+            'email' => $user->email,
+            'password' => 'platform-pass-123',
+        ])->assertUnauthorized()->assertJsonPath('error.key', 'INVALID_CREDENTIALS');
+
+        $this->artisan('bluepos:platform-admin-reset-password', [
+            '--email' => 'missing-platform@example.com',
+        ])->assertFailed();
     }
 
     /**

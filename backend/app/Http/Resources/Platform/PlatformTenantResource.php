@@ -46,6 +46,7 @@ class PlatformTenantResource extends JsonResource
             'branches_count' => $this->whenCounted('branches'),
             'devices_count' => $this->when(isset($this->active_devices_count), $this->active_devices_count),
             'warehouses_count' => $this->whenCounted('warehouses'),
+            'admin_username' => $this->adminUsername(),
         ];
 
         if ($request->routeIs('platform.tenants.show')) {
@@ -73,6 +74,7 @@ class PlatformTenantResource extends JsonResource
                     'name' => $membership->user->name,
                     'recovery_email' => $membership->user->recovery_email,
                     'must_change_password' => (bool) $membership->user->must_change_password,
+                    'last_login_at' => $membership->user->last_login_at?->toISOString(),
                     'status' => $membership->user->status->value,
                 ] : null,
                 'roles' => $membership->relationLoaded('roles')
@@ -86,5 +88,19 @@ class PlatformTenantResource extends JsonResource
         }
 
         return $payload;
+    }
+
+    private function adminUsername(): ?string
+    {
+        if ($this->relationLoaded('ownerMembership')) {
+            return $this->ownerMembership?->username;
+        }
+
+        if ($this->relationLoaded('memberships')) {
+            return $this->memberships->firstWhere('is_owner', true)?->username
+                ?? $this->memberships->first()?->username;
+        }
+
+        return null;
     }
 }

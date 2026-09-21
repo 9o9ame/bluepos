@@ -17,7 +17,7 @@ class PlatformAdminController extends Controller
     public function index(): mixed
     {
         return PlatformUserResource::collection(
-            PlatformUser::query()->with('roles')->orderBy('email')->get()
+            PlatformUser::query()->with('roles')->withMax('sessions', 'last_seen_at')->orderBy('email')->get()
         );
     }
 

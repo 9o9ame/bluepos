@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['name', 'slug', 'code', 'legal_name', 'status', 'timezone', 'currency_code', 'security_version'])]
 class Tenant extends Model
@@ -30,6 +31,14 @@ class Tenant extends Model
     public function memberships(): HasMany
     {
         return $this->hasMany(Membership::class);
+    }
+
+    /**
+     * @return HasOne<Membership, $this>
+     */
+    public function ownerMembership(): HasOne
+    {
+        return $this->hasOne(Membership::class)->where('is_owner', true)->oldest('id');
     }
 
     /**

@@ -2,17 +2,24 @@
 
 namespace App\Http\Controllers\Platform;
 
+use App\Actions\Platform\ConfirmPlatformMfaAction;
 use App\Actions\Platform\LoginPlatformUserAction;
 use App\Actions\Platform\ResendPlatformMfaAction;
+use App\Actions\Platform\UpdatePlatformUserAction;
 use App\Actions\Platform\VerifyPlatformMfaAction;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\EnsurePlatformContext;
 use App\Http\Requests\Platform\PlatformLoginRequest;
 use App\Http\Requests\Platform\PlatformMfaVerifyRequest;
+use App\Http\Requests\Platform\UpdatePlatformUserRequest;
+use App\Http\Resources\Platform\PlatformDeviceResource;
 use App\Http\Resources\Platform\PlatformSessionResource;
 use App\Http\Resources\Platform\PlatformUserResource;
+use App\Models\Platform\PlatformDevice;
 use App\Models\Platform\PlatformSession;
+use App\Platform\PlatformAuditLogger;
+use App\Platform\PlatformCatalogSync;
 use App\Platform\PlatformContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,9 +55,20 @@ class PlatformAuthController extends Controller
         $resend->execute($request, $data['challenge_ulid']);
     }
 
-    public function me(PlatformContext $context): PlatformUserResource
+    public function me(PlatformContext $context, PlatformCatalogSync $catalog): PlatformUserResource
     {
+        $catalog->ensure();
+
         return new PlatformUserResource($context->user()->load('roles'));
+    }
+
+    public function confirmMfa(PlatformMfaVerifyRequest $request, ConfirmPlatformMfaAction $confirm): PlatformUserResource
+    {
+        return new PlatformUserResource($confirm->execute(
+            $request,
+            $request->validated('challenge_ulid'),
+            $request->validated('code'),
+        )->load('roles'));
     }
 
     public function logout(Request $request): JsonResponse
@@ -99,6 +117,51 @@ class PlatformAuthController extends Controller
                 'security_version' => (int) $user->security_version,
             ]);
         }
+
+        app(PlatformAuditLogger::class)->record('PLATFORM_PASSWORD_CHANGED', [
+            'resource_type' => 'platform_user',
+            'resource_ulid' => $user->ulid,
+        ], $request, $user);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function updateProfile(UpdatePlatformUserRequest $request, PlatformContext $context, UpdatePlatformUserAction $update): PlatformUserResource
+    {
+        return new PlatformUserResource(
+            $update->execute($request, $context->user(), $request->validated(), true)->load('roles')
+        );
+    }
+
+    public function devices(PlatformContext $context): mixed
+    {
+        return PlatformDeviceResource::collection(
+            PlatformDevice::query()
+                ->where('platform_user_id', $context->user()->id)
+                ->orderByDesc('last_seen_at')
+                ->get()
+        );
+    }
+
+    public function destroyDevice(string $deviceUlid, PlatformContext $context): JsonResponse
+    {
+        $device = PlatformDevice::query()
+            ->where('platform_user_id', $context->user()->id)
+            ->where('ulid', $deviceUlid)
+            ->first();
+        if (! $device) {
+            throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
+        }
+
+        $device->status = \App\Enums\DeviceStatus::Revoked;
+        $device->revoked_at = now();
+        $device->trusted_until = null;
+        $device->save();
+
+        PlatformSession::query()
+            ->where('platform_device_id', $device->id)
+            ->whereNull('revoked_at')
+            ->update(['revoked_at' => now()]);
 
         return response()->json(['ok' => true]);
     }
