@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'slug', 'code', 'status', 'timezone', 'currency_code'])]
+#[Fillable(['name', 'slug', 'code', 'legal_name', 'status', 'timezone', 'currency_code', 'security_version'])]
 class Tenant extends Model
 {
     /** @use HasFactory<TenantFactory> */
@@ -20,6 +20,7 @@ class Tenant extends Model
     {
         return [
             'status' => TenantStatus::class,
+            'security_version' => 'integer',
         ];
     }
 
@@ -45,5 +46,40 @@ class Tenant extends Model
     public function warehouses(): HasMany
     {
         return $this->hasMany(Warehouse::class);
+    }
+
+    public function subscription(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(TenantSubscription::class);
+    }
+
+    /**
+     * @return HasMany<Device, $this>
+     */
+    public function devices(): HasMany
+    {
+        return $this->hasMany(Device::class);
+    }
+
+    /**
+     * @return HasMany<TenantFeatureOverride, $this>
+     */
+    public function featureOverrides(): HasMany
+    {
+        return $this->hasMany(TenantFeatureOverride::class);
+    }
+
+    /**
+     * @return HasMany<TenantLimitOverride, $this>
+     */
+    public function limitOverrides(): HasMany
+    {
+        return $this->hasMany(TenantLimitOverride::class);
+    }
+
+    public function bumpSecurityVersion(): void
+    {
+        $this->security_version = (int) $this->security_version + 1;
+        $this->save();
     }
 }

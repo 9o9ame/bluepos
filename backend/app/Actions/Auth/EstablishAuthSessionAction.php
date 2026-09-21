@@ -35,6 +35,7 @@ class EstablishAuthSessionAction
 
     public function execute(Request $request, AuthenticatedSession $session, bool $logSuccess = true): void
     {
+        Auth::guard('platform')->logout();
         Auth::guard('web')->login($session->user);
         $request->session()->regenerate();
 

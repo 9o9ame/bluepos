@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Authz\PermissionService;
+use App\Platform\PlatformContext;
 use App\Tenancy\TenantContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->scoped(TenantContext::class);
         $this->app->scoped(PermissionService::class);
+        $this->app->scoped(PlatformContext::class);
     }
 
     public function boot(): void
@@ -48,6 +50,20 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('auth', function (Request $request) {
             $id = optional($request->user())->getAuthIdentifier() ?: $request->ip();
+
+            return Limit::perMinute(60)->by((string) $id);
+        });
+
+        RateLimiter::for('platform-login', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip().'|'.strtolower((string) $request->input('email')));
+        });
+
+        RateLimiter::for('platform-mfa', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip().'|'.(string) $request->input('challenge_ulid'));
+        });
+
+        RateLimiter::for('platform-auth', function (Request $request) {
+            $id = optional($request->user('platform'))->getAuthIdentifier() ?: $request->ip();
 
             return Limit::perMinute(60)->by((string) $id);
         });

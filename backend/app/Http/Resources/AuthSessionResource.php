@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Auth\AuthenticatedSession;
 use App\Authz\PermissionService;
+use App\Security\TenantEntitlementService;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -31,6 +32,9 @@ class AuthSessionResource extends JsonResource
     public function toArray(Request $request): array
     {
         $permissions = app(PermissionService::class);
+        $entitlements = app(TenantEntitlementService::class);
+        $snapshot = $entitlements->snapshot($this->tenant);
+        $subscription = $entitlements->subscription($this->tenant);
 
         return [
             'user' => new UserResource($this->user),
@@ -43,6 +47,16 @@ class AuthSessionResource extends JsonResource
             'device' => $this->device ? new DeviceResource($this->device) : null,
             'must_change_password' => (bool) $this->user->must_change_password,
             'branch_access' => $permissions->canAccessAllBranches() ? 'all_branches' : 'selected_branches',
+            'entitlements' => [
+                'plan' => $subscription?->plan ? [
+                    'code' => $subscription->plan->code,
+                    'name' => $subscription->plan->name,
+                    'status' => $subscription->status->value,
+                ] : null,
+                'features' => $snapshot['features'],
+                'limits' => $snapshot['limits'],
+                'usage' => $snapshot['usage'],
+            ],
         ];
     }
 }

@@ -31,4 +31,9 @@ class BranchPolicy
     {
         return $this->permissions->can('branches.switch');
     }
+
+    public function create(User $user): bool
+    {
+        return $this->permissions->can('branches.manage');
+    }
 }

@@ -33,7 +33,7 @@ class ProvisionTenantAction
     ) {}
 
     /**
-     * @param  array{name: string, username: string, recovery_email?: ?string, password: string, tenant_name: string, tenant_code: string, timezone?: string, currency_code?: string, must_change_password?: bool}  $data
+     * @param  array{name: string, username: string, recovery_email?: ?string, password: string, tenant_name: string, tenant_code: string, timezone?: string, currency_code?: string, must_change_password?: bool, legal_name?: ?string, status?: \App\Enums\TenantStatus|string}  $data
      */
     public function execute(array $data): AuthenticatedSession
     {
@@ -75,13 +75,20 @@ class ProvisionTenantAction
                     'security_version' => 1,
                 ]);
 
+                $status = $data['status'] ?? TenantStatus::Active;
+                if (! $status instanceof TenantStatus) {
+                    $status = TenantStatus::from((string) $status);
+                }
+
                 $tenant = Tenant::query()->create([
                     'name' => $data['tenant_name'],
                     'code' => $code,
                     'slug' => $this->uniqueSlug($data['tenant_name']),
-                    'status' => TenantStatus::Active,
+                    'legal_name' => $data['legal_name'] ?? null,
+                    'status' => $status,
                     'timezone' => $data['timezone'] ?? 'Asia/Karachi',
                     'currency_code' => strtoupper($data['currency_code'] ?? 'PKR'),
+                    'security_version' => 1,
                 ]);
 
                 $membership = Membership::query()->create([

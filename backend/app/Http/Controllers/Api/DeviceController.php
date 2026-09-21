@@ -12,6 +12,7 @@ use App\Models\Warehouse;
 use App\Security\AuditLogger;
 use App\Security\DeviceCredentialService;
 use App\Security\SessionRevocationService;
+use App\Security\TenantEntitlementService;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -78,6 +79,10 @@ class DeviceController extends Controller
             'warehouse_ulid' => ['nullable', 'string', 'size:26'],
             'name' => ['sometimes', 'string', 'max:120'],
         ]);
+
+        if ($device->status !== DeviceStatus::Active) {
+            app(TenantEntitlementService::class)->assertCanRegisterDevice($tenantContext->tenant());
+        }
 
         $device->status = DeviceStatus::Active;
         $device->approved_at = now();

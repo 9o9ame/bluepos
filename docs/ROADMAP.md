@@ -2,7 +2,7 @@
 
 Greenfield commercial Multi-Mart POS. **Modular monolith.** No microservices.
 
-**Current position:** Phase 2.5 account/device/session security. Phase 3 catalog is paused (files preserved). Do not start Phase 4 until a human explicitly asks.
+**Current position:** Phase 2.6 Super Admin platform. Phase 3 catalog remains paused (files preserved). Do not start Phase 3 continuation or Phase 4 until a human explicitly asks.
 
 A phase is **not** complete because a UI renders. Completion requires migrations, policies, tests, a changed-file report, command report, and test results — then stop for approval.
 

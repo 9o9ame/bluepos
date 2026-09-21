@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Branches\CreateBranchAction;
 use App\Actions\Branches\SwitchActiveBranchAction;
 use App\Authz\PermissionService;
 use App\Http\Controllers\Controller;
@@ -9,6 +10,7 @@ use App\Http\Resources\AuthSessionResource;
 use App\Http\Resources\BranchResource;
 use App\Models\Branch;
 use App\Tenancy\TenantContext;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class BranchController extends Controller
@@ -27,6 +29,19 @@ class BranchController extends Controller
         }
 
         return BranchResource::collection($query->get());
+    }
+
+    public function store(Request $request, CreateBranchAction $create): JsonResponse
+    {
+        $this->authorize('create', Branch::class);
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:32'],
+            'name' => ['required', 'string', 'max:120'],
+        ]);
+
+        return (new BranchResource($create->execute($data)))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function switch(

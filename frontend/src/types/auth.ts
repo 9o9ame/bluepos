@@ -88,6 +88,12 @@ export type AuthSession = {
   device: Device | null
   must_change_password: boolean
   branch_access: 'all_branches' | 'selected_branches'
+  entitlements?: {
+    plan: { code: string; name: string; status: string } | null
+    features: string[]
+    limits: Record<string, number | null>
+    usage: Record<string, number>
+  }
 }
 
 export type ApiErrorBody = {

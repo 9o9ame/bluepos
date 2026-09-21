@@ -12,7 +12,9 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SecuritySessionController;
 use App\Http\Controllers\Api\SubcategoryController;
+use App\Http\Controllers\Api\TenantEntitlementController;
 use App\Http\Controllers\Api\UnitController;
+use App\Http\Controllers\Api\WarehouseController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -43,7 +45,9 @@ Route::post('/devices/enrollment', [DeviceController::class, 'enroll'])->middlew
 
 Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function () {
     Route::get('/branches', [BranchController::class, 'index']);
+    Route::post('/branches', [BranchController::class, 'store']);
     Route::post('/branches/{branchUlid}/switch', [BranchController::class, 'switch']);
+    Route::post('/warehouses', [WarehouseController::class, 'store']);
 
     Route::get('/permissions', [PermissionController::class, 'index']);
 
@@ -75,36 +79,41 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::get('/settings/business', [BusinessSettingController::class, 'show']);
     Route::patch('/settings/business', [BusinessSettingController::class, 'update']);
+    Route::get('/settings/entitlements', [TenantEntitlementController::class, 'show']);
 
-    Route::get('/categories', [CategoryController::class, 'index']);
-    Route::post('/categories', [CategoryController::class, 'store']);
-    Route::get('/categories/{categoryUlid}', [CategoryController::class, 'show']);
-    Route::patch('/categories/{categoryUlid}', [CategoryController::class, 'update']);
-    Route::delete('/categories/{categoryUlid}', [CategoryController::class, 'destroy']);
+    Route::middleware('entitled:catalog')->group(function () {
+        Route::get('/categories', [CategoryController::class, 'index']);
+        Route::post('/categories', [CategoryController::class, 'store']);
+        Route::get('/categories/{categoryUlid}', [CategoryController::class, 'show']);
+        Route::patch('/categories/{categoryUlid}', [CategoryController::class, 'update']);
+        Route::delete('/categories/{categoryUlid}', [CategoryController::class, 'destroy']);
 
-    Route::get('/subcategories', [SubcategoryController::class, 'index']);
-    Route::post('/subcategories', [SubcategoryController::class, 'store']);
-    Route::get('/subcategories/{subcategoryUlid}', [SubcategoryController::class, 'show']);
-    Route::patch('/subcategories/{subcategoryUlid}', [SubcategoryController::class, 'update']);
-    Route::delete('/subcategories/{subcategoryUlid}', [SubcategoryController::class, 'destroy']);
+        Route::get('/subcategories', [SubcategoryController::class, 'index']);
+        Route::post('/subcategories', [SubcategoryController::class, 'store']);
+        Route::get('/subcategories/{subcategoryUlid}', [SubcategoryController::class, 'show']);
+        Route::patch('/subcategories/{subcategoryUlid}', [SubcategoryController::class, 'update']);
+        Route::delete('/subcategories/{subcategoryUlid}', [SubcategoryController::class, 'destroy']);
 
-    Route::get('/brands', [BrandController::class, 'index']);
-    Route::post('/brands', [BrandController::class, 'store']);
-    Route::get('/brands/{brandUlid}', [BrandController::class, 'show']);
-    Route::patch('/brands/{brandUlid}', [BrandController::class, 'update']);
-    Route::delete('/brands/{brandUlid}', [BrandController::class, 'destroy']);
+        Route::get('/brands', [BrandController::class, 'index']);
+        Route::post('/brands', [BrandController::class, 'store']);
+        Route::get('/brands/{brandUlid}', [BrandController::class, 'show']);
+        Route::patch('/brands/{brandUlid}', [BrandController::class, 'update']);
+        Route::delete('/brands/{brandUlid}', [BrandController::class, 'destroy']);
 
-    Route::get('/units', [UnitController::class, 'index']);
-    Route::post('/units', [UnitController::class, 'store']);
-    Route::get('/units/{unitUlid}', [UnitController::class, 'show']);
-    Route::patch('/units/{unitUlid}', [UnitController::class, 'update']);
-    Route::delete('/units/{unitUlid}', [UnitController::class, 'destroy']);
+        Route::get('/units', [UnitController::class, 'index']);
+        Route::post('/units', [UnitController::class, 'store']);
+        Route::get('/units/{unitUlid}', [UnitController::class, 'show']);
+        Route::patch('/units/{unitUlid}', [UnitController::class, 'update']);
+        Route::delete('/units/{unitUlid}', [UnitController::class, 'destroy']);
 
-    Route::get('/products', [ProductController::class, 'index']);
-    Route::post('/products', [ProductController::class, 'store']);
-    Route::get('/products/{productUlid}', [ProductController::class, 'show']);
-    Route::patch('/products/{productUlid}', [ProductController::class, 'update']);
-    Route::delete('/products/{productUlid}', [ProductController::class, 'destroy']);
-    Route::put('/products/{productUlid}/barcodes', [ProductController::class, 'syncBarcodes']);
-    Route::put('/products/{productUlid}/prices', [ProductController::class, 'syncPrices']);
+        Route::get('/products', [ProductController::class, 'index']);
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::get('/products/{productUlid}', [ProductController::class, 'show']);
+        Route::patch('/products/{productUlid}', [ProductController::class, 'update']);
+        Route::delete('/products/{productUlid}', [ProductController::class, 'destroy']);
+        Route::put('/products/{productUlid}/barcodes', [ProductController::class, 'syncBarcodes']);
+        Route::put('/products/{productUlid}/prices', [ProductController::class, 'syncPrices']);
+    });
 });
+
+require __DIR__.'/platform.php';

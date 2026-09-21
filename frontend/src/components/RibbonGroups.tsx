@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import type { RibbonTab } from './TopRibbon'
-import { useCan } from '../features/auth/useCan'
+import { useCan, useEntitled } from '../features/auth/useCan'
 
 const GROUPS: Record<RibbonTab, string[]> = {
   Definition: ['Business Settings', 'Categories', 'Subcategories', 'Brands', 'Units', 'Products', 'Parties'],
@@ -21,15 +21,16 @@ export function RibbonGroups({ tab }: { tab: RibbonTab }) {
   const canUnits = useCan('units.view') || useCan('units.manage')
   const canProducts = useCan('products.view')
   const canDevices = useCan('devices.view')
+  const catalogEnabled = useEntitled('catalog')
 
   const enabledFor = (item: string): boolean => {
     if (item === 'Users') return canUsers
     if (item === 'Roles') return canRoles
     if (item === 'Settings' || item === 'Business Settings') return canSettings
-    if (item === 'Categories' || item === 'Subcategories') return canCategories
-    if (item === 'Brands') return canBrands
-    if (item === 'Units') return canUnits
-    if (item === 'Products') return canProducts
+    if (item === 'Categories' || item === 'Subcategories') return canCategories && catalogEnabled
+    if (item === 'Brands') return canBrands && catalogEnabled
+    if (item === 'Units') return canUnits && catalogEnabled
+    if (item === 'Products') return canProducts && catalogEnabled
     if (item === 'Devices') return canDevices
     return false
   }

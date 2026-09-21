@@ -97,7 +97,15 @@ class Membership extends Model
 
     public function currentSecurityVersion(): int
     {
-        return max((int) $this->security_version, (int) $this->user?->security_version);
+        $tenantVersion = (int) ($this->relationLoaded('tenant')
+            ? $this->tenant?->security_version
+            : $this->tenant()->value('security_version'));
+
+        return max(
+            (int) $this->security_version,
+            (int) $this->user?->security_version,
+            $tenantVersion,
+        );
     }
 
     public function bumpSecurityVersion(): void

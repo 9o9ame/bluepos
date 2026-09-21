@@ -23,6 +23,11 @@ class OfflineAuthorizationService
             throw new ApiException('ACCOUNT_DISABLED', 'This account is disabled.', 403);
         }
 
+        $tenant = $membership->tenant()->first() ?? $membership->tenant;
+        if ($tenant) {
+            app(TenantEntitlementService::class)->assertOperational($tenant);
+        }
+
         if (! $device->isActive() || (int) $device->tenant_id !== (int) $membership->tenant_id) {
             throw new ApiException('DEVICE_NOT_APPROVED', 'This device is not approved. Ask your administrator to approve it.', 403);
         }

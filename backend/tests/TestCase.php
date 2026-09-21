@@ -70,6 +70,10 @@ abstract class TestCase extends BaseTestCase
             'approved_by',
             'actor_user_id',
             'actor_membership_id',
+            'platform_user_id',
+            'plan_id',
+            'actor_platform_user_id',
+            'subscription_id',
         ];
 
         foreach ($payload as $key => $value) {
@@ -180,5 +184,51 @@ abstract class TestCase extends BaseTestCase
             'username' => IdentityNormalizer::username($username),
             'password' => $password,
         ]);
+    }
+
+    protected function createPlatformAdmin(string $suffix = 'sa', bool $mustChange = false): \App\Models\Platform\PlatformUser
+    {
+        app(\App\Platform\PlatformCatalogSync::class)->ensure();
+
+        return app(\App\Actions\Platform\CreatePlatformAdminAction::class)->execute([
+            'name' => 'Platform '.$suffix,
+            'email' => "platform-{$suffix}@example.com",
+            'password' => 'platform-pass-123',
+            'must_change_password' => $mustChange,
+        ]);
+    }
+
+    protected function signInPlatformAdmin(string $suffix = 'sa'): \App\Models\Platform\PlatformUser
+    {
+        $user = \App\Models\Platform\PlatformUser::query()
+            ->where('email', "platform-{$suffix}@example.com")
+            ->first() ?? $this->createPlatformAdmin($suffix);
+
+        \Illuminate\Support\Facades\Notification::fake();
+
+        $login = $this->postJson('/api/platform/auth/login', [
+            'email' => $user->email,
+            'password' => 'platform-pass-123',
+        ]);
+        $login->assertForbidden()->assertJsonPath('error.key', 'MFA_REQUIRED');
+        $challengeUlid = $login->json('error.challenge_ulid');
+
+        $code = null;
+        \Illuminate\Support\Facades\Notification::assertSentOnDemand(
+            \App\Notifications\SecurityCodeNotification::class,
+            function ($notification) use (&$code): bool {
+                $code = $notification->code;
+
+                return true;
+            },
+        );
+
+        $this->postJson('/api/platform/auth/mfa/verify', [
+            'challenge_ulid' => $challengeUlid,
+            'code' => $code,
+            'trust_device' => true,
+        ])->assertOk();
+
+        return $user->fresh(['roles']) ?? $user;
     }
 }

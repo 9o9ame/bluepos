@@ -7,6 +7,7 @@ use App\Enums\UserStatus;
 use App\Models\Membership;
 use App\Models\User;
 use App\Security\AuditLogger;
+use App\Security\TenantEntitlementService;
 use App\Support\IdentityNormalizer;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,7 @@ class CreateMembershipAction
         private readonly SyncMembershipRolesAction $syncRoles,
         private readonly SyncMembershipBranchesAction $syncBranches,
         private readonly AuditLogger $audit,
+        private readonly TenantEntitlementService $entitlements,
     ) {}
 
     /**
@@ -33,6 +35,8 @@ class CreateMembershipAction
             : null;
 
         return DB::transaction(function () use ($data, $tenantId, $username, $recovery): Membership {
+            $this->entitlements->assertCanCreateUser($this->tenantContext->tenant());
+
             if (! IdentityNormalizer::isValidUsername($username)) {
                 throw ValidationException::withMessages([
                     'username' => 'Username must be 2-63 letters, numbers, dots, underscores, or hyphens.',

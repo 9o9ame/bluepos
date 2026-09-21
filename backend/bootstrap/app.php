@@ -1,7 +1,11 @@
 <?php
 
 use App\Exceptions\ApiException;
+use App\Http\Middleware\EnsureFeatureEntitled;
+use App\Http\Middleware\EnsurePlatformContext;
+use App\Http\Middleware\EnsurePlatformPermission;
 use App\Http\Middleware\EnsureTenantContext;
+use App\Http\Middleware\RequireRecentPlatformMfa;
 use App\Http\Responses\ApiError;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -27,6 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->alias([
             'tenant' => EnsureTenantContext::class,
+            'platform' => EnsurePlatformContext::class,
+            'platform.can' => EnsurePlatformPermission::class,
+            'platform.recent-mfa' => RequireRecentPlatformMfa::class,
+            'entitled' => EnsureFeatureEntitled::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
