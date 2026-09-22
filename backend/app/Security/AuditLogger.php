@@ -51,7 +51,8 @@ class AuditLogger
     {
         $blocked = [
             'password', 'otp', 'code', 'token', 'secret', 'credential', 'authorization',
-            'cookie', 'session', 'recovery_token', 'device_secret',
+            'cookie', 'session', 'recovery_token', 'device_secret', 'mail_password',
+            'smtp', 'api_key', 'apikey',
         ];
 
         foreach ($metadata as $key => $value) {
@@ -59,6 +60,7 @@ class AuditLogger
             foreach ($blocked as $needle) {
                 if (str_contains($normalized, $needle)) {
                     unset($metadata[$key]);
+                    continue 2;
                 }
             }
             if (is_array($value)) {

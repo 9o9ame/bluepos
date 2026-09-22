@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['tenant_id', 'membership_id', 'token_hash', 'expires_at', 'consumed_at'])]
+#[Fillable(['tenant_id', 'membership_id', 'token_hash', 'attempts', 'expires_at', 'consumed_at'])]
 #[Hidden(['token_hash'])]
 class PasswordResetChallenge extends Model
 {
@@ -17,6 +17,7 @@ class PasswordResetChallenge extends Model
     protected function casts(): array
     {
         return [
+            'attempts' => 'integer',
             'expires_at' => 'datetime',
             'consumed_at' => 'datetime',
         ];

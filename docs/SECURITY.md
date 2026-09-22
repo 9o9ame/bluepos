@@ -34,6 +34,7 @@ Public self-registration is disabled (`REGISTRATION_DISABLED`). First tenants ar
 - Browser fingerprints, IP, and user-agent are risk metadata only and never prove a trusted device.
 - Staff login on an unknown device returns `DEVICE_NOT_APPROVED` and does not establish a session.
 - Owner/Admin unknown-device login returns `MFA_REQUIRED` (email OTP now; WebAuthn/TOTP reserved).
+- OTP policy is centralized in `config/security.php`. Delivery uses `SecurityMailService`. See `docs/MAIL.md`.
 - Devices belong to the tenant/branch and may be shared by multiple staff. User identity is separate from device identity.
 - Revoke → `DEVICE_REVOKED`. Bound sessions and offline leases are invalidated.
 

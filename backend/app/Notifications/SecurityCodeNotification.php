@@ -2,17 +2,16 @@
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
+use App\Enums\SecurityNotificationType;
+use App\Security\SecurityOtp;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class SecurityCodeNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(
         public readonly string $code,
-        public readonly string $purpose,
+        public readonly SecurityNotificationType $type,
     ) {}
 
     /**
@@ -25,11 +24,31 @@ class SecurityCodeNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
+        $ttl = $this->type === SecurityNotificationType::PasswordReset
+            || $this->type === SecurityNotificationType::PlatformPasswordReset
+            ? SecurityOtp::passwordResetTtlMinutes()
+            : SecurityOtp::ttlMinutes();
+
+        $payload = [
+            'heading' => $this->type->heading(),
+            'reason' => $this->type->reason(),
+            'code' => $this->code,
+            'ttl_minutes' => $ttl,
+        ];
+
         return (new MailMessage)
-            ->subject('BluePOS security code')
-            ->line('A security code was requested for '.$this->purpose.'.')
-            ->line('Your code: '.$this->code)
-            ->line('Your code expires shortly.')
-            ->line('If you did not request this, contact your administrator.');
+            ->subject($this->type->subject())
+            ->view('mail.security.otp', $payload)
+            ->text('mail.security.otp-text', $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'type' => $this->type->value,
+        ];
     }
 }

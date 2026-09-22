@@ -30,6 +30,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:password-reset');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:password-reset');
     Route::post('/mfa/verify', [AuthController::class, 'verifyMfa'])->middleware('throttle:mfa');
+    Route::post('/mfa/resend', [AuthController::class, 'resendMfa'])->middleware('throttle:mfa');
 
     Route::middleware(['auth:sanctum', 'throttle:auth'])->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);

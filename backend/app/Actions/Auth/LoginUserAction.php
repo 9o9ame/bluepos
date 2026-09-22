@@ -6,16 +6,13 @@ use App\Auth\AuthenticatedSession;
 use App\Authz\MembershipAccess;
 use App\Enums\DeviceStatus;
 use App\Enums\MembershipStatus;
-use App\Enums\MfaMethod;
 use App\Enums\TenantStatus;
 use App\Enums\UserStatus;
 use App\Exceptions\ApiException;
 use App\Models\Device;
 use App\Models\Membership;
-use App\Models\MfaChallenge;
 use App\Models\Tenant;
 use App\Models\Warehouse;
-use App\Notifications\SecurityCodeNotification;
 use App\Security\AuditLogger;
 use App\Security\DeviceCredentialService;
 use App\Security\PrivilegedAccess;
@@ -24,7 +21,6 @@ use App\Support\IdentityNormalizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
 
 class LoginUserAction
 {
@@ -34,6 +30,7 @@ class LoginUserAction
         private readonly PrivilegedAccess $privilegedAccess,
         private readonly MembershipAccess $membershipAccess,
         private readonly TenantEntitlementService $entitlements,
+        private readonly IssueTenantMfaChallengeAction $issueMfa,
     ) {}
 
     public function execute(Request $request, string $tenantCode, string $username, string $password): AuthenticatedSession
@@ -197,54 +194,6 @@ class LoginUserAction
 
     private function requireMfa(Request $request, Membership $membership, Device $device): never
     {
-        $code = (string) random_int(100000, 999999);
-
-        $challenge = MfaChallenge::query()->create([
-            'tenant_id' => $membership->tenant_id,
-            'user_id' => $membership->user_id,
-            'membership_id' => $membership->id,
-            'device_id' => $device->id,
-            'method' => MfaMethod::EmailOtp,
-            'purpose' => 'login',
-            'code_hash' => Hash::make($code),
-            'attempts' => 0,
-            'expires_at' => now()->addMinutes(10),
-        ]);
-
-        $address = $membership->user?->recoveryAddress();
-        if ($address) {
-            Notification::route('mail', $address)
-                ->notify(new SecurityCodeNotification($code, 'admin login'));
-        }
-
-        $this->audit->record('MFA_CHALLENGE', [
-            'tenant_id' => $membership->tenant_id,
-            'actor_user_id' => $membership->user_id,
-            'actor_membership_id' => $membership->id,
-            'device_id' => $device->id,
-            'resource_type' => 'mfa_challenge',
-            'resource_ulid' => $challenge->ulid,
-            'method' => MfaMethod::EmailOtp->value,
-        ], $request);
-
-        $masked = $this->mask($address);
-
-        throw new ApiException('MFA_REQUIRED', 'Additional verification is required for this device.', 403, [
-            'challenge_ulid' => $challenge->ulid,
-            'method' => MfaMethod::EmailOtp->value,
-            'recovery_hint' => $masked,
-        ]);
-    }
-
-    private function mask(?string $email): ?string
-    {
-        if ($email === null || ! str_contains($email, '@')) {
-            return null;
-        }
-
-        [$local, $domain] = explode('@', $email, 2);
-        $keep = substr($local, 0, 1);
-
-        return $keep.'***@'.$domain;
+        $this->issueMfa->execute($request, $membership, $device);
     }
 }

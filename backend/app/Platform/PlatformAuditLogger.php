@@ -40,16 +40,17 @@ class PlatformAuditLogger
      */
     private function redact(array $metadata): array
     {
-        $blocked = ['password', 'otp', 'code', 'token', 'secret', 'credential', 'cookie', 'session'];
+        $blocked = ['password', 'otp', 'code', 'token', 'secret', 'credential', 'cookie', 'session', 'mail_password', 'smtp', 'api_key', 'apikey'];
 
         foreach ($metadata as $key => $value) {
             $normalized = strtolower((string) $key);
             foreach ($blocked as $needle) {
                 if (str_contains($normalized, $needle)) {
                     unset($metadata[$key]);
+                    continue 2;
                 }
             }
-            if (is_array($value) && isset($metadata[$key])) {
+            if (is_array($value)) {
                 $metadata[$key] = $this->redact($value);
             }
         }

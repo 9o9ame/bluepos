@@ -33,7 +33,7 @@ class ConfirmPlatformMfaAction
         if ($challenge->expires_at->isPast()) {
             throw new ApiException('MFA_EXPIRED', 'The verification code has expired.', 403);
         }
-        if ($challenge->attempts >= 5) {
+        if ($challenge->attempts >= \App\Security\SecurityOtp::maxVerifyAttempts()) {
             throw new ApiException('TOO_MANY_ATTEMPTS', 'Too many attempts. Please wait and try again.', 429);
         }
         if (! Hash::check($code, $challenge->code_hash)) {

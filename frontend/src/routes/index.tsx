@@ -2,17 +2,24 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { AppShell } from '../layouts/AppShell'
+import { AccountPage, PlanInfoPage } from '../pages/AccountAndPlanPages'
+import { BranchesPage, SecurityStatusPage, WarehousesPage } from '../pages/AdminShellPages'
 import { BrandsPage } from '../pages/BrandsPage'
 import { BusinessSettingsPage } from '../pages/BusinessSettingsPage'
 import { CategoriesPage } from '../pages/CategoriesPage'
 import { ChangePasswordPage } from '../pages/ChangePasswordPage'
 import { DevicesPage } from '../pages/DevicesPage'
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
+import { HelpAboutPage } from '../pages/HelpAboutPage'
 import { LoginPage } from '../pages/LoginPage'
+import { PartiesPlaceholderPage } from '../pages/PartiesPlaceholderPage'
 import { ProductEditorPage } from '../pages/ProductEditorPage'
 import { ProductsPage } from '../pages/ProductsPage'
+import { PurchaseInvoicePlaceholderPage } from '../pages/PurchaseInvoicePlaceholderPage'
+import { ReportsPlaceholderPage } from '../pages/ReportsPlaceholderPage'
 import { RoleEditorPage } from '../pages/RoleEditorPage'
 import { RolesPage } from '../pages/RolesPage'
+import { SalesInvoicePlaceholderPage } from '../pages/SalesInvoicePlaceholderPage'
 import { SubcategoriesPage } from '../pages/SubcategoriesPage'
 import { UnitsPage } from '../pages/UnitsPage'
 import { UsersPage } from '../pages/UsersPage'
@@ -20,7 +27,7 @@ import { WorkspacePage } from '../pages/WorkspacePage'
 
 function Splash() {
   return (
-    <div className="grid h-screen place-items-center bg-[#1f4e79] text-sm text-white">
+    <div className="grid h-screen place-items-center bg-[var(--titlebar-bg)] text-sm text-white">
       Loading BluePOS…
     </div>
   )
@@ -57,6 +64,14 @@ export function AppRoutes() {
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route path="/" element={<WorkspacePage />} />
+          <Route path="/definition/parties" element={<PartiesPlaceholderPage />} />
+          <Route path="/daily/sales" element={<SalesInvoicePlaceholderPage />} />
+          <Route path="/daily/purchases" element={<PurchaseInvoicePlaceholderPage />} />
+          <Route path="/reports" element={<ReportsPlaceholderPage />} />
+          <Route path="/help/about" element={<HelpAboutPage />} />
+          <Route path="/administration/account" element={<AccountPage />} />
+          <Route path="/administration/plan" element={<PlanInfoPage />} />
+          <Route path="/administration/security" element={<SecurityStatusPage />} />
           <Route element={<RequirePermission permission="users.view" />}>
             <Route path="/administration/users" element={<UsersPage />} />
           </Route>
@@ -69,6 +84,8 @@ export function AppRoutes() {
           </Route>
           <Route element={<RequirePermission permission="settings.view" />}>
             <Route path="/administration/settings" element={<BusinessSettingsPage />} />
+            <Route path="/administration/branches" element={<BranchesPage />} />
+            <Route path="/administration/warehouses" element={<WarehousesPage />} />
           </Route>
           <Route element={<RequirePermission permission="categories.view" />}>
             <Route path="/definition/categories" element={<CategoriesPage />} />

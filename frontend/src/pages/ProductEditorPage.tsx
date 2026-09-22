@@ -1,6 +1,9 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { RefreshCw, Save, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { DesktopButton, DesktopPanel, Field, FormGroup } from '../components/desktop/DesktopPanel'
+import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import {
   createProduct,
   fetchBrands,
@@ -62,6 +65,14 @@ export function ProductEditorPage() {
   const [pieceBarcode, setPieceBarcode] = useState('')
   const [packBarcode, setPackBarcode] = useState('')
   const [cartonBarcode, setCartonBarcode] = useState('')
+  const { closeActiveTab } = useWorkspace()
+
+  useWorkspaceHandlers({
+    save: () => (document.getElementById('product-form') as HTMLFormElement | null)?.requestSubmit(),
+    refresh: () => {
+      void productQuery.refetch()
+    },
+  })
 
   useEffect(() => {
     const product = productQuery.data
@@ -151,92 +162,99 @@ export function ProductEditorPage() {
     }
   }
 
-  const field = 'h-8 rounded border px-2 text-[12px]'
-
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">{isNew ? 'New product' : `Product ${productQuery.data?.product_number ?? ''}`}</h2>
-        <Link className="text-[12px] text-[#1f4e79]" to="/definition/products">Back to products</Link>
-      </div>
-      {error ? <p className="text-[12px] text-red-700">{error}</p> : null}
-      <div className="flex flex-wrap gap-1">
+    <DesktopPanel
+      title={isNew ? 'New product' : `Product ${productQuery.data?.product_number ?? ''}`}
+      toolbar={
+        <>
+          <DesktopButton icon={<Save size={13} />} label="Save" shortcut="F9" disabled={!canSave || saveMutation.isPending} onClick={() => (document.getElementById('product-form') as HTMLFormElement | null)?.requestSubmit()} />
+          <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" disabled={isNew} onClick={() => void productQuery.refetch()} />
+          <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
+        </>
+      }
+    >
+      {error ? <p className="mb-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
+      <div className="inner-tabs">
         {TABS.map((item) => (
-          <button key={item} type="button" className={`rounded border px-2 py-1 text-[11px] ${tab === item ? 'bg-[#1f4e79] text-white' : 'bg-white'}`} onClick={() => setTab(item)}>{item}</button>
+          <button key={item} type="button" className={`inner-tab${tab === item ? ' is-active' : ''}`} onClick={() => setTab(item)}>{item}</button>
         ))}
       </div>
-      <form className="rounded border border-slate-300 bg-white p-3" onSubmit={onSubmit}>
+      <form id="product-form" className="mt-2" onSubmit={onSubmit}>
         {tab === 'GENERAL' ? (
-          <div className="grid gap-2 md:grid-cols-2">
-            <input className={field} placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-            <input className={field} placeholder="SKU" value={sku} onChange={(e) => setSku(e.target.value)} />
-            <select className={field} value={categoryUlid} onChange={(e) => {
-              setCategoryUlid(e.target.value)
-              setSubcategoryUlid('')
-            }}>
-              <option value="">Category</option>
-              {(categories.data ?? []).map((row) => <option key={row.ulid} value={row.ulid}>{row.name}</option>)}
-            </select>
-            <select className={field} value={subcategoryUlid} onChange={(e) => setSubcategoryUlid(e.target.value)}>
-              <option value="">Subcategory</option>
-              {(subcategories.data ?? []).map((row) => <option key={row.ulid} value={row.ulid}>{row.name}</option>)}
-            </select>
-            <select className={field} value={brandUlid} onChange={(e) => setBrandUlid(e.target.value)}>
-              <option value="">Brand</option>
-              {(brands.data ?? []).map((row) => <option key={row.ulid} value={row.ulid}>{row.name}</option>)}
-            </select>
-          </div>
+          <FormGroup title="Product information">
+            <Field label="Name"><input className="desktop-input" value={name} onChange={(e) => setName(e.target.value)} required /></Field>
+            <Field label="SKU"><input className="desktop-input" value={sku} onChange={(e) => setSku(e.target.value)} /></Field>
+            <Field label="Category">
+              <select className="desktop-select" value={categoryUlid} onChange={(e) => {
+                setCategoryUlid(e.target.value)
+                setSubcategoryUlid('')
+              }}>
+                <option value="">Category</option>
+                {(categories.data ?? []).map((row) => <option key={row.ulid} value={row.ulid}>{row.name}</option>)}
+              </select>
+            </Field>
+            <Field label="Subcategory">
+              <select className="desktop-select" value={subcategoryUlid} onChange={(e) => setSubcategoryUlid(e.target.value)}>
+                <option value="">Subcategory</option>
+                {(subcategories.data ?? []).map((row) => <option key={row.ulid} value={row.ulid}>{row.name}</option>)}
+              </select>
+            </Field>
+            <Field label="Brand">
+              <select className="desktop-select" value={brandUlid} onChange={(e) => setBrandUlid(e.target.value)}>
+                <option value="">Brand</option>
+                {(brands.data ?? []).map((row) => <option key={row.ulid} value={row.ulid}>{row.name}</option>)}
+              </select>
+            </Field>
+          </FormGroup>
         ) : null}
         {tab === 'PRICING' ? (
-          <div className="grid gap-2 md:grid-cols-3">
-            <label className="text-[12px]">Retail<input className={`${field} w-full`} value={retail} onChange={(e) => setRetail(e.target.value)} /></label>
-            <label className="text-[12px]">Wholesale<input className={`${field} w-full`} value={wholesale} onChange={(e) => setWholesale(e.target.value)} /></label>
-            <label className="text-[12px]">Minimum sale<input className={`${field} w-full`} value={minimumSale} onChange={(e) => setMinimumSale(e.target.value)} /></label>
-          </div>
+          <FormGroup title="Pricing">
+            <Field label="Retail"><input className="desktop-input" value={retail} onChange={(e) => setRetail(e.target.value)} /></Field>
+            <Field label="Wholesale"><input className="desktop-input" value={wholesale} onChange={(e) => setWholesale(e.target.value)} /></Field>
+            <Field label="Minimum sale"><input className="desktop-input" value={minimumSale} onChange={(e) => setMinimumSale(e.target.value)} /></Field>
+          </FormGroup>
         ) : null}
         {tab === 'BARCODES' ? (
-          <div className="grid gap-2 md:grid-cols-3">
-            <label className="text-[12px]">Piece / primary<input className={`${field} w-full`} value={pieceBarcode} onChange={(e) => setPieceBarcode(e.target.value)} /></label>
-            <label className="text-[12px]">Pack x6<input className={`${field} w-full`} value={packBarcode} onChange={(e) => setPackBarcode(e.target.value)} /></label>
-            <label className="text-[12px]">Carton x24<input className={`${field} w-full`} value={cartonBarcode} onChange={(e) => setCartonBarcode(e.target.value)} /></label>
-          </div>
+          <FormGroup title="Barcodes">
+            <Field label="Piece / primary"><input className="desktop-input" value={pieceBarcode} onChange={(e) => setPieceBarcode(e.target.value)} /></Field>
+            <Field label="Pack x6"><input className="desktop-input" value={packBarcode} onChange={(e) => setPackBarcode(e.target.value)} /></Field>
+            <Field label="Carton x24"><input className="desktop-input" value={cartonBarcode} onChange={(e) => setCartonBarcode(e.target.value)} /></Field>
+          </FormGroup>
         ) : null}
         {tab === 'UNITS' ? (
-          <div className="grid gap-2 md:grid-cols-3">
-            <label className="text-[12px]">Base unit
-              <select className={`${field} w-full`} value={baseUnitUlid || units.data?.[0]?.ulid || ''} onChange={(e) => setBaseUnitUlid(e.target.value)}>
+          <FormGroup title="Units">
+            <Field label="Base unit">
+              <select className="desktop-select" value={baseUnitUlid || units.data?.[0]?.ulid || ''} onChange={(e) => setBaseUnitUlid(e.target.value)}>
                 {(units.data ?? []).map((unit) => <option key={unit.ulid} value={unit.ulid}>{unit.code} — {unit.name}</option>)}
               </select>
-            </label>
-            <label className="text-[12px]">Secondary unit
-              <select className={`${field} w-full`} value={secondaryUnitUlid} onChange={(e) => setSecondaryUnitUlid(e.target.value)}>
+            </Field>
+            <Field label="Secondary unit">
+              <select className="desktop-select" value={secondaryUnitUlid} onChange={(e) => setSecondaryUnitUlid(e.target.value)}>
                 <option value="">None</option>
                 {(units.data ?? []).map((unit) => <option key={unit.ulid} value={unit.ulid}>{unit.code} — {unit.name}</option>)}
               </select>
-            </label>
-            <label className="text-[12px]">Conversion factor
-              <input className={`${field} w-full`} placeholder="e.g. 24.00000000" value={secondaryConversion} onChange={(e) => setSecondaryConversion(e.target.value)} />
-            </label>
-          </div>
+            </Field>
+            <Field label="Conversion factor">
+              <input className="desktop-input" placeholder="e.g. 24.00000000" value={secondaryConversion} onChange={(e) => setSecondaryConversion(e.target.value)} />
+            </Field>
+          </FormGroup>
         ) : null}
         {tab === 'TAX' ? (
-          <label className="text-[12px]">Tax percent<input className={`${field} ml-2`} value={taxPercent} onChange={(e) => setTaxPercent(e.target.value)} /></label>
+          <FormGroup title="Tax">
+            <Field label="Tax percent"><input className="desktop-input" value={taxPercent} onChange={(e) => setTaxPercent(e.target.value)} /></Field>
+          </FormGroup>
         ) : null}
         {tab === 'INVENTORY SETTINGS' ? (
-          <div className="grid gap-2 md:grid-cols-2">
-            <label className="text-[12px]"><input type="checkbox" checked={trackBatch} onChange={(e) => setTrackBatch(e.target.checked)} /> Batch tracking</label>
-            <label className="text-[12px]"><input type="checkbox" checked={trackExpiry} onChange={(e) => setTrackExpiry(e.target.checked)} /> Expiry tracking</label>
-            <input className={field} placeholder="Reorder level" value={reorderLevel} onChange={(e) => setReorderLevel(e.target.value)} />
-            <input className={field} placeholder="Min stock" value={minimumStock} onChange={(e) => setMinimumStock(e.target.value)} />
-            <input className={field} placeholder="Max stock" value={maximumStock} onChange={(e) => setMaximumStock(e.target.value)} />
-            <input className={field} placeholder="Rack" value={rackLocation} onChange={(e) => setRackLocation(e.target.value)} />
-            <p className="md:col-span-2 text-[11px] text-slate-500">These fields are configuration only. Stock movements are Phase 4.</p>
-          </div>
+          <FormGroup title="Inventory configuration">
+            <label className="desktop-field"><span>Batch tracking</span><input type="checkbox" checked={trackBatch} onChange={(e) => setTrackBatch(e.target.checked)} /></label>
+            <label className="desktop-field"><span>Expiry tracking</span><input type="checkbox" checked={trackExpiry} onChange={(e) => setTrackExpiry(e.target.checked)} /></label>
+            <Field label="Reorder level"><input className="desktop-input" value={reorderLevel} onChange={(e) => setReorderLevel(e.target.value)} /></Field>
+            <Field label="Min stock"><input className="desktop-input" value={minimumStock} onChange={(e) => setMinimumStock(e.target.value)} /></Field>
+            <Field label="Max stock"><input className="desktop-input" value={maximumStock} onChange={(e) => setMaximumStock(e.target.value)} /></Field>
+            <Field label="Rack"><input className="desktop-input" value={rackLocation} onChange={(e) => setRackLocation(e.target.value)} /></Field>
+          </FormGroup>
         ) : null}
-        <button type="submit" className="mt-3 h-8 rounded bg-[#1f4e79] px-3 text-[12px] font-semibold text-white disabled:opacity-50" disabled={!canSave || saveMutation.isPending}>
-          Save
-        </button>
       </form>
-    </section>
+    </DesktopPanel>
   )
 }

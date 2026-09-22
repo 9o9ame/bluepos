@@ -30,6 +30,12 @@
         <env name="DB_USERNAME" value="postgres"/>
         <env name="DB_URL" value="" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
+        <env name="MAIL_FROM_ADDRESS" value="no-reply@example.com"/>
+        <env name="MAIL_FROM_NAME" value="BluePOS"/>
+        <env name="OTP_LENGTH" value="6"/>
+        <env name="OTP_TTL_MINUTES" value="10"/>
+        <env name="OTP_RESEND_COOLDOWN_SECONDS" value="60"/>
+        <env name="OTP_MAX_VERIFY_ATTEMPTS" value="5"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="SESSION_DOMAIN" value="localhost"/>

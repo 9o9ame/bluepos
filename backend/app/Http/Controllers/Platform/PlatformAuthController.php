@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Platform;
 
 use App\Actions\Platform\ConfirmPlatformMfaAction;
 use App\Actions\Platform\LoginPlatformUserAction;
+use App\Actions\Platform\RequestPlatformPasswordResetAction;
 use App\Actions\Platform\ResendPlatformMfaAction;
+use App\Actions\Platform\ResetPlatformPasswordAction;
 use App\Actions\Platform\UpdatePlatformUserAction;
 use App\Actions\Platform\VerifyPlatformMfaAction;
 use App\Exceptions\ApiException;
@@ -53,6 +55,26 @@ class PlatformAuthController extends Controller
         ]);
 
         $resend->execute($request, $data['challenge_ulid']);
+    }
+
+    public function forgotPassword(Request $request, RequestPlatformPasswordResetAction $reset): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+        ]);
+
+        return $reset->execute($request, $data['email']);
+    }
+
+    public function resetPassword(Request $request, ResetPlatformPasswordAction $reset): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255'],
+            'token' => ['required', 'string', 'max:12'],
+            'password' => ['required', 'string', 'confirmed', Password::min(8)],
+        ]);
+
+        return $reset->execute($request, $data['email'], $data['token'], $data['password']);
     }
 
     public function me(PlatformContext $context, PlatformCatalogSync $catalog): PlatformUserResource

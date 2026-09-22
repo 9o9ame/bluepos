@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { ApiClientError } from '../../api/client'
 import { usePlatformAuth } from '../../features/platform/PlatformAuthProvider'
 
@@ -21,11 +21,13 @@ export function PlatformLoginPage() {
   }
 
   function applyMfaChallenge(err: ApiClientError): void {
-    setChallengeUlid(typeof err.extra.challenge_ulid === 'string' ? err.extra.challenge_ulid : null)
+    if (typeof err.extra.challenge_ulid === 'string') {
+      setChallengeUlid(err.extra.challenge_ulid)
+    }
     setRecoveryHint(typeof err.extra.recovery_hint === 'string' ? err.extra.recovery_hint : null)
     setDeliveryHint(typeof err.extra.delivery_hint === 'string' ? err.extra.delivery_hint : null)
     setMfaCode('')
-    setError(null)
+    setError(err.key === 'MFA_REQUIRED' ? null : err.message)
   }
 
   async function onSubmit(event: FormEvent) {
@@ -40,7 +42,10 @@ export function PlatformLoginPage() {
       }
       await login({ email, password })
     } catch (err) {
-      if (err instanceof ApiClientError && err.key === 'MFA_REQUIRED') {
+      if (
+        err instanceof ApiClientError &&
+        (err.key === 'MFA_REQUIRED' || err.key === 'EMAIL_DELIVERY_FAILED' || err.key === 'OTP_RESEND_COOLDOWN')
+      ) {
         applyMfaChallenge(err)
         return
       }
@@ -59,7 +64,10 @@ export function PlatformLoginPage() {
     try {
       await resendMfa(challengeUlid)
     } catch (err) {
-      if (err instanceof ApiClientError && err.key === 'MFA_REQUIRED') {
+      if (
+        err instanceof ApiClientError &&
+        (err.key === 'MFA_REQUIRED' || err.key === 'EMAIL_DELIVERY_FAILED' || err.key === 'OTP_RESEND_COOLDOWN')
+      ) {
         applyMfaChallenge(err)
         return
       }
@@ -134,6 +142,11 @@ export function PlatformLoginPage() {
           >
             {submitting ? 'Signing in…' : challengeUlid ? 'Verify' : 'Continue'}
           </button>
+          <p className="text-center text-[12px] text-slate-400">
+            <Link className="font-semibold text-amber-400" to="/platform/forgot-password">
+              Forgot password
+            </Link>
+          </p>
         </form>
       </div>
     </div>

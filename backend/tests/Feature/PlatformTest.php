@@ -68,6 +68,8 @@ class PlatformTest extends TestCase
         ]);
         $oldUlid = $login->json('error.challenge_ulid');
 
+        $this->travel(61)->seconds();
+
         $resend = $this->postJson('/api/platform/auth/mfa/resend', [
             'challenge_ulid' => $oldUlid,
         ]);

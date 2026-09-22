@@ -5,26 +5,23 @@ namespace App\Http\Controllers\Api;
 use App\Actions\Auth\EstablishAuthSessionAction;
 use App\Actions\Auth\LoginUserAction;
 use App\Actions\Auth\LogoutUserAction;
+use App\Actions\Auth\RequestTenantPasswordResetAction;
+use App\Actions\Auth\ResendTenantMfaAction;
+use App\Actions\Auth\ResetTenantPasswordAction;
 use App\Enums\DeviceStatus;
 use App\Enums\MfaMethod;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\AuthSessionResource;
-use App\Models\Device;
 use App\Models\MfaChallenge;
-use App\Models\PasswordResetChallenge;
-use App\Notifications\SecurityCodeNotification;
 use App\Security\AuditLogger;
-use App\Security\DeviceCredentialService;
+use App\Security\SecurityOtp;
 use App\Security\SessionRevocationService;
-use App\Support\IdentityNormalizer;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -109,94 +106,41 @@ class AuthController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function forgotPassword(Request $request, AuditLogger $audit): JsonResponse
+    public function forgotPassword(Request $request, RequestTenantPasswordResetAction $reset): JsonResponse
     {
         $data = $request->validate([
             'tenant_code' => ['required', 'string'],
             'username' => ['required', 'string'],
         ]);
 
-        $code = IdentityNormalizer::tenantCode($data['tenant_code']);
-        $username = IdentityNormalizer::username($data['username']);
-        $tenant = \App\Models\Tenant::query()->where('code', $code)->first();
-        $membership = $tenant
-            ? \App\Models\Membership::query()->with('user')->where('tenant_id', $tenant->id)->where('username', $username)->first()
-            : null;
-
-        if ($membership?->user?->recoveryAddress()) {
-            $token = Str::random(40);
-            PasswordResetChallenge::query()->create([
-                'tenant_id' => $membership->tenant_id,
-                'membership_id' => $membership->id,
-                'token_hash' => Hash::make($token),
-                'expires_at' => now()->addMinutes(30),
-            ]);
-            Notification::route('mail', $membership->user->recoveryAddress())
-                ->notify(new SecurityCodeNotification($token, 'password reset'));
-        }
-
-        $audit->record('PASSWORD_RESET_REQUESTED', [
-            'tenant_code_hash' => hash('sha256', $code),
-            'username_hash' => hash('sha256', $username),
-        ], $request);
-
-        return response()->json([
-            'ok' => true,
-            'message' => 'If the account exists, password reset instructions have been sent.',
-        ]);
+        return $reset->execute($request, $data['tenant_code'], $data['username']);
     }
 
-    public function resetPassword(Request $request, SessionRevocationService $revocation): JsonResponse
+    public function resetPassword(Request $request, ResetTenantPasswordAction $reset): JsonResponse
     {
         $data = $request->validate([
             'tenant_code' => ['required', 'string'],
             'username' => ['required', 'string'],
-            'token' => ['required', 'string'],
+            'token' => ['required', 'string', 'max:12'],
             'password' => ['required', 'string', 'confirmed', Password::min(8)],
         ]);
 
-        $generic = fn () => throw new ApiException('INVALID_CREDENTIALS', 'Invalid tenant code, username, or password.', 401);
+        return $reset->execute(
+            $request,
+            $data['tenant_code'],
+            $data['username'],
+            $data['token'],
+            $data['password'],
+        );
+    }
 
-        $tenant = \App\Models\Tenant::query()->where('code', IdentityNormalizer::tenantCode($data['tenant_code']))->first();
-        if (! $tenant) {
-            $generic();
-        }
-        $membership = \App\Models\Membership::query()->with('user')
-            ->where('tenant_id', $tenant->id)
-            ->where('username', IdentityNormalizer::username($data['username']))
-            ->first();
-        if (! $membership?->user) {
-            $generic();
-        }
+    public function resendMfa(Request $request, ResendTenantMfaAction $resend): never
+    {
+        $data = $request->validate([
+            'challenge_ulid' => ['required', 'string', 'size:26'],
+        ]);
 
-        $challenge = PasswordResetChallenge::query()
-            ->where('membership_id', $membership->id)
-            ->whereNull('consumed_at')
-            ->orderByDesc('id')
-            ->first();
-
-        if (! $challenge || $challenge->expires_at->isPast() || ! Hash::check($data['token'], $challenge->token_hash)) {
-            $generic();
-        }
-
-        $challenge->consumed_at = now();
-        $challenge->save();
-
-        $user = $membership->user;
-        $user->password = $data['password'];
-        $user->must_change_password = false;
-        $user->password_changed_at = now();
-        $user->save();
-        $membership->bumpSecurityVersion();
-        $revocation->revokeMembership($membership->fresh() ?? $membership);
-
-        app(AuditLogger::class)->record('PASSWORD_RESET_COMPLETED', [
-            'tenant_id' => $membership->tenant_id,
-            'resource_type' => 'membership',
-            'resource_ulid' => $membership->ulid,
-        ], $request);
-
-        return response()->json(['ok' => true]);
+        $resend->execute($request, $data['challenge_ulid']);
     }
 
     public function verifyMfa(
@@ -222,7 +166,7 @@ class AuthController extends Controller
             throw new ApiException('MFA_EXPIRED', 'The verification code has expired.', 403);
         }
 
-        if ($challenge->attempts >= 5) {
+        if ($challenge->attempts >= SecurityOtp::maxVerifyAttempts()) {
             throw new ApiException('TOO_MANY_ATTEMPTS', 'Too many attempts. Please wait and try again.', 429);
         }
 

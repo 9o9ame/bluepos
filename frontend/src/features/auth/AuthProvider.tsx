@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useContext, type ReactNode } from 'react'
-import { fetchMe, login, logout, verifyMfa, type LoginInput, type MfaVerifyInput } from '../../api/auth'
+import { fetchMe, login, logout, resendMfa as requestResendMfa, verifyMfa, type LoginInput, type MfaVerifyInput } from '../../api/auth'
 import { ApiClientError } from '../../api/client'
 import type { AuthSession } from '../../types/auth'
 
@@ -18,6 +18,7 @@ type AuthContextValue = {
   isLoading: boolean
   login: (input: LoginInput) => Promise<AuthSession>
   verifyMfa: (input: MfaVerifyInput) => Promise<AuthSession>
+  resendMfa: (challengeUlid: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -62,6 +63,7 @@ function AuthStateProvider({ children }: { children: ReactNode }) {
     isLoading: meQuery.isLoading,
     login: (input) => loginMutation.mutateAsync(input),
     verifyMfa: (input) => mfaMutation.mutateAsync(input),
+    resendMfa: (challengeUlid) => requestResendMfa(challengeUlid),
     logout: () => logoutMutation.mutateAsync(),
   }
 

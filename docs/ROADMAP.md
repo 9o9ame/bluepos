@@ -2,7 +2,7 @@
 
 Greenfield commercial Multi-Mart POS. **Modular monolith.** No microservices.
 
-**Current position:** Phase 2.6A Platform Access (users, roles, permissions, account security, tenant credential UX). Phase 3 catalog remains paused. Do not start Phase 3 continuation or Phase 4 until a human explicitly asks.
+**Current position:** Phase 2.6B Email delivery + OTP configuration hardening. Phase 3 catalog remains paused. Do not start Phase 3 continuation or Phase 4 until a human explicitly asks.
 
 A phase is **not** complete because a UI renders. Completion requires migrations, policies, tests, a changed-file report, command report, and test results — then stop for approval.
 

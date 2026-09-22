@@ -1,16 +1,22 @@
 import { FormEvent, useState } from 'react'
+import { RefreshCw, Save, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createBrand, fetchBrands } from '../api/catalog'
 import { ApiClientError } from '../api/client'
+import { DesktopButton, DesktopPanel, Field, FormGroup } from '../components/desktop/DesktopPanel'
+import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { useCan } from '../features/auth/useCan'
+import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 
 export function BrandsPage() {
   const queryClient = useQueryClient()
+  const { closeActiveTab } = useWorkspace()
   const canCreate = useCan('brands.create') || useCan('brands.manage')
   const query = useQuery({ queryKey: ['brands'], queryFn: fetchBrands })
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const mutation = useMutation({
     mutationFn: createBrand,
     onSuccess: async () => {
@@ -30,25 +36,43 @@ export function BrandsPage() {
     }
   }
 
+  useWorkspaceHandlers({
+    save: () => (document.getElementById('brand-form') as HTMLFormElement | null)?.requestSubmit(),
+    refresh: () => void query.refetch(),
+  })
+
   return (
-    <section className="space-y-3">
-      <h2 className="text-base font-semibold">Brands</h2>
-      {error ? <p className="text-[12px] text-red-700">{error}</p> : null}
+    <DesktopPanel
+      title="Brands"
+      toolbar={
+        <>
+          <DesktopButton icon={<Save size={13} />} label="Save" shortcut="F9" disabled={!canCreate} onClick={() => (document.getElementById('brand-form') as HTMLFormElement | null)?.requestSubmit()} />
+          <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => void query.refetch()} />
+          <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
+        </>
+      }
+    >
+      {error ? <p className="mb-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
       {canCreate ? (
-        <form className="flex flex-wrap gap-2 rounded border bg-white p-3" onSubmit={onSubmit}>
-          <input className="h-8 rounded border px-2 text-[12px]" placeholder="Code" value={code} onChange={(e) => setCode(e.target.value)} required />
-          <input className="h-8 rounded border px-2 text-[12px]" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-          <button type="submit" className="h-8 rounded bg-[#1f4e79] px-3 text-[12px] font-semibold text-white">Add</button>
+        <form id="brand-form" onSubmit={onSubmit}>
+          <FormGroup title="New brand">
+            <Field label="Code"><input className="desktop-input" value={code} onChange={(e) => setCode(e.target.value)} required /></Field>
+            <Field label="Name"><input className="desktop-input" value={name} onChange={(e) => setName(e.target.value)} required /></Field>
+          </FormGroup>
         </form>
       ) : null}
-      <table className="w-full border border-slate-300 bg-white text-[12px]">
-        <thead className="bg-slate-100"><tr><th className="p-2 text-left">Code</th><th className="p-2 text-left">Name</th></tr></thead>
-        <tbody>
-          {(query.data ?? []).map((row) => (
-            <tr key={row.ulid} className="border-t"><td className="p-2">{row.code}</td><td className="p-2">{row.name}</td></tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+      <div style={{ height: 380, marginTop: 6 }}>
+        <PosDataGrid
+          columns={[
+            { key: 'code', header: 'Code', width: 120, render: (row) => row.code },
+            { key: 'name', header: 'Name', render: (row) => row.name },
+          ]}
+          rows={query.data ?? []}
+          rowKey={(row) => row.ulid}
+          selectedKey={selectedKey}
+          onSelect={(row) => setSelectedKey(row.ulid)}
+        />
+      </div>
+    </DesktopPanel>
   )
 }

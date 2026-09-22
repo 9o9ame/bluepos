@@ -1,66 +1,105 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
-import { BranchSelector } from '../components/BranchSelector'
-import { RibbonGroups } from '../components/RibbonGroups'
-import { TopRibbon, type RibbonTab } from '../components/TopRibbon'
-import { UserPanel } from '../components/UserPanel'
-import { WorkspaceTabs } from '../components/WorkspaceTabs'
+import { ApplicationTitleBar } from '../components/desktop/ApplicationTitleBar'
+import { CalculatorDialog } from '../components/desktop/CalculatorDialog'
+import { Ribbon } from '../components/desktop/Ribbon'
+import { StatusBar } from '../components/desktop/StatusBar'
+import { WorkspaceTabBar } from '../components/desktop/WorkspaceTabBar'
 import { useAuth } from '../features/auth/AuthProvider'
+import { WorkspaceProvider } from '../features/workspace/WorkspaceProvider'
+import { useWorkspaceShortcuts } from '../features/workspace/useWorkspaceShortcuts'
 
 export function AppShell() {
   const { session, logout } = useAuth()
   const navigate = useNavigate()
-  const [ribbonTab, setRibbonTab] = useState<RibbonTab>('Definition')
-  const [workspaceTab, setWorkspaceTab] = useState('home')
   const [loggingOut, setLoggingOut] = useState(false)
+  const [calculatorOpen, setCalculatorOpen] = useState(false)
+  const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
+
+  useEffect(() => {
+    function onOnline() {
+      setOnline(true)
+    }
+    function onOffline() {
+      setOnline(false)
+    }
+    window.addEventListener('online', onOnline)
+    window.addEventListener('offline', onOffline)
+    return () => {
+      window.removeEventListener('online', onOnline)
+      window.removeEventListener('offline', onOffline)
+    }
+  }, [])
 
   if (!session) {
     return null
   }
 
   return (
-    <div className="flex h-screen flex-col bg-[#d9dee6] text-slate-900">
-      <header className="flex items-center justify-between bg-[#1f4e79] px-3 py-1.5">
-        <div className="flex items-center gap-4">
-          <div className="text-[15px] font-black tracking-[0.18em] text-white">BLUEPOS</div>
-          <BranchSelector session={session} />
-        </div>
-        <UserPanel
-          session={session}
-          busy={loggingOut}
-          onLogout={() => {
-            setLoggingOut(true)
-            void logout().finally(() => {
-              setLoggingOut(false)
-              navigate('/login', { replace: true })
-            })
-          }}
-        />
-      </header>
-
-      <TopRibbon activeTab={ribbonTab} onChange={setRibbonTab} />
-      <WorkspaceTabs
-        tabs={[
-          { id: 'home', title: 'Home' },
-          { id: ribbonTab.toLowerCase().replace(' ', '-'), title: ribbonTab },
-        ]}
-        activeId={workspaceTab}
-        onSelect={setWorkspaceTab}
+    <WorkspaceProvider>
+      <AppShellFrame
+        session={session}
+        online={online}
+        loggingOut={loggingOut}
+        calculatorOpen={calculatorOpen}
+        setCalculatorOpen={setCalculatorOpen}
+        onLogout={() => {
+          setLoggingOut(true)
+          void logout().finally(() => {
+            setLoggingOut(false)
+            navigate('/login', { replace: true })
+          })
+        }}
+        onChangePassword={() => navigate('/change-password')}
+        onAccount={() => navigate('/administration/account')}
+        onHome={() => navigate('/')}
       />
+    </WorkspaceProvider>
+  )
+}
 
-      <div className="flex min-h-0 flex-1">
-        <RibbonGroups tab={ribbonTab} />
-        <main className="min-w-0 flex-1 overflow-auto bg-[#eef2f6] p-3">
-          <Outlet context={{ ribbonTab, workspaceTab }} />
-        </main>
+function AppShellFrame({
+  session,
+  online,
+  loggingOut,
+  calculatorOpen,
+  setCalculatorOpen,
+  onLogout,
+  onChangePassword,
+  onAccount,
+  onHome,
+}: {
+  session: NonNullable<ReturnType<typeof useAuth>['session']>
+  online: boolean
+  loggingOut: boolean
+  calculatorOpen: boolean
+  setCalculatorOpen: (open: boolean) => void
+  onLogout: () => void
+  onChangePassword: () => void
+  onAccount: () => void
+  onHome: () => void
+}) {
+  useWorkspaceShortcuts()
+
+  return (
+    <div className="app-shell">
+      <ApplicationTitleBar
+        session={session}
+        busy={loggingOut}
+        onHome={onHome}
+        onLogout={onLogout}
+        onChangePassword={onChangePassword}
+        onAccount={onAccount}
+      />
+      <Ribbon onCalculator={() => setCalculatorOpen(true)} />
+      <WorkspaceTabBar />
+      <div className="workspace-host">
+        <div className="workspace-host-inner">
+          <Outlet />
+        </div>
       </div>
-
-      <footer className="flex items-center justify-between border-t border-slate-400 bg-slate-200 px-3 py-1 text-[11px] text-slate-600">
-        <span>
-          {session.branch.name} / {session.warehouse.name}
-        </span>
-        <span>Phase 2.5 account and device security</span>
-      </footer>
+      <StatusBar session={session} online={online} />
+      <CalculatorDialog open={calculatorOpen} onClose={() => setCalculatorOpen(false)} />
     </div>
   )
 }

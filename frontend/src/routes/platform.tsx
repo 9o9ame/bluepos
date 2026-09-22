@@ -8,6 +8,7 @@ import { PlatformAdminsPage } from '../pages/platform/PlatformAdminsPage'
 import { PlatformAuditPage } from '../pages/platform/PlatformAuditPage'
 import { PlatformChangePasswordPage } from '../pages/platform/PlatformChangePasswordPage'
 import { PlatformDashboardPage } from '../pages/platform/PlatformDashboardPage'
+import { PlatformForgotPasswordPage } from '../pages/platform/PlatformForgotPasswordPage'
 import { PlatformLoginPage } from '../pages/platform/PlatformLoginPage'
 import { PlatformPermissionsPage } from '../pages/platform/PlatformPermissionsPage'
 import { PlatformPlanEditorPage } from '../pages/platform/PlatformPlanEditorPage'
@@ -46,6 +47,7 @@ export function PlatformRoutes() {
   return (
     <Routes>
       <Route path="login" element={<PlatformLoginPage />} />
+      <Route path="forgot-password" element={<PlatformForgotPasswordPage />} />
       <Route element={<RequirePlatformAuth />}>
         <Route path="change-password" element={<PlatformChangePasswordPage />} />
         <Route element={<RequirePlatformPassword />}>

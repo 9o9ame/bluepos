@@ -71,6 +71,13 @@ export function verifyMfa(input: MfaVerifyInput): Promise<AuthSession> {
   })
 }
 
+export function resendMfa(challengeUlid: string): Promise<void> {
+  return apiFetch<void>('/api/auth/mfa/resend', {
+    method: 'POST',
+    body: JSON.stringify({ challenge_ulid: challengeUlid }),
+  })
+}
+
 export async function logout(): Promise<void> {
   await apiFetch<{ ok: boolean }>('/api/auth/logout', { method: 'POST' })
   resetCsrf()

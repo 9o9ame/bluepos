@@ -12,7 +12,7 @@ class ResetPlatformAdminPasswordCommand extends Command
         {--email= : Platform administrator email}
         {--password= : Temporary password (omit to generate once)}';
 
-    protected $description = 'Reset a platform Super Admin password from the server. There is no self-service forgot-password screen.';
+    protected $description = 'Reset a platform Super Admin password from the server. Self-service recovery uses /api/platform/auth/forgot-password.';
 
     public function handle(ResetPlatformAdminPasswordAction $reset): int
     {

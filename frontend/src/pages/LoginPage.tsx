@@ -5,7 +5,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 import { AuthLayout } from '../layouts/AuthLayout'
 
 export function LoginPage() {
-  const { session, isLoading, login, verifyMfa } = useAuth()
+  const { session, isLoading, login, verifyMfa, resendMfa } = useAuth()
   const navigate = useNavigate()
   const [tenantCode, setTenantCode] = useState('')
   const [username, setUsername] = useState('')
@@ -17,6 +17,7 @@ export function LoginPage() {
   const [deviceMessage, setDeviceMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [resending, setResending] = useState(false)
 
   if (!isLoading && session) {
     return <Navigate to={session.must_change_password ? '/change-password' : '/'} replace />
@@ -41,7 +42,7 @@ export function LoginPage() {
       const session = await login({ tenant_code: tenantCode, username, password })
       navigate(session.must_change_password ? '/change-password' : '/', { replace: true })
     } catch (err) {
-      if (err instanceof ApiClientError && err.key === 'MFA_REQUIRED') {
+      if (err instanceof ApiClientError && (err.key === 'MFA_REQUIRED' || err.key === 'EMAIL_DELIVERY_FAILED')) {
         setChallengeUlid(typeof err.extra.challenge_ulid === 'string' ? err.extra.challenge_ulid : null)
         setRecoveryHint(typeof err.extra.recovery_hint === 'string' ? err.extra.recovery_hint : null)
         setError(err.message)
@@ -112,6 +113,31 @@ export function LoginPage() {
               <input type="checkbox" checked={trustDevice} onChange={(event) => setTrustDevice(event.target.checked)} />
               Trust this device
             </label>
+            <button
+              type="button"
+              className="text-[12px] font-semibold text-[#1f4e79] underline disabled:opacity-60"
+              disabled={resending}
+              onClick={() => {
+                if (!challengeUlid) {
+                  return
+                }
+                setError(null)
+                setResending(true)
+                void resendMfa(challengeUlid)
+                  .catch((err) => {
+                    if (err instanceof ApiClientError && (err.key === 'MFA_REQUIRED' || err.key === 'EMAIL_DELIVERY_FAILED')) {
+                      setChallengeUlid(typeof err.extra.challenge_ulid === 'string' ? err.extra.challenge_ulid : challengeUlid)
+                      setRecoveryHint(typeof err.extra.recovery_hint === 'string' ? err.extra.recovery_hint : recoveryHint)
+                      setError(err.key === 'EMAIL_DELIVERY_FAILED' ? err.message : null)
+                      return
+                    }
+                    setError(err instanceof ApiClientError ? err.message : 'Unable to resend the code.')
+                  })
+                  .finally(() => setResending(false))
+              }}
+            >
+              {resending ? 'Sending…' : 'Resend code'}
+            </button>
           </>
         ) : null}
         {deviceMessage ? <p className="text-[12px] text-amber-800">{deviceMessage}</p> : null}

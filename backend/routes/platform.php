@@ -17,6 +17,8 @@ Route::prefix('platform')->group(function () {
         Route::post('/login', [PlatformAuthController::class, 'login'])->middleware('throttle:platform-login');
         Route::post('/mfa/verify', [PlatformAuthController::class, 'verifyMfa'])->middleware('throttle:platform-mfa');
         Route::post('/mfa/resend', [PlatformAuthController::class, 'resendMfa'])->middleware('throttle:platform-mfa');
+        Route::post('/forgot-password', [PlatformAuthController::class, 'forgotPassword'])->middleware('throttle:platform-password-reset');
+        Route::post('/reset-password', [PlatformAuthController::class, 'resetPassword'])->middleware('throttle:platform-password-reset');
 
         Route::middleware(['platform', 'throttle:platform-auth'])->group(function () {
             Route::get('/me', [PlatformAuthController::class, 'me']);

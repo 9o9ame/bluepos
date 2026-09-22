@@ -1,4 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react'
+import { RefreshCw, Save, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchBranches } from '../api/branches'
 import {
@@ -13,16 +14,19 @@ import {
 } from '../api/memberships'
 import { fetchRoles } from '../api/roles'
 import { ApiClientError } from '../api/client'
+import { DesktopButton, DesktopPanel, Field, FormGroup } from '../components/desktop/DesktopPanel'
+import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { useCan } from '../features/auth/useCan'
+import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Membership } from '../types/auth'
 
 export function UsersPage() {
   const queryClient = useQueryClient()
+  const { closeActiveTab } = useWorkspace()
   const canCreate = useCan('users.create')
   const canRoles = useCan('users.manage_roles')
   const canBranches = useCan('users.manage_branches')
   const canDeactivate = useCan('users.deactivate')
-
   const canReset = useCan('users.reset_password')
   const canForceLogout = useCan('users.force_logout')
   const canActivate = useCan('users.activate')
@@ -38,6 +42,7 @@ export function UsersPage() {
   const [roleUlid, setRoleUlid] = useState('')
   const [branchUlids, setBranchUlids] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [selectedKey, setSelectedKey] = useState<string | null>(null)
 
   const createMutation = useMutation({
     mutationFn: createMembership,
@@ -72,205 +77,245 @@ export function UsersPage() {
   const roles = rolesQuery.data ?? []
   const branches = branchesQuery.data ?? []
   const defaultRole = useMemo(() => roles.find((role) => role.code === 'cashier') ?? roles[0], [roles])
+  const rows = membershipsQuery.data ?? []
+
+  useWorkspaceHandlers({
+    save: () => {
+      const form = document.getElementById('user-create-form') as HTMLFormElement | null
+      form?.requestSubmit()
+    },
+    refresh: () => {
+      void membershipsQuery.refetch()
+    },
+  })
 
   return (
-    <section className="space-y-4">
-      <h2 className="text-base font-semibold">Users / Memberships</h2>
-      {error ? <p className="text-[12px] text-red-700">{error}</p> : null}
-
+    <DesktopPanel
+      title="Users / Memberships"
+      toolbar={
+        <>
+          <DesktopButton icon={<Save size={13} />} label="Save" shortcut="F9" type="submit" disabled={!canCreate} onClick={() => {
+            const form = document.getElementById('user-create-form') as HTMLFormElement | null
+            form?.requestSubmit()
+          }} />
+          <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => void membershipsQuery.refetch()} />
+          <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
+        </>
+      }
+    >
+      {error ? <p className="mb-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
       {canCreate ? (
-        <form className="grid gap-2 rounded border border-slate-300 bg-white p-3 md:grid-cols-2" onSubmit={onCreate}>
-          <input className="h-8 rounded border px-2 text-[12px]" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-          <input className="h-8 rounded border px-2 text-[12px]" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-          <input className="h-8 rounded border px-2 text-[12px]" placeholder="Recovery email" type="email" value={recoveryEmail} onChange={(e) => setRecoveryEmail(e.target.value)} />
-          <input className="h-8 rounded border px-2 text-[12px]" placeholder="Password" type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required />
-          <select className="h-8 rounded border px-2 text-[12px]" value={roleUlid || defaultRole?.ulid || ''} onChange={(e) => setRoleUlid(e.target.value)}>
-            {roles.map((role) => (
-              <option key={role.ulid} value={role.ulid}>{role.name}</option>
-            ))}
-          </select>
-          <div className="md:col-span-2 flex flex-wrap gap-2 text-[12px]">
-            {branches.map((branch) => (
-              <label key={branch.ulid} className="flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  checked={branchUlids.includes(branch.ulid)}
-                  onChange={(event) => {
-                    setBranchUlids((current) => event.target.checked
-                      ? [...current, branch.ulid]
-                      : current.filter((id) => id !== branch.ulid))
-                  }}
-                />
-                {branch.code}
-              </label>
-            ))}
-          </div>
-          <button type="submit" className="h-8 rounded bg-[#1f4e79] px-3 text-[12px] font-semibold text-white" disabled={createMutation.isPending}>
-            Add user
-          </button>
+        <form id="user-create-form" onSubmit={onCreate}>
+          <FormGroup title="New membership">
+            <Field label="Name">
+              <input className="desktop-input" value={name} onChange={(e) => setName(e.target.value)} required />
+            </Field>
+            <Field label="Username">
+              <input className="desktop-input" value={username} onChange={(e) => setUsername(e.target.value)} required />
+            </Field>
+            <Field label="Recovery email">
+              <input className="desktop-input" type="email" value={recoveryEmail} onChange={(e) => setRecoveryEmail(e.target.value)} />
+            </Field>
+            <Field label="Password">
+              <input className="desktop-input" type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </Field>
+            <Field label="Role">
+              <select className="desktop-select" value={roleUlid || defaultRole?.ulid || ''} onChange={(e) => setRoleUlid(e.target.value)}>
+                {roles.map((role) => (
+                  <option key={role.ulid} value={role.ulid}>{role.name}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Branches" span2>
+              <div className="flex flex-wrap gap-2 text-[12px] text-[var(--text-main)]">
+                {branches.map((branch) => (
+                  <label key={branch.ulid} className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={branchUlids.includes(branch.ulid)}
+                      onChange={(event) => {
+                        setBranchUlids((current) => event.target.checked
+                          ? [...current, branch.ulid]
+                          : current.filter((id) => id !== branch.ulid))
+                      }}
+                    />
+                    {branch.code}
+                  </label>
+                ))}
+              </div>
+            </Field>
+          </FormGroup>
         </form>
       ) : null}
 
-      <table className="w-full border border-slate-300 bg-white text-[12px]">
-        <thead className="bg-slate-100">
-          <tr>
-            <th className="p-2 text-left">Name</th>
-            <th className="p-2 text-left">Username</th>
-            <th className="p-2 text-left">Roles</th>
-            <th className="p-2 text-left">Branches</th>
-            <th className="p-2 text-left">Status</th>
-            <th className="p-2"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {(membershipsQuery.data ?? []).map((membership) => (
-            <MembershipRow
-              key={membership.ulid}
-              membership={membership}
-              roles={roles}
-              branches={branches}
-              canRoles={canRoles}
-              canBranches={canBranches}
-              canDeactivate={canDeactivate}
-              canActivate={canActivate}
-              canReset={canReset}
-              canForceLogout={canForceLogout}
-            />
-          ))}
-        </tbody>
-      </table>
-    </section>
+      <div style={{ height: 360, marginTop: 6 }}>
+        <PosDataGrid
+          columns={[
+            { key: 'name', header: 'Name', render: (row) => row.user?.name ?? '' },
+            { key: 'username', header: 'Username', render: (row) => row.username },
+            {
+              key: 'roles',
+              header: 'Roles',
+              render: (row) => (
+                <RoleCell membership={row} roles={roles} canRoles={canRoles} />
+              ),
+            },
+            {
+              key: 'branches',
+              header: 'Branches',
+              render: (row) => (
+                <BranchCell membership={row} branches={branches} canBranches={canBranches} />
+              ),
+            },
+            { key: 'status', header: 'Status', render: (row) => `${row.status}${row.is_owner ? ' / owner' : ''}` },
+            {
+              key: 'actions',
+              header: 'Actions',
+              render: (row) => (
+                <MembershipActions
+                  membership={row}
+                  canDeactivate={canDeactivate}
+                  canActivate={canActivate}
+                  canReset={canReset}
+                  canForceLogout={canForceLogout}
+                />
+              ),
+            },
+          ]}
+          rows={rows}
+          rowKey={(row) => row.ulid}
+          selectedKey={selectedKey}
+          onSelect={(row) => setSelectedKey(row.ulid)}
+        />
+      </div>
+    </DesktopPanel>
   )
 }
 
-function MembershipRow({
+function RoleCell({
   membership,
   roles,
-  branches,
   canRoles,
+}: {
+  membership: Membership
+  roles: { ulid: string; name: string }[]
+  canRoles: boolean
+}) {
+  const queryClient = useQueryClient()
+  const assignedRoles = (membership.roles ?? []).map((role) => role.ulid)
+  if (!canRoles) {
+    return <>{(membership.roles ?? []).map((role) => role.name).join(', ')}</>
+  }
+  return (
+    <select
+      className="desktop-select"
+      value={assignedRoles[0] ?? ''}
+      onChange={(event) => {
+        void saveMembershipRoles(membership.ulid, [event.target.value]).then(() =>
+          queryClient.invalidateQueries({ queryKey: ['memberships'] }),
+        )
+      }}
+    >
+      {roles.map((role) => (
+        <option key={role.ulid} value={role.ulid}>{role.name}</option>
+      ))}
+    </select>
+  )
+}
+
+function BranchCell({
+  membership,
+  branches,
   canBranches,
+}: {
+  membership: Membership
+  branches: { ulid: string; code: string }[]
+  canBranches: boolean
+}) {
+  const queryClient = useQueryClient()
+  const assignedBranches = (membership.branches ?? []).map((branch) => branch.ulid)
+  if (!canBranches) {
+    return <>{(membership.branches ?? []).map((branch) => branch.code).join(', ') || 'All'}</>
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {branches.map((branch) => (
+        <label key={branch.ulid} className="flex items-center gap-1">
+          <input
+            type="checkbox"
+            checked={assignedBranches.includes(branch.ulid)}
+            onChange={(event) => {
+              const next = event.target.checked
+                ? [...assignedBranches, branch.ulid]
+                : assignedBranches.filter((id) => id !== branch.ulid)
+              void saveMembershipBranches(membership.ulid, next).then(() =>
+                queryClient.invalidateQueries({ queryKey: ['memberships'] }),
+              )
+            }}
+          />
+          {branch.code}
+        </label>
+      ))}
+    </div>
+  )
+}
+
+function MembershipActions({
+  membership,
   canDeactivate,
   canActivate,
   canReset,
   canForceLogout,
 }: {
   membership: Membership
-  roles: { ulid: string; name: string }[]
-  branches: { ulid: string; code: string }[]
-  canRoles: boolean
-  canBranches: boolean
   canDeactivate: boolean
   canActivate: boolean
   canReset: boolean
   canForceLogout: boolean
 }) {
   const queryClient = useQueryClient()
-  const assignedRoles = (membership.roles ?? []).map((role) => role.ulid)
-  const assignedBranches = (membership.branches ?? []).map((branch) => branch.ulid)
-
   return (
-    <tr className="border-t border-slate-200">
-      <td className="p-2">{membership.user?.name}</td>
-      <td className="p-2">{membership.username}</td>
-      <td className="p-2">
-        {canRoles ? (
-          <select
-            className="h-7 rounded border px-1"
-            value={assignedRoles[0] ?? ''}
-            onChange={(event) => {
-              void saveMembershipRoles(membership.ulid, [event.target.value]).then(() =>
-                queryClient.invalidateQueries({ queryKey: ['memberships'] }),
-              )
-            }}
-          >
-            {roles.map((role) => (
-              <option key={role.ulid} value={role.ulid}>{role.name}</option>
-            ))}
-          </select>
-        ) : (
-          (membership.roles ?? []).map((role) => role.name).join(', ')
-        )}
-      </td>
-      <td className="p-2">
-        {canBranches ? (
-          <div className="flex flex-wrap gap-1">
-            {branches.map((branch) => (
-              <label key={branch.ulid} className="flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  checked={assignedBranches.includes(branch.ulid)}
-                  onChange={(event) => {
-                    const next = event.target.checked
-                      ? [...assignedBranches, branch.ulid]
-                      : assignedBranches.filter((id) => id !== branch.ulid)
-                    void saveMembershipBranches(membership.ulid, next).then(() =>
-                      queryClient.invalidateQueries({ queryKey: ['memberships'] }),
-                    )
-                  }}
-                />
-                {branch.code}
-              </label>
-            ))}
-          </div>
-        ) : (
-          (membership.branches ?? []).map((branch) => branch.code).join(', ') || 'All'
-        )}
-      </td>
-      <td className="p-2">{membership.status}{membership.is_owner ? ' / owner' : ''}</td>
-      <td className="p-2 text-right">
-        {canDeactivate && membership.status === 'active' ? (
-          <button
-            type="button"
-            className="rounded border px-2 py-1"
-            onClick={() => {
-              void deactivateMembership(membership.ulid).then(() =>
-                queryClient.invalidateQueries({ queryKey: ['memberships'] }),
-              )
-            }}
-          >
-            Deactivate
-          </button>
-        ) : null}
-        {canActivate && membership.status !== 'active' ? (
-          <button
-            type="button"
-            className="rounded border px-2 py-1"
-            onClick={() => {
-              void activateMembership(membership.ulid).then(() =>
-                queryClient.invalidateQueries({ queryKey: ['memberships'] }),
-              )
-            }}
-          >
-            Activate
-          </button>
-        ) : null}
-        {canReset ? (
-          <button
-            type="button"
-            className="rounded border px-2 py-1"
-            onClick={() => {
-              const next = window.prompt('Temporary password (min 8 characters)')
-              if (!next || next.length < 8) {
-                return
-              }
-              void resetMembershipPassword(membership.ulid, next)
-            }}
-          >
-            Reset password
-          </button>
-        ) : null}
-        {canForceLogout ? (
-          <button
-            type="button"
-            className="rounded border px-2 py-1"
-            onClick={() => {
-              void forceLogoutMembership(membership.ulid)
-            }}
-          >
-            Force logout
-          </button>
-        ) : null}
-      </td>
-    </tr>
+    <div className="flex flex-wrap justify-end gap-1">
+      {canDeactivate && membership.status === 'active' ? (
+        <DesktopButton
+          label="Deactivate"
+          onClick={() => {
+            void deactivateMembership(membership.ulid).then(() =>
+              queryClient.invalidateQueries({ queryKey: ['memberships'] }),
+            )
+          }}
+        />
+      ) : null}
+      {canActivate && membership.status !== 'active' ? (
+        <DesktopButton
+          label="Activate"
+          onClick={() => {
+            void activateMembership(membership.ulid).then(() =>
+              queryClient.invalidateQueries({ queryKey: ['memberships'] }),
+            )
+          }}
+        />
+      ) : null}
+      {canReset ? (
+        <DesktopButton
+          label="Reset password"
+          onClick={() => {
+            const next = window.prompt('Temporary password (min 8 characters)')
+            if (!next || next.length < 8) {
+              return
+            }
+            void resetMembershipPassword(membership.ulid, next)
+          }}
+        />
+      ) : null}
+      {canForceLogout ? (
+        <DesktopButton
+          label="Force logout"
+          onClick={() => {
+            void forceLogoutMembership(membership.ulid)
+          }}
+        />
+      ) : null}
+    </div>
   )
 }

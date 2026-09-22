@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchBranches, switchBranch } from '../api/branches'
-import { ApiClientError } from '../api/client'
-import type { AuthSession } from '../types/auth'
+import { fetchBranches, switchBranch } from '../../api/branches'
+import { ApiClientError } from '../../api/client'
+import type { AuthSession } from '../../types/auth'
 
-type BranchSelectorProps = {
+type BranchSwitcherProps = {
   session: AuthSession
 }
 
-export function BranchSelector({ session }: BranchSelectorProps) {
+export function BranchSwitcher({ session }: BranchSwitcherProps) {
   const queryClient = useQueryClient()
   const branchesQuery = useQuery({
     queryKey: ['branches'],
@@ -18,6 +18,7 @@ export function BranchSelector({ session }: BranchSelectorProps) {
     mutationFn: switchBranch,
     onSuccess: (nextSession) => {
       queryClient.setQueryData(['auth', 'me'], nextSession)
+      void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] !== 'auth' })
     },
   })
 
@@ -25,10 +26,11 @@ export function BranchSelector({ session }: BranchSelectorProps) {
   const error = switchMutation.error instanceof ApiClientError ? switchMutation.error.message : null
 
   return (
-    <label className="flex items-center gap-2 text-[12px] text-white">
-      <span className="text-slate-300">Branch</span>
+    <label className="titlebar-meta">
+      <span>Branch</span>
       <select
-        className="h-7 min-w-[10rem] rounded border border-slate-500 bg-slate-800 px-2 text-white"
+        className="titlebar-select"
+        aria-label="Active branch"
         value={session.branch.ulid}
         onChange={(event) => {
           const next = event.target.value
@@ -43,7 +45,7 @@ export function BranchSelector({ session }: BranchSelectorProps) {
           </option>
         ))}
       </select>
-      {error ? <span className="text-red-300">{error}</span> : null}
+      {error ? <span className="text-red-700">{error}</span> : null}
     </label>
   )
 }

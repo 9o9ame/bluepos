@@ -1,17 +1,22 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight, RefreshCw, Save, Trash2, X } from 'lucide-react'
+import { useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchPermissions, fetchRole, saveRolePermissions } from '../api/roles'
 import { ApiClientError } from '../api/client'
 import { useCan } from '../features/auth/useCan'
+import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Permission } from '../types/auth'
 
 export function RoleEditorPage() {
   const { roleUlid } = useParams()
   const queryClient = useQueryClient()
+  const { closeActiveTab } = useWorkspace()
   const canSave = useCan('roles.manage_permissions')
   const [error, setError] = useState<string | null>(null)
   const [granted, setGranted] = useState<string[] | null>(null)
+  const [searchAvailable, setSearchAvailable] = useState('')
+  const [searchGranted, setSearchGranted] = useState('')
 
   const roleQuery = useQuery({
     queryKey: ['roles', roleUlid],
@@ -22,18 +27,18 @@ export function RoleEditorPage() {
 
   const grantedKeys = granted ?? (roleQuery.data?.permissions ?? []).map((permission) => permission.key)
 
-  const grouped = useMemo(() => {
-    const map = new Map<string, Permission[]>()
-    for (const permission of permissionsQuery.data ?? []) {
-      const list = map.get(permission.module) ?? []
-      list.push(permission)
-      map.set(permission.module, list)
-    }
-    return map
-  }, [permissionsQuery.data])
+  const available = useMemo(() => {
+    const list = (permissionsQuery.data ?? []).filter((permission) => !grantedKeys.includes(permission.key))
+    const q = searchAvailable.trim().toLowerCase()
+    return q ? list.filter((p) => p.name.toLowerCase().includes(q) || p.key.toLowerCase().includes(q)) : list
+  }, [permissionsQuery.data, grantedKeys, searchAvailable])
 
-  const available = (permissionsQuery.data ?? []).filter((permission) => !grantedKeys.includes(permission.key))
-  const grantedPermissions = (permissionsQuery.data ?? []).filter((permission) => grantedKeys.includes(permission.key))
+  const grantedPermissions = useMemo(() => {
+    const list = (permissionsQuery.data ?? []).filter((permission) => grantedKeys.includes(permission.key))
+    const q = searchGranted.trim().toLowerCase()
+    return q ? list.filter((p) => p.name.toLowerCase().includes(q) || p.key.toLowerCase().includes(q)) : list
+  }, [permissionsQuery.data, grantedKeys, searchGranted])
+
   const [selectedAvailable, setSelectedAvailable] = useState<string[]>([])
   const [selectedGranted, setSelectedGranted] = useState<string[]>([])
 
@@ -44,112 +49,175 @@ export function RoleEditorPage() {
     },
   })
 
-  if (!roleQuery.data) {
-    return <p className="text-[12px]">Loading role…</p>
+  function saveNow() {
+    if (!canSave || roleQuery.data?.code === 'owner') return
+    setError(null)
+    saveMutation.mutateAsync(grantedKeys).catch((err) => {
+      setError(err instanceof ApiClientError ? err.message : 'Unable to save permissions.')
+    })
   }
 
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">Role editor — {roleQuery.data.name}</h2>
-        <Link className="text-[12px] text-[#1f4e79]" to="/administration/roles">Back to roles</Link>
-      </div>
-      {error ? <p className="text-[12px] text-red-700">{error}</p> : null}
-      {roleQuery.data.code === 'owner' ? (
-        <p className="text-[12px] text-slate-600">Owner permissions are locked to all tenant capabilities.</p>
-      ) : null}
+  useWorkspaceHandlers({
+    save: saveNow,
+    refresh: () => {
+      void roleQuery.refetch()
+    },
+  })
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <PermissionList
-          title="Available permissions"
+  if (!roleQuery.data) {
+    return (
+      <div className="classic-workspace is-groups">
+        <div className="module-banner">Manage Groups</div>
+        <p className="p-3 text-[12px]">Loading role…</p>
+      </div>
+    )
+  }
+
+  const locked = roleQuery.data.code === 'owner'
+
+  return (
+    <div className="classic-workspace is-groups">
+      <div className="module-banner">Manage Groups</div>
+      <div className="desktop-toolbar" style={{ justifyContent: 'space-between' }}>
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] font-semibold">Group</span>
+          <input className="desktop-input" style={{ width: 180 }} readOnly value={roleQuery.data.name} />
+          <span className="text-[11px] text-[var(--text-muted)]">{roleQuery.data.code}</span>
+        </div>
+        {error ? <span className="text-[12px] text-[var(--danger)]">{error}</span> : null}
+        {locked ? <span className="text-[12px] text-[var(--text-muted)]">Owner permissions are locked.</span> : null}
+      </div>
+
+      <div className="groups-layout">
+        <PermissionBox
+          title={`Available Commands (${available.length})`}
+          search={searchAvailable}
+          onSearch={setSearchAvailable}
           permissions={available}
-          grouped={grouped}
           selected={selectedAvailable}
           onSelect={setSelectedAvailable}
         />
-        <PermissionList
-          title="Granted permissions"
+        <div className="transfer-col">
+          <button
+            type="button"
+            className="transfer-btn"
+            title="Add selected"
+            disabled={locked}
+            onClick={() => {
+              setGranted([...grantedKeys, ...selectedAvailable])
+              setSelectedAvailable([])
+            }}
+          >
+            <ChevronRight size={18} />
+          </button>
+          <button
+            type="button"
+            className="transfer-btn"
+            title="Add all"
+            disabled={locked}
+            onClick={() => setGranted((permissionsQuery.data ?? []).map((p) => p.key))}
+          >
+            <ChevronsRight size={18} />
+          </button>
+          <button
+            type="button"
+            className="transfer-btn"
+            title="Remove selected"
+            disabled={locked}
+            onClick={() => {
+              setGranted(grantedKeys.filter((key) => !selectedGranted.includes(key)))
+              setSelectedGranted([])
+            }}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <button
+            type="button"
+            className="transfer-btn"
+            title="Remove all"
+            disabled={locked}
+            onClick={() => setGranted([])}
+          >
+            <ChevronsLeft size={18} />
+          </button>
+        </div>
+        <PermissionBox
+          title={`Granted Commands (${grantedPermissions.length})`}
+          search={searchGranted}
+          onSearch={setSearchGranted}
           permissions={grantedPermissions}
-          grouped={grouped}
           selected={selectedGranted}
           onSelect={setSelectedGranted}
         />
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button type="button" className="rounded border bg-white px-3 py-1 text-[12px]" onClick={() => {
-          setGranted([...grantedKeys, ...selectedAvailable])
-          setSelectedAvailable([])
-        }}>Add</button>
-        <button type="button" className="rounded border bg-white px-3 py-1 text-[12px]" onClick={() => {
-          setGranted(grantedKeys.filter((key) => !selectedGranted.includes(key)))
-          setSelectedGranted([])
-        }}>Remove</button>
-        <button type="button" className="rounded border bg-white px-3 py-1 text-[12px]" onClick={() => setGranted((permissionsQuery.data ?? []).map((p) => p.key))}>Add All</button>
-        <button type="button" className="rounded border bg-white px-3 py-1 text-[12px]" onClick={() => setGranted([])}>Remove All</button>
-        <button
-          type="button"
-          className="rounded bg-[#1f4e79] px-3 py-1 text-[12px] font-semibold text-white disabled:opacity-60"
-          disabled={!canSave || saveMutation.isPending || roleQuery.data.code === 'owner'}
-          onClick={() => {
-            setError(null)
-            saveMutation.mutateAsync(grantedKeys).catch((err) => {
-              setError(err instanceof ApiClientError ? err.message : 'Unable to save permissions.')
-            })
-          }}
-        >
-          Save
+      <div className="invoice-bottom">
+        <button type="button" className="desktop-btn is-danger" disabled title="Available in a later phase">
+          <Trash2 size={13} /> Delete Group
         </button>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            className="desktop-btn is-primary"
+            disabled={!canSave || saveMutation.isPending || locked}
+            onClick={saveNow}
+          >
+            <Save size={13} /> Save Changes [F9]
+          </button>
+          <button type="button" className="desktop-btn" onClick={() => void roleQuery.refetch()}>
+            <RefreshCw size={13} /> Refresh [F8]
+          </button>
+          <button type="button" className="desktop-btn is-danger" onClick={closeActiveTab}>
+            <X size={13} /> Close
+          </button>
+        </div>
       </div>
-    </section>
+    </div>
   )
 }
 
-function PermissionList({
+function PermissionBox({
   title,
+  search,
+  onSearch,
   permissions,
-  grouped,
   selected,
   onSelect,
 }: {
   title: string
+  search: string
+  onSearch: (value: string) => void
   permissions: Permission[]
-  grouped: Map<string, Permission[]>
   selected: string[]
   onSelect: (keys: string[]) => void
 }) {
-  const modules = Array.from(grouped.keys())
-
   return (
-    <div className="rounded border border-slate-300 bg-white">
-      <div className="border-b bg-slate-100 px-3 py-2 text-[12px] font-bold uppercase">{title}</div>
-      <div className="max-h-[28rem] overflow-auto p-2 text-[12px]">
-        {modules.map((module) => {
-          const items = permissions.filter((permission) => permission.module === module)
-          if (items.length === 0) {
-            return null
-          }
-          return (
-            <div key={module} className="mb-2">
-              <div className="font-semibold capitalize text-slate-500">{module}</div>
-              {items.map((permission) => (
-                <label key={permission.key} className="flex items-center gap-2 py-0.5">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(permission.key)}
-                    onChange={(event) => {
-                      onSelect(event.target.checked
-                        ? [...selected, permission.key]
-                        : selected.filter((key) => key !== permission.key))
-                    }}
-                  />
-                  <span>{permission.name}</span>
-                  <span className="text-slate-400">{permission.key}</span>
-                </label>
-              ))}
-            </div>
-          )
-        })}
+    <div className="command-list-box">
+      <h3>{title}</h3>
+      <input
+        className="desktop-input"
+        placeholder="Enter text to search…"
+        value={search}
+        onChange={(event) => onSearch(event.target.value)}
+      />
+      <div className="command-list-scroll">
+        {permissions.map((permission) => (
+          <label key={permission.key}>
+            <input
+              type="checkbox"
+              checked={selected.includes(permission.key)}
+              onChange={(event) => {
+                onSelect(
+                  event.target.checked
+                    ? [...selected, permission.key]
+                    : selected.filter((key) => key !== permission.key),
+                )
+              }}
+            />
+            <span>{permission.name}</span>
+            <span className="text-[10px] text-[var(--text-muted)]">{permission.key}</span>
+          </label>
+        ))}
       </div>
     </div>
   )

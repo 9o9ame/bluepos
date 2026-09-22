@@ -61,6 +61,25 @@ export async function platformLogout(): Promise<void> {
   resetCsrf()
 }
 
+export function platformForgotPassword(email: string): Promise<{ ok: boolean; message: string }> {
+  return apiFetch<{ ok: boolean; message: string }>('/api/platform/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export function platformResetPassword(input: {
+  email: string
+  token: string
+  password: string
+  password_confirmation: string
+}): Promise<{ ok: boolean }> {
+  return apiFetch<{ ok: boolean }>('/api/platform/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
 export function platformChangePassword(input: {
   current_password: string
   password: string
