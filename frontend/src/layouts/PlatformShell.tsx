@@ -33,8 +33,8 @@ export function PlatformShell() {
   )
 
   return (
-    <div className="flex h-screen flex-col bg-slate-100 text-slate-900">
-      <header className="flex items-center justify-between border-b border-slate-800 bg-slate-950 px-4 py-2 text-slate-100">
+    <div className="platform-shell flex h-screen flex-col bg-slate-100 text-slate-900">
+      <header className="platform-header flex items-center justify-between border-b border-slate-800 bg-slate-950 px-4 py-2 text-slate-100">
         <div>
           <div className="text-[10px] font-black tracking-[0.2em] text-amber-400">PLATFORM ADMINISTRATION</div>
           <div className="text-sm font-semibold">BluePOS Super Admin</div>
@@ -83,8 +83,8 @@ export function PlatformShell() {
           ) : null}
         </div>
       </header>
-      <div className="flex min-h-0 flex-1">
-        <nav className="w-52 shrink-0 overflow-auto border-r border-slate-300 bg-slate-200 p-2">
+      <div className="platform-body flex min-h-0 flex-1">
+        <nav className="platform-nav w-52 shrink-0 overflow-auto border-r border-slate-300 bg-slate-200 p-2">
           {visiblePrimary.map((link) => (
             <NavItem key={link.to} to={link.to} label={link.label} end={link.end} />
           ))}
@@ -107,7 +107,7 @@ export function PlatformShell() {
           {canAudit ? <NavItem to="/platform/security/audit" label="Audit" /> : null}
           {canSettings ? <NavItem to="/platform/settings" label="Settings" /> : null}
         </nav>
-        <main className="min-w-0 flex-1 overflow-auto p-4">
+        <main className="platform-main min-w-0 flex-1 overflow-auto p-4">
           <Outlet />
         </main>
       </div>

@@ -38,9 +38,9 @@ export function ApplicationTitleBar({
       <div className="titlebar-center">
         {active?.title ?? 'Home'} — {session.tenant.name}
       </div>
-      <div className="titlebar-meta">
+      <div className="titlebar-meta titlebar-controls">
         <BranchSwitcher session={session} />
-        <span title="Active warehouse">
+        <span className="titlebar-warehouse" title="Active warehouse">
           {session.warehouse.code} — {session.warehouse.name}
         </span>
         <UserAccountMenu

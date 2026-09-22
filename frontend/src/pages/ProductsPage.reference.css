@@ -1,0 +1,134 @@
+/* Inline create/edit support for the single-screen Products workflow */
+.product-reference-screen .product-inline-error {
+  margin: 6px 9px 0;
+  padding: 5px 7px;
+  border: 1px solid #b45353;
+  background: #fff0f0;
+  color: #8a1515;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.product-reference-screen .pdf-barcode-input {
+  width: 100%;
+  height: 18px;
+  min-width: 0;
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.product-reference-screen .pdf-barcode-input:focus {
+  outline: 1px solid #4f8fc0;
+  background: #fff;
+}
+
+.product-reference-screen .pdf-barcode-input:read-only {
+  color: #626d77;
+}
+
+.product-reference-screen .pdf-barcode-table td:first-child {
+  padding: 1px 2px;
+}
+/* Products inline-editor polish — append to ProductsPage.reference.css */
+
+/* Keep search and New on one line, even when the global input rules are wide. */
+.product-reference-screen .product-def-grid-top {
+  display: block;
+  flex: 0 0 46px;
+  padding: 5px 8px;
+}
+
+.product-reference-screen .product-def-grid-search {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 72px !important;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+}
+
+.product-reference-screen .product-def-grid-search .pdf-input {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 32px;
+  margin: 0;
+}
+
+.product-reference-screen .product-def-new-btn {
+  width: 72px;
+  min-width: 72px;
+  height: 30px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Give the group selector breathing room and a reference-like raised header. */
+.product-reference-screen .product-def-groupbar {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 10px !important;
+  min-width: 220px;
+  height: 32px;
+  margin: 7px 0 4px 7px;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.product-reference-screen .product-def-groupbar-label,
+.product-reference-screen .product-def-groupbar-value,
+.product-reference-screen .product-def-groupbar-arrow {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Bring the barcode block closer to the reference position. */
+.product-reference-screen .pdf-barcode-box {
+  width: 72%;
+  margin-left: auto;
+  margin-right: 0;
+  align-self: auto;
+}
+
+/* Keep the editable barcode cells compact. */
+.product-reference-screen .pdf-barcode-input {
+  width: 100%;
+  height: 18px;
+  min-width: 0;
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+}
+
+.product-reference-screen .pdf-barcode-input:focus {
+  outline: 1px solid #4f8fc0;
+  background: #fff;
+}
+
+/* The form should remain stable when New mode clears the selection. */
+.product-reference-screen .product-def-form,
+.product-reference-screen .product-def-grid {
+  min-width: 0;
+}
+
+/* Slightly stronger selected row, closer to the reference application. */
+.product-reference-screen .product-def-grid .pos-grid tbody tr.is-selected td,
+.product-reference-screen .product-def-grid .pos-grid tbody tr[aria-selected='true'] td {
+  background: #6b91d4;
+}
+
+/* Smaller widths: keep toolbar usable instead of stacking. */
+@media (max-width: 1050px) {
+  .product-reference-screen .product-def-grid-search {
+    grid-template-columns: minmax(180px, 1fr) 66px !important;
+  }
+
+  .product-reference-screen .product-def-new-btn {
+    width: 66px;
+    min-width: 66px;
+  }
+}
+

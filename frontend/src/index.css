@@ -69,7 +69,9 @@ textarea {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  width: 100%;
   min-height: 0;
+  overflow: hidden;
   background: var(--app-chrome);
   color: var(--text-main);
 }
@@ -1772,4 +1774,906 @@ textarea {
   .pdf-right-label {
     text-align: left;
   }
+}
+
+/* Responsive shell: desktop keeps the POS density; smaller screens scroll/stack safely. */
+@media (max-width: 1024px) {
+  .app-shell,
+  .platform-shell {
+    height: 100dvh;
+  }
+
+  .titlebar {
+    height: auto;
+    min-height: 34px;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    padding: 4px 6px;
+  }
+
+  .titlebar-center {
+    display: none;
+  }
+
+  .titlebar-controls {
+    margin-left: auto;
+  }
+
+  .ribbon-tabs,
+  .ribbon-body,
+  .workspace-tabs,
+  .statusbar {
+    scrollbar-width: thin;
+  }
+
+  .ribbon-tabs {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    white-space: nowrap;
+  }
+
+  .ribbon-body {
+    min-height: 88px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+  }
+
+  .ribbon-group,
+  .ribbon-group-items {
+    flex: 0 0 auto;
+  }
+
+  .ribbon-command {
+    min-width: 68px;
+    max-width: 92px;
+    padding-inline: 5px;
+  }
+
+  .ribbon-icon-tile {
+    width: 36px;
+    height: 36px;
+  }
+
+  .workspace-tabs {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .workspace-tab {
+    flex: 0 0 auto;
+  }
+
+  .workspace-host {
+    padding: 2px;
+  }
+
+  .desktop-toolbar,
+  .desktop-panel-footer,
+  .invoice-bottom,
+  .grid-pane-toolbar,
+  .grid-pane-footer {
+    flex-wrap: wrap;
+  }
+
+  .desktop-panel-body {
+    overflow: auto;
+  }
+
+  .pos-grid {
+    min-width: 640px;
+  }
+
+  .pos-invoice {
+    display: block;
+    height: auto;
+    min-height: 100%;
+    overflow: auto;
+  }
+
+  .pos-invoice-main {
+    min-height: 520px;
+  }
+
+  .pos-invoice-pay {
+    border-top: 1px solid var(--panel-border);
+    border-left: 0;
+    min-height: auto;
+  }
+
+  .invoice-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .purchase-header {
+    grid-template-columns: minmax(0, 1fr) minmax(150px, 0.5fr);
+  }
+
+  .purchase-header > :last-child {
+    grid-column: 1 / -1;
+  }
+
+  .classic-workspace.is-parties {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(300px, 1fr) auto;
+    height: auto;
+    min-height: 100%;
+  }
+
+  .account-tree {
+    grid-column: 1;
+  }
+
+  .report-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-command {
+    flex: 1 1 120px;
+  }
+
+  .calc-card {
+    width: min(260px, calc(100vw - 24px));
+  }
+}
+
+@media (max-width: 768px) {
+  .titlebar-brand {
+    flex: 1 1 auto;
+  }
+
+  .titlebar-controls {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  .titlebar-controls > .titlebar-meta {
+    flex: 1 1 auto;
+  }
+
+  .titlebar-select {
+    min-width: 0;
+    width: min(100%, 220px);
+  }
+
+  .titlebar-warehouse {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .account-menu-panel {
+    position: fixed;
+    top: auto;
+    right: 8px;
+    left: 8px;
+    min-width: 0;
+  }
+
+  .ribbon-tab {
+    min-height: 34px;
+    padding: 7px 12px 8px;
+  }
+
+  .ribbon-body {
+    min-height: 84px;
+  }
+
+  .ribbon-command {
+    min-width: 66px;
+    min-height: 68px;
+    font-size: 10px;
+  }
+
+  .workspace-tab-label {
+    min-height: 30px;
+    padding: 6px 8px;
+  }
+
+  .workspace-tab-close {
+    width: 26px;
+    height: 26px;
+  }
+
+  .statusbar {
+    height: 24px;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .statusbar-cluster {
+    flex: 0 0 auto;
+  }
+
+  .desktop-panel {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .desktop-panel-header {
+    min-height: 30px;
+  }
+
+  .desktop-btn {
+    min-height: 30px;
+  }
+
+  .form-group-body {
+    grid-template-columns: 1fr;
+  }
+
+  .desktop-field.is-span-2 {
+    grid-column: auto;
+  }
+
+  .desktop-input,
+  .desktop-select {
+    min-height: 30px;
+  }
+
+  .split-workspace {
+    display: block;
+    height: auto;
+    min-height: 100%;
+  }
+
+  .split-workspace > .desktop-panel + .desktop-panel {
+    margin-top: 4px;
+    min-height: 320px;
+  }
+
+  .invoice-meta {
+    grid-template-columns: 1fr !important;
+  }
+
+  .invoice-meta .desktop-field {
+    display: grid;
+    grid-template-columns: 70px minmax(0, 1fr);
+  }
+
+  .f1-row {
+    grid-template-columns: 1fr;
+  }
+
+  .f1-search,
+  .f1-hint {
+    min-height: 34px;
+  }
+
+  .invoice-bottom {
+    align-items: stretch;
+  }
+
+  .invoice-bottom > .flex {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .purchase-header,
+  .report-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-header > :last-child {
+    grid-column: auto;
+  }
+
+  .groups-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(220px, 1fr) auto minmax(220px, 1fr);
+  }
+
+  .transfer-col {
+    flex-direction: row;
+    padding: 6px 0;
+  }
+
+  .transfer-btn {
+    width: 40px;
+    height: 40px;
+    transform: rotate(90deg);
+  }
+
+  .command-list-box {
+    min-height: 220px;
+  }
+
+  .classic-workspace.is-groups {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .dense-row.is-2 {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .product-def {
+    display: block;
+    height: auto;
+    min-height: 100%;
+  }
+
+  .product-def-rail {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 3px;
+  }
+
+  .product-def-rail-spacer {
+    display: none;
+  }
+
+  .product-def-rail-btn,
+  .product-def-cmd {
+    flex: 0 0 74px;
+    min-height: 58px;
+  }
+
+  .product-def-form {
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--panel-border);
+  }
+
+  .product-def-tabs {
+    overflow-x: auto;
+  }
+
+  .product-def-tabs button {
+    flex: 0 0 auto;
+    min-height: 34px;
+  }
+
+  .product-def-grid {
+    min-height: 360px;
+  }
+
+  .pdf-row,
+  .pdf-row-split,
+  .pdf-row-rates,
+  .pdf-row-check {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+
+  .pdf-input,
+  .pdf-select {
+    min-height: 28px;
+  }
+
+  .pdf-short {
+    max-width: none;
+  }
+
+  .pdf-right-label {
+    text-align: right;
+  }
+
+  .pdf-barcode-box {
+    overflow-x: auto;
+  }
+
+  .pdf-barcode-table {
+    min-width: 420px;
+  }
+
+  .product-def-grid-tools input {
+    width: auto !important;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .kv-grid {
+    grid-template-columns: 95px minmax(0, 1fr);
+  }
+
+  .later-banner {
+    margin: 4px 0;
+  }
+
+  .platform-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .platform-body {
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .platform-nav {
+    display: flex;
+    width: 100%;
+    flex: 0 0 auto;
+    gap: 3px;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid #cbd5e1;
+  }
+
+  .platform-nav > * {
+    flex: 0 0 auto;
+  }
+
+  .platform-main {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    font-size: 11px;
+  }
+
+  .titlebar {
+    padding: 3px 4px;
+  }
+
+  .titlebar-brand .titlebar-meta > span:first-child,
+  .titlebar-warehouse {
+    display: none;
+  }
+
+  .titlebar-controls {
+    flex-wrap: nowrap;
+  }
+
+  .titlebar-controls > .titlebar-meta {
+    min-width: 0;
+  }
+
+  .titlebar-select {
+    max-width: 150px;
+  }
+
+  .account-menu-btn {
+    max-width: 138px;
+  }
+
+  .account-menu-btn > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ribbon-tabs {
+    padding-left: 3px;
+  }
+
+  .ribbon-body {
+    padding-left: 2px;
+  }
+
+  .ribbon-group {
+    padding-inline: 4px;
+  }
+
+  .ribbon-group-caption {
+    max-width: 210px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .workspace-host {
+    padding: 0;
+  }
+
+  .desktop-toolbar {
+    gap: 3px;
+    padding: 3px;
+  }
+
+  .desktop-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding-inline: 6px;
+  }
+
+  .pos-grid {
+    min-width: 560px;
+  }
+
+  .quick-command {
+    min-width: 0;
+    flex-basis: calc(50% - 4px);
+  }
+
+  .retail-title {
+    font-size: 18px;
+  }
+
+  .product-def-title {
+    font-size: 15px;
+  }
+
+  .product-def-fields {
+    padding-inline: 4px;
+  }
+
+  .pdf-row,
+  .pdf-row-split,
+  .pdf-row-rates,
+  .pdf-row-check {
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .pdf-row > label:first-child,
+  .pdf-right-label {
+    font-size: 10px;
+  }
+
+  .statusbar-item {
+    padding-inline: 6px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .workspace-host {
+    padding: 6px;
+  }
+
+  .ribbon-command {
+    min-width: 84px;
+    max-width: 116px;
+  }
+
+  .product-def {
+    grid-template-columns: 78px minmax(420px, 34%) minmax(0, 1fr);
+  }
+
+  .pos-grid th,
+  .pos-grid td {
+    height: 24px;
+  }
+}
+
+@media (max-height: 650px) and (max-width: 1024px) {
+  .ribbon-body {
+    min-height: 72px;
+  }
+
+  .ribbon-command {
+    min-height: 58px;
+  }
+
+  .ribbon-icon-tile {
+    width: 30px;
+    height: 30px;
+  }
+
+  .ribbon-icon-tile svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ribbon-group-caption {
+    display: none;
+  }
+}
+
+/* =========================================================
+   Products Definition — targeted reference-style refinements
+   Append to END of frontend/src/index.css
+   ========================================================= */
+
+.product-def {
+  grid-template-columns: 138px minmax(460px, 36%) minmax(0, 1fr);
+  background: #d9dde2;
+}
+
+.product-def-rail {
+  gap: 6px;
+  padding: 8px 7px 6px;
+  background: linear-gradient(#eef1f4, #d5dbe2);
+}
+
+.product-def-photo {
+  display: grid;
+  place-items: center;
+  height: 150px;
+  margin-bottom: 2px;
+  border: 2px solid #7f1f1f;
+  background: #fff;
+  color: #20262d;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.product-def-photo span {
+  max-width: 90px;
+}
+
+.product-def-rail-btn {
+  min-height: 42px;
+  padding: 5px 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.product-def-rail-spacer {
+  flex: 1 1 auto;
+  min-height: 18px;
+}
+
+.product-def-cmd {
+  min-height: 58px;
+  padding: 5px 4px 4px;
+  font-size: 11px;
+}
+
+.product-def-cmd-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.product-def-form {
+  background: #eef0f3;
+}
+
+.product-def-title {
+  padding: 7px 12px 5px;
+  font-size: 20px;
+  line-height: 1.05;
+}
+
+.product-def-tabs {
+  padding: 0 8px;
+  background: #d8dde3;
+}
+
+.product-def-tabs button {
+  min-height: 30px;
+  padding: 5px 12px 6px;
+  font-size: 11px;
+}
+
+.product-def-tabs button.is-active {
+  background: linear-gradient(#dff4ff, #a8dcf5);
+  color: #124e82;
+  font-weight: 800;
+}
+
+.product-def-fields {
+  gap: 4px;
+  padding: 8px 10px 10px;
+}
+
+.pdf-row {
+  grid-template-columns: 102px minmax(0, 1fr);
+  gap: 5px 7px;
+}
+
+.pdf-row-split {
+  grid-template-columns: 102px minmax(0, 1fr) 92px minmax(0, 0.92fr);
+}
+
+.pdf-row-rates {
+  grid-template-columns: 102px minmax(0, 0.72fr) 82px minmax(0, 0.72fr) 62px minmax(0, 0.72fr);
+}
+
+.pdf-row-check {
+  grid-template-columns: 102px minmax(0, 1fr) 62px 100px;
+}
+
+.pdf-row > label:first-child,
+.pdf-right-label {
+  font-weight: 600;
+}
+
+.pdf-input,
+.pdf-select {
+  height: 24px;
+  font-size: 11px;
+}
+
+.pdf-barcode-box {
+  margin-top: 10px;
+}
+
+.pdf-barcode-title {
+  min-height: 25px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.pdf-barcode-table th {
+  height: 23px;
+}
+
+.pdf-barcode-table td {
+  height: 22px;
+}
+
+.product-def-grid-tools {
+  min-height: 38px;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 4px 8px;
+  background: linear-gradient(#f7f8fa, #dfe4e9);
+}
+
+.product-def-grid-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  min-width: 220px;
+  height: 28px;
+  padding: 0 9px;
+  border: 1px solid #7e8894;
+  background: linear-gradient(#f4f5f7, #d4d9df);
+  color: #2d3740;
+  font-size: 11px;
+}
+
+.product-def-grid-context-label {
+  color: #174a76;
+  font-weight: 800;
+}
+
+.product-def-grid .pos-grid th {
+  height: 27px;
+  font-size: 11px;
+}
+
+.product-def-grid .pos-grid td {
+  height: 24px;
+  font-size: 11px;
+}
+
+.product-def-grid-foot {
+  justify-content: center;
+  min-height: 29px;
+  font-size: 11px;
+  font-weight: 700;
+  position: relative;
+}
+
+.product-def-pager {
+  position: absolute;
+  right: 8px;
+}
+
+@media (max-width: 1280px) {
+  .product-def {
+    grid-template-columns: 116px minmax(420px, 42%) minmax(0, 1fr);
+  }
+
+  .product-def-photo {
+    height: 125px;
+  }
+}
+/* =========================================================
+   Products Definition — fit-to-workspace correction
+   Append AFTER the previous Products reference-style patch.
+   This removes the page-level vertical scrollbar by making
+   the product screen fit the available browser workspace.
+   ========================================================= */
+
+.product-def {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.product-def-rail,
+.product-def-form,
+.product-def-grid {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Keep the reference-style photo area, but size it for a browser viewport. */
+.product-def-photo {
+  height: 102px;
+  min-height: 102px;
+}
+
+.product-def-rail {
+  gap: 4px;
+  padding: 5px 6px 4px;
+}
+
+.product-def-rail-btn {
+  min-height: 34px;
+  padding: 3px 3px;
+}
+
+.product-def-rail-spacer {
+  flex: 1 1 auto;
+  min-height: 4px;
+}
+
+.product-def-cmd {
+  min-height: 48px;
+  padding: 4px 3px 3px;
+}
+
+.product-def-cmd-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.product-def-title {
+  padding: 5px 10px 3px;
+  font-size: 18px;
+}
+
+.product-def-tabs button {
+  min-height: 26px;
+  padding: 3px 10px 4px;
+}
+
+.product-def-fields {
+  gap: 3px;
+  padding: 6px 9px 7px;
+  overflow: hidden;
+}
+
+.pdf-input,
+.pdf-select {
+  height: 22px;
+}
+
+.pdf-barcode-box {
+  margin-top: 6px;
+}
+
+.pdf-barcode-title {
+  min-height: 21px;
+  padding: 2px 6px;
+}
+
+.pdf-barcode-table th {
+  height: 20px;
+}
+
+.pdf-barcode-table td {
+  height: 19px;
+}
+
+.pdf-barcode-empty {
+  padding: 5px !important;
+}
+
+.pdf-barcode-nav {
+  min-height: 22px;
+  padding: 1px 3px;
+}
+
+.product-def-grid-tools {
+  min-height: 32px;
+  padding: 3px 7px;
+}
+
+.product-def-grid-context {
+  height: 24px;
+}
+
+.product-def-grid {
+  overflow: hidden;
+}
+
+.product-def-grid .pos-grid-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.product-def-grid-foot {
+  min-height: 24px;
+}
+
+/* Prevent the shell from receiving overflow produced by this screen. */
+.workspace-host-inner:has(.product-def) {
+  overflow: hidden;
 }
