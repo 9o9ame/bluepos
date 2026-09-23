@@ -191,7 +191,9 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     title: 'Purchase Invoice',
     path: '/daily/purchases',
     ribbon: 'daily-entries',
-    status: 'shell',
+    status: 'ready',
+    permission: 'purchases.view',
+    entitlement: 'purchases',
   },
   {
     key: 'purchase-return',
@@ -382,7 +384,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       id: 'purchases',
       caption: 'Purchases',
       commands: [
-        { id: 'purchase-invoice', label: 'Purchase Invoice', icon: ClipboardList, moduleKey: 'purchase-invoice', status: 'shell', tone: 'navy' },
+        { id: 'purchase-invoice', label: 'Purchase Invoice', icon: ClipboardList, moduleKey: 'purchase-invoice', permission: 'purchases.view', entitlement: 'purchases', status: 'ready', tone: 'navy' },
         { id: 'purchase-return', label: 'Purchase Return', icon: RotateCcw, status: 'later', tone: 'orange' },
         { id: 'adjustments', label: 'Adjustments of Items', icon: SlidersHorizontal, status: 'later', tone: 'slate' },
       ],

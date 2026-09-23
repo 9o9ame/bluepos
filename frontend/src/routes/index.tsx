@@ -14,7 +14,7 @@ import { HelpAboutPage } from '../pages/HelpAboutPage'
 import { LoginPage } from '../pages/LoginPage'
 import { PartiesPlaceholderPage } from '../pages/PartiesPlaceholderPage'
 import { ProductsPage } from '../pages/ProductsPage'
-import { PurchaseInvoicePlaceholderPage } from '../pages/PurchaseInvoicePlaceholderPage'
+import { PurchasesPage } from '../pages/PurchasesPage'
 import { ReportsPlaceholderPage } from '../pages/ReportsPlaceholderPage'
 import { RoleEditorPage } from '../pages/RoleEditorPage'
 import { RolesPage } from '../pages/RolesPage'
@@ -59,7 +59,9 @@ export function AppRoutes() {
           <Route path="/" element={<WorkspacePage />} />
           <Route path="/definition/parties" element={<PartiesPlaceholderPage />} />
           <Route path="/daily/sales" element={<SalesInvoicePlaceholderPage />} />
-          <Route path="/daily/purchases" element={<PurchaseInvoicePlaceholderPage />} />
+          <Route element={<RequirePermission permission="purchases.view" />}>
+            <Route path="/daily/purchases" element={<PurchasesPage />} />
+          </Route>
           <Route path="/reports" element={<ReportsPlaceholderPage />} />
           <Route path="/help/about" element={<HelpAboutPage />} />
           <Route path="/administration/account" element={<AccountPage />} />

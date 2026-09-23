@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Inventory\StockController;
 use App\Http\Controllers\Api\MembershipController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\Purchases\PurchaseInvoiceController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SecuritySessionController;
 use App\Http\Controllers\Api\SubcategoryController;
@@ -146,6 +147,17 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::patch('/inventory/opening-balances/{openingBalanceUlid}/lines/{lineUlid}', [OpeningBalanceController::class, 'updateLine']);
         Route::delete('/inventory/opening-balances/{openingBalanceUlid}/lines/{lineUlid}', [OpeningBalanceController::class, 'destroyLine']);
         Route::post('/inventory/opening-balances/{openingBalanceUlid}/post', [OpeningBalanceController::class, 'post']);
+    });
+
+    Route::middleware('entitled:purchases')->group(function () {
+        Route::get('/purchases', [PurchaseInvoiceController::class, 'index']);
+        Route::post('/purchases', [PurchaseInvoiceController::class, 'store']);
+        Route::get('/purchases/{purchaseUlid}', [PurchaseInvoiceController::class, 'show']);
+        Route::patch('/purchases/{purchaseUlid}', [PurchaseInvoiceController::class, 'update']);
+        Route::post('/purchases/{purchaseUlid}/lines', [PurchaseInvoiceController::class, 'storeLine']);
+        Route::patch('/purchases/{purchaseUlid}/lines/{lineUlid}', [PurchaseInvoiceController::class, 'updateLine']);
+        Route::delete('/purchases/{purchaseUlid}/lines/{lineUlid}', [PurchaseInvoiceController::class, 'destroyLine']);
+        Route::post('/purchases/{purchaseUlid}/post', [PurchaseInvoiceController::class, 'post']);
     });
 });
 
