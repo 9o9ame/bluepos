@@ -28,22 +28,39 @@ import {
   updateProduct,
 } from '../api/catalog'
 import { ApiClientError } from '../api/client'
+import {
+  createOpeningBalance,
+  createOpeningBalanceLine,
+  fetchOpeningBalances,
+  fetchProductStock,
+  fetchWarehouses,
+  postOpeningBalance,
+  updateOpeningBalanceLine,
+} from '../api/inventory'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { CatalogQuickEditorModal, type QuickEditorKind } from '../components/catalog/CatalogQuickEditorModal'
+import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
+import type { OpeningBalance } from '../types/inventory'
 import './ProductsPage.reference.css'
 
 export function ProductsPage() {
   const queryClient = useQueryClient()
   const { closeActiveTab, openModule } = useWorkspace()
+  const { session } = useAuth()
 
   const canCreate = useCan('products.create')
   const canEdit = useCan('products.edit')
   const canDelete = useCan('products.delete')
   const canPrices = useCan('products.manage_prices')
   const canBarcodes = useCan('products.manage_barcodes')
+  const canViewStock = useCan('inventory.view')
+  const canOpeningView = useCan('inventory.opening_balance.view') || canViewStock
+  const canOpeningCreate = useCan('inventory.opening_balance.create')
+  const canOpeningEdit = useCan('inventory.opening_balance.edit')
+  const canOpeningPost = useCan('inventory.opening_balance.post')
 
   const [q, setQ] = useState('')
   const [page, setPage] = useState(1)
@@ -71,6 +88,16 @@ export function ProductsPage() {
   const units = useQuery({ queryKey: ['units'], queryFn: fetchUnits })
   const barcodeGroups = useQuery({ queryKey: ['barcode-groups'], queryFn: fetchBarcodeGroups })
   const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: fetchSuppliers })
+  const warehouses = useQuery({
+    queryKey: ['warehouses', session?.branch.ulid],
+    queryFn: fetchWarehouses,
+    enabled: Boolean(session?.branch.ulid),
+  })
+  const productStock = useQuery({
+    queryKey: ['product-stock', selectedKey],
+    queryFn: () => fetchProductStock(selectedKey ?? ''),
+    enabled: Boolean(selectedKey) && !creating && canViewStock,
+  })
 
   const selectedRow = products.find((product) => product.ulid === selectedKey) ?? null
   const selected = productQuery.data ?? selectedRow
@@ -94,7 +121,23 @@ export function ProductsPage() {
   const [packBarcode, setPackBarcode] = useState('')
   const [cartonBarcode, setCartonBarcode] = useState('')
 
+  const [openingWarehouseUlid, setOpeningWarehouseUlid] = useState('')
+  const [openingQty, setOpeningQty] = useState('')
+  const [openingUnitCost, setOpeningUnitCost] = useState('0.0000')
+  const [openingDocument, setOpeningDocument] = useState<OpeningBalance | null>(null)
+  const [openingBusy, setOpeningBusy] = useState(false)
+
   const canSave = creating ? canCreate : canEdit && Boolean(selectedKey)
+  const inStockDisplay = productStock.data?.active_warehouse.quantity ?? '0.000000'
+  const openingTotal = useMemo(() => {
+    if (!openingQty || !openingUnitCost) return '0.0000'
+    const qty = Number(openingQty)
+    const cost = Number(openingUnitCost)
+    if (!Number.isFinite(qty) || !Number.isFinite(cost)) return '0.0000'
+    return (qty * cost).toFixed(4)
+  }, [openingQty, openingUnitCost])
+  const openingPosted = openingDocument?.status === 'posted'
+  const openingLine = openingDocument?.lines?.find((line) => line.product?.ulid === selectedKey) ?? null
 
   function resetForm() {
     setName('')
@@ -115,6 +158,9 @@ export function ProductsPage() {
     setPieceBarcode('')
     setPackBarcode('')
     setCartonBarcode('')
+    setOpeningQty('')
+    setOpeningUnitCost('0.0000')
+    setOpeningDocument(null)
     setError(null)
   }
 
@@ -167,6 +213,117 @@ export function ProductsPage() {
     setCartonBarcode(carton?.barcode ?? '')
     setError(null)
   }, [creating, selected])
+
+  useEffect(() => {
+    if (!openingWarehouseUlid && session?.warehouse.ulid) {
+      setOpeningWarehouseUlid(session.warehouse.ulid)
+    }
+  }, [openingWarehouseUlid, session?.warehouse.ulid])
+
+  useEffect(() => {
+    if (creating || !selectedKey || !openingWarehouseUlid || !canOpeningView) {
+      setOpeningDocument(null)
+      setOpeningQty('')
+      setOpeningUnitCost('0.0000')
+      return
+    }
+
+    let cancelled = false
+    void (async () => {
+      try {
+        const docs = await fetchOpeningBalances({
+          product_ulid: selectedKey,
+          warehouse_ulid: openingWarehouseUlid,
+        })
+        if (cancelled) return
+        const posted = docs.find((doc) => doc.status === 'posted')
+        const draft = docs.find((doc) => doc.status === 'draft')
+        const chosen = posted ?? draft ?? null
+        setOpeningDocument(chosen)
+        const line = chosen?.lines?.find((row) => row.product?.ulid === selectedKey)
+        setOpeningQty(line?.quantity ?? '')
+        setOpeningUnitCost(line?.unit_cost ?? '0.0000')
+      } catch {
+        if (!cancelled) {
+          setOpeningDocument(null)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [creating, selectedKey, openingWarehouseUlid, canOpeningView])
+
+  async function saveOpeningDraft() {
+    if (!selectedKey || creating || !openingWarehouseUlid) return
+    if (!canOpeningCreate && !canOpeningEdit) return
+    setOpeningBusy(true)
+    setError(null)
+    try {
+      let document = openingDocument
+      if (!document || document.status === 'posted') {
+        document = await createOpeningBalance({ warehouse_ulid: openingWarehouseUlid })
+      }
+
+      const existingLine = document.lines?.find((line) => line.product?.ulid === selectedKey)
+      if (existingLine) {
+        await updateOpeningBalanceLine(document.ulid, existingLine.ulid, {
+          product_ulid: selectedKey,
+          quantity: openingQty,
+          unit_cost: openingUnitCost,
+        })
+      } else {
+        await createOpeningBalanceLine(document.ulid, {
+          product_ulid: selectedKey,
+          quantity: openingQty,
+          unit_cost: openingUnitCost,
+        })
+      }
+
+      const refreshed = await fetchOpeningBalances({
+        product_ulid: selectedKey,
+        warehouse_ulid: openingWarehouseUlid,
+      })
+      const next = refreshed.find((doc) => doc.ulid === document?.ulid) ?? refreshed[0] ?? null
+      setOpeningDocument(next)
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : 'Unable to save opening balance.')
+    } finally {
+      setOpeningBusy(false)
+    }
+  }
+
+  async function postOpeningDraft() {
+    if (!openingDocument || openingDocument.status === 'posted') return
+    if (!canOpeningPost) return
+    if (!window.confirm('Post this opening balance? Stock will update and the document becomes read-only.')) {
+      return
+    }
+    setOpeningBusy(true)
+    setError(null)
+    try {
+      if (!openingLine) {
+        await saveOpeningDraft()
+      }
+      const docs = await fetchOpeningBalances({
+        product_ulid: selectedKey ?? undefined,
+        warehouse_ulid: openingWarehouseUlid,
+        status: 'draft',
+      })
+      const draft = docs.find((doc) => doc.ulid === openingDocument.ulid) ?? docs[0]
+      if (!draft) {
+        throw new Error('Draft opening balance not found.')
+      }
+      const posted = await postOpeningBalance(draft.ulid)
+      setOpeningDocument(posted)
+      await queryClient.invalidateQueries({ queryKey: ['product-stock', selectedKey] })
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : 'Unable to post opening balance.')
+    } finally {
+      setOpeningBusy(false)
+    }
+  }
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -433,12 +590,91 @@ export function ProductsPage() {
             >
               Definition of Product
             </button>
-            <button type="button" disabled title="Available in a later phase">Opening Balance (F1)</button>
+            <button
+              type="button"
+              className={section === 'opening' ? 'is-active' : undefined}
+              disabled={!canOpeningView}
+              title={canOpeningView ? 'Opening Balance' : 'No inventory permission'}
+              onClick={() => setSection('opening')}
+            >
+              Opening Balance (F1)
+            </button>
             <button type="button" disabled title="Available in a later phase">Products To Be Used With This Product</button>
           </div>
 
           {error ? <div className="product-inline-error">{error}</div> : null}
 
+          {section === 'opening' ? (
+            <div className="product-def-fields">
+              {creating || !selectedKey ? (
+                <p className="text-[12px] text-[var(--muted)]">Save the product first, then enter opening stock.</p>
+              ) : (
+                <>
+                  <div className="pdf-row">
+                    <label>Warehouse</label>
+                    <select
+                      className="pdf-select"
+                      value={openingWarehouseUlid}
+                      disabled={openingPosted || openingBusy}
+                      onChange={(e) => setOpeningWarehouseUlid(e.target.value)}
+                    >
+                      {(warehouses.data ?? []).map((row) => (
+                        <option key={row.ulid} value={row.ulid}>
+                          {row.code} — {row.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="pdf-row pdf-row-rates">
+                    <label>Opening Qty</label>
+                    <input
+                      className="pdf-input pdf-num"
+                      value={openingQty}
+                      readOnly={openingPosted || openingBusy}
+                      onChange={(e) => setOpeningQty(e.target.value)}
+                    />
+                    <label>Unit Cost</label>
+                    <input
+                      className="pdf-input pdf-num"
+                      value={openingUnitCost}
+                      readOnly={openingPosted || openingBusy}
+                      onChange={(e) => setOpeningUnitCost(e.target.value)}
+                    />
+                    <label>Total Cost</label>
+                    <input className="pdf-input pdf-num pdf-readonly" readOnly value={openingLine?.total_cost ?? openingTotal} />
+                  </div>
+                  <div className="pdf-row pdf-row-split">
+                    <label>Document Status</label>
+                    <input
+                      className="pdf-input pdf-readonly"
+                      readOnly
+                      value={openingDocument?.status === 'posted' ? `Posted (${openingDocument.document_number})` : openingDocument ? `Draft (${openingDocument.document_number})` : 'No draft'}
+                    />
+                    <label className="pdf-right-label">In Stock</label>
+                    <input className="pdf-input pdf-num pdf-readonly" readOnly value={canViewStock ? inStockDisplay : '—'} />
+                  </div>
+                  <div className="pdf-row" style={{ gap: 8, marginTop: 8 }}>
+                    <button
+                      type="button"
+                      className="desktop-btn"
+                      disabled={openingPosted || openingBusy || (!canOpeningCreate && !canOpeningEdit) || !openingQty}
+                      onClick={() => void saveOpeningDraft()}
+                    >
+                      Save Draft
+                    </button>
+                    <button
+                      type="button"
+                      className="desktop-btn"
+                      disabled={openingPosted || openingBusy || !canOpeningPost || (!openingDocument && !openingQty)}
+                      onClick={() => void postOpeningDraft()}
+                    >
+                      Post Opening Balance
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
           <div className="product-def-fields">
             <div className="pdf-row pdf-row-split">
               <label>Product #</label>
@@ -618,7 +854,12 @@ export function ProductsPage() {
 
             <div className="pdf-row pdf-row-split">
               <label>In Stock</label>
-              <input className="pdf-input pdf-num pdf-readonly" readOnly value="—" title="Stock balances are a later phase" />
+              <input
+                className="pdf-input pdf-num pdf-readonly"
+                readOnly
+                value={creating || !selectedKey || !canViewStock ? '—' : inStockDisplay}
+                title={canViewStock ? 'Active warehouse stock balance' : 'Inventory view permission required'}
+              />
               <label className="pdf-right-label">Supplier Code</label>
               <input
                 className="pdf-input"
@@ -676,6 +917,7 @@ export function ProductsPage() {
               </div>
             </div>
           </div>
+          )}
         </section>
 
         <section className="product-def-grid">
@@ -715,7 +957,12 @@ export function ProductsPage() {
                 header: 'In Stock',
                 width: 88,
                 align: 'right',
-                render: () => <span className="stock-na" title="Stock balances are a later phase">—</span>,
+                render: (row: Product) =>
+                  row.ulid === selectedKey && canViewStock && !creating ? (
+                    inStockDisplay
+                  ) : (
+                    <span className="stock-na" title="Select product to view active warehouse stock">—</span>
+                  ),
               },
             ]}
             rows={gridRows}

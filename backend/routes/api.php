@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\BusinessSettingController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DeviceController;
+use App\Http\Controllers\Api\Inventory\OpeningBalanceController;
+use App\Http\Controllers\Api\Inventory\StockController;
 use App\Http\Controllers\Api\MembershipController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
@@ -50,6 +52,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::get('/branches', [BranchController::class, 'index']);
     Route::post('/branches', [BranchController::class, 'store']);
     Route::post('/branches/{branchUlid}/switch', [BranchController::class, 'switch']);
+    Route::get('/warehouses', [WarehouseController::class, 'index']);
     Route::post('/warehouses', [WarehouseController::class, 'store']);
 
     Route::get('/permissions', [PermissionController::class, 'index']);
@@ -128,6 +131,21 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::delete('/products/{productUlid}', [ProductController::class, 'destroy']);
         Route::put('/products/{productUlid}/barcodes', [ProductController::class, 'syncBarcodes']);
         Route::put('/products/{productUlid}/prices', [ProductController::class, 'syncPrices']);
+        Route::get('/products/{productUlid}/stock', [StockController::class, 'forProduct']);
+    });
+
+    Route::middleware('entitled:inventory')->group(function () {
+        Route::get('/inventory/stock', [StockController::class, 'index']);
+
+        Route::get('/inventory/opening-balances', [OpeningBalanceController::class, 'index']);
+        Route::post('/inventory/opening-balances', [OpeningBalanceController::class, 'store']);
+        Route::get('/inventory/opening-balances/{openingBalanceUlid}', [OpeningBalanceController::class, 'show']);
+        Route::patch('/inventory/opening-balances/{openingBalanceUlid}', [OpeningBalanceController::class, 'update']);
+        Route::delete('/inventory/opening-balances/{openingBalanceUlid}', [OpeningBalanceController::class, 'destroy']);
+        Route::post('/inventory/opening-balances/{openingBalanceUlid}/lines', [OpeningBalanceController::class, 'storeLine']);
+        Route::patch('/inventory/opening-balances/{openingBalanceUlid}/lines/{lineUlid}', [OpeningBalanceController::class, 'updateLine']);
+        Route::delete('/inventory/opening-balances/{openingBalanceUlid}/lines/{lineUlid}', [OpeningBalanceController::class, 'destroyLine']);
+        Route::post('/inventory/opening-balances/{openingBalanceUlid}/post', [OpeningBalanceController::class, 'post']);
     });
 });
 
