@@ -3,6 +3,7 @@
 namespace App\Catalog;
 
 use App\Exceptions\ApiException;
+use App\Models\BarcodeGroup;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
@@ -30,6 +31,11 @@ class TenantCatalog
         return $this->find(Brand::class, $ulid);
     }
 
+    public function barcodeGroup(string $ulid): BarcodeGroup
+    {
+        return $this->find(BarcodeGroup::class, $ulid);
+    }
+
     public function unit(string $ulid): Unit
     {
         return $this->find(Unit::class, $ulid);
@@ -42,6 +48,7 @@ class TenantCatalog
 
     /**
      * @template TModel of Model
+     *
      * @param  class-string<TModel>  $class
      * @return TModel
      */

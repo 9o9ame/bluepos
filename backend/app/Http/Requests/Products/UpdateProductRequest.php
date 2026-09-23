@@ -42,6 +42,7 @@ class UpdateProductRequest extends FormRequest
             'category_ulid' => ['nullable', 'string', 'size:26'],
             'subcategory_ulid' => ['nullable', 'string', 'size:26'],
             'brand_ulid' => ['nullable', 'string', 'size:26'],
+            'barcode_group_ulid' => ['nullable', 'string', 'size:26'],
             'base_unit_ulid' => ['sometimes', 'required', 'string', 'size:26'],
             'secondary_unit_ulid' => ['nullable', 'string', 'size:26'],
             'secondary_conversion_factor' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/', 'numeric', 'gt:0'],

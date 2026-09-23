@@ -7,15 +7,18 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Catalog\StoreUnitRequest;
 use App\Http\Requests\Catalog\UpdateUnitRequest;
 use App\Http\Resources\UnitResource;
-use App\Models\Product;
-use App\Models\ProductBarcode;
 use App\Models\Unit;
+use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class UnitController extends Controller
 {
-    public function __construct(private readonly TenantCatalog $catalog) {}
+    public function __construct(
+        private readonly TenantCatalog $catalog,
+        private readonly AuditLogger $audit,
+    ) {}
 
     public function index(TenantContext $tenantContext): mixed
     {
@@ -30,11 +33,19 @@ class UnitController extends Controller
     {
         $this->authorize('create', Unit::class);
 
-        $unit = Unit::query()->create([
-            'tenant_id' => $tenantContext->tenantId(),
-            ...$request->validated(),
-            'is_active' => $request->boolean('is_active', true),
-        ]);
+        $unit = DB::transaction(function () use ($request, $tenantContext): Unit {
+            $unit = Unit::query()->create([
+                'tenant_id' => $tenantContext->tenantId(),
+                ...$request->validated(),
+                'is_active' => $request->boolean('is_active', true),
+            ]);
+            $this->audit->record('UNIT_CREATED', [
+                'resource_type' => 'unit',
+                'resource_ulid' => $unit->ulid,
+            ]);
+
+            return $unit;
+        });
 
         return (new UnitResource($unit))->response()->setStatusCode(201);
     }
@@ -51,33 +62,32 @@ class UnitController extends Controller
     {
         $unit = $this->catalog->unit($unitUlid);
         $this->authorize('update', $unit);
-        $unit->fill($request->validated());
-        $unit->save();
+        DB::transaction(function () use ($unit, $request): void {
+            $unit->fill($request->validated());
+            $unit->save();
+            $this->audit->record('UNIT_UPDATED', [
+                'resource_type' => 'unit',
+                'resource_ulid' => $unit->ulid,
+            ]);
+        });
 
-        return new UnitResource($unit);
+        return new UnitResource($unit->refresh());
     }
 
-    public function destroy(string $unitUlid, TenantContext $tenantContext): JsonResponse
+    public function destroy(string $unitUlid): JsonResponse
     {
         $unit = $this->catalog->unit($unitUlid);
         $this->authorize('delete', $unit);
 
-        $inUse = Product::query()->forTenant($tenantContext->tenantId())
-            ->where(function ($query) use ($unit): void {
-                $query->where('base_unit_id', $unit->id)->orWhere('secondary_unit_id', $unit->id);
-            })
-            ->exists()
-            || ProductBarcode::query()->forTenant($tenantContext->tenantId())->where('unit_id', $unit->id)->exists();
-
-        if ($inUse) {
+        DB::transaction(function () use ($unit): void {
             $unit->is_active = false;
             $unit->save();
+            $this->audit->record('UNIT_DEACTIVATED', [
+                'resource_type' => 'unit',
+                'resource_ulid' => $unit->ulid,
+            ]);
+        });
 
-            return response()->json(['ok' => true, 'archived' => true]);
-        }
-
-        $unit->delete();
-
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'archived' => true]);
     }
 }

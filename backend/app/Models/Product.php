@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'category_id',
     'subcategory_id',
     'brand_id',
+    'barcode_group_id',
     'base_unit_id',
     'secondary_unit_id',
     'secondary_conversion_factor',
@@ -85,6 +86,14 @@ class Product extends Model
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
+    }
+
+    /**
+     * @return BelongsTo<BarcodeGroup, $this>
+     */
+    public function barcodeGroup(): BelongsTo
+    {
+        return $this->belongsTo(BarcodeGroup::class);
     }
 
     /**

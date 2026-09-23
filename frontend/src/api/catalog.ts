@@ -1,5 +1,14 @@
 import { apiFetch } from './client'
-import type { Brand, BusinessSettings, CatalogItem, Paginated, Product, Subcategory, Unit } from '../types/catalog'
+import type {
+  BarcodeGroup,
+  Brand,
+  BusinessSettings,
+  CatalogItem,
+  Paginated,
+  Product,
+  Subcategory,
+  Unit,
+} from '../types/catalog'
 
 export function fetchBusinessSettings() {
   return apiFetch<BusinessSettings>('/api/settings/business')
@@ -20,6 +29,14 @@ export function createCategory(payload: { code: string; name: string }) {
   return apiFetch<CatalogItem>('/api/categories', { method: 'POST', body: JSON.stringify(payload) })
 }
 
+export function updateCategory(ulid: string, payload: { code: string; name: string }) {
+  return apiFetch<CatalogItem>(`/api/categories/${ulid}`, { method: 'PATCH', body: JSON.stringify(payload) })
+}
+
+export function deactivateCategory(ulid: string) {
+  return apiFetch<{ ok: boolean; archived: boolean }>(`/api/categories/${ulid}`, { method: 'DELETE' })
+}
+
 export function fetchSubcategories(categoryUlid?: string) {
   const query = categoryUlid ? `?category_ulid=${categoryUlid}` : ''
   return apiFetch<Subcategory[]>(`/api/subcategories${query}`)
@@ -37,12 +54,50 @@ export function createBrand(payload: { code: string; name: string }) {
   return apiFetch<Brand>('/api/brands', { method: 'POST', body: JSON.stringify(payload) })
 }
 
+export function updateBrand(ulid: string, payload: { code: string; name: string }) {
+  return apiFetch<Brand>(`/api/brands/${ulid}`, { method: 'PATCH', body: JSON.stringify(payload) })
+}
+
+export function deactivateBrand(ulid: string) {
+  return apiFetch<{ ok: boolean; archived: boolean }>(`/api/brands/${ulid}`, { method: 'DELETE' })
+}
+
 export function fetchUnits() {
   return apiFetch<Unit[]>('/api/units')
 }
 
 export function createUnit(payload: { code: string; name: string; symbol: string; allows_decimal: boolean }) {
   return apiFetch<Unit>('/api/units', { method: 'POST', body: JSON.stringify(payload) })
+}
+
+export function updateUnit(
+  ulid: string,
+  payload: { code: string; name: string; symbol: string; allows_decimal: boolean },
+) {
+  return apiFetch<Unit>(`/api/units/${ulid}`, { method: 'PATCH', body: JSON.stringify(payload) })
+}
+
+export function deactivateUnit(ulid: string) {
+  return apiFetch<{ ok: boolean; archived: boolean }>(`/api/units/${ulid}`, { method: 'DELETE' })
+}
+
+export function fetchBarcodeGroups() {
+  return apiFetch<BarcodeGroup[]>('/api/barcode-groups')
+}
+
+export function createBarcodeGroup(payload: { code: string; name: string }) {
+  return apiFetch<BarcodeGroup>('/api/barcode-groups', { method: 'POST', body: JSON.stringify(payload) })
+}
+
+export function updateBarcodeGroup(ulid: string, payload: { code: string; name: string }) {
+  return apiFetch<BarcodeGroup>(`/api/barcode-groups/${ulid}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deactivateBarcodeGroup(ulid: string) {
+  return apiFetch<{ ok: boolean; archived: boolean }>(`/api/barcode-groups/${ulid}`, { method: 'DELETE' })
 }
 
 export function fetchProducts(params: { q?: string; page?: number; per_page?: number }) {

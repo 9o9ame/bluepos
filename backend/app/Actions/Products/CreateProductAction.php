@@ -4,6 +4,8 @@ namespace App\Actions\Products;
 
 use App\Catalog\TenantCatalog;
 use App\Enums\ProductStatus;
+use App\Models\BarcodeGroup;
+use App\Models\Brand;
 use App\Models\BusinessSetting;
 use App\Models\Category;
 use App\Models\Product;
@@ -58,6 +60,7 @@ class CreateProductAction
                 'category_id' => $relations['category']?->id,
                 'subcategory_id' => $relations['subcategory']?->id,
                 'brand_id' => $relations['brand']?->id,
+                'barcode_group_id' => $relations['barcodeGroup']?->id,
                 'base_unit_id' => $relations['baseUnit']->id,
                 'secondary_unit_id' => $relations['secondaryUnit']?->id,
                 'secondary_conversion_factor' => $data['secondary_conversion_factor'] ?? null,
@@ -89,7 +92,7 @@ class CreateProductAction
 
     /**
      * @param  array<string, mixed>  $data
-     * @return array{category: ?Category, subcategory: ?Subcategory, brand: mixed, baseUnit: Unit, secondaryUnit: ?Unit}
+     * @return array{category: ?Category, subcategory: ?Subcategory, brand: ?Brand, barcodeGroup: ?BarcodeGroup, baseUnit: Unit, secondaryUnit: ?Unit}
      */
     private function resolveRelations(array $data): array
     {
@@ -112,6 +115,9 @@ class CreateProductAction
             'category' => $category,
             'subcategory' => $subcategory,
             'brand' => isset($data['brand_ulid']) ? $this->catalog->brand($data['brand_ulid']) : null,
+            'barcodeGroup' => isset($data['barcode_group_ulid'])
+                ? $this->catalog->barcodeGroup($data['barcode_group_ulid'])
+                : null,
             'baseUnit' => $this->catalog->unit($data['base_unit_ulid']),
             'secondaryUnit' => $secondary,
         ];
@@ -122,6 +128,6 @@ class CreateProductAction
      */
     public static function with(): array
     {
-        return ['category', 'subcategory', 'brand', 'baseUnit', 'secondaryUnit', 'barcodes.unit', 'prices'];
+        return ['category', 'subcategory', 'brand', 'barcodeGroup', 'baseUnit', 'secondaryUnit', 'barcodes.unit', 'prices'];
     }
 }

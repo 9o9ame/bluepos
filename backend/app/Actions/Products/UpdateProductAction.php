@@ -51,6 +51,11 @@ class UpdateProductAction
                     ? $this->catalog->brand($data['brand_ulid'])->id
                     : null;
             }
+            if (array_key_exists('barcode_group_ulid', $data)) {
+                $payload['barcode_group_id'] = $data['barcode_group_ulid']
+                    ? $this->catalog->barcodeGroup($data['barcode_group_ulid'])->id
+                    : null;
+            }
             if (isset($data['base_unit_ulid'])) {
                 $payload['base_unit_id'] = $this->catalog->unit($data['base_unit_ulid'])->id;
             }

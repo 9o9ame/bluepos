@@ -8,12 +8,17 @@ use App\Http\Requests\Catalog\StoreBrandRequest;
 use App\Http\Requests\Catalog\UpdateBrandRequest;
 use App\Http\Resources\BrandResource;
 use App\Models\Brand;
+use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class BrandController extends Controller
 {
-    public function __construct(private readonly TenantCatalog $catalog) {}
+    public function __construct(
+        private readonly TenantCatalog $catalog,
+        private readonly AuditLogger $audit,
+    ) {}
 
     public function index(TenantContext $tenantContext): mixed
     {
@@ -28,11 +33,19 @@ class BrandController extends Controller
     {
         $this->authorize('create', Brand::class);
 
-        $brand = Brand::query()->create([
-            'tenant_id' => $tenantContext->tenantId(),
-            ...$request->validated(),
-            'is_active' => $request->boolean('is_active', true),
-        ]);
+        $brand = DB::transaction(function () use ($request, $tenantContext): Brand {
+            $brand = Brand::query()->create([
+                'tenant_id' => $tenantContext->tenantId(),
+                ...$request->validated(),
+                'is_active' => $request->boolean('is_active', true),
+            ]);
+            $this->audit->record('BRAND_CREATED', [
+                'resource_type' => 'brand',
+                'resource_ulid' => $brand->ulid,
+            ]);
+
+            return $brand;
+        });
 
         return (new BrandResource($brand))->response()->setStatusCode(201);
     }
@@ -49,10 +62,16 @@ class BrandController extends Controller
     {
         $brand = $this->catalog->brand($brandUlid);
         $this->authorize('update', $brand);
-        $brand->fill($request->validated());
-        $brand->save();
+        DB::transaction(function () use ($brand, $request): void {
+            $brand->fill($request->validated());
+            $brand->save();
+            $this->audit->record('BRAND_UPDATED', [
+                'resource_type' => 'brand',
+                'resource_ulid' => $brand->ulid,
+            ]);
+        });
 
-        return new BrandResource($brand);
+        return new BrandResource($brand->refresh());
     }
 
     public function destroy(string $brandUlid): JsonResponse
@@ -60,15 +79,15 @@ class BrandController extends Controller
         $brand = $this->catalog->brand($brandUlid);
         $this->authorize('delete', $brand);
 
-        if ($brand->products()->exists()) {
+        DB::transaction(function () use ($brand): void {
             $brand->is_active = false;
             $brand->save();
+            $this->audit->record('BRAND_DEACTIVATED', [
+                'resource_type' => 'brand',
+                'resource_ulid' => $brand->ulid,
+            ]);
+        });
 
-            return response()->json(['ok' => true, 'archived' => true]);
-        }
-
-        $brand->delete();
-
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'archived' => true]);
     }
 }

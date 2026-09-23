@@ -16,6 +16,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createProduct,
   deactivateProduct,
+  fetchBarcodeGroups,
   fetchBrands,
   fetchCategories,
   fetchProduct,
@@ -27,6 +28,7 @@ import {
 } from '../api/catalog'
 import { ApiClientError } from '../api/client'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { CatalogQuickEditorModal, type QuickEditorKind } from '../components/catalog/CatalogQuickEditorModal'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
@@ -48,6 +50,7 @@ export function ProductsPage() {
   const [creating, setCreating] = useState(false)
   const [section, setSection] = useState<'definition' | 'opening' | 'related'>('definition')
   const [error, setError] = useState<string | null>(null)
+  const [quickEditor, setQuickEditor] = useState<QuickEditorKind | null>(null)
 
   const productsQuery = useQuery({
     queryKey: ['products', q, page],
@@ -65,6 +68,7 @@ export function ProductsPage() {
   const categories = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
   const brands = useQuery({ queryKey: ['brands'], queryFn: fetchBrands })
   const units = useQuery({ queryKey: ['units'], queryFn: fetchUnits })
+  const barcodeGroups = useQuery({ queryKey: ['barcode-groups'], queryFn: fetchBarcodeGroups })
 
   const selectedRow = products.find((product) => product.ulid === selectedKey) ?? null
   const selected = productQuery.data ?? selectedRow
@@ -73,6 +77,7 @@ export function ProductsPage() {
   const [sku, setSku] = useState('')
   const [categoryUlid, setCategoryUlid] = useState('')
   const [brandUlid, setBrandUlid] = useState('')
+  const [barcodeGroupUlid, setBarcodeGroupUlid] = useState('')
   const [baseUnitUlid, setBaseUnitUlid] = useState('')
   const [reorderLevel, setReorderLevel] = useState('')
   const [rackLocation, setRackLocation] = useState('')
@@ -91,6 +96,7 @@ export function ProductsPage() {
     setSku('')
     setCategoryUlid('')
     setBrandUlid('')
+    setBarcodeGroupUlid('')
     setBaseUnitUlid(units.data?.[0]?.ulid ?? '')
     setReorderLevel('')
     setRackLocation('')
@@ -132,6 +138,7 @@ export function ProductsPage() {
     setSku(selected.sku ?? '')
     setCategoryUlid(selected.category?.ulid ?? '')
     setBrandUlid(selected.brand?.ulid ?? '')
+    setBarcodeGroupUlid(selected.barcode_group?.ulid ?? '')
     setBaseUnitUlid(selected.base_unit?.ulid ?? '')
     setReorderLevel(selected.reorder_level ?? '')
     setRackLocation(selected.rack_location ?? '')
@@ -160,6 +167,7 @@ export function ProductsPage() {
         category_ulid: categoryUlid || null,
         subcategory_ulid: current?.subcategory?.ulid ?? null,
         brand_ulid: brandUlid || null,
+        barcode_group_ulid: barcodeGroupUlid || null,
         base_unit_ulid: baseUnitUlid || units.data?.[0]?.ulid,
         secondary_unit_ulid: current?.secondary_unit?.ulid ?? null,
         secondary_conversion_factor: current?.secondary_conversion_factor ?? null,
@@ -257,6 +265,7 @@ export function ProductsPage() {
   const productNumber = creating ? 'NEW' : selected?.product_number ?? ''
 
   return (
+    <>
     <form id="inline-product-form" className="product-def product-reference-screen" onSubmit={onSubmit}>
       <aside className="product-def-rail" aria-label="Product actions">
         <div className="product-def-photo" title="Product image support will be added later">
@@ -355,10 +364,28 @@ export function ProductsPage() {
 
           <div className="pdf-row">
             <label>Category</label>
-            <select className="pdf-select" value={categoryUlid} disabled={!canSave} onChange={(e) => setCategoryUlid(e.target.value)}>
-              <option value="">—</option>
-              {(categories.data ?? []).map((row) => <option key={row.ulid} value={row.ulid}>{row.name}</option>)}
-            </select>
+            <div className="pdf-field-plus">
+              <select
+                className="pdf-select"
+                value={categoryUlid}
+                disabled={!canSave}
+                onChange={(e) => setCategoryUlid(e.target.value)}
+              >
+                <option value="">—</option>
+                {(categories.data ?? []).filter((row) => row.is_active || row.ulid === categoryUlid).map((row) => (
+                  <option key={row.ulid} value={row.ulid}>{row.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="pdf-plus-button"
+                title="Edit / Define Categories"
+                aria-label="Edit or define categories"
+                onClick={() => setQuickEditor('category')}
+              >
+                <Plus size={15} strokeWidth={3} />
+              </button>
+            </div>
           </div>
 
           <div className="pdf-row pdf-row-split">
@@ -370,24 +397,79 @@ export function ProductsPage() {
 
           <div className="pdf-row">
             <label>Company</label>
-            <select className="pdf-select" value={brandUlid} disabled={!canSave} onChange={(e) => setBrandUlid(e.target.value)}>
-              <option value="">—</option>
-              {(brands.data ?? []).map((row) => <option key={row.ulid} value={row.ulid}>{row.name}</option>)}
-            </select>
+            <div className="pdf-field-plus">
+              <select
+                className="pdf-select"
+                value={brandUlid}
+                disabled={!canSave}
+                onChange={(e) => setBrandUlid(e.target.value)}
+              >
+                <option value="">—</option>
+                {(brands.data ?? []).filter((row) => row.is_active || row.ulid === brandUlid).map((row) => (
+                  <option key={row.ulid} value={row.ulid}>{row.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="pdf-plus-button"
+                title="Edit / Define Manufacture"
+                aria-label="Edit or define manufacture"
+                onClick={() => setQuickEditor('brand')}
+              >
+                <Plus size={15} strokeWidth={3} />
+              </button>
+            </div>
           </div>
 
           <div className="pdf-row pdf-row-split">
             <label>Bar.Grp</label>
-            <input className="pdf-input" disabled placeholder="—" />
+            <div className="pdf-field-plus">
+              <select
+                className="pdf-select"
+                value={barcodeGroupUlid}
+                disabled={!canSave}
+                onChange={(e) => setBarcodeGroupUlid(e.target.value)}
+              >
+                <option value="">—</option>
+                {(barcodeGroups.data ?? [])
+                  .filter((row) => row.is_active || row.ulid === barcodeGroupUlid)
+                  .map((row) => (
+                    <option key={row.ulid} value={row.ulid}>{row.name}</option>
+                  ))}
+              </select>
+              <button
+                type="button"
+                className="pdf-plus-button"
+                title="Edit / Define Barcode Groups"
+                aria-label="Edit or define barcode groups"
+                onClick={() => setQuickEditor('barcode_group')}
+              >
+                <Plus size={15} strokeWidth={3} />
+              </button>
+            </div>
+
             <label className="pdf-right-label">Measure Unit</label>
-            <select
-              className="pdf-select"
-              value={baseUnitUlid || units.data?.[0]?.ulid || ''}
-              disabled={!canSave}
-              onChange={(e) => setBaseUnitUlid(e.target.value)}
-            >
-              {(units.data ?? []).map((unit) => <option key={unit.ulid} value={unit.ulid}>{unit.code} — {unit.name}</option>)}
-            </select>
+            <div className="pdf-field-plus">
+              <select
+                className="pdf-select"
+                value={baseUnitUlid || units.data?.[0]?.ulid || ''}
+                disabled={!canSave}
+                onChange={(e) => setBaseUnitUlid(e.target.value)}
+              >
+                {(units.data ?? []).filter((unit) => unit.is_active || unit.ulid === baseUnitUlid).map((unit) => (
+                  <option key={unit.ulid} value={unit.ulid}>{unit.code} — {unit.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="pdf-plus-button"
+                title="Edit / Define Units"
+                aria-label="Edit or define units"
+                onClick={() => setQuickEditor('unit')}
+              >
+                <Plus size={15} strokeWidth={3} />
+              </button>
+            </div>
           </div>
 
           <div className="pdf-row pdf-row-rates">
@@ -529,5 +611,23 @@ export function ProductsPage() {
         </div>
       </section>
     </form>
+
+    <CatalogQuickEditorModal
+      kind={quickEditor}
+      open={quickEditor !== null}
+      onClose={() => setQuickEditor(null)}
+      onSaved={(kind, item) => {
+        if (kind === 'category') {
+          setCategoryUlid(item.ulid)
+        } else if (kind === 'brand') {
+          setBrandUlid(item.ulid)
+        } else if (kind === 'unit') {
+          setBaseUnitUlid(item.ulid)
+        } else if (kind === 'barcode_group') {
+          setBarcodeGroupUlid(item.ulid)
+        }
+      }}
+    />
+    </>
   )
 }

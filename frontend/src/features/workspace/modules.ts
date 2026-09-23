@@ -120,18 +120,6 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     match: (pathname) => pathname === '/definition/products',
   },
   {
-    key: 'product-editor',
-    title: 'Product Definition',
-    path: '/definition/products/new',
-    ribbon: 'definition',
-    status: 'ready',
-    permission: 'products.view',
-    entitlement: 'catalog',
-    match: (pathname) => pathname.startsWith('/definition/products/') && pathname !== '/definition/products',
-    keyForPath: (pathname) => `product:${pathname.split('/').pop() ?? 'new'}`,
-    titleForPath: (pathname) => (pathname.endsWith('/new') ? 'New Product' : 'Product Definition'),
-  },
-  {
     key: 'categories',
     title: 'Categories',
     path: '/definition/categories',

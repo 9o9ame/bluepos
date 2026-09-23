@@ -8,12 +8,17 @@ use App\Http\Requests\Catalog\StoreCategoryRequest;
 use App\Http\Requests\Catalog\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class CategoryController extends Controller
 {
-    public function __construct(private readonly TenantCatalog $catalog) {}
+    public function __construct(
+        private readonly TenantCatalog $catalog,
+        private readonly AuditLogger $audit,
+    ) {}
 
     public function index(TenantContext $tenantContext): mixed
     {
@@ -32,12 +37,20 @@ class CategoryController extends Controller
     {
         $this->authorize('create', Category::class);
 
-        $category = Category::query()->create([
-            'tenant_id' => $tenantContext->tenantId(),
-            ...$request->validated(),
-            'is_active' => $request->boolean('is_active', true),
-            'sort_order' => $request->integer('sort_order'),
-        ]);
+        $category = DB::transaction(function () use ($request, $tenantContext): Category {
+            $category = Category::query()->create([
+                'tenant_id' => $tenantContext->tenantId(),
+                ...$request->validated(),
+                'is_active' => $request->boolean('is_active', true),
+                'sort_order' => $request->integer('sort_order'),
+            ]);
+            $this->audit->record('CATEGORY_CREATED', [
+                'resource_type' => 'category',
+                'resource_ulid' => $category->ulid,
+            ]);
+
+            return $category;
+        });
 
         return (new CategoryResource($category))->response()->setStatusCode(201);
     }
@@ -54,10 +67,16 @@ class CategoryController extends Controller
     {
         $category = $this->catalog->category($categoryUlid);
         $this->authorize('update', $category);
-        $category->fill($request->validated());
-        $category->save();
+        DB::transaction(function () use ($category, $request): void {
+            $category->fill($request->validated());
+            $category->save();
+            $this->audit->record('CATEGORY_UPDATED', [
+                'resource_type' => 'category',
+                'resource_ulid' => $category->ulid,
+            ]);
+        });
 
-        return new CategoryResource($category);
+        return new CategoryResource($category->refresh());
     }
 
     public function destroy(string $categoryUlid): JsonResponse
@@ -65,15 +84,15 @@ class CategoryController extends Controller
         $category = $this->catalog->category($categoryUlid);
         $this->authorize('delete', $category);
 
-        if ($category->products()->exists() || $category->subcategories()->exists()) {
+        DB::transaction(function () use ($category): void {
             $category->is_active = false;
             $category->save();
+            $this->audit->record('CATEGORY_DEACTIVATED', [
+                'resource_type' => 'category',
+                'resource_ulid' => $category->ulid,
+            ]);
+        });
 
-            return response()->json(['ok' => true, 'archived' => true]);
-        }
-
-        $category->delete();
-
-        return response()->json(['ok' => true]);
+        return response()->json(['ok' => true, 'archived' => true]);
     }
 }

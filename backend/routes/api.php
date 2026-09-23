@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BarcodeGroupController;
 use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\BusinessSettingController;
@@ -106,6 +107,12 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::get('/units/{unitUlid}', [UnitController::class, 'show']);
         Route::patch('/units/{unitUlid}', [UnitController::class, 'update']);
         Route::delete('/units/{unitUlid}', [UnitController::class, 'destroy']);
+
+        Route::get('/barcode-groups', [BarcodeGroupController::class, 'index']);
+        Route::post('/barcode-groups', [BarcodeGroupController::class, 'store']);
+        Route::get('/barcode-groups/{barcodeGroupUlid}', [BarcodeGroupController::class, 'show']);
+        Route::patch('/barcode-groups/{barcodeGroupUlid}', [BarcodeGroupController::class, 'update']);
+        Route::delete('/barcode-groups/{barcodeGroupUlid}', [BarcodeGroupController::class, 'destroy']);
 
         Route::get('/products', [ProductController::class, 'index']);
         Route::post('/products', [ProductController::class, 'store']);

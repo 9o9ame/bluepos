@@ -6,6 +6,10 @@ export function useWorkspaceShortcuts(): void {
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) {
+        return
+      }
+
       const target = event.target
       if (target instanceof HTMLElement) {
         const typing =

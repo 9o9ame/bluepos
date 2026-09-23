@@ -30,7 +30,7 @@ class ProductController extends Controller
         $perPage = min(max($request->integer('per_page', 25), 1), 100);
         $query = Product::query()
             ->forTenant($tenantContext->tenantId())
-            ->with(['category', 'brand', 'baseUnit', 'barcodes.unit', 'prices'])
+            ->with(['category', 'brand', 'barcodeGroup', 'baseUnit', 'barcodes.unit', 'prices'])
             ->orderBy('product_number');
 
         if ($request->filled('q')) {

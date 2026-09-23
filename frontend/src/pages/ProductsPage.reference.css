@@ -132,3 +132,46 @@
   }
 }
 
+/* Products field + buttons for reference-style master-data popups */
+
+.product-reference-screen .pdf-field-plus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 25px;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+}
+
+.product-reference-screen .pdf-field-plus > .pdf-input,
+.product-reference-screen .pdf-field-plus > .pdf-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.product-reference-screen .pdf-plus-button {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  min-width: 25px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #5487a8;
+  border-radius: 2px;
+  background: linear-gradient(#dff5ff, #8fd2f2 52%, #5aaed7);
+  color: #0f5782;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.9),
+    0 1px 1px rgba(0,0,0,.12);
+}
+
+.product-reference-screen .pdf-plus-button:hover:not(:disabled) {
+  background: linear-gradient(#f0fbff, #9bdbf7 52%, #69b9de);
+}
+
+.product-reference-screen .pdf-plus-button:active:not(:disabled) {
+  background: linear-gradient(#64b4db, #9bdcf8);
+}
+
+.product-reference-screen .pdf-plus-button:disabled {
+  opacity: .45;
+}

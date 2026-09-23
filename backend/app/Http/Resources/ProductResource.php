@@ -42,6 +42,7 @@ class ProductResource extends JsonResource
             'category' => new CategoryResource($this->whenLoaded('category')),
             'subcategory' => new SubcategoryResource($this->whenLoaded('subcategory')),
             'brand' => new BrandResource($this->whenLoaded('brand')),
+            'barcode_group' => new BarcodeGroupResource($this->whenLoaded('barcodeGroup')),
             'base_unit' => new UnitResource($this->whenLoaded('baseUnit')),
             'secondary_unit' => new UnitResource($this->whenLoaded('secondaryUnit')),
             'barcodes' => ProductBarcodeResource::collection($this->whenLoaded('barcodes')),

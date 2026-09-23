@@ -3,9 +3,9 @@
 namespace Tests\Feature;
 
 use App\Authz\PermissionCatalogue;
+use App\Models\AuditLog;
 use App\Models\Product;
 use App\Models\Tenant;
-use App\Models\Unit;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -142,6 +142,226 @@ class CatalogTest extends TestCase
             'code' => 'LOCAL',
             'name' => 'Local B',
         ])->assertCreated();
+    }
+
+    public function test_catalog_masters_can_be_created_updated_and_deactivated(): void
+    {
+        $this->signInOwner('master-crud')->assertOk();
+
+        $category = $this->postJson('/api/categories', [
+            'code' => 'FOOD',
+            'name' => 'Food',
+        ])->assertCreated();
+        $categoryUlid = $category->json('ulid');
+        $this->patchJson('/api/categories/'.$categoryUlid, [
+            'code' => 'FOODS',
+            'name' => 'Foods',
+        ])->assertOk()->assertJsonPath('name', 'Foods');
+        $subcategoryUlid = $this->postJson('/api/subcategories', [
+            'category_ulid' => $categoryUlid,
+            'code' => 'SNACK',
+            'name' => 'Snacks',
+        ])->assertCreated()->json('ulid');
+        $this->deleteJson('/api/categories/'.$categoryUlid)
+            ->assertOk()
+            ->assertJsonPath('archived', true);
+        $this->getJson('/api/categories/'.$categoryUlid)
+            ->assertOk()
+            ->assertJsonPath('is_active', false);
+        $this->getJson('/api/subcategories/'.$subcategoryUlid)->assertOk();
+
+        $brandUlid = $this->postJson('/api/brands', [
+            'code' => 'ACME',
+            'name' => 'Acme',
+        ])->assertCreated()->json('ulid');
+        $this->patchJson('/api/brands/'.$brandUlid, ['name' => 'Acme Updated'])
+            ->assertOk()
+            ->assertJsonPath('name', 'Acme Updated');
+        $this->deleteJson('/api/brands/'.$brandUlid)
+            ->assertOk()
+            ->assertJsonPath('archived', true);
+        $this->getJson('/api/brands/'.$brandUlid)->assertOk()->assertJsonPath('is_active', false);
+
+        $unitUlid = $this->postJson('/api/units', [
+            'code' => 'TSTBOX',
+            'name' => 'Box',
+            'symbol' => 'box',
+            'allows_decimal' => false,
+        ])->assertCreated()->json('ulid');
+        $unit = $this->patchJson('/api/units/'.$unitUlid, [
+            'name' => 'Large Box',
+            'symbol' => 'lbox',
+            'allows_decimal' => true,
+        ])->assertOk();
+        $unit->assertJsonPath('allows_decimal', true);
+        $this->deleteJson('/api/units/'.$unitUlid)
+            ->assertOk()
+            ->assertJsonPath('archived', true);
+        $this->getJson('/api/units/'.$unitUlid)->assertOk()->assertJsonPath('is_active', false);
+
+        $barcodeGroup = $this->postJson('/api/barcode-groups', [
+            'code' => ' retail ',
+            'name' => 'Retail',
+            'description' => 'Retail barcode family',
+            'sort_order' => 2,
+        ])->assertCreated();
+        $barcodeGroup->assertJsonPath('code', 'RETAIL');
+        $barcodeGroupUlid = $barcodeGroup->json('ulid');
+        $updatedBarcodeGroup = $this->patchJson('/api/barcode-groups/'.$barcodeGroupUlid, [
+            'code' => ' retail-main ',
+            'name' => 'Retail Main',
+        ])->assertOk();
+        $updatedBarcodeGroup->assertJsonPath('code', 'RETAIL-MAIN');
+        $this->assertNoInternalIds($updatedBarcodeGroup->json());
+        $this->deleteJson('/api/barcode-groups/'.$barcodeGroupUlid)
+            ->assertOk()
+            ->assertJsonPath('archived', true);
+        $this->getJson('/api/barcode-groups/'.$barcodeGroupUlid)
+            ->assertOk()
+            ->assertJsonPath('is_active', false);
+
+        foreach ([
+            'CATEGORY_CREATED',
+            'CATEGORY_UPDATED',
+            'CATEGORY_DEACTIVATED',
+            'BRAND_CREATED',
+            'BRAND_UPDATED',
+            'BRAND_DEACTIVATED',
+            'UNIT_CREATED',
+            'UNIT_UPDATED',
+            'UNIT_DEACTIVATED',
+            'BARCODE_GROUP_CREATED',
+            'BARCODE_GROUP_UPDATED',
+            'BARCODE_GROUP_DEACTIVATED',
+        ] as $event) {
+            $this->assertTrue(AuditLog::query()->where('event', $event)->exists(), "Missing audit event {$event}");
+        }
+    }
+
+    public function test_all_catalog_masters_are_tenant_isolated(): void
+    {
+        $this->signInOwner('master-iso-a')->assertOk();
+        $resources = [
+            'categories' => $this->postJson('/api/categories', [
+                'code' => 'ISOCAT',
+                'name' => 'Private Category',
+            ])->assertCreated()->json('ulid'),
+            'brands' => $this->postJson('/api/brands', [
+                'code' => 'ISOBRAND',
+                'name' => 'Private Brand',
+            ])->assertCreated()->json('ulid'),
+            'units' => $this->postJson('/api/units', [
+                'code' => 'ISOUNIT',
+                'name' => 'Private Unit',
+                'symbol' => 'iu',
+                'allows_decimal' => false,
+            ])->assertCreated()->json('ulid'),
+            'barcode-groups' => $this->postJson('/api/barcode-groups', [
+                'code' => 'ISOBAR',
+                'name' => 'Private Barcode Group',
+            ])->assertCreated()->json('ulid'),
+        ];
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('master-iso-b')->assertOk();
+
+        foreach ($resources as $endpoint => $ulid) {
+            $list = $this->getJson('/api/'.$endpoint)->assertOk()->json();
+            $this->assertNotContains($ulid, collect($list)->pluck('ulid')->all());
+            $this->getJson('/api/'.$endpoint.'/'.$ulid)->assertNotFound();
+            $this->patchJson('/api/'.$endpoint.'/'.$ulid, ['name' => 'Leaked'])->assertNotFound();
+            $this->deleteJson('/api/'.$endpoint.'/'.$ulid)->assertNotFound();
+        }
+    }
+
+    public function test_product_barcode_group_round_trip_and_inactive_relations_remain_readable(): void
+    {
+        $this->signInOwner('barcode-product')->assertOk();
+        $masters = $this->seedMasters();
+        $barcodeGroupUlid = $this->postJson('/api/barcode-groups', [
+            'code' => 'PACKAGING',
+            'name' => 'Packaging',
+        ])->assertCreated()->json('ulid');
+
+        $product = $this->postJson('/api/products', [
+            'name' => 'Grouped Product',
+            'category_ulid' => $masters['category'],
+            'brand_ulid' => $masters['brand'],
+            'barcode_group_ulid' => $barcodeGroupUlid,
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated();
+        $productUlid = $product->json('ulid');
+        $product->assertJsonPath('barcode_group.ulid', $barcodeGroupUlid);
+        $this->assertNoInternalIds($product->json());
+
+        $secondGroupUlid = $this->postJson('/api/barcode-groups', [
+            'code' => 'PACKAGING2',
+            'name' => 'Packaging Two',
+        ])->assertCreated()->json('ulid');
+        $this->patchJson('/api/products/'.$productUlid, [
+            'barcode_group_ulid' => $secondGroupUlid,
+        ])->assertOk()->assertJsonPath('barcode_group.ulid', $secondGroupUlid);
+
+        $this->deleteJson('/api/categories/'.$masters['category'])->assertOk();
+        $this->deleteJson('/api/brands/'.$masters['brand'])->assertOk();
+        $this->deleteJson('/api/units/'.$masters['pcs'])->assertOk();
+        $this->deleteJson('/api/barcode-groups/'.$secondGroupUlid)->assertOk();
+
+        $existing = $this->getJson('/api/products/'.$productUlid)->assertOk();
+        $existing->assertJsonPath('category.is_active', false);
+        $existing->assertJsonPath('brand.is_active', false);
+        $existing->assertJsonPath('base_unit.is_active', false);
+        $existing->assertJsonPath('barcode_group.is_active', false);
+        $this->assertNoInternalIds($existing->json());
+    }
+
+    public function test_foreign_barcode_group_assignment_and_unauthorized_master_mutations_are_blocked(): void
+    {
+        $owner = $this->signInOwner('master-auth-a')->assertOk();
+        $masters = $this->seedMasters();
+        $barcodeGroupUlid = $this->postJson('/api/barcode-groups', [
+            'code' => 'PRIVATE',
+            'name' => 'Private Group',
+        ])->assertCreated()->json('ulid');
+        $this->createCashier('master-auth-a', $owner->json('branch.ulid'));
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('master-auth-b')->assertOk();
+        $ownProduct = $this->postJson('/api/products', [
+            'name' => 'Own Product',
+            'base_unit_ulid' => $this->unitUlid('PCS'),
+        ])->assertCreated();
+        $this->postJson('/api/products', [
+            'name' => 'Foreign Group Product',
+            'base_unit_ulid' => $this->unitUlid('PCS'),
+            'barcode_group_ulid' => $barcodeGroupUlid,
+        ])->assertNotFound();
+        $this->patchJson('/api/products/'.$ownProduct->json('ulid'), [
+            'barcode_group_ulid' => $barcodeGroupUlid,
+        ])->assertNotFound();
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->loginAs('master-auth-a', 'cashier-master-auth-a')->assertOk();
+
+        $payloads = [
+            'categories' => ['code' => 'NOPE', 'name' => 'Nope'],
+            'brands' => ['code' => 'NOPE', 'name' => 'Nope'],
+            'units' => ['code' => 'NOPE', 'name' => 'Nope', 'symbol' => 'n', 'allows_decimal' => false],
+            'barcode-groups' => ['code' => 'NOPE', 'name' => 'Nope'],
+        ];
+        $existing = [
+            'categories' => $masters['category'],
+            'brands' => $masters['brand'],
+            'units' => $masters['pcs'],
+            'barcode-groups' => $barcodeGroupUlid,
+        ];
+
+        foreach ($payloads as $endpoint => $payload) {
+            $this->postJson('/api/'.$endpoint, $payload)->assertForbidden();
+            $this->patchJson('/api/'.$endpoint.'/'.$existing[$endpoint], ['name' => 'Forbidden'])
+                ->assertForbidden();
+            $this->deleteJson('/api/'.$endpoint.'/'.$existing[$endpoint])->assertForbidden();
+        }
     }
 
     public function test_product_lifecycle_barcodes_and_prices(): void

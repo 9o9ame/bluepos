@@ -62,6 +62,7 @@ abstract class TestCase extends BaseTestCase
             'category_id',
             'subcategory_id',
             'brand_id',
+            'barcode_group_id',
             'unit_id',
             'product_id',
             'base_unit_id',
