@@ -22,6 +22,7 @@ class CreateProductAction
         private readonly TenantCatalog $catalog,
         private readonly SyncProductBarcodesAction $syncBarcodes,
         private readonly SyncProductPricesAction $syncPrices,
+        private readonly SyncProductPrimarySupplierAction $syncPrimarySupplier,
     ) {}
 
     /**
@@ -86,6 +87,14 @@ class CreateProductAction
                 $this->syncPrices->execute($product, $data['prices']);
             }
 
+            if (array_key_exists('primary_supplier_ulid', $data)) {
+                $this->syncPrimarySupplier->execute(
+                    $product,
+                    $data['primary_supplier_ulid'],
+                    $data['supplier_product_code'] ?? null,
+                );
+            }
+
             return $product->fresh($this->with());
         });
     }
@@ -128,6 +137,6 @@ class CreateProductAction
      */
     public static function with(): array
     {
-        return ['category', 'subcategory', 'brand', 'barcodeGroup', 'baseUnit', 'secondaryUnit', 'barcodes.unit', 'prices'];
+        return ['category', 'subcategory', 'brand', 'barcodeGroup', 'baseUnit', 'secondaryUnit', 'barcodes.unit', 'prices', 'primaryProductSupplier.supplier'];
     }
 }

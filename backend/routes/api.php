@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SecuritySessionController;
 use App\Http\Controllers\Api\SubcategoryController;
+use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\TenantEntitlementController;
 use App\Http\Controllers\Api\UnitController;
 use App\Http\Controllers\Api\WarehouseController;
@@ -113,6 +114,12 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::get('/barcode-groups/{barcodeGroupUlid}', [BarcodeGroupController::class, 'show']);
         Route::patch('/barcode-groups/{barcodeGroupUlid}', [BarcodeGroupController::class, 'update']);
         Route::delete('/barcode-groups/{barcodeGroupUlid}', [BarcodeGroupController::class, 'destroy']);
+
+        Route::get('/suppliers', [SupplierController::class, 'index']);
+        Route::post('/suppliers', [SupplierController::class, 'store']);
+        Route::get('/suppliers/{supplierUlid}', [SupplierController::class, 'show']);
+        Route::patch('/suppliers/{supplierUlid}', [SupplierController::class, 'update']);
+        Route::delete('/suppliers/{supplierUlid}', [SupplierController::class, 'destroy']);
 
         Route::get('/products', [ProductController::class, 'index']);
         Route::post('/products', [ProductController::class, 'store']);

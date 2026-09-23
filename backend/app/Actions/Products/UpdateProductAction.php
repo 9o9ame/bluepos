@@ -13,6 +13,7 @@ class UpdateProductAction
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly TenantCatalog $catalog,
+        private readonly SyncProductPrimarySupplierAction $syncPrimarySupplier,
     ) {}
 
     /**
@@ -72,6 +73,16 @@ class UpdateProductAction
             $payload['updated_by'] = $this->tenantContext->userId();
             $product->fill($payload);
             $product->save();
+
+            if (array_key_exists('primary_supplier_ulid', $data)) {
+                $this->syncPrimarySupplier->execute(
+                    $product,
+                    $data['primary_supplier_ulid'],
+                    array_key_exists('supplier_product_code', $data)
+                        ? $data['supplier_product_code']
+                        : null,
+                );
+            }
 
             return $product->fresh(CreateProductAction::with());
         });

@@ -21,6 +21,7 @@ import {
   fetchCategories,
   fetchProduct,
   fetchProducts,
+  fetchSuppliers,
   fetchUnits,
   saveProductBarcodes,
   saveProductPrices,
@@ -36,7 +37,7 @@ import './ProductsPage.reference.css'
 
 export function ProductsPage() {
   const queryClient = useQueryClient()
-  const { closeActiveTab } = useWorkspace()
+  const { closeActiveTab, openModule } = useWorkspace()
 
   const canCreate = useCan('products.create')
   const canEdit = useCan('products.edit')
@@ -69,6 +70,7 @@ export function ProductsPage() {
   const brands = useQuery({ queryKey: ['brands'], queryFn: fetchBrands })
   const units = useQuery({ queryKey: ['units'], queryFn: fetchUnits })
   const barcodeGroups = useQuery({ queryKey: ['barcode-groups'], queryFn: fetchBarcodeGroups })
+  const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: fetchSuppliers })
 
   const selectedRow = products.find((product) => product.ulid === selectedKey) ?? null
   const selected = productQuery.data ?? selectedRow
@@ -79,6 +81,8 @@ export function ProductsPage() {
   const [categoryUlid, setCategoryUlid] = useState('')
   const [brandUlid, setBrandUlid] = useState('')
   const [barcodeGroupUlid, setBarcodeGroupUlid] = useState('')
+  const [primarySupplierUlid, setPrimarySupplierUlid] = useState('')
+  const [supplierProductCode, setSupplierProductCode] = useState('')
   const [baseUnitUlid, setBaseUnitUlid] = useState('')
   const [reorderLevel, setReorderLevel] = useState('')
   const [rackLocation, setRackLocation] = useState('')
@@ -99,6 +103,8 @@ export function ProductsPage() {
     setCategoryUlid('')
     setBrandUlid('')
     setBarcodeGroupUlid('')
+    setPrimarySupplierUlid('')
+    setSupplierProductCode('')
     setBaseUnitUlid(units.data?.[0]?.ulid ?? '')
     setReorderLevel('')
     setRackLocation('')
@@ -142,6 +148,8 @@ export function ProductsPage() {
     setCategoryUlid(selected.category?.ulid ?? '')
     setBrandUlid(selected.brand?.ulid ?? '')
     setBarcodeGroupUlid(selected.barcode_group?.ulid ?? '')
+    setPrimarySupplierUlid(selected.primary_supplier?.ulid ?? '')
+    setSupplierProductCode(selected.supplier_product_code ?? '')
     setBaseUnitUlid(selected.base_unit?.ulid ?? '')
     setReorderLevel(selected.reorder_level ?? '')
     setRackLocation(selected.rack_location ?? '')
@@ -172,6 +180,8 @@ export function ProductsPage() {
         subcategory_ulid: current?.subcategory?.ulid ?? null,
         brand_ulid: brandUlid || null,
         barcode_group_ulid: barcodeGroupUlid || null,
+        primary_supplier_ulid: primarySupplierUlid || null,
+        supplier_product_code: supplierProductCode || null,
         base_unit_ulid: baseUnitUlid || units.data?.[0]?.ulid,
         secondary_unit_ulid: current?.secondary_unit?.ulid ?? null,
         secondary_conversion_factor: current?.secondary_conversion_factor ?? null,
@@ -480,7 +490,33 @@ export function ProductsPage() {
 
             <div className="pdf-row pdf-row-split">
               <label>Supplier</label>
-              <input className="pdf-input" disabled placeholder="Later phase" />
+              <div className="pdf-field-plus">
+                <select
+                  className="pdf-select"
+                  value={primarySupplierUlid}
+                  disabled={!canSave}
+                  onChange={(e) => setPrimarySupplierUlid(e.target.value)}
+                >
+                  <option value="">—</option>
+                  {(suppliers.data ?? [])
+                    .filter((row) => {
+                      if (creating) return row.is_active
+                      return row.is_active || row.ulid === primarySupplierUlid
+                    })
+                    .map((row) => (
+                      <option key={row.ulid} value={row.ulid}>{row.name}</option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  className="pdf-plus-button"
+                  title="Edit / Define Suppliers"
+                  aria-label="Edit or define suppliers"
+                  onClick={() => openModule('/definition/suppliers')}
+                >
+                  <Plus size={15} strokeWidth={3} />
+                </button>
+              </div>
               <label className="pdf-right-label">Location</label>
               <input className="pdf-input" value={rackLocation} readOnly={!canSave} onChange={(e) => setRackLocation(e.target.value)} />
             </div>
@@ -584,7 +620,12 @@ export function ProductsPage() {
               <label>In Stock</label>
               <input className="pdf-input pdf-num pdf-readonly" readOnly value="—" title="Stock balances are a later phase" />
               <label className="pdf-right-label">Supplier Code</label>
-              <input className="pdf-input" disabled placeholder="—" />
+              <input
+                className="pdf-input"
+                value={supplierProductCode}
+                readOnly={!canSave}
+                onChange={(e) => setSupplierProductCode(e.target.value)}
+              />
             </div>
 
             <div className="pdf-row pdf-row-check">

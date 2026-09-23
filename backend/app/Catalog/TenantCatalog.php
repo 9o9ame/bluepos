@@ -8,6 +8,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Subcategory;
+use App\Models\Supplier;
 use App\Models\Unit;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Model;
@@ -39,6 +40,11 @@ class TenantCatalog
     public function unit(string $ulid): Unit
     {
         return $this->find(Unit::class, $ulid);
+    }
+
+    public function supplier(string $ulid): Supplier
+    {
+        return $this->find(Supplier::class, $ulid);
     }
 
     public function product(string $ulid): Product

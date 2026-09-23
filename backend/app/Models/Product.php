@@ -7,7 +7,9 @@ use App\Support\HasPublicUlid;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'tenant_id',
@@ -126,5 +128,36 @@ class Product extends Model
     public function prices(): HasMany
     {
         return $this->hasMany(ProductPrice::class);
+    }
+
+    /**
+     * @return HasMany<ProductSupplier, $this>
+     */
+    public function productSuppliers(): HasMany
+    {
+        return $this->hasMany(ProductSupplier::class);
+    }
+
+    /**
+     * @return HasOne<ProductSupplier, $this>
+     */
+    public function primaryProductSupplier(): HasOne
+    {
+        return $this->hasOne(ProductSupplier::class)->where('is_primary', true);
+    }
+
+    /**
+     * @return BelongsToMany<Supplier, $this>
+     */
+    public function suppliers(): BelongsToMany
+    {
+        return $this->belongsToMany(Supplier::class, 'product_suppliers')
+            ->withPivot([
+                'ulid',
+                'supplier_product_code',
+                'is_primary',
+                'is_active',
+            ])
+            ->withTimestamps();
     }
 }

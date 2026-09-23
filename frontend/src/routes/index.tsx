@@ -20,6 +20,7 @@ import { RoleEditorPage } from '../pages/RoleEditorPage'
 import { RolesPage } from '../pages/RolesPage'
 import { SalesInvoicePlaceholderPage } from '../pages/SalesInvoicePlaceholderPage'
 import { SubcategoriesPage } from '../pages/SubcategoriesPage'
+import { SuppliersPage } from '../pages/SuppliersPage'
 import { UnitsPage } from '../pages/UnitsPage'
 import { UsersPage } from '../pages/UsersPage'
 import { WorkspacePage } from '../pages/WorkspacePage'
@@ -95,6 +96,10 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="units.view" />}>
             <Route path="/definition/units" element={<UnitsPage />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="suppliers.view" />}>
+            <Route path="/definition/suppliers" element={<SuppliersPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="products.view" />}>

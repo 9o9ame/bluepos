@@ -43,6 +43,28 @@ class ProductResource extends JsonResource
             'subcategory' => new SubcategoryResource($this->whenLoaded('subcategory')),
             'brand' => new BrandResource($this->whenLoaded('brand')),
             'barcode_group' => new BarcodeGroupResource($this->whenLoaded('barcodeGroup')),
+            'primary_supplier' => $this->when(
+                $this->relationLoaded('primaryProductSupplier'),
+                function () {
+                    $link = $this->primaryProductSupplier;
+                    $supplier = $link?->supplier;
+
+                    if (! $supplier) {
+                        return null;
+                    }
+
+                    return [
+                        'ulid' => $supplier->ulid,
+                        'code' => $supplier->code,
+                        'name' => $supplier->name,
+                        'is_active' => $supplier->is_active,
+                    ];
+                },
+            ),
+            'supplier_product_code' => $this->when(
+                $this->relationLoaded('primaryProductSupplier'),
+                fn () => $this->primaryProductSupplier?->supplier_product_code,
+            ),
             'base_unit' => new UnitResource($this->whenLoaded('baseUnit')),
             'secondary_unit' => new UnitResource($this->whenLoaded('secondaryUnit')),
             'barcodes' => ProductBarcodeResource::collection($this->whenLoaded('barcodes')),

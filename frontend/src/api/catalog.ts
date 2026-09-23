@@ -7,6 +7,7 @@ import type {
   Paginated,
   Product,
   Subcategory,
+  Supplier,
   Unit,
 } from '../types/catalog'
 
@@ -293,6 +294,55 @@ export function deactivateBarcodeGroup(
       method: 'DELETE',
     },
   )
+}
+
+/*
+|--------------------------------------------------------------------------
+| Suppliers
+|--------------------------------------------------------------------------
+*/
+
+export type SupplierPayload = {
+  code: string
+  name: string
+  contact_person?: string | null
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+  tax_number?: string | null
+  notes?: string | null
+  is_active?: boolean
+}
+
+export function fetchSuppliers() {
+  return apiFetch<Supplier[]>('/api/suppliers')
+}
+
+export function fetchSupplier(ulid: string) {
+  return apiFetch<Supplier>(`/api/suppliers/${ulid}`)
+}
+
+export function createSupplier(payload: SupplierPayload) {
+  return apiFetch<Supplier>('/api/suppliers', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateSupplier(
+  ulid: string,
+  payload: Partial<SupplierPayload>,
+) {
+  return apiFetch<Supplier>(`/api/suppliers/${ulid}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deactivateSupplier(ulid: string) {
+  return apiFetch<ArchiveResponse>(`/api/suppliers/${ulid}`, {
+    method: 'DELETE',
+  })
 }
 
 /*

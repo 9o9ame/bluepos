@@ -25,6 +25,26 @@ export type Brand = CatalogItem
 
 export type BarcodeGroup = CatalogItem
 
+export type Supplier = {
+  ulid: string
+  code: string
+  name: string
+  contact_person: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  tax_number: string | null
+  notes: string | null
+  is_active: boolean
+}
+
+export type PrimarySupplier = {
+  ulid: string
+  code: string
+  name: string
+  is_active: boolean
+}
+
 export type BusinessSettings = {
   ulid: string
   business_name: string
@@ -88,6 +108,8 @@ export type Product = {
   subcategory?: Subcategory | null
   brand?: Brand | null
   barcode_group?: BarcodeGroup | null
+  primary_supplier?: PrimarySupplier | null
+  supplier_product_code?: string | null
 
   base_unit?: Unit | null
   secondary_unit?: Unit | null

@@ -260,6 +260,10 @@ class CatalogTest extends TestCase
                 'code' => 'ISOBAR',
                 'name' => 'Private Barcode Group',
             ])->assertCreated()->json('ulid'),
+            'suppliers' => $this->postJson('/api/suppliers', [
+                'code' => 'ISOSUP',
+                'name' => 'Private Supplier',
+            ])->assertCreated()->json('ulid'),
         ];
 
         $this->postJson('/api/auth/logout')->assertOk();
@@ -323,6 +327,10 @@ class CatalogTest extends TestCase
             'code' => 'PRIVATE',
             'name' => 'Private Group',
         ])->assertCreated()->json('ulid');
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'CASHBLOCK',
+            'name' => 'Cashier Block',
+        ])->assertCreated()->json('ulid');
         $this->createCashier('master-auth-a', $owner->json('branch.ulid'));
 
         $this->postJson('/api/auth/logout')->assertOk();
@@ -348,12 +356,14 @@ class CatalogTest extends TestCase
             'brands' => ['code' => 'NOPE', 'name' => 'Nope'],
             'units' => ['code' => 'NOPE', 'name' => 'Nope', 'symbol' => 'n', 'allows_decimal' => false],
             'barcode-groups' => ['code' => 'NOPE', 'name' => 'Nope'],
+            'suppliers' => ['code' => 'NOPE', 'name' => 'Nope'],
         ];
         $existing = [
             'categories' => $masters['category'],
             'brands' => $masters['brand'],
             'units' => $masters['pcs'],
             'barcode-groups' => $barcodeGroupUlid,
+            'suppliers' => $supplierUlid,
         ];
 
         foreach ($payloads as $endpoint => $payload) {

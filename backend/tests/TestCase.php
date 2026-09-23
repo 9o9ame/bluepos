@@ -4,14 +4,23 @@ namespace Tests;
 
 use App\Actions\Auth\ProvisionTenantAction;
 use App\Actions\Platform\AssignTenantPlanAction;
+use App\Actions\Platform\CreatePlatformAdminAction;
 use App\Auth\AuthenticatedSession;
 use App\Enums\DeviceStatus;
+use App\Enums\PlatformUserStatus;
 use App\Models\Device;
+use App\Models\Platform\PlatformPermission;
+use App\Models\Platform\PlatformRole;
+use App\Models\Platform\PlatformUser;
 use App\Models\Tenant;
+use App\Notifications\SecurityCodeNotification;
+use App\Platform\PlatformCatalogSync;
 use App\Security\DeviceCredentialService;
 use App\Support\IdentityNormalizer;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Tests\Support\TestDatabaseGuard;
 
@@ -63,6 +72,7 @@ abstract class TestCase extends BaseTestCase
             'subcategory_id',
             'brand_id',
             'barcode_group_id',
+            'supplier_id',
             'unit_id',
             'product_id',
             'base_unit_id',
@@ -206,11 +216,11 @@ abstract class TestCase extends BaseTestCase
         ]);
     }
 
-    protected function createPlatformAdmin(string $suffix = 'sa', bool $mustChange = false): \App\Models\Platform\PlatformUser
+    protected function createPlatformAdmin(string $suffix = 'sa', bool $mustChange = false): PlatformUser
     {
-        app(\App\Platform\PlatformCatalogSync::class)->ensure();
+        app(PlatformCatalogSync::class)->ensure();
 
-        return app(\App\Actions\Platform\CreatePlatformAdminAction::class)->execute([
+        return app(CreatePlatformAdminAction::class)->execute([
             'name' => 'Platform '.$suffix,
             'email' => "platform-{$suffix}@example.com",
             'password' => 'platform-pass-123',
@@ -221,39 +231,39 @@ abstract class TestCase extends BaseTestCase
     /**
      * @param  list<string>  $permissionKeys
      */
-    protected function createPlatformStaff(string $suffix, array $permissionKeys): \App\Models\Platform\PlatformUser
+    protected function createPlatformStaff(string $suffix, array $permissionKeys): PlatformUser
     {
-        app(\App\Platform\PlatformCatalogSync::class)->ensure();
+        app(PlatformCatalogSync::class)->ensure();
 
-        $role = \App\Models\Platform\PlatformRole::query()->create([
-            'code' => \App\Support\IdentityNormalizer::platformRoleCode('STAFF_'.$suffix),
+        $role = PlatformRole::query()->create([
+            'code' => IdentityNormalizer::platformRoleCode('STAFF_'.$suffix),
             'name' => 'Staff '.$suffix,
             'is_system' => false,
             'is_active' => true,
         ]);
-        $permissionIds = \App\Models\Platform\PlatformPermission::query()
+        $permissionIds = PlatformPermission::query()
             ->whereIn('key', $permissionKeys)
             ->pluck('id');
         foreach ($permissionIds as $permissionId) {
-            $role->permissions()->attach($permissionId, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
+            $role->permissions()->attach($permissionId, ['ulid' => (string) Str::ulid()]);
         }
 
-        $user = \App\Models\Platform\PlatformUser::query()->create([
+        $user = PlatformUser::query()->create([
             'name' => 'Staff '.$suffix,
             'email' => "staff-{$suffix}@example.com",
             'password' => 'platform-pass-123',
-            'status' => \App\Enums\PlatformUserStatus::Active,
+            'status' => PlatformUserStatus::Active,
             'must_change_password' => false,
             'security_version' => 1,
         ]);
-        $user->roles()->attach($role->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
+        $user->roles()->attach($role->id, ['ulid' => (string) Str::ulid()]);
 
         return $user->fresh(['roles']) ?? $user;
     }
 
-    protected function signInPlatformUser(\App\Models\Platform\PlatformUser $user, string $password = 'platform-pass-123'): \App\Models\Platform\PlatformUser
+    protected function signInPlatformUser(PlatformUser $user, string $password = 'platform-pass-123'): PlatformUser
     {
-        \Illuminate\Support\Facades\Notification::fake();
+        Notification::fake();
 
         $login = $this->postJson('/api/platform/auth/login', [
             'email' => $user->email,
@@ -263,8 +273,8 @@ abstract class TestCase extends BaseTestCase
         $challengeUlid = $login->json('error.challenge_ulid');
 
         $code = null;
-        \Illuminate\Support\Facades\Notification::assertSentOnDemand(
-            \App\Notifications\SecurityCodeNotification::class,
+        Notification::assertSentOnDemand(
+            SecurityCodeNotification::class,
             function ($notification) use (&$code): bool {
                 $code = $notification->code;
 
@@ -281,13 +291,13 @@ abstract class TestCase extends BaseTestCase
         return $user->fresh(['roles']) ?? $user;
     }
 
-    protected function signInPlatformAdmin(string $suffix = 'sa'): \App\Models\Platform\PlatformUser
+    protected function signInPlatformAdmin(string $suffix = 'sa'): PlatformUser
     {
-        $user = \App\Models\Platform\PlatformUser::query()
+        $user = PlatformUser::query()
             ->where('email', "platform-{$suffix}@example.com")
             ->first() ?? $this->createPlatformAdmin($suffix);
 
-        \Illuminate\Support\Facades\Notification::fake();
+        Notification::fake();
 
         $login = $this->postJson('/api/platform/auth/login', [
             'email' => $user->email,
@@ -297,8 +307,8 @@ abstract class TestCase extends BaseTestCase
         $challengeUlid = $login->json('error.challenge_ulid');
 
         $code = null;
-        \Illuminate\Support\Facades\Notification::assertSentOnDemand(
-            \App\Notifications\SecurityCodeNotification::class,
+        Notification::assertSentOnDemand(
+            SecurityCodeNotification::class,
             function ($notification) use (&$code): bool {
                 $code = $notification->code;
 
