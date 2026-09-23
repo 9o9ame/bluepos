@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\Platform\EstablishPlatformSessionAction;
 use App\Enums\PlatformUserStatus;
 use App\Exceptions\ApiException;
 use App\Models\Platform\PlatformDevice;
@@ -22,11 +23,15 @@ class EnsurePlatformContext
 
     public const MFA_AT = 'platform_mfa_verified_at';
 
-    public function __construct(private readonly PlatformContext $context) {}
+    public function __construct(
+        private readonly PlatformContext $context,
+        private readonly EstablishPlatformSessionAction $establishSession,
+    ) {}
 
     public function handle(Request $request, Closure $next): Response
     {
-        $user = Auth::guard('platform')->user();
+        $guard = Auth::guard('platform');
+        $user = $guard->user();
         if (! $user) {
             throw new ApiException('UNAUTHORIZED', 'You are not authorized to perform this action.', 401);
         }
@@ -35,12 +40,17 @@ class EnsurePlatformContext
             throw new ApiException('ACCOUNT_DISABLED', 'This account is disabled.', 403);
         }
 
+        $ulid = $request->session()->get(self::SESSION_ULID);
+        if (! is_string($ulid) && $guard->viaRemember()) {
+            $user = $this->establishSession->resumeRemembered($request, $user);
+            $ulid = $request->session()->get(self::SESSION_ULID);
+        }
+
         $sessionVersion = (int) $request->session()->get(self::SECURITY_VERSION, 0);
         if ($sessionVersion !== (int) $user->security_version) {
             throw new ApiException('SESSION_REVOKED', 'This session is no longer valid.', 401);
         }
 
-        $ulid = $request->session()->get(self::SESSION_ULID);
         $record = is_string($ulid)
             ? PlatformSession::query()->where('ulid', $ulid)->first()
             : null;

@@ -2,6 +2,11 @@
 
 return [
 
+    'platform_dev_bypass_mfa' => filter_var(
+        env('PLATFORM_DEV_BYPASS_MFA', false),
+        FILTER_VALIDATE_BOOL,
+    ),
+
     /*
     |--------------------------------------------------------------------------
     | Security OTP / email policy

@@ -21,8 +21,13 @@ class IssuePlatformMfaChallengeAction
         private readonly PlatformAuditLogger $audit,
     ) {}
 
-    public function execute(PlatformUser $user, ?PlatformDevice $device, string $purpose = 'login', bool $resend = false): never
-    {
+    public function execute(
+        PlatformUser $user,
+        ?PlatformDevice $device,
+        string $purpose = 'login',
+        bool $resend = false,
+        bool $remember = false,
+    ): never {
         $email = EmailNormalizer::normalize($user->email);
         if ($email === null) {
             throw $this->mail->failed();
@@ -41,6 +46,7 @@ class IssuePlatformMfaChallengeAction
             'method' => MfaMethod::EmailOtp,
             'purpose' => $purpose,
             'code_hash' => SecurityOtp::hash($otp),
+            'remember' => $remember,
             'attempts' => 0,
             'expires_at' => now()->addMinutes(SecurityOtp::ttlMinutes()),
         ]);

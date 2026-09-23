@@ -33,7 +33,7 @@ type StepUpState = {
 type PlatformAuthContextValue = {
   user: PlatformUser | null
   isLoading: boolean
-  login: (input: PlatformLoginInput) => Promise<void>
+  login: (input: PlatformLoginInput) => Promise<PlatformUser>
   verifyMfa: (input: PlatformMfaInput) => Promise<PlatformUser>
   resendMfa: (challengeUlid: string) => Promise<void>
   changePassword: (input: {
@@ -59,6 +59,9 @@ function PlatformAuthState({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: platformLogin,
+    onSuccess: (user) => {
+      client.setQueryData(['platform', 'me'], user)
+    },
   })
 
   const mfaMutation = useMutation({

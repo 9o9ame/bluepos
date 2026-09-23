@@ -9,6 +9,7 @@ use App\Actions\Platform\ResendPlatformMfaAction;
 use App\Actions\Platform\ResetPlatformPasswordAction;
 use App\Actions\Platform\UpdatePlatformUserAction;
 use App\Actions\Platform\VerifyPlatformMfaAction;
+use App\Enums\DeviceStatus;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\EnsurePlatformContext;
@@ -26,14 +27,22 @@ use App\Platform\PlatformContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 
 class PlatformAuthController extends Controller
 {
-    public function login(PlatformLoginRequest $request, LoginPlatformUserAction $login): never
-    {
-        $login->execute($request, $request->validated('email'), $request->validated('password'));
+    public function login(
+        PlatformLoginRequest $request,
+        LoginPlatformUserAction $login,
+    ): PlatformUserResource {
+        return new PlatformUserResource($login->execute(
+            $request,
+            $request->validated('email'),
+            $request->validated('password'),
+            (bool) $request->boolean('remember'),
+        ));
     }
 
     public function verifyMfa(PlatformMfaVerifyRequest $request, VerifyPlatformMfaAction $verify): PlatformUserResource
@@ -101,6 +110,7 @@ class PlatformAuthController extends Controller
         }
 
         Auth::guard('platform')->logout();
+        Cookie::queue(Cookie::forget(Auth::guard('platform')->getRecallerName()));
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
@@ -175,7 +185,7 @@ class PlatformAuthController extends Controller
             throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
         }
 
-        $device->status = \App\Enums\DeviceStatus::Revoked;
+        $device->status = DeviceStatus::Revoked;
         $device->revoked_at = now();
         $device->trusted_until = null;
         $device->save();
@@ -238,6 +248,7 @@ class PlatformAuthController extends Controller
             ->update(['revoked_at' => now()]);
 
         Auth::guard('platform')->logout();
+        Cookie::queue(Cookie::forget(Auth::guard('platform')->getRecallerName()));
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

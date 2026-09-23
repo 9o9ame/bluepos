@@ -34,6 +34,7 @@ class ResendPlatformMfaAction
             $previous->device,
             (string) ($previous->purpose ?: 'login'),
             true,
+            (bool) $previous->remember,
         );
     }
 }

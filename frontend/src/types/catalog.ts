@@ -23,9 +23,7 @@ export type Unit = {
 
 export type Brand = CatalogItem
 
-export type BarcodeGroup = CatalogItem & {
-  sort_order: number
-}
+export type BarcodeGroup = CatalogItem
 
 export type BusinessSettings = {
   ulid: string
@@ -85,13 +83,16 @@ export type Product = {
   status: string
   is_active: boolean
   primary_barcode?: string | null
+
   category?: CatalogItem | null
   subcategory?: Subcategory | null
   brand?: Brand | null
   barcode_group?: BarcodeGroup | null
+
   base_unit?: Unit | null
   secondary_unit?: Unit | null
   secondary_conversion_factor?: string | null
+
   barcodes?: ProductBarcode[]
   prices?: ProductPrice[]
 }

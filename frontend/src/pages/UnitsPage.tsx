@@ -38,6 +38,25 @@ export function UnitsPage() {
               editor.setError(err instanceof ApiClientError ? err.message : 'Unable to deactivate unit.')
             })
           }} />
+          <DesktopButton
+            icon={<RefreshCw size={13} />}
+            label="Activate"
+            disabled={
+              !editor.canActivate ||
+              !editor.selected ||
+              editor.selected.is_active ||
+              editor.isActivating
+            }
+            onClick={() => {
+              void editor.activate().catch((err) => {
+                editor.setError(
+                  err instanceof ApiClientError
+                    ? err.message
+                    : 'Unable to activate unit.',
+                )
+              })
+            }}
+          />
           <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => void editor.refresh()} />
           <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
         </>
@@ -61,6 +80,7 @@ export function UnitsPage() {
             { key: 'name', header: 'Name', render: (row) => row.name },
             { key: 'symbol', header: 'Symbol', width: 80, render: (row) => ('symbol' in row ? row.symbol : '') },
             { key: 'decimal', header: 'Decimal', width: 80, align: 'center', render: (row) => ('allows_decimal' in row && row.allows_decimal ? 'Yes' : 'No') },
+            { key: 'status', header: 'Status', width: 100, render: (row) => row.is_active ? 'Active' : 'Archived', },
           ]}
           rows={editor.rows}
           rowKey={(row) => row.ulid}

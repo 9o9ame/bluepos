@@ -198,6 +198,7 @@ export function CatalogQuickEditorModal({
                   <th>Code</th>
                   <th>{activeKind === 'unit' ? 'Unit Name' : 'Desc'}</th>
                   {activeKind === 'unit' ? <th>Symbol</th> : null}
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -207,15 +208,22 @@ export function CatalogQuickEditorModal({
                     className={editor.selectedKey === row.ulid ? 'is-selected' : undefined}
                     onClick={() => editor.select(row)}
                   >
-                    <td>{row.code}</td>
+                    <td>{row.code}</td><td>{row.code}</td>
                     <td>{row.name}</td>
-                    {activeKind === 'unit' ? <td>{'symbol' in row ? row.symbol : ''}</td> : null}
+
+                    {activeKind === 'unit' ? (
+                      <td>{'symbol' in row ? row.symbol : ''}</td>
+                    ) : null}
+
+                    <td>
+                      {row.is_active ? 'Active' : 'Archived'}
+                    </td>
                   </tr>
                 ))}
 
                 {editor.rows.length === 0 ? (
                   <tr>
-                    <td colSpan={activeKind === 'unit' ? 3 : 2} className="catalog-popup-empty">
+                    <td colSpan={activeKind === 'unit' ? 4 : 3} className="catalog-popup-empty" >
                       No records
                     </td>
                   </tr>
@@ -232,20 +240,60 @@ export function CatalogQuickEditorModal({
             type="button"
             className="catalog-popup-action"
             disabled={
-              !editor.canDelete ||
               !editor.selected ||
-              !editor.selected.is_active ||
-              editor.isDeactivating
+              editor.isDeactivating ||
+              editor.isActivating ||
+              (
+                editor.selected.is_active
+                  ? !editor.canDelete
+                  : !editor.canActivate
+              )
             }
             onClick={() => {
-              if (!editor.selected || !window.confirm(`Deactivate ${editor.selected.name}?`)) return
-              void editor.deactivate().catch((err) => {
-                editor.setError(err instanceof ApiClientError ? err.message : 'Unable to deactivate record.')
+              if (!editor.selected) {
+                return
+              }
+
+              if (editor.selected.is_active) {
+                if (
+                  !window.confirm(
+                    `Deactivate ${editor.selected.name}?`,
+                  )
+                ) {
+                  return
+                }
+
+                void editor.deactivate().catch((err) => {
+                  editor.setError(
+                    err instanceof ApiClientError
+                      ? err.message
+                      : 'Unable to deactivate record.',
+                  )
+                })
+
+                return
+              }
+
+              void editor.activate().catch((err) => {
+                editor.setError(
+                  err instanceof ApiClientError
+                    ? err.message
+                    : 'Unable to activate record.',
+                )
               })
             }}
           >
-            <Trash2 size={22} />
-            Delete
+            {editor.selected && !editor.selected.is_active ? (
+              <>
+                <RefreshCw size={22} />
+                Activate
+              </>
+            ) : (
+              <>
+                <Trash2 size={22} />
+                Delete
+              </>
+            )}
           </button>
 
           <button type="button" className="catalog-popup-action" onClick={editor.startNew}>

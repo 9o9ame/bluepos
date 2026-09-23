@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 #[Fillable([
     'name',
@@ -96,6 +97,7 @@ class PlatformUser extends Authenticatable
     public function bumpSecurityVersion(): void
     {
         $this->security_version = (int) $this->security_version + 1;
+        $this->setRememberToken(Str::random(60));
         $this->save();
     }
 }

@@ -38,6 +38,25 @@ export function BrandsPage() {
               editor.setError(err instanceof ApiClientError ? err.message : 'Unable to deactivate brand.')
             })
           }} />
+          <DesktopButton
+            icon={<RefreshCw size={13} />}
+            label="Activate"
+            disabled={
+              !editor.canActivate ||
+              !editor.selected ||
+              editor.selected.is_active ||
+              editor.isActivating
+            }
+            onClick={() => {
+              void editor.activate().catch((err) => {
+                editor.setError(
+                  err instanceof ApiClientError
+                    ? err.message
+                    : 'Unable to activate brand.',
+                )
+              })
+            }}
+          />
           <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => void editor.refresh()} />
           <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
         </>
@@ -57,6 +76,7 @@ export function BrandsPage() {
           columns={[
             { key: 'code', header: 'Code', width: 120, render: (row) => row.code },
             { key: 'name', header: 'Name', render: (row) => row.name },
+            { key: 'status', header: 'Status', width: 100, render: (row) => row.is_active ? 'Active' : 'Archived', },
           ]}
           rows={editor.rows}
           rowKey={(row) => row.ulid}

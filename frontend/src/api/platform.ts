@@ -16,6 +16,7 @@ import type {
 export type PlatformLoginInput = {
   email: string
   password: string
+  remember: boolean
 }
 
 export type PlatformMfaInput = {
@@ -35,8 +36,8 @@ export function fetchPlatformMe(): Promise<PlatformUser> {
   return apiFetch<PlatformUser>('/api/platform/auth/me')
 }
 
-export function platformLogin(input: PlatformLoginInput): Promise<void> {
-  return apiFetch<void>('/api/platform/auth/login', {
+export function platformLogin(input: PlatformLoginInput): Promise<PlatformUser> {
+  return apiFetch<PlatformUser>('/api/platform/auth/login', {
     method: 'POST',
     body: JSON.stringify(input),
   })

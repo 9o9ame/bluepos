@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'method',
     'purpose',
     'code_hash',
+    'remember',
     'attempts',
     'expires_at',
     'consumed_at',
@@ -30,6 +31,7 @@ class PlatformMfaChallenge extends Model
     {
         return [
             'method' => MfaMethod::class,
+            'remember' => 'boolean',
             'attempts' => 'integer',
             'expires_at' => 'datetime',
             'consumed_at' => 'datetime',

@@ -38,6 +38,25 @@ export function CategoriesPage() {
               editor.setError(err instanceof ApiClientError ? err.message : 'Unable to deactivate category.')
             })
           }} />
+          <DesktopButton
+            icon={<RefreshCw size={13} />}
+            label="Activate"
+            disabled={
+              !editor.canActivate ||
+              !editor.selected ||
+              editor.selected.is_active ||
+              editor.isActivating
+            }
+            onClick={() => {
+              void editor.activate().catch((err) => {
+                editor.setError(
+                  err instanceof ApiClientError
+                    ? err.message
+                    : 'Unable to activate category.',
+                )
+              })
+            }}
+          />
           <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => void editor.refresh()} />
           <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
         </>

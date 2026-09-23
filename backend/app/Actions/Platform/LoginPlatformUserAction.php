@@ -8,6 +8,7 @@ use App\Exceptions\ApiException;
 use App\Models\Platform\PlatformDevice;
 use App\Models\Platform\PlatformUser;
 use App\Platform\PlatformAuditLogger;
+use App\Platform\PlatformMfaPolicy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -16,9 +17,11 @@ class LoginPlatformUserAction
     public function __construct(
         private readonly PlatformAuditLogger $audit,
         private readonly IssuePlatformMfaChallengeAction $issue,
+        private readonly EstablishPlatformSessionAction $establishSession,
+        private readonly PlatformMfaPolicy $mfaPolicy,
     ) {}
 
-    public function execute(Request $request, string $email, string $password): never
+    public function execute(Request $request, string $email, string $password, bool $remember): PlatformUser
     {
         $fail = function () use ($request, $email): never {
             $this->audit->record('PLATFORM_LOGIN_FAILURE', [
@@ -37,7 +40,20 @@ class LoginPlatformUserAction
             throw new ApiException('ACCOUNT_DISABLED', 'This account is disabled.', 403);
         }
 
-        $this->issue->execute($user, $this->device($request, $user));
+        $device = $this->device($request, $user);
+
+        if ($this->mfaPolicy->localBypassEnabled()) {
+            return $this->establishSession->execute(
+                $request,
+                $user,
+                $device,
+                $remember,
+                true,
+                true,
+            );
+        }
+
+        $this->issue->execute($user, $device, 'login', false, $remember);
     }
 
     private function device(Request $request, PlatformUser $user): PlatformDevice

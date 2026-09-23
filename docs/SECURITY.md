@@ -43,6 +43,21 @@ Public self-registration is disabled (`REGISTRATION_DISABLED`). First tenants ar
 - Laravel hashing (`bcrypt`/`argon2`). Never store plaintext.
 - Reset tokens hashed, short-lived.
 
+### Local Platform login development
+
+Platform administrators may bypass email OTP only when both settings are active:
+
+```dotenv
+APP_ENV=local
+PLATFORM_DEV_BYPASS_MFA=true
+```
+
+In that local-only mode, a valid Platform email and password establish the Platform session directly and no OTP challenge is created or sent. The password, active-account, `security_version`, RBAC, forced-password-change, session-regeneration, and audit controls still apply. Local development login also satisfies the existing recent-MFA marker.
+
+**Never rely on or enable this bypass outside local development.** The application ignores the flag in testing, staging, production, and every environment other than `local`.
+
+Platform login supports secure server-side Remember Me through Laravel's HttpOnly remember cookie. Explicit logout and `security_version` changes invalidate remembered access. Tenant/POS Remember Me is intentionally not supported.
+
 ### Login identifier
 
 Email (globally unique) plus optional username. Rate-limited (section 8).
