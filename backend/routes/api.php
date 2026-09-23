@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\MembershipController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\Purchases\PurchaseInvoiceController;
+use App\Http\Controllers\Api\Purchases\PurchaseReturnController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SecuritySessionController;
 use App\Http\Controllers\Api\SubcategoryController;
@@ -158,6 +159,18 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::patch('/purchases/{purchaseUlid}/lines/{lineUlid}', [PurchaseInvoiceController::class, 'updateLine']);
         Route::delete('/purchases/{purchaseUlid}/lines/{lineUlid}', [PurchaseInvoiceController::class, 'destroyLine']);
         Route::post('/purchases/{purchaseUlid}/post', [PurchaseInvoiceController::class, 'post']);
+        Route::get('/purchases/{purchaseUlid}/returnable-lines', [PurchaseReturnController::class, 'returnableLines']);
+    });
+
+    Route::middleware('entitled:purchase_returns')->group(function () {
+        Route::get('/purchase-returns', [PurchaseReturnController::class, 'index']);
+        Route::post('/purchase-returns', [PurchaseReturnController::class, 'store']);
+        Route::get('/purchase-returns/{returnUlid}', [PurchaseReturnController::class, 'show']);
+        Route::patch('/purchase-returns/{returnUlid}', [PurchaseReturnController::class, 'update']);
+        Route::post('/purchase-returns/{returnUlid}/lines', [PurchaseReturnController::class, 'storeLine']);
+        Route::patch('/purchase-returns/{returnUlid}/lines/{lineUlid}', [PurchaseReturnController::class, 'updateLine']);
+        Route::delete('/purchase-returns/{returnUlid}/lines/{lineUlid}', [PurchaseReturnController::class, 'destroyLine']);
+        Route::post('/purchase-returns/{returnUlid}/post', [PurchaseReturnController::class, 'post']);
     });
 });
 

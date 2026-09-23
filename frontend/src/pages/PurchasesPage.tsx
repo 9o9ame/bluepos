@@ -1,5 +1,25 @@
 import { FormEvent, useMemo, useState } from 'react'
-import { Plus, RefreshCw, Save, Send, Trash2, X } from 'lucide-react'
+import {
+  Barcode,
+  Binoculars,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  LayoutGrid,
+  Minus,
+  Package,
+  Plus,
+  Printer,
+  Receipt,
+  RefreshCw,
+  Save,
+  Send,
+  Table2,
+  X,
+  XCircle,
+} from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchProducts, fetchSuppliers } from '../api/catalog'
 import { ApiClientError } from '../api/client'
@@ -498,377 +518,497 @@ export function PurchasesPage() {
     )
   }
 
+  const editable = !readOnly && (invoiceUlid ? canEdit : canCreate)
+  const previewDiscountPercent = previewSubtotal > 0
+    ? ((Number(discountAmount || 0) / previewSubtotal) * 100).toFixed(2)
+    : '0.00'
+
   return (
-    <div className="pos-invoice" style={{ gridTemplateColumns: '1fr' }}>
-      <div className="pos-invoice-main">
-        <div className="inner-tabs">
-          <button type="button" className="inner-tab is-active">Purchase Invoice</button>
-          <span style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 14, padding: '4px 10px' }}>
-            {documentNumber || 'New Draft'} · {status.toUpperCase()}
-          </span>
-        </div>
+    <div className="purchase-reference-screen">
+      <div className="purchase-reference-subtabs">
+        <button type="button" className="purchase-reference-subtab is-active">
+          <span className="purchase-reference-tab-icon is-cyan"><Table2 /></span>
+          <span>Purchase Invoice</span>
+        </button>
+        <button type="button" className="purchase-reference-subtab" onClick={backToList}>
+          <span className="purchase-reference-tab-icon is-blue"><Binoculars /></span>
+          <span>Search</span>
+        </button>
+        <button type="button" className="purchase-reference-subtab" disabled>
+          <span className="purchase-reference-tab-icon is-multi"><LayoutGrid /></span>
+          <span>(0,Due:0) Pending Purchases</span>
+        </button>
+        <button type="button" className="purchase-reference-subtab" disabled>
+          <span className="purchase-reference-tab-icon is-orange"><Receipt /></span>
+          <span>Other Expenses</span>
+        </button>
+        <button type="button" className="purchase-reference-subtab" disabled>
+          <span className="purchase-reference-tab-icon is-green"><Package /></span>
+          <span>Product Wise</span>
+        </button>
+        <div className="purchase-reference-title">Purchase Invoice</div>
+      </div>
 
-        <div className="purchase-header">
-          <div className="grid gap-1">
-            <div className="dense-row is-2">
-              <label>Doc#</label>
-              <input className="desktop-input" value={documentNumber || 'Auto'} disabled />
-              <label>Date</label>
-              <input
-                className="desktop-input"
-                type="date"
-                value={invoiceDate}
-                disabled={readOnly || (Boolean(invoiceUlid) && !canEdit)}
-                onChange={(e) => setInvoiceDate(e.target.value)}
-              />
-            </div>
-            <div className="dense-row is-2">
-              <label>Supplier</label>
-              <select
-                className="desktop-select"
-                value={supplierUlid}
-                disabled={readOnly || (!invoiceUlid ? !canCreate : !canEdit)}
-                onChange={(e) => setSupplierUlid(e.target.value)}
-              >
-                <option value="">Select supplier…</option>
-                {suppliers.map((s) => (
-                  <option key={s.ulid} value={s.ulid}>{s.code} — {s.name}</option>
-                ))}
-              </select>
-              <label>Supp. Inv#</label>
-              <input
-                className="desktop-input"
-                value={supplierInvoiceNumber}
-                disabled={readOnly || (Boolean(invoiceUlid) && !canEdit)}
-                onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
-              />
-            </div>
-            <div className="dense-row is-2">
-              <label>Warehouse</label>
-              <select
-                className="desktop-select"
-                value={warehouseUlid}
-                disabled={readOnly || (!invoiceUlid ? !canCreate : !canEdit)}
-                onChange={(e) => setWarehouseUlid(e.target.value)}
-              >
-                <option value="">Select warehouse…</option>
-                {warehouses.map((w) => (
-                  <option key={w.ulid} value={w.ulid}>{w.code} — {w.name}</option>
-                ))}
-              </select>
-              <label>Due</label>
-              <input
-                className="desktop-input"
-                type="date"
-                value={dueDate}
-                disabled={readOnly || (Boolean(invoiceUlid) && !canEdit)}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
-            </div>
-            <div className="dense-row">
-              <label>Notes</label>
-              <textarea
-                className="desktop-textarea"
-                rows={2}
-                value={notes}
-                disabled={readOnly || (Boolean(invoiceUlid) && !canEdit)}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-          </div>
+      <div className="purchase-reference-top">
+        <fieldset className="purchase-reference-options">
+          <legend>Purchase Invoice Options</legend>
 
-          <div className="amt-stack">
-            <div className="amt-box is-cyan"><span>Subtotal</span><input disabled value={money(subtotal || previewSubtotal)} readOnly /></div>
-            <div className="amt-box is-red"><span>Discount</span><input disabled value={money(discountAmount)} readOnly /></div>
-            <div className="amt-box is-red"><span>Tax</span><input disabled value={money(taxAmount)} readOnly /></div>
-            <div className="amt-box is-green">
-              <span>Freight</span>
-              <input
-                value={freightAmount}
-                disabled={readOnly || (Boolean(invoiceUlid) && !canEdit)}
-                onChange={(e) => setFreightAmount(e.target.value)}
-              />
-            </div>
-            <div className="amt-box is-green">
-              <span>Other</span>
-              <input
-                value={otherCharges}
-                disabled={readOnly || (Boolean(invoiceUlid) && !canEdit)}
-                onChange={(e) => setOtherCharges(e.target.value)}
-              />
-            </div>
-            <div className="amt-box is-yellow"><span>Grand Total</span><input disabled value={money(grandTotal)} readOnly /></div>
-          </div>
-        </div>
-
-        {!readOnly ? (
-          <div className="f1-row" style={{ position: 'relative' }}>
+          <div className="purchase-reference-option-line">
+            <label>Inv#:</label>
+            <input className="purchase-reference-inv" value={documentNumber || 'Auto'} disabled />
+            <label>Date:</label>
             <input
-              className="f1-search"
-              placeholder="Search product # / SKU / name / barcode…"
+              className="purchase-reference-date"
+              type="date"
+              value={invoiceDate}
+              disabled={!editable}
+              onChange={(e) => setInvoiceDate(e.target.value)}
+            />
+            <select className="purchase-reference-credit" value="credit" disabled>
+              <option value="credit">CREDIT</option>
+            </select>
+            <label>Inv #:</label>
+            <input
+              className="purchase-reference-supplier-inv"
+              value={supplierInvoiceNumber}
+              disabled={!editable}
+              onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
+            />
+          </div>
+
+          <div className="purchase-reference-from-line">
+            <label>From:</label>
+            <select
+              value={supplierUlid}
+              disabled={!editable}
+              onChange={(e) => setSupplierUlid(e.target.value)}
+            >
+              <option value="">Select supplier...</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.ulid} value={supplier.ulid}>
+                  {supplier.code} — {supplier.name}
+                </option>
+              ))}
+            </select>
+            <button type="button" className="purchase-reference-mini" disabled title="Use Supplier master">▼</button>
+            <button type="button" className="purchase-reference-mini" disabled title="Use Supplier master">+</button>
+          </div>
+
+          <div className="purchase-reference-rem-line">
+            <label>Rem:</label>
+            <textarea
+              value={notes}
+              disabled={!editable}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+            />
+            <div className="purchase-reference-order">
+              <label>Order No:</label>
+              <input disabled />
+            </div>
+          </div>
+
+          <div className="purchase-reference-warehouse-line">
+            <label>Warehouse:</label>
+            <select
+              value={warehouseUlid}
+              disabled={!editable}
+              onChange={(e) => setWarehouseUlid(e.target.value)}
+            >
+              <option value="">Select warehouse...</option>
+              {warehouses.map((warehouse) => (
+                <option key={warehouse.ulid} value={warehouse.ulid}>
+                  {warehouse.code} — {warehouse.name}
+                </option>
+              ))}
+            </select>
+            <label>Due:</label>
+            <input
+              type="date"
+              value={dueDate}
+              disabled={!editable}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+            {status !== 'draft' ? (
+              <span className="purchase-reference-status">Status: {status.toUpperCase()}</span>
+            ) : null}
+          </div>
+        </fieldset>
+
+        <div className="purchase-reference-center">
+          <div className="purchase-reference-checks">
+            <label><input type="checkbox" disabled /> Payment Due</label>
+            <label><input type="checkbox" disabled /> On Hold</label>
+          </div>
+
+          <div className="purchase-reference-center-panels">
+            <div className="purchase-reference-balance">
+              <div className="purchase-reference-balance-head">
+                <button type="button" disabled>Refresh</button>
+              </div>
+              <div className="purchase-reference-balance-row is-prev">
+                <span>Previous</span><strong>0</strong>
+              </div>
+              <div className="purchase-reference-balance-row is-this">
+                <span>This Bill</span><strong>{money(grandTotal || previewSubtotal)}</strong>
+              </div>
+              <div className="purchase-reference-balance-row is-total">
+                <span>Total Balance</span><strong>{money(grandTotal || previewSubtotal)}</strong>
+              </div>
+            </div>
+
+            <div className="purchase-reference-discount">
+              <div><span>Disc.(C)</span><strong>{money(discountAmount)}</strong></div>
+              <div><span>Disc.(%)</span><strong>{previewDiscountPercent}</strong></div>
+              <div><span>Sales Tax (%)</span><strong>0</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <fieldset className="purchase-reference-amount">
+          <legend>
+            <span>Amount Options</span>
+            <span className="purchase-reference-amount-tools">
+              <button type="button" disabled>Add</button>
+              <button type="button" disabled title="Get">Get</button>
+              <button type="button" disabled>Import</button>
+            </span>
+          </legend>
+
+          <div className="purchase-reference-amount-grid">
+            <label>Amount(Rs):</label>
+            <strong className="is-cyan">{money(subtotal || previewSubtotal)}</strong>
+            <label className="is-red">Disc.:</label>
+            <strong>{money(discountAmount)}</strong>
+            <em>{previewDiscountPercent}%</em>
+
+            <label>Others:</label>
+            <input
+              className="is-green"
+              value={otherCharges}
+              disabled={!editable}
+              onChange={(e) => setOtherCharges(e.target.value)}
+            />
+            <label className="is-red">Tax:</label>
+            <strong>{money(taxAmount)}</strong>
+            <input className="is-tax-extra" value="0" disabled />
+
+            <label>Freight:</label>
+            <input
+              className="is-green-soft"
+              value={freightAmount}
+              disabled={!editable}
+              onChange={(e) => setFreightAmount(e.target.value)}
+            />
+            <span /><span /><span />
+
+            <label className="is-net-label">Net Payable:</label>
+            <strong className="is-yellow">{money(grandTotal || previewSubtotal)}</strong>
+          </div>
+        </fieldset>
+      </div>
+
+      {!readOnly ? (
+        <div className="purchase-f1-row">
+          <div className="purchase-f1-search">
+            <input
               value={productQuery}
               onChange={(e) => setProductQuery(e.target.value)}
+              placeholder="Search product # / SKU / name / barcode..."
               aria-label="Product lookup"
             />
-            <div className="f1-hint">Add line</div>
             {productLookup.data?.data?.length ? (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 80,
-                  top: '100%',
-                  zIndex: 20,
-                  background: '#fff',
-                  border: '1px solid #94a3b8',
-                  maxHeight: 200,
-                  overflow: 'auto',
-                }}
-              >
+              <div className="purchase-reference-results">
                 {productLookup.data.data.map((product) => (
-                  <button
-                    key={product.ulid}
-                    type="button"
-                    className="block w-full text-left px-2 py-1 text-[12px] hover:bg-sky-100"
-                    onClick={() => addProduct(product)}
-                  >
-                    {product.product_number} · {product.name}
-                    {product.sku ? ` · ${product.sku}` : ''}
+                  <button key={product.ulid} type="button" onClick={() => addProduct(product)}>
+                    {product.product_number} · {product.name}{product.sku ? ` · ${product.sku}` : ''}
                   </button>
                 ))}
               </div>
             ) : null}
           </div>
-        ) : null}
+          <div className="purchase-f1-label">F1 to Add New</div>
+          <div className="purchase-f1-spacer" />
+          <button type="button" className="purchase-f1-chk" disabled>Chk</button>
+        </div>
+      ) : (
+        <div className="purchase-reference-posted-strip">
+          Status: {status.toUpperCase()}
+        </div>
+      )}
 
-        {error ? <div className="text-[12px] text-red-700 px-2 py-1">{error}</div> : null}
+      {error ? <div className="purchase-reference-error">{error}</div> : null}
 
-        <div className="invoice-grid">
-          <PosDataGrid
-            columns={[
-              {
-                key: 'product',
-                header: 'Product',
-                render: (row) => row.product_label,
-              },
-              { key: 'unit_label', header: 'Unit', width: 70 },
-              {
-                key: 'quantity',
-                header: 'Qty',
-                width: 80,
-                align: 'right',
-                render: (row) =>
-                  readOnly ? (
-                    row.quantity
-                  ) : (
-                    <input
-                      className="desktop-input col-yellow"
-                      value={row.quantity}
-                      onChange={(e) =>
-                        setLines((prev) =>
-                          prev.map((l) => (l.key === row.key ? { ...l, quantity: e.target.value } : l)),
-                        )
-                      }
-                    />
-                  ),
-              },
-              {
-                key: 'conversion_factor',
-                header: 'Factor',
-                width: 70,
-                align: 'right',
-                render: (row) =>
-                  readOnly ? (
-                    row.conversion_factor
-                  ) : (
-                    <input
-                      className="desktop-input"
-                      value={row.conversion_factor}
-                      onChange={(e) =>
-                        setLines((prev) =>
-                          prev.map((l) =>
-                            l.key === row.key ? { ...l, conversion_factor: e.target.value } : l,
-                          ),
-                        )
-                      }
-                    />
-                  ),
-              },
-              {
-                key: 'base_quantity',
-                header: 'Base Qty',
-                width: 80,
-                align: 'right',
-                render: (row) =>
-                  row.base_quantity ??
-                  (((Number(row.quantity) || 0) * (Number(row.conversion_factor) || 0)).toFixed(6)),
-              },
-              {
-                key: 'unit_cost',
-                header: 'Unit Cost',
-                width: 90,
-                align: 'right',
-                render: (row) =>
-                  readOnly ? (
-                    money(row.unit_cost)
-                  ) : (
-                    <input
-                      className="desktop-input col-yellow"
-                      value={row.unit_cost}
-                      onChange={(e) =>
-                        setLines((prev) =>
-                          prev.map((l) => (l.key === row.key ? { ...l, unit_cost: e.target.value } : l)),
-                        )
-                      }
-                    />
-                  ),
-              },
-              {
-                key: 'discount_amount',
-                header: 'Discount',
-                width: 80,
-                align: 'right',
-                render: (row) =>
-                  readOnly ? (
-                    money(row.discount_amount)
-                  ) : (
-                    <input
-                      className="desktop-input"
-                      value={row.discount_amount}
-                      onChange={(e) =>
-                        setLines((prev) =>
-                          prev.map((l) =>
-                            l.key === row.key ? { ...l, discount_amount: e.target.value } : l,
-                          ),
-                        )
-                      }
-                    />
-                  ),
-              },
-              {
-                key: 'tax_amount',
-                header: 'Tax',
-                width: 70,
-                align: 'right',
-                render: (row) =>
-                  readOnly ? (
-                    money(row.tax_amount)
-                  ) : (
-                    <input
-                      className="desktop-input"
-                      value={row.tax_amount}
-                      onChange={(e) =>
-                        setLines((prev) =>
-                          prev.map((l) => (l.key === row.key ? { ...l, tax_amount: e.target.value } : l)),
-                        )
-                      }
-                    />
-                  ),
-              },
-              {
-                key: 'line_total',
-                header: 'Line Total',
-                width: 90,
-                align: 'right',
-                render: (row) =>
-                  money(
-                    row.line_total ??
-                      (
-                        (Number(row.quantity) || 0) * (Number(row.unit_cost) || 0) -
-                        (Number(row.discount_amount) || 0) +
-                        (Number(row.tax_amount) || 0)
-                      ),
-                  ),
-              },
-              {
-                key: 'batch_number',
-                header: 'Batch',
-                width: 90,
-                render: (row) =>
-                  readOnly ? (
-                    row.batch_number || '—'
-                  ) : (
-                    <input
-                      className="desktop-input"
-                      value={row.batch_number}
-                      placeholder={row.track_batch ? 'Required' : ''}
-                      onChange={(e) =>
-                        setLines((prev) =>
-                          prev.map((l) =>
-                            l.key === row.key ? { ...l, batch_number: e.target.value } : l,
-                          ),
-                        )
-                      }
-                    />
-                  ),
-              },
-              {
-                key: 'expiry_date',
-                header: 'Expiry',
-                width: 110,
-                render: (row) =>
-                  readOnly ? (
-                    row.expiry_date || '—'
-                  ) : (
-                    <input
-                      className="desktop-input"
-                      type="date"
-                      value={row.expiry_date}
-                      onChange={(e) =>
-                        setLines((prev) =>
-                          prev.map((l) =>
-                            l.key === row.key ? { ...l, expiry_date: e.target.value } : l,
-                          ),
-                        )
-                      }
-                    />
-                  ),
-              },
-              {
-                key: 'actions',
-                header: '',
-                width: 40,
-                render: (row) =>
-                  readOnly || !canEdit ? null : (
-                    <button type="button" title="Remove" onClick={() => void removeLine(row)}>
-                      <Trash2 size={12} />
-                    </button>
-                  ),
-              },
-            ]}
-            rows={lines}
-            rowKey={(row) => row.key}
-            emptyMessage="No lines — search a product above"
-          />
+      <div className="purchase-reference-grid-wrap">
+        <table className="purchase-reference-grid">
+          <thead>
+            <tr>
+              <th className="col-sel" />
+              <th className="col-product">ITEM / PRODUCT DESCRIPTION</th>
+              <th className="col-stock">In Stock</th>
+              <th className="col-qty">Quantity</th>
+              <th className="col-price">Price (C)</th>
+              <th className="col-disc">Disc-Rs</th>
+              <th className="col-desc">DESC.</th>
+              <th className="col-disc2">Disc</th>
+              <th className="col-disrs">Dis-Rs</th>
+              <th className="col-dispct">Dis %</th>
+              <th className="col-tax">Tax</th>
+              <th className="col-taxamt">Tax Amt</th>
+              <th className="col-at">A.T</th>
+              <th className="col-atamt">AT Amt</th>
+              <th className="col-amt">AMT</th>
+              <th className="col-batch">Batch</th>
+              <th className="col-expiry">Expiry</th>
+              <th className="col-amount">Amount</th>
+              <th className="col-margin">Margin</th>
+              <th className="col-sale">Sale Rate (N)</th>
+              <th className="col-p">P</th>
+              <th className="col-del">-</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lines.length === 0 ? (
+              <tr className="is-empty">
+                <td>*</td>
+                <td />
+                <td /><td className="cell-yellow" /><td className="cell-yellow" />
+                <td /><td /><td /><td /><td className="cell-yellow" />
+                <td className="cell-yellow" /><td /><td /><td />
+                <td className="cell-yellow" /><td /><td /><td />
+                <td className="cell-cyan" /><td className="cell-cyan" /><td /><td />
+              </tr>
+            ) : lines.map((row) => {
+              const qty = Number(row.quantity) || 0
+              const factor = Number(row.conversion_factor) || 0
+              const lineAmount = Number(
+                row.line_total ??
+                  (qty * (Number(row.unit_cost) || 0) -
+                    (Number(row.discount_amount) || 0) +
+                    (Number(row.tax_amount) || 0)),
+              ) || 0
+              const baseQty = row.base_quantity ?? (qty * factor).toFixed(6)
+              const discountPercent =
+                qty > 0 && Number(row.unit_cost) > 0
+                  ? ((Number(row.discount_amount || 0) / (qty * Number(row.unit_cost))) * 100).toFixed(2)
+                  : '0.00'
+
+              return (
+                <tr key={row.key}>
+                  <td className="col-sel">*</td>
+                  <td className="col-product">{row.product_label}</td>
+                  <td className="is-num">—</td>
+                  <td className="is-num cell-yellow">
+                    {readOnly ? (
+                      row.quantity
+                    ) : (
+                      <input
+                        value={row.quantity}
+                        onChange={(e) =>
+                          setLines((prev) =>
+                            prev.map((line) =>
+                              line.key === row.key ? { ...line, quantity: e.target.value } : line,
+                            ),
+                          )
+                        }
+                      />
+                    )}
+                  </td>
+                  <td className="is-num cell-yellow">
+                    {readOnly ? (
+                      money(row.unit_cost)
+                    ) : (
+                      <input
+                        value={row.unit_cost}
+                        onChange={(e) =>
+                          setLines((prev) =>
+                            prev.map((line) =>
+                              line.key === row.key ? { ...line, unit_cost: e.target.value } : line,
+                            ),
+                          )
+                        }
+                      />
+                    )}
+                  </td>
+                  <td className="is-num">
+                    {readOnly ? (
+                      money(row.discount_amount)
+                    ) : (
+                      <input
+                        value={row.discount_amount}
+                        onChange={(e) =>
+                          setLines((prev) =>
+                            prev.map((line) =>
+                              line.key === row.key
+                                ? { ...line, discount_amount: e.target.value }
+                                : line,
+                            ),
+                          )
+                        }
+                      />
+                    )}
+                  </td>
+                  <td className="is-center">{row.unit_label}</td>
+                  <td className="is-num" />
+                  <td className="is-num" />
+                  <td className="is-num cell-yellow">{discountPercent}</td>
+                  <td className="is-num cell-yellow">0</td>
+                  <td className="is-num">
+                    {readOnly ? (
+                      money(row.tax_amount)
+                    ) : (
+                      <input
+                        value={row.tax_amount}
+                        onChange={(e) =>
+                          setLines((prev) =>
+                            prev.map((line) =>
+                              line.key === row.key ? { ...line, tax_amount: e.target.value } : line,
+                            ),
+                          )
+                        }
+                      />
+                    )}
+                  </td>
+                  <td className="is-num">{row.conversion_factor}</td>
+                  <td className="is-num">{baseQty}</td>
+                  <td className="is-num cell-yellow">{money(lineAmount)}</td>
+                  <td>
+                    {readOnly ? (
+                      row.batch_number || ''
+                    ) : (
+                      <input
+                        value={row.batch_number}
+                        placeholder={row.track_batch ? 'Req' : ''}
+                        onChange={(e) =>
+                          setLines((prev) =>
+                            prev.map((line) =>
+                              line.key === row.key
+                                ? { ...line, batch_number: e.target.value }
+                                : line,
+                            ),
+                          )
+                        }
+                      />
+                    )}
+                  </td>
+                  <td>
+                    {readOnly ? (
+                      row.expiry_date || ''
+                    ) : (
+                      <input
+                        type="date"
+                        value={row.expiry_date}
+                        onChange={(e) =>
+                          setLines((prev) =>
+                            prev.map((line) =>
+                              line.key === row.key
+                                ? { ...line, expiry_date: e.target.value }
+                                : line,
+                            ),
+                          )
+                        }
+                      />
+                    )}
+                  </td>
+                  <td className="is-num">{money(lineAmount)}</td>
+                  <td className="cell-cyan" />
+                  <td className="cell-cyan" />
+                  <td className="is-center col-p">
+                    <span className="purchase-reference-p-icon" title="P" aria-hidden>
+                      <Package size={14} />
+                    </span>
+                  </td>
+                  <td className="is-center col-del">
+                    {readOnly || !canEdit ? null : (
+                      <button type="button" title="Remove" onClick={() => void removeLine(row)}>
+                        <XCircle size={16} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="purchase-reference-totals">
+        <span />
+        <strong>{lines.length}</strong>
+        <strong>
+          {lines.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0).toFixed(0)}
+        </strong>
+        <span />
+        <strong>{money(discountAmount)}</strong>
+        <strong>{money(taxAmount)}</strong>
+        <strong>{money(grandTotal || previewSubtotal)}</strong>
+      </div>
+
+      <div className="purchase-reference-nav">
+        <button type="button" disabled aria-label="First"><ChevronsLeft size={12} /></button>
+        <button type="button" disabled aria-label="Prev"><ChevronLeft size={12} /></button>
+        <span>Record {lines.length ? 1 : 0} of {lines.length}</span>
+        <button type="button" disabled aria-label="Next"><ChevronRight size={12} /></button>
+        <button type="button" disabled aria-label="Last"><ChevronsRight size={12} /></button>
+        <button type="button" disabled aria-label="Add"><Plus size={11} /></button>
+        <button type="button" disabled aria-label="Remove"><Minus size={11} /></button>
+        <button type="button" disabled aria-label="Ok"><Check size={11} /></button>
+        <button type="button" disabled aria-label="Cancel"><X size={11} /></button>
+      </div>
+
+      <div className="purchase-reference-actions">
+        <button type="button" className="purchase-reference-delete" disabled>
+          <span>Delete</span>
+          <span className="purchase-reference-action-icon is-delete"><XCircle /></span>
+        </button>
+
+        <div className="purchase-reference-actions-center">
+          <button
+            type="button"
+            className="purchase-reference-btn-save"
+            disabled={readOnly || saveMutation.isPending || (invoiceUlid ? !canEdit : !canCreate)}
+            onClick={() => void onSave()}
+          >
+            <span>Save</span>
+            <span className="purchase-reference-action-icon is-save"><Save /></span>
+          </button>
+          <button
+            type="button"
+            className="purchase-reference-btn-post"
+            disabled={readOnly || !canPost || postMutation.isPending}
+            onClick={() => void onPost()}
+          >
+            <span>Post</span>
+            <span className="purchase-reference-action-icon is-post"><Send /></span>
+          </button>
+          <button type="button" className="purchase-reference-btn-print" disabled>
+            <span>Print</span>
+            <span className="purchase-reference-action-icon is-print"><Printer /></span>
+          </button>
+          <button
+            type="button"
+            className="purchase-reference-btn-refresh"
+            disabled={!invoiceUlid}
+            onClick={() => invoiceUlid && void openInvoice(invoiceUlid)}
+          >
+            <span>Refresh</span>
+            <span className="purchase-reference-action-icon is-refresh"><RefreshCw /></span>
+          </button>
+          <button type="button" className="purchase-reference-btn-close" onClick={backToList}>
+            <span>Close</span>
+            <span className="purchase-reference-action-icon is-close"><XCircle /></span>
+          </button>
         </div>
 
-        <div className="invoice-bottom">
-          <span className="text-[11px] text-[var(--text-muted)]">
-            {lines.length} line{lines.length === 1 ? '' : 's'}
-          </span>
-          <div className="flex gap-1">
-            <DesktopButton
-              icon={<Save size={13} />}
-              label="Save Draft"
-              shortcut="F9"
-              disabled={readOnly || saveMutation.isPending || (invoiceUlid ? !canEdit : !canCreate)}
-              onClick={() => void onSave()}
-            />
-            <DesktopButton
-              icon={<Send size={13} />}
-              label="Post"
-              disabled={readOnly || !canPost || postMutation.isPending}
-              onClick={() => void onPost()}
-            />
-            <DesktopButton
-              icon={<RefreshCw size={13} />}
-              label="Refresh"
-              shortcut="F8"
-              disabled={!invoiceUlid}
-              onClick={() => invoiceUlid && void openInvoice(invoiceUlid)}
-            />
-            <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={backToList} />
-          </div>
+        <div className="purchase-reference-actions-right">
+          <button type="button" disabled>
+            <span>Save &amp;<br />Barcode</span>
+            <span className="purchase-reference-action-icon is-barcode"><Barcode /></span>
+          </button>
+          <button type="button" disabled>
+            <span>Save &amp;<br />Print</span>
+            <span className="purchase-reference-action-icon is-print"><Printer /></span>
+          </button>
         </div>
       </div>
     </div>

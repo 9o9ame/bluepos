@@ -5,6 +5,7 @@ namespace App\Actions\Inventory;
 use App\Enums\StockMovementType;
 use App\Enums\WarehouseStatus;
 use App\Exceptions\ApiException;
+use App\Models\BusinessSetting;
 use App\Models\Product;
 use App\Models\StockBalance;
 use App\Models\StockMovement;
@@ -125,6 +126,16 @@ class PostStockMovementAction
 
             $oldQty = (string) $balance->quantity;
             $newQty = bcadd($oldQty, $quantity, 6);
+
+            if (bccomp($newQty, '0', 6) === -1 && ! $this->negativeStockAllowed($tenantId)) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Insufficient stock in the selected warehouse.',
+                ]);
+            }
+
+            // Weighted-average cost updates only on inbound stock (positive qty).
+            // Outbound movements (purchase_return, sale, adjustment_out, etc.) reduce
+            // quantity and stock_value using the existing average_cost unchanged.
             $updateAverage = (bool) ($data['update_average_cost'] ?? false);
 
             if ($updateAverage && $unitCost !== null && bccomp($quantity, '0', 6) === 1) {
@@ -170,5 +181,12 @@ class PostStockMovementAction
         }
 
         return bcadd($value, '0', 4);
+    }
+
+    private function negativeStockAllowed(int $tenantId): bool
+    {
+        return (bool) BusinessSetting::query()
+            ->where('tenant_id', $tenantId)
+            ->value('negative_stock_allowed');
     }
 }
