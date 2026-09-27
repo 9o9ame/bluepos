@@ -77,6 +77,14 @@ export type Device = {
   warehouse?: Warehouse | null
 }
 
+export type ThemePreference = 'system' | 'light' | 'dark'
+export type InterfaceStyle = 'classic' | 'hybrid' | 'advanced'
+
+export type AppearancePreferences = {
+  theme: ThemePreference
+  skin: InterfaceStyle
+}
+
 export type AuthSession = {
   user: User
   tenant: Tenant
@@ -88,6 +96,7 @@ export type AuthSession = {
   device: Device | null
   must_change_password: boolean
   branch_access: 'all_branches' | 'selected_branches'
+  appearance: AppearancePreferences
   entitlements?: {
     plan: { code: string; name: string; status: string } | null
     features: string[]

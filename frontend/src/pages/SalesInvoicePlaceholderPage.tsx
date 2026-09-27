@@ -1,116 +1,298 @@
-import { FileText, Printer, RefreshCw, Save, X } from 'lucide-react'
-import { DesktopButton, Field } from '../components/desktop/DesktopPanel'
-import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import {
+  CircleHelp,
+  FileText,
+  FolderOpen,
+  Grid3X3,
+  Printer,
+  ReceiptText,
+  RefreshCw,
+  Save,
+  StickyNote,
+  XCircle,
+} from 'lucide-react'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 
 export function SalesInvoicePlaceholderPage() {
   const { closeActiveTab } = useWorkspace()
 
   return (
-    <div className="pos-invoice">
-      <div className="pos-invoice-main">
-        <div className="inner-tabs">
-          <button type="button" className="inner-tab is-active">Sales Invoice</button>
-          <button type="button" className="inner-tab" disabled title="Available in a later phase">(0) Pending Invoices</button>
-          <button type="button" className="inner-tab" disabled title="Available in a later phase">Expenses</button>
-        </div>
+    <div className="sales-reference-screen">
+      <main className="sales-reference-main">
+        <nav className="sales-reference-subtabs" aria-label="Sales invoice views">
+          <button type="button" className="sales-reference-subtab is-active">
+            <span className="sales-reference-tab-icon is-blue"><Grid3X3 /></span>
+            <span>Sales Invoice</span>
+          </button>
 
-        <div className="invoice-meta" style={{ gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' }}>
-          <div className="flex items-center gap-2 text-[11px]" style={{ gridColumn: '1 / -1' }}>
-            <span className="font-semibold">Invoice Options:</span>
-            <label className="flex items-center gap-1"><input type="radio" name="sale-type" disabled defaultChecked /> Default</label>
-            <label className="flex items-center gap-1"><input type="radio" name="sale-type" disabled /> Whole Sale</label>
-            <label className="flex items-center gap-1"><input type="radio" name="sale-type" disabled /> Retail</label>
-            <label className="flex items-center gap-1 ml-4"><input type="checkbox" disabled /> Payment Due</label>
-            <label className="flex items-center gap-1"><input type="checkbox" disabled /> On Hold</label>
-          </div>
-          <Field label="Inv#"><input className="desktop-input" disabled placeholder="Auto" /></Field>
-          <Field label="Date"><input className="desktop-input" disabled /></Field>
-          <Field label="Qu #"><input className="desktop-input" disabled /></Field>
-          <Field label="S.Man">
-            <select className="desktop-select" disabled>
-              <option>Default</option>
-            </select>
-          </Field>
-          <Field label="To"><input className="desktop-input" disabled placeholder="CASH IN HAND" /></Field>
-          <Field label="CNIC"><input className="desktop-input" disabled /></Field>
-          <Field label="Disc %"><input className="desktop-input" disabled defaultValue="0" /></Field>
-          <Field label="Tax %"><input className="desktop-input" disabled defaultValue="0" /></Field>
-        </div>
+          <button type="button" className="sales-reference-subtab" disabled>
+            <span className="sales-reference-tab-icon is-yellow"><StickyNote /></span>
+            <span>(0,Due:2) Pending Invoices</span>
+          </button>
 
-        <div className="f1-row">
-          <input className="f1-search" disabled placeholder="..." aria-label="Product entry" />
-          <div className="f1-hint">F1 to Add New</div>
-        </div>
+          <button type="button" className="sales-reference-subtab" disabled>
+            <span className="sales-reference-tab-icon is-multi"><ReceiptText /></span>
+            <span>Expenses</span>
+          </button>
 
-        <div className="invoice-grid">
-          <PosDataGrid
-            columns={[
-              { key: 'item', header: 'ITEM / PRODUCT DESCRIPTION', render: () => <span className="entry-cell" style={{ display: 'block', minHeight: 20 }} /> },
-              { key: 'stock', header: 'In Stock', align: 'right', width: 80 },
-              { key: 'qty', header: 'Sales Qty', align: 'right', width: 80 },
-              { key: 'price', header: 'Price', align: 'right', width: 80 },
-              { key: 'amt', header: 'AMT', align: 'right', width: 80 },
-              { key: 'disc', header: 'Disc%', align: 'right', width: 70 },
-              { key: 'discrs', header: 'Disc-Rs', align: 'right', width: 80 },
-              { key: 'net', header: 'Net Amt', align: 'right', width: 90 },
-            ]}
-            rows={[{ id: '1' }]}
-            rowKey={(row) => row.id}
-            selectedKey="1"
-            emptyMessage=""
+        </nav>
+
+        <section className="sales-reference-meta">
+          <fieldset className="sales-reference-options">
+            <legend>Invoice Options</legend>
+
+            <div className="sales-reference-options-head">
+              <label><input type="radio" name="sale-type" defaultChecked disabled /> Default</label>
+              <label><input type="radio" name="sale-type" disabled /> Whole Sale</label>
+              <label><input type="radio" name="sale-type" disabled /> Retail</label>
+
+              <div className="sales-reference-copy-from">
+                <span>Copy From:</span>
+                <input defaultValue="0" disabled />
+              </div>
+            </div>
+
+            <div className="sales-reference-option-grid">
+              <label>Inv#:</label>
+              <input className="is-short" placeholder="Auto" disabled />
+
+              <label>Date</label>
+              <input className="is-date" defaultValue="09/24/2026" disabled />
+
+              <label>Qu #:</label>
+              <div className="sales-reference-input-button">
+                <input disabled />
+                <button type="button" disabled>▼</button>
+              </div>
+
+              <label>S.Man:</label>
+              <div className="sales-reference-input-button">
+                <input defaultValue="Default" disabled />
+                <button type="button" disabled>▼</button>
+              </div>
+
+              <label>To:</label>
+              <div className="sales-reference-input-button sales-reference-to">
+                <input defaultValue="CASH IN HAND" disabled />
+                <button type="button" disabled>+</button>
+              </div>
+
+              <label>Name:</label>
+              <input disabled />
+
+              <label>CNIC:</label>
+              <input disabled />
+            </div>
+          </fieldset>
+
+          <fieldset className="sales-reference-amounts">
+            <legend>Amounts</legend>
+
+            <div className="sales-reference-amounts-checks">
+              <label><input type="checkbox" disabled /> Payment Due</label>
+              <label><input type="checkbox" disabled /> On Hold</label>
+            </div>
+
+            <div className="sales-reference-amounts-grid">
+              <span />
+              <strong className="is-green">-</strong>
+
+              <button type="button" disabled>Get</button>
+              <label>Disc (%)</label>
+              <label>Sales Tax (%)</label>
+
+              <input defaultValue="0" disabled />
+              <input defaultValue="0" disabled />
+              <input defaultValue="0" disabled />
+            </div>
+          </fieldset>
+
+          <div className="sales-reference-meta-spacer" aria-hidden />
+        </section>
+
+        <div className="sales-reference-entry-row">
+          <input
+            className="sales-reference-product-entry"
+            disabled
+            placeholder="..."
+            aria-label="Product entry"
           />
+          <div className="sales-reference-f1">F1 to Add New</div>
+          <button type="button" className="sales-reference-sale-btn" disabled>Sale</button>
+          <div className="sales-reference-entry-spacer" />
         </div>
 
-        <div className="invoice-bottom">
-          <span className="text-[11px]">
-            Record 1 of 1
-            <span className="ml-3 text-[var(--brand-blue)]">Ctrl+M = POS · Ctrl+G = A4 · Ctrl+H = A5</span>
-          </span>
-          <div className="flex gap-1">
-            <DesktopButton icon={<Save size={13} />} label="Save" shortcut="F9" disabled />
-            <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" disabled />
-            <DesktopButton icon={<FileText size={13} />} label="Preview" shortcut="F3" disabled />
-            <DesktopButton icon={<Printer size={13} />} label="Print" shortcut="F11" disabled />
-            <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
+        <div className="sales-reference-grid-wrap">
+          <table className="sales-reference-grid">
+            <colgroup>
+              <col className="col-selector" />
+              <col className="col-product" />
+              <col className="col-stock" />
+              <col className="col-qty" />
+              <col className="col-price" />
+              <col className="col-amt" />
+              <col className="col-disc" />
+              <col className="col-discrs" />
+              <col className="col-net" />
+              <col className="col-delete" />
+            </colgroup>
+
+            <thead>
+              <tr>
+                <th />
+                <th>ITEM / PRODUCT DESCRIPTION</th>
+                <th>In Stock</th>
+                <th>Sales Qty</th>
+                <th>Price</th>
+                <th>AMT</th>
+                <th>Disc%</th>
+                <th>Disc-Rs</th>
+                <th>Net Amt</th>
+                <th>-</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr className="is-entry-row">
+                <td className="sales-reference-row-arrow">›</td>
+                <td className="sales-reference-yellow">
+                  <span className="sales-reference-dots">....</span>
+                  <button type="button" className="sales-reference-product-drop" disabled>▼</button>
+                </td>
+                <td />
+                <td />
+                <td />
+                <td />
+                <td />
+                <td />
+                <td />
+                <td className="sales-reference-delete-cell">
+                  <button type="button" disabled aria-label="Delete row"><XCircle size={16} /></button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="sales-reference-grid-empty" />
+
+          <div className="sales-reference-grid-totals">
+            <div />
+            <strong>0</strong>
+            <strong>0</strong>
+            <strong>0</strong>
+          </div>
+
+          <div className="sales-reference-record-nav">
+            <div className="sales-reference-record-controls">
+              <button type="button" disabled>⏮</button>
+              <button type="button" disabled>◀</button>
+              <span>Record 1 of 1</span>
+              <button type="button" disabled>▶</button>
+              <button type="button" disabled>⏭</button>
+              <button type="button" disabled>+</button>
+              <button type="button" disabled>−</button>
+              <button type="button" disabled>⌃</button>
+              <button type="button" disabled>⌄</button>
+              <button type="button" disabled>✓</button>
+              <button type="button" disabled>×</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <aside className="pos-invoice-pay">
-        <div className="retail-title">RETAIL INVOICE</div>
-        <div className="pay-block">
-          <Field label="Amount Options">
-            <select className="desktop-select" disabled>
-              <option>Default</option>
-            </select>
-          </Field>
-          <Field label="Disc (Rs)">
-            <input className="desktop-input pay-disc" disabled value="0" readOnly />
-          </Field>
-          <Field label="Payment Method">
-            <select className="desktop-select" disabled style={{ background: '#cfe0f8' }}>
-              <option>CASH IN HAND</option>
-            </select>
-          </Field>
-          <Field label="Remarks">
-            <textarea className="desktop-textarea" disabled rows={3} />
-          </Field>
-        </div>
-        <div className="pay-block">
+        <footer className="sales-reference-actions">
+          <div className="sales-reference-shortcuts">
+            <span>Ctrl+M = POS</span>
+            <span>Ctrl+G = A4</span>
+            <span>Ctrl+H = A5</span>
+          </div>
+
+          <div className="sales-reference-actions-center">
+            <button type="button" disabled>
+              <span>Save [F9]</span>
+              <span className="sales-reference-action-icon is-save"><Save /></span>
+            </button>
+
+            <button type="button" disabled>
+              <span>Refresh [F8]</span>
+              <span className="sales-reference-action-icon is-refresh"><RefreshCw /></span>
+            </button>
+
+            <button type="button" disabled>
+              <span>Preview [F3]</span>
+              <span className="sales-reference-action-icon is-preview"><FileText /></span>
+            </button>
+
+            <button type="button" disabled>
+              <span>Print [F11]</span>
+              <span className="sales-reference-action-icon is-print"><Printer /></span>
+            </button>
+
+            <button type="button" onClick={closeActiveTab}>
+              <span>Close</span>
+              <span className="sales-reference-action-icon is-close"><XCircle /></span>
+            </button>
+          </div>
+        </footer>
+      </main>
+
+      <aside className="sales-reference-pay">
+        <div className="sales-reference-retail-title">RETAIL INVOICE</div>
+
+        <fieldset className="sales-reference-pay-options">
+          <legend>
+            <span>Amount Options</span>
+            <span className="sales-reference-pay-tools">
+              <button type="button" disabled title="Open"><FolderOpen size={13} /></button>
+              <button type="button" disabled title="Help"><CircleHelp size={13} /></button>
+            </span>
+          </legend>
+
+          <div className="sales-reference-pay-head-values">
+            <strong>0</strong>
+            <strong>0</strong>
+          </div>
+
+          <div className="sales-reference-disc-line">
+            <span>Disc (Rs):</span>
+            <label><input type="checkbox" disabled /> Cost</label>
+          </div>
+
+          <div className="sales-reference-disc-values">
+            <strong>0</strong>
+            <strong>0 %</strong>
+          </div>
+
+          <label className="sales-reference-payment-label">Payment Method:</label>
+          <div className="sales-reference-payment-method">
+            <strong>CASH IN HAND</strong>
+            <button type="button" disabled>▼</button>
+          </div>
+
+          <label className="sales-reference-remarks-label">Remarks:</label>
+          <textarea disabled />
+        </fieldset>
+
+        <div className="sales-reference-total-block">
           <span>Total:</span>
-          <div className="pay-total">0</div>
+          <div>0</div>
         </div>
-        <div className="pay-block">
-          <span>Received (F12):</span>
-          <input className="pay-received" disabled />
+
+        <label className="sales-reference-side-label">Received (F12):</label>
+        <div className="sales-reference-received">
+          <span />
+          <strong>-</strong>
         </div>
-        <Field label="Credit Card">
-          <input className="desktop-input" disabled value="0." readOnly style={{ background: '#d8c8f0' }} />
-        </Field>
-        <Field label="Balance">
-          <input className="desktop-input" disabled value="0" readOnly />
-        </Field>
+
+        <label className="sales-reference-side-label">Credit Card:</label>
+        <div className="sales-reference-card">
+          <strong>0.</strong>
+          <strong>-</strong>
+        </div>
+
+        <label className="sales-reference-side-label">Balance:</label>
+        <div className="sales-reference-balance">
+          <strong>0</strong>
+          <strong>-</strong>
+        </div>
       </aside>
     </div>
   )

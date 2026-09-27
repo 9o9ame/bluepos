@@ -1,0 +1,261 @@
+/*
+ * BluePOS Appearance Foundation
+ *
+ * Important:
+ * - Default combination is System + Classic.
+ * - Classic/light intentionally preserves the existing BluePOS visuals.
+ * - Theme and skin are independent.
+ * - This file does not change application flow, text, routes or business logic.
+ */
+
+:root {
+  --appearance-surface: #ffffff;
+  --appearance-surface-soft: #eef1f4;
+  --appearance-surface-muted: #d9dee6;
+  --appearance-text: #1d2430;
+  --appearance-text-muted: #5c6770;
+  --appearance-border: #8e97a3;
+  --appearance-accent: #1f4e79;
+  --appearance-control-radius: 2px;
+  --appearance-panel-radius: 0px;
+  --appearance-shadow-strength: 0.18;
+  --appearance-spacing-scale: 1;
+}
+
+/*
+ * LIGHT
+ * No broad selectors are applied yet so the current approved Classic UI
+ * remains visually unchanged.
+ */
+:root[data-theme='light'] {
+  --appearance-surface: #ffffff;
+  --appearance-surface-soft: #eef1f4;
+  --appearance-surface-muted: #d9dee6;
+  --appearance-text: #1d2430;
+  --appearance-text-muted: #5c6770;
+  --appearance-border: #8e97a3;
+  --appearance-accent: #1f4e79;
+}
+
+/*
+ * DARK
+ * Foundation tokens only. Existing screens will be migrated to these
+ * variables incrementally so no approved screen is broken in one large pass.
+ */
+:root[data-theme='dark'] {
+  --appearance-surface: #1b1f24;
+  --appearance-surface-soft: #252b31;
+  --appearance-surface-muted: #303840;
+  --appearance-text: #edf1f5;
+  --appearance-text-muted: #aeb8c2;
+  --appearance-border: #56616c;
+  --appearance-accent: #6aa9e6;
+}
+
+/* CLASSIC */
+:root[data-skin='classic'] {
+  --appearance-control-radius: 2px;
+  --appearance-panel-radius: 0px;
+  --appearance-shadow-strength: 0.18;
+  --appearance-spacing-scale: 1;
+}
+
+/* HYBRID */
+:root[data-skin='hybrid'] {
+  --appearance-control-radius: 5px;
+  --appearance-panel-radius: 4px;
+  --appearance-shadow-strength: 0.14;
+  --appearance-spacing-scale: 1.04;
+}
+
+/* ADVANCED */
+:root[data-skin='advanced'] {
+  --appearance-control-radius: 8px;
+  --appearance-panel-radius: 8px;
+  --appearance-shadow-strength: 0.1;
+  --appearance-spacing-scale: 1.08;
+}
+
+/* Appearance settings component */
+.appearance-settings {
+  display: grid;
+  gap: 14px;
+  padding: 12px;
+  color: var(--appearance-text);
+}
+
+.appearance-settings-group {
+  display: grid;
+  gap: 7px;
+}
+
+.appearance-settings-heading {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.appearance-option-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.appearance-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.appearance-skin-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.appearance-skin-card {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 3px 7px;
+  min-height: 78px;
+  padding: 9px;
+  border: 1px solid var(--appearance-border);
+  border-radius: var(--appearance-panel-radius);
+  background: var(--appearance-surface-soft);
+  cursor: pointer;
+}
+
+.appearance-skin-card.is-selected {
+  border-color: var(--appearance-accent);
+  box-shadow: inset 0 0 0 1px var(--appearance-accent);
+}
+
+.appearance-skin-card input {
+  grid-row: 1 / span 2;
+  align-self: start;
+  margin-top: 2px;
+}
+
+.appearance-skin-title {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.appearance-skin-description {
+  color: var(--appearance-text-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.appearance-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 760px) {
+  .appearance-skin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Appearance quick menu in the application title bar */
+.appearance-menu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.appearance-menu-trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 23px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #9d9d9d;
+  border-radius: 0;
+  background: linear-gradient(#ffffff, #e3e3e3);
+  color: #245d8e;
+  cursor: pointer;
+}
+
+.appearance-menu-trigger:hover {
+  background: linear-gradient(#ffffff, #d7e8f7);
+}
+
+.appearance-menu-panel {
+  position: absolute;
+  top: calc(100% + 3px);
+  right: 0;
+  z-index: 500;
+  width: min(520px, calc(100vw - 24px));
+  border: 1px solid var(--appearance-border);
+  background: var(--appearance-surface);
+  color: var(--appearance-text);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+}
+
+.appearance-menu-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 27px;
+  padding: 0 5px 0 9px;
+  border-bottom: 1px solid var(--appearance-border);
+  background: linear-gradient(#e8e8e8, #c8c8c8);
+  color: #222;
+}
+
+.appearance-menu-titlebar > button {
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  padding: 0;
+  border: 1px solid #a44;
+  border-radius: 999px;
+  background: linear-gradient(#ff8585, #bd2020);
+  color: #fff;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.appearance-settings-actions {
+  align-items: center;
+  gap: 8px;
+}
+
+.appearance-save-state {
+  min-width: 48px;
+  margin-right: auto;
+  color: var(--appearance-text-muted);
+  font-size: 10px;
+}
+
+.appearance-save-error {
+  padding: 6px 8px;
+  border: 1px solid #b84b4b;
+  background: #ffe8e8;
+  color: #8b0000;
+  font-size: 10px;
+}
+
+/* The settings popup itself follows dark mode immediately. */
+:root[data-theme='dark'] .appearance-menu-panel {
+  background: #1b1f24;
+}
+
+:root[data-theme='dark'] .appearance-menu-titlebar {
+  background: linear-gradient(#323941, #252b31);
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .appearance-menu-trigger {
+  border-color: #56616c;
+  background: linear-gradient(#343b43, #242a30);
+  color: #8fc7ff;
+}
+
+:root[data-theme='dark'] .appearance-skin-card {
+  background: #252b31;
+}

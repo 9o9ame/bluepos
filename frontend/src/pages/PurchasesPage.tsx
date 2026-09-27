@@ -3,6 +3,7 @@ import {
   Barcode,
   Binoculars,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -62,6 +63,19 @@ type DraftLine = {
   line_total?: string
   base_quantity?: string
 }
+
+const PURCHASE_CUSTOMIZATION_FIELDS = [
+  'Barcode',
+  'BNS',
+  'C',
+  'Dis 3',
+  'Dis A',
+  'From Party',
+  'Ledger Bal',
+  'Location',
+] as const
+
+type PurchaseCustomizationField = (typeof PURCHASE_CUSTOMIZATION_FIELDS)[number]
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10)
@@ -156,6 +170,8 @@ export function PurchasesPage() {
   const [lines, setLines] = useState<DraftLine[]>([])
   const [productQuery, setProductQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [customizationOpen, setCustomizationOpen] = useState(false)
+  const [customGridFields, setCustomGridFields] = useState<PurchaseCustomizationField[]>([])
 
   const readOnly = status === 'posted' || status === 'cancelled'
 
@@ -192,6 +208,20 @@ export function PurchasesPage() {
   const listRows = listQuery.data?.data ?? []
   const suppliers = (suppliersQuery.data ?? []).filter((s) => s.is_active)
   const warehouses = (warehousesQuery.data ?? []).filter((w) => w.status === 'active')
+  const selectedSupplier = suppliers.find((supplier) => supplier.ulid === supplierUlid)
+
+  function toggleCustomGridField(field: PurchaseCustomizationField) {
+    setCustomGridFields((current) =>
+      current.includes(field)
+        ? current.filter((item) => item !== field)
+        : [...current, field],
+    )
+  }
+
+  function customGridValue(field: PurchaseCustomizationField) {
+    if (field === 'From Party') return selectedSupplier?.name ?? ''
+    return ''
+  }
 
   function applyInvoice(invoice: PurchaseInvoice) {
     setInvoiceUlid(invoice.ulid)
@@ -590,8 +620,22 @@ export function PurchasesPage() {
                 </option>
               ))}
             </select>
-            <button type="button" className="purchase-reference-mini" disabled title="Use Supplier master">▼</button>
-            <button type="button" className="purchase-reference-mini" disabled title="Use Supplier master">+</button>
+            <button
+              type="button"
+              className="purchase-reference-mini is-arrow"
+              disabled
+              title="Use Supplier master"
+            >
+              <ChevronDown size={13} />
+            </button>
+            <button
+              type="button"
+              className="purchase-reference-mini is-plus"
+              disabled
+              title="Use Supplier master"
+            >
+              <Plus size={13} />
+            </button>
           </div>
 
           <div className="purchase-reference-rem-line">
@@ -644,7 +688,10 @@ export function PurchasesPage() {
           <div className="purchase-reference-center-panels">
             <div className="purchase-reference-balance">
               <div className="purchase-reference-balance-head">
-                <button type="button" disabled>Refresh</button>
+                <button type="button" disabled>
+                  <RefreshCw size={12} />
+                  <span>Refresh</span>
+                </button>
               </div>
               <div className="purchase-reference-balance-row is-prev">
                 <span>Previous</span><strong>0</strong>
@@ -669,9 +716,18 @@ export function PurchasesPage() {
           <legend>
             <span>Amount Options</span>
             <span className="purchase-reference-amount-tools">
-              <button type="button" disabled>Add</button>
-              <button type="button" disabled title="Get">Get</button>
-              <button type="button" disabled>Import</button>
+              <button type="button" disabled>
+                <Plus size={12} />
+                <span>Add</span>
+              </button>
+              <button type="button" disabled title="Get">
+                <Package size={12} />
+                <span>Get</span>
+              </button>
+              <button type="button" disabled>
+                <Receipt size={12} />
+                <span>Import</span>
+              </button>
             </span>
           </legend>
 
@@ -679,8 +735,8 @@ export function PurchasesPage() {
             <label>Amount(Rs):</label>
             <strong className="is-cyan">{money(subtotal || previewSubtotal)}</strong>
             <label className="is-red">Disc.:</label>
-            <strong>{money(discountAmount)}</strong>
-            <em>{previewDiscountPercent}%</em>
+            <strong className="is-disc-value">{money(discountAmount)}</strong>
+            <em className="is-disc-percent">{previewDiscountPercent}%</em>
 
             <label>Others:</label>
             <input
@@ -729,7 +785,10 @@ export function PurchasesPage() {
           </div>
           <div className="purchase-f1-label">F1 to Add New</div>
           <div className="purchase-f1-spacer" />
-          <button type="button" className="purchase-f1-chk" disabled>Chk</button>
+          <button type="button" className="purchase-f1-chk" disabled>
+            <Check size={12} />
+            <span>Chk</span>
+          </button>
         </div>
       ) : (
         <div className="purchase-reference-posted-strip">
@@ -763,20 +822,45 @@ export function PurchasesPage() {
               <th className="col-amount">Amount</th>
               <th className="col-margin">Margin</th>
               <th className="col-sale">Sale Rate (N)</th>
+              {customGridFields.map((field) => (
+                <th key={field} className="col-custom">{field}</th>
+              ))}
               <th className="col-p">P</th>
-              <th className="col-del">-</th>
+              <th className="col-del">
+                <button
+                  type="button"
+                  className={`purchase-reference-customize-trigger${customizationOpen ? ' is-open' : ''}`}
+                  title="Customize columns"
+                  aria-label="Customize columns"
+                  aria-expanded={customizationOpen}
+                  onClick={() => setCustomizationOpen((open) => !open)}
+                >
+                  −
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>
             {lines.length === 0 ? (
               <tr className="is-empty">
                 <td>*</td>
-                <td />
+                <td><span className="purchase-reference-empty-dots">....</span></td>
                 <td /><td className="cell-yellow" /><td className="cell-yellow" />
                 <td /><td /><td /><td /><td className="cell-yellow" />
                 <td className="cell-yellow" /><td /><td /><td />
                 <td className="cell-yellow" /><td /><td /><td />
-                <td className="cell-cyan" /><td className="cell-cyan" /><td /><td />
+                <td className="cell-cyan" /><td className="cell-cyan" />
+                {customGridFields.map((field) => <td key={field} className="col-custom" />)}
+                <td className="is-center col-p">
+                  <span className="purchase-reference-p-icon is-placeholder" aria-hidden>
+                    <Package size={14} />
+                  </span>
+                </td>
+                <td className="is-center col-del">
+                  <button type="button" className="is-placeholder" disabled aria-label="Remove">
+                    <XCircle size={16} />
+                  </button>
+                </td>
               </tr>
             ) : lines.map((row) => {
               const qty = Number(row.quantity) || 0
@@ -913,6 +997,11 @@ export function PurchasesPage() {
                   <td className="is-num">{money(lineAmount)}</td>
                   <td className="cell-cyan" />
                   <td className="cell-cyan" />
+                  {customGridFields.map((field) => (
+                    <td key={field} className="col-custom">
+                      {customGridValue(field)}
+                    </td>
+                  ))}
                   <td className="is-center col-p">
                     <span className="purchase-reference-p-icon" title="P" aria-hidden>
                       <Package size={14} />
@@ -931,6 +1020,42 @@ export function PurchasesPage() {
           </tbody>
         </table>
       </div>
+
+      {customizationOpen ? (
+        <aside
+          className="purchase-reference-customization"
+          role="dialog"
+          aria-label="Purchase grid customization"
+        >
+          <div className="purchase-reference-customization-titlebar">
+            <span>Customization</span>
+            <button
+              type="button"
+              aria-label="Close customization"
+              onClick={() => setCustomizationOpen(false)}
+            >
+              <XCircle size={14} />
+            </button>
+          </div>
+          <div className="purchase-reference-customization-list">
+            {PURCHASE_CUSTOMIZATION_FIELDS.map((field) => {
+              const active = customGridFields.includes(field)
+              return (
+                <button
+                  key={field}
+                  type="button"
+                  className={active ? 'is-active' : undefined}
+                  aria-pressed={active}
+                  onClick={() => toggleCustomGridField(field)}
+                >
+                  <span>{field}</span>
+                  {active ? <Check size={13} /> : null}
+                </button>
+              )
+            })}
+          </div>
+        </aside>
+      ) : null}
 
       <div className="purchase-reference-totals">
         <span />

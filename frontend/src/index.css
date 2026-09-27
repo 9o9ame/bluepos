@@ -3624,3 +3624,4539 @@ textarea {
     max-height: none;
   }
 }
+
+/* =========================================================
+   POS PLUS reference matching — FINAL MANUAL PASS
+   Shell + Purchase Invoice only.
+   Existing behavior is preserved; this is a visual layer.
+   ========================================================= */
+
+/* ---------- Global classic font used by the reference shell ---------- */
+.app-shell,
+.app-shell button,
+.app-shell input,
+.app-shell select,
+.app-shell textarea {
+  font-family: Arial, Tahoma, "Microsoft Sans Serif", sans-serif;
+}
+
+/* ---------- Application title strip ---------- */
+.titlebar {
+  height: 28px;
+  min-height: 28px;
+  padding: 0 7px;
+  gap: 9px;
+  background: linear-gradient(#eeeeee 0%, #d2d2d2 48%, #bababa 100%);
+  border-bottom: 1px solid #9f9f9f;
+  color: #202020;
+  font-size: 11px;
+}
+
+.titlebar-center {
+  color: #222;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.titlebar-logo {
+  color: #164e80;
+  font-family: Arial, Tahoma, sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.titlebar-meta {
+  gap: 5px;
+  color: #2d2d2d;
+  font-size: 10px;
+}
+
+.titlebar-env {
+  padding: 0 5px;
+  border-color: #b59a22;
+  border-radius: 0;
+  background: #ffe89c;
+  color: #6c5600;
+  font-size: 9px;
+}
+
+.titlebar-select,
+.account-menu-btn {
+  height: 20px;
+  border: 1px solid #9d9d9d;
+  border-radius: 0;
+  background: linear-gradient(#ffffff, #e3e3e3);
+  color: #222;
+  font-size: 10px;
+}
+
+/* =========================================================
+   1. Main ribbon tabs — icon above, strong label below
+   ========================================================= */
+.ribbon {
+  background: #cdcdcd;
+  border-bottom: 1px solid #9a9a9a;
+}
+
+.ribbon-tabs {
+  min-height: 51px;
+  height: 51px;
+  gap: 0;
+  padding: 0 7px;
+  align-items: stretch;
+  background: linear-gradient(#bdbdbd 0%, #9d9d9d 100%);
+  border-bottom: 1px solid #858585;
+}
+
+.ribbon-tab {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 105px;
+  min-height: 50px;
+  padding: 2px 14px 3px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #f5f5f5;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(0,0,0,.32);
+}
+
+.ribbon-tab-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: #f6f6f6;
+}
+
+.ribbon-tab-icon svg {
+  width: 19px;
+  height: 19px;
+  stroke-width: 2.1;
+}
+
+.ribbon-tab-text {
+  display: block;
+  white-space: nowrap;
+}
+
+.ribbon-tab:hover {
+  background: rgba(255,255,255,.12);
+  color: #fff;
+}
+
+.ribbon-tab.is-active {
+  margin: 0;
+  padding-bottom: 3px;
+  border-color: #8f8f8f;
+  border-bottom: 0;
+  background: linear-gradient(#ffffff 0%, #f7f7f7 64%, #e6e6e6 100%);
+  color: #174e86;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+.ribbon-tab.is-active .ribbon-tab-icon {
+  color: #174e86;
+}
+
+/* =========================================================
+   2. Ribbon commands + dark group caption strips
+   ========================================================= */
+.ribbon-body {
+  min-height: 111px;
+  padding: 0 4px;
+  background: linear-gradient(#fbfbfb 0%, #eeeeee 48%, #d0d0d0 100%);
+  border-top: 0;
+  border-bottom: 1px solid #9e9e9e;
+}
+
+.ribbon-group {
+  padding: 3px 0 0;
+  border-right: 1px solid #b5b5b5;
+}
+
+.ribbon-group-items {
+  gap: 0;
+}
+
+.ribbon-command {
+  min-width: 82px;
+  max-width: 98px;
+  min-height: 82px;
+  padding: 5px 5px 3px;
+  gap: 3px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #111;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.ribbon-command:hover:not(:disabled) {
+  border-color: #b7c4ce;
+  background: linear-gradient(#fff, #e1edf5);
+}
+
+.ribbon-command:active:not(:disabled),
+.ribbon-command.is-active {
+  border-color: #79a2c3;
+  background: linear-gradient(#fff 0%, #e5f2fb 54%, #c8e2f3 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.7);
+}
+
+.ribbon-command-label {
+  min-height: 27px;
+  align-items: flex-start;
+  font-family: Arial, Tahoma, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.02;
+}
+
+.ribbon-command.is-active .ribbon-command-label,
+.ribbon-command.has-menu.is-menu-open .ribbon-command-label {
+  color: #c00000;
+}
+
+.ribbon-icon-tile {
+  width: 42px;
+  height: 42px;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 1px 1px rgba(0,0,0,.18);
+}
+
+.ribbon-icon-tile svg {
+  width: 34px;
+  height: 34px;
+}
+
+.ribbon-group-caption {
+  min-height: 21px;
+  margin: 0;
+  padding: 3px 7px 2px;
+  background: linear-gradient(#ababab 0%, #898989 100%);
+  border-top: 1px solid #bdbdbd;
+  border-radius: 0;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-shadow: 0 1px 0 rgba(0,0,0,.35);
+}
+
+/* =========================================================
+   3. Workspace tabs
+   ========================================================= */
+.workspace-tabs {
+  min-height: 28px;
+  height: 28px;
+  gap: 3px;
+  padding: 3px 5px 0;
+  background: #c9c9c9;
+  border-bottom: 1px solid #9a9a9a;
+}
+
+.workspace-tab {
+  height: 25px;
+  padding: 0 3px 0 2px;
+  gap: 2px;
+  border: 1px solid #aaa;
+  border-bottom: 0;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(#f6f6f6 0%, #dedede 54%, #c9c9c9 100%);
+  color: #222;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: inset 1px 1px 0 #fff;
+}
+
+.workspace-tab-label {
+  padding: 3px 7px 4px;
+  font-size: 11px;
+  font-weight: inherit;
+}
+
+.workspace-tab.is-active {
+  background: linear-gradient(#dff8ff 0%, #b9e8fa 48%, #8fd0ee 100%);
+  color: #174e83;
+  border-color: #8eaabd;
+  font-weight: 700;
+}
+
+.workspace-tab-close {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #666;
+  font-size: 11px;
+}
+
+.workspace-tab-close:hover {
+  background: radial-gradient(circle at 35% 30%, #ff8d8d, #bc2b2b);
+  color: #fff;
+}
+
+/* Workspace flushness matches the reference more closely. */
+.workspace-host {
+  padding: 0;
+  background: #dadada;
+}
+
+/* =========================================================
+   PURCHASE INVOICE
+   ========================================================= */
+.purchase-reference-screen {
+  position: relative;
+  color: #111;
+  background: #e8e8e8;
+  border: 1px solid #b4b4b4;
+  font-family: Arial, Tahoma, "Microsoft Sans Serif", sans-serif;
+  font-size: 11px;
+}
+
+.purchase-reference-screen button,
+.purchase-reference-screen input,
+.purchase-reference-screen select,
+.purchase-reference-screen textarea {
+  font-family: Arial, Tahoma, "Microsoft Sans Serif", sans-serif;
+  font-size: 11px;
+}
+
+.purchase-reference-screen input,
+.purchase-reference-screen select,
+.purchase-reference-screen textarea {
+  border-color: #b8b8b8;
+}
+
+/* =========================================================
+   4. Purchase inner tabs
+   ========================================================= */
+.purchase-reference-screen .purchase-reference-subtabs {
+  height: 47px;
+  min-height: 47px;
+  gap: 4px;
+  padding: 3px 10px 0;
+  background: #e7e7e7;
+  border-bottom: 1px solid #a7a7a7;
+}
+
+.purchase-reference-screen .purchase-reference-subtab {
+  height: 43px;
+  min-width: 0;
+  padding: 0 10px;
+  gap: 7px;
+  border: 1px solid #aaa;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(#f9f9f9 0%, #e8e8e8 48%, #cecece 100%);
+  color: #111;
+  font-family: Arial, Tahoma, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: inset 1px 1px 0 #fff;
+}
+
+.purchase-reference-screen .purchase-reference-subtab:nth-child(1) { width: 198px; }
+.purchase-reference-screen .purchase-reference-subtab:nth-child(2) { width: 122px; }
+.purchase-reference-screen .purchase-reference-subtab:nth-child(3) { width: 305px; }
+.purchase-reference-screen .purchase-reference-subtab:nth-child(4) { width: 185px; }
+.purchase-reference-screen .purchase-reference-subtab:nth-child(5) { width: 166px; }
+
+.purchase-reference-screen .purchase-reference-subtab.is-active {
+  background: linear-gradient(#e4fbff 0%, #c2eff8 44%, #93d5e5 100%);
+  border-color: #8caeb6;
+  border-bottom-color: #c8eef5;
+  color: #0a3858;
+}
+
+.purchase-reference-screen .purchase-reference-tab-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 2px;
+}
+
+.purchase-reference-screen .purchase-reference-tab-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.purchase-reference-screen .purchase-reference-title {
+  padding-right: 18px;
+  font-family: Arial, Tahoma, sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+/* =========================================================
+   5 / 6. Purchase options, balances and Amount Options
+   ========================================================= */
+.purchase-reference-screen .purchase-reference-top {
+  height: 165px;
+  min-height: 165px;
+  max-height: 165px;
+  grid-template-columns: minmax(505px, 32fr) minmax(430px, 37fr) minmax(440px, 31fr);
+  gap: 4px;
+  padding: 4px 6px 5px;
+  background: #e6e6e6;
+  border-bottom: 1px solid #b5b5b5;
+}
+
+.purchase-reference-screen .purchase-reference-options,
+.purchase-reference-screen .purchase-reference-amount {
+  padding: 4px 6px 5px;
+  border: 1px solid #b6b6b6;
+  border-radius: 0;
+  background: #e9e9e9;
+}
+
+.purchase-reference-screen .purchase-reference-options legend,
+.purchase-reference-screen .purchase-reference-amount legend {
+  color: #111;
+  font-family: Arial, Tahoma, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.purchase-reference-screen .purchase-reference-option-line,
+.purchase-reference-screen .purchase-reference-from-line {
+  height: 23px;
+  margin-bottom: 5px;
+}
+
+.purchase-reference-screen .purchase-reference-rem-line textarea {
+  height: 43px;
+  min-height: 43px;
+  max-height: 43px;
+}
+
+.purchase-reference-screen .purchase-reference-rem-line {
+  margin-bottom: 4px;
+}
+
+.purchase-reference-screen .purchase-reference-checks {
+  flex-direction: row;
+  align-items: center;
+  gap: 13px;
+  min-height: 21px;
+}
+
+.purchase-reference-screen .purchase-reference-checks label {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.purchase-reference-screen .purchase-reference-mini {
+  width: 22px;
+  height: 22px;
+  border: 1px solid #aaa;
+  border-radius: 1px;
+  background: linear-gradient(#fbfbfb 0%, #e8e8e8 50%, #d3d3d3 100%);
+  box-shadow: inset 1px 1px 0 #fff;
+  color: #245e8d;
+}
+
+.purchase-reference-screen .purchase-reference-mini svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.3;
+}
+
+.purchase-reference-screen .purchase-reference-center {
+  padding-top: 3px;
+  gap: 6px;
+}
+
+.purchase-reference-screen .purchase-reference-center-panels {
+  gap: 7px;
+}
+
+.purchase-reference-screen .purchase-reference-balance,
+.purchase-reference-screen .purchase-reference-discount {
+  border: 1px solid #b7b7b7;
+  border-radius: 0;
+  background: #e5e5e5;
+}
+
+.purchase-reference-screen .purchase-reference-balance {
+  width: 121px;
+  flex-basis: 121px;
+}
+
+.purchase-reference-screen .purchase-reference-discount {
+  width: 125px;
+  flex-basis: 125px;
+}
+
+.purchase-reference-screen .purchase-reference-balance-head button,
+.purchase-reference-screen .purchase-reference-amount-tools button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 20px;
+  padding: 0 6px;
+  border: 1px solid #aaa;
+  border-radius: 5px;
+  background: linear-gradient(#ffffff 0%, #ededed 53%, #d3d3d3 100%);
+  box-shadow: inset 0 1px 0 #fff;
+  color: #181818;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.purchase-reference-screen .purchase-reference-balance-head button svg,
+.purchase-reference-screen .purchase-reference-amount-tools button svg {
+  width: 12px;
+  height: 12px;
+}
+
+.purchase-reference-screen .purchase-reference-balance-row {
+  height: 23px;
+}
+
+.purchase-reference-screen .purchase-reference-balance-row strong,
+.purchase-reference-screen .purchase-reference-discount strong {
+  border-color: #b8b8b8;
+  font-family: Arial, Tahoma, sans-serif;
+  font-weight: 700;
+}
+
+.purchase-reference-screen .purchase-reference-discount > div {
+  height: 27px;
+}
+
+/* Amount panel sizes/colors based on the supplied reference screenshot. */
+.purchase-reference-screen .purchase-reference-amount {
+  background: #e8e8e8;
+}
+
+.purchase-reference-screen .purchase-reference-amount-grid {
+  grid-template-columns: 83px minmax(0, 1.5fr) 47px 72px 50px;
+  gap: 5px 4px;
+}
+
+.purchase-reference-screen .purchase-reference-amount-grid label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #111;
+}
+
+.purchase-reference-screen .purchase-reference-amount-grid label.is-red {
+  color: #e31818;
+}
+
+.purchase-reference-screen .purchase-reference-amount-grid strong,
+.purchase-reference-screen .purchase-reference-amount-grid input,
+.purchase-reference-screen .purchase-reference-amount-grid em {
+  height: 26px;
+  line-height: 26px;
+  border: 1px solid #b4b4b4;
+  border-radius: 0;
+  color: #111;
+  font-family: Arial, Tahoma, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.purchase-reference-screen .purchase-reference-amount-grid strong.is-cyan {
+  height: 29px;
+  line-height: 29px;
+  background: #c2feff;
+}
+
+.purchase-reference-screen .purchase-reference-amount-grid .is-green {
+  background: #00ff00;
+}
+
+.purchase-reference-screen .purchase-reference-amount-grid .is-green-soft {
+  background: #9bff9b;
+}
+
+.purchase-reference-screen .purchase-reference-amount-grid strong.is-yellow {
+  height: 30px;
+  line-height: 30px;
+  background: #ffff00;
+}
+
+.purchase-reference-screen .purchase-reference-amount-grid .is-disc-value,
+.purchase-reference-screen .purchase-reference-amount-grid .is-disc-percent {
+  background: #fff;
+  color: #e01818;
+}
+
+.purchase-reference-screen .purchase-reference-amount-grid .is-tax-extra {
+  background: #dddddd;
+  color: #111;
+}
+
+.purchase-reference-screen .purchase-reference-amount-tools {
+  gap: 4px;
+}
+
+.purchase-reference-screen .purchase-reference-amount-tools button {
+  min-width: 47px;
+}
+
+.purchase-reference-screen .purchase-reference-amount-tools button:nth-child(1) svg { color: #3c6f93; }
+.purchase-reference-screen .purchase-reference-amount-tools button:nth-child(2) svg { color: #43874b; }
+.purchase-reference-screen .purchase-reference-amount-tools button:nth-child(3) svg { color: #d7771a; }
+
+/* F1 line */
+.purchase-reference-screen .purchase-f1-row {
+  height: 33px;
+  min-height: 33px;
+  background: #e8e8e8;
+  border-bottom: 1px solid #aaa;
+}
+
+.purchase-reference-screen .purchase-f1-search {
+  width: 315px;
+  flex-basis: 315px;
+}
+
+.purchase-reference-screen .purchase-f1-search > input {
+  height: 33px;
+  border-color: #c0c0c0;
+  background: #fff;
+}
+
+.purchase-reference-screen .purchase-f1-label {
+  width: 158px;
+  flex-basis: 158px;
+  justify-items: start;
+  padding-left: 7px;
+  background: #efefef;
+  border-right-color: #c3c3c3;
+  color: #00a31a;
+  font-family: Arial, Tahoma, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.purchase-reference-screen .purchase-f1-spacer {
+  background: #e8e8e8;
+  border-right-color: #c3c3c3;
+}
+
+.purchase-reference-screen .purchase-f1-chk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 55px;
+  flex-basis: 55px;
+  height: 33px;
+  border-left: 1px solid #aaa;
+  background: linear-gradient(#fff, #dadada);
+}
+
+.purchase-reference-screen .purchase-f1-chk svg {
+  color: #396c96;
+}
+
+/* =========================================================
+   7. Grid — softer borders and reference gradient
+   ========================================================= */
+.purchase-reference-screen .purchase-reference-grid-wrap {
+  border-top: 1px solid #a1a1a1;
+  border-bottom: 1px solid #adadad;
+}
+
+.purchase-reference-screen .purchase-reference-grid th {
+  height: 34px;
+  border: 1px solid #999;
+  background: linear-gradient(#e8e8e8 0%, #d8d8d8 48%, #bfc1c3 100%);
+  color: #111;
+  font-family: Arial, Tahoma, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.purchase-reference-screen .purchase-reference-grid td {
+  height: 29px;
+  border-right: 1px solid #bebebe;
+  border-bottom: 1px solid #c8c8c8;
+  font-family: Arial, Tahoma, sans-serif;
+  font-size: 11px;
+}
+
+.purchase-reference-screen .purchase-reference-grid .col-product {
+  width: 322px;
+}
+
+.purchase-reference-screen .purchase-reference-grid .cell-yellow,
+.purchase-reference-screen .purchase-reference-grid td.cell-yellow {
+  background: #ffff3a;
+}
+
+.purchase-reference-screen .purchase-reference-grid .cell-cyan,
+.purchase-reference-screen .purchase-reference-grid td.cell-cyan {
+  background: #74dfd6;
+}
+
+.purchase-reference-screen .purchase-reference-empty-dots {
+  color: #343fa0;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding-left: 4px;
+}
+
+.purchase-reference-screen .purchase-reference-grid .col-custom {
+  width: 86px;
+  min-width: 86px;
+}
+
+.purchase-reference-screen .purchase-reference-customize-trigger {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #222;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.purchase-reference-screen .purchase-reference-customize-trigger:hover,
+.purchase-reference-screen .purchase-reference-customize-trigger.is-open {
+  background: linear-gradient(#f7f7f7, #d3d3d3);
+  color: #0d5f92;
+}
+
+/* =========================================================
+   9. Column customization popup
+   ========================================================= */
+.purchase-reference-screen .purchase-reference-customization {
+  position: absolute;
+  z-index: 100;
+  right: 230px;
+  bottom: 74px;
+  width: 270px;
+  max-height: 360px;
+  overflow: hidden;
+  border: 1px solid #8d8d8d;
+  border-radius: 1px;
+  background: #dedede;
+  box-shadow: 1px 2px 4px rgba(0,0,0,.28);
+}
+
+.purchase-reference-screen .purchase-reference-customization-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  padding: 0 5px 0 8px;
+  background: linear-gradient(#d1d1d1 0%, #aaaaaa 100%);
+  border-bottom: 1px solid #8d8d8d;
+  color: #222;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.purchase-reference-screen .purchase-reference-customization-titlebar button {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #ff8585, #bd2020);
+  color: #fff;
+}
+
+.purchase-reference-screen .purchase-reference-customization-list {
+  max-height: 330px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.purchase-reference-screen .purchase-reference-customization-list > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  height: 38px;
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 1px solid #aaa;
+  border-radius: 0;
+  background: linear-gradient(#eeeeee 0%, #dbdbdb 49%, #c8c8c8 100%);
+  color: #151515;
+  font-family: Arial, Tahoma, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.purchase-reference-screen .purchase-reference-customization-list > button:hover {
+  background: linear-gradient(#f9f9f9, #dbeaf4);
+}
+
+.purchase-reference-screen .purchase-reference-customization-list > button.is-active {
+  background: linear-gradient(#dff4ff, #afd8ef);
+  color: #174d77;
+}
+
+/* =========================================================
+   10. Totals + record navigator
+   ========================================================= */
+.purchase-reference-screen .purchase-reference-totals {
+  height: 30px;
+  min-height: 30px;
+  background: #cfcfcf;
+  border-top: 1px solid #b1b1b1;
+  border-bottom: 1px solid #a6a6a6;
+}
+
+.purchase-reference-screen .purchase-reference-totals strong {
+  display: inline-block;
+  min-width: 43px;
+  height: 22px;
+  line-height: 22px;
+  padding: 0 5px;
+  border: 1px solid #aaa;
+  background: #c4c4c4;
+  color: #111;
+  text-align: right;
+  font-weight: 700;
+}
+
+.purchase-reference-screen .purchase-reference-nav {
+  height: 25px;
+  min-height: 25px;
+  gap: 0;
+  padding: 0 8px;
+  background: #d8d8d8;
+  border-bottom: 1px solid #aaa;
+}
+
+.purchase-reference-screen .purchase-reference-nav button {
+  width: 17px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #555;
+}
+
+.purchase-reference-screen .purchase-reference-nav button:disabled {
+  color: #777;
+  opacity: .82;
+}
+
+.purchase-reference-screen .purchase-reference-nav span {
+  margin: 0 5px;
+  color: #333;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+/* =========================================================
+   8. Bottom action buttons
+   ========================================================= */
+.purchase-reference-screen .purchase-reference-actions {
+  min-height: 56px;
+  padding: 6px 9px;
+  background: linear-gradient(#eeeeee 0%, #d7d7d7 100%);
+  border-top: 1px solid #b0b0b0;
+}
+
+.purchase-reference-screen .purchase-reference-actions button {
+  height: 40px;
+  border: 1px solid #a3a3a3;
+  border-radius: 7px;
+  background: linear-gradient(#ffffff 0%, #eeeeee 48%, #d3d3d3 100%);
+  box-shadow: inset 0 1px 0 #fff;
+  color: #111;
+  font-family: Arial, Tahoma, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.purchase-reference-screen .purchase-reference-actions button:hover:not(:disabled) {
+  border-color: #8fa5b5;
+  background: linear-gradient(#fff, #e3eef6);
+}
+
+.purchase-reference-screen .purchase-reference-actions button:disabled {
+  color: #a0a0a0;
+  background: linear-gradient(#f4f4f4, #dfdfdf);
+}
+
+.purchase-reference-screen .purchase-reference-delete {
+  width: 88px;
+  min-width: 88px;
+}
+
+.purchase-reference-screen .purchase-reference-btn-save,
+.purchase-reference-screen .purchase-reference-btn-post,
+.purchase-reference-screen .purchase-reference-btn-print {
+  width: 95px;
+  min-width: 95px;
+}
+
+.purchase-reference-screen .purchase-reference-btn-refresh {
+  width: 105px;
+  min-width: 105px;
+}
+
+.purchase-reference-screen .purchase-reference-btn-close {
+  width: 100px;
+  min-width: 100px;
+}
+
+.purchase-reference-screen .purchase-reference-actions-center {
+  gap: 7px;
+}
+
+.purchase-reference-screen .purchase-reference-actions-right button {
+  width: 112px;
+  height: 42px;
+}
+
+.purchase-reference-screen .purchase-reference-action-icon {
+  width: 29px;
+  height: 29px;
+  border-radius: 3px;
+}
+
+.purchase-reference-screen .purchase-reference-action-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* Softer reference-style bottom icon treatments. */
+.purchase-reference-screen .purchase-reference-action-icon.is-save {
+  background: linear-gradient(#d8d8d8, #7b7b7b);
+}
+.purchase-reference-screen .purchase-reference-action-icon.is-print {
+  background: linear-gradient(#f8f8f8, #c5c5c5);
+}
+.purchase-reference-screen .purchase-reference-action-icon.is-refresh {
+  background: linear-gradient(#cbd4db, #7f909d);
+}
+.purchase-reference-screen .purchase-reference-action-icon.is-close {
+  border-radius: 999px;
+}
+
+/* Status strip */
+.statusbar {
+  height: 23px;
+  padding: 0 7px;
+  gap: 0;
+  background: linear-gradient(#d8d8d8, #b8b8b8);
+  border-top: 1px solid #9e9e9e;
+  color: #222;
+  font-size: 10px;
+}
+
+.statusbar-item {
+  padding: 0 7px;
+  border-right-color: #9f9f9f;
+}
+
+/* Desktop target remains primary. */
+@media (max-width: 1400px) {
+  .purchase-reference-screen .purchase-reference-customization {
+    right: 38px;
+  }
+}
+
+@media (min-width: 1101px) and (max-width: 1500px) {
+  .purchase-reference-screen .purchase-reference-subtab:nth-child(1) { width: 176px; }
+  .purchase-reference-screen .purchase-reference-subtab:nth-child(2) { width: 110px; }
+  .purchase-reference-screen .purchase-reference-subtab:nth-child(3) { width: 275px; }
+  .purchase-reference-screen .purchase-reference-subtab:nth-child(4) { width: 168px; }
+  .purchase-reference-screen .purchase-reference-subtab:nth-child(5) { width: 150px; }
+
+  .purchase-reference-screen .purchase-reference-top {
+    grid-template-columns: minmax(470px, 32fr) minmax(390px, 37fr) minmax(400px, 31fr);
+  }
+}
+
+/* =========================================================
+   Vendor / Customers / Accounts — POS PLUS reference screen
+   Scoped visual layer; accounting actions remain visual-only.
+   ========================================================= */
+
+.workspace-host-inner:has(.parties-reference-screen) {
+  overflow: hidden;
+}
+
+.parties-reference-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  color: #111;
+  background: #e8e8e8;
+  font-family: Arial, Tahoma, "Microsoft Sans Serif", sans-serif;
+  font-size: 11px;
+}
+
+.parties-reference-screen button,
+.parties-reference-screen input,
+.parties-reference-screen select,
+.parties-reference-screen textarea {
+  font-family: Arial, Tahoma, "Microsoft Sans Serif", sans-serif;
+  font-size: 11px;
+}
+
+.parties-reference-header {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px minmax(320px, 1fr);
+  align-items: center;
+  min-height: 58px;
+  padding: 2px 10px 0;
+  background: #efefef;
+  border-bottom: 1px solid #a7a7a7;
+}
+
+.parties-reference-header h1 {
+  margin: 0;
+  align-self: end;
+  padding: 0 0 6px 4px;
+  color: #111;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.parties-reference-header-icon {
+  display: grid;
+  place-items: center;
+  height: 56px;
+  color: #245d8e;
+}
+
+.parties-reference-header-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: end;
+  gap: 10px;
+  padding-bottom: 5px;
+}
+
+.parties-reference-header-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 94px;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid #9a9a9a;
+  border-radius: 8px;
+  background: linear-gradient(#fff 0%, #ededed 48%, #d1d1d1 100%);
+  box-shadow: inset 0 1px 0 #fff;
+  color: #111;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.parties-reference-header-actions button:disabled {
+  color: #9a9a9a;
+}
+
+.parties-reference-header-actions button:last-child svg {
+  color: #d92d2d;
+}
+
+.parties-reference-view-tabs {
+  display: flex;
+  align-items: end;
+  gap: 3px;
+  min-height: 31px;
+  padding: 0 20px;
+  background: #e8e8e8;
+  border-bottom: 1px solid #9b9b9b;
+}
+
+.parties-reference-view-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #aaa;
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(#f6f6f6, #d5d5d5);
+  color: #222;
+  box-shadow: inset 1px 1px 0 #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.parties-reference-view-tabs button.is-active {
+  background: linear-gradient(#e4fbff 0%, #bcecf6 52%, #96d8e8 100%);
+  color: #164a74;
+  border-color: #8baab7;
+}
+
+.parties-reference-main {
+  display: grid;
+  grid-template-columns: minmax(510px, 36%) minmax(0, 64%);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.parties-reference-left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 5px 6px 14px;
+  background: #e7e7e7;
+  border-right: 1px solid #aaa;
+}
+
+.parties-reference-right {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 32px 188px;
+  min-width: 0;
+  min-height: 0;
+  background: #fff;
+}
+
+.parties-reference-personal,
+.parties-reference-account-info {
+  margin: 0;
+  padding: 4px 6px 6px;
+  border: 1px solid #b1b1b1;
+  border-radius: 0;
+  background: #e9e9e9;
+}
+
+.parties-reference-personal legend,
+.parties-reference-account-info legend {
+  padding: 0 5px;
+  color: #222;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.parties-reference-personal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 50px;
+  gap: 4px;
+}
+
+.parties-reference-row {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  align-items: center;
+  gap: 3px;
+  min-height: 26px;
+}
+
+.parties-reference-row label {
+  color: #222;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.parties-reference-row input,
+.parties-reference-row select,
+.parties-reference-row textarea,
+.parties-reference-account-grid input,
+.parties-reference-account-type-row select {
+  width: 100%;
+  height: 23px;
+  padding: 0 4px;
+  border: 1px solid #aaa;
+  border-radius: 0;
+  background: #fff;
+  color: #222;
+  box-sizing: border-box;
+}
+
+.parties-reference-row input:disabled,
+.parties-reference-row select:disabled,
+.parties-reference-row textarea:disabled,
+.parties-reference-account-grid input:disabled,
+.parties-reference-account-type-row select:disabled {
+  opacity: 1;
+  color: #444;
+  background: #f4f4f4;
+}
+
+.parties-reference-id-row {
+  grid-template-columns: 70px 62px 45px minmax(80px, .8fr) 48px minmax(135px, 1.2fr);
+}
+
+.parties-reference-id-row select {
+  background: #eef3f8;
+  color: #1e4f8a;
+  font-weight: 700;
+}
+
+.parties-reference-deals-row {
+  grid-template-columns: 70px 180px;
+}
+
+.parties-reference-arrow-box {
+  display: flex;
+  align-items: start;
+  justify-content: center;
+  gap: 2px;
+  padding-top: 1px;
+}
+
+.parties-reference-arrow-box button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #6fb9a3;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #76e7c5, #3aa987);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.parties-reference-subtabs {
+  display: flex;
+  align-items: end;
+  gap: 2px;
+  min-height: 27px;
+  margin-top: 6px;
+  padding-left: 4px;
+  border-bottom: 1px solid #a7a7a7;
+  background: #dedede;
+}
+
+.parties-reference-subtabs button {
+  height: 25px;
+  padding: 0 10px;
+  border: 1px solid #aaa;
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+  background: linear-gradient(#f3f3f3, #d2d2d2);
+  color: #7a2d2d;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.parties-reference-subtabs button.is-active {
+  background: linear-gradient(#e1f8ff, #abdff1);
+  color: #174f7d;
+  border-color: #8ca9b7;
+}
+
+.parties-reference-subtab-panel {
+  min-height: 174px;
+  padding: 4px 6px;
+  border: 1px solid #aaa;
+  border-top: 0;
+  background: #ededed;
+}
+
+.parties-reference-contact-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  gap: 6px;
+}
+
+.parties-reference-contact-fields textarea {
+  min-height: 38px;
+  max-height: 38px;
+  padding: 3px 4px;
+  resize: none;
+}
+
+.parties-reference-two-value-row {
+  grid-template-columns: 70px minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.parties-reference-photo {
+  display: grid;
+  place-items: center;
+  align-self: start;
+  height: 126px;
+  margin-top: 2px;
+  border: 2px solid #7f1f1f;
+  border-radius: 0;
+  background: #fff;
+  color: #222;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.parties-reference-placeholder {
+  padding: 12px;
+  color: #666;
+  font-size: 11px;
+}
+
+.parties-reference-account-info {
+  margin-top: 6px;
+  min-height: 226px;
+}
+
+.parties-reference-account-checks {
+  display: flex;
+  justify-content: flex-end;
+  gap: 18px;
+  min-height: 28px;
+  padding: 0 4px 4px;
+}
+
+.parties-reference-account-checks label,
+.parties-reference-inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.parties-reference-account-checks input,
+.parties-reference-inline-check input {
+  width: 14px;
+  height: 14px;
+}
+
+.parties-reference-account-grid {
+  display: grid;
+  grid-template-columns: 70px 85px 70px 90px 42px 50px;
+  align-items: center;
+  gap: 5px 4px;
+  padding: 38px 6px 8px;
+}
+
+.parties-reference-account-grid > label:not(.parties-reference-inline-check) {
+  text-align: right;
+  font-weight: 600;
+}
+
+.parties-reference-account-grid input {
+  height: 23px;
+}
+
+.parties-reference-account-type-row {
+  display: grid;
+  grid-template-columns: 84px minmax(180px, 1fr) 24px 145px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+}
+
+.parties-reference-account-type-row > label {
+  color: #174f7d;
+  font-weight: 800;
+  text-align: right;
+}
+
+.parties-reference-account-type-row select {
+  height: 25px;
+  background: #fff41f !important;
+  color: #0f2e61 !important;
+  font-weight: 800;
+}
+
+.parties-reference-account-type-row > button:not(.parties-reference-account-type-btn) {
+  height: 25px;
+  border: 1px solid #aaa;
+  background: linear-gradient(#fff, #d7d7d7);
+}
+
+.parties-reference-account-type-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  height: 27px;
+  padding: 0 5px 0 8px;
+  border: 1px solid #aaa;
+  border-radius: 5px;
+  background: linear-gradient(#f8f8f8, #d9d9d9);
+  font-weight: 700;
+}
+
+.parties-reference-round-plus {
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #92d7ff, #3b87c2);
+  color: #fff;
+  font-size: 15px;
+}
+
+.parties-reference-grid-wrap {
+  min-height: 0;
+  overflow: auto;
+  background: #fff;
+  border-bottom: 1px solid #aaa;
+}
+
+.parties-reference-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 12px;
+}
+
+.parties-reference-grid .col-marker { width: 28px; }
+.parties-reference-grid .col-row { width: 34px; }
+.parties-reference-grid .col-no { width: 92px; }
+.parties-reference-grid .col-name { width: 42%; }
+.parties-reference-grid .col-address { width: 30%; }
+.parties-reference-grid .col-type { width: 160px; }
+
+.parties-reference-grid th {
+  height: 30px;
+  padding: 0 5px;
+  border-right: 1px solid #9d9d9d;
+  border-bottom: 1px solid #8d8d8d;
+  background: linear-gradient(#e6e6e6 0%, #cecece 48%, #b9bdc0 100%);
+  color: #111;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.parties-reference-grid td {
+  height: 27px;
+  padding: 0 6px;
+  border-right: 1px solid #c1c1c1;
+  border-bottom: 1px solid #d3d3d3;
+  background: #fff;
+  color: #111;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.parties-reference-grid tbody tr:nth-child(even) td {
+  background: #f8f5ff;
+}
+
+.parties-reference-grid tbody tr.is-selected td {
+  background: #7597dd;
+  color: #fff;
+  font-weight: 700;
+}
+
+.parties-reference-filter-cell,
+.parties-reference-row-marker {
+  text-align: center;
+  color: #666;
+}
+
+.parties-reference-grid tbody tr.is-selected .parties-reference-row-marker {
+  color: #fff;
+  font-size: 18px;
+}
+
+.parties-reference-grid-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 32px;
+  padding: 0 7px;
+  background: #d1d1d1;
+  border-bottom: 1px solid #aaa;
+}
+
+.parties-reference-record-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.parties-reference-record-nav button {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #555;
+}
+
+.parties-reference-record-nav button:disabled {
+  color: #999;
+}
+
+.parties-reference-record-nav span {
+  margin: 0 5px;
+  font-size: 10px;
+}
+
+.parties-reference-drcr {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.parties-reference-drcr strong {
+  display: inline-block;
+  min-width: 92px;
+  height: 25px;
+  line-height: 25px;
+  padding: 0 6px;
+  border: 1px solid #aaa;
+  background: #fff637;
+  text-align: right;
+  box-sizing: border-box;
+}
+
+.parties-reference-account-tree {
+  min-height: 0;
+  overflow: auto;
+  padding: 4px 6px;
+  background: #fff;
+  border-top: 1px solid #aaa;
+  font-size: 11px;
+}
+
+.parties-reference-tree-title {
+  margin-bottom: 2px;
+  font-weight: 700;
+}
+
+.parties-reference-account-tree details {
+  border-bottom: 1px solid #e2e2e2;
+}
+
+.parties-reference-account-tree summary {
+  display: grid;
+  grid-template-columns: 15px 1fr 24px;
+  align-items: center;
+  min-height: 23px;
+  padding: 0 2px;
+  list-style: none;
+  cursor: pointer;
+  color: #0f4f7e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.parties-reference-account-tree details:nth-of-type(even) summary {
+  background: #eaf2ff;
+}
+
+.parties-reference-account-tree summary::-webkit-details-marker {
+  display: none;
+}
+
+.parties-reference-tree-icon {
+  display: grid;
+  place-items: center;
+  color: #2b6aa3;
+}
+
+.parties-reference-tree-number {
+  color: #555;
+  text-align: right;
+  font-size: 10px;
+}
+
+.parties-reference-tree-child {
+  padding: 2px 0 5px 22px;
+  color: #666;
+}
+
+.parties-reference-disabled-view {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  flex: 1;
+  background: #f5f5f5;
+  color: #555;
+}
+
+.parties-reference-disabled-view strong {
+  color: #222;
+  font-size: 18px;
+}
+
+@media (max-width: 1250px) {
+  .parties-reference-screen {
+    overflow: auto;
+  }
+
+  .parties-reference-main {
+    min-width: 1200px;
+  }
+}
+
+/* =========================================================
+   Vendor / Customers / Accounts — final fine tuning pass
+   Geometry/colors matched against supplied reference screenshot.
+   ========================================================= */
+
+/* Softer overall borders like the reference app */
+.parties-reference-screen {
+  background: #e9e9e9;
+}
+
+.parties-reference-screen fieldset,
+.parties-reference-screen input,
+.parties-reference-screen select,
+.parties-reference-screen textarea,
+.parties-reference-screen button {
+  border-color: #b8b8b8;
+}
+
+/* Header */
+.parties-reference-header {
+  min-height: 64px;
+  padding-top: 4px;
+  grid-template-columns: minmax(0, 1fr) 165px minmax(330px, 1fr);
+  background: #efefef;
+  border-bottom-color: #b6b6b6;
+}
+
+.parties-reference-header h1 {
+  padding-left: 6px;
+  padding-bottom: 9px;
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.parties-reference-header-icon {
+  position: relative;
+  height: 62px;
+  color: #184f84;
+}
+
+.parties-reference-header-icon svg {
+  position: relative;
+  z-index: 3;
+  width: 48px;
+  height: 48px;
+  stroke-width: 2;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,.85));
+}
+
+.parties-reference-header-icon-badge {
+  position: absolute;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+}
+
+.parties-reference-header-icon-badge.is-orange {
+  transform: translate(-17px, -11px);
+  background: radial-gradient(circle at 35% 30%, #ffd27a, #dc6b20 72%);
+}
+
+.parties-reference-header-icon-badge.is-blue {
+  transform: translate(17px, -8px);
+  background: radial-gradient(circle at 35% 30%, #a6dcff, #3c79b8 72%);
+}
+
+.parties-reference-header-actions {
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.parties-reference-header-actions button {
+  min-width: 96px;
+  height: 41px;
+  gap: 7px;
+  border-color: #a8a8a8;
+  border-radius: 8px;
+  background: linear-gradient(#ffffff 0%, #f3f3f3 34%, #dfdfdf 70%, #c9c9c9 100%);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 #bdbdbd;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.parties-reference-header-actions button svg {
+  width: 27px;
+  height: 27px;
+}
+
+/* Top inner tabs */
+.parties-reference-view-tabs {
+  min-height: 33px;
+  padding-left: 20px;
+  background: #e7e7e7;
+  border-bottom-color: #aaa;
+}
+
+.parties-reference-view-tabs button {
+  height: 30px;
+  padding: 0 11px;
+  border-color: #aaa;
+  border-radius: 5px 5px 0 0;
+  background: linear-gradient(#f8f8f8 0%, #e9e9e9 45%, #d0d0d0 100%);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.parties-reference-view-tabs button.is-active {
+  background: linear-gradient(#e8fbff 0%, #c5eff9 43%, #91d4e6 100%);
+  border-color: #8daab8;
+  color: #164e7a;
+}
+
+/* Main split ratios */
+.parties-reference-main {
+  grid-template-columns: minmax(540px, 36.5%) minmax(0, 63.5%);
+}
+
+.parties-reference-left {
+  padding-top: 5px;
+  padding-left: 16px;
+  border-right-color: #b5b5b5;
+}
+
+/* Personal info */
+.parties-reference-personal,
+.parties-reference-account-info {
+  border-color: #b8b8b8;
+  background: #ebebeb;
+}
+
+.parties-reference-personal-grid {
+  grid-template-columns: minmax(0, 1fr) 52px;
+}
+
+.parties-reference-row {
+  min-height: 28px;
+}
+
+.parties-reference-row input,
+.parties-reference-row select,
+.parties-reference-row textarea,
+.parties-reference-account-grid input,
+.parties-reference-account-type-row select {
+  height: 24px;
+  border-color: #b8b8b8;
+  background: #fafafa;
+}
+
+.parties-reference-row input:disabled,
+.parties-reference-row select:disabled,
+.parties-reference-row textarea:disabled,
+.parties-reference-account-grid input:disabled,
+.parties-reference-account-type-row select:disabled {
+  background: #f2f2f2;
+  color: #3d3d3d;
+}
+
+.parties-reference-arrow-box {
+  padding-top: 0;
+}
+
+.parties-reference-arrow-box button {
+  width: 23px;
+  height: 23px;
+  border-color: #65aa95;
+  background: radial-gradient(circle at 35% 30%, #8beacb, #42aa8b 72%);
+}
+
+/* Contact sub-tabs */
+.parties-reference-subtabs {
+  min-height: 29px;
+  margin-top: 7px;
+  border-bottom-color: #aaa;
+  background: #dddddd;
+}
+
+.parties-reference-subtabs button {
+  height: 27px;
+  padding: 0 11px;
+  border-color: #aaa;
+  border-radius: 5px 5px 0 0;
+  background: linear-gradient(#f6f6f6 0%, #e9e9e9 45%, #d0d0d0 100%);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.parties-reference-subtabs button.is-active {
+  background: linear-gradient(#e8fbff 0%, #c5eff9 43%, #96d7e7 100%);
+  color: #174f7d;
+}
+
+/* Contact details */
+.parties-reference-subtab-panel {
+  min-height: 184px;
+  padding-top: 5px;
+  border-color: #b8b8b8;
+  background: #eeeeee;
+}
+
+.parties-reference-contact-layout {
+  grid-template-columns: minmax(0, 1fr) 118px;
+  gap: 7px;
+}
+
+.parties-reference-contact-fields textarea {
+  min-height: 41px;
+  max-height: 41px;
+}
+
+.parties-reference-photo {
+  height: 132px;
+  border-color: #8c2a2a;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Account related info */
+.parties-reference-account-info {
+  margin-top: 5px;
+  min-height: 220px;
+}
+
+.parties-reference-account-checks {
+  min-height: 27px;
+  padding-bottom: 2px;
+  gap: 16px;
+}
+
+.parties-reference-account-grid {
+  grid-template-columns: 70px 80px 65px 88px 40px 48px;
+  gap: 5px 4px;
+  padding: 22px 6px 8px;
+}
+
+.parties-reference-account-type-row {
+  grid-template-columns: 84px minmax(180px, 0.92fr) 24px 138px;
+  gap: 4px;
+}
+
+.parties-reference-account-type-row select {
+  height: 25px;
+  background: #fff21f !important;
+  color: #173c71 !important;
+}
+
+.parties-reference-account-type-btn {
+  height: 26px;
+  border-color: #aaa;
+  border-radius: 5px;
+  background: linear-gradient(#f8f8f8, #d7d7d7);
+}
+
+/* Right grid */
+.parties-reference-grid th {
+  height: 31px;
+  border-right-color: #aaa;
+  border-bottom-color: #979797;
+  background: linear-gradient(#e8e8e8 0%, #d5d5d5 43%, #b9bdc0 100%);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.parties-reference-grid td {
+  height: 29px;
+  border-right-color: #c5c5c5;
+  border-bottom-color: #d7d7d7;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.parties-reference-grid tbody tr:nth-child(even) td {
+  background: #faf7ff;
+}
+
+.parties-reference-grid tbody tr.is-selected td {
+  background: #6f91d6;
+  color: #fff;
+}
+
+.parties-reference-grid-footer {
+  min-height: 34px;
+  background: #d2d2d2;
+  border-bottom-color: #aaa;
+}
+
+.parties-reference-record-nav button {
+  width: 17px;
+  height: 17px;
+}
+
+.parties-reference-record-nav span {
+  margin: 0 4px;
+}
+
+.parties-reference-drcr {
+  gap: 5px;
+}
+
+.parties-reference-drcr strong {
+  min-width: 96px;
+  height: 27px;
+  line-height: 27px;
+  background: #fff633;
+  border-color: #aaa;
+}
+
+/* Account tree */
+.parties-reference-account-tree {
+  padding: 3px 6px;
+  border-top-color: #aaa;
+}
+
+.parties-reference-tree-title {
+  margin-bottom: 1px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.parties-reference-account-tree details {
+  border-bottom-color: #e6e6e6;
+}
+
+.parties-reference-account-tree summary {
+  grid-template-columns: 15px 1fr 24px;
+  min-height: 21px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.parties-reference-account-tree details:nth-of-type(even) summary {
+  background: #edf4ff;
+}
+
+.parties-reference-tree-icon {
+  display: grid;
+  place-items: center;
+  width: 11px;
+  height: 11px;
+  border: 1px solid #7e8fa5;
+  background: #f7f7f7;
+  color: #2a5e8d;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.parties-reference-tree-child {
+  padding-top: 1px;
+  padding-bottom: 4px;
+  font-size: 10px;
+}
+
+/* Slightly softer lines across the page */
+.parties-reference-grid-wrap,
+.parties-reference-grid-footer,
+.parties-reference-account-tree,
+.parties-reference-subtab-panel,
+.parties-reference-view-tabs,
+.parties-reference-subtabs {
+  border-color: #b5b5b5;
+}
+
+/* =========================================================
+   Sales Invoice — POS PLUS reference-style visual shell
+   Scoped so Purchase / Products / Parties remain untouched.
+   ========================================================= */
+
+.workspace-host-inner:has(.sales-reference-screen) {
+  overflow: hidden;
+}
+
+.sales-reference-screen,
+.sales-reference-screen * {
+  box-sizing: border-box;
+}
+
+.sales-reference-screen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 278px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  color: #111;
+  background: #e6e6e6;
+  border: 1px solid #aaa;
+  font-family: Arial, Tahoma, "Microsoft Sans Serif", sans-serif;
+  font-size: 11px;
+}
+
+.sales-reference-screen button,
+.sales-reference-screen input,
+.sales-reference-screen textarea,
+.sales-reference-screen select {
+  font-family: Arial, Tahoma, "Microsoft Sans Serif", sans-serif;
+  font-size: 14px;
+}
+
+.sales-reference-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #f2f2f2;
+  border-right: 1px solid #a8a8a8;
+}
+
+/* Inner tabs ------------------------------------------------ */
+.sales-reference-subtabs {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  min-height: 47px;
+  height: 47px;
+  padding: 3px 9px 0;
+  background: #e7e7e7;
+  border-bottom: 1px solid #aaa;
+  flex: 0 0 auto;
+}
+
+.sales-reference-subtab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 43px;
+  padding: 0 10px;
+  border: 1px solid #aaa;
+  border-radius: 2px 2px 0 0;
+  background: linear-gradient(#f9f9f9 0%, #e7e7e7 48%, #cecece 100%);
+  color: #111;
+  box-shadow: inset 1px 1px 0 #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sales-reference-subtab:nth-child(1) { width: 160px; }
+.sales-reference-subtab:nth-child(2) { width: 245px; }
+.sales-reference-subtab:nth-child(3) { width: 118px; }
+
+.sales-reference-subtab.is-active {
+  background: linear-gradient(#e5fbff 0%, #c6eff8 44%, #94d6e6 100%);
+  border-color: #8daeb8;
+  border-bottom-color: #c7eef6;
+  color: #0b3f62;
+}
+
+.sales-reference-subtab:disabled {
+  opacity: 1;
+  color: #333;
+}
+
+.sales-reference-tab-icon {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  border-radius: 2px;
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 1px 1px rgba(0,0,0,.18);
+}
+
+.sales-reference-tab-icon svg {
+  width: 25px;
+  height: 25px;
+  stroke-width: 1.9;
+}
+
+.sales-reference-tab-icon.is-blue {
+  background: linear-gradient(135deg, #73bee9 0 25%, #4c83b8 25% 50%, #51a49e 50% 75%, #67839d 75%);
+}
+
+.sales-reference-tab-icon.is-yellow {
+  color: #7f5a00;
+  background: radial-gradient(circle at 30% 25%, #fff5a8, #f6c948 60%, #d99a19);
+}
+
+.sales-reference-tab-icon.is-multi {
+  background: linear-gradient(135deg, #f0a547 0 33%, #2c9ab6 33% 66%, #51a46b 66%);
+}
+
+.sales-reference-heading {
+  margin-left: auto;
+  align-self: center;
+  padding-right: 12px;
+  color: #111;
+  font-size: 27px;
+  font-weight: 900;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+
+/* Invoice options / amounts ------------------------------- */
+.sales-reference-meta {
+  display: grid;
+  grid-template-columns: minmax(620px, 1fr) 295px;
+  gap: 4px;
+  min-height: 118px;
+  height: 118px;
+  padding: 4px 5px 5px;
+  background: #e5e5e5;
+  border-bottom: 1px solid #b5b5b5;
+  flex: 0 0 auto;
+}
+
+.sales-reference-options,
+.sales-reference-amounts {
+  margin: 0;
+  padding: 4px 6px 5px;
+  border: 1px solid #b4b4b4;
+  border-radius: 0;
+  background: #e9e9e9;
+  min-width: 0;
+}
+
+.sales-reference-options legend,
+.sales-reference-amounts legend {
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sales-reference-options-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 24px;
+  margin-bottom: 4px;
+}
+
+.sales-reference-options-head label,
+.sales-reference-amounts-checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sales-reference-options-head input[type="radio"],
+.sales-reference-amounts-checks input[type="checkbox"],
+.sales-reference-disc-line input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+}
+
+.sales-reference-copy-from {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-weight: 700;
+}
+
+.sales-reference-copy-from input {
+  width: 66px;
+  height: 21px;
+  padding: 0 4px;
+  text-align: right;
+  border: 1px solid #b5b5b5;
+  background: #f5f5f5;
+}
+
+.sales-reference-option-grid {
+  display: grid;
+  grid-template-columns: 38px 92px 32px 145px 35px minmax(110px, 1fr) 42px minmax(110px, 1fr);
+  align-items: center;
+  gap: 4px 4px;
+}
+
+.sales-reference-option-grid > label {
+  text-align: right;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sales-reference-option-grid > input,
+.sales-reference-input-button input {
+  height: 23px;
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #aaa;
+  background: #f6f6f6;
+  color: #444;
+  padding: 0 5px;
+}
+
+.sales-reference-input-button {
+  display: flex;
+  min-width: 0;
+}
+
+.sales-reference-input-button input {
+  border-right: 0;
+}
+
+.sales-reference-input-button button {
+  width: 24px;
+  height: 23px;
+  flex: 0 0 24px;
+  padding: 0;
+  border: 1px solid #aaa;
+  background: linear-gradient(#fff, #d8d8d8);
+  color: #245f8f;
+  font-weight: 800;
+}
+
+.sales-reference-to {
+  grid-column: span 3;
+}
+
+.sales-reference-amounts {
+  display: grid;
+  grid-template-rows: 24px 1fr;
+}
+
+.sales-reference-amounts-checks {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sales-reference-amounts-grid {
+  display: grid;
+  grid-template-columns: 43px 82px 54px 76px 92px;
+  align-items: center;
+  gap: 4px;
+}
+
+.sales-reference-amounts-grid > strong,
+.sales-reference-amounts-grid > input {
+  height: 23px;
+  line-height: 23px;
+  border: 1px solid #aaa;
+  background: #fff;
+  padding: 0 4px;
+  text-align: right;
+  font-weight: 800;
+}
+
+.sales-reference-amounts-grid > strong.is-green {
+  background: #00ed20;
+}
+
+.sales-reference-amounts-grid > button {
+  height: 21px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  background: linear-gradient(#fff, #d7d7d7);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.sales-reference-amounts-grid > label {
+  font-weight: 700;
+  text-align: center;
+}
+
+/* F1 row -------------------------------------------------- */
+.sales-reference-entry-row {
+  display: flex;
+  align-items: stretch;
+  height: 34px;
+  min-height: 34px;
+  background: #ededed;
+  border-bottom: 1px solid #a7a7a7;
+  flex: 0 0 auto;
+}
+
+.sales-reference-product-entry {
+  width: 300px;
+  flex: 0 0 300px;
+  height: 34px;
+  padding: 0 7px;
+  border: 1px solid #b6b6b6;
+  border-top: 0;
+  border-left: 0;
+  background: #fff534;
+  color: #333;
+}
+
+.sales-reference-f1 {
+  display: grid;
+  align-items: center;
+  width: 126px;
+  flex: 0 0 126px;
+  padding-left: 4px;
+  color: #00a420;
+  background: #eeeeee;
+  font-size: 15px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.sales-reference-sale-btn {
+  width: 78px;
+  flex: 0 0 78px;
+  height: 30px;
+  align-self: center;
+  margin-left: 4px;
+  border: 1px solid #aaa;
+  border-radius: 9px;
+  background: linear-gradient(#fff 0%, #eee 45%, #d1d1d1 100%);
+  box-shadow: inset 0 1px 0 #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sales-reference-entry-spacer {
+  flex: 1 1 auto;
+}
+
+/* Grid ---------------------------------------------------- */
+.sales-reference-grid-wrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: #fff;
+  border-bottom: 1px solid #aaa;
+}
+
+.sales-reference-grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 11px;
+}
+
+.sales-reference-grid .col-selector { width: 48px; }
+.sales-reference-grid .col-product { width: auto; }
+.sales-reference-grid .col-stock { width: 92px; }
+.sales-reference-grid .col-qty { width: 94px; }
+.sales-reference-grid .col-price { width: 92px; }
+.sales-reference-grid .col-amt { width: 100px; }
+.sales-reference-grid .col-disc { width: 90px; }
+.sales-reference-grid .col-discrs { width: 96px; }
+.sales-reference-grid .col-net { width: 136px; }
+.sales-reference-grid .col-delete { width: 32px; }
+
+.sales-reference-grid th {
+  height: 35px;
+  padding: 0 4px;
+  border: 1px solid #999;
+  background: linear-gradient(#e9e9e9 0%, #d7d7d7 48%, #bfc1c3 100%);
+  color: #111;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sales-reference-grid td {
+  height: 29px;
+  padding: 0 4px;
+  border-right: 1px solid #bebebe;
+  border-bottom: 1px solid #c9c9c9;
+  background: #7597d9;
+  color: #fff;
+}
+
+.sales-reference-grid td.sales-reference-yellow {
+  position: relative;
+  background: #fff238;
+  color: #25318b;
+}
+
+.sales-reference-row-arrow {
+  color: #444 !important;
+  background: #ededed !important;
+  text-align: center;
+  font-size: 17px;
+}
+
+.sales-reference-dots {
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.sales-reference-product-drop {
+  position: absolute;
+  top: 3px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #7791a8;
+  background: linear-gradient(#fff, #c9d9e9);
+  color: #174f7c;
+}
+
+.sales-reference-delete-cell {
+  background: #eef0f2 !important;
+  text-align: center;
+}
+
+.sales-reference-delete-cell button {
+  width: 21px;
+  height: 21px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #d83c34;
+}
+
+.sales-reference-grid-empty {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: #fff;
+}
+
+.sales-reference-grid-totals {
+  display: grid;
+  grid-template-columns: 1fr 120px 120px 155px;
+  align-items: center;
+  height: 31px;
+  min-height: 31px;
+  padding: 0 8px;
+  background: #cfcfcf;
+  border-top: 1px solid #aaa;
+  border-bottom: 1px solid #a0a0a0;
+}
+
+.sales-reference-grid-totals strong {
+  display: inline-block;
+  height: 24px;
+  line-height: 24px;
+  margin-left: 14px;
+  padding: 0 5px;
+  border: 1px solid #aaa;
+  background: #c4c4c4;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sales-reference-record-nav {
+  display: flex;
+  align-items: center;
+  height: 27px;
+  min-height: 27px;
+  padding: 0 8px;
+  background: #d9d9d9;
+  border-bottom: 1px solid #aaa;
+}
+
+.sales-reference-record-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+}
+
+.sales-reference-record-controls button {
+  width: 19px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #555;
+  font-size: 10px;
+}
+
+.sales-reference-record-controls span {
+  margin: 0 5px;
+  font-size: 10px;
+}
+
+/* Bottom actions ----------------------------------------- */
+.sales-reference-actions {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 58px;
+  padding: 5px 8px;
+  background: linear-gradient(#eeeeee 0%, #d5d5d5 100%);
+  border-top: 1px solid #aaa;
+  flex: 0 0 auto;
+}
+
+.sales-reference-shortcuts {
+  display: grid;
+  justify-content: end;
+  align-content: center;
+  min-width: 250px;
+  padding-right: 8px;
+  color: #2a2aa4;
+  font-size: 9px;
+  line-height: 1.05;
+}
+
+.sales-reference-actions-center {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+}
+
+.sales-reference-actions-center button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 42px;
+  min-width: 104px;
+  padding: 0 7px;
+  border: 1px solid #a3a3a3;
+  border-radius: 8px;
+  background: linear-gradient(#fff 0%, #efefef 48%, #d2d2d2 100%);
+  box-shadow: inset 0 1px 0 #fff;
+  color: #111;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sales-reference-actions-center button:disabled {
+  color: #999;
+  opacity: 1;
+}
+
+.sales-reference-action-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  border-radius: 3px;
+}
+
+.sales-reference-action-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.sales-reference-action-icon.is-save {
+  color: #111;
+  background: linear-gradient(#dcdcdc, #858585);
+}
+
+.sales-reference-action-icon.is-refresh {
+  color: #fff;
+  background: linear-gradient(#b9cad6, #6c8496);
+}
+
+.sales-reference-action-icon.is-preview {
+  color: #2c69a0;
+  background: linear-gradient(#fff, #d9d9d9);
+}
+
+.sales-reference-action-icon.is-print {
+  color: #111;
+  background: linear-gradient(#f7f7f7, #bfbfbf);
+}
+
+.sales-reference-action-icon.is-close {
+  color: #fff;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #ff9696, #c82b2b);
+}
+
+/* Right payment panel ------------------------------------ */
+.sales-reference-pay {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 7px 8px 8px;
+  background: #d1d7de;
+}
+
+.sales-reference-retail-title {
+  padding: 0 2px 9px;
+  color: #111;
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: .03em;
+  line-height: 1;
+}
+
+.sales-reference-pay-options {
+  margin: 0;
+  padding: 4px 6px 7px;
+  border: 1px solid #a7a7a7;
+  background: #d7d7d7;
+}
+
+.sales-reference-pay-options legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: calc(100% - 4px);
+  padding: 0 3px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sales-reference-pay-tools {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.sales-reference-pay-tools button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #aaa;
+  border-radius: 999px;
+  background: linear-gradient(#fff, #d7d7d7);
+  color: #5c6e7f;
+}
+
+.sales-reference-pay-head-values,
+.sales-reference-disc-values,
+.sales-reference-received,
+.sales-reference-card,
+.sales-reference-balance {
+  display: grid;
+  grid-template-columns: 1fr 90px;
+  gap: 3px;
+}
+
+.sales-reference-pay-head-values strong,
+.sales-reference-disc-values strong {
+  height: 28px;
+  line-height: 28px;
+  padding: 0 6px;
+  border: 1px solid #aaa;
+  background: #efefef;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sales-reference-disc-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 27px;
+  color: #e01818;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.sales-reference-disc-line label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #222;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.sales-reference-disc-values strong {
+  background: #fff;
+  color: #e01818;
+}
+
+.sales-reference-payment-label,
+.sales-reference-remarks-label,
+.sales-reference-side-label {
+  display: block;
+  margin-top: 6px;
+  margin-bottom: 2px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sales-reference-payment-method {
+  display: flex;
+  height: 33px;
+  border: 1px solid #a7a7a7;
+  background: #eef0f2;
+}
+
+.sales-reference-payment-method strong {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  padding: 0 6px;
+  color: #0f2e61;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.sales-reference-payment-method button {
+  width: 28px;
+  border: 0;
+  border-left: 1px solid #aaa;
+  background: linear-gradient(#fff, #d8d8d8);
+}
+
+.sales-reference-pay-options textarea {
+  width: 100%;
+  height: 47px;
+  resize: none;
+  padding: 3px 4px;
+  border: 1px solid #aaa;
+  background: #fff;
+}
+
+.sales-reference-total-block {
+  margin-top: 6px;
+}
+
+.sales-reference-total-block > span {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.sales-reference-total-block > div {
+  height: 54px;
+  line-height: 54px;
+  padding: 0 7px;
+  border: 1px solid #333;
+  background: #0c0c0c;
+  color: #20f038;
+  text-align: right;
+  font-size: 33px;
+  font-weight: 900;
+}
+
+.sales-reference-received {
+  height: 39px;
+  background: #ffd900;
+  border: 1px solid #ad9512;
+}
+
+.sales-reference-received strong,
+.sales-reference-card strong,
+.sales-reference-balance strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 6px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.sales-reference-card {
+  height: 41px;
+  background: #cac0ff;
+  border: 1px solid #a69fd0;
+}
+
+.sales-reference-card strong:first-child {
+  font-size: 24px;
+}
+
+.sales-reference-balance {
+  height: 34px;
+  background: #eeeeee;
+  border: 1px solid #aaa;
+}
+
+.sales-reference-balance strong {
+  font-size: 14px;
+}
+
+/* Softer borders to match reference app */
+.sales-reference-screen input,
+.sales-reference-screen textarea,
+.sales-reference-screen select,
+.sales-reference-screen fieldset,
+.sales-reference-screen table,
+.sales-reference-screen th,
+.sales-reference-screen td {
+  border-color: #b5b5b5;
+}
+
+@media (max-width: 1250px) {
+  .sales-reference-screen {
+    min-width: 1220px;
+    overflow: auto;
+  }
+}
+
+/* =========================================================
+   Sales Invoice — screenshot comparison pass v2
+   Fixes geometry differences visible against the supplied POS PLUS reference.
+   ========================================================= */
+
+.sales-reference-screen {
+  grid-template-columns: minmax(0, 1fr) 238px;
+}
+
+/* Reference has RETAIL INVOICE only once, in the payment panel. */
+.sales-reference-heading {
+  display: none !important;
+}
+
+
+
+.sales-reference-subtab {
+  height: 41px;
+}
+
+.sales-reference-subtab:nth-child(1) { width: 145px; }
+.sales-reference-subtab:nth-child(2) { width: 242px; }
+.sales-reference-subtab:nth-child(3) { width: 116px; }
+
+/* The reference top form occupies only the left ~860px and leaves blank grey space. */
+.sales-reference-meta {
+  grid-template-columns: 610px 236px minmax(0, 1fr);
+  min-height: 93px;
+  height: 93px;
+  padding: 4px 5px 4px;
+  gap: 4px;
+}
+
+.sales-reference-meta-spacer {
+  min-width: 0;
+  background: #e5e5e5;
+}
+
+.sales-reference-options,
+.sales-reference-amounts {
+  padding: 3px 6px 4px;
+}
+
+.sales-reference-options-head {
+  height: 20px;
+  margin-bottom: 2px;
+  gap: 8px;
+}
+
+.sales-reference-copy-from input {
+  width: 62px;
+  height: 20px;
+}
+
+.sales-reference-option-grid {
+  grid-template-columns: 34px 90px 29px 122px 34px 130px 40px 142px;
+  gap: 3px 4px;
+}
+
+.sales-reference-option-grid > input,
+.sales-reference-input-button input {
+  height: 21px;
+  padding: 0 4px;
+}
+
+.sales-reference-input-button button {
+  width: 22px;
+  height: 21px;
+  flex-basis: 22px;
+}
+
+.sales-reference-to {
+  grid-column: span 3;
+}
+
+.sales-reference-amounts {
+  grid-template-rows: 20px 1fr;
+}
+
+.sales-reference-amounts-grid {
+  grid-template-columns: 38px 65px 44px 62px 74px;
+  gap: 3px;
+}
+
+.sales-reference-amounts-grid > strong,
+.sales-reference-amounts-grid > input {
+  height: 21px;
+  line-height: 21px;
+  padding: 0 3px;
+}
+
+.sales-reference-amounts-grid > button {
+  height: 20px;
+}
+
+/* Product entry row. */
+.sales-reference-entry-row {
+  height: 35px;
+  min-height: 35px;
+}
+
+.sales-reference-product-entry {
+  width: 302px;
+  flex-basis: 302px;
+  height: 35px;
+}
+
+.sales-reference-f1 {
+  width: 122px;
+  flex-basis: 122px;
+  padding-left: 3px;
+  font-size: 15px;
+}
+
+.sales-reference-sale-btn {
+  width: 74px;
+  flex-basis: 74px;
+  height: 30px;
+}
+
+/* Reference grid has left/right breathing room and a much narrower product column. */
+.sales-reference-grid-wrap {
+  padding: 0 14px;
+  background: #fff;
+}
+
+.sales-reference-grid {
+  width: 100%;
+}
+
+.sales-reference-grid .col-selector { width: 48px; }
+.sales-reference-grid .col-product { width: 482px; }
+.sales-reference-grid .col-stock { width: 88px; }
+.sales-reference-grid .col-qty { width: 120px; }
+.sales-reference-grid .col-price { width: 94px; }
+.sales-reference-grid .col-amt { width: 124px; }
+.sales-reference-grid .col-disc { width: 92px; }
+.sales-reference-grid .col-discrs { width: 92px; }
+.sales-reference-grid .col-net { width: 175px; }
+.sales-reference-grid .col-delete { width: 28px; }
+
+.sales-reference-grid th {
+  height: 34px;
+}
+
+.sales-reference-grid td {
+  height: 27px;
+}
+
+/* Keep the blank body aligned with the inset grid. */
+.sales-reference-grid-empty {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* Totals positioned like the reference instead of being grouped at the far right. */
+.sales-reference-grid-totals {
+  grid-template-columns:
+    48px
+    482px
+    88px
+    120px
+    94px
+    124px
+    92px
+    92px
+    minmax(120px, 175px)
+    28px;
+  height: 31px;
+  min-height: 31px;
+  padding: 0;
+}
+
+.sales-reference-grid-totals > div {
+  grid-column: 1 / 4;
+}
+
+.sales-reference-grid-totals strong {
+  margin: 0;
+  height: 24px;
+  line-height: 24px;
+  align-self: center;
+}
+
+.sales-reference-grid-totals strong:nth-of-type(1) {
+  grid-column: 4;
+}
+
+.sales-reference-grid-totals strong:nth-of-type(2) {
+  grid-column: 6;
+}
+
+.sales-reference-grid-totals strong:nth-of-type(3) {
+  grid-column: 9;
+}
+
+.sales-reference-record-nav {
+  margin: 0 -14px;
+  padding: 0 14px;
+}
+
+/* Bottom reference puts shortcuts left-of-center and action buttons toward the right. */
+.sales-reference-actions {
+  grid-template-columns: minmax(300px, 1fr) auto;
+  min-height: 57px;
+  padding: 5px 14px;
+}
+
+.sales-reference-shortcuts {
+  justify-content: end;
+  min-width: 0;
+  padding-right: 330px;
+}
+
+.sales-reference-actions-center {
+  justify-self: end;
+  gap: 6px;
+}
+
+.sales-reference-actions-center button {
+  min-width: 108px;
+  height: 41px;
+}
+
+/* Right payment panel */
+.sales-reference-pay {
+  padding: 5px 7px 7px;
+}
+
+.sales-reference-retail-title {
+  padding: 0 0 8px;
+  font-size: 25px;
+  white-space: nowrap;
+}
+
+.sales-reference-pay-options {
+  padding: 3px 5px 6px;
+}
+
+.sales-reference-pay-head-values,
+.sales-reference-disc-values,
+.sales-reference-received,
+.sales-reference-card,
+.sales-reference-balance {
+  grid-template-columns: 1fr 82px;
+}
+
+.sales-reference-pay-head-values strong,
+.sales-reference-disc-values strong {
+  height: 26px;
+  line-height: 26px;
+}
+
+.sales-reference-disc-line {
+  min-height: 25px;
+  font-size: 14px;
+}
+
+.sales-reference-payment-method {
+  height: 31px;
+}
+
+.sales-reference-payment-method strong {
+  font-size: 13px;
+}
+
+.sales-reference-pay-options textarea {
+  height: 38px;
+}
+
+.sales-reference-total-block {
+  margin-top: 5px;
+}
+
+.sales-reference-total-block > div {
+  height: 50px;
+  line-height: 50px;
+  font-size: 31px;
+}
+
+.sales-reference-received {
+  height: 35px;
+}
+
+.sales-reference-card {
+  height: 38px;
+}
+
+.sales-reference-balance {
+  height: 31px;
+}
+
+/* Softer borders: reference app is less contrasty than the first pass. */
+.sales-reference-screen,
+.sales-reference-main,
+.sales-reference-pay,
+.sales-reference-options,
+.sales-reference-amounts,
+.sales-reference-pay-options,
+.sales-reference-grid-wrap,
+.sales-reference-grid th,
+.sales-reference-grid td,
+.sales-reference-grid-totals,
+.sales-reference-record-nav,
+.sales-reference-actions {
+  border-color: #b9b9b9;
+}
+
+/* Desktop screenshot target. */
+@media (min-width: 1500px) {
+  .sales-reference-meta {
+    grid-template-columns: 610px 236px minmax(0, 1fr);
+  }
+}
+
+/* =========================================================
+   Sales Invoice — screenshot comparison pass v3
+   Final geometry / spacing / sidebar tuning against reference.
+   ========================================================= */
+
+/* Sidebar was clipping RETAIL INVOICE in the previous pass. */
+.sales-reference-screen {
+  grid-template-columns: minmax(0, 1fr) 258px;
+}
+
+.sales-reference-pay {
+  padding: 5px 7px 7px;
+}
+
+.sales-reference-retail-title {
+  padding: 0 0 8px 1px;
+  font-size: 24px;
+  letter-spacing: .015em;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+/* Tabs are slightly taller / weightier in the source app. */
+.sales-reference-subtabs {
+  height: 47px;
+  min-height: 47px;
+  padding: 3px 9px 0;
+  color: #181dc1;
+}
+
+.sales-reference-subtab {
+  height: 43px;
+  font-size: 13px;
+}
+
+.sales-reference-subtab:nth-child(1) { width: 150px; }
+.sales-reference-subtab:nth-child(2) { width: 246px; }
+.sales-reference-subtab:nth-child(3) { width: 120px; }
+
+/* Top form: a little wider and taller, especially Amounts. */
+.sales-reference-meta {
+  grid-template-columns: 615px 258px minmax(0, 1fr);
+  min-height: 99px;
+  height: 99px;
+  gap: 5px;
+}
+
+.sales-reference-options,
+.sales-reference-amounts {
+  padding-top: 4px;
+}
+
+.sales-reference-options-head {
+  height: 22px;
+  margin-bottom: 3px;
+  color: #1735c9;
+  font-size: 13px;
+}
+
+.sales-reference-option-grid {
+  grid-template-columns: 36px 94px 30px 128px 36px 132px 42px 145px;
+  gap: 4px;
+}
+
+.sales-reference-option-grid > input,
+.sales-reference-input-button input {
+  height: 22px;
+}
+
+.sales-reference-input-button button {
+  height: 22px;
+}
+
+.sales-reference-amounts {
+  grid-template-rows: 22px 1fr;
+}
+
+.sales-reference-amounts-grid {
+  grid-template-columns: 40px 70px 46px 66px 84px;
+  gap: 4px;
+}
+
+.sales-reference-amounts-grid > strong,
+.sales-reference-amounts-grid > input {
+  height: 22px;
+  line-height: 22px;
+}
+
+/* Reference has a narrower yellow entry field, then label, then Sale button. */
+.sales-reference-product-entry {
+  width: 303px;
+  flex-basis: 303px;
+}
+
+.sales-reference-f1 {
+  width: 124px;
+  flex-basis: 124px;
+}
+
+.sales-reference-sale-btn {
+  width: 76px;
+  flex-basis: 76px;
+}
+
+/* Grid is inset from both sides in the reference. */
+.sales-reference-grid-wrap {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+.sales-reference-grid .col-selector { width: 50px; }
+.sales-reference-grid .col-product { width: 480px; }
+.sales-reference-grid .col-stock { width: 88px; }
+.sales-reference-grid .col-qty { width: 120px; }
+.sales-reference-grid .col-price { width: 96px; }
+.sales-reference-grid .col-amt { width: 122px; }
+.sales-reference-grid .col-disc { width: 92px; }
+.sales-reference-grid .col-discrs { width: 92px; }
+.sales-reference-grid .col-net { width: 176px; }
+.sales-reference-grid .col-delete { width: 29px; }
+
+.sales-reference-grid th {
+  height: 35px;
+  font-size: 11px;
+}
+
+.sales-reference-grid td {
+  height: 28px;
+}
+
+/* Slightly stronger blue selected row, closer to reference. */
+.sales-reference-grid td:not(.sales-reference-yellow):not(.sales-reference-row-arrow):not(.sales-reference-delete-cell) {
+  background: #7697d8;
+}
+
+/* Bottom totals / navigator alignment. */
+.sales-reference-grid-totals {
+  grid-template-columns:
+    50px
+    480px
+    88px
+    120px
+    96px
+    122px
+    92px
+    92px
+    minmax(120px, 176px)
+    29px;
+}
+
+.sales-reference-record-nav {
+  margin-left: -15px;
+  margin-right: -15px;
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* Bottom action strip should sit closer to the reference center/right. */
+.sales-reference-actions {
+  min-height: 59px;
+  padding: 5px 14px;
+}
+
+.sales-reference-shortcuts {
+  padding-right: 300px;
+  font-size: 9px;
+}
+
+.sales-reference-actions-center {
+  gap: 6px;
+}
+
+.sales-reference-actions-center button {
+  min-width: 111px;
+  height: 42px;
+  font-size: 13px;
+}
+
+/* Right payment panel proportions. */
+.sales-reference-pay-options {
+  padding: 4px 5px 7px;
+}
+
+.sales-reference-pay-options legend {
+  font-size: 12px;
+}
+
+.sales-reference-pay-head-values,
+.sales-reference-disc-values,
+.sales-reference-received,
+.sales-reference-card,
+.sales-reference-balance {
+  grid-template-columns: 1fr 84px;
+}
+
+.sales-reference-pay-head-values strong,
+.sales-reference-disc-values strong {
+  height: 27px;
+  line-height: 27px;
+}
+
+.sales-reference-disc-line {
+  min-height: 26px;
+  font-size: 15px;
+}
+
+.sales-reference-payment-label,
+.sales-reference-remarks-label,
+.sales-reference-side-label {
+  margin-top: 7px;
+}
+
+.sales-reference-payment-method {
+  height: 32px;
+}
+
+.sales-reference-payment-method strong {
+  font-size: 14px;
+}
+
+.sales-reference-pay-options textarea {
+  height: 42px;
+}
+
+.sales-reference-total-block > span {
+  font-size: 14px;
+}
+
+.sales-reference-total-block > div {
+  height: 52px;
+  line-height: 52px;
+  font-size: 32px;
+}
+
+.sales-reference-received {
+  height: 37px;
+}
+
+.sales-reference-card {
+  height: 39px;
+}
+
+.sales-reference-balance {
+  height: 32px;
+}
+
+/* Softer, lower-contrast borders like the Windows reference. */
+.sales-reference-screen,
+.sales-reference-main,
+.sales-reference-pay,
+.sales-reference-options,
+.sales-reference-amounts,
+.sales-reference-pay-options,
+.sales-reference-grid-wrap,
+.sales-reference-grid th,
+.sales-reference-grid td,
+.sales-reference-grid-totals,
+.sales-reference-record-nav,
+.sales-reference-actions,
+.sales-reference-payment-method,
+.sales-reference-pay-options textarea {
+  border-color: #bdbdbd;
+}
+
+/* Keep wide desktop behavior stable. */
+@media (min-width: 1500px) {
+  .sales-reference-screen {
+    grid-template-columns: minmax(0, 1fr) 258px;
+  }
+
+  .sales-reference-meta {
+    grid-template-columns: 685px 258px minmax(0, 1fr);
+  }
+}
+/* Sales Invoice — micro fix 1: Amounts labels clipping */
+.sales-reference-amounts-grid {
+  grid-template-columns: 22px 50px 36px 44px 74px;
+  gap: 4px;
+}
+
+.sales-reference-amounts-grid > label {
+  font-size: 9px;
+  white-space: nowrap;
+}
+/* Sales Invoice — micro fix 2: Invoice Options field height */
+.sales-reference-option-grid > input,
+.sales-reference-input-button input {
+  height: 23px;
+  line-height: 21px;
+}
+
+.sales-reference-input-button button {
+  height: 23px;
+}
+
+.sales-reference-option-grid {
+  row-gap: 4px;
+}
+/* Sales Invoice — micro fix 3: F1 entry row geometry */
+.sales-reference-entry-row {
+  padding-left: 38px;
+}
+
+.sales-reference-product-entry {
+  width: 265px;
+  flex-basis: 265px;
+}
+
+.sales-reference-f1 {
+  width: 120px;
+  flex-basis: 120px;
+}
+
+.sales-reference-sale-btn {
+  margin-left: 4px;
+}
+
+/* Sales Invoice — micro fix: Amounts box only
+   Matches the supplied POS PLUS reference.
+   No other Sales Invoice layout is changed. */
+
+.sales-reference-amounts {
+  position: relative;
+  display: block;
+  min-width: 0;
+  padding: 4px 6px 6px;
+}
+
+/* Payment Due / On Hold sit on the same top line as in the reference. */
+.sales-reference-amounts-checks {
+  position: absolute;
+  top: 3px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 21px;
+  height: 20px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.sales-reference-amounts-checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.sales-reference-amounts-checks input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+}
+
+/* Re-map the EXISTING Amounts children into the reference layout.
+   No TSX/markup change is required. */
+.sales-reference-amounts-grid {
+  display: grid !important;
+  grid-template-columns: 58px 72px 88px !important;
+  grid-template-rows: 25px 21px 24px !important;
+  column-gap: 5px !important;
+  row-gap: 3px !important;
+  align-items: center;
+  width: max-content;
+  margin-top: 20px;
+}
+
+/* Empty spacer from the existing markup is not needed. */
+.sales-reference-amounts-grid > span:first-child {
+  display: none;
+}
+
+/* Green current-amount box: top-right, exactly like reference. */
+.sales-reference-amounts-grid > strong.is-green {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  width: 88px;
+  height: 23px !important;
+  line-height: 23px !important;
+  padding: 0 4px;
+  border: 1px solid #aaa;
+  background: #498424;
+  color: #111;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* Middle label row. */
+.sales-reference-amounts-grid > button {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  justify-self: start;
+  width: 30px;
+  height: 19px !important;
+  padding: 0;
+  border: 1px solid #aaa;
+  border-radius: 8px;
+  background: linear-gradient(#fff, #d7d7d7);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.sales-reference-amounts-grid > label:nth-of-type(1) {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+}
+
+.sales-reference-amounts-grid > label:nth-of-type(2) {
+  grid-column: 3 !important;
+  grid-row: 2 !important;
+}
+
+.sales-reference-amounts-grid > label {
+  justify-self: center;
+  font-size: 10px !important;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Bottom values row. */
+.sales-reference-amounts-grid > input:nth-of-type(1) {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+}
+
+.sales-reference-amounts-grid > input:nth-of-type(2) {
+  grid-column: 2 !important;
+  grid-row: 3 !important;
+}
+
+.sales-reference-amounts-grid > input:nth-of-type(3) {
+  grid-column: 3 !important;
+  grid-row: 3 !important;
+}
+
+.sales-reference-amounts-grid > input {
+  width: 100%;
+  height: 23px !important;
+  line-height: 21px !important;
+  padding: 0 4px;
+  border: 1px solid #aaa;
+  background: #efefef;
+  color: #111;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   BluePOS V2 premium-classic ribbon icons
+   Icon-only integration: existing ribbon geometry is preserved.
+   ========================================================= */
+
+.ribbon-tab-icon.has-custom-icon,
+.ribbon-icon-tile.has-custom-icon {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit;
+  overflow: visible;
+}
+
+.ribbon-tab-icon.has-custom-icon img {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.22));
+}
+
+.ribbon-icon-tile.has-custom-icon img {
+  display: block;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.24));
+}
+
+.ribbon-command:hover:not(:disabled) .ribbon-icon-tile.has-custom-icon img,
+.ribbon-command.is-active .ribbon-icon-tile.has-custom-icon img {
+  transform: translateY(-1px);
+}
+
+.ribbon-command:disabled .ribbon-icon-tile.has-custom-icon {
+  opacity: 0.62;
+}
+
+.ribbon-command:disabled .ribbon-icon-tile.has-custom-icon img {
+  filter: grayscale(0.58) saturate(0.65) opacity(0.9);
+}
+
+@media (max-width: 1024px) {
+  .ribbon-icon-tile.has-custom-icon img {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@media (max-height: 650px) and (max-width: 1024px) {
+  .ribbon-icon-tile.has-custom-icon img {
+    width: 30px;
+    height: 30px;
+  }
+}
+/* top ribbon tabs */
+.ribbon-tab__icon,
+.ribbon-tab__icon img,
+.ribbon-tab__icon svg {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  object-fit: contain;
+  display: block;
+}
+
+/* command icons inside ribbon */
+.ribbon-command__icon,
+.ribbon-command__icon img,
+.ribbon-command__icon svg {
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  object-fit: contain;
+  display: block;
+}
+
+/* icon wrapper alignment */
+.ribbon-tab__icon,
+.ribbon-command__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* if commands still look too small */
+.ribbon-command {
+  gap: 6px;
+}
+
+.ribbon-command__label {
+  margin-top: 4px;
+}
+
+/* =========================================================
+   POS PLUS top ribbon tabs — icon LEFT, label RIGHT
+   Definition / Daily Entries / Reports / Tools / Administration / Help
+   ========================================================= */
+
+.ribbon-tabs {
+  min-height: 46px !important;
+  height: 46px !important;
+  align-items: stretch !important;
+  padding: 0 7px !important;
+}
+
+.ribbon-tab {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+
+  min-width: auto !important;
+  min-height: 45px !important;
+  height: 45px !important;
+
+  padding: 0 14px !important;
+  line-height: 1 !important;
+}
+
+.ribbon-tab-icon,
+.ribbon-tab-icon.has-custom-icon {
+  display: grid !important;
+  place-items: center !important;
+
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+
+  flex: 0 0 28px !important;
+  margin: 0 !important;
+}
+
+.ribbon-tab-icon svg,
+.ribbon-tab-icon.has-custom-icon img {
+  display: block !important;
+  width: 28px !important;
+  height: 28px !important;
+  object-fit: contain !important;
+}
+
+.ribbon-tab-text {
+  display: block !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+
+  font-family: Arial, Tahoma, "Microsoft Sans Serif", sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+.ribbon-tab.is-active {
+  padding: 0 14px !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 1024px) {
+  .ribbon-tab {
+    min-width: auto !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    padding: 0 10px !important;
+    gap: 5px !important;
+  }
+
+  .ribbon-tab-icon,
+  .ribbon-tab-icon.has-custom-icon,
+  .ribbon-tab-icon svg,
+  .ribbon-tab-icon.has-custom-icon img {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+  }
+
+  .ribbon-tab-text {
+    font-size: 12px !important;
+  }
+}
+
+
+/* ==========================================================================
+   BluePOS Appearance Phase C1
+   Global Theme + Interface Skin visual layer
+   --------------------------------------------------------------------------
+   GUARANTEES
+   - No routes, text, DOM order, application flow, field names or behavior.
+   - Classic + Light keeps the existing approved POS PLUS-inspired visuals.
+   - Theme and Interface Style remain independent:
+       theme: system | light | dark
+       skin : classic | hybrid | advanced
+   - This phase intentionally targets shell/shared controls first.
+     Screen-specific Purchase/Sales/Product reference layouts remain structurally
+     untouched and can be themed incrementally in later passes.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1) Theme tokens
+   -------------------------------------------------------------------------- */
+
+:root[data-theme='dark'] {
+  --app-chrome: #20252b;
+  --titlebar-bg: #343a41;
+  --titlebar-bg-2: #242a30;
+  --titlebar-text: #eef2f6;
+
+  --ribbon-bg: #2d343b;
+  --ribbon-bg-2: #20262c;
+  --ribbon-selected: #343d46;
+  --ribbon-tab-idle: #2a3036;
+  --ribbon-border: #56616c;
+
+  --workspace-bg: #171b1f;
+  --workspace-tab-bg: #252b31;
+
+  --panel-border: #56616c;
+  --panel-header-1: #343b43;
+  --panel-header-2: #282e34;
+
+  --grid-header: #3b434c;
+  --grid-header-2: #2f363d;
+  --grid-border: #505a64;
+  --selected-row: #244d72;
+  --hover-row: #263d52;
+
+  --statusbar-bg: #2f363d;
+  --statusbar-bg-2: #242a30;
+
+  --brand-blue: #79b8f3;
+  --brand-blue-hot: #9acbfa;
+  --text-main: #edf1f5;
+  --text-muted: #aeb8c2;
+  --danger: #ff7777;
+  --focus-ring: #6eb6f6;
+
+  --input-bg: #20262c;
+  --input-border: #5d6873;
+  --disabled-fg: #7f8a94;
+  --pay-panel: #252b31;
+
+  /* Keep POS semantic entry colors recognisable in dark mode. */
+  --entry-yellow: #bda900;
+}
+
+/* Light is intentionally the existing approved appearance. */
+:root[data-theme='light'][data-skin='classic'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+/* --------------------------------------------------------------------------
+   2) DARK — application shell
+   Geometry is intentionally unchanged.
+   -------------------------------------------------------------------------- */
+
+:root[data-theme='dark'] body,
+:root[data-theme='dark'] .app-shell {
+  color: var(--text-main);
+  background: var(--workspace-bg);
+}
+
+:root[data-theme='dark'] .titlebar {
+  color: var(--titlebar-text);
+  background: linear-gradient(#373e45 0%, #2e343a 48%, #23292f 100%);
+  border-bottom-color: #4f5963;
+}
+
+:root[data-theme='dark'] .titlebar-center,
+:root[data-theme='dark'] .titlebar-meta {
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .titlebar-logo {
+  color: #8fc8ff;
+}
+
+:root[data-theme='dark'] .titlebar-env {
+  border-color: #8d792b;
+  background: #554b1c;
+  color: #ffe995;
+}
+
+:root[data-theme='dark'] .titlebar-select,
+:root[data-theme='dark'] .account-menu-btn {
+  border-color: #59636d;
+  background: linear-gradient(#343b42, #252b31);
+  color: #edf1f5;
+}
+
+/* Ribbon tabs: preserve icon-left / text-right geometry already approved. */
+:root[data-theme='dark'] .ribbon {
+  background: #252b31;
+  border-bottom-color: #505a64;
+}
+
+:root[data-theme='dark'] .ribbon-tabs {
+  background: linear-gradient(#343a40 0%, #282e34 100%);
+  border-bottom-color: #4b555f;
+}
+
+:root[data-theme='dark'] .ribbon-tab {
+  color: #d9e0e6;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .65);
+}
+
+:root[data-theme='dark'] .ribbon-tab:hover {
+  background: rgba(255, 255, 255, .07);
+  color: #ffffff;
+}
+
+:root[data-theme='dark'] .ribbon-tab.is-active {
+  border-color: #596570;
+  background: linear-gradient(#3c454e 0%, #333b43 55%, #293037 100%);
+  color: #8fc8ff;
+  text-shadow: none;
+}
+
+:root[data-theme='dark'] .ribbon-body {
+  background: linear-gradient(#30373e 0%, #292f35 48%, #20262c 100%);
+  border-bottom-color: #4d5760;
+}
+
+:root[data-theme='dark'] .ribbon-group {
+  border-right-color: #4a545e;
+}
+
+:root[data-theme='dark'] .ribbon-command {
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .ribbon-command:hover:not(:disabled) {
+  border-color: #4d7598;
+  background: linear-gradient(#344453, #293846);
+}
+
+:root[data-theme='dark'] .ribbon-command:active:not(:disabled),
+:root[data-theme='dark'] .ribbon-command.is-active {
+  border-color: #5e96c6;
+  background: linear-gradient(#36516a 0%, #2d465b 54%, #253b4e 100%);
+  box-shadow: inset 0 0 0 1px rgba(170, 215, 255, .14);
+}
+
+:root[data-theme='dark'] .ribbon-command.is-active .ribbon-command-label,
+:root[data-theme='dark'] .ribbon-command.has-menu.is-menu-open .ribbon-command-label {
+  color: #ff8b8b;
+}
+
+:root[data-theme='dark'] .ribbon-group-caption {
+  border-top-color: #59636d;
+  background: linear-gradient(#414950 0%, #323940 100%);
+  color: #e7edf2;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .7);
+}
+
+:root[data-theme='dark'] .ribbon-menu {
+  border-color: #56616c;
+  background: #22282e;
+  color: #edf1f5;
+  box-shadow: 2px 5px 14px rgba(0, 0, 0, .42);
+}
+
+:root[data-theme='dark'] .ribbon-menu button {
+  background: #22282e;
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .ribbon-menu button:hover:not(:disabled) {
+  background: #2d628f;
+  color: #fff;
+}
+
+:root[data-theme='dark'] .ribbon-menu button:disabled {
+  color: #7f8a94;
+}
+
+/* Workspace tabs */
+:root[data-theme='dark'] .workspace-tabs {
+  background: #252b31;
+  border-bottom-color: #505a64;
+}
+
+:root[data-theme='dark'] .workspace-tab {
+  border-color: #505a64;
+  background: linear-gradient(#343b42 0%, #2c3238 54%, #252b31 100%);
+  color: #dce3e9;
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .04);
+}
+
+:root[data-theme='dark'] .workspace-tab.is-active {
+  border-color: #54799a;
+  background: linear-gradient(#304f68 0%, #29465d 48%, #233c50 100%);
+  color: #d9efff;
+}
+
+:root[data-theme='dark'] .workspace-tab-close {
+  color: #aab4bd;
+}
+
+:root[data-theme='dark'] .workspace-host {
+  background: var(--workspace-bg);
+}
+
+/* Status bar */
+:root[data-theme='dark'] .statusbar {
+  border-top-color: #505a64;
+  background: linear-gradient(#30373e, #252b31);
+  color: #dce3e9;
+}
+
+:root[data-theme='dark'] .statusbar-item {
+  border-right-color: #4c5660;
+}
+
+/* --------------------------------------------------------------------------
+   3) DARK — shared panels, controls, grids and popups
+   -------------------------------------------------------------------------- */
+
+:root[data-theme='dark'] .desktop-panel {
+  background: #1d2227;
+  border-color: var(--panel-border);
+}
+
+:root[data-theme='dark'] .desktop-panel-header {
+  color: #9bcfff;
+  background: linear-gradient(#343b43, #292f35);
+  border-bottom-color: var(--panel-border);
+}
+
+:root[data-theme='dark'] .desktop-toolbar {
+  background: linear-gradient(#2e353c, #252b31);
+  border-bottom-color: var(--grid-border);
+}
+
+:root[data-theme='dark'] .desktop-panel-body {
+  background: #1d2227;
+  color: var(--text-main);
+}
+
+:root[data-theme='dark'] .desktop-panel-footer {
+  background: linear-gradient(#2c3339, #252b31);
+  border-top-color: var(--panel-border);
+}
+
+:root[data-theme='dark'] .desktop-btn {
+  border-color: #59646f;
+  background: linear-gradient(#343b42, #282e34);
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .desktop-btn:hover:not(:disabled) {
+  border-color: #638db2;
+  background: linear-gradient(#3c4b59, #2d3d4c);
+}
+
+:root[data-theme='dark'] .desktop-btn:active:not(:disabled) {
+  background: #2c465d;
+}
+
+:root[data-theme='dark'] .desktop-btn.is-primary {
+  border-color: #417aa9;
+  background: linear-gradient(#397db5, #285c86);
+  color: #fff;
+}
+
+:root[data-theme='dark'] .desktop-btn.is-danger {
+  color: #ff8c8c;
+}
+
+:root[data-theme='dark'] .form-group {
+  border-color: var(--panel-border);
+  background: #20262c;
+}
+
+:root[data-theme='dark'] .form-group-title {
+  color: #9bcfff;
+  background: linear-gradient(#323941, #282e34);
+  border-bottom-color: var(--panel-border);
+}
+
+:root[data-theme='dark'] .desktop-field,
+:root[data-theme='dark'] .kv-grid dt {
+  color: var(--text-muted);
+}
+
+:root[data-theme='dark'] .desktop-input,
+:root[data-theme='dark'] .desktop-select,
+:root[data-theme='dark'] .desktop-textarea {
+  border-color: var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-main);
+}
+
+:root[data-theme='dark'] .desktop-input:disabled,
+:root[data-theme='dark'] .desktop-select:disabled,
+:root[data-theme='dark'] .desktop-textarea:disabled {
+  background: #2a3036;
+  color: var(--disabled-fg);
+}
+
+:root[data-theme='dark'] input::placeholder,
+:root[data-theme='dark'] textarea::placeholder {
+  color: #7f8b96;
+}
+
+/* Native date/select widgets need an explicit dark hint in Chromium. */
+:root[data-theme='dark'] input,
+:root[data-theme='dark'] select,
+:root[data-theme='dark'] textarea {
+  color-scheme: dark;
+}
+
+:root[data-theme='dark'] .pos-grid-wrap {
+  border-color: var(--grid-border);
+  background: #1d2227;
+}
+
+:root[data-theme='dark'] .pos-grid {
+  color: #e7edf2;
+  background: #1d2227;
+}
+
+:root[data-theme='dark'] .pos-grid th {
+  color: #edf1f5;
+  background: linear-gradient(var(--grid-header), var(--grid-header-2));
+  border-right-color: var(--grid-border);
+  border-bottom-color: #4d5760;
+}
+
+:root[data-theme='dark'] .pos-grid td {
+  background: #1d2227;
+  border-right-color: #404a53;
+  border-bottom-color: #353e47;
+}
+
+:root[data-theme='dark'] .pos-grid tbody tr:nth-child(even) td {
+  background: #20262c;
+}
+
+:root[data-theme='dark'] .pos-grid tbody tr:hover td {
+  background: var(--hover-row);
+}
+
+:root[data-theme='dark'] .pos-grid tbody tr.is-selected td {
+  background: var(--selected-row);
+}
+
+:root[data-theme='dark'] .account-menu-panel {
+  border-color: var(--panel-border);
+  background: #22282e;
+  color: var(--text-main);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, .38);
+}
+
+:root[data-theme='dark'] .account-menu-panel button {
+  border-bottom-color: #343d45;
+  background: #22282e;
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .account-menu-panel button:hover:not(:disabled) {
+  background: #2a4358;
+}
+
+:root[data-theme='dark'] .quick-command {
+  border-color: var(--panel-border);
+  background: linear-gradient(#30373e, #252b31);
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .quick-command:hover:not(:disabled) {
+  border-color: #638db2;
+  background: linear-gradient(#354656, #293a49);
+}
+
+:root[data-theme='dark'] .inner-tabs {
+  border-bottom-color: var(--panel-border);
+  background: #252b31;
+}
+
+:root[data-theme='dark'] .inner-tab {
+  color: #aeb8c2;
+}
+
+:root[data-theme='dark'] .inner-tab.is-active {
+  border-color: var(--panel-border);
+  background: #1d2227;
+  color: #9bcfff;
+}
+
+:root[data-theme='dark'] .calc-card,
+:root[data-theme='dark'] .command-list-box,
+:root[data-theme='dark'] .report-list {
+  border-color: var(--panel-border);
+  background: #1d2227;
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .later-banner {
+  border-color: var(--panel-border);
+  background: #252b31;
+  color: var(--text-muted);
+}
+
+:root[data-theme='dark'] .status-pill {
+  border-color: #5b6670;
+  background: #26362c;
+  color: #cfe8d5;
+}
+
+/* --------------------------------------------------------------------------
+   4) HYBRID skin
+   Keeps Classic density and workflow, but softens the visual treatment.
+   No dimension/position changes.
+   -------------------------------------------------------------------------- */
+
+:root[data-skin='hybrid'] .titlebar,
+:root[data-skin='hybrid'] .ribbon-tabs,
+:root[data-skin='hybrid'] .ribbon-body,
+:root[data-skin='hybrid'] .statusbar {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, currentColor 0%, transparent) 0%,
+    transparent 100%
+  );
+}
+
+/* Explicit surfaces for broad Chromium support; these override the helper above. */
+:root[data-theme='light'][data-skin='hybrid'] .titlebar {
+  background: linear-gradient(#f4f6f8, #d7dce2);
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .ribbon-tabs {
+  background: linear-gradient(#b9c1c9, #a1a9b1);
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .ribbon-body {
+  background: linear-gradient(#ffffff 0%, #f1f3f5 48%, #d9dee3 100%);
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .statusbar {
+  background: linear-gradient(#e2e5e8, #c4c9ce);
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .titlebar {
+  background: linear-gradient(#3b434b, #293037);
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .ribbon-tabs {
+  background: linear-gradient(#353d45, #2a3036);
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .ribbon-body {
+  background: linear-gradient(#333b43 0%, #2c3339 48%, #242a30 100%);
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .statusbar {
+  background: linear-gradient(#343b42, #282e34);
+}
+
+:root[data-skin='hybrid'] .ribbon-tab,
+:root[data-skin='hybrid'] .workspace-tab,
+:root[data-skin='hybrid'] .desktop-btn,
+:root[data-skin='hybrid'] .account-menu-btn,
+:root[data-skin='hybrid'] .titlebar-select,
+:root[data-skin='hybrid'] .quick-command {
+  border-radius: 4px;
+}
+
+:root[data-skin='hybrid'] .ribbon-tab.is-active {
+  border-radius: 5px 5px 0 0;
+}
+
+:root[data-skin='hybrid'] .workspace-tab {
+  border-radius: 4px 4px 0 0;
+}
+
+:root[data-skin='hybrid'] .desktop-panel,
+:root[data-skin='hybrid'] .form-group,
+:root[data-skin='hybrid'] .pos-grid-wrap,
+:root[data-skin='hybrid'] .account-menu-panel,
+:root[data-skin='hybrid'] .calc-card {
+  border-radius: 4px;
+}
+
+:root[data-skin='hybrid'] .desktop-btn,
+:root[data-skin='hybrid'] .quick-command {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .25),
+    0 1px 2px rgba(15, 25, 35, .12);
+}
+
+:root[data-skin='hybrid'] .ribbon-icon-tile.has-custom-icon img {
+  filter:
+    drop-shadow(0 1px 1px rgba(0, 0, 0, .24))
+    saturate(1.05);
+}
+
+/* --------------------------------------------------------------------------
+   5) ADVANCED skin
+   Same controls and workflow, cleaner contemporary surface treatment.
+   Geometry remains fixed; this is visual-only.
+   -------------------------------------------------------------------------- */
+
+:root[data-theme='light'][data-skin='advanced'] {
+  --app-chrome: #eef2f6;
+  --workspace-bg: #e9eef3;
+  --workspace-tab-bg: #dce4eb;
+  --panel-border: #b5c0ca;
+  --grid-border: #c0c9d1;
+  --brand-blue: #1769aa;
+  --brand-blue-hot: #0f7dcc;
+  --focus-ring: #278bd1;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] {
+  --app-chrome: #161a1e;
+  --workspace-bg: #12161a;
+  --workspace-tab-bg: #1e252b;
+  --panel-border: #46535f;
+  --grid-border: #414d57;
+  --brand-blue: #69b7f5;
+  --brand-blue-hot: #8cccff;
+}
+
+:root[data-skin='advanced'] .titlebar {
+  border-bottom-width: 1px;
+  box-shadow: 0 1px 5px rgba(20, 30, 40, .14);
+}
+
+:root[data-theme='light'][data-skin='advanced'] .titlebar {
+  background: #f8fafc;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .titlebar {
+  background: #1e252b;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .ribbon-tabs {
+  background: #e3e9ee;
+  border-bottom-color: #c2ccd5;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .ribbon-tabs {
+  background: #20272d;
+  border-bottom-color: #414d57;
+}
+
+:root[data-skin='advanced'] .ribbon-tab {
+  border-radius: 6px 6px 0 0;
+  text-shadow: none;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .ribbon-tab {
+  color: #46535f;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .ribbon-tab {
+  color: #c7d0d8;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .ribbon-tab.is-active {
+  border-color: #b7c5d1;
+  background: #ffffff;
+  color: #1769aa;
+  box-shadow: inset 0 -2px 0 #278bd1;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .ribbon-tab.is-active {
+  border-color: #43525e;
+  background: #2a333b;
+  color: #8cccff;
+  box-shadow: inset 0 -2px 0 #69b7f5;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .ribbon-body {
+  background: #f7f9fb;
+  border-bottom-color: #c2ccd5;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .ribbon-body {
+  background: #1b2127;
+  border-bottom-color: #414d57;
+}
+
+:root[data-skin='advanced'] .ribbon-group-caption {
+  border-top: 0;
+  background: transparent;
+  text-shadow: none;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .ribbon-group-caption {
+  color: #63717e;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .ribbon-group-caption {
+  color: #9faab4;
+}
+
+:root[data-skin='advanced'] .ribbon-command {
+  border-radius: 7px;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .ribbon-command:hover:not(:disabled) {
+  border-color: #c5d5e2;
+  background: #eaf3fa;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .ribbon-command:hover:not(:disabled) {
+  border-color: #3f627d;
+  background: #223342;
+}
+
+:root[data-skin='advanced'] .workspace-tab {
+  border-radius: 6px 6px 0 0;
+  box-shadow: none;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .workspace-tabs {
+  background: #dfe6ec;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .workspace-tabs {
+  background: #1e252b;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .workspace-tab {
+  background: #edf2f6;
+  color: #44525e;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .workspace-tab.is-active {
+  background: #fff;
+  border-color: #aebdca;
+  color: #1769aa;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .workspace-tab {
+  background: #252d34;
+  color: #c6d0d9;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .workspace-tab.is-active {
+  background: #2a3946;
+  border-color: #45657f;
+  color: #b9e1ff;
+}
+
+:root[data-skin='advanced'] .desktop-panel,
+:root[data-skin='advanced'] .form-group,
+:root[data-skin='advanced'] .pos-grid-wrap,
+:root[data-skin='advanced'] .account-menu-panel,
+:root[data-skin='advanced'] .calc-card,
+:root[data-skin='advanced'] .quick-command {
+  border-radius: 7px;
+}
+
+:root[data-skin='advanced'] .desktop-panel {
+  overflow: hidden;
+}
+
+:root[data-skin='advanced'] .desktop-panel-header,
+:root[data-skin='advanced'] .desktop-toolbar,
+:root[data-skin='advanced'] .desktop-panel-footer,
+:root[data-skin='advanced'] .form-group-title {
+  background-image: none;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .desktop-panel {
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(32, 47, 61, .08);
+}
+
+:root[data-theme='light'][data-skin='advanced'] .desktop-panel-header,
+:root[data-theme='light'][data-skin='advanced'] .desktop-toolbar,
+:root[data-theme='light'][data-skin='advanced'] .desktop-panel-footer,
+:root[data-theme='light'][data-skin='advanced'] .form-group-title {
+  background-color: #f3f6f8;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .desktop-panel {
+  background: #1a2025;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .22);
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .desktop-panel-header,
+:root[data-theme='dark'][data-skin='advanced'] .desktop-toolbar,
+:root[data-theme='dark'][data-skin='advanced'] .desktop-panel-footer,
+:root[data-theme='dark'][data-skin='advanced'] .form-group-title {
+  background-color: #232b32;
+}
+
+:root[data-skin='advanced'] .desktop-btn,
+:root[data-skin='advanced'] .account-menu-btn,
+:root[data-skin='advanced'] .titlebar-select,
+:root[data-skin='advanced'] .desktop-input,
+:root[data-skin='advanced'] .desktop-select,
+:root[data-skin='advanced'] .desktop-textarea,
+:root[data-skin='advanced'] .quick-command {
+  border-radius: 6px;
+}
+
+:root[data-skin='advanced'] .desktop-btn {
+  box-shadow: none;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .desktop-btn {
+  border-color: #bcc8d2;
+  background: #f8fafb;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .desktop-btn:hover:not(:disabled) {
+  border-color: #8eb7d6;
+  background: #edf6fc;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .desktop-btn {
+  border-color: #46535f;
+  background: #252d34;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .desktop-btn:hover:not(:disabled) {
+  border-color: #527b9c;
+  background: #293b49;
+}
+
+:root[data-skin='advanced'] .pos-grid th {
+  background-image: none;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .pos-grid th {
+  background-color: #e6edf3;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .pos-grid th {
+  background-color: #2a333b;
+}
+
+:root[data-skin='advanced'] .ribbon-icon-tile.has-custom-icon img {
+  filter:
+    drop-shadow(0 1px 2px rgba(0, 0, 0, .18))
+    saturate(.96);
+}
+
+/* --------------------------------------------------------------------------
+   6) Keep semantic POS colors readable across all visual styles.
+   These are meaning-bearing fields, not decorative theme surfaces.
+   -------------------------------------------------------------------------- */
+
+:root[data-theme='dark'] .entry-cell,
+:root[data-theme='dark'] .f1-search,
+:root[data-theme='dark'] .pay-received,
+:root[data-theme='dark'] .drcr-box span {
+  color: #171717;
+}
+
+:root[data-theme='dark'] .pay-total {
+  background: #050607;
+  color: #42ff57;
+}
+
+/* --------------------------------------------------------------------------
+   7) Reduced motion/accessibility
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-skin='hybrid'] *,
+  :root[data-skin='advanced'] * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ============================ END PHASE C1 ================================ */

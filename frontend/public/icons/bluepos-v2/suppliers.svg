@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<defs>
+  <linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#74c1ff"/><stop offset="1" stop-color="#1c67b5"/></linearGradient>
+  <linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8be18c"/><stop offset="1" stop-color="#258a45"/></linearGradient>
+  <linearGradient id="o" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffd36c"/><stop offset="1" stop-color="#df8a17"/></linearGradient>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f9fbfd"/><stop offset="1" stop-color="#bec8d2"/></linearGradient>
+  <filter id="sh"><feDropShadow dx="0" dy="1.4" stdDeviation="1.1" flood-opacity=".28"/></filter>
+</defs>
+<g filter="url(#sh)">
+<path d="M8 24h31v26H8z" fill="url(#s)" stroke="#4b657c" stroke-width="2"/>
+<path d="M12 24l7-9 7 9 7-9 6 9" fill="url(#b)" stroke="#355d85" stroke-width="2"/>
+<rect x="14" y="33" width="18" height="12" fill="url(#o)" stroke="#b86a12" stroke-width="1.5"/>
+<circle cx="47" cy="24" r="7" fill="url(#o)" stroke="#b86a12"/><path d="M38 49c1-11 5-17 9-17s8 6 9 17z" fill="url(#b)" stroke="#1c67b5"/>
+</g></svg>

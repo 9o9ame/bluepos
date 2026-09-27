@@ -45,6 +45,7 @@ import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/Worksp
 import type { Product } from '../types/catalog'
 import type { OpeningBalance } from '../types/inventory'
 import './ProductsPage.reference.css'
+import './ProductsPage.theme.css'
 
 export function ProductsPage() {
   const queryClient = useQueryClient()

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { laterPhaseHint, type RibbonCommandDef } from '../../features/workspace/modules'
+import { BLUEPOS_RIBBON_COMMAND_ICONS } from '../../features/workspace/blueposIconMap'
 
 type RibbonCommandProps = RibbonCommandDef & {
   active?: boolean
@@ -10,6 +11,7 @@ type RibbonCommandProps = RibbonCommandDef & {
 }
 
 export function RibbonCommand({
+  id,
   icon: Icon,
   label,
   shortcut,
@@ -29,6 +31,7 @@ export function RibbonCommand({
   const entitled = !entitlement || !features || features.includes(entitlement)
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const customIconSrc = BLUEPOS_RIBBON_COMMAND_ICONS[id]
 
   useEffect(() => {
     function onDocClick(event: MouseEvent) {
@@ -73,8 +76,12 @@ export function RibbonCommand({
           onClick?.()
         }}
       >
-        <span className={`ribbon-icon-tile tone-${tone}`}>
-          <Icon size={26} strokeWidth={1.75} aria-hidden />
+        <span className={`ribbon-icon-tile${customIconSrc ? ' has-custom-icon' : ` tone-${tone}`}`}>
+          {customIconSrc ? (
+            <img src={customIconSrc} alt="" draggable={false} aria-hidden />
+          ) : (
+            <Icon size={34} strokeWidth={1.9} aria-hidden />
+          )}
         </span>
         <span className="ribbon-command-label">
           {label}

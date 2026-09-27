@@ -25,6 +25,8 @@ use Illuminate\Support\Str;
     'must_change_password',
     'password_changed_at',
     'security_version',
+    'appearance_theme',
+    'appearance_skin',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable

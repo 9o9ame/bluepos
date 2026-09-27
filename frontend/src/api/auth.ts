@@ -1,4 +1,4 @@
-import type { AuthSession } from '../types/auth'
+import type { AppearancePreferences, AuthSession } from '../types/auth'
 import { apiFetch, resetCsrf } from './client'
 
 export type LoginInput = {
@@ -32,8 +32,21 @@ export type MfaVerifyInput = {
   trust_device?: boolean
 }
 
+export type UpdateAppearanceInput = AppearancePreferences
+
+export type UpdateAppearanceResponse = {
+  appearance: AppearancePreferences
+}
+
 export function fetchMe(): Promise<AuthSession> {
   return apiFetch<AuthSession>('/api/auth/me')
+}
+
+export function updateAppearance(input: UpdateAppearanceInput): Promise<UpdateAppearanceResponse> {
+  return apiFetch<UpdateAppearanceResponse>('/api/auth/appearance', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
 }
 
 export function login(input: LoginInput): Promise<AuthSession> {

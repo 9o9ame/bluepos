@@ -6,15 +6,25 @@ import { Ribbon } from '../components/desktop/Ribbon'
 import { StatusBar } from '../components/desktop/StatusBar'
 import { WorkspaceTabBar } from '../components/desktop/WorkspaceTabBar'
 import { useAuth } from '../features/auth/AuthProvider'
+import { useAppearance } from '../features/appearance/AppearanceProvider'
 import { WorkspaceProvider } from '../features/workspace/WorkspaceProvider'
 import { useWorkspaceShortcuts } from '../features/workspace/useWorkspaceShortcuts'
 
 export function AppShell() {
   const { session, logout } = useAuth()
+  const { setUserScope } = useAppearance()
   const navigate = useNavigate()
   const [loggingOut, setLoggingOut] = useState(false)
   const [calculatorOpen, setCalculatorOpen] = useState(false)
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
+
+  useEffect(() => {
+    setUserScope(session?.user.ulid ?? null, session?.appearance ?? null)
+
+    return () => {
+      setUserScope(null)
+    }
+  }, [session?.user.ulid, session?.appearance, setUserScope])
 
   useEffect(() => {
     function onOnline() {

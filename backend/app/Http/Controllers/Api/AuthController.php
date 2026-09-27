@@ -22,6 +22,7 @@ use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -67,6 +68,26 @@ class AuthController extends Controller
     public function me(TenantContext $tenantContext): AuthSessionResource
     {
         return AuthSessionResource::fromContext($tenantContext);
+    }
+
+    public function updateAppearance(Request $request, TenantContext $tenantContext): JsonResponse
+    {
+        $data = $request->validate([
+            'theme' => ['required', 'string', Rule::in(['system', 'light', 'dark'])],
+            'skin' => ['required', 'string', Rule::in(['classic', 'hybrid', 'advanced'])],
+        ]);
+
+        $user = $tenantContext->user();
+        $user->appearance_theme = $data['theme'];
+        $user->appearance_skin = $data['skin'];
+        $user->save();
+
+        return response()->json([
+            'appearance' => [
+                'theme' => $user->appearance_theme,
+                'skin' => $user->appearance_skin,
+            ],
+        ]);
     }
 
     public function changePassword(Request $request, TenantContext $tenantContext, SessionRevocationService $revocation): JsonResponse

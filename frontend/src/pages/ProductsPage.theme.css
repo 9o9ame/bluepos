@@ -1,0 +1,683 @@
+/*
+ * BluePOS — Products Definition theme/skin layer (Phase C2)
+ *
+ * Imported AFTER ProductsPage.reference.css so this file only overrides visuals.
+ * It intentionally does NOT change:
+ * - layout/grid geometry
+ * - field order
+ * - text/content
+ * - routes
+ * - permissions
+ * - keyboard shortcuts
+ * - product/inventory behavior
+ *
+ * Supported combinations:
+ * Light + Classic   => existing approved reference design (no override here)
+ * Dark  + Classic
+ * Light + Hybrid
+ * Dark  + Hybrid
+ * Light + Advanced
+ * Dark  + Advanced
+ */
+
+/* ==========================================================================
+   DARK + ALL SKINS — Products screen base
+   ========================================================================== */
+
+:root[data-theme='dark'] .product-reference-screen {
+  color: #edf1f5;
+  background: #181d22;
+  border-color: #4d5862;
+}
+
+/* Left command rail */
+:root[data-theme='dark'] .product-reference-screen .product-def-rail {
+  background: linear-gradient(#2f363d, #242a30);
+  border-right-color: #4d5862;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-photo {
+  border-color: #9c5555;
+  background: #20262c;
+  color: #dce3e9;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-rail-btn,
+:root[data-theme='dark'] .product-reference-screen .product-def-cmd {
+  border-color: #59646f;
+  background: linear-gradient(#353c43, #282e34);
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-rail-btn:hover:not(:disabled),
+:root[data-theme='dark'] .product-reference-screen .product-def-cmd:hover:not(:disabled) {
+  border-color: #638db2;
+  background: linear-gradient(#3d4d5c, #2d3e4d);
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-rail-btn:disabled,
+:root[data-theme='dark'] .product-reference-screen .product-def-cmd:disabled {
+  color: #7d8994;
+  opacity: .68;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-cmd-key {
+  color: #97a5b1;
+}
+
+/* Form side */
+:root[data-theme='dark'] .product-reference-screen .product-def-form {
+  background: #20262c;
+  border-right-color: #4d5862;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-title {
+  color: #ff8c8c;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-tabs {
+  border-bottom-color: #56616c;
+  background: #2a3036;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-tabs button {
+  color: #aeb8c2;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-tabs button.is-active {
+  border-color: #527b9c;
+  background: linear-gradient(#314e65, #263f53);
+  color: #b9e1ff;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-tabs button:disabled {
+  color: #707b85;
+}
+
+/* Labels */
+:root[data-theme='dark'] .product-reference-screen .pdf-row > label:first-child,
+:root[data-theme='dark'] .product-reference-screen .pdf-right-label,
+:root[data-theme='dark'] .product-reference-screen .pdf-check {
+  color: #d8e0e7;
+}
+
+/* Inputs/selects */
+:root[data-theme='dark'] .product-reference-screen .pdf-input,
+:root[data-theme='dark'] .product-reference-screen .pdf-select,
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-input {
+  border-color: #5e6974;
+  background: #1b2127;
+  color: #edf1f5;
+  color-scheme: dark;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-input:focus,
+:root[data-theme='dark'] .product-reference-screen .pdf-select:focus,
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-input:focus {
+  border-color: #6eb6f6;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-input::placeholder,
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-input::placeholder {
+  color: #77838e;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-input:disabled,
+:root[data-theme='dark'] .product-reference-screen .pdf-select:disabled,
+:root[data-theme='dark'] .product-reference-screen .pdf-input[readonly],
+:root[data-theme='dark'] .product-reference-screen .pdf-readonly {
+  border-color: #4b555f;
+  background: #282f36;
+  color: #9ba7b2;
+}
+
+/* Small + buttons */
+:root[data-theme='dark'] .product-reference-screen .pdf-plus-button {
+  border-color: #477a9f;
+  background: linear-gradient(#58a9d5, #367da8);
+  color: #fff;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-plus-button:hover:not(:disabled) {
+  background: linear-gradient(#6bb9e0, #3c89b8);
+}
+
+/* Barcode section */
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-box {
+  border-color: #56616c;
+  background: #1b2127;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-title {
+  border-bottom-color: #56616c;
+  background: linear-gradient(#343c44, #292f35);
+  color: #9bcfff;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-table {
+  color: #dfe6ec;
+  background: #1b2127;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-table th {
+  border-color: #56616c;
+  background: #343c44;
+  color: #e8eef3;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-table td {
+  border-color: #3e4851;
+  background: #1d2329;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-nav {
+  border-top-color: #56616c;
+  background: #293038;
+  color: #b2bdc7;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-nav button {
+  border-color: #56616c;
+  background: linear-gradient(#353d44, #272e34);
+  color: #c8d2db;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-nav button:disabled {
+  color: #65717c;
+}
+
+/* Inline errors */
+:root[data-theme='dark'] .product-reference-screen .product-inline-error {
+  border-color: #8e4a4a;
+  background: #4a2525;
+  color: #ffb8b8;
+}
+
+/* Right grid pane */
+:root[data-theme='dark'] .product-reference-screen .product-def-grid {
+  background: #171c21;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-grid-top,
+:root[data-theme='dark'] .product-reference-screen .product-def-grid-search {
+  background: #20262c;
+  border-color: #4d5862;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-grid-search .pdf-input {
+  background: #1b2127;
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-new-btn {
+  border-color: #4e6579;
+  background: linear-gradient(#34414d, #29343e);
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-groupbar {
+  border-color: #48535d;
+  background: #20272d;
+  color: #9da9b4;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-groupbar-label {
+  color: #8ea5b8;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-groupbar-value {
+  color: #b9c6d1;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-groupbar-arrow {
+  color: #6f7d88;
+}
+
+/* Generic data grid, scoped only to Products */
+:root[data-theme='dark'] .product-reference-screen .pos-grid-wrap {
+  border-color: #48535d;
+  background: #171c21;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pos-grid {
+  background: #171c21;
+  color: #e5ebf0;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pos-grid th {
+  border-right-color: #56616c;
+  border-bottom-color: #56616c;
+  background: linear-gradient(#343c44, #2b3239);
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pos-grid td {
+  border-right-color: #39434c;
+  border-bottom-color: #333c44;
+  background: #171c21;
+  color: #dfe6ec;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pos-grid tbody tr:nth-child(even) td {
+  background: #1b2127;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pos-grid tbody tr:hover td {
+  background: #23394b;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pos-grid tbody tr.is-selected td {
+  background: #28547a;
+  color: #fff;
+}
+
+:root[data-theme='dark'] .product-reference-screen .stock-na {
+  color: #77838e;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-grid-foot {
+  border-top-color: #4d5862;
+  background: #2a3138;
+  color: #cbd4dc;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-pager button {
+  border-color: #56616c;
+  background: linear-gradient(#353d44, #272e34);
+  color: #dce4eb;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-pager button:disabled {
+  color: #66717c;
+}
+
+
+/* ==========================================================================
+   HYBRID — same geometry, premium-classic treatment
+   ========================================================================== */
+
+/* LIGHT + HYBRID */
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen {
+  background: #e3e8ed;
+  border-color: #9faab4;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .product-def-rail {
+  background: linear-gradient(#f4f6f8, #d9dfe5);
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .product-def-form {
+  background: #f2f4f6;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .product-def-tabs {
+  background: #dde3e8;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .product-def-tabs button.is-active {
+  background: linear-gradient(#e8f8ff, #b8e2f3);
+  border-color: #8daebf;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .pdf-input,
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .pdf-select,
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .pdf-barcode-input {
+  border-color: #8794a0;
+  background: #fff;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .product-def-rail-btn,
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .product-def-cmd,
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .product-def-new-btn,
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .product-def-pager button {
+  border-radius: 5px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.8),
+    0 1px 2px rgba(35,48,60,.12);
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .pdf-plus-button {
+  border-radius: 4px;
+}
+
+/* DARK + HYBRID */
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen {
+  background: #1a2025;
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .product-def-rail {
+  background: linear-gradient(#333b43, #272e34);
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .product-def-form {
+  background: #22282e;
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .product-def-tabs {
+  background: #2d343b;
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .product-def-tabs button.is-active {
+  background: linear-gradient(#35566e, #29465b);
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .product-def-rail-btn,
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .product-def-cmd,
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .product-def-new-btn,
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .product-def-pager button {
+  border-radius: 5px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 1px 2px rgba(0,0,0,.22);
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .pdf-input,
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .pdf-select,
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .pdf-barcode-input,
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .pdf-plus-button {
+  border-radius: 4px;
+}
+
+
+/* ==========================================================================
+   ADVANCED — same geometry, clean/flat professional treatment
+   ========================================================================== */
+
+/* Shared advanced treatment */
+:root[data-skin='advanced'] .product-reference-screen .product-def-rail-btn,
+:root[data-skin='advanced'] .product-reference-screen .product-def-cmd,
+:root[data-skin='advanced'] .product-reference-screen .product-def-new-btn,
+:root[data-skin='advanced'] .product-reference-screen .product-def-pager button,
+:root[data-skin='advanced'] .product-reference-screen .pdf-plus-button,
+:root[data-skin='advanced'] .product-reference-screen .pdf-input,
+:root[data-skin='advanced'] .product-reference-screen .pdf-select,
+:root[data-skin='advanced'] .product-reference-screen .pdf-barcode-input {
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+:root[data-skin='advanced'] .product-reference-screen .product-def-photo,
+:root[data-skin='advanced'] .product-reference-screen .pdf-barcode-box {
+  border-radius: 7px;
+}
+
+:root[data-skin='advanced'] .product-reference-screen .product-def-tabs button {
+  border-radius: 6px 6px 0 0;
+}
+
+:root[data-skin='advanced'] .product-reference-screen .product-def-grid-foot,
+:root[data-skin='advanced'] .product-reference-screen .pdf-barcode-title,
+:root[data-skin='advanced'] .product-reference-screen .pdf-barcode-nav,
+:root[data-skin='advanced'] .product-reference-screen .pos-grid th {
+  background-image: none;
+}
+
+/* LIGHT + ADVANCED */
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen {
+  background: #edf2f6;
+  border-color: #bcc7d1;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-rail {
+  background: #f4f7f9;
+  border-right-color: #c4ced7;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-form {
+  background: #f7f9fb;
+  border-right-color: #c4ced7;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-title {
+  color: #8f2525;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-tabs {
+  background: #e7edf2;
+  border-bottom-color: #bdc8d2;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-tabs button {
+  color: #5d6872;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-tabs button.is-active {
+  background: #ffffff;
+  border-color: #aebfcd;
+  color: #1769aa;
+  box-shadow: inset 0 -2px 0 #278bd1;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-rail-btn,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-cmd,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-new-btn,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-pager button {
+  border-color: #bdc8d2;
+  background: #f8fafb;
+  color: #28333d;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-rail-btn:hover:not(:disabled),
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-cmd:hover:not(:disabled),
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-new-btn:hover:not(:disabled) {
+  border-color: #8db6d5;
+  background: #edf6fc;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-input,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-select,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-barcode-input {
+  border-color: #b7c3cd;
+  background: #fff;
+  color: #26323c;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-readonly,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-input[readonly],
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-input:disabled,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-select:disabled {
+  background: #edf1f4;
+  color: #697580;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-barcode-box {
+  border-color: #bdc8d2;
+  background: #fff;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-barcode-title {
+  border-bottom-color: #c3cdd6;
+  background: #eef3f7;
+  color: #1769aa;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-barcode-table th {
+  background: #e6edf3;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-barcode-nav {
+  background: #eef3f7;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-grid,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pos-grid-wrap {
+  background: #fff;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-grid-top,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-grid-search {
+  background: #f7f9fb;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-groupbar {
+  background: #eef3f7;
+  border-color: #c2ccd5;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pos-grid th {
+  background: #e5edf3;
+  border-color: #c2ccd5;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pos-grid td {
+  border-color: #d9e0e6;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pos-grid tbody tr:nth-child(even) td {
+  background: #fafcfd;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pos-grid tbody tr.is-selected td {
+  background: #d8ebfa;
+  color: #174f7d;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-grid-foot {
+  background: #e8eef3;
+  border-top-color: #c2ccd5;
+  color: #4c5964;
+}
+
+/* DARK + ADVANCED */
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen {
+  background: #12171b;
+  border-color: #414d57;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-rail {
+  background: #1d242a;
+  border-right-color: #414d57;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-form {
+  background: #181e23;
+  border-right-color: #414d57;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-title {
+  color: #ff8d8d;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-tabs {
+  background: #20272d;
+  border-bottom-color: #414d57;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-tabs button.is-active {
+  border-color: #45657f;
+  background: #293844;
+  color: #b9e1ff;
+  box-shadow: inset 0 -2px 0 #69b7f5;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-rail-btn,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-cmd,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-new-btn,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-pager button {
+  border-color: #46535f;
+  background: #252d34;
+  color: #e4ebf0;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-rail-btn:hover:not(:disabled),
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-cmd:hover:not(:disabled),
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-new-btn:hover:not(:disabled) {
+  border-color: #527b9c;
+  background: #293b49;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-input,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-select,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-barcode-input {
+  border-color: #46535f;
+  background: #20272d;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-readonly,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-input[readonly],
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-input:disabled,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-select:disabled {
+  background: #252d34;
+  color: #84919c;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-barcode-box {
+  border-color: #414d57;
+  background: #181e23;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-barcode-title {
+  border-bottom-color: #414d57;
+  background: #232b32;
+  color: #8cccff;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-barcode-table th {
+  background: #2a333b;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-barcode-nav {
+  background: #222a31;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-grid,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pos-grid-wrap {
+  background: #12171b;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-grid-top,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-grid-search {
+  background: #181e23;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-groupbar {
+  background: #1d242a;
+  border-color: #414d57;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pos-grid th {
+  background: #293139;
+  border-color: #414d57;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pos-grid td {
+  background: #12171b;
+  border-color: #303941;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pos-grid tbody tr:nth-child(even) td {
+  background: #161c21;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pos-grid tbody tr.is-selected td {
+  background: #214766;
+  color: #fff;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .product-def-grid-foot {
+  background: #20272d;
+  border-top-color: #414d57;
+  color: #b8c3cc;
+}
+
+
+/* ==========================================================================
+   Semantic colors stay semantic in every mode
+   ========================================================================== */
+
+.product-reference-screen .product-def-cmd-icon.is-green {
+  color: #fff;
+}
+
+.product-reference-screen .product-def-cmd-icon.is-blue {
+  color: #fff;
+}
+
+.product-reference-screen .product-def-cmd-icon.is-red,
+.product-reference-screen .product-def-cmd-icon.is-red-circle {
+  color: #fff;
+}
+
+:root[data-theme='dark'] .product-reference-screen input[type='checkbox'] {
+  accent-color: #69b7f5;
+}

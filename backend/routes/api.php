@@ -44,6 +44,7 @@ Route::prefix('auth')->group(function () {
 
     Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
+        Route::patch('/appearance', [AuthController::class, 'updateAppearance']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
     });
 });
