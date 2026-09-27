@@ -11,6 +11,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import './SalesInvoicePlaceholderPage.theme.css'
 
 export function SalesInvoicePlaceholderPage() {
   const { closeActiveTab } = useWorkspace()

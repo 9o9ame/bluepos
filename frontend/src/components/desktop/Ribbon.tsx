@@ -8,10 +8,11 @@ import {
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
+import { useAppearance } from '../../features/appearance/AppearanceProvider'
 import { useWorkspace } from '../../features/workspace/WorkspaceProvider'
 import { RIBBON_GROUPS, RIBBON_TABS, WORKSPACE_MODULES } from '../../features/workspace/modules'
 import { RibbonCommand, RibbonGroup } from './RibbonCommand'
-import { BLUEPOS_RIBBON_TAB_ICONS } from '../../features/workspace/blueposIconMap'
+import { resolveRibbonTabIcon } from '../../features/workspace/blueposIconMap'
 
 const RIBBON_TAB_ICONS: Record<string, LucideIcon> = {
   Definition: Home,
@@ -28,6 +29,7 @@ type RibbonProps = {
 
 export function Ribbon({ onCalculator }: RibbonProps) {
   const { ribbonTab, setRibbonTab, openModule, activeModule } = useWorkspace()
+  const { skin } = useAppearance()
 
   return (
     <div className="ribbon">
@@ -44,7 +46,7 @@ export function Ribbon({ onCalculator }: RibbonProps) {
               onClick={() => setRibbonTab(tab.id)}
             >
               {(() => {
-                const customIconSrc = BLUEPOS_RIBBON_TAB_ICONS[tab.id]
+                const customIconSrc = resolveRibbonTabIcon(skin, tab.id)
                 const TabIcon = RIBBON_TAB_ICONS[tab.label] ?? CircleHelp
                 return (
                   <>

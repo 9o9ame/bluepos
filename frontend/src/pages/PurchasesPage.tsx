@@ -42,6 +42,7 @@ import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
 import type { PurchaseInvoice, PurchaseInvoiceLine } from '../types/purchases'
+import './PurchasesPage.theme.css'
 
 type DraftLine = {
   key: string

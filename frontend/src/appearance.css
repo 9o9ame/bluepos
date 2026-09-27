@@ -1,14 +1,11 @@
 /*
- * BluePOS Appearance Foundation
- *
- * Important:
- * - Default combination is System + Classic.
- * - Classic/light intentionally preserves the existing BluePOS visuals.
- * - Theme and skin are independent.
- * - This file does not change application flow, text, routes or business logic.
+ * BluePOS Appearance Foundation — Phase D1
+ * Theme (system|light|dark) and skin (classic|hybrid|advanced) are independent.
+ * Classic preserves traditional POS geometry; Hybrid/Advanced change visuals only.
  */
 
 :root {
+  /* Shared surfaces (overridden by theme) */
   --appearance-surface: #ffffff;
   --appearance-surface-soft: #eef1f4;
   --appearance-surface-muted: #d9dee6;
@@ -16,17 +13,31 @@
   --appearance-text-muted: #5c6770;
   --appearance-border: #8e97a3;
   --appearance-accent: #1f4e79;
+
+  /* Skin tokens (defaults = Classic) */
+  --app-font-family: Tahoma, Arial, "Segoe UI", sans-serif;
+  --app-font-weight: 400;
+  --app-letter-spacing: 0;
+  --control-radius: 2px;
+  --panel-radius: 0px;
+  --control-border: #8e97a3;
+  --panel-border: #7e8894;
+  --button-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #bbb;
+  --panel-shadow: none;
+  --surface-1: #ffffff;
+  --surface-2: #eef1f4;
+  --surface-3: #d9dee6;
   --appearance-control-radius: 2px;
   --appearance-panel-radius: 0px;
   --appearance-shadow-strength: 0.18;
   --appearance-spacing-scale: 1;
+  --skin-gradient-strong: linear-gradient(#ffffff, #dadada);
+  --skin-gradient-soft: linear-gradient(#ffffff, #e8e8e8);
+  --skin-focus-ring: #2b6aa3;
 }
 
-/*
- * LIGHT
- * No broad selectors are applied yet so the current approved Classic UI
- * remains visually unchanged.
- */
+/* ---------- THEME ---------- */
+
 :root[data-theme='light'] {
   --appearance-surface: #ffffff;
   --appearance-surface-soft: #eef1f4;
@@ -35,13 +46,13 @@
   --appearance-text-muted: #5c6770;
   --appearance-border: #8e97a3;
   --appearance-accent: #1f4e79;
+  --surface-1: #ffffff;
+  --surface-2: #eef1f4;
+  --surface-3: #d9dee6;
+  --control-border: #8e97a3;
+  --panel-border: #7e8894;
 }
 
-/*
- * DARK
- * Foundation tokens only. Existing screens will be migrated to these
- * variables incrementally so no approved screen is broken in one large pass.
- */
 :root[data-theme='dark'] {
   --appearance-surface: #1b1f24;
   --appearance-surface-soft: #252b31;
@@ -50,30 +61,313 @@
   --appearance-text-muted: #aeb8c2;
   --appearance-border: #56616c;
   --appearance-accent: #6aa9e6;
+  --surface-1: #1b1f24;
+  --surface-2: #252b31;
+  --surface-3: #303840;
+  --control-border: #56616c;
+  --panel-border: #4d5862;
+  --button-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --skin-focus-ring: #6aa9e6;
 }
 
-/* CLASSIC */
+/* ---------- SKIN: CLASSIC (dense Windows/POS) ---------- */
+
 :root[data-skin='classic'] {
+  --app-font-family: Tahoma, Arial, "Segoe UI", sans-serif;
+  --app-font-weight: 400;
+  --app-letter-spacing: -0.01em;
+  --control-radius: 2px;
+  --panel-radius: 0px;
+  --button-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #bbb;
+  --panel-shadow: none;
   --appearance-control-radius: 2px;
   --appearance-panel-radius: 0px;
   --appearance-shadow-strength: 0.18;
   --appearance-spacing-scale: 1;
+  --skin-gradient-strong: linear-gradient(#ffffff, #dadada);
+  --skin-gradient-soft: linear-gradient(#f7f7f7, #d8d8d8);
 }
 
-/* HYBRID */
+:root[data-theme='dark'][data-skin='classic'] {
+  --button-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.08), inset -1px -1px 0 rgba(0, 0, 0, 0.35);
+  --skin-gradient-strong: linear-gradient(#3a424a, #2a3036);
+  --skin-gradient-soft: linear-gradient(#343b43, #252b31);
+}
+
+/* ---------- SKIN: HYBRID (premium modern-classic) ---------- */
+
 :root[data-skin='hybrid'] {
+  --app-font-family: "Roboto Condensed", "Arial Narrow", "Segoe UI", Arial, sans-serif;
+  --app-font-weight: 400;
+  --app-letter-spacing: 0.005em;
+  --control-radius: 5px;
+  --panel-radius: 4px;
+  --button-shadow: 0 1px 2px rgba(20, 30, 40, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --panel-shadow: 0 1px 3px rgba(20, 30, 40, 0.08);
   --appearance-control-radius: 5px;
   --appearance-panel-radius: 4px;
   --appearance-shadow-strength: 0.14;
-  --appearance-spacing-scale: 1.04;
+  --appearance-spacing-scale: 1.02;
+  --skin-gradient-strong: linear-gradient(#ffffff, #e6ebf0);
+  --skin-gradient-soft: linear-gradient(#fafbfc, #e4e9ee);
 }
 
-/* ADVANCED */
+:root[data-theme='light'][data-skin='hybrid'] {
+  --control-border: #9aa5b0;
+  --panel-border: #a0aab4;
+  --surface-1: #ffffff;
+  --surface-2: #f3f5f7;
+  --surface-3: #e2e7ec;
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] {
+  --button-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --panel-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+  --skin-gradient-strong: linear-gradient(#3a434c, #2c3339);
+  --skin-gradient-soft: linear-gradient(#333b43, #272d33);
+}
+
+/* ---------- SKIN: ADVANCED (modern enterprise / SaaS) ---------- */
+
 :root[data-skin='advanced'] {
+  --app-font-family: Inter, "Segoe UI", Arial, sans-serif;
+  --app-font-weight: 400;
+  --app-letter-spacing: 0.015em;
+  --control-radius: 8px;
+  --panel-radius: 8px;
+  --button-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --panel-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
   --appearance-control-radius: 8px;
   --appearance-panel-radius: 8px;
   --appearance-shadow-strength: 0.1;
-  --appearance-spacing-scale: 1.08;
+  --appearance-spacing-scale: 1.04;
+  --skin-gradient-strong: none;
+  --skin-gradient-soft: none;
+}
+
+:root[data-theme='light'][data-skin='advanced'] {
+  --control-border: #d0d7de;
+  --panel-border: #d0d7de;
+  --surface-1: #ffffff;
+  --surface-2: #f6f8fa;
+  --surface-3: #eef1f4;
+  --appearance-accent: #0969da;
+  --skin-focus-ring: #0969da;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] {
+  --control-border: #444c56;
+  --panel-border: #444c56;
+  --button-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --panel-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --appearance-accent: #58a6ff;
+  --skin-focus-ring: #58a6ff;
+  --skin-gradient-strong: none;
+  --skin-gradient-soft: none;
+}
+
+/* ---------- Apply font to shell (visible skin switch) ---------- */
+
+html,
+body,
+#root,
+.app-shell,
+.titlebar,
+.ribbon,
+.workspace-tabs,
+.workspace-host,
+.statusbar,
+.appearance-menu,
+.appearance-settings {
+  font-family: var(--app-font-family);
+  font-weight: var(--app-font-weight);
+  letter-spacing: var(--app-letter-spacing);
+}
+
+.app-shell button,
+.app-shell input,
+.app-shell select,
+.app-shell textarea {
+  font-family: var(--app-font-family);
+}
+
+/* ---------- Skin-driven shell chrome (no layout/DOM changes) ---------- */
+
+:root[data-skin='classic'] .desktop-btn,
+:root[data-skin='classic'] .account-menu-btn,
+:root[data-skin='classic'] .titlebar-select,
+:root[data-skin='classic'] .quick-command {
+  border-radius: var(--control-radius);
+  border-color: var(--control-border);
+  box-shadow: var(--button-shadow);
+}
+
+:root[data-skin='classic'] .desktop-panel,
+:root[data-skin='classic'] .form-group,
+:root[data-skin='classic'] .pos-grid-wrap {
+  border-radius: var(--panel-radius);
+  border-color: var(--panel-border);
+  box-shadow: var(--panel-shadow);
+}
+
+/* Hybrid: softer radii, refined chrome */
+:root[data-skin='hybrid'] .titlebar,
+:root[data-skin='hybrid'] .ribbon-tabs,
+:root[data-skin='hybrid'] .ribbon-body,
+:root[data-skin='hybrid'] .statusbar {
+  font-family: var(--app-font-family);
+}
+
+:root[data-skin='hybrid'] .ribbon-tab,
+:root[data-skin='hybrid'] .workspace-tab,
+:root[data-skin='hybrid'] .desktop-btn,
+:root[data-skin='hybrid'] .account-menu-btn,
+:root[data-skin='hybrid'] .titlebar-select,
+:root[data-skin='hybrid'] .quick-command,
+:root[data-skin='hybrid'] .desktop-input,
+:root[data-skin='hybrid'] .desktop-select,
+:root[data-skin='hybrid'] .desktop-textarea {
+  border-radius: var(--control-radius);
+  border-color: var(--control-border);
+  font-family: var(--app-font-family);
+}
+
+:root[data-skin='hybrid'] .ribbon-tab.is-active,
+:root[data-skin='hybrid'] .workspace-tab {
+  border-radius: 5px 5px 0 0;
+}
+
+:root[data-skin='hybrid'] .desktop-panel,
+:root[data-skin='hybrid'] .form-group,
+:root[data-skin='hybrid'] .pos-grid-wrap,
+:root[data-skin='hybrid'] .account-menu-panel,
+:root[data-skin='hybrid'] .calc-card,
+:root[data-skin='hybrid'] .ribbon-menu {
+  border-radius: var(--panel-radius);
+  border-color: var(--panel-border);
+  box-shadow: var(--panel-shadow);
+}
+
+:root[data-skin='hybrid'] .desktop-btn,
+:root[data-skin='hybrid'] .quick-command,
+:root[data-skin='hybrid'] .account-menu-btn {
+  background: var(--skin-gradient-strong);
+  box-shadow: var(--button-shadow);
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .ribbon-tabs {
+  background: linear-gradient(#c5ccd4, #aeb6c0);
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .ribbon-body {
+  background: linear-gradient(#ffffff 0%, #f2f4f6 50%, #dde3e9 100%);
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .ribbon-tabs {
+  background: linear-gradient(#353d45, #2a3036);
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .ribbon-body {
+  background: linear-gradient(#333b43 0%, #2c3339 50%, #242a30 100%);
+}
+
+/* Advanced: flat surfaces, modern focus, more radius */
+:root[data-skin='advanced'] .titlebar,
+:root[data-skin='advanced'] .ribbon-tabs,
+:root[data-skin='advanced'] .ribbon-body,
+:root[data-skin='advanced'] .statusbar,
+:root[data-skin='advanced'] .ribbon-tab,
+:root[data-skin='advanced'] .workspace-tab,
+:root[data-skin='advanced'] .desktop-btn,
+:root[data-skin='advanced'] .desktop-input,
+:root[data-skin='advanced'] .desktop-select {
+  font-family: var(--app-font-family);
+}
+
+:root[data-skin='advanced'] .ribbon-tab,
+:root[data-skin='advanced'] .workspace-tab,
+:root[data-skin='advanced'] .desktop-btn,
+:root[data-skin='advanced'] .account-menu-btn,
+:root[data-skin='advanced'] .titlebar-select,
+:root[data-skin='advanced'] .quick-command,
+:root[data-skin='advanced'] .desktop-input,
+:root[data-skin='advanced'] .desktop-select,
+:root[data-skin='advanced'] .desktop-textarea {
+  border-radius: var(--control-radius);
+  border-color: var(--control-border);
+  box-shadow: none;
+}
+
+:root[data-skin='advanced'] .ribbon-tab.is-active,
+:root[data-skin='advanced'] .workspace-tab {
+  border-radius: 8px 8px 0 0;
+}
+
+:root[data-skin='advanced'] .desktop-panel,
+:root[data-skin='advanced'] .form-group,
+:root[data-skin='advanced'] .pos-grid-wrap,
+:root[data-skin='advanced'] .account-menu-panel,
+:root[data-skin='advanced'] .calc-card,
+:root[data-skin='advanced'] .ribbon-menu {
+  border-radius: var(--panel-radius);
+  border-color: var(--panel-border);
+  box-shadow: var(--panel-shadow);
+  background: var(--surface-1);
+}
+
+:root[data-theme='light'][data-skin='advanced'] .titlebar,
+:root[data-theme='light'][data-skin='advanced'] .ribbon-tabs,
+:root[data-theme='light'][data-skin='advanced'] .ribbon-body,
+:root[data-theme='light'][data-skin='advanced'] .statusbar {
+  background: var(--surface-2);
+  background-image: none;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .ribbon-body {
+  background: var(--surface-1);
+  border-top: 1px solid var(--panel-border);
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .titlebar,
+:root[data-theme='dark'][data-skin='advanced'] .ribbon-tabs,
+:root[data-theme='dark'][data-skin='advanced'] .ribbon-body,
+:root[data-theme='dark'][data-skin='advanced'] .statusbar {
+  background: var(--surface-2);
+  background-image: none;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .ribbon-body {
+  background: var(--surface-1);
+}
+
+:root[data-skin='advanced'] .desktop-btn,
+:root[data-skin='advanced'] .quick-command,
+:root[data-skin='advanced'] .account-menu-btn {
+  background: var(--surface-1);
+  box-shadow: var(--button-shadow);
+}
+
+:root[data-skin='advanced'] .desktop-btn:focus-visible,
+:root[data-skin='advanced'] .desktop-input:focus-visible,
+:root[data-skin='advanced'] .desktop-select:focus-visible,
+:root[data-skin='advanced'] .ribbon-tab:focus-visible,
+:root[data-skin='advanced'] .ribbon-command:focus-visible {
+  outline: 2px solid var(--skin-focus-ring);
+  outline-offset: 1px;
+}
+
+:root[data-skin='advanced'] .ribbon-icon-tile {
+  border-radius: 8px;
+  box-shadow: var(--button-shadow);
+}
+
+:root[data-skin='hybrid'] .ribbon-icon-tile {
+  border-radius: 5px;
+  box-shadow: var(--button-shadow);
+}
+
+:root[data-skin='classic'] .ribbon-icon-tile {
+  border-radius: 3px;
 }
 
 /* Appearance settings component */
@@ -82,6 +376,7 @@
   gap: 14px;
   padding: 12px;
   color: var(--appearance-text);
+  font-family: var(--app-font-family);
 }
 
 .appearance-settings-group {
@@ -120,9 +415,10 @@
   min-height: 78px;
   padding: 9px;
   border: 1px solid var(--appearance-border);
-  border-radius: var(--appearance-panel-radius);
+  border-radius: var(--panel-radius);
   background: var(--appearance-surface-soft);
   cursor: pointer;
+  font-family: var(--app-font-family);
 }
 
 .appearance-skin-card.is-selected {
@@ -158,7 +454,6 @@
   }
 }
 
-
 /* Appearance quick menu in the application title bar */
 .appearance-menu {
   position: relative;
@@ -172,15 +467,24 @@
   width: 23px;
   height: 20px;
   padding: 0;
-  border: 1px solid #9d9d9d;
-  border-radius: 0;
-  background: linear-gradient(#ffffff, #e3e3e3);
-  color: #245d8e;
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
+  background: var(--skin-gradient-strong, linear-gradient(#ffffff, #e3e3e3));
+  color: var(--appearance-accent);
   cursor: pointer;
+}
+
+:root[data-skin='advanced'] .appearance-menu-trigger {
+  background: var(--surface-1);
+  box-shadow: var(--button-shadow);
 }
 
 .appearance-menu-trigger:hover {
   background: linear-gradient(#ffffff, #d7e8f7);
+}
+
+:root[data-theme='dark'] .appearance-menu-trigger:hover {
+  background: linear-gradient(#3a434c, #2c3339);
 }
 
 .appearance-menu-panel {
@@ -190,9 +494,11 @@
   z-index: 500;
   width: min(520px, calc(100vw - 24px));
   border: 1px solid var(--appearance-border);
+  border-radius: var(--panel-radius);
   background: var(--appearance-surface);
   color: var(--appearance-text);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, var(--appearance-shadow-strength));
+  font-family: var(--app-font-family);
 }
 
 .appearance-menu-titlebar {
@@ -202,8 +508,13 @@
   height: 27px;
   padding: 0 5px 0 9px;
   border-bottom: 1px solid var(--appearance-border);
-  background: linear-gradient(#e8e8e8, #c8c8c8);
-  color: #222;
+  background: var(--skin-gradient-soft, linear-gradient(#e8e8e8, #c8c8c8));
+  color: var(--appearance-text);
+  border-radius: var(--panel-radius) var(--panel-radius) 0 0;
+}
+
+:root[data-skin='advanced'] .appearance-menu-titlebar {
+  background: var(--surface-2);
 }
 
 .appearance-menu-titlebar > button {
@@ -240,7 +551,6 @@
   font-size: 10px;
 }
 
-/* The settings popup itself follows dark mode immediately. */
 :root[data-theme='dark'] .appearance-menu-panel {
   background: #1b1f24;
 }
@@ -248,6 +558,10 @@
 :root[data-theme='dark'] .appearance-menu-titlebar {
   background: linear-gradient(#323941, #252b31);
   color: #edf1f5;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .appearance-menu-titlebar {
+  background: var(--surface-2);
 }
 
 :root[data-theme='dark'] .appearance-menu-trigger {
@@ -258,4 +572,100 @@
 
 :root[data-theme='dark'] .appearance-skin-card {
   background: #252b31;
+}
+
+
+/* ---------- PHASE D4: DISTINCT TYPOGRAPHY OVERRIDES ---------- */
+/*
+ * Some reference screens declare their own Tahoma/MS Sans font family.
+ * These selectors intentionally override only typography, never layout/functionality.
+ */
+:root[data-skin] .app-shell,
+:root[data-skin] .app-shell button,
+:root[data-skin] .app-shell input,
+:root[data-skin] .app-shell select,
+:root[data-skin] .app-shell textarea,
+:root[data-skin] .titlebar,
+:root[data-skin] .ribbon,
+:root[data-skin] .ribbon button,
+:root[data-skin] .workspace-tabs,
+:root[data-skin] .workspace-tab,
+:root[data-skin] .workspace-host,
+:root[data-skin] .statusbar,
+:root[data-skin] .product-reference-screen,
+:root[data-skin] .product-reference-screen button,
+:root[data-skin] .product-reference-screen input,
+:root[data-skin] .product-reference-screen select,
+:root[data-skin] .product-reference-screen textarea,
+:root[data-skin] .product-reference-screen label,
+:root[data-skin] .product-reference-screen table {
+  font-family: var(--app-font-family) !important;
+  letter-spacing: var(--app-letter-spacing);
+}
+
+/* Classic: compact, traditional Windows/POS typography */
+:root[data-skin='classic'] .ribbon-tab-text,
+:root[data-skin='classic'] .ribbon-command-label,
+:root[data-skin='classic'] .product-def-title,
+:root[data-skin='classic'] .product-reference-screen label {
+  font-weight: 700;
+}
+
+/* Hybrid: narrower, cleaner modern-classic typography */
+:root[data-skin='hybrid'] .ribbon-tab-text,
+:root[data-skin='hybrid'] .ribbon-command-label {
+  font-weight: 600;
+}
+
+:root[data-skin='hybrid'] .product-def-title {
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* Advanced: modern enterprise typography */
+:root[data-skin='advanced'] .ribbon-tab-text,
+:root[data-skin='advanced'] .ribbon-command-label,
+:root[data-skin='advanced'] .product-def-title {
+  font-weight: 600;
+  letter-spacing: 0.015em;
+}
+
+:root[data-skin='advanced'] .product-reference-screen label,
+:root[data-skin='advanced'] .product-reference-screen input,
+:root[data-skin='advanced'] .product-reference-screen select,
+:root[data-skin='advanced'] .product-reference-screen table {
+  font-weight: 500;
+}
+
+
+/* ---------- PHASE D5: MODERN ADVANCED ICON PRESENTATION ---------- */
+/*
+ * Advanced icons are intentionally flat/outline and must not inherit the
+ * Classic/Hybrid icon-tile chrome.
+ */
+:root[data-skin='advanced'] .ribbon-icon-tile,
+:root[data-skin='advanced'] .ribbon-tab-icon {
+  background: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+:root[data-skin='advanced'] .ribbon-icon-tile.has-custom-icon img,
+:root[data-skin='advanced'] .ribbon-tab-icon.has-custom-icon img {
+  filter: none !important;
+}
+
+:root[data-skin='advanced'] .ribbon-command:hover:not(:disabled) .ribbon-icon-tile,
+:root[data-skin='advanced'] .ribbon-tab:hover .ribbon-tab-icon {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Classic keeps the visible desktop-app icon framing. */
+:root[data-skin='classic'] .ribbon-icon-tile.has-custom-icon,
+:root[data-skin='classic'] .ribbon-tab-icon.has-custom-icon {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.85),
+    0 1px 2px rgba(0,0,0,.18);
 }

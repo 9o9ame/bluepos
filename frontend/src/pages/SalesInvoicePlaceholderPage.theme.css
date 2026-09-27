@@ -1,0 +1,492 @@
+/* BluePOS Phase E2 — Sales Invoice visual theme layer.
+   Light+Classic remains the approved reference.
+   No content, DOM order, functionality or geometry is changed. */
+
+:root[data-skin] .sales-reference-screen,
+:root[data-skin] .sales-reference-screen button,
+:root[data-skin] .sales-reference-screen input,
+:root[data-skin] .sales-reference-screen select,
+:root[data-skin] .sales-reference-screen textarea,
+:root[data-skin] .sales-reference-screen legend,
+:root[data-skin] .sales-reference-screen table {
+  font-family: var(--app-font-family) !important;
+  letter-spacing: var(--app-letter-spacing, 0);
+}
+
+/* ---------- Dark base ---------- */
+:root[data-theme='dark'] .sales-reference-screen,
+:root[data-theme='dark'] .sales-reference-main {
+  color: #edf1f5;
+  background: #151a1f;
+  border-color: #4d5862;
+}
+
+:root[data-theme='dark'] .sales-reference-subtabs {
+  background: #242b31;
+  border-bottom-color: #4c5761;
+}
+:root[data-theme='dark'] .sales-reference-subtab {
+  border-color: #56616c;
+  background: linear-gradient(#353d45,#242a30);
+  color: #dce4eb;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.06);
+}
+:root[data-theme='dark'] .sales-reference-subtab.is-active {
+  border-color: #527b9c;
+  background: linear-gradient(#35566e,#233b4f);
+  color: #c9e9ff;
+}
+:root[data-theme='dark'] .sales-reference-subtab:disabled { color:#7d8994; }
+
+:root[data-theme='dark'] .sales-reference-meta {
+  background:#1d2329;
+  border-color:#4d5862;
+}
+:root[data-theme='dark'] .sales-reference-options,
+:root[data-theme='dark'] .sales-reference-amounts,
+:root[data-theme='dark'] .sales-reference-pay-options {
+  border-color:#56616c;
+  background:#20262c;
+}
+:root[data-theme='dark'] .sales-reference-options legend,
+:root[data-theme='dark'] .sales-reference-amounts legend,
+:root[data-theme='dark'] .sales-reference-pay-options legend,
+:root[data-theme='dark'] .sales-reference-screen label {
+  color:#dce4eb;
+}
+
+:root[data-theme='dark'] .sales-reference-screen input,
+:root[data-theme='dark'] .sales-reference-screen select,
+:root[data-theme='dark'] .sales-reference-screen textarea {
+  border-color:#5d6873;
+  background:#1a2026;
+  color:#edf1f5;
+  color-scheme:dark;
+}
+:root[data-theme='dark'] .sales-reference-screen input:disabled,
+:root[data-theme='dark'] .sales-reference-screen select:disabled,
+:root[data-theme='dark'] .sales-reference-screen textarea:disabled {
+  border-color:#47515b;
+  background:#282f36;
+  color:#8d99a4;
+}
+:root[data-theme='dark'] .sales-reference-input-button button,
+:root[data-theme='dark'] .sales-reference-amounts-grid button,
+:root[data-theme='dark'] .sales-reference-pay-tools button,
+:root[data-theme='dark'] .sales-reference-payment-method button,
+:root[data-theme='dark'] .sales-reference-sale-btn {
+  border-color:#59646f;
+  background:linear-gradient(#353d44,#272e34);
+  color:#dce4eb;
+}
+
+/* Approved Amounts geometry is intentionally untouched. */
+:root[data-theme='dark'] .sales-reference-amounts-grid { color:#e7edf2; }
+:root[data-theme='dark'] .sales-reference-amounts-grid .is-green { color:#91e5a0; }
+
+:root[data-theme='dark'] .sales-reference-entry-row {
+  border-color:#4d5862;
+  background:#20262c;
+}
+:root[data-theme='dark'] .sales-reference-product-entry {
+  border-color:#5d6873;
+  background:#171d22;
+  color:#edf1f5;
+}
+:root[data-theme='dark'] .sales-reference-f1 { color:#dce4eb; }
+
+:root[data-theme='dark'] .sales-reference-grid-wrap,
+:root[data-theme='dark'] .sales-reference-grid-empty {
+  border-color:#4d5862;
+  background:#14191d;
+}
+:root[data-theme='dark'] .sales-reference-grid {
+  background:#14191d;
+  color:#e7edf2;
+}
+:root[data-theme='dark'] .sales-reference-grid th {
+  border-color:#56616c;
+  background:linear-gradient(#343c44,#2a3138);
+  color:#edf1f5;
+}
+:root[data-theme='dark'] .sales-reference-grid td {
+  border-color:#38424b;
+  background:#171c21;
+  color:#dfe6ec;
+}
+:root[data-theme='dark'] .sales-reference-grid .sales-reference-yellow {
+  background:#4b451e;
+  color:#fff4a6;
+}
+:root[data-theme='dark'] .sales-reference-product-drop {
+  border-color:#56616c;
+  background:#262e35;
+  color:#cbd4dc;
+}
+
+:root[data-theme='dark'] .sales-reference-grid-totals,
+:root[data-theme='dark'] .sales-reference-record-nav {
+  border-color:#4d5862;
+  background:#232a30;
+  color:#e7edf2;
+}
+:root[data-theme='dark'] .sales-reference-record-controls button {
+  border-color:#56616c;
+  background:linear-gradient(#353d44,#272e34);
+  color:#dce4eb;
+}
+
+:root[data-theme='dark'] .sales-reference-actions {
+  border-color:#56616c;
+  background:linear-gradient(#30373e,#252b31);
+}
+:root[data-theme='dark'] .sales-reference-shortcuts { color:#aeb8c2; }
+:root[data-theme='dark'] .sales-reference-actions-center button {
+  border-color:#59646f;
+  background:linear-gradient(#353c43,#282e34);
+  color:#edf1f5;
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.05);
+}
+:root[data-theme='dark'] .sales-reference-actions-center button:disabled { color:#77838e; }
+
+:root[data-theme='dark'] .sales-reference-action-icon.is-save { background:#39434c;color:#e3eaf0; }
+:root[data-theme='dark'] .sales-reference-action-icon.is-refresh { background:#2e78ae;color:#dff1ff; }
+:root[data-theme='dark'] .sales-reference-action-icon.is-preview { background:#49545e;color:#dce4eb; }
+:root[data-theme='dark'] .sales-reference-action-icon.is-print { background:#434d56;color:#e6edf3; }
+:root[data-theme='dark'] .sales-reference-action-icon.is-close { background:#a84545;color:#fff; }
+
+/* Right payment panel */
+:root[data-theme='dark'] .sales-reference-pay {
+  border-color:#4d5862;
+  background:#1b2127;
+}
+:root[data-theme='dark'] .sales-reference-retail-title { color:#f2f5f7; }
+:root[data-theme='dark'] .sales-reference-payment-label,
+:root[data-theme='dark'] .sales-reference-remarks-label,
+:root[data-theme='dark'] .sales-reference-side-label,
+:root[data-theme='dark'] .sales-reference-disc-line { color:#dce4eb; }
+:root[data-theme='dark'] .sales-reference-pay-head-values strong,
+:root[data-theme='dark'] .sales-reference-disc-values strong {
+  border-color:#56616c;
+  background:#222a30;
+  color:#e7edf2;
+}
+:root[data-theme='dark'] .sales-reference-payment-method {
+  border-color:#56616c;
+  background:#222a30;
+  color:#edf1f5;
+}
+:root[data-theme='dark'] .sales-reference-pay-options textarea {
+  border-color:#56616c;
+  background:#181e23;
+}
+:root[data-theme='dark'] .sales-reference-total-block > div {
+  border-color:#56616c;
+  background:#050607;
+  color:#4cff62;
+}
+:root[data-theme='dark'] .sales-reference-received {
+  border-color:#56616c;background:#4b451e;color:#fff4a6;
+}
+:root[data-theme='dark'] .sales-reference-card {
+  border-color:#56616c;background:#1c3948;color:#bceeff;
+}
+:root[data-theme='dark'] .sales-reference-balance {
+  border-color:#56616c;background:#2b3b2f;color:#cdebd3;
+}
+
+/* ---------- Hybrid ---------- */
+:root[data-skin='hybrid'] .sales-reference-subtab { border-radius:5px 5px 0 0; }
+:root[data-skin='hybrid'] .sales-reference-sale-btn,
+:root[data-skin='hybrid'] .sales-reference-record-controls button,
+:root[data-skin='hybrid'] .sales-reference-actions-center button,
+:root[data-skin='hybrid'] .sales-reference-input-button button,
+:root[data-skin='hybrid'] .sales-reference-screen input,
+:root[data-skin='hybrid'] .sales-reference-screen select,
+:root[data-skin='hybrid'] .sales-reference-screen textarea { border-radius:5px; }
+:root[data-skin='hybrid'] .sales-reference-options,
+:root[data-skin='hybrid'] .sales-reference-amounts,
+:root[data-skin='hybrid'] .sales-reference-pay-options,
+:root[data-skin='hybrid'] .sales-reference-payment-method { border-radius:4px; }
+
+:root[data-theme='light'][data-skin='hybrid'] .sales-reference-screen { background:#e8edf1; }
+:root[data-theme='light'][data-skin='hybrid'] .sales-reference-subtabs { background:#dbe2e8; }
+:root[data-theme='light'][data-skin='hybrid'] .sales-reference-subtab {
+  border-color:#a6b1bb;background:linear-gradient(#fff,#e8edf1);color:#26323c;
+}
+:root[data-theme='light'][data-skin='hybrid'] .sales-reference-subtab.is-active {
+  border-color:#8aaec6;background:linear-gradient(#eefaff,#c9eaf7);color:#174f7d;
+}
+:root[data-theme='light'][data-skin='hybrid'] .sales-reference-meta,
+:root[data-theme='light'][data-skin='hybrid'] .sales-reference-pay { background:#edf1f4; }
+:root[data-theme='light'][data-skin='hybrid'] .sales-reference-options,
+:root[data-theme='light'][data-skin='hybrid'] .sales-reference-amounts,
+:root[data-theme='light'][data-skin='hybrid'] .sales-reference-pay-options {
+  border-color:#aeb9c3;background:#f3f5f7;
+}
+:root[data-theme='light'][data-skin='hybrid'] .sales-reference-grid th {
+  background:linear-gradient(#dce4eb,#c5ced7);border-color:#a9b5bf;
+}
+:root[data-theme='light'][data-skin='hybrid'] .sales-reference-actions {
+  background:linear-gradient(#eef2f5,#d9dfe5);
+}
+
+/* ---------- Advanced ---------- */
+:root[data-skin='advanced'] .sales-reference-subtab {
+  border-radius:8px 8px 0 0;
+  box-shadow:none;
+}
+:root[data-skin='advanced'] .sales-reference-sale-btn,
+:root[data-skin='advanced'] .sales-reference-record-controls button,
+:root[data-skin='advanced'] .sales-reference-actions-center button,
+:root[data-skin='advanced'] .sales-reference-input-button button,
+:root[data-skin='advanced'] .sales-reference-screen input,
+:root[data-skin='advanced'] .sales-reference-screen select,
+:root[data-skin='advanced'] .sales-reference-screen textarea {
+  border-radius:7px;
+  box-shadow:none;
+}
+:root[data-skin='advanced'] .sales-reference-options,
+:root[data-skin='advanced'] .sales-reference-amounts,
+:root[data-skin='advanced'] .sales-reference-pay-options,
+:root[data-skin='advanced'] .sales-reference-payment-method {
+  border-radius:8px;
+  box-shadow:var(--panel-shadow);
+}
+:root[data-skin='advanced'] .sales-reference-tab-icon,
+:root[data-skin='advanced'] .sales-reference-action-icon {
+  background-image:none !important;
+  box-shadow:none !important;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-screen,
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-main { background:#f3f6f9; }
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-subtabs { background:#eef2f6; }
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-subtab {
+  border-color:#d0d8e0;background:#f8fafc;color:#465463;
+}
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-subtab.is-active {
+  border-color:#a9c6dd;background:#fff;color:#1769aa;box-shadow:inset 0 -2px 0 #278bd1;
+}
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-meta { background:#f5f7f9; }
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-options,
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-amounts,
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-pay-options {
+  border-color:#ccd5dd;background:#fff;
+}
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-grid th {
+  border-color:#c8d2db;background:#e8eef3;color:#33414d;
+}
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-grid td { border-color:#dde4ea;background:#fff; }
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-grid-empty { background:#fff; }
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-actions {
+  background:#eef2f5;border-top-color:#c8d2db;
+}
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-actions-center button {
+  border-color:#c1ccd5;background:#fff;color:#2d3944;box-shadow:none;
+}
+:root[data-theme='light'][data-skin='advanced'] .sales-reference-pay {
+  background:#f4f7f9;border-color:#c8d1da;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-screen,
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-main { background:#11161a;border-color:#414d57; }
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-subtabs { background:#1d242a; }
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-subtab {
+  border-color:#46535f;background:#222a31;color:#c7d1da;box-shadow:none;
+}
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-subtab.is-active {
+  border-color:#45657f;background:#293844;color:#b9e1ff;box-shadow:inset 0 -2px 0 #69b7f5;
+}
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-meta { background:#171d22; }
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-options,
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-amounts,
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-pay-options {
+  border-color:#414d57;background:#1b2228;
+}
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-grid th {
+  border-color:#414d57;background:#293139;
+}
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-grid td {
+  border-color:#303941;background:#12171b;
+}
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-grid-empty { background:#11161a; }
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-actions {
+  border-top-color:#414d57;background:#1c2329;
+}
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-actions-center button {
+  border-color:#46535f;background:#252d34;box-shadow:none;
+}
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-pay {
+  background:#171d22;border-color:#414d57;
+}
+
+:root[data-skin='advanced'] .sales-reference-screen button:focus-visible,
+:root[data-skin='advanced'] .sales-reference-screen input:focus-visible,
+:root[data-skin='advanced'] .sales-reference-screen select:focus-visible,
+:root[data-skin='advanced'] .sales-reference-screen textarea:focus-visible {
+  outline:2px solid var(--skin-focus-ring);
+  outline-offset:1px;
+}
+
+
+/* ==========================================================================
+   Phase E2.1 — Dark-mode text/readability correction
+   Chrome can dim disabled form text independently of `color`, so explicitly
+   set opacity and -webkit-text-fill-color. Also remove the remaining white
+   spacer surface in the Sales Invoice header.
+   ========================================================================== */
+
+:root[data-theme='dark'] .sales-reference-meta-spacer,
+:root[data-theme='dark'] .sales-reference-entry-spacer {
+  background: #1d2329 !important;
+  color: #dce4eb !important;
+}
+
+/* Labels/headings that had hard-coded light-theme text colors. */
+:root[data-theme='dark'] .sales-reference-options-head,
+:root[data-theme='dark'] .sales-reference-options-head label,
+:root[data-theme='dark'] .sales-reference-option-grid > label,
+:root[data-theme='dark'] .sales-reference-copy-from,
+:root[data-theme='dark'] .sales-reference-copy-from > span,
+:root[data-theme='dark'] .sales-reference-amounts-checks,
+:root[data-theme='dark'] .sales-reference-amounts-checks label,
+:root[data-theme='dark'] .sales-reference-amounts-grid > label,
+:root[data-theme='dark'] .sales-reference-payment-label,
+:root[data-theme='dark'] .sales-reference-remarks-label,
+:root[data-theme='dark'] .sales-reference-side-label,
+:root[data-theme='dark'] .sales-reference-pay-options legend,
+:root[data-theme='dark'] .sales-reference-total-block > span {
+  color: #e6edf3 !important;
+}
+
+/* Chromium/WebKit disabled fields can ignore normal text color through
+   -webkit-text-fill-color and opacity. */
+:root[data-theme='dark'] .sales-reference-screen input:disabled,
+:root[data-theme='dark'] .sales-reference-screen select:disabled,
+:root[data-theme='dark'] .sales-reference-screen textarea:disabled,
+:root[data-theme='dark'] .sales-reference-screen input[readonly],
+:root[data-theme='dark'] .sales-reference-screen textarea[readonly] {
+  color: #c7d1da !important;
+  -webkit-text-fill-color: #c7d1da !important;
+  opacity: 1 !important;
+}
+
+/* Placeholder text must remain readable but visually secondary. */
+:root[data-theme='dark'] .sales-reference-screen input::placeholder,
+:root[data-theme='dark'] .sales-reference-screen textarea::placeholder {
+  color: #8f9ba6 !important;
+  -webkit-text-fill-color: #8f9ba6 !important;
+  opacity: 1 !important;
+}
+
+/* Keep disabled buttons visibly disabled without making their captions vanish. */
+:root[data-theme='dark'] .sales-reference-screen button:disabled {
+  color: #aab5bf !important;
+  -webkit-text-fill-color: #aab5bf !important;
+  opacity: 1 !important;
+}
+
+:root[data-theme='dark'] .sales-reference-subtab:disabled {
+  color: #98a4ae !important;
+}
+
+/* Native/select option text. */
+:root[data-theme='dark'] .sales-reference-screen select,
+:root[data-theme='dark'] .sales-reference-screen select option {
+  color: #dce4eb !important;
+  background: #1a2026 !important;
+}
+
+/* Specific value text that had stronger light-theme color declarations. */
+:root[data-theme='dark'] .sales-reference-payment-method strong {
+  color: #9bd0ff !important;
+  -webkit-text-fill-color: #9bd0ff !important;
+}
+
+:root[data-theme='dark'] .sales-reference-copy-from {
+  color: #79b8f3 !important;
+}
+
+:root[data-theme='dark'] .sales-reference-f1 {
+  color: #d7e0e8 !important;
+}
+
+:root[data-theme='dark'] .sales-reference-grid-totals strong {
+  color: #15191d !important;
+  -webkit-text-fill-color: #15191d !important;
+}
+
+/* Radio/checkbox labels keep full readability while controls remain disabled. */
+:root[data-theme='dark'] .sales-reference-screen input[type='radio']:disabled,
+:root[data-theme='dark'] .sales-reference-screen input[type='checkbox']:disabled {
+  opacity: .9 !important;
+}
+
+/* Stronger readable muted text in record/navigation/footer areas. */
+:root[data-theme='dark'] .sales-reference-record-controls,
+:root[data-theme='dark'] .sales-reference-shortcuts {
+  color: #bac4cd !important;
+}
+
+:root[data-theme='dark'] .sales-reference-actions-center button:disabled {
+  color: #a5b0ba !important;
+  -webkit-text-fill-color: #a5b0ba !important;
+}
+
+
+/* ==========================================================================
+   Phase E2.2 — Sales dark contrast correction
+   Fixes the remaining light-theme islands identified in the screenshot:
+   - F1 to Add New strip
+   - three grid total value boxes
+   ========================================================================== */
+
+/* F1 to Add New: original reference CSS uses a very light grey background.
+   In dark mode make the whole block dark and keep the shortcut text vivid. */
+:root[data-theme='dark'] .sales-reference-f1 {
+  background: #1f262c !important;
+  color: #69d889 !important;
+  -webkit-text-fill-color: #69d889 !important;
+  border-color: #4d5862 !important;
+  opacity: 1 !important;
+}
+
+/* Keep its surrounding entry strip continuous rather than leaving a light island. */
+:root[data-theme='dark'] .sales-reference-entry-row {
+  background: #1d2329 !important;
+}
+
+:root[data-theme='dark'] .sales-reference-entry-spacer {
+  background: #1d2329 !important;
+}
+
+/* Grid total boxes: use a true dark-mode value field instead of the reference
+   light grey boxes. Geometry and positions remain exactly unchanged. */
+:root[data-theme='dark'] .sales-reference-grid-totals strong {
+  border-color: #56616c !important;
+  background: #20272d !important;
+  color: #f4f7f9 !important;
+  -webkit-text-fill-color: #f4f7f9 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04) !important;
+  opacity: 1 !important;
+}
+
+/* Slightly distinguish totals from the surrounding footer without changing size. */
+:root[data-theme='dark'] .sales-reference-grid-totals {
+  background: #1b2228 !important;
+  border-top-color: #4d5862 !important;
+  border-bottom-color: #4d5862 !important;
+}
+
+/* Advanced keeps the same corrected contrast but flatter surfaces. */
+:root[data-theme='dark'][data-skin='advanced'] .sales-reference-grid-totals strong {
+  background: #182027 !important;
+  border-color: #414d57 !important;
+  box-shadow: none !important;
+}
+
+/* Hybrid gets the slightly softer raised-field treatment. */
+:root[data-theme='dark'][data-skin='hybrid'] .sales-reference-grid-totals strong {
+  background: #252d34 !important;
+}

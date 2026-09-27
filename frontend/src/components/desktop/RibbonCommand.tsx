@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { useAppearance } from '../../features/appearance/AppearanceProvider'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { laterPhaseHint, type RibbonCommandDef } from '../../features/workspace/modules'
-import { BLUEPOS_RIBBON_COMMAND_ICONS } from '../../features/workspace/blueposIconMap'
+import { resolveRibbonCommandIcon } from '../../features/workspace/blueposIconMap'
 
 type RibbonCommandProps = RibbonCommandDef & {
   active?: boolean
@@ -26,12 +27,13 @@ export function RibbonCommand({
   onNavigate,
 }: RibbonCommandProps) {
   const { session } = useAuth()
+  const { skin } = useAppearance()
   const allowed = !permission || Boolean(session?.permissions.includes(permission))
   const features = session?.entitlements?.features
   const entitled = !entitlement || !features || features.includes(entitlement)
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
-  const customIconSrc = BLUEPOS_RIBBON_COMMAND_ICONS[id]
+  const customIconSrc = resolveRibbonCommandIcon(skin, id)
 
   useEffect(() => {
     function onDocClick(event: MouseEvent) {

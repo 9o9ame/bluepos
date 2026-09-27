@@ -1,3 +1,9 @@
+import type { InterfaceStyle } from '../../types/auth'
+
+/**
+ * Current working icon catalog (bluepos-v2).
+ * Always used as the safe fallback when a skin pack is missing.
+ */
 export const BLUEPOS_RIBBON_TAB_ICONS: Record<string, string> = {
   definition: '/icons/bluepos-v2/definition.svg',
   'daily-entries': '/icons/bluepos-v2/daily-entries.svg',
@@ -9,7 +15,7 @@ export const BLUEPOS_RIBBON_TAB_ICONS: Record<string, string> = {
 
 export const BLUEPOS_RIBBON_COMMAND_ICONS: Record<string, string> = {
   backup: '/icons/bluepos-v2/backup-restore.svg',
-  settings: '/icons/bluepos-v2/business-settings.svg',
+  settings: '/icons/bluepos-v2/software-options.svg',
   products: '/icons/bluepos-v2/define-products.svg',
   tabular: '/icons/bluepos-v2/tabular-view.svg',
   'stock-taking': '/icons/bluepos-v2/stock-taking.svg',
@@ -55,4 +61,58 @@ export const BLUEPOS_RIBBON_COMMAND_ICONS: Record<string, string> = {
   plan: '/icons/bluepos-v2/plan.svg',
   about: '/icons/bluepos-v2/about.svg',
   docs: '/icons/bluepos-v2/documentation.svg',
+}
+
+/**
+ * Future per-skin icon pack roots.
+ * Enable a skin only after its folder is populated under /public/icons/{skin}/.
+ * Until then, resolution always returns the bluepos-v2 (or catalog) fallback.
+ */
+export const BLUEPOS_ICON_PACK_BASE: Record<InterfaceStyle, string> = {
+  classic: '/icons/classic',
+  hybrid: '/icons/hybrid',
+  advanced: '/icons/advanced',
+}
+
+export const BLUEPOS_ICON_PACK_ENABLED: Record<InterfaceStyle, boolean> = {
+  classic: true,
+  hybrid: true,
+  advanced: true,
+}
+
+function filenameFromPath(path: string): string | null {
+  const parts = path.split('/')
+  const name = parts[parts.length - 1]
+  return name || null
+}
+
+/**
+ * Resolve a ribbon/custom icon for the active skin.
+ * Prefer /icons/{skin}/{file} when that pack is enabled; otherwise keep current assets.
+ * Callers must still fall back to Lucide when this returns null.
+ */
+export function resolveBlueposIcon(
+  skin: InterfaceStyle,
+  key: string,
+  catalog: Record<string, string>,
+): string | null {
+  const fallback = catalog[key]
+  if (!fallback) return null
+
+  if (!BLUEPOS_ICON_PACK_ENABLED[skin]) {
+    return fallback
+  }
+
+  const file = filenameFromPath(fallback)
+  if (!file) return fallback
+
+  return `${BLUEPOS_ICON_PACK_BASE[skin]}/${file}`
+}
+
+export function resolveRibbonTabIcon(skin: InterfaceStyle, tabId: string): string | null {
+  return resolveBlueposIcon(skin, tabId, BLUEPOS_RIBBON_TAB_ICONS)
+}
+
+export function resolveRibbonCommandIcon(skin: InterfaceStyle, commandId: string): string | null {
+  return resolveBlueposIcon(skin, commandId, BLUEPOS_RIBBON_COMMAND_ICONS)
 }

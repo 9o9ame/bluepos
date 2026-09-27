@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<defs>
+  <linearGradient id="classicTile" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffffff"/>
+    <stop offset=".45" stop-color="#edf3f8"/>
+    <stop offset="1" stop-color="#b9c5cf"/>
+  </linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+    <feDropShadow dx="0" dy="1.2" stdDeviation="1.1" flood-color="#000000" flood-opacity=".34"/>
+  </filter>
+</defs>
+<rect x="4" y="4" width="56" height="56" rx="4" fill="url(#classicTile)" stroke="#70808d" stroke-width="1.5"/>
+<path d="M8 9h48" stroke="#ffffff" stroke-opacity=".95" stroke-width="1.2"/>
+<g filter="url(#shadow)">
+        <ellipse cx="26" cy="17" rx="13" ry="6" fill="#2d8ed3" stroke="#253746" stroke-width="2.1"/>
+        <path d="M13 17v24c0 4 6 7 13 7s13-3 13-7V17" fill="#dfeaf3" stroke="#253746" stroke-width="2.1"/>
+        <path d="M42 31h9v-7l8 10-8 10v-7h-9" fill="#21a366" stroke="#253746" stroke-width="2.1" stroke-linejoin="round"/></g>
+</svg>

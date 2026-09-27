@@ -21,6 +21,7 @@ import {
   fetchCategories,
   fetchProduct,
   fetchProducts,
+  fetchSubcategories,
   fetchSuppliers,
   fetchUnits,
   saveProductBarcodes,
@@ -46,6 +47,33 @@ import type { Product } from '../types/catalog'
 import type { OpeningBalance } from '../types/inventory'
 import './ProductsPage.reference.css'
 import './ProductsPage.theme.css'
+import './ProductsPage.functional.css'
+
+type ProductBarcodeDraft = {
+  id: string
+  barcode: string
+  unit_ulid: string
+  conversion_factor: string
+  is_primary: boolean
+}
+
+let barcodeDraftSequence = 0
+
+function createBarcodeDraft(
+  unitUlid = '',
+  conversionFactor = '1.00000000',
+  isPrimary = false,
+): ProductBarcodeDraft {
+  barcodeDraftSequence += 1
+
+  return {
+    id: `barcode-draft-${barcodeDraftSequence}`,
+    barcode: '',
+    unit_ulid: unitUlid,
+    conversion_factor: conversionFactor,
+    is_primary: isPrimary,
+  }
+}
 
 export function ProductsPage() {
   const queryClient = useQueryClient()
@@ -107,6 +135,7 @@ export function ProductsPage() {
   const [alternateName, setAlternateName] = useState('')
   const [sku, setSku] = useState('')
   const [categoryUlid, setCategoryUlid] = useState('')
+  const [subcategoryUlid, setSubcategoryUlid] = useState('')
   const [brandUlid, setBrandUlid] = useState('')
   const [barcodeGroupUlid, setBarcodeGroupUlid] = useState('')
   const [primarySupplierUlid, setPrimarySupplierUlid] = useState('')
@@ -118,9 +147,14 @@ export function ProductsPage() {
   const [retail, setRetail] = useState('0.0000')
   const [wholesale, setWholesale] = useState('0.0000')
   const [minimumSale, setMinimumSale] = useState('0.0000')
-  const [pieceBarcode, setPieceBarcode] = useState('')
-  const [packBarcode, setPackBarcode] = useState('')
-  const [cartonBarcode, setCartonBarcode] = useState('')
+  const [barcodeRows, setBarcodeRows] = useState<ProductBarcodeDraft[]>([])
+  const [selectedBarcodeId, setSelectedBarcodeId] = useState<string | null>(null)
+
+  const subcategories = useQuery({
+    queryKey: ['subcategories', categoryUlid],
+    queryFn: () => fetchSubcategories(categoryUlid),
+    enabled: Boolean(categoryUlid),
+  })
 
   const [openingWarehouseUlid, setOpeningWarehouseUlid] = useState('')
   const [openingQty, setOpeningQty] = useState('')
@@ -145,6 +179,7 @@ export function ProductsPage() {
     setAlternateName('')
     setSku('')
     setCategoryUlid('')
+    setSubcategoryUlid('')
     setBrandUlid('')
     setBarcodeGroupUlid('')
     setPrimarySupplierUlid('')
@@ -156,9 +191,8 @@ export function ProductsPage() {
     setRetail('0.0000')
     setWholesale('0.0000')
     setMinimumSale('0.0000')
-    setPieceBarcode('')
-    setPackBarcode('')
-    setCartonBarcode('')
+    setBarcodeRows([])
+    setSelectedBarcodeId(null)
     setOpeningQty('')
     setOpeningUnitCost('0.0000')
     setOpeningDocument(null)
@@ -171,6 +205,75 @@ export function ProductsPage() {
     setSelectedKey(null)
     resetForm()
     setSection('definition')
+  }
+
+  function addBarcodeRow() {
+    if (!canSave || !canBarcodes) return
+
+    const defaultUnitUlid =
+      baseUnitUlid ||
+      units.data?.find((unit) => unit.is_active)?.ulid ||
+      units.data?.[0]?.ulid ||
+      ''
+
+    const row = createBarcodeDraft(
+      defaultUnitUlid,
+      '1.00000000',
+      barcodeRows.length === 0,
+    )
+
+    setBarcodeRows((current) => [...current, row])
+    setSelectedBarcodeId(row.id)
+  }
+
+  function updateBarcodeRow(
+    id: string,
+    patch: Partial<Omit<ProductBarcodeDraft, 'id'>>,
+  ) {
+    setBarcodeRows((current) =>
+      current.map((row) => (row.id === id ? { ...row, ...patch } : row)),
+    )
+  }
+
+  function makePrimaryBarcode(id: string) {
+    setBarcodeRows((current) =>
+      current.map((row) => ({
+        ...row,
+        is_primary: row.id === id,
+      })),
+    )
+    setSelectedBarcodeId(id)
+  }
+
+  function deleteSelectedBarcode() {
+    if (!canSave || !canBarcodes || !selectedBarcodeId) return
+
+    const currentIndex = barcodeRows.findIndex(
+      (row) => row.id === selectedBarcodeId,
+    )
+    if (currentIndex < 0) return
+
+    const deletingPrimary = barcodeRows[currentIndex]?.is_primary ?? false
+    const nextRows = barcodeRows.filter((row) => row.id !== selectedBarcodeId)
+
+    if (
+      deletingPrimary &&
+      nextRows.length > 0 &&
+      !nextRows.some((row) => row.is_primary)
+    ) {
+      nextRows[0] = { ...nextRows[0], is_primary: true }
+    }
+
+    setBarcodeRows(nextRows)
+    setSelectedBarcodeId(
+      nextRows[Math.min(currentIndex, nextRows.length - 1)]?.id ?? null,
+    )
+  }
+
+  function selectBarcodeAt(index: number) {
+    if (barcodeRows.length === 0) return
+    const safeIndex = Math.min(Math.max(index, 0), barcodeRows.length - 1)
+    setSelectedBarcodeId(barcodeRows[safeIndex].id)
   }
 
   useEffect(() => {
@@ -193,6 +296,7 @@ export function ProductsPage() {
     setAlternateName(selected.alternate_name ?? '')
     setSku(selected.sku ?? '')
     setCategoryUlid(selected.category?.ulid ?? '')
+    setSubcategoryUlid(selected.subcategory?.ulid ?? '')
     setBrandUlid(selected.brand?.ulid ?? '')
     setBarcodeGroupUlid(selected.barcode_group?.ulid ?? '')
     setPrimarySupplierUlid(selected.primary_supplier?.ulid ?? '')
@@ -205,13 +309,18 @@ export function ProductsPage() {
     setWholesale(selected.prices?.find((row) => row.price_type === 'wholesale')?.amount ?? '0.0000')
     setMinimumSale(selected.prices?.find((row) => row.price_type === 'minimum_sale')?.amount ?? '0.0000')
 
-    const primary = selected.barcodes?.find((row) => row.is_primary)
-    const pack = selected.barcodes?.find((row) => row.unit?.code === 'PACK')
-    const carton = selected.barcodes?.find((row) => row.unit?.code === 'CARTON')
+    const loadedBarcodes: ProductBarcodeDraft[] = (selected.barcodes ?? [])
+      .filter((row) => row.is_active)
+      .map((row) => ({
+        id: `saved-${row.ulid}`,
+        barcode: row.barcode,
+        unit_ulid: row.unit?.ulid ?? selected.base_unit?.ulid ?? '',
+        conversion_factor: row.conversion_factor || '1.00000000',
+        is_primary: row.is_primary,
+      }))
 
-    setPieceBarcode(primary?.barcode ?? '')
-    setPackBarcode(pack?.barcode ?? '')
-    setCartonBarcode(carton?.barcode ?? '')
+    setBarcodeRows(loadedBarcodes)
+    setSelectedBarcodeId(loadedBarcodes[0]?.id ?? null)
     setError(null)
   }, [creating, selected])
 
@@ -335,7 +444,7 @@ export function ProductsPage() {
         alternate_name: alternateName || null,
         sku: sku || null,
         category_ulid: categoryUlid || null,
-        subcategory_ulid: current?.subcategory?.ulid ?? null,
+        subcategory_ulid: subcategoryUlid || null,
         brand_ulid: brandUlid || null,
         barcode_group_ulid: barcodeGroupUlid || null,
         primary_supplier_ulid: primarySupplierUlid || null,
@@ -365,36 +474,45 @@ export function ProductsPage() {
       }
 
       if (canBarcodes) {
-        const pcs =
-          units.data?.find((unit) => unit.code === 'PCS')?.ulid ??
-          saved.base_unit?.ulid ??
-          baseUnitUlid
+        const barcodes = barcodeRows
+          .map((row) => ({
+            barcode: row.barcode.trim(),
+            unit_ulid: row.unit_ulid,
+            conversion_factor: row.conversion_factor.trim(),
+            is_primary: row.is_primary,
+          }))
+          .filter((row) => row.barcode !== '')
 
-        const pack = units.data?.find((unit) => unit.code === 'PACK')?.ulid ?? pcs
-        const carton = units.data?.find((unit) => unit.code === 'CARTON')?.ulid ?? pcs
+        const duplicateBarcode = barcodes.find(
+          (row, index) =>
+            barcodes.findIndex(
+              (candidate) =>
+                candidate.barcode.toLowerCase() === row.barcode.toLowerCase(),
+            ) !== index,
+        )
 
-        if (pcs && (pieceBarcode || packBarcode || cartonBarcode)) {
-          const barcodes = [
-            pieceBarcode
-              ? { barcode: pieceBarcode, unit_ulid: pcs, conversion_factor: '1.00000000', is_primary: true }
-              : null,
-            packBarcode
-              ? { barcode: packBarcode, unit_ulid: pack ?? pcs, conversion_factor: '6.00000000', is_primary: !pieceBarcode }
-              : null,
-            cartonBarcode
-              ? { barcode: cartonBarcode, unit_ulid: carton ?? pcs, conversion_factor: '24.00000000', is_primary: !pieceBarcode && !packBarcode }
-              : null,
-          ].filter(
-            (row): row is {
-              barcode: string
-              unit_ulid: string
-              conversion_factor: string
-              is_primary: boolean
-            } => row !== null,
-          )
-
-          await saveProductBarcodes(saved.ulid, barcodes)
+        if (duplicateBarcode) {
+          throw new Error(`Duplicate barcode: ${duplicateBarcode.barcode}`)
         }
+
+        for (const row of barcodes) {
+          if (!row.unit_ulid) {
+            throw new Error(`Select a unit for barcode ${row.barcode}.`)
+          }
+
+          const factor = Number(row.conversion_factor)
+          if (!Number.isFinite(factor) || factor <= 0) {
+            throw new Error(
+              `Factor for barcode ${row.barcode} must be greater than zero.`,
+            )
+          }
+        }
+
+        if (barcodes.length > 0 && !barcodes.some((row) => row.is_primary)) {
+          barcodes[0] = { ...barcodes[0], is_primary: true }
+        }
+
+        await saveProductBarcodes(saved.ulid, barcodes)
       }
 
       return saved
@@ -416,7 +534,13 @@ export function ProductsPage() {
     try {
       await saveMutation.mutateAsync()
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : 'Unable to save product.')
+      setError(
+        err instanceof ApiClientError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Unable to save product.',
+      )
     }
   }
 
@@ -435,14 +559,24 @@ export function ProductsPage() {
   const currentPage = productsQuery.data?.meta.current_page ?? 1
   const lastPage = productsQuery.data?.meta.last_page ?? 1
   const productNumber = creating ? 'NEW' : selected?.product_number ?? ''
+  const selectedBarcodeIndex = barcodeRows.findIndex(
+    (row) => row.id === selectedBarcodeId,
+  )
 
   return (
     <>
       <form id="inline-product-form" className="product-def product-reference-screen" onSubmit={onSubmit}>
         <aside className="product-def-rail" aria-label="Product actions">
-          <div className="product-def-photo" title="Product image support will be added later">
-            <span>Right Click to +</span>
-          </div>
+          <button
+            type="button"
+            className="product-def-photo product-def-add-new"
+            disabled={!canCreate}
+            title={canCreate ? 'Add a new product' : 'Product create permission required'}
+            onClick={startNewProduct}
+          >
+            <Plus size={24} strokeWidth={2.5} />
+            <span>Add New Product</span>
+          </button>
 
           <button type="button" className="product-def-rail-btn" disabled title="Available in a later phase">
             <Barcode size={18} />
@@ -706,7 +840,10 @@ export function ProductsPage() {
                   className="pdf-select"
                   value={categoryUlid}
                   disabled={!canSave}
-                  onChange={(e) => setCategoryUlid(e.target.value)}
+                  onChange={(e) => {
+                    setCategoryUlid(e.target.value)
+                    setSubcategoryUlid('')
+                  }}
                 >
                   <option value="">—</option>
                   {(categories.data ?? []).filter((row) => row.is_active || row.ulid === categoryUlid).map((row) => (
@@ -719,6 +856,40 @@ export function ProductsPage() {
                   title="Edit / Define Categories"
                   aria-label="Edit or define categories"
                   onClick={() => setQuickEditor('category')}
+                >
+                  <Plus size={15} strokeWidth={3} />
+                </button>
+              </div>
+            </div>
+
+            <div className="pdf-row">
+              <label>Subcategory</label>
+              <div className="pdf-field-plus">
+                <select
+                  className="pdf-select"
+                  value={subcategoryUlid}
+                  disabled={!canSave || !categoryUlid}
+                  onChange={(e) => setSubcategoryUlid(e.target.value)}
+                >
+                  <option value="">—</option>
+                  {(subcategories.data ?? [])
+                    .filter(
+                      (row) =>
+                        row.is_active ||
+                        row.ulid === subcategoryUlid,
+                    )
+                    .map((row) => (
+                      <option key={row.ulid} value={row.ulid}>
+                        {row.name}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  className="pdf-plus-button"
+                  title="Open Subcategories"
+                  aria-label="Open subcategories"
+                  onClick={() => openModule('/definition/subcategories')}
                 >
                   <Plus size={15} strokeWidth={3} />
                 </button>
@@ -882,8 +1053,9 @@ export function ProductsPage() {
 
             <div className="pdf-barcode-box">
               <div className="pdf-barcode-title">Multi Barcode Entry</div>
-              <table className="pdf-barcode-table">
-                <thead>
+              <div className="pdf-barcode-table-scroll">
+                <table className="pdf-barcode-table">
+                  <thead>
                   <tr>
                     <th>Barcode</th>
                     <th>Unit</th>
@@ -892,29 +1064,156 @@ export function ProductsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td><input className="pdf-barcode-input" value={pieceBarcode} readOnly={!canSave || !canBarcodes} placeholder="Piece barcode" onChange={(e) => setPieceBarcode(e.target.value)} /></td>
-                    <td>PCS</td><td className="is-num">1</td><td className="is-center">{pieceBarcode ? 'Yes' : ''}</td>
-                  </tr>
-                  <tr>
-                    <td><input className="pdf-barcode-input" value={packBarcode} readOnly={!canSave || !canBarcodes} placeholder="Pack barcode" onChange={(e) => setPackBarcode(e.target.value)} /></td>
-                    <td>PACK</td><td className="is-num">6</td><td className="is-center">{!pieceBarcode && packBarcode ? 'Yes' : ''}</td>
-                  </tr>
-                  <tr>
-                    <td><input className="pdf-barcode-input" value={cartonBarcode} readOnly={!canSave || !canBarcodes} placeholder="Carton barcode" onChange={(e) => setCartonBarcode(e.target.value)} /></td>
-                    <td>CARTON</td><td className="is-num">24</td><td className="is-center">{!pieceBarcode && !packBarcode && cartonBarcode ? 'Yes' : ''}</td>
-                  </tr>
-                </tbody>
-              </table>
+                  {barcodeRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="pdf-barcode-empty">
+                        {canSave && canBarcodes
+                          ? 'Click + to add a barcode'
+                          : 'No barcode entries'}
+                      </td>
+                    </tr>
+                  ) : (
+                    barcodeRows.map((row) => (
+                      <tr
+                        key={row.id}
+                        className={
+                          row.id === selectedBarcodeId
+                            ? 'is-selected'
+                            : undefined
+                        }
+                        onClick={() => setSelectedBarcodeId(row.id)}
+                      >
+                        <td>
+                          <input
+                            className="pdf-barcode-input"
+                            value={row.barcode}
+                            readOnly={!canSave || !canBarcodes}
+                            placeholder="Barcode"
+                            onFocus={() => setSelectedBarcodeId(row.id)}
+                            onChange={(e) =>
+                              updateBarcodeRow(row.id, {
+                                barcode: e.target.value,
+                              })
+                            }
+                          />
+                        </td>
+                        <td>
+                          <select
+                            className="pdf-barcode-input"
+                            value={row.unit_ulid}
+                            disabled={!canSave || !canBarcodes}
+                            onFocus={() => setSelectedBarcodeId(row.id)}
+                            onChange={(e) =>
+                              updateBarcodeRow(row.id, {
+                                unit_ulid: e.target.value,
+                              })
+                            }
+                          >
+                            <option value="">—</option>
+                            {(units.data ?? [])
+                              .filter(
+                                (unit) =>
+                                  unit.is_active ||
+                                  unit.ulid === row.unit_ulid,
+                              )
+                              .map((unit) => (
+                                <option key={unit.ulid} value={unit.ulid}>
+                                  {unit.code}
+                                </option>
+                              ))}
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            className="pdf-barcode-input pdf-barcode-factor"
+                            value={row.conversion_factor}
+                            readOnly={!canSave || !canBarcodes}
+                            inputMode="decimal"
+                            onFocus={() => setSelectedBarcodeId(row.id)}
+                            onChange={(e) =>
+                              updateBarcodeRow(row.id, {
+                                conversion_factor: e.target.value,
+                              })
+                            }
+                          />
+                        </td>
+                        <td className="is-center">
+                          <input
+                            type="radio"
+                            name="product-primary-barcode"
+                            checked={row.is_primary}
+                            disabled={!canSave || !canBarcodes}
+                            aria-label={`Set ${row.barcode || 'barcode'} as primary`}
+                            onChange={() => makePrimaryBarcode(row.id)}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                  </tbody>
+                </table>
+              </div>
 
               <div className="pdf-barcode-nav">
-                <button type="button" disabled><ChevronFirst size={14} /></button>
-                <button type="button" disabled><ChevronLeft size={14} /></button>
-                <span>3 barcode slots</span>
-                <button type="button" disabled><ChevronRight size={14} /></button>
-                <button type="button" disabled><ChevronLast size={14} /></button>
-                <button type="button" disabled><Plus size={14} /></button>
-                <button type="button" disabled><Trash2 size={14} /></button>
+                <button
+                  type="button"
+                  title="First barcode"
+                  disabled={barcodeRows.length === 0 || selectedBarcodeIndex <= 0}
+                  onClick={() => selectBarcodeAt(0)}
+                >
+                  <ChevronFirst size={14} />
+                </button>
+                <button
+                  type="button"
+                  title="Previous barcode"
+                  disabled={barcodeRows.length === 0 || selectedBarcodeIndex <= 0}
+                  onClick={() => selectBarcodeAt(selectedBarcodeIndex - 1)}
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span>
+                  Record {selectedBarcodeIndex >= 0 ? selectedBarcodeIndex + 1 : 0} of {barcodeRows.length}
+                </span>
+                <button
+                  type="button"
+                  title="Next barcode"
+                  disabled={
+                    barcodeRows.length === 0 ||
+                    selectedBarcodeIndex < 0 ||
+                    selectedBarcodeIndex >= barcodeRows.length - 1
+                  }
+                  onClick={() => selectBarcodeAt(selectedBarcodeIndex + 1)}
+                >
+                  <ChevronRight size={14} />
+                </button>
+                <button
+                  type="button"
+                  title="Last barcode"
+                  disabled={
+                    barcodeRows.length === 0 ||
+                    selectedBarcodeIndex < 0 ||
+                    selectedBarcodeIndex >= barcodeRows.length - 1
+                  }
+                  onClick={() => selectBarcodeAt(barcodeRows.length - 1)}
+                >
+                  <ChevronLast size={14} />
+                </button>
+                <button
+                  type="button"
+                  title="Add barcode"
+                  disabled={!canSave || !canBarcodes}
+                  onClick={addBarcodeRow}
+                >
+                  <Plus size={14} />
+                </button>
+                <button
+                  type="button"
+                  title="Delete selected barcode"
+                  disabled={!canSave || !canBarcodes || !selectedBarcodeId}
+                  onClick={deleteSelectedBarcode}
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
           </div>

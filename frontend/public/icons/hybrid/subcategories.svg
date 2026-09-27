@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<defs>
+  <linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#74c1ff"/><stop offset="1" stop-color="#1c67b5"/></linearGradient>
+  <linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8be18c"/><stop offset="1" stop-color="#258a45"/></linearGradient>
+  <linearGradient id="o" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffd36c"/><stop offset="1" stop-color="#df8a17"/></linearGradient>
+  <linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f9fbfd"/><stop offset="1" stop-color="#bec8d2"/></linearGradient>
+  <filter id="sh"><feDropShadow dx="0" dy="1.4" stdDeviation="1.1" flood-opacity=".28"/></filter>
+</defs>
+<g filter="url(#sh)">
+<path d="M8 16h19l5 6h24v28H8z" fill="url(#o)" stroke="#b86a12" stroke-width="2"/>
+<path d="M17 29h13M30 29v-8M30 29v10M30 21h13M30 39h13" fill="none" stroke="#346a9b" stroke-width="2.5"/>
+<rect x="43" y="17" width="8" height="8" rx="2" fill="url(#b)"/><rect x="43" y="35" width="8" height="8" rx="2" fill="url(#g)"/>
+</g></svg>

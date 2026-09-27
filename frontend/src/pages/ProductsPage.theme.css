@@ -681,3 +681,115 @@
 :root[data-theme='dark'] .product-reference-screen input[type='checkbox'] {
   accent-color: #69b7f5;
 }
+
+/* ==========================================================================
+   Phase D1 — Strong skin differentiation (font + chrome only)
+   Geometry / DOM / workflow unchanged.
+   ========================================================================== */
+
+.product-reference-screen,
+.product-reference-screen button,
+.product-reference-screen input,
+.product-reference-screen select,
+.product-reference-screen textarea,
+.product-reference-screen label {
+  font-family: var(--app-font-family);
+}
+
+:root[data-skin='classic'] .product-reference-screen {
+  font-family: Tahoma, Arial, "Segoe UI", sans-serif;
+}
+
+:root[data-skin='classic'] .product-reference-screen .product-def-rail-btn,
+:root[data-skin='classic'] .product-reference-screen .product-def-cmd,
+:root[data-skin='classic'] .product-reference-screen .product-def-new-btn,
+:root[data-skin='classic'] .product-reference-screen .product-def-pager button,
+:root[data-skin='classic'] .product-reference-screen .pdf-input,
+:root[data-skin='classic'] .product-reference-screen .pdf-select,
+:root[data-skin='classic'] .product-reference-screen .pdf-barcode-input,
+:root[data-skin='classic'] .product-reference-screen .pdf-plus-button {
+  border-radius: var(--control-radius, 2px);
+  box-shadow: var(--button-shadow);
+}
+
+:root[data-skin='hybrid'] .product-reference-screen {
+  font-family: "Segoe UI", Inter, Arial, sans-serif;
+}
+
+:root[data-skin='hybrid'] .product-reference-screen .product-def-rail-btn,
+:root[data-skin='hybrid'] .product-reference-screen .product-def-cmd,
+:root[data-skin='hybrid'] .product-reference-screen .product-def-new-btn,
+:root[data-skin='hybrid'] .product-reference-screen .product-def-pager button,
+:root[data-skin='hybrid'] .product-reference-screen .pdf-plus-button {
+  border-radius: 5px;
+  box-shadow: var(--button-shadow);
+}
+
+:root[data-skin='hybrid'] .product-reference-screen .pdf-input,
+:root[data-skin='hybrid'] .product-reference-screen .pdf-select,
+:root[data-skin='hybrid'] .product-reference-screen .pdf-barcode-input {
+  border-radius: 5px;
+  border-color: var(--control-border);
+}
+
+:root[data-skin='hybrid'] .product-reference-screen .product-def-tabs button {
+  border-radius: 5px 5px 0 0;
+}
+
+:root[data-skin='hybrid'] .product-reference-screen .pdf-barcode-box,
+:root[data-skin='hybrid'] .product-reference-screen .product-def-photo,
+:root[data-skin='hybrid'] .product-reference-screen .pos-grid-wrap {
+  border-radius: 4px;
+  box-shadow: var(--panel-shadow);
+}
+
+:root[data-skin='advanced'] .product-reference-screen {
+  font-family: Inter, Roboto, "Segoe UI", Arial, sans-serif;
+}
+
+:root[data-skin='advanced'] .product-reference-screen .product-def-rail-btn,
+:root[data-skin='advanced'] .product-reference-screen .product-def-cmd,
+:root[data-skin='advanced'] .product-reference-screen .product-def-new-btn,
+:root[data-skin='advanced'] .product-reference-screen .product-def-pager button,
+:root[data-skin='advanced'] .product-reference-screen .pdf-plus-button {
+  border-radius: 8px;
+  background-image: none;
+  box-shadow: var(--button-shadow);
+}
+
+:root[data-skin='advanced'] .product-reference-screen .pdf-input,
+:root[data-skin='advanced'] .product-reference-screen .pdf-select,
+:root[data-skin='advanced'] .product-reference-screen .pdf-barcode-input {
+  border-radius: 8px;
+  border-color: var(--control-border);
+  background-image: none;
+}
+
+:root[data-skin='advanced'] .product-reference-screen .pdf-input:focus,
+:root[data-skin='advanced'] .product-reference-screen .pdf-select:focus,
+:root[data-skin='advanced'] .product-reference-screen .pdf-barcode-input:focus {
+  outline: 2px solid var(--skin-focus-ring, var(--appearance-accent));
+  outline-offset: 0;
+  border-color: var(--skin-focus-ring, var(--appearance-accent));
+}
+
+:root[data-skin='advanced'] .product-reference-screen .product-def-tabs button {
+  border-radius: 8px 8px 0 0;
+}
+
+:root[data-skin='advanced'] .product-reference-screen .pdf-barcode-box,
+:root[data-skin='advanced'] .product-reference-screen .product-def-photo,
+:root[data-skin='advanced'] .product-reference-screen .pos-grid-wrap,
+:root[data-skin='advanced'] .product-reference-screen .product-def-grid-foot {
+  border-radius: 8px;
+  box-shadow: var(--panel-shadow);
+}
+
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-rail,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-form,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .product-def-tabs,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-barcode-title,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-barcode-nav,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pos-grid th {
+  background-image: none;
+}

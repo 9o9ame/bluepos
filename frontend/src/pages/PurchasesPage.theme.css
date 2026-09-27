@@ -1,0 +1,756 @@
+/*
+ * BluePOS — Purchase Invoice theme layer (Phase E1)
+ *
+ * Actual page/component: PurchasesPage.tsx
+ *
+ * This file is VISUAL ONLY.
+ * It does not change:
+ * - invoice/purchase logic
+ * - API calls
+ * - permissions
+ * - posting/immutability
+ * - field order/content
+ * - keyboard/workspace handlers
+ * - grid columns
+ * - dimensions/positions of the approved Purchase Invoice layout
+ *
+ * Light + Classic intentionally remains the existing approved POS PLUS design.
+ * The Amount Options geometry is intentionally untouched.
+ */
+
+/* ==========================================================================
+   TYPOGRAPHY — allow the selected interface style to own the page font
+   ========================================================================== */
+
+:root[data-skin] .purchase-reference-screen,
+:root[data-skin] .purchase-reference-screen button,
+:root[data-skin] .purchase-reference-screen input,
+:root[data-skin] .purchase-reference-screen select,
+:root[data-skin] .purchase-reference-screen textarea,
+:root[data-skin] .purchase-reference-screen legend,
+:root[data-skin] .purchase-reference-screen table {
+  font-family: var(--app-font-family) !important;
+  letter-spacing: var(--app-letter-spacing, 0);
+}
+
+/* Keep the large approved title strong without changing its dimensions. */
+:root[data-skin='classic'] .purchase-reference-title {
+  font-weight: 800;
+}
+
+:root[data-skin='hybrid'] .purchase-reference-title,
+:root[data-skin='advanced'] .purchase-reference-title {
+  font-weight: 700;
+}
+
+
+/* ==========================================================================
+   DARK — complete Purchase Invoice dark treatment
+   ========================================================================== */
+
+:root[data-theme='dark'] .purchase-reference-screen {
+  color: #edf1f5;
+  background: #171c21;
+  border-color: #4d5862;
+}
+
+/* Inner purchase tabs */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-subtabs {
+  background: #242b31;
+  border-bottom-color: #4c5761;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-subtab {
+  border-color: #56616c;
+  background: linear-gradient(#353d45 0%, #2c3339 50%, #242a30 100%);
+  color: #dce4eb;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.06);
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-subtab.is-active {
+  border-color: #527b9c;
+  border-bottom-color: #29465b;
+  background: linear-gradient(#35566e 0%, #29465b 55%, #233b4f 100%);
+  color: #c9e9ff;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-subtab:disabled {
+  color: #7d8994;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-title {
+  color: #f1f4f7;
+}
+
+/* Header/top area */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-top {
+  background: #1d2329;
+  border-bottom-color: #4d5862;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-options,
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-amount {
+  border-color: #56616c;
+  background: #20262c;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-options legend,
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-amount legend {
+  color: #dce4eb;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen label {
+  color: #d8e0e7;
+}
+
+/* Form controls */
+:root[data-theme='dark'] .purchase-reference-screen input,
+:root[data-theme='dark'] .purchase-reference-screen select,
+:root[data-theme='dark'] .purchase-reference-screen textarea {
+  border-color: #5d6873;
+  background: #1a2026;
+  color: #edf1f5;
+  color-scheme: dark;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen input:disabled,
+:root[data-theme='dark'] .purchase-reference-screen select:disabled,
+:root[data-theme='dark'] .purchase-reference-screen textarea:disabled {
+  border-color: #47515b;
+  background: #282f36;
+  color: #8d99a4;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen input::placeholder,
+:root[data-theme='dark'] .purchase-reference-screen textarea::placeholder {
+  color: #77838e;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen input:focus,
+:root[data-theme='dark'] .purchase-reference-screen select:focus,
+:root[data-theme='dark'] .purchase-reference-screen textarea:focus {
+  border-color: #6eb6f6;
+  outline-color: #6eb6f6;
+}
+
+/* Small supplier/master buttons */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-mini {
+  border-color: #59646f;
+  background: linear-gradient(#363e45, #282f35);
+  color: #8fc8ff;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.05);
+}
+
+/* Center balances and discount blocks */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-balance,
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-discount {
+  border-color: #56616c;
+  background: #20262c;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-balance-head,
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-balance-head button,
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-amount-tools button {
+  border-color: #56616c;
+  background: linear-gradient(#343c44, #292f35);
+  color: #dce4eb;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-balance-row {
+  border-color: #414b54;
+  color: #e4ebf0;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-balance-row.is-prev {
+  background: #262d33;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-balance-row.is-this {
+  background: #223749;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-balance-row.is-total {
+  background: #2b3b2f;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-discount > div {
+  border-color: #414b54;
+  background: #242b31;
+  color: #dce4eb;
+}
+
+/*
+ * APPROVED AMOUNT OPTIONS:
+ * Do not change its grid, dimensions, ordering, padding or value placement.
+ * Only its neutral surfaces/borders adapt to dark mode.
+ */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-amount {
+  border-color: #56616c;
+  background: #20262c;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-amount-grid {
+  color: #edf1f5;
+}
+
+/* Preserve semantic amount colors while making text readable in dark mode. */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-amount-grid .is-cyan {
+  color: #79d9ff;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-amount-grid .is-red,
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-amount-grid .is-disc-value {
+  color: #ff8888;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-amount-grid .is-green,
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-amount-grid .is-green-soft {
+  color: #9be7aa;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-amount-grid .is-yellow {
+  color: #ffe174;
+}
+
+/* Product F1 search strip */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-f1-row {
+  border-color: #4d5862;
+  background: #20262c;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-f1-search input {
+  border-color: #5d6873;
+  background: #171d22;
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-f1-label {
+  color: #dce4eb;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-f1-chk {
+  border-color: #56616c;
+  background: linear-gradient(#343c44, #292f35);
+  color: #dce4eb;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-results {
+  border-color: #56616c;
+  background: #1c2227;
+  box-shadow: 0 7px 16px rgba(0,0,0,.38);
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-results button {
+  border-bottom-color: #343e47;
+  background: #1c2227;
+  color: #e8eef3;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-results button:hover {
+  background: #244866;
+  color: #fff;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-posted-strip {
+  border-color: #4d5862;
+  background: #252c32;
+  color: #c9d2da;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-error {
+  border-color: #8e4a4a;
+  background: #4b2525;
+  color: #ffb8b8;
+}
+
+/* Main invoice grid */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-grid-wrap {
+  border-color: #4d5862;
+  background: #14191d;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-grid {
+  background: #14191d;
+  color: #e7edf2;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-grid th {
+  border-color: #56616c;
+  background: linear-gradient(#343c44, #2a3138);
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-grid td {
+  border-color: #38424b;
+  background: #171c21;
+  color: #dfe6ec;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-grid tbody tr:nth-child(even) td {
+  background: #1b2127;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-grid input {
+  border-color: #4c5761;
+  background: #1d242a;
+  color: #edf1f5;
+}
+
+/* Semantic editable columns stay visibly special. */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-grid td.cell-yellow {
+  background: #4b451e;
+  color: #fff4a6;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-grid td.cell-cyan {
+  background: #183d4d;
+  color: #b8eeff;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-empty-dots {
+  color: #aeb8c2;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-p-icon {
+  color: #8fc8ff;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-customize-trigger {
+  border-color: #56616c;
+  background: #252c32;
+  color: #dce4eb;
+}
+
+/* Customization popup */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-customization {
+  border-color: #56616c;
+  background: #1d2329;
+  color: #e8eef3;
+  box-shadow: 0 8px 18px rgba(0,0,0,.42);
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-customization-titlebar {
+  border-bottom-color: #56616c;
+  background: linear-gradient(#343c44, #292f35);
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-customization-list button {
+  border-bottom-color: #37414a;
+  background: #1d2329;
+  color: #dce4eb;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-customization-list button:hover,
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-customization-list button.is-active {
+  background: #244866;
+  color: #fff;
+}
+
+/* Totals + record nav */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-totals {
+  border-color: #4d5862;
+  background: #232a30;
+  color: #e7edf2;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-nav {
+  border-color: #4d5862;
+  background: #242b31;
+  color: #cbd4dc;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-nav button {
+  border-color: #56616c;
+  background: linear-gradient(#353d44, #272e34);
+  color: #dce4eb;
+}
+
+/* Bottom action bar */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-actions {
+  border-top-color: #56616c;
+  background: linear-gradient(#30373e, #252b31);
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-actions button {
+  border-color: #59646f;
+  background: linear-gradient(#353c43, #282e34);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.05);
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-actions button:hover:not(:disabled) {
+  border-color: #638db2;
+  background: linear-gradient(#3d4d5c, #2d3e4d);
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-actions button:disabled {
+  color: #77838e;
+}
+
+/* Keep action semantics, but remove washed-out classic light backgrounds in dark. */
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-action-icon.is-save {
+  color: #d9e3eb;
+  background: #38424b;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-action-icon.is-post {
+  color: #fff;
+  background: #28679b;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-action-icon.is-print {
+  color: #e6edf3;
+  background: #434d56;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-action-icon.is-refresh {
+  color: #dff1ff;
+  background: #2e78ae;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-action-icon.is-close,
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-action-icon.is-delete {
+  color: #fff;
+  background: #a84545;
+}
+
+:root[data-theme='dark'] .purchase-reference-screen .purchase-reference-action-icon.is-barcode {
+  color: #eef3f7;
+  background: #3c4650;
+}
+
+
+/* ==========================================================================
+   HYBRID — premium modern-classic, same layout
+   ========================================================================== */
+
+/* Shared */
+:root[data-skin='hybrid'] .purchase-reference-screen .purchase-reference-subtab,
+:root[data-skin='hybrid'] .purchase-reference-screen .purchase-reference-mini,
+:root[data-skin='hybrid'] .purchase-reference-screen .purchase-f1-chk,
+:root[data-skin='hybrid'] .purchase-reference-screen .purchase-reference-nav button,
+:root[data-skin='hybrid'] .purchase-reference-screen .purchase-reference-actions button {
+  border-radius: 5px;
+}
+
+:root[data-skin='hybrid'] .purchase-reference-screen .purchase-reference-subtab {
+  border-radius: 5px 5px 0 0;
+}
+
+:root[data-skin='hybrid'] .purchase-reference-screen .purchase-reference-options,
+:root[data-skin='hybrid'] .purchase-reference-screen .purchase-reference-balance,
+:root[data-skin='hybrid'] .purchase-reference-screen .purchase-reference-discount,
+:root[data-skin='hybrid'] .purchase-reference-screen .purchase-reference-customization {
+  border-radius: 4px;
+}
+
+:root[data-skin='hybrid'] .purchase-reference-screen input,
+:root[data-skin='hybrid'] .purchase-reference-screen select,
+:root[data-skin='hybrid'] .purchase-reference-screen textarea {
+  border-radius: 4px;
+}
+
+:root[data-skin='hybrid'] .purchase-reference-screen .purchase-reference-actions button {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.35),
+    0 1px 2px rgba(20,30,40,.15);
+}
+
+/* Light Hybrid */
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen {
+  background: #e8edf1;
+  border-color: #9faab4;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-subtabs {
+  background: #dbe2e8;
+  border-bottom-color: #a5b0ba;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-subtab {
+  border-color: #a6b1bb;
+  background: linear-gradient(#fff, #e8edf1);
+  color: #26323c;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-subtab.is-active {
+  border-color: #8aaec6;
+  background: linear-gradient(#eefaff, #c9eaf7);
+  color: #174f7d;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-top {
+  background: #edf1f4;
+  border-bottom-color: #adb7c0;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-options,
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-amount,
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-balance,
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-discount {
+  border-color: #aeb9c3;
+  background: #f3f5f7;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen input,
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen select,
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen textarea {
+  border-color: #98a5b0;
+  background: #fff;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-grid th {
+  background: linear-gradient(#dce4eb, #c5ced7);
+  border-color: #a9b5bf;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-actions {
+  background: linear-gradient(#eef2f5, #d9dfe5);
+  border-top-color: #a5b0ba;
+}
+
+/* Dark Hybrid gets a slightly softer dark surface than Classic. */
+:root[data-theme='dark'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-top,
+:root[data-theme='dark'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-options,
+:root[data-theme='dark'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-amount {
+  background: #22292f;
+}
+
+:root[data-theme='dark'][data-skin='hybrid'] .purchase-reference-screen .purchase-reference-actions {
+  background: linear-gradient(#343c44, #293038);
+}
+
+
+/* ==========================================================================
+   ADVANCED — flat modern enterprise, same functionality/geometry
+   ========================================================================== */
+
+:root[data-skin='advanced'] .purchase-reference-screen .purchase-reference-subtab {
+  border-radius: 8px 8px 0 0;
+  box-shadow: none;
+}
+
+:root[data-skin='advanced'] .purchase-reference-screen .purchase-reference-mini,
+:root[data-skin='advanced'] .purchase-reference-screen .purchase-f1-chk,
+:root[data-skin='advanced'] .purchase-reference-screen .purchase-reference-nav button,
+:root[data-skin='advanced'] .purchase-reference-screen .purchase-reference-actions button,
+:root[data-skin='advanced'] .purchase-reference-screen input,
+:root[data-skin='advanced'] .purchase-reference-screen select,
+:root[data-skin='advanced'] .purchase-reference-screen textarea {
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+:root[data-skin='advanced'] .purchase-reference-screen .purchase-reference-options,
+:root[data-skin='advanced'] .purchase-reference-screen .purchase-reference-balance,
+:root[data-skin='advanced'] .purchase-reference-screen .purchase-reference-discount,
+:root[data-skin='advanced'] .purchase-reference-screen .purchase-reference-customization {
+  border-radius: 8px;
+  box-shadow: var(--panel-shadow);
+}
+
+/* Amount Options geometry intentionally remains untouched. */
+:root[data-skin='advanced'] .purchase-reference-screen .purchase-reference-amount {
+  box-shadow: var(--panel-shadow);
+}
+
+/* Flat icon containers/buttons in Advanced */
+:root[data-skin='advanced'] .purchase-reference-screen .purchase-reference-tab-icon,
+:root[data-skin='advanced'] .purchase-reference-screen .purchase-reference-action-icon {
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* Light Advanced */
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen {
+  background: #f3f6f9;
+  border-color: #c8d1da;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-subtabs {
+  background: #eef2f6;
+  border-bottom-color: #c7d0d9;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-subtab {
+  border-color: #d0d8e0;
+  background: #f8fafc;
+  color: #465463;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-subtab.is-active {
+  border-color: #a9c6dd;
+  background: #fff;
+  color: #1769aa;
+  box-shadow: inset 0 -2px 0 #278bd1;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-top {
+  background: #f5f7f9;
+  border-bottom-color: #c9d2da;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-options,
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-amount,
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-balance,
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-discount {
+  border-color: #ccd5dd;
+  background: #fff;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen input,
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen select,
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen textarea {
+  border-color: #c1ccd5;
+  background: #fff;
+  color: #25313b;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen input:disabled,
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen select:disabled,
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen textarea:disabled {
+  background: #eef2f5;
+  color: #78838d;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-balance-head,
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-balance-head button,
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-amount-tools button {
+  background: #f3f6f8;
+  border-color: #cbd4dc;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-grid-wrap,
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-grid {
+  background: #fff;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-grid th {
+  border-color: #c8d2db;
+  background: #e8eef3;
+  color: #33414d;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-grid td {
+  border-color: #dde4ea;
+  background: #fff;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-grid tbody tr:nth-child(even) td {
+  background: #fafcfd;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-totals,
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-nav {
+  border-color: #c8d2db;
+  background: #edf2f6;
+  color: #4b5965;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-actions {
+  background: #eef2f5;
+  border-top-color: #c8d2db;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-actions button {
+  border-color: #c1ccd5;
+  background: #fff;
+  color: #2d3944;
+  box-shadow: none;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-actions button:hover:not(:disabled) {
+  border-color: #8fb7d4;
+  background: #edf6fc;
+}
+
+/* Dark Advanced */
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen {
+  background: #11161a;
+  border-color: #414d57;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-subtabs {
+  background: #1d242a;
+  border-bottom-color: #414d57;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-subtab {
+  border-color: #46535f;
+  background: #222a31;
+  color: #c7d1da;
+  box-shadow: none;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-subtab.is-active {
+  border-color: #45657f;
+  background: #293844;
+  color: #b9e1ff;
+  box-shadow: inset 0 -2px 0 #69b7f5;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-top {
+  background: #171d22;
+  border-bottom-color: #414d57;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-options,
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-amount,
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-balance,
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-discount {
+  border-color: #414d57;
+  background: #1b2228;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen input,
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen select,
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen textarea {
+  border-color: #46535f;
+  background: #20272d;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-grid th {
+  border-color: #414d57;
+  background: #293139;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-grid td {
+  border-color: #303941;
+  background: #12171b;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-grid tbody tr:nth-child(even) td {
+  background: #161c21;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-totals,
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-nav {
+  border-color: #414d57;
+  background: #1f262c;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-actions {
+  border-top-color: #414d57;
+  background: #1c2329;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-actions button {
+  border-color: #46535f;
+  background: #252d34;
+  box-shadow: none;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .purchase-reference-screen .purchase-reference-actions button:hover:not(:disabled) {
+  border-color: #527b9c;
+  background: #293b49;
+}
+
+/* Focus treatment only; no size/layout changes. */
+:root[data-skin='advanced'] .purchase-reference-screen button:focus-visible,
+:root[data-skin='advanced'] .purchase-reference-screen input:focus-visible,
+:root[data-skin='advanced'] .purchase-reference-screen select:focus-visible,
+:root[data-skin='advanced'] .purchase-reference-screen textarea:focus-visible {
+  outline: 2px solid var(--skin-focus-ring);
+  outline-offset: 1px;
+}

@@ -13,6 +13,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import './PartiesPlaceholderPage.theme.css'
 
 const DEMO_ROWS = [
   { id: '1', no: '-1', name: 'JV', address: '', type: 'ACCOUNTS' },

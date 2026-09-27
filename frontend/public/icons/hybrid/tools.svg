@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+
+<defs>
+  <linearGradient id="blue" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#67b7ff"/><stop offset="1" stop-color="#1267c9"/>
+  </linearGradient>
+  <linearGradient id="green" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#6fe07b"/><stop offset="1" stop-color="#159447"/>
+  </linearGradient>
+  <linearGradient id="orange" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffd166"/><stop offset="1" stop-color="#ef8b00"/>
+  </linearGradient>
+  <linearGradient id="red" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ff6a55"/><stop offset="1" stop-color="#d52316"/>
+  </linearGradient>
+  <linearGradient id="gray" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#f7f9fb"/><stop offset="1" stop-color="#bfc8d3"/>
+  </linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffe581"/><stop offset="1" stop-color="#e5a500"/>
+  </linearGradient>
+  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="1.5" stdDeviation="1.1" flood-color="#000" flood-opacity=".25"/>
+  </filter>
+</defs>
+
+<path d="M12 15 C19 9 26 10 30 14 L23 21 L27 25 L34 18 C38 24 36 31 31 35 L21 45 C18 48 13 48 10 45 C7 42 7 37 10 34 L20 24 C15 24 10 20 12 15 Z" fill="url(#gray)" stroke="#334155" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><path d="M40 10 L54 24 L49 29 L35 15 Z" fill="url(#orange)" stroke="#9a5a00" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><path d="M34 16 L15 35 C11 39 11 44 15 48 C19 52 24 52 28 48 L47 29 Z" fill="url(#orange)" stroke="#9a5a00" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

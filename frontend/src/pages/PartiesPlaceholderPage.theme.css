@@ -1,0 +1,634 @@
+/*
+ * BluePOS — Vendor / Customers / Accounts theme layer (Phase E3)
+ *
+ * Actual component: PartiesPlaceholderPage.tsx
+ *
+ * VISUAL ONLY:
+ * - no content changes
+ * - no business/accounting behavior changes
+ * - no DOM order changes
+ * - no routing/workspace behavior changes
+ * - no field/grid geometry changes
+ *
+ * Light + Classic remains the approved POS PLUS-inspired reference.
+ */
+
+/* ==========================================================================
+   TYPOGRAPHY
+   ========================================================================== */
+
+:root[data-skin] .parties-reference-screen,
+:root[data-skin] .parties-reference-screen button,
+:root[data-skin] .parties-reference-screen input,
+:root[data-skin] .parties-reference-screen select,
+:root[data-skin] .parties-reference-screen textarea,
+:root[data-skin] .parties-reference-screen legend,
+:root[data-skin] .parties-reference-screen table,
+:root[data-skin] .parties-reference-screen summary {
+  font-family: var(--app-font-family) !important;
+  letter-spacing: var(--app-letter-spacing, 0);
+}
+
+/* ==========================================================================
+   DARK BASE
+   ========================================================================== */
+
+:root[data-theme='dark'] .parties-reference-screen {
+  background: #151a1f !important;
+  color: #edf1f5;
+}
+
+/* Header */
+:root[data-theme='dark'] .parties-reference-header {
+  background: #1d2329 !important;
+  border-bottom-color: #4d5862 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-header h1 {
+  color: #f1f5f8 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-header-icon {
+  color: #8fc8ff !important;
+}
+
+:root[data-theme='dark'] .parties-reference-header-icon svg {
+  filter: none !important;
+}
+
+:root[data-theme='dark'] .parties-reference-header-actions button {
+  border-color: #59646f !important;
+  background: linear-gradient(#353c43, #282e34) !important;
+  color: #edf1f5 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+
+:root[data-theme='dark'] .parties-reference-header-actions button:disabled {
+  color: #aab5bf !important;
+  -webkit-text-fill-color: #aab5bf !important;
+  opacity: 1 !important;
+}
+
+/* Top view tabs */
+:root[data-theme='dark'] .parties-reference-view-tabs {
+  background: #242b31 !important;
+  border-bottom-color: #4c5761 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-view-tabs button {
+  border-color: #56616c !important;
+  background: linear-gradient(#353d45, #292f35) !important;
+  color: #cbd4dc !important;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.05) !important;
+}
+
+:root[data-theme='dark'] .parties-reference-view-tabs button.is-active {
+  border-color: #527b9c !important;
+  background: linear-gradient(#35566e, #29465b) !important;
+  color: #c9e9ff !important;
+}
+
+/* Main columns */
+:root[data-theme='dark'] .parties-reference-main,
+:root[data-theme='dark'] .parties-reference-left,
+:root[data-theme='dark'] .parties-reference-right {
+  background: #151a1f !important;
+  color: #edf1f5;
+}
+
+/* Fieldsets/panels */
+:root[data-theme='dark'] .parties-reference-personal,
+:root[data-theme='dark'] .parties-reference-account-info {
+  border-color: #56616c !important;
+  background: #1d2329 !important;
+  color: #edf1f5 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-personal legend,
+:root[data-theme='dark'] .parties-reference-account-info legend {
+  color: #dce4eb !important;
+  background: #1d2329 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-row label,
+:root[data-theme='dark'] .parties-reference-account-grid > label,
+:root[data-theme='dark'] .parties-reference-account-checks label,
+:root[data-theme='dark'] .parties-reference-account-type-row > label,
+:root[data-theme='dark'] .parties-reference-inline-check span {
+  color: #dce4eb !important;
+}
+
+/* Inputs — proactively fix Chromium disabled text visibility */
+:root[data-theme='dark'] .parties-reference-screen input,
+:root[data-theme='dark'] .parties-reference-screen select,
+:root[data-theme='dark'] .parties-reference-screen textarea {
+  border-color: #5d6873 !important;
+  background: #1a2026 !important;
+  color: #edf1f5 !important;
+  -webkit-text-fill-color: #edf1f5 !important;
+  color-scheme: dark;
+}
+
+:root[data-theme='dark'] .parties-reference-screen input:disabled,
+:root[data-theme='dark'] .parties-reference-screen select:disabled,
+:root[data-theme='dark'] .parties-reference-screen textarea:disabled,
+:root[data-theme='dark'] .parties-reference-screen input[readonly],
+:root[data-theme='dark'] .parties-reference-screen textarea[readonly] {
+  border-color: #47515b !important;
+  background: #262d33 !important;
+  color: #c7d1da !important;
+  -webkit-text-fill-color: #c7d1da !important;
+  opacity: 1 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-screen input::placeholder,
+:root[data-theme='dark'] .parties-reference-screen textarea::placeholder {
+  color: #8f9ba6 !important;
+  -webkit-text-fill-color: #8f9ba6 !important;
+  opacity: 1 !important;
+}
+
+/* Native checkbox/radio */
+:root[data-theme='dark'] .parties-reference-screen input[type='checkbox'],
+:root[data-theme='dark'] .parties-reference-screen input[type='radio'] {
+  accent-color: #69b7f5;
+}
+
+/* Personal arrows / photo */
+:root[data-theme='dark'] .parties-reference-arrow-box button {
+  border-color: #56616c !important;
+  background: linear-gradient(#343c44, #292f35) !important;
+  color: #cbd4dc !important;
+}
+
+:root[data-theme='dark'] .parties-reference-photo {
+  border-color: #a85959 !important;
+  background: #1b2127 !important;
+  color: #e2e8ee !important;
+  -webkit-text-fill-color: #e2e8ee !important;
+  opacity: 1 !important;
+}
+
+/* Inner detail tabs */
+:root[data-theme='dark'] .parties-reference-subtabs {
+  border-color: #56616c !important;
+  background: #242b31 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-subtabs button {
+  border-color: #56616c !important;
+  background: linear-gradient(#343c44, #292f35) !important;
+  color: #cbd4dc !important;
+}
+
+:root[data-theme='dark'] .parties-reference-subtabs button.is-active {
+  border-color: #527b9c !important;
+  background: #29465b !important;
+  color: #c9e9ff !important;
+}
+
+:root[data-theme='dark'] .parties-reference-subtab-panel {
+  border-color: #56616c !important;
+  background: #1b2127 !important;
+  color: #e5ebf0 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-placeholder {
+  color: #aeb8c2 !important;
+}
+
+/* Account type controls */
+:root[data-theme='dark'] .parties-reference-account-type-row button {
+  border-color: #56616c !important;
+  background: linear-gradient(#343c44, #292f35) !important;
+  color: #dce4eb !important;
+}
+
+:root[data-theme='dark'] .parties-reference-account-type-btn {
+  border-color: #56616c !important;
+  background: linear-gradient(#343c44, #292f35) !important;
+  color: #dce4eb !important;
+}
+
+/* Account Type is semantic/highlighted in the reference: retain yellow meaning,
+   but darken it enough for dark-mode comfort. */
+:root[data-theme='dark'] .parties-reference-account-type-row select {
+  background: #5a5314 !important;
+  color: #fff3a3 !important;
+  -webkit-text-fill-color: #fff3a3 !important;
+  border-color: #766d25 !important;
+  opacity: 1 !important;
+}
+
+/* Right data grid */
+:root[data-theme='dark'] .parties-reference-grid-wrap {
+  border-color: #4d5862 !important;
+  background: #14191d !important;
+}
+
+:root[data-theme='dark'] .parties-reference-grid {
+  background: #14191d !important;
+  color: #e7edf2 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-grid th {
+  border-color: #56616c !important;
+  background: linear-gradient(#343c44, #2a3138) !important;
+  color: #edf1f5 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-grid td {
+  border-right-color: #38424b !important;
+  border-bottom-color: #333d46 !important;
+  background: #171c21 !important;
+  color: #dfe6ec !important;
+}
+
+:root[data-theme='dark'] .parties-reference-grid tbody tr:nth-child(even) td {
+  background: #1b2127 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-grid tbody tr.is-selected td {
+  background: #28547a !important;
+  color: #fff !important;
+}
+
+:root[data-theme='dark'] .parties-reference-filter-cell,
+:root[data-theme='dark'] .parties-reference-row-marker {
+  color: #9bcfff !important;
+}
+
+/* Grid footer / nav */
+:root[data-theme='dark'] .parties-reference-grid-footer {
+  border-color: #4d5862 !important;
+  background: #232a30 !important;
+  color: #dce4eb !important;
+}
+
+:root[data-theme='dark'] .parties-reference-record-nav button {
+  border-color: #56616c !important;
+  background: #293038 !important;
+  color: #dce4eb !important;
+}
+
+:root[data-theme='dark'] .parties-reference-record-nav button:disabled {
+  color: #74808b !important;
+  -webkit-text-fill-color: #74808b !important;
+  opacity: 1 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-record-nav span {
+  color: #c2ccd5 !important;
+}
+
+/* Dr / Cr remain semantic but without glaring light-theme islands */
+:root[data-theme='dark'] .parties-reference-drcr span {
+  color: #dce4eb !important;
+}
+
+:root[data-theme='dark'] .parties-reference-drcr strong {
+  border-color: #716923 !important;
+  background: #504a17 !important;
+  color: #fff3a3 !important;
+  -webkit-text-fill-color: #fff3a3 !important;
+}
+
+/* Account classification tree */
+:root[data-theme='dark'] .parties-reference-account-tree {
+  border-color: #4d5862 !important;
+  background: #171c21 !important;
+  color: #e4ebf0 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-tree-title {
+  color: #dce4eb !important;
+}
+
+:root[data-theme='dark'] .parties-reference-account-tree details {
+  border-bottom-color: #303a43 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-account-tree summary {
+  color: #9bcfff !important;
+  background: #171c21 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-account-tree details:nth-of-type(even) summary {
+  background: #1d2730 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-tree-icon {
+  border-color: #53697c !important;
+  background: #222b33 !important;
+  color: #8fc8ff !important;
+}
+
+:root[data-theme='dark'] .parties-reference-tree-number {
+  color: #aeb8c2 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-tree-child {
+  color: #99a5af !important;
+}
+
+/* Non-entry views */
+:root[data-theme='dark'] .parties-reference-disabled-view {
+  background: #151a1f !important;
+  color: #aeb8c2 !important;
+}
+
+:root[data-theme='dark'] .parties-reference-disabled-view strong {
+  color: #edf1f5 !important;
+}
+
+
+/* ==========================================================================
+   HYBRID — premium modern-classic
+   ========================================================================== */
+
+:root[data-skin='hybrid'] .parties-reference-header-actions button,
+:root[data-skin='hybrid'] .parties-reference-view-tabs button,
+:root[data-skin='hybrid'] .parties-reference-subtabs button,
+:root[data-skin='hybrid'] .parties-reference-account-type-row button,
+:root[data-skin='hybrid'] .parties-reference-record-nav button,
+:root[data-skin='hybrid'] .parties-reference-screen input,
+:root[data-skin='hybrid'] .parties-reference-screen select,
+:root[data-skin='hybrid'] .parties-reference-screen textarea {
+  border-radius: 5px;
+}
+
+:root[data-skin='hybrid'] .parties-reference-view-tabs button,
+:root[data-skin='hybrid'] .parties-reference-subtabs button {
+  border-radius: 5px 5px 0 0;
+}
+
+:root[data-skin='hybrid'] .parties-reference-personal,
+:root[data-skin='hybrid'] .parties-reference-account-info,
+:root[data-skin='hybrid'] .parties-reference-subtab-panel,
+:root[data-skin='hybrid'] .parties-reference-account-tree,
+:root[data-skin='hybrid'] .parties-reference-photo {
+  border-radius: 4px;
+}
+
+:root[data-skin='hybrid'] .parties-reference-header-actions button {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.30),
+    0 1px 2px rgba(20,30,40,.14);
+}
+
+/* Light Hybrid */
+:root[data-theme='light'][data-skin='hybrid'] .parties-reference-screen {
+  background: #e8edf1;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .parties-reference-header {
+  background: #edf1f4;
+  border-bottom-color: #adb7c0;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .parties-reference-view-tabs {
+  background: #dbe2e8;
+  border-bottom-color: #a5b0ba;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .parties-reference-view-tabs button,
+:root[data-theme='light'][data-skin='hybrid'] .parties-reference-subtabs button {
+  border-color: #a6b1bb;
+  background: linear-gradient(#fff, #e8edf1);
+  color: #26323c;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .parties-reference-view-tabs button.is-active,
+:root[data-theme='light'][data-skin='hybrid'] .parties-reference-subtabs button.is-active {
+  border-color: #8aaec6;
+  background: linear-gradient(#eefaff, #c9eaf7);
+  color: #174f7d;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .parties-reference-personal,
+:root[data-theme='light'][data-skin='hybrid'] .parties-reference-account-info,
+:root[data-theme='light'][data-skin='hybrid'] .parties-reference-subtab-panel {
+  border-color: #aeb9c3;
+  background: #f3f5f7;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .parties-reference-grid th {
+  background: linear-gradient(#dce4eb, #c5ced7);
+  border-color: #a9b5bf;
+}
+
+:root[data-theme='light'][data-skin='hybrid'] .parties-reference-grid-footer {
+  background: #dfe5ea;
+}
+
+
+/* ==========================================================================
+   ADVANCED — flat modern enterprise
+   ========================================================================== */
+
+:root[data-skin='advanced'] .parties-reference-header-actions button,
+:root[data-skin='advanced'] .parties-reference-account-type-row button,
+:root[data-skin='advanced'] .parties-reference-record-nav button,
+:root[data-skin='advanced'] .parties-reference-screen input,
+:root[data-skin='advanced'] .parties-reference-screen select,
+:root[data-skin='advanced'] .parties-reference-screen textarea {
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+:root[data-skin='advanced'] .parties-reference-view-tabs button,
+:root[data-skin='advanced'] .parties-reference-subtabs button {
+  border-radius: 8px 8px 0 0;
+  box-shadow: none;
+}
+
+:root[data-skin='advanced'] .parties-reference-personal,
+:root[data-skin='advanced'] .parties-reference-account-info,
+:root[data-skin='advanced'] .parties-reference-subtab-panel,
+:root[data-skin='advanced'] .parties-reference-account-tree,
+:root[data-skin='advanced'] .parties-reference-photo {
+  border-radius: 8px;
+  box-shadow: var(--panel-shadow);
+}
+
+:root[data-skin='advanced'] .parties-reference-header-icon svg {
+  filter: none !important;
+}
+
+/* Light Advanced */
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-screen {
+  background: #f3f6f9;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-header {
+  background: #f7f9fb;
+  border-bottom-color: #c8d2db;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-header h1 {
+  color: #24313d;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-header-actions button {
+  border-color: #c1ccd5;
+  background: #fff;
+  color: #2d3944;
+  box-shadow: none;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-view-tabs {
+  background: #eef2f6;
+  border-bottom-color: #c7d0d9;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-view-tabs button,
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-subtabs button {
+  border-color: #d0d8e0;
+  background: #f8fafc;
+  color: #465463;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-view-tabs button.is-active,
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-subtabs button.is-active {
+  border-color: #a9c6dd;
+  background: #fff;
+  color: #1769aa;
+  box-shadow: inset 0 -2px 0 #278bd1;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-personal,
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-account-info,
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-subtab-panel {
+  border-color: #ccd5dd;
+  background: #fff;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-screen input,
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-screen select,
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-screen textarea {
+  border-color: #c1ccd5;
+  background: #fff;
+  color: #25313b;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-grid-wrap,
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-grid,
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-account-tree {
+  background: #fff;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-grid th {
+  border-color: #c8d2db;
+  background: #e8eef3;
+  color: #33414d;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-grid td {
+  border-color: #dde4ea;
+  background: #fff;
+  color: #28343f;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-grid tbody tr:nth-child(even) td {
+  background: #fafcfd;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-grid tbody tr.is-selected td {
+  background: #d8ebfa;
+  color: #174f7d;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-grid-footer {
+  background: #edf2f6;
+  border-color: #c8d2db;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-account-tree summary {
+  color: #2e648d;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-account-tree details:nth-of-type(even) summary {
+  background: #f3f7fa;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .parties-reference-disabled-view {
+  background: #f3f6f9;
+  color: #66737f;
+}
+
+/* Dark Advanced */
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-screen,
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-main,
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-left,
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-right {
+  background: #11161a !important;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-header {
+  background: #171d22 !important;
+  border-bottom-color: #414d57 !important;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-view-tabs,
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-subtabs {
+  background: #1d242a !important;
+  border-color: #414d57 !important;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-view-tabs button,
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-subtabs button {
+  border-color: #46535f !important;
+  background: #222a31 !important;
+  color: #c7d1da !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-view-tabs button.is-active,
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-subtabs button.is-active {
+  border-color: #45657f !important;
+  background: #293844 !important;
+  color: #b9e1ff !important;
+  box-shadow: inset 0 -2px 0 #69b7f5 !important;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-personal,
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-account-info,
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-subtab-panel {
+  border-color: #414d57 !important;
+  background: #1b2228 !important;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-grid th {
+  border-color: #414d57 !important;
+  background: #293139 !important;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-grid td {
+  border-color: #303941 !important;
+  background: #12171b !important;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-grid tbody tr:nth-child(even) td {
+  background: #161c21 !important;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-grid tbody tr.is-selected td {
+  background: #214766 !important;
+  color: #fff !important;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-grid-footer,
+:root[data-theme='dark'][data-skin='advanced'] .parties-reference-account-tree {
+  border-color: #414d57 !important;
+  background: #171d22 !important;
+}
+
+/* Focus treatment only, no geometry changes. */
+:root[data-skin='advanced'] .parties-reference-screen button:focus-visible,
+:root[data-skin='advanced'] .parties-reference-screen input:focus-visible,
+:root[data-skin='advanced'] .parties-reference-screen select:focus-visible,
+:root[data-skin='advanced'] .parties-reference-screen textarea:focus-visible,
+:root[data-skin='advanced'] .parties-reference-screen summary:focus-visible {
+  outline: 2px solid var(--skin-focus-ring);
+  outline-offset: 1px;
+}
