@@ -684,7 +684,6 @@ export function BarcodePrintingPage() {
                 <div className="bp-printer-label">On Following Printer</div>
                 <div className="bp-printer-row">
                   <BpFancySelect
-                    className="bp-control-full"
                     aria-label="On Following Printer"
                     value={browserPrintDialogPrinter.id}
                     title="Browsers cannot enumerate installed Windows printers. Use the system print dialog. A BluePOS Print Bridge will enable native printer lists later."

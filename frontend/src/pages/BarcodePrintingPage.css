@@ -448,6 +448,11 @@
   min-width: 0;
 }
 
+.bp-printer-row .bp-fancy-select {
+  width: 100%;
+  min-width: 0;
+}
+
 .bp-printer-row .bp-btn-calibrate {
   min-width: 72px;
 }
