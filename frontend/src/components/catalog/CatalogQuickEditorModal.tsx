@@ -16,6 +16,7 @@ type CatalogQuickEditorModalProps = {
   kind: QuickEditorKind | null
   open: boolean
   onClose: () => void
+  parentCategoryUlid?: string
   onSaved?: (kind: QuickEditorKind, item: CatalogMasterRecord, created: boolean) => void
 }
 
@@ -23,6 +24,14 @@ const COPY: Record<QuickEditorKind, { title: string; listTitle: string }> = {
   category: {
     title: 'Edit/Define Categories',
     listTitle: 'Edit/Define Categories',
+  },
+  subcategory: {
+    title: 'Edit/Define Subcategories',
+    listTitle: 'Edit/Define Subcategories',
+  },
+  supplier: {
+    title: 'Edit/Define Suppliers',
+    listTitle: 'Edit/Define Suppliers',
   },
   brand: {
     title: 'Edit/Define Manufacture',
@@ -42,6 +51,7 @@ export function CatalogQuickEditorModal({
   kind,
   open,
   onClose,
+  parentCategoryUlid,
   onSaved,
 }: CatalogQuickEditorModalProps) {
   const activeKind = kind ?? 'category'
@@ -49,6 +59,7 @@ export function CatalogQuickEditorModal({
   const { openModule } = useWorkspace()
   const editor = useCatalogMasterEditor(activeKind, {
     enabled: open,
+    parentCategoryUlid,
     onSaved,
   })
 
@@ -135,6 +146,8 @@ export function CatalogQuickEditorModal({
               onClick={() => {
                 const path = {
                   category: '/definition/categories',
+                  subcategory: '/definition/subcategories',
+                  supplier: '/definition/suppliers',
                   brand: '/definition/brands',
                   unit: '/definition/units',
                   barcode_group: null,
@@ -161,7 +174,15 @@ export function CatalogQuickEditorModal({
               autoFocus
             />
 
-            <label>{activeKind === 'unit' ? 'Unit Name:' : 'Desc:'}</label>
+            <label>
+              {activeKind === 'unit'
+                ? 'Unit Name:'
+                : activeKind === 'supplier'
+                  ? 'Supplier Name:'
+                  : activeKind === 'subcategory'
+                    ? 'Subcategory:'
+                    : 'Desc:'}
+            </label>
             <input
               className="catalog-popup-name"
               value={editor.name}
@@ -196,9 +217,16 @@ export function CatalogQuickEditorModal({
               <thead>
                 <tr>
                   <th>Code</th>
-                  <th>{activeKind === 'unit' ? 'Unit Name' : 'Desc'}</th>
+                  <th>
+                    {activeKind === 'unit'
+                      ? 'Unit Name'
+                      : activeKind === 'supplier'
+                        ? 'Supplier Name'
+                        : activeKind === 'subcategory'
+                          ? 'Subcategory'
+                          : 'Desc'}
+                  </th>
                   {activeKind === 'unit' ? <th>Symbol</th> : null}
-                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -208,22 +236,15 @@ export function CatalogQuickEditorModal({
                     className={editor.selectedKey === row.ulid ? 'is-selected' : undefined}
                     onClick={() => editor.select(row)}
                   >
-                    <td>{row.code}</td><td>{row.code}</td>
+                    <td>{row.code}</td>
                     <td>{row.name}</td>
-
-                    {activeKind === 'unit' ? (
-                      <td>{'symbol' in row ? row.symbol : ''}</td>
-                    ) : null}
-
-                    <td>
-                      {row.is_active ? 'Active' : 'Archived'}
-                    </td>
+                    {activeKind === 'unit' ? <td>{'symbol' in row ? row.symbol : ''}</td> : null}
                   </tr>
                 ))}
 
                 {editor.rows.length === 0 ? (
                   <tr>
-                    <td colSpan={activeKind === 'unit' ? 4 : 3} className="catalog-popup-empty" >
+                    <td colSpan={activeKind === 'unit' ? 3 : 2} className="catalog-popup-empty">
                       No records
                     </td>
                   </tr>
@@ -240,60 +261,20 @@ export function CatalogQuickEditorModal({
             type="button"
             className="catalog-popup-action"
             disabled={
+              !editor.canDelete ||
               !editor.selected ||
-              editor.isDeactivating ||
-              editor.isActivating ||
-              (
-                editor.selected.is_active
-                  ? !editor.canDelete
-                  : !editor.canActivate
-              )
+              !editor.selected.is_active ||
+              editor.isDeactivating
             }
             onClick={() => {
-              if (!editor.selected) {
-                return
-              }
-
-              if (editor.selected.is_active) {
-                if (
-                  !window.confirm(
-                    `Deactivate ${editor.selected.name}?`,
-                  )
-                ) {
-                  return
-                }
-
-                void editor.deactivate().catch((err) => {
-                  editor.setError(
-                    err instanceof ApiClientError
-                      ? err.message
-                      : 'Unable to deactivate record.',
-                  )
-                })
-
-                return
-              }
-
-              void editor.activate().catch((err) => {
-                editor.setError(
-                  err instanceof ApiClientError
-                    ? err.message
-                    : 'Unable to activate record.',
-                )
+              if (!editor.selected || !window.confirm(`Deactivate ${editor.selected.name}?`)) return
+              void editor.deactivate().catch((err) => {
+                editor.setError(err instanceof ApiClientError ? err.message : 'Unable to deactivate record.')
               })
             }}
           >
-            {editor.selected && !editor.selected.is_active ? (
-              <>
-                <RefreshCw size={22} />
-                Activate
-              </>
-            ) : (
-              <>
-                <Trash2 size={22} />
-                Delete
-              </>
-            )}
+            <Trash2 size={22} />
+            Delete
           </button>
 
           <button type="button" className="catalog-popup-action" onClick={editor.startNew}>

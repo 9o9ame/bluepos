@@ -356,6 +356,9 @@ export function fetchProducts(
     q?: string
     page?: number
     per_page?: number
+    category_ulid?: string
+    brand_ulid?: string
+    status?: string
   },
 ) {
   const search = new URLSearchParams()
@@ -366,6 +369,18 @@ export function fetchProducts(
 
   if (params.page) {
     search.set('page', String(params.page))
+  }
+
+  if (params.category_ulid) {
+    search.set('category_ulid', params.category_ulid)
+  }
+
+  if (params.brand_ulid) {
+    search.set('brand_ulid', params.brand_ulid)
+  }
+
+  if (params.status) {
+    search.set('status', params.status)
   }
 
   search.set(

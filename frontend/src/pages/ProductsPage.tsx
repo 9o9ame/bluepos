@@ -6,6 +6,7 @@ import {
   ChevronLast,
   ChevronLeft,
   ChevronRight,
+  ImagePlus,
   Plus,
   Printer,
   RefreshCw,
@@ -42,6 +43,7 @@ import {
 } from '../api/inventory'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { CatalogQuickEditorModal, type QuickEditorKind } from '../components/catalog/CatalogQuickEditorModal'
+import { loadBarcodePrintSettings, printBarcodeLabels } from '../components/products/barcodePrint'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
@@ -665,6 +667,53 @@ export function ProductsPage() {
     pendingImagePreview ||
     (!imageRemoveRequested ? selected?.image_url ?? null : null)
 
+  const printableBarcodes = barcodeRows
+    .filter((row) => row.barcode.trim() !== '')
+    .map((row) => ({
+      id: row.id,
+      barcode: row.barcode.trim(),
+      unitCode:
+        units.data?.find((unit) => unit.ulid === row.unit_ulid)?.code ?? '',
+      conversionFactor: row.conversion_factor,
+      isPrimary: row.is_primary,
+    }))
+
+  const currentPrintableBarcode =
+    printableBarcodes.find((row) => row.id === selectedBarcodeId) ??
+    printableBarcodes.find((row) => row.isPrimary) ??
+    printableBarcodes[0] ??
+    null
+
+  function printCurrentBarcode() {
+    if (!currentPrintableBarcode) {
+      setError('Select or add a barcode before printing.')
+      return
+    }
+
+    try {
+      const settings = loadBarcodePrintSettings()
+
+      printBarcodeLabels({
+        businessName: session?.tenant.name ?? 'BluePOS',
+        productName: name || selected?.name || 'Product',
+        productNumber,
+        barcode: currentPrintableBarcode.barcode,
+        unitCode: currentPrintableBarcode.unitCode,
+        price: retail,
+        currencyCode: session?.tenant.currency_code ?? '',
+        copies: 1,
+        labelSize: settings.labelSize,
+        showPrice: settings.showPrice,
+      })
+
+      setError(null)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Unable to print barcode.',
+      )
+    }
+  }
+
   return (
     <>
       <form id="inline-product-form" className="product-def product-reference-screen" onSubmit={onSubmit}>
@@ -712,7 +761,13 @@ export function ProductsPage() {
                 className="product-def-image-preview"
               />
             ) : (
-              <span>Right Click to +</span>
+              <span className="product-def-image-empty">
+                <span className="product-def-image-icon" aria-hidden="true">
+                  <ImagePlus size={34} strokeWidth={1.8} />
+                </span>
+                <strong>Upload Image</strong>
+                <small>Click or right-click</small>
+              </span>
             )}
 
             {productImagePreview && canSave ? (
@@ -731,12 +786,41 @@ export function ProductsPage() {
             ) : null}
           </div>
 
-          <button type="button" className="product-def-rail-btn" disabled title="Available in a later phase">
+          <button
+            type="button"
+            className="product-def-rail-btn"
+            disabled={
+              creating ||
+              !selectedKey ||
+              printableBarcodes.length === 0
+            }
+            title={
+              creating
+                ? 'Save the product first'
+                : printableBarcodes.length > 0
+                  ? 'Open full barcode printing workspace'
+                  : 'Add a barcode first'
+            }
+            onClick={() => {
+              if (!selectedKey) return
+              openModule(`/definition/barcode-printing/${selectedKey}`)
+            }}
+          >
             <Barcode size={18} />
             <span>Barcode Print</span>
           </button>
 
-          <button type="button" className="product-def-rail-btn" disabled title="Available in a later phase">
+          <button
+            type="button"
+            className="product-def-rail-btn"
+            disabled={!currentPrintableBarcode}
+            title={
+              currentPrintableBarcode
+                ? `Print one label for ${currentPrintableBarcode.barcode}`
+                : 'Select or add a barcode first'
+            }
+            onClick={printCurrentBarcode}
+          >
             <Printer size={18} />
             <span>Current Print</span>
           </button>
@@ -1040,9 +1124,14 @@ export function ProductsPage() {
                 <button
                   type="button"
                   className="pdf-plus-button"
-                  title="Open Subcategories"
-                  aria-label="Open subcategories"
-                  onClick={() => openModule('/definition/subcategories')}
+                  title={
+                    categoryUlid
+                      ? 'Edit / Define Subcategories'
+                      : 'Select a category first'
+                  }
+                  aria-label="Edit or define subcategories"
+                  disabled={!canSave || !categoryUlid}
+                  onClick={() => setQuickEditor('subcategory')}
                 >
                   <Plus size={15} strokeWidth={3} />
                 </button>
@@ -1073,7 +1162,8 @@ export function ProductsPage() {
                   className="pdf-plus-button"
                   title="Edit / Define Suppliers"
                   aria-label="Edit or define suppliers"
-                  onClick={() => openModule('/definition/suppliers')}
+                  disabled={!canSave}
+                  onClick={() => setQuickEditor('supplier')}
                 >
                   <Plus size={15} strokeWidth={3} />
                 </button>
@@ -1446,10 +1536,16 @@ export function ProductsPage() {
       <CatalogQuickEditorModal
         kind={quickEditor}
         open={quickEditor !== null}
+        parentCategoryUlid={categoryUlid}
         onClose={() => setQuickEditor(null)}
         onSaved={(kind, item) => {
           if (kind === 'category') {
             setCategoryUlid(item.ulid)
+            setSubcategoryUlid('')
+          } else if (kind === 'subcategory') {
+            setSubcategoryUlid(item.ulid)
+          } else if (kind === 'supplier') {
+            setPrimarySupplierUlid(item.ulid)
           } else if (kind === 'brand') {
             setBrandUlid(item.ulid)
           } else if (kind === 'unit') {

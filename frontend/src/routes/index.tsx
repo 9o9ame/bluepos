@@ -5,6 +5,7 @@ import { AppShell } from '../layouts/AppShell'
 import { AccountPage, PlanInfoPage } from '../pages/AccountAndPlanPages'
 import { BranchesPage, SecurityStatusPage, WarehousesPage } from '../pages/AdminShellPages'
 import { BrandsPage } from '../pages/BrandsPage'
+import { BarcodePrintingPage } from '../pages/BarcodePrintingPage'
 import { BusinessSettingsPage } from '../pages/BusinessSettingsPage'
 import { CategoriesPage } from '../pages/CategoriesPage'
 import { ChangePasswordPage } from '../pages/ChangePasswordPage'
@@ -111,6 +112,8 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="products.view" />}>
             <Route path="/definition/products" element={<ProductsPage />} />
             <Route path="/definition/products/:productUlid" element={<Navigate to="/definition/products" replace />} />
+            <Route path="/definition/barcode-printing" element={<BarcodePrintingPage />} />
+            <Route path="/definition/barcode-printing/:productUlid" element={<BarcodePrintingPage />} />
           </Route>
         </Route>
       </Route>

@@ -121,6 +121,20 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     match: (pathname) => pathname === '/definition/products',
   },
   {
+    key: 'barcode-printing',
+    title: 'Barcode Printing',
+    path: '/definition/barcode-printing',
+    ribbon: 'definition',
+    status: 'ready',
+    permission: 'products.view',
+    entitlement: 'catalog',
+    match: (pathname) =>
+      pathname === '/definition/barcode-printing' ||
+      pathname.startsWith('/definition/barcode-printing/'),
+    keyForPath: () => 'barcode-printing',
+    titleForPath: () => 'Barcode Printing',
+  },
+  {
     key: 'categories',
     title: 'Categories',
     path: '/definition/categories',
@@ -366,7 +380,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       caption: 'Printing / Lists',
       commands: [
         { id: 'opening-stock', label: 'Opening Stock', icon: Boxes, status: 'later', tone: 'orange' },
-        { id: 'barcodes', label: 'Barcode Printing', icon: Barcode, status: 'later', tone: 'navy' },
+        { id: 'barcodes', label: 'Barcode Printing', icon: Barcode, moduleKey: 'barcode-printing', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'navy' },
         { id: 'price-lists', label: 'Price Lists', icon: List, status: 'later', tone: 'teal' },
       ],
     },
