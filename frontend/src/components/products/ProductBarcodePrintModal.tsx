@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Barcode, Printer, X } from 'lucide-react'
 import {
-  code39Svg,
   getBarcodeLabelSizeOptions,
   loadBarcodePrintSettings,
   printBarcodeLabels,
+  renderBarcodeSvg,
   saveBarcodePrintSettings,
   type BarcodeLabelSize,
 } from './barcodePrint'
@@ -244,7 +244,13 @@ export function ProductBarcodePrintModal({
                 <div
                   className="product-barcode-print-svg"
                   dangerouslySetInnerHTML={{
-                    __html: code39Svg(selected.barcode),
+                    __html: (() => {
+                      try {
+                        return renderBarcodeSvg(selected.barcode, 'Code128')
+                      } catch {
+                        return ''
+                      }
+                    })(),
                   }}
                 />
               ) : (

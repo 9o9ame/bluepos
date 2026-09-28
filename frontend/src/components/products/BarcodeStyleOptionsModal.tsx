@@ -1,0 +1,149 @@
+import { useEffect, useState } from 'react'
+import {
+  getAllBarcodeStylePresets,
+  saveBarcodeStylePrefs,
+  type BarcodeStyleId,
+  type BarcodeStylePreset,
+} from './barcodeStyles'
+import './BarcodeStyleOptionsModal.css'
+
+type BarcodeStyleOptionsModalProps = {
+  open: boolean
+  onClose: () => void
+  onSaved: () => void
+}
+
+export function BarcodeStyleOptionsModal({
+  open,
+  onClose,
+  onSaved,
+}: BarcodeStyleOptionsModalProps) {
+  const [rows, setRows] = useState<BarcodeStylePreset[]>([])
+
+  useEffect(() => {
+    if (open) {
+      setRows(getAllBarcodeStylePresets())
+    }
+  }, [open])
+
+  if (!open) return null
+
+  const activeCount = rows.filter((row) => row.active).length
+
+  function move(index: number, direction: -1 | 1) {
+    const target = index + direction
+    if (target < 0 || target >= rows.length) return
+    setRows((current) => {
+      const next = [...current]
+      const tmp = next[index]
+      next[index] = next[target]
+      next[target] = tmp
+      return next.map((row, order) => ({ ...row, order: order + 1 }))
+    })
+  }
+
+  function toggleActive(id: BarcodeStyleId) {
+    setRows((current) => {
+      const row = current.find((item) => item.id === id)
+      if (!row) return current
+      if (row.active && current.filter((item) => item.active).length <= 1) {
+        return current
+      }
+      return current.map((item) =>
+        item.id === id ? { ...item, active: !item.active } : item,
+      )
+    })
+  }
+
+  function save() {
+    const activeIds = rows.filter((row) => row.active).map((row) => row.id)
+    if (activeIds.length < 1) return
+    saveBarcodeStylePrefs({
+      activeIds,
+      order: rows.map((row) => row.id),
+    })
+    onSaved()
+    onClose()
+  }
+
+  return (
+    <div className="bp-style-modal-backdrop" role="presentation">
+      <div
+        className="bp-style-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Report Type On / Off Options"
+      >
+        <header className="bp-style-modal-title">
+          <strong>Report Type On / Off Options</strong>
+          <button type="button" aria-label="Close" onClick={onClose}>
+            ×
+          </button>
+        </header>
+
+        <div className="bp-style-modal-body">
+          <table className="bp-style-modal-grid">
+            <thead>
+              <tr>
+                <th>Index</th>
+                <th>Report Name</th>
+                <th>Used For</th>
+                <th>Order By</th>
+                <th>Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr key={row.id}>
+                  <td>{index + 1}</td>
+                  <td>{row.name}</td>
+                  <td>{row.usedFor}</td>
+                  <td>
+                    <div className="bp-style-order-btns">
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => move(index, -1)}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        disabled={index === rows.length - 1}
+                        onClick={() => move(index, 1)}
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  </td>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={row.active}
+                      disabled={row.active && activeCount <= 1}
+                      title={
+                        row.active && activeCount <= 1
+                          ? 'At least one barcode style must remain active.'
+                          : undefined
+                      }
+                      onChange={() => toggleActive(row.id)}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <footer className="bp-style-modal-footer">
+          <button type="button" className="bp-style-modal-btn is-primary" onClick={save}>
+            Save
+          </button>
+          <button type="button" className="bp-style-modal-btn" onClick={onClose}>
+            Close
+          </button>
+        </footer>
+      </div>
+    </div>
+  )
+}

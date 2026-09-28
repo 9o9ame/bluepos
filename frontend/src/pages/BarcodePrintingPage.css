@@ -427,6 +427,32 @@
   font-weight: 700;
 }
 
+.bp-preview-name {
+  max-width: 100%;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 0 auto;
+}
+
+.bp-preview-invalid {
+  max-width: 92%;
+  padding: 6px 8px;
+  border: 1px solid #c67070;
+  border-radius: 4px;
+  background: #fff5f5;
+  color: #8d1717;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.25;
+  flex: 0 0 auto;
+}
+
 .bp-preview-paper code {
   font-size: var(--ui-font-md, 11px);
   color: #000;
@@ -943,9 +969,16 @@
   background: #161c21;
 }
 
+:root[data-theme='dark'] .bp-preview-name,
 :root[data-theme='dark'] .bp-preview-paper code,
 :root[data-theme='dark'] .bp-preview-paper strong {
   color: #edf2f6;
+}
+
+:root[data-theme='dark'] .bp-preview-invalid {
+  background: #3a2222;
+  border-color: #8d4545;
+  color: #ffb4b4;
 }
 
 :root[data-theme='dark'] .bp-btn,

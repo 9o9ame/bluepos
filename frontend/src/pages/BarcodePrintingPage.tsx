@@ -16,29 +16,49 @@ import {
   fetchProduct,
   fetchProducts,
 } from '../api/catalog'
+import { BarcodeStyleOptionsModal } from '../components/products/BarcodeStyleOptionsModal'
 import {
-  barcodeSvg,
+  BARCODE_TYPE_OPTIONS,
+  DISPLAY_FIELD_OPTIONS,
+  PRICE_FIELD_OPTIONS,
+  browserPrintDialogPrinter,
+  getActiveBarcodeStyles,
+  isBarcodeTypeSupported,
   loadBarcodePrintSettings,
+  migrateLegacyBarcodeType,
+  migrateLegacyPrintStyle,
   printBarcodeBatch,
   printBarcodeLabels,
+  renderBarcodeSvg,
   saveBarcodePrintSettings,
+  validateBarcodeValue,
   type BarcodeLabelSize,
-  type BarcodePrintStyle,
+  type BarcodeStyleId,
   type BarcodeType,
+  type DisplayFieldOption,
+  type PriceFieldOption,
 } from '../components/products/barcodePrint'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product, ProductBarcode, ProductPrice } from '../types/catalog'
 import './BarcodePrintingPage.css'
 
-type DisplayField = 'name' | 'alternate_name' | 'product_number' | 'sku'
-type PriceField = 'retail' | 'wholesale' | 'minimum_sale' | 'none'
+type RangeMode = 'product_number' | 'sku'
 
 type PrintQueueLine = {
   id: string
   product: Product
   barcodeUlid: string
   quantity: number
+}
+
+const PRICE_TYPE_MAP: Record<
+  Exclude<PriceFieldOption, 'NONE' | 'SELLING_WITH_UNIT' | 'SUB_SELLING_WITH_UNIT'>,
+  ProductPrice['price_type']
+> = {
+  WHOLESALE: 'wholesale',
+  SELLING: 'retail',
+  SUB_SELLING: 'minimum_sale',
 }
 
 function activeBarcodes(product: Product): ProductBarcode[] {
@@ -56,21 +76,52 @@ function selectedBarcode(line: PrintQueueLine | null): ProductBarcode | null {
   )
 }
 
-function priceFor(product: Product, priceField: PriceField): string {
-  if (priceField === 'none') return ''
+function priceFor(product: Product, priceField: PriceFieldOption): string {
+  if (
+    priceField === 'NONE' ||
+    priceField === 'SELLING_WITH_UNIT' ||
+    priceField === 'SUB_SELLING_WITH_UNIT'
+  ) {
+    return ''
+  }
+  const priceType = PRICE_TYPE_MAP[priceField]
   return (
     (product.prices ?? []).find(
-      (row: ProductPrice) => row.price_type === priceField,
+      (row: ProductPrice) => row.price_type === priceType && row.is_active,
     )?.amount ?? ''
   )
 }
 
-function displayText(product: Product, field: DisplayField): string {
-  if (field === 'alternate_name') {
-    return product.alternate_name?.trim() || product.name
+function packingLabel(barcode: ProductBarcode | null): string {
+  if (!barcode) return ''
+  const unit = barcode.unit?.code?.trim()
+  const factor = barcode.conversion_factor?.trim()
+  if (unit && factor && factor !== '1') return `${unit} ×${factor}`
+  if (unit) return unit
+  if (factor && factor !== '1') return `×${factor}`
+  return ''
+}
+
+function displayText(
+  product: Product,
+  field: DisplayFieldOption,
+  barcode: ProductBarcode | null,
+): string {
+  if (field === 'CODE_PRODUCT_NAME') {
+    const code = product.sku?.trim() || product.product_number
+    return `${code} ${product.name}`.trim()
   }
-  if (field === 'product_number') return product.product_number
-  if (field === 'sku') return product.sku?.trim() || product.name
+  if (field === 'PRODUCT_NAME_PACKING') {
+    const packing = packingLabel(barcode)
+    return packing ? `${product.name} (${packing})` : product.name
+  }
+  if (field === 'PRODUCT_NAME_CATEGORY') {
+    const category = product.category?.name?.trim()
+    return category ? `${product.name} / ${category}` : product.name
+  }
+  if (field === 'PRODUCT_NAME_EXPIRY') {
+    return product.name
+  }
   return product.name
 }
 
@@ -85,6 +136,16 @@ function productNumberValue(productNumber: string): number | null {
   return Number.isFinite(value) ? value : null
 }
 
+function skuInRange(sku: string | null, from: string, to: string): boolean {
+  const value = (sku ?? '').trim().toUpperCase()
+  if (!value) return false
+  const fromKey = from.trim().toUpperCase()
+  const toKey = to.trim().toUpperCase()
+  if (fromKey && value < fromKey) return false
+  if (toKey && value > toKey) return false
+  return true
+}
+
 export function BarcodePrintingPage() {
   const { productUlid } = useParams()
   const { session } = useAuth()
@@ -97,28 +158,36 @@ export function BarcodePrintingPage() {
   const [brandUlid, setBrandUlid] = useState('')
   const [includeSubBarcodes, setIncludeSubBarcodes] = useState(false)
   const [addWithExisting, setAddWithExisting] = useState(false)
+  const [ignoreStockQty, setIgnoreStockQty] = useState(true)
 
-  const [rangeMode, setRangeMode] = useState<'code'>('code')
+  const [rangeMode, setRangeMode] = useState<RangeMode>('product_number')
   const [rangeFrom, setRangeFrom] = useState('')
   const [rangeTo, setRangeTo] = useState('')
   const [multiplier, setMultiplier] = useState('1')
 
   const [barcodeType, setBarcodeType] = useState<BarcodeType>(
-    remembered.barcodeType,
+    migrateLegacyBarcodeType(remembered.barcodeType),
   )
-  const [displayField, setDisplayField] = useState<DisplayField>('name')
-  const [priceField, setPriceField] = useState<PriceField>('retail')
+  const [displayField, setDisplayField] =
+    useState<DisplayFieldOption>('PRODUCT_NAME')
+  const [priceField, setPriceField] = useState<PriceFieldOption>('SELLING')
   const [printString, setPrintString] = useState('[PRODUCT_NAME]')
-  const [labelSize] = useState<BarcodeLabelSize>(
-    remembered.labelSize,
+  const [labelSize] = useState<BarcodeLabelSize>(remembered.labelSize)
+  const [printStyle, setPrintStyle] = useState<BarcodeStyleId>(
+    migrateLegacyPrintStyle(
+      typeof remembered.printStyle === 'string'
+        ? remembered.printStyle
+        : undefined,
+    ),
   )
-  const [printStyle, setPrintStyle] = useState<BarcodePrintStyle>(
-    remembered.printStyle,
+  const [activeStyles, setActiveStyles] = useState(() =>
+    getActiveBarcodeStyles(),
   )
+  const [styleModalOpen, setStyleModalOpen] = useState(false)
   const [showPrice, setShowPrice] = useState(remembered.showPrice)
-  const [marginLeftMm, setMarginLeftMm] = useState(0)
-  const [marginTopMm, setMarginTopMm] = useState(0)
-  const [scaleFactor, setScaleFactor] = useState(1)
+  const [marginLeftMm, setMarginLeftMm] = useState(remembered.marginLeftMm)
+  const [marginTopMm, setMarginTopMm] = useState(remembered.marginTopMm)
+  const [scaleFactor, setScaleFactor] = useState(remembered.scaleFactor)
 
   const [queue, setQueue] = useState<PrintQueueLine[]>([])
   const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null)
@@ -154,6 +223,16 @@ export function BarcodePrintingPage() {
   })
 
   const products = productsQuery.data?.data ?? []
+
+  useEffect(() => {
+    if (!activeStyles.some((style) => style.id === printStyle)) {
+      setPrintStyle(activeStyles[0]?.id ?? 'one_2')
+    }
+  }, [activeStyles, printStyle])
+
+  function refreshActiveStyles() {
+    setActiveStyles(getActiveBarcodeStyles())
+  }
 
   function addProduct(product: Product, qty = 1) {
     const barcodes = activeBarcodes(product)
@@ -217,6 +296,26 @@ export function BarcodePrintingPage() {
   const previewPrice = previewProduct
     ? priceFor(previewProduct, priceField)
     : ''
+  const previewDisplay = previewProduct
+    ? displayText(previewProduct, displayField, previewBarcode)
+    : ''
+
+  const previewValidation = useMemo(() => {
+    if (!previewBarcode) return null
+    if (!isBarcodeTypeSupported(barcodeType)) {
+      return `${barcodeType} is not supported by the current barcode library.`
+    }
+    return validateBarcodeValue(previewBarcode.barcode, barcodeType)
+  }, [previewBarcode, barcodeType])
+
+  const previewSvg = useMemo(() => {
+    if (!previewBarcode || previewValidation) return null
+    try {
+      return renderBarcodeSvg(previewBarcode.barcode, barcodeType)
+    } catch {
+      return null
+    }
+  }, [previewBarcode, barcodeType, previewValidation])
 
   function updateQuantity(id: string, quantity: number) {
     const safe = Math.max(1, Math.min(999, Math.floor(quantity || 1)))
@@ -250,16 +349,30 @@ export function BarcodePrintingPage() {
   }
 
   function autoFill() {
-    const from = rangeFrom.trim() ? Number(rangeFrom) : null
-    const to = rangeTo.trim() ? Number(rangeTo) : null
+    if (!ignoreStockQty) {
+      setError(
+        'Ignore Stock Qty is off, but the product list does not include trustworthy available-stock quantities. Enable Ignore Stock Qty, or wait until stock is included in this list payload.',
+      )
+      return
+    }
+
+    const fromRaw = rangeFrom.trim()
+    const toRaw = rangeTo.trim()
     const qty = Math.max(1, Math.min(999, Number(multiplier) || 1))
 
     const matched = products.filter((product) => {
-      if (from === null && to === null) return true
+      if (!fromRaw && !toRaw) return true
+
+      if (rangeMode === 'sku') {
+        return skuInRange(product.sku, fromRaw, toRaw)
+      }
+
+      const from = fromRaw ? Number(fromRaw) : null
+      const to = toRaw ? Number(toRaw) : null
       const value = productNumberValue(product.product_number)
       if (value === null) return false
-      if (from !== null && value < from) return false
-      if (to !== null && value > to) return false
+      if (from !== null && Number.isFinite(from) && value < from) return false
+      if (to !== null && Number.isFinite(to) && value > to) return false
       return true
     })
 
@@ -295,9 +408,14 @@ export function BarcodePrintingPage() {
     const barcode = selectedBarcode(line)
     if (!barcode) return null
 
+    const validationError = validateBarcodeValue(barcode.barcode, barcodeType)
+    if (validationError) {
+      throw new Error(`${line.product.name}: ${validationError}`)
+    }
+
     return {
       businessName: session?.tenant.name ?? 'BluePOS',
-      productName: displayText(line.product, displayField),
+      productName: displayText(line.product, displayField, barcode),
       productNumber: line.product.product_number,
       barcode: barcode.barcode,
       unitCode: barcode.unit?.code ?? '',
@@ -305,7 +423,7 @@ export function BarcodePrintingPage() {
       currencyCode: session?.tenant.currency_code ?? '',
       copies,
       labelSize,
-      showPrice: showPrice && priceField !== 'none',
+      showPrice: showPrice && priceField !== 'NONE',
       barcodeType,
       printStyle,
       marginLeftMm,
@@ -324,13 +442,13 @@ export function BarcodePrintingPage() {
       return
     }
 
-    const payload = buildPayload(selectedLine, selectedLine.quantity)
-    if (!payload) {
-      setError('The selected row has no printable barcode.')
-      return
-    }
-
     try {
+      const payload = buildPayload(selectedLine, selectedLine.quantity)
+      if (!payload) {
+        setError('The selected row has no printable barcode.')
+        return
+      }
+
       saveSettings()
       printBarcodeLabels(payload)
       setError(null)
@@ -347,16 +465,16 @@ export function BarcodePrintingPage() {
       return
     }
 
-    const payloads = queue.flatMap((line) => {
-      const payload = buildPayload(line, line.quantity)
-      return payload ? [payload] : []
-    })
-
     try {
+      const payloads = queue.flatMap((line) => {
+        const payload = buildPayload(line, line.quantity)
+        return payload ? [payload] : []
+      })
+
       saveSettings()
       printBarcodeBatch(payloads, {
         labelSize,
-        showPrice,
+        showPrice: showPrice && priceField !== 'NONE',
         barcodeType,
         printStyle,
         marginLeftMm,
@@ -373,31 +491,48 @@ export function BarcodePrintingPage() {
 
   function calibrate() {
     try {
-      const payload = selectedLine
-        ? buildPayload(selectedLine, 1)
-        : {
-            businessName: session?.tenant.name ?? 'BluePOS',
-            productName: 'Calibration Test',
-            productNumber: '000001',
-            barcode: '1105000',
-            unitCode: 'PCS',
-            price: '100.00',
-            currencyCode: session?.tenant.currency_code ?? '',
-            copies: 1,
-            labelSize,
-            showPrice,
-            barcodeType,
-            printStyle,
-            marginLeftMm,
-            marginTopMm,
-            scaleFactor,
-            showBusinessName: true,
-            showProductNumber: true,
-            showUnit: true,
-            showBarcodeText: true,
-          }
+      if (selectedLine) {
+        const payload = buildPayload(selectedLine, 1)
+        if (payload) {
+          printBarcodeLabels(payload)
+          setError(null)
+          return
+        }
+      }
 
-      if (payload) printBarcodeLabels(payload)
+      const sampleValue = 'CALIBRATE'
+      const sampleType: BarcodeType = isBarcodeTypeSupported(barcodeType)
+        ? barcodeType
+        : 'Code128'
+      const sampleError = validateBarcodeValue(sampleValue, sampleType)
+      const barcodeValue = sampleError ? '1105000' : sampleValue
+      const finalType: BarcodeType =
+        validateBarcodeValue(barcodeValue, sampleType) === null
+          ? sampleType
+          : 'Code128'
+
+      printBarcodeLabels({
+        businessName: session?.tenant.name ?? 'BluePOS',
+        productName: 'Calibration Test',
+        productNumber: '000001',
+        barcode: barcodeValue,
+        unitCode: 'PCS',
+        price: '100.00',
+        currencyCode: session?.tenant.currency_code ?? '',
+        copies: 1,
+        labelSize,
+        showPrice,
+        barcodeType: finalType,
+        printStyle,
+        marginLeftMm,
+        marginTopMm,
+        scaleFactor,
+        showBusinessName: true,
+        showProductNumber: true,
+        showUnit: true,
+        showBarcodeText: true,
+      })
+      setError(null)
     } catch (err) {
       setError(
         err instanceof Error
@@ -438,8 +573,21 @@ export function BarcodePrintingPage() {
                       setBarcodeType(event.target.value as BarcodeType)
                     }
                   >
-                    <option value="CODE128">Code128</option>
-                    <option value="CODE39">Code39</option>
+                    {BARCODE_TYPE_OPTIONS.map((type) => (
+                      <option
+                        key={type}
+                        value={type}
+                        disabled={!isBarcodeTypeSupported(type)}
+                        title={
+                          isBarcodeTypeSupported(type)
+                            ? undefined
+                            : 'Not supported by the current barcode library'
+                        }
+                      >
+                        {type}
+                        {!isBarcodeTypeSupported(type) ? ' (unsupported)' : ''}
+                      </option>
+                    ))}
                   </select>
                 </label>
 
@@ -448,13 +596,21 @@ export function BarcodePrintingPage() {
                   <select
                     value={displayField}
                     onChange={(event) =>
-                      setDisplayField(event.target.value as DisplayField)
+                      setDisplayField(
+                        event.target.value as DisplayFieldOption,
+                      )
                     }
                   >
-                    <option value="name">PRODUCT NAME</option>
-                    <option value="alternate_name">ALTERNATE DESC</option>
-                    <option value="product_number">PRODUCT #</option>
-                    <option value="sku">SKU / CODE</option>
+                    {DISPLAY_FIELD_OPTIONS.map((option) => (
+                      <option
+                        key={option.value}
+                        value={option.value}
+                        disabled={option.disabled}
+                        title={option.title}
+                      >
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </label>
 
@@ -463,18 +619,27 @@ export function BarcodePrintingPage() {
                   <select
                     value={priceField}
                     onChange={(event) =>
-                      setPriceField(event.target.value as PriceField)
+                      setPriceField(event.target.value as PriceFieldOption)
                     }
                   >
-                    <option value="retail">SUB SELLING PRICE</option>
-                    <option value="wholesale">WHOLESALE PRICE</option>
-                    <option value="minimum_sale">MIN SALE PRICE</option>
-                    <option value="none">NO PRICE</option>
+                    {PRICE_FIELD_OPTIONS.map((option) => (
+                      <option
+                        key={option.value}
+                        value={option.value}
+                        disabled={option.disabled}
+                        title={option.title}
+                      >
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </label>
 
                 <div className="bp-price-checks">
-                  <label className="bp-check">
+                  <label
+                    className="bp-check"
+                    title="Historical price data is not currently available."
+                  >
                     <input type="checkbox" disabled />
                     <span>Show Old Price</span>
                   </label>
@@ -534,8 +699,14 @@ export function BarcodePrintingPage() {
               <div className="bp-printer-block">
                 <div className="bp-printer-label">On Following Printer</div>
                 <div className="bp-printer-row">
-                  <select className="bp-control-full" value="system" disabled>
-                    <option value="system">System Print Dialog</option>
+                  <select
+                    className="bp-control-full"
+                    value={browserPrintDialogPrinter.id}
+                    title="Browsers cannot enumerate installed Windows printers. Use the system print dialog. A BluePOS Print Bridge will enable native printer lists later."
+                  >
+                    <option value={browserPrintDialogPrinter.id}>
+                      {browserPrintDialogPrinter.name}
+                    </option>
                   </select>
                   <button
                     type="button"
@@ -544,7 +715,10 @@ export function BarcodePrintingPage() {
                   >
                     Calibrate
                   </button>
-                  <label className="bp-check">
+                  <label
+                    className="bp-check"
+                    title="Requires a BluePOS local Print Bridge / native helper. Not available in browser/PWA."
+                  >
                     <input type="checkbox" disabled />
                     <span>Computer Based</span>
                   </label>
@@ -563,7 +737,10 @@ export function BarcodePrintingPage() {
                   </label>
                 </div>
                 <div className="bp-lower-options-row2">
-                  <label className="bp-check">
+                  <label
+                    className="bp-check"
+                    title="Direct print requires native printer access via a future BluePOS Print Bridge."
+                  >
                     <input type="checkbox" disabled />
                     <span>Direct Print to Printer</span>
                   </label>
@@ -577,21 +754,21 @@ export function BarcodePrintingPage() {
               </div>
 
               <div className="bp-preview-paper">
-                {previewBarcode ? (
+                {previewProduct ? (
+                  <div className="bp-preview-name">{previewDisplay}</div>
+                ) : null}
+                {previewValidation ? (
+                  <div className="bp-preview-invalid">{previewValidation}</div>
+                ) : previewSvg ? (
                   <div
                     className="bp-preview-svg"
-                    dangerouslySetInnerHTML={{
-                      __html: barcodeSvg(
-                        previewBarcode.barcode,
-                        barcodeType,
-                      ),
-                    }}
+                    dangerouslySetInnerHTML={{ __html: previewSvg }}
                   />
                 ) : (
                   <div className="bp-preview-empty">Barcode Preview</div>
                 )}
                 <code>{previewBarcode?.barcode ?? '1105000'}</code>
-                {showPrice && priceField !== 'none' ? (
+                {showPrice && priceField !== 'NONE' ? (
                   <strong>
                     {session?.tenant.currency_code ?? ''}{' '}
                     {Number(previewPrice || 0).toFixed(2)}
@@ -605,18 +782,20 @@ export function BarcodePrintingPage() {
                   <select
                     value={printStyle}
                     onChange={(event) =>
-                      setPrintStyle(event.target.value as BarcodePrintStyle)
+                      setPrintStyle(event.target.value as BarcodeStyleId)
                     }
                   >
-                    <option value="standard">1 Barcode (Style 2)</option>
-                    <option value="compact">Compact Barcode</option>
-                    <option value="price_emphasis">Price Emphasis</option>
+                    {activeStyles.map((style) => (
+                      <option key={style.id} value={style.id}>
+                        {style.name}
+                      </option>
+                    ))}
                   </select>
                   <button
                     type="button"
                     className="bp-btn bp-btn-icon"
-                    title="Future custom style editor"
-                    disabled
+                    title="Report Type On / Off Options"
+                    onClick={() => setStyleModalOpen(true)}
                   >
                     <Plus size={14} />
                   </button>
@@ -639,10 +818,20 @@ export function BarcodePrintingPage() {
                 type="button"
                 className="bp-action-btn bp-action-primary"
                 onClick={saveAndPreview}
-                disabled={!selectedLine}
+                disabled={!selectedLine || Boolean(previewValidation)}
               >
                 <span>Save &amp; Preview</span>
                 <Save size={16} />
+              </button>
+
+              <button
+                type="button"
+                className="bp-action-btn"
+                onClick={printAll}
+                disabled={!queue.length}
+              >
+                <span>Print All</span>
+                <Printer size={16} />
               </button>
 
               <button
@@ -662,8 +851,17 @@ export function BarcodePrintingPage() {
             <header className="bp-panel-title">Auto Fill Options</header>
             <div className="bp-panel-body">
               <div className="bp-row bp-row-checks">
-                <label className="bp-check">
-                  <input type="checkbox" disabled />
+                <label
+                  className="bp-check"
+                  title="Product list results do not currently include available stock quantities. Unchecking will block Auto Fill until stock is present in the list payload."
+                >
+                  <input
+                    type="checkbox"
+                    checked={ignoreStockQty}
+                    onChange={(event) =>
+                      setIgnoreStockQty(event.target.checked)
+                    }
+                  />
                   <span>Ignore Stock Qty</span>
                 </label>
 
@@ -694,16 +892,21 @@ export function BarcodePrintingPage() {
                 <select
                   className="bp-w-code"
                   value={rangeMode}
-                  onChange={() => setRangeMode('code')}
+                  onChange={(event) =>
+                    setRangeMode(event.target.value as RangeMode)
+                  }
                 >
-                  <option value="code">Code</option>
+                  <option value="product_number">Product #</option>
+                  <option value="sku">Code / SKU</option>
                 </select>
 
                 <span className="bp-label">From</span>
                 <input
                   className="bp-w-range"
                   value={rangeFrom}
-                  placeholder="000001"
+                  placeholder={
+                    rangeMode === 'sku' ? 'A0001' : '000001'
+                  }
                   onChange={(event) => setRangeFrom(event.target.value)}
                 />
 
@@ -711,7 +914,9 @@ export function BarcodePrintingPage() {
                 <input
                   className="bp-w-range"
                   value={rangeTo}
-                  placeholder="999999"
+                  placeholder={
+                    rangeMode === 'sku' ? 'Z9999' : '999999'
+                  }
                   onChange={(event) => setRangeTo(event.target.value)}
                 />
 
@@ -937,6 +1142,12 @@ export function BarcodePrintingPage() {
           </section>
         </main>
       </div>
+
+      <BarcodeStyleOptionsModal
+        open={styleModalOpen}
+        onClose={() => setStyleModalOpen(false)}
+        onSaved={refreshActiveStyles}
+      />
     </div>
   )
 }
