@@ -420,9 +420,9 @@ export function BarcodePrintingPage() {
           <section className="bp-panel bp-settings-panel">
             <header className="bp-panel-title">Barcode Settings</header>
 
-            <div className="bp-left-scroll">
-              <div className="bp-settings-stack">
-                <label className="bp-field">
+            <div className="bp-left-body">
+              <div className="bp-settings-grid">
+                <label className="bp-field bp-span-2">
                   <span>Barcode Print String: (Use | ColName | For Parse)</span>
                   <input
                     value={printString}
@@ -473,7 +473,7 @@ export function BarcodePrintingPage() {
                   </select>
                 </label>
 
-                <div className="bp-check-row">
+                <div className="bp-price-checks">
                   <label className="bp-check">
                     <input type="checkbox" disabled />
                     <span>Show Old Price</span>
@@ -487,75 +487,72 @@ export function BarcodePrintingPage() {
                     <span>Show Price on Label</span>
                   </label>
                 </div>
+              </div>
 
-                <fieldset className="bp-group">
-                  <legend>Margin Settings</legend>
-                  <div className="bp-margin-row">
-                    <label className="bp-inline-pair">
-                      <span>Left:</span>
-                      <input
-                        type="number"
-                        step={0.5}
-                        value={marginLeftMm}
-                        onChange={(event) =>
-                          setMarginLeftMm(Number(event.target.value))
-                        }
-                      />
-                    </label>
-                    <label className="bp-inline-pair">
-                      <span>Top:</span>
-                      <input
-                        type="number"
-                        step={0.5}
-                        value={marginTopMm}
-                        onChange={(event) =>
-                          setMarginTopMm(Number(event.target.value))
-                        }
-                      />
-                    </label>
-                    <label className="bp-inline-pair">
-                      <span>Scale Factor:</span>
-                      <input
-                        type="number"
-                        step={0.05}
-                        min={0.7}
-                        max={1.3}
-                        value={scaleFactor}
-                        onChange={(event) =>
-                          setScaleFactor(Number(event.target.value))
-                        }
-                      />
-                    </label>
-                  </div>
-                  <div className="bp-sample-row">
-                    <span>Sample:</span>
-                    <strong>{previewBarcode?.barcode ?? '1105000'}</strong>
-                  </div>
-                </fieldset>
-
-                <div className="bp-printer-block">
-                  <div className="bp-printer-heading">
-                    <span>On Following Printer</span>
-                    <label className="bp-check">
-                      <input type="checkbox" disabled />
-                      <span>Computer Based</span>
-                    </label>
-                  </div>
-                  <div className="bp-printer-controls">
-                    <button
-                      type="button"
-                      className="bp-btn bp-btn-calibrate"
-                      onClick={calibrate}
-                    >
-                      Calibrate
-                    </button>
-                    <select className="bp-control-full" value="system" disabled>
-                      <option value="system">System Print Dialog</option>
-                    </select>
-                  </div>
+              <fieldset className="bp-group">
+                <legend>Margin Settings</legend>
+                <div className="bp-margin-row">
+                  <span>Left</span>
+                  <input
+                    type="number"
+                    step={0.5}
+                    value={marginLeftMm}
+                    onChange={(event) =>
+                      setMarginLeftMm(Number(event.target.value))
+                    }
+                  />
+                  <span>Top</span>
+                  <input
+                    type="number"
+                    step={0.5}
+                    value={marginTopMm}
+                    onChange={(event) =>
+                      setMarginTopMm(Number(event.target.value))
+                    }
+                  />
+                  <span>Scale Factor</span>
+                  <input
+                    type="number"
+                    step={0.05}
+                    min={0.7}
+                    max={1.3}
+                    value={scaleFactor}
+                    onChange={(event) =>
+                      setScaleFactor(Number(event.target.value))
+                    }
+                  />
                 </div>
+                <div className="bp-sample-row">
+                  <span>Sample:</span>
+                  <input
+                    value={previewBarcode?.barcode ?? '1105000'}
+                    readOnly
+                  />
+                </div>
+              </fieldset>
 
-                <div className="bp-extra-options">
+              <div className="bp-printer-block">
+                <div className="bp-printer-label">On Following Printer</div>
+                <div className="bp-printer-row">
+                  <select className="bp-control-full" value="system" disabled>
+                    <option value="system">System Print Dialog</option>
+                  </select>
+                  <button
+                    type="button"
+                    className="bp-btn bp-btn-calibrate"
+                    onClick={calibrate}
+                  >
+                    Calibrate
+                  </button>
+                  <label className="bp-check">
+                    <input type="checkbox" disabled />
+                    <span>Computer Based</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="bp-extra-options">
+                <div className="bp-lower-options-row1">
                   <label className="bp-check">
                     <input type="checkbox" disabled />
                     <span>Use Invoice Batch / Serial for Barcode Printing</span>
@@ -564,67 +561,67 @@ export function BarcodePrintingPage() {
                     <input type="checkbox" checked readOnly />
                     <span>Auto Module</span>
                   </label>
+                </div>
+                <div className="bp-lower-options-row2">
                   <label className="bp-check">
                     <input type="checkbox" disabled />
                     <span>Direct Print to Printer</span>
                   </label>
-                  <div className="bp-purchase-row">
-                    <span>From Purchase ID:</span>
-                    <input disabled />
-                    <button type="button" className="bp-btn" disabled>
-                      <RefreshCw size={12} />
-                      Get
-                    </button>
-                  </div>
+                  <span className="bp-label">From Purchase ID:</span>
+                  <input disabled />
+                  <button type="button" className="bp-btn" disabled>
+                    <RefreshCw size={12} />
+                    Get
+                  </button>
                 </div>
-
-                <div className="bp-preview-paper">
-                  {previewBarcode ? (
-                    <div
-                      className="bp-preview-svg"
-                      dangerouslySetInnerHTML={{
-                        __html: barcodeSvg(
-                          previewBarcode.barcode,
-                          barcodeType,
-                        ),
-                      }}
-                    />
-                  ) : (
-                    <div className="bp-preview-empty">Barcode Preview</div>
-                  )}
-                  <code>{previewBarcode?.barcode ?? '1105000'}</code>
-                  {showPrice && priceField !== 'none' ? (
-                    <strong>
-                      {session?.tenant.currency_code ?? ''}{' '}
-                      {Number(previewPrice || 0).toFixed(2)}
-                    </strong>
-                  ) : null}
-                </div>
-
-                <label className="bp-field">
-                  <span>Barcode Printing Style</span>
-                  <div className="bp-style-row">
-                    <select
-                      value={printStyle}
-                      onChange={(event) =>
-                        setPrintStyle(event.target.value as BarcodePrintStyle)
-                      }
-                    >
-                      <option value="standard">1 Barcode (Style 2)</option>
-                      <option value="compact">Compact Barcode</option>
-                      <option value="price_emphasis">Price Emphasis</option>
-                    </select>
-                    <button
-                      type="button"
-                      className="bp-btn bp-btn-icon"
-                      title="Future custom style editor"
-                      disabled
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </div>
-                </label>
               </div>
+
+              <div className="bp-preview-paper">
+                {previewBarcode ? (
+                  <div
+                    className="bp-preview-svg"
+                    dangerouslySetInnerHTML={{
+                      __html: barcodeSvg(
+                        previewBarcode.barcode,
+                        barcodeType,
+                      ),
+                    }}
+                  />
+                ) : (
+                  <div className="bp-preview-empty">Barcode Preview</div>
+                )}
+                <code>{previewBarcode?.barcode ?? '1105000'}</code>
+                {showPrice && priceField !== 'none' ? (
+                  <strong>
+                    {session?.tenant.currency_code ?? ''}{' '}
+                    {Number(previewPrice || 0).toFixed(2)}
+                  </strong>
+                ) : null}
+              </div>
+
+              <label className="bp-field bp-style-field">
+                <span>Barcode Printing Style</span>
+                <div className="bp-style-row">
+                  <select
+                    value={printStyle}
+                    onChange={(event) =>
+                      setPrintStyle(event.target.value as BarcodePrintStyle)
+                    }
+                  >
+                    <option value="standard">1 Barcode (Style 2)</option>
+                    <option value="compact">Compact Barcode</option>
+                    <option value="price_emphasis">Price Emphasis</option>
+                  </select>
+                  <button
+                    type="button"
+                    className="bp-btn bp-btn-icon"
+                    title="Future custom style editor"
+                    disabled
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </label>
             </div>
 
             <div className="bp-left-actions">
@@ -635,7 +632,7 @@ export function BarcodePrintingPage() {
                 disabled={!selectedLine}
               >
                 <span>Delete</span>
-                <Trash2 size={18} />
+                <Trash2 size={16} />
               </button>
 
               <button
@@ -645,7 +642,7 @@ export function BarcodePrintingPage() {
                 disabled={!selectedLine}
               >
                 <span>Save &amp; Preview</span>
-                <Save size={18} />
+                <Save size={16} />
               </button>
 
               <button
@@ -654,7 +651,7 @@ export function BarcodePrintingPage() {
                 onClick={closeActiveTab}
               >
                 <span>Close</span>
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
           </section>
