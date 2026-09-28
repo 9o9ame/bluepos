@@ -420,7 +420,7 @@ export function BarcodePrintingPage() {
           <section className="bp-panel">
             <header className="bp-panel-title">Barcode Settings</header>
             <div className="bp-panel-body">
-              <label className="bp-field">
+              <label className="bp-field bp-field-stack">
                 <span>Barcode Print String: (Use | ColName | For Parse)</span>
                 <input
                   value={printString}
@@ -769,6 +769,11 @@ export function BarcodePrintingPage() {
                   <span className="bp-color-chip is-orange" />
                   Selected Products
                 </button>
+
+                <button type="button" className="bp-btn bp-btn-card" disabled>
+                  Card Print
+                  <CreditCard size={15} />
+                </button>
               </div>
 
               <div className="bp-row bp-row-search">
@@ -807,11 +812,6 @@ export function BarcodePrintingPage() {
                     </option>
                   ))}
                 </select>
-
-                <button type="button" className="bp-btn bp-btn-card" disabled>
-                  Card Print
-                  <CreditCard size={15} />
-                </button>
               </div>
             </div>
           </section>
