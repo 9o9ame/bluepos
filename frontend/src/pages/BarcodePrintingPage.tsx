@@ -417,10 +417,11 @@ export function BarcodePrintingPage() {
         {error ? <div className="bp-error">{error}</div> : null}
 
         <aside className="bp-left">
-          <div className="bp-left-scroll">
-            <section className="bp-panel">
-              <header className="bp-panel-title">Barcode Settings</header>
-              <div className="bp-panel-body">
+          <section className="bp-panel bp-settings-panel">
+            <header className="bp-panel-title">Barcode Settings</header>
+
+            <div className="bp-left-scroll">
+              <div className="bp-settings-stack">
                 <label className="bp-field">
                   <span>Barcode Print String: (Use | ColName | For Parse)</span>
                   <input
@@ -430,7 +431,7 @@ export function BarcodePrintingPage() {
                 </label>
 
                 <label className="bp-field">
-                  <span>Select Barcode Type:</span>
+                  <span>Select Barcode Types</span>
                   <select
                     value={barcodeType}
                     onChange={(event) =>
@@ -443,7 +444,7 @@ export function BarcodePrintingPage() {
                 </label>
 
                 <label className="bp-field">
-                  <span>Field to Display:</span>
+                  <span>Field to Display</span>
                   <select
                     value={displayField}
                     onChange={(event) =>
@@ -458,7 +459,7 @@ export function BarcodePrintingPage() {
                 </label>
 
                 <label className="bp-field">
-                  <span>Price Field:</span>
+                  <span>Price Field</span>
                   <select
                     value={priceField}
                     onChange={(event) =>
@@ -486,80 +487,72 @@ export function BarcodePrintingPage() {
                     <span>Show Price on Label</span>
                   </label>
                 </div>
-              </div>
-            </section>
 
-            <section className="bp-panel">
-              <header className="bp-panel-title">Margin Settings</header>
-              <div className="bp-panel-body">
-                <div className="bp-margin-grid">
-                  <label className="bp-field">
-                    <span>Left</span>
-                    <input
-                      type="number"
-                      step={0.5}
-                      value={marginLeftMm}
-                      onChange={(event) =>
-                        setMarginLeftMm(Number(event.target.value))
-                      }
-                    />
-                  </label>
+                <fieldset className="bp-group">
+                  <legend>Margin Settings</legend>
+                  <div className="bp-margin-row">
+                    <label className="bp-inline-pair">
+                      <span>Left:</span>
+                      <input
+                        type="number"
+                        step={0.5}
+                        value={marginLeftMm}
+                        onChange={(event) =>
+                          setMarginLeftMm(Number(event.target.value))
+                        }
+                      />
+                    </label>
+                    <label className="bp-inline-pair">
+                      <span>Top:</span>
+                      <input
+                        type="number"
+                        step={0.5}
+                        value={marginTopMm}
+                        onChange={(event) =>
+                          setMarginTopMm(Number(event.target.value))
+                        }
+                      />
+                    </label>
+                    <label className="bp-inline-pair">
+                      <span>Scale Factor:</span>
+                      <input
+                        type="number"
+                        step={0.05}
+                        min={0.7}
+                        max={1.3}
+                        value={scaleFactor}
+                        onChange={(event) =>
+                          setScaleFactor(Number(event.target.value))
+                        }
+                      />
+                    </label>
+                  </div>
+                  <div className="bp-sample-row">
+                    <span>Sample:</span>
+                    <strong>{previewBarcode?.barcode ?? '1105000'}</strong>
+                  </div>
+                </fieldset>
 
-                  <label className="bp-field">
-                    <span>Top</span>
-                    <input
-                      type="number"
-                      step={0.5}
-                      value={marginTopMm}
-                      onChange={(event) =>
-                        setMarginTopMm(Number(event.target.value))
-                      }
-                    />
-                  </label>
-
-                  <label className="bp-field">
-                    <span>Scale Factor</span>
-                    <input
-                      type="number"
-                      step={0.05}
-                      min={0.7}
-                      max={1.3}
-                      value={scaleFactor}
-                      onChange={(event) =>
-                        setScaleFactor(Number(event.target.value))
-                      }
-                    />
-                  </label>
-                </div>
-
-                <label className="bp-field">
-                  <span>Sample</span>
-                  <input
-                    value={previewBarcode?.barcode ?? '1105000'}
-                    readOnly
-                  />
-                </label>
-              </div>
-            </section>
-
-            <section className="bp-panel">
-              <header className="bp-panel-title">Printer / Calibration</header>
-              <div className="bp-panel-body">
-                <label className="bp-field">
-                  <span>On Following Printer</span>
-                  <select className="bp-control-full" value="system" disabled>
-                    <option value="system">System Print Dialog</option>
-                  </select>
-                </label>
-
-                <div className="bp-printer-actions">
-                  <button type="button" className="bp-btn bp-btn-calibrate" onClick={calibrate}>
-                    Calibrate
-                  </button>
-                  <label className="bp-check">
-                    <input type="checkbox" disabled />
-                    <span>Computer Based</span>
-                  </label>
+                <div className="bp-printer-block">
+                  <div className="bp-printer-heading">
+                    <span>On Following Printer</span>
+                    <label className="bp-check">
+                      <input type="checkbox" disabled />
+                      <span>Computer Based</span>
+                    </label>
+                  </div>
+                  <div className="bp-printer-controls">
+                    <button
+                      type="button"
+                      className="bp-btn bp-btn-calibrate"
+                      onClick={calibrate}
+                    >
+                      Calibrate
+                    </button>
+                    <select className="bp-control-full" value="system" disabled>
+                      <option value="system">System Print Dialog</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div className="bp-extra-options">
@@ -567,17 +560,14 @@ export function BarcodePrintingPage() {
                     <input type="checkbox" disabled />
                     <span>Use Invoice Batch / Serial for Barcode Printing</span>
                   </label>
-
                   <label className="bp-check">
                     <input type="checkbox" checked readOnly />
                     <span>Auto Module</span>
                   </label>
-
                   <label className="bp-check">
                     <input type="checkbox" disabled />
                     <span>Direct Print to Printer</span>
                   </label>
-
                   <div className="bp-purchase-row">
                     <span>From Purchase ID:</span>
                     <input disabled />
@@ -587,12 +577,7 @@ export function BarcodePrintingPage() {
                     </button>
                   </div>
                 </div>
-              </div>
-            </section>
 
-            <section className="bp-panel bp-preview-panel">
-              <header className="bp-panel-title">Live Barcode Preview</header>
-              <div className="bp-preview-body">
                 <div className="bp-preview-paper">
                   {previewBarcode ? (
                     <div
@@ -615,59 +600,64 @@ export function BarcodePrintingPage() {
                     </strong>
                   ) : null}
                 </div>
+
+                <label className="bp-field">
+                  <span>Barcode Printing Style</span>
+                  <div className="bp-style-row">
+                    <select
+                      value={printStyle}
+                      onChange={(event) =>
+                        setPrintStyle(event.target.value as BarcodePrintStyle)
+                      }
+                    >
+                      <option value="standard">1 Barcode (Style 2)</option>
+                      <option value="compact">Compact Barcode</option>
+                      <option value="price_emphasis">Price Emphasis</option>
+                    </select>
+                    <button
+                      type="button"
+                      className="bp-btn bp-btn-icon"
+                      title="Future custom style editor"
+                      disabled
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </label>
               </div>
-            </section>
+            </div>
 
-            <section className="bp-panel">
-              <header className="bp-panel-title">Barcode Printing Style</header>
-              <div className="bp-panel-body bp-style-row">
-                <select
-                  value={printStyle}
-                  onChange={(event) =>
-                    setPrintStyle(event.target.value as BarcodePrintStyle)
-                  }
-                >
-                  <option value="standard">1 Barcode (Style 2)</option>
-                  <option value="compact">Compact Barcode</option>
-                  <option value="price_emphasis">Price Emphasis</option>
-                </select>
-                <button type="button" className="bp-btn bp-btn-icon" title="Future custom style editor" disabled>
-                  <Plus size={14} />
-                </button>
-              </div>
-            </section>
-          </div>
+            <div className="bp-left-actions">
+              <button
+                type="button"
+                className="bp-action-btn"
+                onClick={removeSelected}
+                disabled={!selectedLine}
+              >
+                <span>Delete</span>
+                <Trash2 size={18} />
+              </button>
 
-          <div className="bp-left-actions">
-            <button
-              type="button"
-              className="bp-action-btn"
-              onClick={removeSelected}
-              disabled={!selectedLine}
-            >
-              <span>Delete</span>
-              <Trash2 size={18} />
-            </button>
+              <button
+                type="button"
+                className="bp-action-btn bp-action-primary"
+                onClick={saveAndPreview}
+                disabled={!selectedLine}
+              >
+                <span>Save &amp; Preview</span>
+                <Save size={18} />
+              </button>
 
-            <button
-              type="button"
-              className="bp-action-btn bp-action-primary"
-              onClick={saveAndPreview}
-              disabled={!selectedLine}
-            >
-              <span>Save &amp; Preview</span>
-              <Save size={18} />
-            </button>
-
-            <button
-              type="button"
-              className="bp-action-btn"
-              onClick={closeActiveTab}
-            >
-              <span>Close</span>
-              <X size={18} />
-            </button>
-          </div>
+              <button
+                type="button"
+                className="bp-action-btn"
+                onClick={closeActiveTab}
+              >
+                <span>Close</span>
+                <X size={18} />
+              </button>
+            </div>
+          </section>
         </aside>
 
         <main className="bp-right">

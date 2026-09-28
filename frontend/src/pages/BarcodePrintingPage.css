@@ -1,6 +1,7 @@
 /*
- * Barcode Printing — viewport-fit desktop workspace
- * Page never scrolls horizontally; only the product grid may scroll.
+ * Barcode Printing — reference-style layout
+ * One left settings panel (scroll inside). Right autofill wraps.
+ * No page horizontal scroll; no clipped/overlapping controls.
  */
 
 .bp-workspace-scroll {
@@ -17,7 +18,7 @@
   position: relative;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: clamp(400px, 28vw, 440px) minmax(0, 1fr);
+  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
   gap: 8px;
   width: 100%;
   height: 100%;
@@ -34,7 +35,7 @@
   position: absolute;
   z-index: 20;
   top: 10px;
-  left: calc(clamp(400px, 28vw, 440px) + 16px);
+  left: 398px;
   right: 16px;
   min-height: 26px;
   padding: 5px 10px;
@@ -49,12 +50,15 @@
 /* ---------- Shared chrome ---------- */
 
 .bp-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
   border: 1px solid #9a9a9a;
   border-radius: 5px;
   background: #ececec;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  min-width: 0;
 }
 
 .bp-panel-title {
@@ -71,16 +75,16 @@
 }
 
 .bp-panel-body {
-  display: grid;
-  gap: 6px;
-  padding: 7px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 10px;
   min-width: 0;
 }
 
 .bp-field {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: stretch;
+  display: flex;
+  flex-direction: column;
   gap: 3px;
   min-width: 0;
 }
@@ -88,8 +92,9 @@
 .bp-field > span {
   display: block;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
   white-space: normal;
+  word-break: break-word;
 }
 
 .bp-field > input,
@@ -101,13 +106,14 @@
 .bp-label {
   font-weight: 700;
   white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .bp-check-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 16px;
+  gap: 8px 14px;
 }
 
 .bp-control-full,
@@ -116,7 +122,9 @@
 .bp-style-row select,
 .bp-row input,
 .bp-row select,
+.bp-inline-pair input,
 .bp-purchase-row input,
+.bp-printer-controls select,
 .bp-grid select,
 .bp-grid input {
   box-sizing: border-box;
@@ -136,17 +144,22 @@
 
 .bp-check {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 5px;
-  white-space: nowrap;
   font-weight: 700;
   min-width: 0;
+  line-height: 1.25;
+}
+
+.bp-check span {
+  white-space: normal;
+  word-break: break-word;
 }
 
 .bp-check input {
   width: 13px;
   height: 13px;
-  margin: 0;
+  margin: 2px 0 0;
   flex: 0 0 auto;
 }
 
@@ -166,6 +179,7 @@
   cursor: pointer;
   white-space: nowrap;
   box-shadow: inset 0 1px 0 #fff;
+  flex: 0 0 auto;
 }
 
 .bp-btn:disabled {
@@ -197,60 +211,134 @@
   height: 28px;
 }
 
-/* ---------- Left column ---------- */
+/* ---------- Left column (single settings panel) ---------- */
 
 .bp-left {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
 
+.bp-settings-panel {
+  flex: 1 1 auto;
+  height: 100%;
+}
+
 .bp-left-scroll {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding-right: 2px;
+  padding: 8px 10px;
 }
 
-.bp-margin-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.bp-settings-stack {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
-.bp-margin-grid .bp-field > span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Margin group — label beside input, wraps cleanly */
+.bp-group {
+  margin: 0;
+  padding: 8px 10px 10px;
+  border: 1px solid #9a9a9a;
+  border-radius: 4px;
+  background: #e4e4e4;
+  min-width: 0;
 }
 
-.bp-printer-actions {
+.bp-group > legend {
+  padding: 0 6px;
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.bp-margin-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
 }
 
-.bp-extra-options {
-  display: grid;
+.bp-inline-pair {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
   min-width: 0;
 }
 
-.bp-extra-options .bp-check {
-  align-items: flex-start;
+.bp-inline-pair > span {
+  font-weight: 700;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
-.bp-extra-options .bp-check span {
-  white-space: normal;
-  line-height: 1.25;
+.bp-inline-pair > input {
+  width: 64px;
+  min-width: 52px;
+  flex: 0 0 auto;
+}
+
+.bp-sample-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  min-width: 0;
+}
+
+.bp-sample-row > span {
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.bp-sample-row > strong {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Printer block */
+.bp-printer-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bp-printer-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.bp-printer-heading > span {
+  font-weight: 700;
+}
+
+.bp-printer-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bp-extra-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
 
 .bp-purchase-row {
@@ -271,14 +359,7 @@
   min-width: 0;
 }
 
-.bp-preview-panel {
-  flex: 0 0 auto;
-}
-
-.bp-preview-body {
-  padding: 8px 10px 10px;
-}
-
+/* Preview */
 .bp-preview-paper {
   box-sizing: border-box;
   display: flex;
@@ -286,7 +367,7 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  min-height: 140px;
+  min-height: 130px;
   width: 100%;
   padding: 10px;
   border: 1px solid #9d9d9d;
@@ -298,7 +379,8 @@
 
 .bp-preview-svg {
   width: 100%;
-  height: 96px;
+  max-width: 280px;
+  height: 88px;
   overflow: hidden;
 }
 
@@ -313,7 +395,7 @@
   display: grid;
   place-items: center;
   width: 100%;
-  height: 96px;
+  height: 88px;
   color: #777;
   font-weight: 700;
 }
@@ -333,24 +415,33 @@
   grid-template-columns: minmax(0, 1fr) 28px;
   gap: 6px;
   align-items: center;
+  min-width: 0;
+}
+
+.bp-style-row select {
+  width: 100%;
+  min-width: 0;
 }
 
 .bp-left-actions {
   display: grid;
-  grid-template-columns: 1fr 1.4fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1fr);
   gap: 6px;
-  min-width: 0;
   flex: 0 0 auto;
+  min-width: 0;
+  padding: 8px 10px 10px;
+  border-top: 1px solid #b0b0b0;
+  background: #e4e4e4;
 }
 
 .bp-action-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   min-height: 36px;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 1px solid #8f8f8f;
   border-radius: 6px;
   background: linear-gradient(#ffffff, #e2e2e2);
@@ -366,6 +457,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+
+.bp-action-btn > svg {
+  flex: 0 0 auto;
 }
 
 .bp-action-btn:disabled {
@@ -393,46 +489,35 @@
   flex: 0 0 auto;
 }
 
-.bp-autofill .bp-panel-body {
-  gap: 8px;
-}
-
 .bp-row {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   min-width: 0;
 }
 
 .bp-row-checks {
-  grid-template-columns: repeat(3, max-content);
-  justify-content: start;
-  column-gap: 16px;
-}
-
-.bp-row-range {
-  grid-template-columns: auto 90px auto 90px auto 60px auto;
-  justify-content: start;
+  gap: 8px 16px;
 }
 
 .bp-row-range .bp-w-code {
   width: 96px;
-  min-width: 0;
+  max-width: 100%;
 }
 
 .bp-row-range .bp-w-range {
   width: 90px;
-  min-width: 0;
+  max-width: 100%;
 }
 
 .bp-row-range .bp-w-mf {
   width: 60px;
-  min-width: 0;
+  max-width: 100%;
 }
 
 .bp-row-select-btns {
-  grid-template-columns: max-content max-content max-content auto;
-  align-items: center;
+  gap: 8px;
 }
 
 .bp-select-btn {
@@ -481,17 +566,19 @@
 }
 
 .bp-row-search {
-  grid-template-columns:
-    auto
-    minmax(180px, 1fr)
-    minmax(130px, 180px)
-    minmax(130px, 180px);
+  flex-wrap: wrap;
 }
 
-.bp-row-search .bp-w-search,
+.bp-row-search .bp-w-search {
+  flex: 1 1 200px;
+  min-width: 140px;
+  width: auto;
+}
+
 .bp-row-search .bp-w-filter {
-  width: 100%;
-  min-width: 0;
+  flex: 0 1 160px;
+  min-width: 120px;
+  width: auto;
 }
 
 /* ---------- Product grid ---------- */
@@ -538,10 +625,10 @@
 
 .bp-grid th.is-marker { width: 24px; }
 .bp-grid th.is-row-no { width: 40px; }
-.bp-grid th.is-barcode { width: 170px; }
+.bp-grid th.is-barcode { width: 150px; }
 .bp-grid th.is-product { width: auto; }
-.bp-grid th.is-other { width: 240px; }
-.bp-grid th.is-quantity { width: 100px; }
+.bp-grid th.is-other { width: 22%; }
+.bp-grid th.is-quantity { width: 90px; }
 
 .bp-grid td {
   height: 26px;
@@ -581,7 +668,8 @@
 }
 
 .bp-grid td.is-quantity input {
-  width: 68px;
+  width: 64px;
+  max-width: 100%;
   height: 22px;
   text-align: center;
 }
@@ -613,64 +701,47 @@
   font-weight: 700;
 }
 
-/* ---------- Laptop / shorter viewport ---------- */
+/* ---------- Laptop / shorter viewports ---------- */
 
-@media (max-width: 1400px) {
+@media (max-width: 1280px) {
   .bp-workspace {
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
     gap: 6px;
     padding: 6px;
     font-size: 10.5px;
   }
 
-  .bp-panel-body {
-    gap: 5px;
-    padding: 6px 8px 7px;
+  .bp-error {
+    left: 356px;
   }
 
-  .bp-margin-grid {
-    gap: 6px;
-  }
-
-  .bp-row-checks {
-    column-gap: 12px;
-  }
-
-  .bp-row-range {
-    grid-template-columns: auto 80px auto 80px auto 52px auto;
-    gap: 6px;
-  }
-
-  .bp-row-range .bp-w-code { width: 86px; }
-  .bp-row-range .bp-w-range { width: 80px; }
-  .bp-row-range .bp-w-mf { width: 52px; }
-
-  .bp-select-btn {
-    padding: 0 8px;
-    height: 26px;
-  }
-
-  .bp-row-search {
-    grid-template-columns:
-      auto
-      minmax(140px, 1fr)
-      minmax(120px, 150px)
-      minmax(120px, 150px);
-    gap: 6px;
+  .bp-inline-pair > input {
+    width: 56px;
   }
 
   .bp-btn-card {
-    min-width: 96px;
-    padding: 0 8px;
+    margin-left: 0;
   }
 
-  .bp-grid th.is-barcode { width: 150px; }
-  .bp-grid th.is-other { width: 200px; }
-  .bp-grid th.is-quantity { width: 90px; }
+  .bp-grid th.is-barcode { width: 130px; }
+  .bp-grid th.is-other { width: 20%; }
+  .bp-grid th.is-quantity { width: 80px; }
+}
 
-  .bp-action-btn {
-    min-height: 34px;
-    padding: 0 8px;
-    font-size: 10.5px;
+@media (max-width: 1100px) {
+  .bp-workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(280px, 42vh) minmax(0, 1fr);
+    overflow-y: auto;
+  }
+
+  .bp-error {
+    left: 16px;
+  }
+
+  .bp-left,
+  .bp-settings-panel {
+    min-height: 0;
   }
 }
 
@@ -685,9 +756,12 @@
     font-size: 10.5px;
   }
 
-  .bp-panel-body {
-    gap: 4px;
-    padding: 5px 8px 6px;
+  .bp-left-scroll {
+    padding: 6px 8px;
+  }
+
+  .bp-settings-stack {
+    gap: 6px;
   }
 
   .bp-control-full,
@@ -696,25 +770,25 @@
   .bp-style-row select,
   .bp-row input,
   .bp-row select,
-  .bp-purchase-row input {
+  .bp-inline-pair input,
+  .bp-purchase-row input,
+  .bp-printer-controls select {
     height: 22px;
   }
 
   .bp-preview-paper {
-    min-height: 120px;
+    min-height: 110px;
+    padding: 8px;
   }
 
   .bp-preview-svg,
   .bp-preview-empty {
-    height: 80px;
+    height: 72px;
   }
 
   .bp-action-btn {
     min-height: 32px;
-  }
-
-  .bp-autofill .bp-panel-body {
-    gap: 5px;
+    font-size: 10.5px;
   }
 
   .bp-grid th {
@@ -737,14 +811,16 @@
 }
 
 :root[data-theme='dark'] .bp-panel,
-:root[data-theme='dark'] .bp-grid-shell {
+:root[data-theme='dark'] .bp-grid-shell,
+:root[data-theme='dark'] .bp-group {
   border-color: #4b565f;
   background: #20272d;
   box-shadow: none;
 }
 
 :root[data-theme='dark'] .bp-panel-title,
-:root[data-theme='dark'] .bp-grid-footer {
+:root[data-theme='dark'] .bp-grid-footer,
+:root[data-theme='dark'] .bp-left-actions {
   border-color: #4b565f;
   background: linear-gradient(#303941, #252c32);
   color: #edf2f6;
@@ -756,7 +832,9 @@
 :root[data-theme='dark'] .bp-style-row select,
 :root[data-theme='dark'] .bp-row input,
 :root[data-theme='dark'] .bp-row select,
+:root[data-theme='dark'] .bp-inline-pair input,
 :root[data-theme='dark'] .bp-purchase-row input,
+:root[data-theme='dark'] .bp-printer-controls select,
 :root[data-theme='dark'] .bp-grid select,
 :root[data-theme='dark'] .bp-grid input {
   border-color: #59656f;
@@ -770,7 +848,8 @@
 }
 
 :root[data-theme='dark'] .bp-preview-paper code,
-:root[data-theme='dark'] .bp-preview-paper strong {
+:root[data-theme='dark'] .bp-preview-paper strong,
+:root[data-theme='dark'] .bp-sample-row > strong {
   color: #edf2f6;
 }
 
