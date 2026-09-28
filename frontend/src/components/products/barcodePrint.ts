@@ -1,13 +1,19 @@
 export type BarcodeLabelSize = '40x25' | '50x30' | '60x40'
 export type BarcodeType = 'CODE128' | 'CODE39'
+export type BarcodePrintStyle = 'standard' | 'compact' | 'price_emphasis'
 
 export type BarcodePrintSettings = {
   labelSize: BarcodeLabelSize
   showPrice: boolean
   barcodeType?: BarcodeType
+  printStyle?: BarcodePrintStyle
   marginLeftMm?: number
   marginTopMm?: number
   scaleFactor?: number
+  showBusinessName?: boolean
+  showProductNumber?: boolean
+  showUnit?: boolean
+  showBarcodeText?: boolean
 }
 
 export type BarcodeLabelPayload = {
@@ -22,9 +28,14 @@ export type BarcodeLabelPayload = {
   labelSize: BarcodeLabelSize
   showPrice: boolean
   barcodeType?: BarcodeType
+  printStyle?: BarcodePrintStyle
   marginLeftMm?: number
   marginTopMm?: number
   scaleFactor?: number
+  showBusinessName?: boolean
+  showProductNumber?: boolean
+  showUnit?: boolean
+  showBarcodeText?: boolean
 }
 
 const STORAGE_KEY = 'bluepos.productBarcodePrintSettings'
@@ -89,8 +100,6 @@ const CODE39_DIRECT = new Set(
   '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%'.split(''),
 )
 
-// Standard Code 128 symbol patterns expressed as alternating bar/space widths.
-// Index 104 is Start B and 106 is Stop.
 const CODE128_PATTERNS = [
   '212222','222122','222221','121223','121322','131222','122213','122312','132212','221213',
   '221312','231212','112232','122132','122231','113222','123122','123221','223211','221132',
@@ -124,7 +133,6 @@ function extendedCode39(value: string): string {
     }
 
     const code = char.charCodeAt(0)
-
     if (code >= 97 && code <= 122) {
       result += `+${String.fromCharCode(code - 32)}`
       continue
@@ -154,13 +162,11 @@ export function code39Svg(value: string): string {
 
     for (const token of pattern) {
       const width = token === '1' ? 2 : 1
-
       if (bar) {
         bars.push(
           `<rect x="${x}" y="0" width="${width}" height="${barHeight}" fill="#000"/>`,
         )
       }
-
       x += width
       bar = !bar
     }
@@ -188,7 +194,7 @@ export function code128Svg(value: string): string {
     })
     .join('')
 
-  const startCode = 104 // Code Set B
+  const startCode = 104
   const dataCodes = Array.from(normalized).map(
     (char) => char.charCodeAt(0) - 32,
   )
@@ -212,13 +218,11 @@ export function code128Svg(value: string): string {
     let bar = true
     for (const token of pattern) {
       const width = Number(token)
-
       if (bar) {
         bars.push(
           `<rect x="${x}" y="0" width="${width}" height="${barHeight}" fill="#000"/>`,
         )
       }
-
       x += width
       bar = !bar
     }
@@ -250,14 +254,19 @@ export function getBarcodeLabelSizeOptions() {
   }))
 }
 
-export function loadBarcodePrintSettings(): BarcodePrintSettings {
+export function loadBarcodePrintSettings(): Required<BarcodePrintSettings> {
   const fallback: Required<BarcodePrintSettings> = {
     labelSize: '50x30',
     showPrice: true,
     barcodeType: 'CODE128',
+    printStyle: 'standard',
     marginLeftMm: 0,
     marginTopMm: 0,
     scaleFactor: 1,
+    showBusinessName: true,
+    showProductNumber: true,
+    showUnit: true,
+    showBarcodeText: true,
   }
 
   try {
@@ -279,6 +288,12 @@ export function loadBarcodePrintSettings(): BarcodePrintSettings {
         parsed.barcodeType === 'CODE39' || parsed.barcodeType === 'CODE128'
           ? parsed.barcodeType
           : fallback.barcodeType,
+      printStyle:
+        parsed.printStyle === 'compact' ||
+        parsed.printStyle === 'price_emphasis' ||
+        parsed.printStyle === 'standard'
+          ? parsed.printStyle
+          : fallback.printStyle,
       marginLeftMm:
         typeof parsed.marginLeftMm === 'number'
           ? parsed.marginLeftMm
@@ -293,6 +308,22 @@ export function loadBarcodePrintSettings(): BarcodePrintSettings {
         parsed.scaleFactor <= 1.3
           ? parsed.scaleFactor
           : fallback.scaleFactor,
+      showBusinessName:
+        typeof parsed.showBusinessName === 'boolean'
+          ? parsed.showBusinessName
+          : fallback.showBusinessName,
+      showProductNumber:
+        typeof parsed.showProductNumber === 'boolean'
+          ? parsed.showProductNumber
+          : fallback.showProductNumber,
+      showUnit:
+        typeof parsed.showUnit === 'boolean'
+          ? parsed.showUnit
+          : fallback.showUnit,
+      showBarcodeText:
+        typeof parsed.showBarcodeText === 'boolean'
+          ? parsed.showBarcodeText
+          : fallback.showBarcodeText,
     }
   } catch {
     return fallback
@@ -301,16 +332,15 @@ export function loadBarcodePrintSettings(): BarcodePrintSettings {
 
 export function saveBarcodePrintSettings(settings: BarcodePrintSettings) {
   try {
-    const current = loadBarcodePrintSettings()
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        ...current,
+        ...loadBarcodePrintSettings(),
         ...settings,
       }),
     )
   } catch {
-    // Printing must remain available if localStorage is blocked.
+    // Printing must still work if localStorage is unavailable.
   }
 }
 
@@ -323,26 +353,20 @@ function printDocument(
   payloads: BarcodeLabelPayload[],
   settings: BarcodePrintSettings,
 ): void {
-  const normalizedSettings = {
+  const normalized = {
     ...loadBarcodePrintSettings(),
     ...settings,
   }
 
-  const size = LABEL_SIZES[normalizedSettings.labelSize]
-  const barcodeType = normalizedSettings.barcodeType ?? 'CODE128'
-  const left = Math.max(-5, Math.min(10, normalizedSettings.marginLeftMm ?? 0))
-  const top = Math.max(-5, Math.min(10, normalizedSettings.marginTopMm ?? 0))
-  const scale = Math.max(
-    0.7,
-    Math.min(1.3, normalizedSettings.scaleFactor ?? 1),
-  )
+  const size = LABEL_SIZES[normalized.labelSize]
+  const left = Math.max(-5, Math.min(10, normalized.marginLeftMm))
+  const top = Math.max(-5, Math.min(10, normalized.marginTopMm))
+  const scale = Math.max(0.7, Math.min(1.3, normalized.scaleFactor))
 
   const labels = payloads
     .flatMap((payload) => {
-      const copies = Math.max(
-        1,
-        Math.min(100, Math.floor(payload.copies || 1)),
-      )
+      const copies = Math.max(1, Math.min(100, Math.floor(payload.copies || 1)))
+      const merged = { ...normalized, ...payload }
 
       return Array.from({ length: copies }, () => {
         const safeBusiness = escapeHtml(payload.businessName)
@@ -351,26 +375,34 @@ function printDocument(
         const safeBarcode = escapeHtml(payload.barcode)
         const safeUnit = escapeHtml(payload.unitCode ?? '')
         const currency = escapeHtml(payload.currencyCode ?? '')
-        const type = payload.barcodeType ?? barcodeType
-        const svg = barcodeSvg(payload.barcode, type)
-        const shouldShowPrice =
-          payload.showPrice ?? normalizedSettings.showPrice
+        const svg = barcodeSvg(payload.barcode, merged.barcodeType)
+
+        const businessLine = merged.showBusinessName
+          ? `<div class="business">${safeBusiness}</div>`
+          : ''
+        const metaLine =
+          merged.showProductNumber || merged.showUnit
+            ? `<div class="meta">
+                <span>${merged.showProductNumber ? safeNumber : ''}</span>
+                <span>${merged.showUnit ? safeUnit : ''}</span>
+              </div>`
+            : ''
+        const barcodeText = merged.showBarcodeText
+          ? `<div class="barcode-text">${safeBarcode}</div>`
+          : ''
         const priceLine =
-          shouldShowPrice && payload.price
+          merged.showPrice && payload.price
             ? `<div class="price">${currency ? `${currency} ` : ''}${money(payload.price)}</div>`
             : ''
 
         return `
-          <section class="label">
+          <section class="label style-${merged.printStyle}">
             <div class="label-inner">
-              <div class="business">${safeBusiness}</div>
+              ${businessLine}
               <div class="product">${safeProduct}</div>
-              <div class="meta">
-                <span>${safeNumber}</span>
-                ${safeUnit ? `<span>${safeUnit}</span>` : ''}
-              </div>
+              ${metaLine}
               <div class="barcode">${svg}</div>
-              <div class="barcode-text">${safeBarcode}</div>
+              ${barcodeText}
               ${priceLine}
             </div>
           </section>
@@ -432,19 +464,18 @@ function printDocument(
     .label-inner {
       width: ${100 / scale}%;
       height: ${100 / scale}%;
-      padding: 1.2mm 1.4mm 1mm;
+      padding: 1.1mm 1.4mm .9mm;
       transform-origin: top left;
       transform: translate(${left}mm, ${top}mm) scale(${scale});
       overflow: hidden;
       display: flex;
       flex-direction: column;
       align-items: stretch;
-      justify-content: flex-start;
     }
 
     .business {
       text-align: center;
-      font-size: 2.6mm;
+      font-size: 2.5mm;
       line-height: 1.05;
       font-weight: 700;
       white-space: nowrap;
@@ -453,9 +484,9 @@ function printDocument(
     }
 
     .product {
-      margin-top: .55mm;
+      margin-top: .45mm;
       text-align: center;
-      font-size: 2.8mm;
+      font-size: 2.75mm;
       line-height: 1.08;
       font-weight: 700;
       white-space: nowrap;
@@ -464,17 +495,17 @@ function printDocument(
     }
 
     .meta {
-      margin-top: .45mm;
+      margin-top: .35mm;
       display: flex;
       justify-content: space-between;
       gap: 2mm;
-      font-size: 1.9mm;
+      font-size: 1.8mm;
       line-height: 1;
     }
 
     .barcode {
-      margin-top: .7mm;
-      height: ${size.heightMm <= 25 ? 9.2 : size.heightMm <= 30 ? 11.6 : 17}mm;
+      margin-top: .55mm;
+      height: ${size.heightMm <= 25 ? 9.1 : size.heightMm <= 30 ? 11.5 : 17}mm;
       width: 100%;
       overflow: hidden;
     }
@@ -487,22 +518,51 @@ function printDocument(
     }
 
     .barcode-text {
-      margin-top: .4mm;
+      margin-top: .3mm;
       text-align: center;
-      font-size: 2.15mm;
+      font-size: 2.05mm;
       line-height: 1;
       font-family: "Courier New", monospace;
-      letter-spacing: .12mm;
+      letter-spacing: .1mm;
       white-space: nowrap;
       overflow: hidden;
     }
 
     .price {
-      margin-top: .6mm;
+      margin-top: .5mm;
       text-align: center;
-      font-size: ${size.heightMm <= 25 ? 2.5 : 3.2}mm;
+      font-size: ${size.heightMm <= 25 ? 2.55 : 3.1}mm;
       line-height: 1;
       font-weight: 800;
+    }
+
+    .style-compact .business {
+      font-size: 2.1mm;
+    }
+
+    .style-compact .product {
+      font-size: 2.35mm;
+      margin-top: .25mm;
+    }
+
+    .style-compact .barcode {
+      margin-top: .3mm;
+      height: ${size.heightMm <= 25 ? 10.2 : size.heightMm <= 30 ? 13 : 18.5}mm;
+    }
+
+    .style-compact .price {
+      margin-top: .25mm;
+      font-size: 2.6mm;
+    }
+
+    .style-price_emphasis .barcode {
+      height: ${size.heightMm <= 25 ? 7.9 : size.heightMm <= 30 ? 9.8 : 15}mm;
+    }
+
+    .style-price_emphasis .price {
+      margin-top: .7mm;
+      font-size: ${size.heightMm <= 25 ? 3.25 : 4.1}mm;
+      font-weight: 900;
     }
 
     @media screen {
@@ -538,14 +598,7 @@ function printDocument(
 }
 
 export function printBarcodeLabels(payload: BarcodeLabelPayload): void {
-  printDocument([payload], {
-    labelSize: payload.labelSize,
-    showPrice: payload.showPrice,
-    barcodeType: payload.barcodeType,
-    marginLeftMm: payload.marginLeftMm,
-    marginTopMm: payload.marginTopMm,
-    scaleFactor: payload.scaleFactor,
-  })
+  printDocument([payload], payload)
 }
 
 export function printBarcodeBatch(
