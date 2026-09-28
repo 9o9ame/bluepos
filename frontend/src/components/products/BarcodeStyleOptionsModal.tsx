@@ -75,13 +75,20 @@ export function BarcodeStyleOptionsModal({
         aria-label="Report Type On / Off Options"
       >
         <header className="bp-style-modal-title">
-          <strong>Report Type On / Off Options</strong>
+          <div className="bp-style-modal-title-text">
+            <span className="bp-style-modal-kicker">Barcode Styles</span>
+            <strong>Report Type On / Off Options</strong>
+          </div>
           <button type="button" aria-label="Close" onClick={onClose}>
             ×
           </button>
         </header>
 
         <div className="bp-style-modal-body">
+          <p className="bp-style-modal-hint">
+            Enable styles for the dropdown. Keep at least one active. Reorder
+            with ↑ ↓.
+          </p>
           <table className="bp-style-modal-grid">
             <thead>
               <tr>
@@ -94,16 +101,26 @@ export function BarcodeStyleOptionsModal({
             </thead>
             <tbody>
               {rows.map((row, index) => (
-                <tr key={row.id}>
-                  <td>{index + 1}</td>
-                  <td>{row.name}</td>
-                  <td>{row.usedFor}</td>
+                <tr
+                  key={row.id}
+                  className={row.active ? 'is-active-row' : 'is-inactive-row'}
+                >
+                  <td>
+                    <span className="bp-style-index">{index + 1}</span>
+                  </td>
+                  <td>
+                    <span className="bp-style-report-name">{row.name}</span>
+                  </td>
+                  <td>
+                    <span className="bp-style-used-for">{row.usedFor}</span>
+                  </td>
                   <td>
                     <div className="bp-style-order-btns">
                       <button
                         type="button"
                         disabled={index === 0}
                         onClick={() => move(index, -1)}
+                        aria-label="Move up"
                       >
                         ↑
                       </button>
@@ -111,23 +128,33 @@ export function BarcodeStyleOptionsModal({
                         type="button"
                         disabled={index === rows.length - 1}
                         onClick={() => move(index, 1)}
+                        aria-label="Move down"
                       >
                         ↓
                       </button>
                     </div>
                   </td>
                   <td>
-                    <input
-                      type="checkbox"
-                      checked={row.active}
-                      disabled={row.active && activeCount <= 1}
+                    <label
+                      className={`bp-style-toggle${row.active && activeCount <= 1 ? ' is-locked' : ''}`}
                       title={
                         row.active && activeCount <= 1
                           ? 'At least one barcode style must remain active.'
-                          : undefined
+                          : row.active
+                            ? 'Active'
+                            : 'Inactive'
                       }
-                      onChange={() => toggleActive(row.id)}
-                    />
+                    >
+                      <input
+                        type="checkbox"
+                        checked={row.active}
+                        disabled={row.active && activeCount <= 1}
+                        onChange={() => toggleActive(row.id)}
+                      />
+                      <span className="bp-style-toggle-track" aria-hidden>
+                        <span className="bp-style-toggle-thumb" />
+                      </span>
+                    </label>
                   </td>
                 </tr>
               ))}
@@ -136,12 +163,25 @@ export function BarcodeStyleOptionsModal({
         </div>
 
         <footer className="bp-style-modal-footer">
-          <button type="button" className="bp-style-modal-btn is-primary" onClick={save}>
-            Save
-          </button>
-          <button type="button" className="bp-style-modal-btn" onClick={onClose}>
-            Close
-          </button>
+          <span className="bp-style-modal-count">
+            {activeCount} active style{activeCount === 1 ? '' : 's'}
+          </span>
+          <div className="bp-style-modal-actions">
+            <button
+              type="button"
+              className="bp-style-modal-btn is-primary"
+              onClick={save}
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              className="bp-style-modal-btn"
+              onClick={onClose}
+            >
+              Close
+            </button>
+          </div>
         </footer>
       </div>
     </div>
