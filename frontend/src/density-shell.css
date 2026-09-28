@@ -1,0 +1,243 @@
+/*
+ * Apply density tokens to BluePOS shell + shared chrome.
+ * Imported LAST so it can override hard-coded px / !important sizing
+ * without changing layout order or skin/theme identities.
+ */
+
+/* ---------- Base text ---------- */
+
+body {
+  font-size: var(--ui-font-md);
+}
+
+/* ---------- Title bar ---------- */
+
+.titlebar {
+  height: var(--ui-header-h) !important;
+  min-height: var(--ui-header-h) !important;
+  gap: var(--ui-gap-md);
+  padding: 0 var(--ui-pad-md);
+  font-size: var(--ui-font-lg);
+}
+
+.titlebar-logo {
+  font-size: var(--ui-font-xl);
+}
+
+.titlebar-meta {
+  gap: var(--ui-gap-sm);
+}
+
+.titlebar-env {
+  font-size: var(--ui-font-xs);
+}
+
+.desktop-chrome-btn {
+  width: calc(var(--ui-control-h-sm) + 1px);
+  height: var(--ui-control-h-sm);
+}
+
+.desktop-chrome-install {
+  height: var(--ui-control-h-sm);
+  font-size: var(--ui-font-xs);
+}
+
+.appearance-menu-trigger {
+  width: calc(var(--ui-control-h-sm) + 3px);
+  height: var(--ui-control-h-sm);
+}
+
+.titlebar-select {
+  height: var(--ui-control-h-sm);
+  font-size: var(--ui-font-sm);
+}
+
+/* ---------- Ribbon tabs (HEADER 1) ---------- */
+
+.ribbon-tabs {
+  min-height: var(--ui-ribbon-tab-h) !important;
+  height: var(--ui-ribbon-tab-h) !important;
+  padding: 0 var(--ui-pad-sm);
+}
+
+.ribbon-tab {
+  min-height: var(--ui-ribbon-tab-h) !important;
+  height: var(--ui-ribbon-tab-h) !important;
+  min-width: auto !important;
+  padding: 0 12px !important;
+  gap: var(--ui-gap-sm) !important;
+  font-size: var(--ui-nav-font) !important;
+}
+
+.ribbon-tab-icon,
+.ribbon-tab-icon.has-custom-icon {
+  width: var(--ui-nav-icon) !important;
+  height: var(--ui-nav-icon) !important;
+  min-width: var(--ui-nav-icon) !important;
+  min-height: var(--ui-nav-icon) !important;
+  flex: 0 0 var(--ui-nav-icon) !important;
+}
+
+.ribbon-tab-icon svg,
+.ribbon-tab-icon.has-custom-icon img {
+  width: var(--ui-nav-icon) !important;
+  height: var(--ui-nav-icon) !important;
+  min-width: var(--ui-nav-icon) !important;
+  min-height: var(--ui-nav-icon) !important;
+}
+
+.ribbon-tab-text {
+  font-size: var(--ui-nav-font) !important;
+}
+
+/* ---------- Ribbon commands (HEADER 2) ---------- */
+
+.ribbon-body {
+  min-height: var(--ui-ribbon-body-h) !important;
+  height: auto;
+  padding-top: var(--ui-gap-xs);
+  padding-bottom: 0;
+}
+
+.ribbon-command {
+  min-width: var(--ui-ribbon-command-min-w) !important;
+  max-width: var(--ui-ribbon-command-max-w) !important;
+  min-height: var(--ui-ribbon-command-h) !important;
+  padding: var(--ui-gap-xs) var(--ui-pad-xs) var(--ui-gap-xs) !important;
+  gap: var(--ui-gap-xs) !important;
+  font-size: var(--ui-command-font) !important;
+}
+
+.ribbon-command-label {
+  min-height: calc(var(--ui-command-font) * 2.1);
+  font-size: var(--ui-command-font) !important;
+  line-height: 1.05 !important;
+}
+
+.ribbon-icon-tile {
+  width: var(--ui-ribbon-icon-tile) !important;
+  height: var(--ui-ribbon-icon-tile) !important;
+}
+
+.ribbon-icon-tile svg {
+  width: var(--ui-ribbon-icon) !important;
+  height: var(--ui-ribbon-icon) !important;
+}
+
+.ribbon-icon-tile.has-custom-icon img {
+  width: var(--ui-ribbon-icon-tile) !important;
+  height: var(--ui-ribbon-icon-tile) !important;
+}
+
+.ribbon-group-caption {
+  min-height: calc(var(--ui-font-sm) + 8px);
+  font-size: var(--ui-font-sm) !important;
+  padding-top: var(--ui-gap-xs);
+  padding-bottom: var(--ui-gap-xs);
+}
+
+.ribbon-menu button {
+  padding: var(--ui-pad-xs) var(--ui-pad-md);
+  font-size: var(--ui-font-lg);
+}
+
+/* ---------- Workspace tabs ---------- */
+
+.workspace-tabs {
+  min-height: var(--ui-workspace-tab-h) !important;
+  height: var(--ui-workspace-tab-h) !important;
+  padding-top: 2px;
+}
+
+.workspace-tab {
+  height: calc(var(--ui-workspace-tab-h) - 3px) !important;
+  font-size: var(--ui-font-md) !important;
+}
+
+.workspace-tab-close {
+  width: var(--ui-icon-md);
+  height: var(--ui-icon-md);
+  font-size: var(--ui-font-sm);
+}
+
+/* ---------- Status bar ---------- */
+
+.statusbar {
+  height: var(--ui-statusbar-h) !important;
+  min-height: var(--ui-statusbar-h) !important;
+  font-size: var(--ui-font-sm);
+  padding: 0 var(--ui-pad-md);
+}
+
+/* ---------- Shared desktop chrome ---------- */
+
+.desktop-toolbar {
+  min-height: calc(var(--ui-control-h-md) + 8px);
+  gap: var(--ui-gap-sm);
+  padding: var(--ui-pad-xs) var(--ui-pad-sm);
+}
+
+.desktop-toolbar input:not([type='checkbox']):not([type='radio']),
+.desktop-toolbar select,
+.desktop-toolbar button,
+.desktop-panel-footer button,
+.grid-pane-toolbar input:not([type='checkbox']):not([type='radio']),
+.grid-pane-toolbar select,
+.grid-pane-toolbar button,
+.grid-pane-footer button {
+  height: var(--ui-control-h-md);
+  min-height: var(--ui-control-h-md);
+  font-size: var(--ui-font-md);
+}
+
+.desktop-panel-title,
+.desktop-panel-header {
+  min-height: calc(var(--ui-font-lg) + 12px);
+  font-size: var(--ui-font-lg);
+}
+
+/* Shared form controls inside classic workspaces (height only) */
+.classic-workspace input:not([type='checkbox']):not([type='radio']):not([type='file']),
+.classic-workspace select,
+.pos-invoice input:not([type='checkbox']):not([type='radio']),
+.pos-invoice select,
+.admin-page input:not([type='checkbox']):not([type='radio']),
+.admin-page select {
+  height: var(--ui-control-h-md);
+  min-height: var(--ui-control-h-md);
+  font-size: var(--ui-font-md);
+}
+
+.classic-workspace label,
+.pos-invoice label,
+.admin-page label,
+.desktop-panel label {
+  font-size: var(--ui-font-sm);
+}
+
+/* Tables — keep hierarchy, scale gently */
+.classic-workspace table th,
+.pos-grid th,
+.desktop-panel table th {
+  font-size: var(--ui-font-sm);
+}
+
+.classic-workspace table td,
+.pos-grid td,
+.desktop-panel table td {
+  font-size: var(--ui-font-md);
+}
+
+/* Prevent page-level horizontal scroll on supported laptop/desktop sizes */
+@media (min-width: 1280px) {
+  .app-shell,
+  .platform-shell {
+    overflow-x: hidden;
+  }
+
+  .workspace-host,
+  .workspace-host-inner {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+}

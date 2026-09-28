@@ -82,7 +82,7 @@ export function RibbonCommand({
           {customIconSrc ? (
             <img src={customIconSrc} alt="" draggable={false} aria-hidden />
           ) : (
-            <Icon size={34} strokeWidth={1.9} aria-hidden />
+            <Icon strokeWidth={1.9} aria-hidden />
           )}
         </span>
         <span className="ribbon-command-label">
