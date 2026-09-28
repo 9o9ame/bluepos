@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Barcode,
-  CheckCircle2,
-  Eraser,
-  Filter,
+  Check,
+  ChevronDown,
+  CreditCard,
   Plus,
   Printer,
   RefreshCw,
-  Search,
-  Settings2,
-  SlidersHorizontal,
+  Save,
   Trash2,
+  X,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
@@ -32,7 +31,7 @@ import {
   type BarcodeType,
 } from '../components/products/barcodePrint'
 import { useAuth } from '../features/auth/AuthProvider'
-import { useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
+import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product, ProductBarcode, ProductPrice } from '../types/catalog'
 import './BarcodePrintingPage.css'
 
@@ -46,16 +45,16 @@ type PrintQueueLine = {
   quantity: number
 }
 
-const PRINT_STRING_TOKENS = [
-  '[PRODUCT_NAME]',
-  '[ALT_DESC]',
-  '[PRODUCT_NO]',
-  '[SKU]',
-  '[BARCODE]',
-  '[UNIT]',
-  '[PRICE]',
-  '[BRAND]',
-  '[CATEGORY]',
+const CUSTOMIZATION_FIELDS = [
+  'Barcode',
+  'BNS',
+  'C',
+  'DESC.',
+  'Dis 3',
+  'Dis A',
+  'Disc-Rs',
+  'Dis-Rs Amt',
+  'Expiry Date',
 ] as const
 
 function activeBarcodes(product: Product): ProductBarcode[] {
@@ -66,7 +65,6 @@ function activeBarcodes(product: Product): ProductBarcode[] {
 
 function selectedBarcode(line: PrintQueueLine | null): ProductBarcode | null {
   if (!line) return null
-
   return (
     activeBarcodes(line.product).find(
       (barcode) => barcode.ulid === line.barcodeUlid,
@@ -76,19 +74,17 @@ function selectedBarcode(line: PrintQueueLine | null): ProductBarcode | null {
 
 function priceFor(product: Product, priceField: PriceField): string {
   if (priceField === 'none') return ''
-
-  const price = (product.prices ?? []).find(
-    (row: ProductPrice) => row.price_type === priceField,
+  return (
+    (product.prices ?? []).find(
+      (row: ProductPrice) => row.price_type === priceField,
+    )?.amount ?? ''
   )
-
-  return price?.amount ?? ''
 }
 
 function displayText(product: Product, field: DisplayField): string {
   if (field === 'alternate_name') {
     return product.alternate_name?.trim() || product.name
   }
-
   if (field === 'product_number') return product.product_number
   if (field === 'sku') return product.sku?.trim() || product.name
   return product.name
@@ -108,6 +104,7 @@ function productNumberValue(productNumber: string): number | null {
 export function BarcodePrintingPage() {
   const { productUlid } = useParams()
   const { session } = useAuth()
+  const { closeActiveTab } = useWorkspace()
   const initializedProduct = useRef<string | null>(null)
   const remembered = useMemo(() => loadBarcodePrintSettings(), [])
 
@@ -115,8 +112,9 @@ export function BarcodePrintingPage() {
   const [categoryUlid, setCategoryUlid] = useState('')
   const [brandUlid, setBrandUlid] = useState('')
   const [includeSubBarcodes, setIncludeSubBarcodes] = useState(false)
-  const [addWithExisting, setAddWithExisting] = useState(true)
+  const [addWithExisting, setAddWithExisting] = useState(false)
 
+  const [rangeMode, setRangeMode] = useState<'code'>('code')
   const [rangeFrom, setRangeFrom] = useState('')
   const [rangeTo, setRangeTo] = useState('')
   const [multiplier, setMultiplier] = useState('1')
@@ -124,6 +122,9 @@ export function BarcodePrintingPage() {
   const [barcodeType, setBarcodeType] = useState<BarcodeType>(
     remembered.barcodeType,
   )
+  const [displayField, setDisplayField] = useState<DisplayField>('name')
+  const [priceField, setPriceField] = useState<PriceField>('retail')
+  const [printString, setPrintString] = useState('[PRODUCT_NAME]')
   const [labelSize, setLabelSize] = useState<BarcodeLabelSize>(
     remembered.labelSize,
   )
@@ -131,29 +132,9 @@ export function BarcodePrintingPage() {
     remembered.printStyle,
   )
   const [showPrice, setShowPrice] = useState(remembered.showPrice)
-  const [displayField, setDisplayField] = useState<DisplayField>('name')
-  const [priceField, setPriceField] = useState<PriceField>('retail')
-  const [printString, setPrintString] = useState('[PRODUCT_NAME]')
-  const [marginLeftMm, setMarginLeftMm] = useState(
-    remembered.marginLeftMm,
-  )
-  const [marginTopMm, setMarginTopMm] = useState(
-    remembered.marginTopMm,
-  )
-  const [scaleFactor, setScaleFactor] = useState(
-    remembered.scaleFactor,
-  )
-
-  const [showBusinessName, setShowBusinessName] = useState(
-    remembered.showBusinessName,
-  )
-  const [showProductNumber, setShowProductNumber] = useState(
-    remembered.showProductNumber,
-  )
-  const [showUnit, setShowUnit] = useState(remembered.showUnit)
-  const [showBarcodeText, setShowBarcodeText] = useState(
-    remembered.showBarcodeText,
-  )
+  const [marginLeftMm, setMarginLeftMm] = useState(0)
+  const [marginTopMm, setMarginTopMm] = useState(0)
+  const [scaleFactor, setScaleFactor] = useState(1)
 
   const [queue, setQueue] = useState<PrintQueueLine[]>([])
   const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null)
@@ -170,12 +151,7 @@ export function BarcodePrintingPage() {
   })
 
   const productsQuery = useQuery({
-    queryKey: [
-      'barcode-print-products',
-      search,
-      categoryUlid,
-      brandUlid,
-    ],
+    queryKey: ['barcode-print-products', search, categoryUlid, brandUlid],
     queryFn: () =>
       fetchProducts({
         q: search || undefined,
@@ -195,28 +171,16 @@ export function BarcodePrintingPage() {
 
   const products = productsQuery.data?.data ?? []
 
-  function addProduct(product: Product, quantityOverride?: number) {
+  function addProduct(product: Product, qty = 1) {
     const barcodes = activeBarcodes(product)
-
     if (barcodes.length === 0) {
       setError(`${product.name} has no active barcode.`)
       return
     }
 
-    const quantity = Math.max(
-      1,
-      Math.min(
-        999,
-        Math.floor(quantityOverride ?? (Number(multiplier) || 1)),
-      ),
-    )
-
     const chosen = includeSubBarcodes
       ? barcodes
-      : [
-          barcodes.find((barcode) => barcode.is_primary) ??
-            barcodes[0],
-        ]
+      : [barcodes.find((row) => row.is_primary) ?? barcodes[0]]
 
     setQueue((current) => {
       const next = [...current]
@@ -231,7 +195,7 @@ export function BarcodePrintingPage() {
               ...next[existingIndex],
               quantity: Math.min(
                 999,
-                next[existingIndex].quantity + quantity,
+                next[existingIndex].quantity + qty,
               ),
             }
           }
@@ -242,7 +206,7 @@ export function BarcodePrintingPage() {
           id,
           product,
           barcodeUlid: barcode.ulid,
-          quantity,
+          quantity: qty,
         })
       }
 
@@ -259,122 +223,55 @@ export function BarcodePrintingPage() {
 
     initializedProduct.current = product.ulid
     addProduct(product, 1)
-    // Initialize the routed product once only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProductQuery.data])
 
   const selectedLine =
-    queue.find((line) => line.id === selectedQueueId) ??
-    queue[0] ??
-    null
-
+    queue.find((row) => row.id === selectedQueueId) ?? queue[0] ?? null
   const previewBarcode = selectedBarcode(selectedLine)
   const previewProduct = selectedLine?.product ?? null
   const previewPrice = previewProduct
     ? priceFor(previewProduct, priceField)
     : ''
 
-  const totalLabels = queue.reduce(
-    (sum, row) => sum + Math.max(0, row.quantity || 0),
-    0,
-  )
-
-  function resolvePrintString(
-    product: Product,
-    barcode: ProductBarcode | null,
-  ): string {
-    const replacements: Record<string, string> = {
-      '[PRODUCT_NAME]': product.name,
-      '[ALT_DESC]': product.alternate_name ?? '',
-      '[PRODUCT_NO]': product.product_number,
-      '[SKU]': product.sku ?? '',
-      '[BARCODE]': barcode?.barcode ?? '',
-      '[UNIT]': barcode?.unit?.code ?? '',
-      '[PRICE]': priceFor(product, priceField),
-      '[BRAND]': product.brand?.name ?? '',
-      '[CATEGORY]': product.category?.name ?? '',
-    }
-
-    let resolved = printString.trim() || '[PRODUCT_NAME]'
-
-    for (const token of PRINT_STRING_TOKENS) {
-      resolved = resolved.replaceAll(token, replacements[token])
-    }
-
-    return resolved.replace(/\s+/g, ' ').trim() || product.name
-  }
-
   function updateQuantity(id: string, quantity: number) {
     const safe = Math.max(1, Math.min(999, Math.floor(quantity || 1)))
     setQueue((current) =>
-      current.map((line) =>
-        line.id === id ? { ...line, quantity: safe } : line,
+      current.map((row) =>
+        row.id === id ? { ...row, quantity: safe } : row,
       ),
     )
   }
 
   function changeBarcode(line: PrintQueueLine, barcodeUlid: string) {
-    const id = queueId(line.product.ulid, barcodeUlid)
+    const nextId = queueId(line.product.ulid, barcodeUlid)
 
-    setQueue((current) => {
-      const duplicate = current.find(
-        (candidate) =>
-          candidate.id === id && candidate.id !== line.id,
-      )
+    setQueue((current) =>
+      current.map((row) =>
+        row.id === line.id
+          ? { ...row, id: nextId, barcodeUlid }
+          : row,
+      ),
+    )
 
-      if (duplicate) {
-        return current
-          .filter((candidate) => candidate.id !== line.id)
-          .map((candidate) =>
-            candidate.id === duplicate.id
-              ? {
-                  ...candidate,
-                  quantity: Math.min(
-                    999,
-                    candidate.quantity + line.quantity,
-                  ),
-                }
-              : candidate,
-          )
-      }
-
-      return current.map((candidate) =>
-        candidate.id === line.id
-          ? { ...candidate, id, barcodeUlid }
-          : candidate,
-      )
-    })
-
-    setSelectedQueueId(id)
+    setSelectedQueueId(nextId)
   }
 
-  function removeLine(id: string) {
-    setQueue((current) => current.filter((line) => line.id !== id))
-    setSelectedQueueId((current) => (current === id ? null : current))
+  function removeSelected() {
+    if (!selectedLine) return
+    setQueue((current) =>
+      current.filter((row) => row.id !== selectedLine.id),
+    )
+    setSelectedQueueId(null)
   }
 
-  function addProducts(items: Product[]) {
-    if (items.length === 0) {
-      setError('No products match the selected criteria.')
-      return
-    }
-
-    items.forEach((product) => addProduct(product))
-  }
-
-  function addByRange() {
+  function autoFill() {
     const from = rangeFrom.trim() ? Number(rangeFrom) : null
     const to = rangeTo.trim() ? Number(rangeTo) : null
-
-    if (
-      (from !== null && !Number.isFinite(from)) ||
-      (to !== null && !Number.isFinite(to))
-    ) {
-      setError('From and To must be numeric product numbers.')
-      return
-    }
+    const qty = Math.max(1, Math.min(999, Number(multiplier) || 1))
 
     const matched = products.filter((product) => {
+      if (from === null && to === null) return true
       const value = productNumberValue(product.product_number)
       if (value === null) return false
       if (from !== null && value < from) return false
@@ -382,7 +279,20 @@ export function BarcodePrintingPage() {
       return true
     })
 
-    addProducts(matched)
+    if (matched.length === 0) {
+      setError('No products match the Auto Fill criteria.')
+      return
+    }
+
+    matched.forEach((product) => addProduct(product, qty))
+  }
+
+  function addFilteredProducts() {
+    if (products.length === 0) {
+      setError('No products match the selected filter.')
+      return
+    }
+    products.forEach((product) => addProduct(product, 1))
   }
 
   function saveSettings() {
@@ -394,28 +304,20 @@ export function BarcodePrintingPage() {
       marginLeftMm,
       marginTopMm,
       scaleFactor,
-      showBusinessName,
-      showProductNumber,
-      showUnit,
-      showBarcodeText,
     })
   }
 
-  function basePayload(
-    product: Product,
-    barcode: ProductBarcode,
-    copies: number,
-  ) {
+  function buildPayload(line: PrintQueueLine, copies: number) {
+    const barcode = selectedBarcode(line)
+    if (!barcode) return null
+
     return {
       businessName: session?.tenant.name ?? 'BluePOS',
-      productName:
-        printString.trim() && printString !== '[PRODUCT_NAME]'
-          ? resolvePrintString(product, barcode)
-          : displayText(product, displayField),
-      productNumber: product.product_number,
+      productName: displayText(line.product, displayField),
+      productNumber: line.product.product_number,
       barcode: barcode.barcode,
       unitCode: barcode.unit?.code ?? '',
-      price: priceFor(product, priceField),
+      price: priceFor(line.product, priceField),
       currencyCode: session?.tenant.currency_code ?? '',
       copies,
       labelSize,
@@ -425,44 +327,57 @@ export function BarcodePrintingPage() {
       marginLeftMm,
       marginTopMm,
       scaleFactor,
-      showBusinessName,
-      showProductNumber,
-      showUnit,
-      showBarcodeText,
+      showBusinessName: true,
+      showProductNumber: true,
+      showUnit: true,
+      showBarcodeText: true,
     }
   }
 
-  function printQueue() {
-    if (queue.length === 0) {
-      setError('Add at least one product to the print queue.')
+  function saveAndPreview() {
+    if (!selectedLine) {
+      setError('Select a row first.')
       return
     }
 
-    const payloads = queue.flatMap((line) => {
-      const barcode = selectedBarcode(line)
-      if (!barcode || line.quantity < 1) return []
-      return [basePayload(line.product, barcode, line.quantity)]
-    })
-
-    if (payloads.length === 0) {
-      setError('The print queue contains no printable barcode.')
+    const payload = buildPayload(selectedLine, selectedLine.quantity)
+    if (!payload) {
+      setError('The selected row has no printable barcode.')
       return
     }
 
     try {
       saveSettings()
+      printBarcodeLabels(payload)
+      setError(null)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Unable to preview barcode.',
+      )
+    }
+  }
+
+  function printAll() {
+    if (queue.length === 0) {
+      setError('Add at least one product before printing.')
+      return
+    }
+
+    const payloads = queue.flatMap((line) => {
+      const payload = buildPayload(line, line.quantity)
+      return payload ? [payload] : []
+    })
+
+    try {
+      saveSettings()
       printBarcodeBatch(payloads, {
         labelSize,
-        showPrice: showPrice && priceField !== 'none',
+        showPrice,
         barcodeType,
         printStyle,
         marginLeftMm,
         marginTopMm,
         scaleFactor,
-        showBusinessName,
-        showProductNumber,
-        showUnit,
-        showBarcodeText,
       })
       setError(null)
     } catch (err) {
@@ -472,39 +387,33 @@ export function BarcodePrintingPage() {
     }
   }
 
-  function printCalibrationLabel() {
+  function calibrate() {
     try {
-      const product = previewProduct
-      const barcode = previewBarcode
+      const payload = selectedLine
+        ? buildPayload(selectedLine, 1)
+        : {
+            businessName: session?.tenant.name ?? 'BluePOS',
+            productName: 'Calibration Test',
+            productNumber: '000001',
+            barcode: '1105000',
+            unitCode: 'PCS',
+            price: '100.00',
+            currencyCode: session?.tenant.currency_code ?? '',
+            copies: 1,
+            labelSize,
+            showPrice,
+            barcodeType,
+            printStyle,
+            marginLeftMm,
+            marginTopMm,
+            scaleFactor,
+            showBusinessName: true,
+            showProductNumber: true,
+            showUnit: true,
+            showBarcodeText: true,
+          }
 
-      if (product && barcode) {
-        printBarcodeLabels(basePayload(product, barcode, 1))
-      } else {
-        printBarcodeLabels({
-          businessName: session?.tenant.name ?? 'BluePOS',
-          productName: 'Calibration Test',
-          productNumber: '000001',
-          barcode: '1234567890',
-          unitCode: 'PCS',
-          price: '100.00',
-          currencyCode: session?.tenant.currency_code ?? '',
-          copies: 1,
-          labelSize,
-          showPrice,
-          barcodeType,
-          printStyle,
-          marginLeftMm,
-          marginTopMm,
-          scaleFactor,
-          showBusinessName,
-          showProductNumber,
-          showUnit,
-          showBarcodeText,
-        })
-      }
-
-      saveSettings()
-      setError(null)
+      if (payload) printBarcodeLabels(payload)
     } catch (err) {
       setError(
         err instanceof Error
@@ -519,657 +428,502 @@ export function BarcodePrintingPage() {
   })
 
   return (
-    <div className="barcode-page barcode-page-v2">
-      {error ? (
-        <div className="barcode-page-alert">{error}</div>
-      ) : null}
+    <div className="pos-barcode-reference">
+      {error ? <div className="pos-barcode-error">{error}</div> : null}
 
-      <div className="barcode-page-v2-layout">
-        <aside className="barcode-settings-panel">
-          <section className="barcode-compact-section">
-            <div className="barcode-section-title">
-              <Settings2 size={14} />
-              <span>Barcode Settings</span>
-            </div>
+      <aside className="pos-barcode-left">
+        <section className="pos-barcode-box pos-barcode-settings">
+          <div className="pos-barcode-box-title">Barcode Settings</div>
 
-            <div className="barcode-compact-fields">
-              <label className="is-wide">
-                <span>Barcode Print String</span>
-                <input
-                  value={printString}
-                  placeholder="[PRODUCT_NAME]"
-                  onChange={(event) => setPrintString(event.target.value)}
-                />
-              </label>
+          <label className="pos-barcode-field pos-barcode-string">
+            <span>Barcode Print String: (Use | ColName | For Parse)</span>
+            <input
+              value={printString}
+              onChange={(event) => setPrintString(event.target.value)}
+            />
+          </label>
 
-              <div className="barcode-token-hint">
-                {PRINT_STRING_TOKENS.map((token) => (
-                  <button
-                    type="button"
-                    key={token}
-                    title={`Insert ${token}`}
-                    onClick={() =>
-                      setPrintString((current) =>
-                        `${current}${current ? ' ' : ''}${token}`,
-                      )
-                    }
-                  >
-                    {token}
-                  </button>
-                ))}
-              </div>
+          <label className="pos-barcode-field">
+            <span>Select Barcode Type:</span>
+            <select
+              value={barcodeType}
+              onChange={(event) =>
+                setBarcodeType(event.target.value as BarcodeType)
+              }
+            >
+              <option value="CODE128">Code128</option>
+              <option value="CODE39">Code39</option>
+            </select>
+          </label>
 
-              <label>
-                <span>Barcode Type</span>
-                <select
-                  value={barcodeType}
-                  onChange={(event) =>
-                    setBarcodeType(event.target.value as BarcodeType)
-                  }
-                >
-                  <option value="CODE128">Code 128</option>
-                  <option value="CODE39">Code 39</option>
-                </select>
-              </label>
+          <label className="pos-barcode-field">
+            <span>Field to Display:</span>
+            <select
+              value={displayField}
+              onChange={(event) =>
+                setDisplayField(event.target.value as DisplayField)
+              }
+            >
+              <option value="name">PRODUCT NAME</option>
+              <option value="alternate_name">ALTERNATE DESC</option>
+              <option value="product_number">PRODUCT #</option>
+              <option value="sku">SKU / CODE</option>
+            </select>
+          </label>
 
-              <label>
-                <span>Field to Display</span>
-                <select
-                  value={displayField}
-                  onChange={(event) =>
-                    setDisplayField(event.target.value as DisplayField)
-                  }
-                >
-                  <option value="name">Product Name</option>
-                  <option value="alternate_name">Alternate Description</option>
-                  <option value="product_number">Product Number</option>
-                  <option value="sku">SKU / Code</option>
-                </select>
-              </label>
-
-              <label>
-                <span>Price Field</span>
-                <select
-                  value={priceField}
-                  onChange={(event) =>
-                    setPriceField(event.target.value as PriceField)
-                  }
-                >
-                  <option value="retail">Retail / Sale Price</option>
-                  <option value="wholesale">Wholesale Price</option>
-                  <option value="minimum_sale">Minimum Sale Price</option>
-                  <option value="none">Do Not Print Price</option>
-                </select>
-              </label>
-
-              <label>
-                <span>Label Size</span>
-                <select
-                  value={labelSize}
-                  onChange={(event) =>
-                    setLabelSize(event.target.value as BarcodeLabelSize)
-                  }
-                >
-                  {getBarcodeLabelSizeOptions().map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                <span>Printing Style</span>
-                <select
-                  value={printStyle}
-                  onChange={(event) =>
-                    setPrintStyle(event.target.value as BarcodePrintStyle)
-                  }
-                >
-                  <option value="standard">Standard</option>
-                  <option value="compact">Compact</option>
-                  <option value="price_emphasis">Price Emphasis</option>
-                </select>
-              </label>
-
-              <label className="barcode-inline-check">
-                <input
-                  type="checkbox"
-                  checked={showPrice && priceField !== 'none'}
-                  disabled={priceField === 'none'}
-                  onChange={(event) => setShowPrice(event.target.checked)}
-                />
-                <span>Show Price</span>
-              </label>
-            </div>
-          </section>
-
-          <section className="barcode-compact-section">
-            <div className="barcode-section-title">
-              <Printer size={14} />
-              <span>Printer / Calibration</span>
-            </div>
-
-            <div className="barcode-printer-grid">
-              <label className="is-wide">
-                <span>Printer</span>
-                <select value="system" disabled>
-                  <option value="system">System Print Dialog</option>
-                </select>
-              </label>
-
-              <label>
-                <span>Left</span>
-                <div className="barcode-number-with-unit">
-                  <input
-                    type="number"
-                    min={-5}
-                    max={10}
-                    step={0.5}
-                    value={marginLeftMm}
-                    onChange={(event) =>
-                      setMarginLeftMm(Number(event.target.value))
-                    }
-                  />
-                  <small>mm</small>
-                </div>
-              </label>
-
-              <label>
-                <span>Top</span>
-                <div className="barcode-number-with-unit">
-                  <input
-                    type="number"
-                    min={-5}
-                    max={10}
-                    step={0.5}
-                    value={marginTopMm}
-                    onChange={(event) =>
-                      setMarginTopMm(Number(event.target.value))
-                    }
-                  />
-                  <small>mm</small>
-                </div>
-              </label>
-
-              <label className="is-wide">
-                <span>Scale Factor</span>
-                <div className="barcode-scale-inline">
-                  <input
-                    type="range"
-                    min={0.7}
-                    max={1.3}
-                    step={0.05}
-                    value={scaleFactor}
-                    onChange={(event) =>
-                      setScaleFactor(Number(event.target.value))
-                    }
-                  />
-                  <strong>{scaleFactor.toFixed(2)}×</strong>
-                </div>
-              </label>
-
-              <button
-                type="button"
-                className="barcode-calibrate-button"
-                onClick={printCalibrationLabel}
+          <div className="pos-barcode-price-row">
+            <label className="pos-barcode-field">
+              <span>Price Field:</span>
+              <select
+                value={priceField}
+                onChange={(event) =>
+                  setPriceField(event.target.value as PriceField)
+                }
               >
-                <SlidersHorizontal size={14} />
-                Calibrate / Test Label
+                <option value="retail">SUB SELLING PRICE</option>
+                <option value="wholesale">WHOLESALE PRICE</option>
+                <option value="minimum_sale">MIN SALE PRICE</option>
+                <option value="none">NO PRICE</option>
+              </select>
+            </label>
+
+            <label className="pos-barcode-check pos-barcode-old-price">
+              <input type="checkbox" disabled />
+              <span>Show Old Price</span>
+            </label>
+          </div>
+
+          <fieldset className="pos-barcode-margin-box">
+            <legend>Margin Settings</legend>
+
+            <label>
+              <span>Left:</span>
+              <input
+                type="number"
+                step={0.5}
+                value={marginLeftMm}
+                onChange={(event) =>
+                  setMarginLeftMm(Number(event.target.value))
+                }
+              />
+            </label>
+
+            <label>
+              <span>Scale Factor:</span>
+              <input
+                type="number"
+                step={0.05}
+                min={0.7}
+                max={1.3}
+                value={scaleFactor}
+                onChange={(event) =>
+                  setScaleFactor(Number(event.target.value))
+                }
+              />
+            </label>
+
+            <label className="pos-barcode-sample-row">
+              <span>Sample:</span>
+              <input
+                value={previewBarcode?.barcode ?? '1105000'}
+                readOnly
+              />
+            </label>
+          </fieldset>
+
+          <div className="pos-barcode-printer-title">
+            <span>On Following Printer</span>
+            <button type="button" onClick={calibrate}>
+              Calibrate
+            </button>
+            <label className="pos-barcode-check">
+              <input type="checkbox" disabled />
+              <span>Computer Based</span>
+            </label>
+          </div>
+
+          <select className="pos-barcode-printer-select" value="system" disabled>
+            <option value="system">System Print Dialog</option>
+          </select>
+
+          <div className="pos-barcode-extra-options">
+            <label className="pos-barcode-check">
+              <input type="checkbox" disabled />
+              <span>Use Invoice Batch / Serial for Barcode Printing</span>
+            </label>
+
+            <label className="pos-barcode-check">
+              <input type="checkbox" checked readOnly />
+              <span>Auto Module</span>
+            </label>
+
+            <label className="pos-barcode-check">
+              <input type="checkbox" disabled />
+              <span>Direct Print to Printer</span>
+            </label>
+
+            <div className="pos-barcode-purchase-row">
+              <span>From Purchase ID:</span>
+              <input disabled />
+              <button type="button" disabled>
+                <RefreshCw size={12} />
+                Get
               </button>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section className="barcode-compact-section barcode-preview-section">
-            <div className="barcode-section-title">
-              <Barcode size={14} />
-              <span>Live Preview</span>
-            </div>
-
-            <div className="barcode-label-stage barcode-label-stage-v2">
+        <section className="pos-barcode-preview-box">
+          <div className="pos-barcode-preview-paper">
+            {previewBarcode ? (
               <div
-                className={`barcode-label-preview size-${labelSize} style-${printStyle}`}
-                style={{
-                  transform: `translate(${marginLeftMm * 0.55}px, ${marginTopMm * 0.55}px) scale(${scaleFactor})`,
+                className="pos-barcode-preview-svg"
+                dangerouslySetInnerHTML={{
+                  __html: barcodeSvg(
+                    previewBarcode.barcode,
+                    barcodeType,
+                  ),
                 }}
-              >
-                {showBusinessName ? (
-                  <strong>{session?.tenant.name ?? 'BluePOS'}</strong>
-                ) : null}
-
-                <b>
-                  {previewProduct
-                    ? printString.trim() &&
-                      printString !== '[PRODUCT_NAME]'
-                      ? resolvePrintString(
-                          previewProduct,
-                          previewBarcode,
-                        )
-                      : displayText(previewProduct, displayField)
-                    : 'Select a queued product'}
-                </b>
-
-                {showProductNumber || showUnit ? (
-                  <div className="barcode-preview-meta">
-                    <span>
-                      {showProductNumber
-                        ? previewProduct?.product_number ?? '000000'
-                        : ''}
-                    </span>
-                    <span>
-                      {showUnit ? previewBarcode?.unit?.code ?? '' : ''}
-                    </span>
-                  </div>
-                ) : null}
-
-                {previewBarcode ? (
-                  <div
-                    className="barcode-preview-svg"
-                    dangerouslySetInnerHTML={{
-                      __html: barcodeSvg(
-                        previewBarcode.barcode,
-                        barcodeType,
-                      ),
-                    }}
-                  />
-                ) : (
-                  <div className="barcode-preview-empty">
-                    Barcode preview
-                  </div>
-                )}
-
-                {showBarcodeText ? (
-                  <code>{previewBarcode?.barcode ?? '000000000000'}</code>
-                ) : null}
-
-                {showPrice && priceField !== 'none' ? (
-                  <em>
-                    {session?.tenant.currency_code ?? ''}{' '}
-                    {Number(previewPrice || 0).toFixed(2)}
-                  </em>
-                ) : null}
+              />
+            ) : (
+              <div className="pos-barcode-preview-empty">
+                Barcode Preview
               </div>
-            </div>
-          </section>
+            )}
+            <code>{previewBarcode?.barcode ?? '1105000'}</code>
+            {showPrice && priceField !== 'none' ? (
+              <strong>
+                {session?.tenant.currency_code ?? ''}{' '}
+                {Number(previewPrice || 0).toFixed(2)}
+              </strong>
+            ) : null}
+          </div>
+        </section>
 
-          <section className="barcode-compact-section">
-            <div className="barcode-section-title">
-              <SlidersHorizontal size={14} />
-              <span>Label Fields</span>
-            </div>
+        <section className="pos-barcode-style-row">
+          <span>Barcode Printing Style</span>
+          <div>
+            <select
+              value={printStyle}
+              onChange={(event) =>
+                setPrintStyle(event.target.value as BarcodePrintStyle)
+              }
+            >
+              <option value="standard">1 Barcode (Style 2)</option>
+              <option value="compact">Compact Barcode</option>
+              <option value="price_emphasis">Price Emphasis</option>
+            </select>
+            <button type="button" title="Future custom style editor" disabled>
+              <Plus size={13} />
+            </button>
+          </div>
+        </section>
 
-            <div className="barcode-customize-grid">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showBusinessName}
-                  onChange={(event) =>
-                    setShowBusinessName(event.target.checked)
-                  }
-                />
-                Business Name
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showProductNumber}
-                  onChange={(event) =>
-                    setShowProductNumber(event.target.checked)
-                  }
-                />
-                Product #
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showUnit}
-                  onChange={(event) => setShowUnit(event.target.checked)}
-                />
-                Unit
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={showBarcodeText}
-                  onChange={(event) =>
-                    setShowBarcodeText(event.target.checked)
-                  }
-                />
-                Barcode Text
-              </label>
-            </div>
-          </section>
-        </aside>
+        <div className="pos-barcode-left-actions">
+          <button type="button" onClick={removeSelected} disabled={!selectedLine}>
+            <span>Delete</span>
+            <Trash2 size={20} />
+          </button>
 
-        <main className="barcode-main-panel">
-          <section className="barcode-autofill-panel">
-            <div className="barcode-section-title">
-              <Filter size={14} />
-              <span>Auto Fill Options</span>
-            </div>
+          <button type="button" onClick={saveAndPreview} disabled={!selectedLine}>
+            <span>Save &amp; Preview</span>
+            <Save size={18} />
+          </button>
 
-            <div className="barcode-autofill-top">
-              <label className="barcode-inline-check">
-                <input
-                  type="checkbox"
-                  checked={addWithExisting}
-                  onChange={(event) =>
-                    setAddWithExisting(event.target.checked)
-                  }
-                />
-                <span>Add With Existing</span>
-              </label>
+          <button type="button" onClick={closeActiveTab}>
+            <span>Close</span>
+            <X size={20} />
+          </button>
+        </div>
+      </aside>
 
-              <label className="barcode-inline-check">
-                <input
-                  type="checkbox"
-                  checked={includeSubBarcodes}
-                  onChange={(event) =>
-                    setIncludeSubBarcodes(event.target.checked)
-                  }
-                />
-                <span>Print Sub Barcode (Multi Barcode)</span>
-              </label>
+      <main className="pos-barcode-right">
+        <section className="pos-barcode-autofill">
+          <div className="pos-barcode-autofill-title">Auto Fill Options</div>
 
-              <label className="barcode-range-field">
-                <span>From</span>
-                <input
-                  value={rangeFrom}
-                  inputMode="numeric"
-                  placeholder="000001"
-                  onChange={(event) => setRangeFrom(event.target.value)}
-                />
-              </label>
+          <div className="pos-barcode-autofill-row1">
+            <label className="pos-barcode-check">
+              <input type="checkbox" disabled />
+              <span>Ignore Stock Qty</span>
+            </label>
 
-              <label className="barcode-range-field">
-                <span>To</span>
-                <input
-                  value={rangeTo}
-                  inputMode="numeric"
-                  placeholder="999999"
-                  onChange={(event) => setRangeTo(event.target.value)}
-                />
-              </label>
+            <label className="pos-barcode-check">
+              <input
+                type="checkbox"
+                checked={addWithExisting}
+                onChange={(event) =>
+                  setAddWithExisting(event.target.checked)
+                }
+              />
+              <span>Add With Existing</span>
+            </label>
 
-              <label className="barcode-range-field is-mf">
-                <span>MF</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={999}
-                  value={multiplier}
-                  onChange={(event) => setMultiplier(event.target.value)}
-                />
-              </label>
+            <label className="pos-barcode-check">
+              <input
+                type="checkbox"
+                checked={includeSubBarcodes}
+                onChange={(event) =>
+                  setIncludeSubBarcodes(event.target.checked)
+                }
+              />
+              <span>Print Sub Barcode (Multi Barcode)</span>
+            </label>
+          </div>
 
-              <button
-                type="button"
-                className="barcode-auto-button"
-                onClick={addByRange}
-              >
-                <RefreshCw size={14} />
-                Auto
-              </button>
-            </div>
+          <div className="pos-barcode-autofill-row2">
+            <select
+              value={rangeMode}
+              onChange={() => setRangeMode('code')}
+            >
+              <option value="code">Code</option>
+            </select>
 
-            <div className="barcode-autofill-bottom">
-              <button
-                type="button"
-                disabled={!categoryUlid}
-                onClick={() => addProducts(products)}
-              >
-                Selected Category
-              </button>
+            <span>From</span>
+            <input
+              value={rangeFrom}
+              placeholder="000001"
+              onChange={(event) => setRangeFrom(event.target.value)}
+            />
 
-              <button
-                type="button"
-                disabled={!brandUlid}
-                onClick={() => addProducts(products)}
-              >
-                Selected Brand
-              </button>
+            <span>To:</span>
+            <input
+              value={rangeTo}
+              placeholder="999999"
+              onChange={(event) => setRangeTo(event.target.value)}
+            />
 
-              <button
-                type="button"
-                disabled={products.length === 0}
-                onClick={() => addProducts(products)}
-              >
-                Selected Products
-              </button>
+            <span>MF</span>
+            <input
+              className="pos-barcode-mf"
+              type="number"
+              min={1}
+              max={999}
+              value={multiplier}
+              onChange={(event) => setMultiplier(event.target.value)}
+            />
 
-              <label className="barcode-search-box">
-                <Search size={14} />
-                <input
-                  value={search}
-                  placeholder="Search product, product #, SKU or barcode..."
-                  onChange={(event) => setSearch(event.target.value)}
-                />
-              </label>
+            <button type="button" onClick={autoFill}>
+              <RefreshCw size={12} />
+              Auto
+            </button>
 
-              <select
-                value={categoryUlid}
-                onChange={(event) => setCategoryUlid(event.target.value)}
-              >
-                <option value="">All Categories</option>
-                {(categories.data ?? []).map((category) => (
-                  <option key={category.ulid} value={category.ulid}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+            <button type="button" className="pos-barcode-card-print" disabled>
+              Card Print
+              <CreditCard size={16} />
+            </button>
+          </div>
 
-              <select
-                value={brandUlid}
-                onChange={(event) => setBrandUlid(event.target.value)}
-              >
-                <option value="">All Brands</option>
-                {(brands.data ?? []).map((brand) => (
-                  <option key={brand.ulid} value={brand.ulid}>
-                    {brand.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </section>
+          <div className="pos-barcode-autofill-row3">
+            <button
+              type="button"
+              disabled={!categoryUlid}
+              onClick={addFilteredProducts}
+            >
+              <span className="pos-barcode-color-grid" />
+              Selected Category
+            </button>
 
-          <section className="barcode-product-picker">
-            <div className="barcode-picker-head">
-              <span>Product #</span>
-              <span>Product / Description</span>
-              <span>Category</span>
-              <span>Primary Barcode</span>
-              <span />
-            </div>
+            <button
+              type="button"
+              disabled={!brandUlid}
+              onClick={addFilteredProducts}
+            >
+              <span className="pos-barcode-color-grid is-green" />
+              Selected Company
+            </button>
 
-            <div className="barcode-picker-body">
-              {productsQuery.isLoading ? (
-                <div className="barcode-picker-empty">Loading products…</div>
-              ) : products.length === 0 ? (
-                <div className="barcode-picker-empty">No products found.</div>
+            <button
+              type="button"
+              disabled={products.length === 0}
+              onClick={addFilteredProducts}
+            >
+              <span className="pos-barcode-color-grid is-orange" />
+              Selected Products
+            </button>
+
+            <span className="pos-barcode-search-label">Search:</span>
+            <input
+              className="pos-barcode-search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+
+            <select
+              className="pos-barcode-hidden-filter"
+              value={categoryUlid}
+              onChange={(event) => setCategoryUlid(event.target.value)}
+              title="Category filter"
+            >
+              <option value="">All Categories</option>
+              {(categories.data ?? []).map((category) => (
+                <option key={category.ulid} value={category.ulid}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="pos-barcode-hidden-filter"
+              value={brandUlid}
+              onChange={(event) => setBrandUlid(event.target.value)}
+              title="Company / Brand filter"
+            >
+              <option value="">All Companies</option>
+              {(brands.data ?? []).map((brand) => (
+                <option key={brand.ulid} value={brand.ulid}>
+                  {brand.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </section>
+
+        <section className="pos-barcode-grid-shell">
+          <table className="pos-barcode-grid">
+            <thead>
+              <tr>
+                <th className="is-marker" />
+                <th className="is-row-no" />
+                <th className="is-barcode">Barcode</th>
+                <th>ITEM / PRODUCT DESCRIPTION</th>
+                <th className="is-other">Other Description</th>
+                <th className="is-quantity">Quantity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {queue.length === 0 ? (
+                <tr>
+                  <td className="is-marker">*</td>
+                  <td className="is-row-no" />
+                  <td />
+                  <td>
+                    <button
+                      type="button"
+                      className="pos-barcode-empty-add"
+                      disabled={products.length === 0}
+                      onClick={() => {
+                        const first = products.find(
+                          (product) => activeBarcodes(product).length > 0,
+                        )
+                        if (first) addProduct(first, 1)
+                      }}
+                    >
+                      Add a product from current search
+                    </button>
+                  </td>
+                  <td />
+                  <td />
+                </tr>
               ) : (
-                products.map((product) => {
-                  const barcodes = activeBarcodes(product)
-                  const primary =
-                    barcodes.find((barcode) => barcode.is_primary) ??
-                    barcodes[0] ??
-                    null
+                queue.map((line, index) => {
+                  const barcode = selectedBarcode(line)
+                  const barcodes = activeBarcodes(line.product)
+                  const isSelected = line.id === selectedQueueId
 
                   return (
-                    <div className="barcode-picker-row" key={product.ulid}>
-                      <span>{product.product_number}</span>
-                      <strong>{product.name}</strong>
-                      <span>{product.category?.name ?? '—'}</span>
-                      <code>{primary?.barcode ?? 'No barcode'}</code>
-                      <button
-                        type="button"
-                        disabled={barcodes.length === 0}
-                        onClick={() => addProduct(product)}
-                      >
-                        <Plus size={13} />
-                        Add
-                      </button>
-                    </div>
+                    <tr
+                      key={line.id}
+                      className={isSelected ? 'is-selected' : undefined}
+                      onClick={() => setSelectedQueueId(line.id)}
+                    >
+                      <td className="is-marker">
+                        {isSelected ? '›' : ''}
+                      </td>
+                      <td className="is-row-no">{index + 1}</td>
+
+                      <td className="is-barcode">
+                        <select
+                          value={line.barcodeUlid}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={(event) =>
+                            changeBarcode(line, event.target.value)
+                          }
+                        >
+                          {barcodes.map((option) => (
+                            <option key={option.ulid} value={option.ulid}>
+                              {option.barcode}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+
+                      <td className="is-product">
+                        <strong>
+                          {line.product.product_number}*
+                          {line.product.name.toUpperCase()}
+                        </strong>
+                      </td>
+
+                      <td className="is-other">
+                        {line.product.alternate_name ?? ''}
+                      </td>
+
+                      <td className="is-quantity">
+                        <input
+                          type="number"
+                          min={1}
+                          max={999}
+                          value={line.quantity}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={(event) =>
+                            updateQuantity(
+                              line.id,
+                              Number(event.target.value),
+                            )
+                          }
+                        />
+                      </td>
+                    </tr>
                   )
                 })
               )}
+
+              <tr className="pos-barcode-new-row">
+                <td className="is-marker">*</td>
+                <td className="is-row-no" />
+                <td>----</td>
+                <td>----</td>
+                <td />
+                <td />
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="pos-barcode-grid-space" />
+
+          <div className="pos-barcode-customization">
+            <div className="pos-barcode-customization-title">
+              Customization
+              <ChevronDown size={12} />
             </div>
-          </section>
+            <button type="button" className="is-minus">-</button>
+            {CUSTOMIZATION_FIELDS.map((field) => (
+              <button
+                type="button"
+                key={field}
+                disabled={!['Barcode', 'DESC.'].includes(field)}
+                title={
+                  ['Barcode', 'DESC.'].includes(field)
+                    ? 'Available'
+                    : 'Requires source data not yet implemented'
+                }
+              >
+                {field}
+              </button>
+            ))}
+          </div>
 
-          <section className="barcode-queue-panel">
-            <div className="barcode-queue-toolbar">
-              <div>
-                <CheckCircle2 size={14} />
-                <strong>Print Queue</strong>
-                <span>
-                  {queue.length} row{queue.length === 1 ? '' : 's'} ·{' '}
-                  {totalLabels} label{totalLabels === 1 ? '' : 's'}
-                </span>
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  disabled={queue.length === 0}
-                  onClick={() => {
-                    setQueue([])
-                    setSelectedQueueId(null)
-                  }}
-                >
-                  <Eraser size={14} />
-                  Clear
-                </button>
-
-                <button
-                  type="button"
-                  className="is-primary"
-                  disabled={queue.length === 0}
-                  onClick={printQueue}
-                >
-                  <Printer size={15} />
-                  Print Queue
-                </button>
-              </div>
+          <div className="pos-barcode-grid-footer">
+            <span>Record {queue.length ? 1 : 0} of {queue.length}</span>
+            <div>
+              <button type="button" onClick={printAll} disabled={!queue.length}>
+                <Printer size={13} />
+                Print All
+              </button>
             </div>
-
-            <div className="barcode-queue-table-wrap">
-              <table className="barcode-queue-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Barcode</th>
-                    <th>Item / Product Description</th>
-                    <th>Other Description</th>
-                    <th>Unit</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {queue.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="barcode-queue-empty">
-                        Add products above to build a barcode print batch.
-                      </td>
-                    </tr>
-                  ) : (
-                    queue.map((line, index) => {
-                      const barcodes = activeBarcodes(line.product)
-                      const barcode = selectedBarcode(line)
-                      const isSelected = line.id === selectedQueueId
-
-                      return (
-                        <tr
-                          key={line.id}
-                          className={isSelected ? 'is-selected' : undefined}
-                          onClick={() => setSelectedQueueId(line.id)}
-                        >
-                          <td className="is-row-number">{index + 1}</td>
-
-                          <td>
-                            <select
-                              value={line.barcodeUlid}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                changeBarcode(line, event.target.value)
-                              }
-                            >
-                              {barcodes.map((option) => (
-                                <option key={option.ulid} value={option.ulid}>
-                                  {option.barcode}
-                                  {option.is_primary ? ' · Primary' : ''}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-
-                          <td>
-                            <strong>{line.product.name}</strong>
-                            <small>{line.product.product_number}</small>
-                          </td>
-
-                          <td>
-                            {line.product.alternate_name?.trim() || '—'}
-                          </td>
-
-                          <td>{barcode?.unit?.code ?? '—'}</td>
-
-                          <td>
-                            {priceField === 'none'
-                              ? '—'
-                              : Number(
-                                  priceFor(line.product, priceField) || 0,
-                                ).toFixed(2)}
-                          </td>
-
-                          <td className="is-quantity">
-                            <input
-                              type="number"
-                              min={1}
-                              max={999}
-                              value={line.quantity}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                updateQuantity(
-                                  line.id,
-                                  Number(event.target.value),
-                                )
-                              }
-                            />
-                          </td>
-
-                          <td className="is-action">
-                            <button
-                              type="button"
-                              title="Remove row"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                removeLine(line.id)
-                              }}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </td>
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <footer className="barcode-page-footer-note">
-            <span>
-              Printer mode: <strong>System Print Dialog</strong>
-            </span>
-            <span>
-              Direct silent printing requires a future local BluePOS Print
-              Bridge.
-            </span>
-          </footer>
-        </main>
-      </div>
+          </div>
+        </section>
+      </main>
     </div>
   )
 }
