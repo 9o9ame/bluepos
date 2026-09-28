@@ -1,817 +1,658 @@
-.pos-barcode-reference {
-  position: relative;
+/*
+ * Barcode Printing — desktop POS workspace
+ * Prioritizes desktop fidelity: min-width + horizontal scroll (no squeeze).
+ */
+
+.bp-workspace-scroll {
   height: 100%;
   min-height: 0;
-  display: grid;
-  grid-template-columns: 382px minmax(0, 1fr);
-  overflow: hidden;
-  background: #dcdcdc;
-  color: #151515;
-  font-family: Tahoma, Arial, sans-serif;
-  font-size: 10px;
+  overflow: auto;
+  background: #cfcfcf;
 }
 
-.pos-barcode-error {
+.bp-workspace {
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 420px minmax(0, 1fr);
+  gap: 8px;
+  width: max(100%, 1500px);
+  min-width: 1500px;
+  min-height: 100%;
+  padding: 8px;
+  color: #151515;
+  font-family: Tahoma, Arial, "Segoe UI", sans-serif;
+  font-size: 11px;
+}
+
+.bp-error {
   position: absolute;
-  z-index: 50;
-  left: 390px;
-  right: 8px;
-  top: 5px;
-  min-height: 25px;
-  padding: 5px 8px;
+  z-index: 20;
+  top: 10px;
+  left: 436px;
+  right: 16px;
+  min-height: 28px;
+  padding: 6px 10px;
   border: 1px solid #c67070;
+  border-radius: 3px;
   background: #fff0f0;
   color: #8d1717;
   font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
-.pos-barcode-left {
-  min-height: 0;
+/* ---------- Shared panel chrome ---------- */
+
+.bp-panel {
+  border: 1px solid #9a9a9a;
+  border-radius: 3px;
+  background: #ececec;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  padding: 7px 6px 6px;
-  border-right: 1px solid #8f8f8f;
-  background: #eeeeee;
 }
 
-.pos-barcode-box {
-  border: 1px solid #ababab;
-  background: #e7e7e7;
-}
-
-.pos-barcode-box-title {
-  height: 22px;
+.bp-panel-title {
   display: flex;
   align-items: center;
-  padding: 0 8px;
-  border-bottom: 1px solid #b2b2b2;
-  background: linear-gradient(#dfdfdf, #cccccc);
-  font-size: 11px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-bottom: 1px solid #b0b0b0;
+  background: linear-gradient(#f2f2f2, #d8d8d8);
+  font-size: 12px;
   font-weight: 800;
+  color: #1a1a1a;
 }
 
-.pos-barcode-settings {
-  padding-bottom: 6px;
+.bp-panel-body {
+  display: grid;
+  gap: 8px;
+  padding: 8px 10px 10px;
 }
 
-.pos-barcode-field {
-  display: block;
-  margin: 5px 10px 0;
+.bp-field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
 }
 
-.pos-barcode-field > span {
-  display: block;
-  margin-bottom: 2px;
+.bp-field > span,
+.bp-label {
   font-weight: 700;
-}
-
-.pos-barcode-field input,
-.pos-barcode-field select,
-.pos-barcode-printer-select,
-.pos-barcode-margin-box input,
-.pos-barcode-purchase-row input,
-.pos-barcode-style-row select,
-.pos-barcode-autofill input,
-.pos-barcode-autofill select,
-.pos-barcode-grid select,
-.pos-barcode-grid input {
-  box-sizing: border-box;
-  height: 24px;
-  border: 1px solid #8f9ca7;
-  background: #fff;
-  color: #111;
-  padding: 2px 5px;
-  font: inherit;
-}
-
-.pos-barcode-field input,
-.pos-barcode-field select {
-  width: 100%;
-}
-
-.pos-barcode-price-row {
-  position: relative;
-}
-
-.pos-barcode-old-price {
-  position: absolute;
-  right: 12px;
-  bottom: 4px;
-}
-
-.pos-barcode-price-row .pos-barcode-field select {
-  padding-right: 90px;
-}
-
-.pos-barcode-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
   white-space: nowrap;
 }
 
-.pos-barcode-check input {
-  width: 13px;
-  height: 13px;
-  margin: 0;
+.bp-field-grow {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.pos-barcode-margin-box {
-  margin: 5px 10px 0;
-  padding: 6px 7px 7px;
-  border: 1px solid #b7b7b7;
+.bp-control-full,
+.bp-field input,
+.bp-field select,
+.bp-inline-field input,
+.bp-style-row select,
+.bp-row input,
+.bp-row select,
+.bp-purchase-row input,
+.bp-grid select,
+.bp-grid input {
+  box-sizing: border-box;
+  height: 26px;
+  border: 1px solid #8f9ca7;
+  border-radius: 2px;
+  background: #fff;
+  color: #111;
+  padding: 2px 6px;
+  font: inherit;
 }
 
-.pos-barcode-margin-box legend {
-  padding: 0 4px;
-  font-weight: 700;
-}
-
-.pos-barcode-margin-box {
-  display: grid;
-  grid-template-columns: 1fr 1.35fr;
-  gap: 5px 8px;
-}
-
-.pos-barcode-margin-box label {
-  display: grid;
-  grid-template-columns: 55px minmax(0, 1fr);
-  align-items: center;
-  gap: 4px;
-}
-
-.pos-barcode-margin-box input {
+.bp-field input,
+.bp-field select,
+.bp-control-full {
   width: 100%;
-  height: 22px;
 }
 
-.pos-barcode-sample-row {
-  grid-column: 1 / -1;
-  grid-template-columns: 95px minmax(0, 1fr) !important;
-}
-
-.pos-barcode-printer-title {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 66px auto;
+.bp-check {
+  display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin: 5px 10px 0;
-}
-
-.pos-barcode-printer-title > span {
+  white-space: nowrap;
   font-weight: 700;
 }
 
-.pos-barcode-printer-title button {
-  height: 22px;
-  border: 1px solid #6d9aa5;
-  background: #b8f1ef;
-  font: inherit;
-  cursor: pointer;
+.bp-check input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  flex: 0 0 auto;
 }
 
-.pos-barcode-printer-select {
-  width: calc(100% - 20px);
-  margin: 3px 10px 0;
-}
-
-.pos-barcode-extra-options {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 5px 12px;
-  margin: 6px 10px 0;
-}
-
-.pos-barcode-purchase-row {
-  display: grid;
-  grid-template-columns: auto 62px 44px;
-  align-items: center;
-  gap: 4px;
-}
-
-.pos-barcode-purchase-row input {
-  width: 62px;
-  height: 22px;
-}
-
-.pos-barcode-purchase-row button {
-  height: 22px;
+.bp-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  border: 1px solid #929da5;
-  background: #ececec;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid #8a959e;
+  border-radius: 3px;
+  background: linear-gradient(#ffffff, #dedede);
+  color: #151515;
   font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 #fff;
 }
 
-.pos-barcode-preview-box {
-  height: 222px;
-  margin: 6px 10px 0;
-  border: 1px solid #9d9d9d;
-  background: #fff;
-  padding: 5px;
+.bp-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-.pos-barcode-preview-paper {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
+.bp-btn-calibrate {
+  min-width: 78px;
+  background: linear-gradient(#d9f7f6, #a8e8e6);
+  border-color: #6d9aa5;
+}
+
+.bp-btn-icon {
+  width: 28px;
+  min-width: 28px;
+  padding: 0;
+}
+
+.bp-btn-card {
+  min-width: 110px;
+  height: 30px;
+  border-radius: 6px;
+  margin-left: auto;
+}
+
+.bp-btn-print-all {
+  min-width: 100px;
+  height: 28px;
+}
+
+/* ---------- Left column ---------- */
+
+.bp-left {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  text-align: center;
+  gap: 8px;
+  min-width: 420px;
+  width: 420px;
 }
 
-.pos-barcode-preview-svg {
-  height: 174px;
+.bp-price-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.bp-check-old-price {
+  flex: 0 0 auto;
+  padding-bottom: 5px;
+}
+
+.bp-margin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.bp-inline-field {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bp-inline-field > span {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.bp-inline-field input {
+  width: 100%;
+}
+
+.bp-inline-wide {
+  grid-column: 1 / -1;
+  grid-template-columns: 88px minmax(0, 1fr);
+}
+
+.bp-printer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.bp-printer-row > span {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.bp-extra-options {
+  display: grid;
+  gap: 6px;
+}
+
+.bp-purchase-row {
+  display: grid;
+  grid-template-columns: auto 90px 56px;
+  align-items: center;
+  gap: 6px;
+}
+
+.bp-purchase-row input {
+  width: 90px;
+}
+
+.bp-preview-panel {
+  flex: 0 0 auto;
+}
+
+.bp-preview-body {
+  padding: 8px 10px 10px;
+}
+
+.bp-preview-paper {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 160px;
+  padding: 10px;
+  border: 1px solid #9d9d9d;
+  border-radius: 2px;
+  background: #fff;
+  text-align: center;
+  box-shadow: inset 0 0 0 1px #f3f3f3;
+}
+
+.bp-preview-svg {
+  width: 100%;
+  height: 110px;
   overflow: hidden;
 }
 
-.pos-barcode-preview-svg svg {
+.bp-preview-svg svg {
   display: block;
   width: 100%;
   height: 100%;
   shape-rendering: crispEdges;
 }
 
-.pos-barcode-preview-paper code {
-  margin-top: -2px;
-  color: #000;
-  font-size: 10px;
-}
-
-.pos-barcode-preview-paper strong {
-  margin-top: 2px;
-  color: #000;
-  font-size: 12px;
-}
-
-.pos-barcode-preview-empty {
-  height: 174px;
+.bp-preview-empty {
   display: grid;
   place-items: center;
+  width: 100%;
+  height: 110px;
   color: #777;
-}
-
-.pos-barcode-style-row {
-  margin: 5px 10px 0;
-}
-
-.pos-barcode-style-row > span {
-  display: block;
-  margin-bottom: 2px;
   font-weight: 700;
 }
 
-.pos-barcode-style-row > div {
+.bp-preview-paper code {
+  font-size: 11px;
+  color: #000;
+}
+
+.bp-preview-paper strong {
+  font-size: 13px;
+  color: #000;
+}
+
+.bp-style-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 24px;
+  grid-template-columns: minmax(0, 1fr) 28px;
+  gap: 6px;
+  align-items: center;
 }
 
-.pos-barcode-style-row select {
-  width: 100%;
-}
-
-.pos-barcode-style-row button {
-  border: 1px solid #8e9aa4;
-  background: linear-gradient(#e6f0f6, #bccdd8);
-  padding: 0;
-}
-
-.pos-barcode-left-actions {
+.bp-left-actions {
   display: grid;
-  grid-template-columns: 82px minmax(115px, 1fr) 82px;
-  gap: 10px;
-  margin: 8px 10px 0;
+  grid-template-columns: 1fr 1.35fr 1fr;
+  gap: 8px;
+  margin-top: 2px;
 }
 
-.pos-barcode-left-actions button {
-  height: 35px;
+.bp-action-btn {
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  border: 1px solid #969696;
-  border-radius: 7px;
-  background: linear-gradient(#fff, #e6e6e6);
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #8f8f8f;
+  border-radius: 6px;
+  background: linear-gradient(#ffffff, #e2e2e2);
   color: #151515;
   font: inherit;
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer;
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
-.pos-barcode-left-actions button:disabled {
-  opacity: .5;
+.bp-action-btn:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.pos-barcode-right {
+.bp-action-primary {
+  background: linear-gradient(#ffffff, #d7e8f6);
+  border-color: #7a9bb5;
+}
+
+/* ---------- Right column ---------- */
+
+.bp-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   min-width: 0;
-  min-height: 0;
-  display: grid;
-  grid-template-rows: 92px minmax(0, 1fr);
-  overflow: hidden;
-  padding: 7px 7px 6px 0;
-  background: #efefef;
+  min-height: 640px;
 }
 
-.pos-barcode-autofill {
-  border: 1px solid #ababab;
-  background: #e9e9e9;
+.bp-autofill .bp-panel-body {
+  gap: 10px;
 }
 
-.pos-barcode-autofill-title {
-  height: 20px;
+.bp-row {
   display: flex;
   align-items: center;
-  padding: 0 7px;
-  font-weight: 800;
-}
-
-.pos-barcode-autofill-row1,
-.pos-barcode-autofill-row2,
-.pos-barcode-autofill-row3 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  gap: 10px;
   min-width: 0;
-  padding: 0 7px;
+  flex-wrap: nowrap;
 }
 
-.pos-barcode-autofill-row1 {
-  height: 19px;
+.bp-row-checks {
+  gap: 18px;
 }
 
-.pos-barcode-autofill-row2 {
-  height: 26px;
+.bp-row-range .bp-w-code {
+  width: 110px;
+  flex: 0 0 110px;
 }
 
-.pos-barcode-autofill-row3 {
-  height: 26px;
+.bp-row-range .bp-w-range {
+  width: 90px;
+  flex: 0 0 90px;
 }
 
-.pos-barcode-autofill-row2 > select {
-  width: 105px;
+.bp-row-range .bp-w-mf {
+  width: 56px;
+  flex: 0 0 56px;
 }
 
-.pos-barcode-autofill-row2 > input {
-  width: 74px;
-}
-
-.pos-barcode-autofill-row2 .pos-barcode-mf {
-  width: 42px;
-}
-
-.pos-barcode-autofill-row2 > button,
-.pos-barcode-autofill-row3 > button {
-  height: 23px;
+.bp-select-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 3px;
-  border: 1px solid #909ba3;
-  background: linear-gradient(#fff, #dedede);
+  gap: 8px;
+  min-width: 168px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid #8a959e;
+  border-radius: 3px;
+  background: linear-gradient(#ffffff, #dedede);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 #fff;
 }
 
-.pos-barcode-card-print {
-  margin-left: auto;
-  min-width: 105px;
-  height: 28px !important;
-  border-radius: 9px !important;
+.bp-select-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-.pos-barcode-color-grid {
-  width: 22px;
-  height: 17px;
+.bp-color-chip {
+  width: 24px;
+  height: 18px;
+  flex: 0 0 24px;
   border: 1px solid #777;
-  background:
-    linear-gradient(90deg, #db6b42 0 25%, #f5c25b 25% 50%, #63a86a 50% 75%, #5e8fbe 75%);
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    #db6b42 0 25%,
+    #f5c25b 25% 50%,
+    #63a86a 50% 75%,
+    #5e8fbe 75%
+  );
 }
 
-.pos-barcode-color-grid.is-green {
-  background:
-    linear-gradient(90deg, #58a65b 0 50%, #efcf5c 50%);
+.bp-color-chip.is-green {
+  background: linear-gradient(90deg, #58a65b 0 50%, #efcf5c 50%);
 }
 
-.pos-barcode-color-grid.is-orange {
-  background:
-    linear-gradient(90deg, #e38449 0 50%, #5fa568 50%);
+.bp-color-chip.is-orange {
+  background: linear-gradient(90deg, #e38449 0 50%, #5fa568 50%);
 }
 
-.pos-barcode-search-label {
-  margin-left: 5px;
-  font-weight: 700;
+.bp-row-search .bp-w-search {
+  width: 240px;
+  flex: 0 0 240px;
 }
 
-.pos-barcode-search {
-  width: 190px;
+.bp-row-search .bp-w-filter {
+  width: 170px;
+  flex: 0 0 170px;
 }
 
-.pos-barcode-hidden-filter {
-  width: 128px;
-}
+/* ---------- Product grid ---------- */
 
-.pos-barcode-grid-shell {
-  position: relative;
-  min-height: 0;
+.bp-grid-shell {
   display: flex;
   flex-direction: column;
-  border: 1px solid #969696;
-  border-top: 0;
+  flex: 1 1 auto;
+  min-height: 420px;
+  border: 1px solid #9a9a9a;
+  border-radius: 3px;
   background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }
 
-.pos-barcode-grid {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  font-size: 10px;
-}
-
-.pos-barcode-grid th {
-  height: 30px;
-  border-right: 1px solid #8c8c8c;
-  border-bottom: 1px solid #777;
-  background: linear-gradient(#dedede, #c9c9c9);
-  padding: 0 5px;
-  text-align: center;
-  font-weight: 900;
-}
-
-.pos-barcode-grid th.is-marker { width: 20px; }
-.pos-barcode-grid th.is-row-no { width: 38px; }
-.pos-barcode-grid th.is-barcode { width: 140px; }
-.pos-barcode-grid th.is-other { width: 270px; }
-.pos-barcode-grid th.is-quantity { width: 118px; }
-
-.pos-barcode-grid td {
-  height: 27px;
-  border-right: 1px solid #c2c2c2;
-  border-bottom: 1px solid #c7c7c7;
-  padding: 2px 5px;
+.bp-grid-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
   background: #fff;
 }
 
-.pos-barcode-grid tbody tr.is-selected td {
+.bp-grid {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 11px;
+}
+
+.bp-grid th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 32px;
+  padding: 0 8px;
+  border-right: 1px solid #8c8c8c;
+  border-bottom: 1px solid #777;
+  background: linear-gradient(#e8e8e8, #cfcfcf);
+  text-align: center;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.bp-grid th.is-marker { width: 28px; }
+.bp-grid th.is-row-no { width: 44px; }
+.bp-grid th.is-barcode { width: 160px; }
+.bp-grid th.is-product { width: auto; }
+.bp-grid th.is-other { width: 280px; }
+.bp-grid th.is-quantity { width: 110px; }
+
+.bp-grid td {
+  height: 28px;
+  padding: 2px 8px;
+  border-right: 1px solid #c8c8c8;
+  border-bottom: 1px solid #d0d0d0;
+  background: #fff;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bp-grid tbody tr.is-selected td {
   background: #6e91d1;
   color: #fff;
 }
 
-.pos-barcode-grid td.is-marker,
-.pos-barcode-grid td.is-row-no,
-.pos-barcode-grid td.is-quantity {
+.bp-grid td.is-marker,
+.bp-grid td.is-row-no,
+.bp-grid td.is-quantity {
   text-align: center;
 }
 
-.pos-barcode-grid td.is-barcode select {
+.bp-grid td.is-barcode select {
   width: 100%;
-  height: 22px;
+  height: 24px;
   border: 0;
   background: transparent;
   color: inherit;
 }
 
-.pos-barcode-grid td.is-product strong {
-  font-size: 10px;
+.bp-grid td.is-product strong {
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.pos-barcode-grid td.is-quantity input {
-  width: 66px;
-  height: 22px;
+.bp-grid td.is-quantity input {
+  width: 72px;
+  height: 24px;
   text-align: center;
 }
 
-.pos-barcode-new-row td {
-  color: #444;
+.bp-new-row td {
+  color: #666;
 }
 
-.pos-barcode-empty-add {
+.bp-empty-add {
   border: 0;
   background: transparent;
   color: #3f5d8c;
   font: inherit;
+  font-weight: 700;
   cursor: pointer;
+  white-space: nowrap;
 }
 
-.pos-barcode-grid-space {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-
-.pos-barcode-grid-footer {
-  height: 25px;
-  flex: 0 0 25px;
+.bp-grid-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 5px;
+  gap: 12px;
+  flex: 0 0 34px;
+  height: 34px;
+  padding: 0 10px;
   border-top: 1px solid #9c9c9c;
-  background: #e2e2e2;
-}
-
-.pos-barcode-grid-footer button {
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid #7d8a94;
-  background: linear-gradient(#fff, #dadada);
-  font: inherit;
+  background: linear-gradient(#efefef, #d8d8d8);
   font-weight: 700;
 }
 
-/* Dark theme */
-:root[data-theme='dark'] .pos-barcode-reference {
-  background: #151a1f;
+/* ---------- Dark theme ---------- */
+
+:root[data-theme='dark'] .bp-workspace-scroll {
+  background: #12171b;
+}
+
+:root[data-theme='dark'] .bp-workspace {
   color: #e9eef2;
 }
 
-:root[data-theme='dark'] .pos-barcode-left,
-:root[data-theme='dark'] .pos-barcode-right {
-  background: #181e23;
-}
-
-:root[data-theme='dark'] .pos-barcode-box,
-:root[data-theme='dark'] .pos-barcode-autofill {
+:root[data-theme='dark'] .bp-panel,
+:root[data-theme='dark'] .bp-grid-shell {
   border-color: #4b565f;
   background: #20272d;
+  box-shadow: none;
 }
 
-:root[data-theme='dark'] .pos-barcode-box-title,
-:root[data-theme='dark'] .pos-barcode-autofill-title,
-:root[data-theme='dark'] .pos-barcode-grid-footer {
+:root[data-theme='dark'] .bp-panel-title,
+:root[data-theme='dark'] .bp-grid-footer {
   border-color: #4b565f;
   background: linear-gradient(#303941, #252c32);
   color: #edf2f6;
 }
 
-:root[data-theme='dark'] .pos-barcode-field input,
-:root[data-theme='dark'] .pos-barcode-field select,
-:root[data-theme='dark'] .pos-barcode-printer-select,
-:root[data-theme='dark'] .pos-barcode-margin-box input,
-:root[data-theme='dark'] .pos-barcode-purchase-row input,
-:root[data-theme='dark'] .pos-barcode-style-row select,
-:root[data-theme='dark'] .pos-barcode-autofill input,
-:root[data-theme='dark'] .pos-barcode-autofill select,
-:root[data-theme='dark'] .pos-barcode-grid select,
-:root[data-theme='dark'] .pos-barcode-grid input {
+:root[data-theme='dark'] .bp-control-full,
+:root[data-theme='dark'] .bp-field input,
+:root[data-theme='dark'] .bp-field select,
+:root[data-theme='dark'] .bp-inline-field input,
+:root[data-theme='dark'] .bp-style-row select,
+:root[data-theme='dark'] .bp-row input,
+:root[data-theme='dark'] .bp-row select,
+:root[data-theme='dark'] .bp-purchase-row input,
+:root[data-theme='dark'] .bp-grid select,
+:root[data-theme='dark'] .bp-grid input {
   border-color: #59656f;
   background: #141a1f;
   color: #edf2f6;
 }
 
-:root[data-theme='dark'] .pos-barcode-margin-box {
-  border-color: #46515a;
+:root[data-theme='dark'] .bp-preview-paper {
+  border-color: #4b565f;
+  background: #161c21;
 }
 
-:root[data-theme='dark'] .pos-barcode-grid-shell {
-  border-color: #45515b;
+:root[data-theme='dark'] .bp-preview-paper code,
+:root[data-theme='dark'] .bp-preview-paper strong {
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .bp-btn,
+:root[data-theme='dark'] .bp-select-btn,
+:root[data-theme='dark'] .bp-action-btn {
+  border-color: #56636d;
+  background: linear-gradient(#343d45, #293138);
+  color: #edf2f6;
+  box-shadow: none;
+}
+
+:root[data-theme='dark'] .bp-action-primary {
+  background: linear-gradient(#3a4f5f, #2a3a48);
+  border-color: #5a7a94;
+}
+
+:root[data-theme='dark'] .bp-grid-scroll {
   background: #12171b;
 }
 
-:root[data-theme='dark'] .pos-barcode-grid th {
+:root[data-theme='dark'] .bp-grid th {
   border-color: #46525c;
   background: linear-gradient(#303941, #252c32);
   color: #edf2f6;
 }
 
-:root[data-theme='dark'] .pos-barcode-grid td {
+:root[data-theme='dark'] .bp-grid td {
   border-color: #303940;
   background: #161c21;
   color: #e6ebef;
 }
 
-:root[data-theme='dark'] .pos-barcode-grid tbody tr.is-selected td {
+:root[data-theme='dark'] .bp-grid tbody tr.is-selected td {
   background: #285274;
 }
 
-
-:root[data-theme='dark'] .pos-barcode-left-actions button,
-:root[data-theme='dark'] .pos-barcode-autofill-row2 > button,
-:root[data-theme='dark'] .pos-barcode-autofill-row3 > button,
-:root[data-theme='dark'] .pos-barcode-grid-footer button {
-  border-color: #56636d;
-  background: linear-gradient(#343d45, #293138);
-  color: #edf2f6;
+:root[data-theme='dark'] .bp-empty-add {
+  color: #8fc7ff;
 }
 
-
-/* ==========================================================================
-   F1.8 — Preview visibility + remove customization overlay
-   The left panel is now a fixed 4-row layout:
-   settings / live barcode / style / actions.
-   No internal scrollbar is required.
-   ========================================================================== */
-
-.pos-barcode-left {
-  display: grid;
-  grid-template-rows: auto minmax(132px, 1fr) 33px 35px;
-  gap: 4px;
-  align-content: stretch;
-  overflow: hidden;
-  padding: 5px 6px;
-}
-
-.pos-barcode-settings {
-  min-height: 0;
-  padding-bottom: 4px;
-}
-
-.pos-barcode-box-title {
-  height: 19px;
-  padding: 0 7px;
-  font-size: 10px;
-}
-
-.pos-barcode-field {
-  margin: 2px 9px 0;
-}
-
-.pos-barcode-field > span {
-  margin-bottom: 1px;
-  font-size: 9px;
-  line-height: 1.05;
-}
-
-.pos-barcode-field input,
-.pos-barcode-field select,
-.pos-barcode-printer-select,
-.pos-barcode-margin-box input,
-.pos-barcode-purchase-row input,
-.pos-barcode-style-row select {
-  height: 20px;
-  padding: 1px 4px;
-  font-size: 9px;
-}
-
-.pos-barcode-old-price {
-  right: 10px;
-  bottom: 2px;
-  font-size: 8px;
-}
-
-.pos-barcode-price-row .pos-barcode-field select {
-  padding-right: 82px;
-}
-
-.pos-barcode-margin-box {
-  margin: 3px 9px 0;
-  padding: 3px 6px 4px;
-  gap: 3px 7px;
-}
-
-.pos-barcode-margin-box legend {
-  font-size: 9px;
-}
-
-.pos-barcode-margin-box label {
-  grid-template-columns: 50px minmax(0, 1fr);
-  gap: 3px;
-  font-size: 8px;
-}
-
-.pos-barcode-margin-box input {
-  height: 19px;
-}
-
-.pos-barcode-sample-row {
-  grid-template-columns: 82px minmax(0, 1fr) !important;
-}
-
-.pos-barcode-printer-title {
-  grid-template-columns: minmax(0, 1fr) 62px auto;
-  gap: 4px;
-  margin: 3px 9px 0;
-  font-size: 8px;
-}
-
-.pos-barcode-printer-title button {
-  height: 19px;
-  font-size: 8px;
-}
-
-.pos-barcode-printer-select {
-  width: calc(100% - 18px);
-  height: 20px;
-  margin: 2px 9px 0;
-}
-
-.pos-barcode-extra-options {
-  gap: 2px 9px;
-  margin: 3px 9px 0;
-  font-size: 8px;
-  line-height: 1.05;
-}
-
-.pos-barcode-extra-options .pos-barcode-check {
-  gap: 3px;
-}
-
-.pos-barcode-extra-options .pos-barcode-check input {
-  width: 11px;
-  height: 11px;
-}
-
-.pos-barcode-purchase-row {
-  grid-template-columns: auto 54px 39px;
-  gap: 3px;
-}
-
-.pos-barcode-purchase-row input {
-  width: 54px;
-  height: 19px;
-}
-
-.pos-barcode-purchase-row button {
-  height: 19px;
-  font-size: 8px;
-}
-
-.pos-barcode-preview-box {
-  width: auto;
-  height: auto;
-  min-height: 132px;
-  margin: 0 9px;
-  padding: 4px;
-  overflow: hidden;
-}
-
-.pos-barcode-preview-paper {
-  height: 100%;
-  min-height: 0;
-  justify-content: flex-start;
-}
-
-.pos-barcode-preview-svg {
-  flex: 1 1 auto;
-  width: 100%;
-  height: auto;
-  min-height: 96px;
-  max-height: none;
-  margin-top: 1px;
-}
-
-.pos-barcode-preview-paper code {
-  flex: 0 0 auto;
-  margin-top: 1px;
-  font-size: 9px;
-}
-
-.pos-barcode-preview-paper strong {
-  flex: 0 0 auto;
-  margin-top: 1px;
-  font-size: 10px;
-}
-
-.pos-barcode-preview-empty {
-  flex: 1 1 auto;
-  height: auto;
-  min-height: 96px;
-}
-
-.pos-barcode-style-row {
-  align-self: stretch;
-  margin: 0 9px;
-}
-
-.pos-barcode-style-row > span {
-  margin-bottom: 1px;
-  font-size: 8px;
-  line-height: 1;
-}
-
-.pos-barcode-style-row > div {
-  height: 21px;
-}
-
-.pos-barcode-style-row select {
-  height: 21px;
-}
-
-.pos-barcode-left-actions {
-  align-self: stretch;
-  grid-template-columns: 76px minmax(108px, 1fr) 76px;
-  gap: 7px;
-  margin: 0 9px;
-}
-
-.pos-barcode-left-actions button {
-  height: 33px;
-  border-radius: 5px;
-  font-size: 8px;
-}
-
-/* The main grid now remains completely unobstructed. */
-.pos-barcode-grid-shell {
-  position: relative;
-}
-
-.pos-barcode-grid-space {
-  flex: 1 1 auto;
-  min-height: 0;
+:root[data-theme='dark'] .bp-error {
+  border-color: #8e4a4a;
+  background: #4a2525;
+  color: #ffb8b8;
 }

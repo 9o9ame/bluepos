@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Barcode,
   CreditCard,
   Plus,
   Printer,
@@ -19,7 +18,6 @@ import {
 } from '../api/catalog'
 import {
   barcodeSvg,
-  getBarcodeLabelSizeOptions,
   loadBarcodePrintSettings,
   printBarcodeBatch,
   printBarcodeLabels,
@@ -42,7 +40,6 @@ type PrintQueueLine = {
   barcodeUlid: string
   quantity: number
 }
-
 
 function activeBarcodes(product: Product): ProductBarcode[] {
   return (product.barcodes ?? []).filter(
@@ -112,7 +109,7 @@ export function BarcodePrintingPage() {
   const [displayField, setDisplayField] = useState<DisplayField>('name')
   const [priceField, setPriceField] = useState<PriceField>('retail')
   const [printString, setPrintString] = useState('[PRODUCT_NAME]')
-  const [labelSize, setLabelSize] = useState<BarcodeLabelSize>(
+  const [labelSize] = useState<BarcodeLabelSize>(
     remembered.labelSize,
   )
   const [printStyle, setPrintStyle] = useState<BarcodePrintStyle>(
@@ -415,480 +412,539 @@ export function BarcodePrintingPage() {
   })
 
   return (
-    <div className="pos-barcode-reference">
-      {error ? <div className="pos-barcode-error">{error}</div> : null}
+    <div className="bp-workspace-scroll">
+      <div className="bp-workspace">
+        {error ? <div className="bp-error">{error}</div> : null}
 
-      <aside className="pos-barcode-left">
-        <section className="pos-barcode-box pos-barcode-settings">
-          <div className="pos-barcode-box-title">Barcode Settings</div>
+        <aside className="bp-left">
+          <section className="bp-panel">
+            <header className="bp-panel-title">Barcode Settings</header>
+            <div className="bp-panel-body">
+              <label className="bp-field">
+                <span>Barcode Print String: (Use | ColName | For Parse)</span>
+                <input
+                  value={printString}
+                  onChange={(event) => setPrintString(event.target.value)}
+                />
+              </label>
 
-          <label className="pos-barcode-field pos-barcode-string">
-            <span>Barcode Print String: (Use | ColName | For Parse)</span>
-            <input
-              value={printString}
-              onChange={(event) => setPrintString(event.target.value)}
-            />
-          </label>
+              <label className="bp-field">
+                <span>Select Barcode Type:</span>
+                <select
+                  value={barcodeType}
+                  onChange={(event) =>
+                    setBarcodeType(event.target.value as BarcodeType)
+                  }
+                >
+                  <option value="CODE128">Code128</option>
+                  <option value="CODE39">Code39</option>
+                </select>
+              </label>
 
-          <label className="pos-barcode-field">
-            <span>Select Barcode Type:</span>
-            <select
-              value={barcodeType}
-              onChange={(event) =>
-                setBarcodeType(event.target.value as BarcodeType)
-              }
-            >
-              <option value="CODE128">Code128</option>
-              <option value="CODE39">Code39</option>
-            </select>
-          </label>
+              <label className="bp-field">
+                <span>Field to Display:</span>
+                <select
+                  value={displayField}
+                  onChange={(event) =>
+                    setDisplayField(event.target.value as DisplayField)
+                  }
+                >
+                  <option value="name">PRODUCT NAME</option>
+                  <option value="alternate_name">ALTERNATE DESC</option>
+                  <option value="product_number">PRODUCT #</option>
+                  <option value="sku">SKU / CODE</option>
+                </select>
+              </label>
 
-          <label className="pos-barcode-field">
-            <span>Field to Display:</span>
-            <select
-              value={displayField}
-              onChange={(event) =>
-                setDisplayField(event.target.value as DisplayField)
-              }
-            >
-              <option value="name">PRODUCT NAME</option>
-              <option value="alternate_name">ALTERNATE DESC</option>
-              <option value="product_number">PRODUCT #</option>
-              <option value="sku">SKU / CODE</option>
-            </select>
-          </label>
+              <div className="bp-price-row">
+                <label className="bp-field bp-field-grow">
+                  <span>Price Field:</span>
+                  <select
+                    value={priceField}
+                    onChange={(event) =>
+                      setPriceField(event.target.value as PriceField)
+                    }
+                  >
+                    <option value="retail">SUB SELLING PRICE</option>
+                    <option value="wholesale">WHOLESALE PRICE</option>
+                    <option value="minimum_sale">MIN SALE PRICE</option>
+                    <option value="none">NO PRICE</option>
+                  </select>
+                </label>
 
-          <div className="pos-barcode-price-row">
-            <label className="pos-barcode-field">
-              <span>Price Field:</span>
+                <label className="bp-check bp-check-old-price">
+                  <input type="checkbox" disabled />
+                  <span>Show Old Price</span>
+                </label>
+              </div>
+
+              <label className="bp-check">
+                <input
+                  type="checkbox"
+                  checked={showPrice}
+                  onChange={(event) => setShowPrice(event.target.checked)}
+                />
+                <span>Show Price on Label</span>
+              </label>
+            </div>
+          </section>
+
+          <section className="bp-panel">
+            <header className="bp-panel-title">Margin Settings</header>
+            <div className="bp-panel-body bp-margin-grid">
+              <label className="bp-inline-field">
+                <span>Left:</span>
+                <input
+                  type="number"
+                  step={0.5}
+                  value={marginLeftMm}
+                  onChange={(event) =>
+                    setMarginLeftMm(Number(event.target.value))
+                  }
+                />
+              </label>
+
+              <label className="bp-inline-field">
+                <span>Top:</span>
+                <input
+                  type="number"
+                  step={0.5}
+                  value={marginTopMm}
+                  onChange={(event) =>
+                    setMarginTopMm(Number(event.target.value))
+                  }
+                />
+              </label>
+
+              <label className="bp-inline-field">
+                <span>Scale Factor:</span>
+                <input
+                  type="number"
+                  step={0.05}
+                  min={0.7}
+                  max={1.3}
+                  value={scaleFactor}
+                  onChange={(event) =>
+                    setScaleFactor(Number(event.target.value))
+                  }
+                />
+              </label>
+
+              <label className="bp-inline-field bp-inline-wide">
+                <span>Sample:</span>
+                <input
+                  value={previewBarcode?.barcode ?? '1105000'}
+                  readOnly
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="bp-panel">
+            <header className="bp-panel-title">Printer / Calibration</header>
+            <div className="bp-panel-body">
+              <div className="bp-printer-row">
+                <span>On Following Printer</span>
+                <button type="button" className="bp-btn bp-btn-calibrate" onClick={calibrate}>
+                  Calibrate
+                </button>
+                <label className="bp-check">
+                  <input type="checkbox" disabled />
+                  <span>Computer Based</span>
+                </label>
+              </div>
+
+              <select className="bp-control-full" value="system" disabled>
+                <option value="system">System Print Dialog</option>
+              </select>
+
+              <div className="bp-extra-options">
+                <label className="bp-check">
+                  <input type="checkbox" disabled />
+                  <span>Use Invoice Batch / Serial for Barcode Printing</span>
+                </label>
+
+                <label className="bp-check">
+                  <input type="checkbox" checked readOnly />
+                  <span>Auto Module</span>
+                </label>
+
+                <label className="bp-check">
+                  <input type="checkbox" disabled />
+                  <span>Direct Print to Printer</span>
+                </label>
+
+                <div className="bp-purchase-row">
+                  <span>From Purchase ID:</span>
+                  <input disabled />
+                  <button type="button" className="bp-btn" disabled>
+                    <RefreshCw size={12} />
+                    Get
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="bp-panel bp-preview-panel">
+            <header className="bp-panel-title">Live Barcode Preview</header>
+            <div className="bp-preview-body">
+              <div className="bp-preview-paper">
+                {previewBarcode ? (
+                  <div
+                    className="bp-preview-svg"
+                    dangerouslySetInnerHTML={{
+                      __html: barcodeSvg(
+                        previewBarcode.barcode,
+                        barcodeType,
+                      ),
+                    }}
+                  />
+                ) : (
+                  <div className="bp-preview-empty">Barcode Preview</div>
+                )}
+                <code>{previewBarcode?.barcode ?? '1105000'}</code>
+                {showPrice && priceField !== 'none' ? (
+                  <strong>
+                    {session?.tenant.currency_code ?? ''}{' '}
+                    {Number(previewPrice || 0).toFixed(2)}
+                  </strong>
+                ) : null}
+              </div>
+            </div>
+          </section>
+
+          <section className="bp-panel">
+            <header className="bp-panel-title">Barcode Printing Style</header>
+            <div className="bp-panel-body bp-style-row">
               <select
-                value={priceField}
+                value={printStyle}
                 onChange={(event) =>
-                  setPriceField(event.target.value as PriceField)
+                  setPrintStyle(event.target.value as BarcodePrintStyle)
                 }
               >
-                <option value="retail">SUB SELLING PRICE</option>
-                <option value="wholesale">WHOLESALE PRICE</option>
-                <option value="minimum_sale">MIN SALE PRICE</option>
-                <option value="none">NO PRICE</option>
+                <option value="standard">1 Barcode (Style 2)</option>
+                <option value="compact">Compact Barcode</option>
+                <option value="price_emphasis">Price Emphasis</option>
               </select>
-            </label>
-
-            <label className="pos-barcode-check pos-barcode-old-price">
-              <input type="checkbox" disabled />
-              <span>Show Old Price</span>
-            </label>
-          </div>
-
-          <fieldset className="pos-barcode-margin-box">
-            <legend>Margin Settings</legend>
-
-            <label>
-              <span>Left:</span>
-              <input
-                type="number"
-                step={0.5}
-                value={marginLeftMm}
-                onChange={(event) =>
-                  setMarginLeftMm(Number(event.target.value))
-                }
-              />
-            </label>
-
-            <label>
-              <span>Scale Factor:</span>
-              <input
-                type="number"
-                step={0.05}
-                min={0.7}
-                max={1.3}
-                value={scaleFactor}
-                onChange={(event) =>
-                  setScaleFactor(Number(event.target.value))
-                }
-              />
-            </label>
-
-            <label className="pos-barcode-sample-row">
-              <span>Sample:</span>
-              <input
-                value={previewBarcode?.barcode ?? '1105000'}
-                readOnly
-              />
-            </label>
-          </fieldset>
-
-          <div className="pos-barcode-printer-title">
-            <span>On Following Printer</span>
-            <button type="button" onClick={calibrate}>
-              Calibrate
-            </button>
-            <label className="pos-barcode-check">
-              <input type="checkbox" disabled />
-              <span>Computer Based</span>
-            </label>
-          </div>
-
-          <select className="pos-barcode-printer-select" value="system" disabled>
-            <option value="system">System Print Dialog</option>
-          </select>
-
-          <div className="pos-barcode-extra-options">
-            <label className="pos-barcode-check">
-              <input type="checkbox" disabled />
-              <span>Use Invoice Batch / Serial for Barcode Printing</span>
-            </label>
-
-            <label className="pos-barcode-check">
-              <input type="checkbox" checked readOnly />
-              <span>Auto Module</span>
-            </label>
-
-            <label className="pos-barcode-check">
-              <input type="checkbox" disabled />
-              <span>Direct Print to Printer</span>
-            </label>
-
-            <div className="pos-barcode-purchase-row">
-              <span>From Purchase ID:</span>
-              <input disabled />
-              <button type="button" disabled>
-                <RefreshCw size={12} />
-                Get
+              <button type="button" className="bp-btn bp-btn-icon" title="Future custom style editor" disabled>
+                <Plus size={14} />
               </button>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section className="pos-barcode-preview-box">
-          <div className="pos-barcode-preview-paper">
-            {previewBarcode ? (
-              <div
-                className="pos-barcode-preview-svg"
-                dangerouslySetInnerHTML={{
-                  __html: barcodeSvg(
-                    previewBarcode.barcode,
-                    barcodeType,
-                  ),
-                }}
-              />
-            ) : (
-              <div className="pos-barcode-preview-empty">
-                Barcode Preview
+          <div className="bp-left-actions">
+            <button
+              type="button"
+              className="bp-action-btn"
+              onClick={removeSelected}
+              disabled={!selectedLine}
+            >
+              <span>Delete</span>
+              <Trash2 size={18} />
+            </button>
+
+            <button
+              type="button"
+              className="bp-action-btn bp-action-primary"
+              onClick={saveAndPreview}
+              disabled={!selectedLine}
+            >
+              <span>Save &amp; Preview</span>
+              <Save size={18} />
+            </button>
+
+            <button
+              type="button"
+              className="bp-action-btn"
+              onClick={closeActiveTab}
+            >
+              <span>Close</span>
+              <X size={18} />
+            </button>
+          </div>
+        </aside>
+
+        <main className="bp-right">
+          <section className="bp-panel bp-autofill">
+            <header className="bp-panel-title">Auto Fill Options</header>
+            <div className="bp-panel-body">
+              <div className="bp-row bp-row-checks">
+                <label className="bp-check">
+                  <input type="checkbox" disabled />
+                  <span>Ignore Stock Qty</span>
+                </label>
+
+                <label className="bp-check">
+                  <input
+                    type="checkbox"
+                    checked={addWithExisting}
+                    onChange={(event) =>
+                      setAddWithExisting(event.target.checked)
+                    }
+                  />
+                  <span>Add With Existing</span>
+                </label>
+
+                <label className="bp-check">
+                  <input
+                    type="checkbox"
+                    checked={includeSubBarcodes}
+                    onChange={(event) =>
+                      setIncludeSubBarcodes(event.target.checked)
+                    }
+                  />
+                  <span>Print Sub Barcode (Multi Barcode)</span>
+                </label>
               </div>
-            )}
-            <code>{previewBarcode?.barcode ?? '1105000'}</code>
-            {showPrice && priceField !== 'none' ? (
-              <strong>
-                {session?.tenant.currency_code ?? ''}{' '}
-                {Number(previewPrice || 0).toFixed(2)}
-              </strong>
-            ) : null}
-          </div>
-        </section>
 
-        <section className="pos-barcode-style-row">
-          <span>Barcode Printing Style</span>
-          <div>
-            <select
-              value={printStyle}
-              onChange={(event) =>
-                setPrintStyle(event.target.value as BarcodePrintStyle)
-              }
-            >
-              <option value="standard">1 Barcode (Style 2)</option>
-              <option value="compact">Compact Barcode</option>
-              <option value="price_emphasis">Price Emphasis</option>
-            </select>
-            <button type="button" title="Future custom style editor" disabled>
-              <Plus size={13} />
-            </button>
-          </div>
-        </section>
+              <div className="bp-row bp-row-range">
+                <select
+                  className="bp-w-code"
+                  value={rangeMode}
+                  onChange={() => setRangeMode('code')}
+                >
+                  <option value="code">Code</option>
+                </select>
 
-        <div className="pos-barcode-left-actions">
-          <button type="button" onClick={removeSelected} disabled={!selectedLine}>
-            <span>Delete</span>
-            <Trash2 size={20} />
-          </button>
+                <span className="bp-label">From</span>
+                <input
+                  className="bp-w-range"
+                  value={rangeFrom}
+                  placeholder="000001"
+                  onChange={(event) => setRangeFrom(event.target.value)}
+                />
 
-          <button type="button" onClick={saveAndPreview} disabled={!selectedLine}>
-            <span>Save &amp; Preview</span>
-            <Save size={18} />
-          </button>
+                <span className="bp-label">To</span>
+                <input
+                  className="bp-w-range"
+                  value={rangeTo}
+                  placeholder="999999"
+                  onChange={(event) => setRangeTo(event.target.value)}
+                />
 
-          <button type="button" onClick={closeActiveTab}>
-            <span>Close</span>
-            <X size={20} />
-          </button>
-        </div>
-      </aside>
+                <span className="bp-label">MF</span>
+                <input
+                  className="bp-w-mf"
+                  type="number"
+                  min={1}
+                  max={999}
+                  value={multiplier}
+                  onChange={(event) => setMultiplier(event.target.value)}
+                />
 
-      <main className="pos-barcode-right">
-        <section className="pos-barcode-autofill">
-          <div className="pos-barcode-autofill-title">Auto Fill Options</div>
+                <button type="button" className="bp-btn" onClick={autoFill}>
+                  <RefreshCw size={13} />
+                  Auto
+                </button>
+              </div>
 
-          <div className="pos-barcode-autofill-row1">
-            <label className="pos-barcode-check">
-              <input type="checkbox" disabled />
-              <span>Ignore Stock Qty</span>
-            </label>
+              <div className="bp-row bp-row-select-btns">
+                <button
+                  type="button"
+                  className="bp-select-btn"
+                  disabled={!categoryUlid}
+                  onClick={addFilteredProducts}
+                >
+                  <span className="bp-color-chip" />
+                  Selected Category
+                </button>
 
-            <label className="pos-barcode-check">
-              <input
-                type="checkbox"
-                checked={addWithExisting}
-                onChange={(event) =>
-                  setAddWithExisting(event.target.checked)
-                }
-              />
-              <span>Add With Existing</span>
-            </label>
+                <button
+                  type="button"
+                  className="bp-select-btn"
+                  disabled={!brandUlid}
+                  onClick={addFilteredProducts}
+                >
+                  <span className="bp-color-chip is-green" />
+                  Selected Company
+                </button>
 
-            <label className="pos-barcode-check">
-              <input
-                type="checkbox"
-                checked={includeSubBarcodes}
-                onChange={(event) =>
-                  setIncludeSubBarcodes(event.target.checked)
-                }
-              />
-              <span>Print Sub Barcode (Multi Barcode)</span>
-            </label>
-          </div>
+                <button
+                  type="button"
+                  className="bp-select-btn"
+                  disabled={products.length === 0}
+                  onClick={addFilteredProducts}
+                >
+                  <span className="bp-color-chip is-orange" />
+                  Selected Products
+                </button>
+              </div>
 
-          <div className="pos-barcode-autofill-row2">
-            <select
-              value={rangeMode}
-              onChange={() => setRangeMode('code')}
-            >
-              <option value="code">Code</option>
-            </select>
+              <div className="bp-row bp-row-search">
+                <span className="bp-label">Search:</span>
+                <input
+                  className="bp-w-search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Product # / name / SKU…"
+                />
 
-            <span>From</span>
-            <input
-              value={rangeFrom}
-              placeholder="000001"
-              onChange={(event) => setRangeFrom(event.target.value)}
-            />
+                <select
+                  className="bp-w-filter"
+                  value={categoryUlid}
+                  onChange={(event) => setCategoryUlid(event.target.value)}
+                  title="Category filter"
+                >
+                  <option value="">All Categories</option>
+                  {(categories.data ?? []).map((category) => (
+                    <option key={category.ulid} value={category.ulid}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
 
-            <span>To:</span>
-            <input
-              value={rangeTo}
-              placeholder="999999"
-              onChange={(event) => setRangeTo(event.target.value)}
-            />
+                <select
+                  className="bp-w-filter"
+                  value={brandUlid}
+                  onChange={(event) => setBrandUlid(event.target.value)}
+                  title="Company / Brand filter"
+                >
+                  <option value="">All Companies</option>
+                  {(brands.data ?? []).map((brand) => (
+                    <option key={brand.ulid} value={brand.ulid}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </select>
 
-            <span>MF</span>
-            <input
-              className="pos-barcode-mf"
-              type="number"
-              min={1}
-              max={999}
-              value={multiplier}
-              onChange={(event) => setMultiplier(event.target.value)}
-            />
+                <button type="button" className="bp-btn bp-btn-card" disabled>
+                  Card Print
+                  <CreditCard size={15} />
+                </button>
+              </div>
+            </div>
+          </section>
 
-            <button type="button" onClick={autoFill}>
-              <RefreshCw size={12} />
-              Auto
-            </button>
-
-            <button type="button" className="pos-barcode-card-print" disabled>
-              Card Print
-              <CreditCard size={16} />
-            </button>
-          </div>
-
-          <div className="pos-barcode-autofill-row3">
-            <button
-              type="button"
-              disabled={!categoryUlid}
-              onClick={addFilteredProducts}
-            >
-              <span className="pos-barcode-color-grid" />
-              Selected Category
-            </button>
-
-            <button
-              type="button"
-              disabled={!brandUlid}
-              onClick={addFilteredProducts}
-            >
-              <span className="pos-barcode-color-grid is-green" />
-              Selected Company
-            </button>
-
-            <button
-              type="button"
-              disabled={products.length === 0}
-              onClick={addFilteredProducts}
-            >
-              <span className="pos-barcode-color-grid is-orange" />
-              Selected Products
-            </button>
-
-            <span className="pos-barcode-search-label">Search:</span>
-            <input
-              className="pos-barcode-search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-
-            <select
-              className="pos-barcode-hidden-filter"
-              value={categoryUlid}
-              onChange={(event) => setCategoryUlid(event.target.value)}
-              title="Category filter"
-            >
-              <option value="">All Categories</option>
-              {(categories.data ?? []).map((category) => (
-                <option key={category.ulid} value={category.ulid}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="pos-barcode-hidden-filter"
-              value={brandUlid}
-              onChange={(event) => setBrandUlid(event.target.value)}
-              title="Company / Brand filter"
-            >
-              <option value="">All Companies</option>
-              {(brands.data ?? []).map((brand) => (
-                <option key={brand.ulid} value={brand.ulid}>
-                  {brand.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </section>
-
-        <section className="pos-barcode-grid-shell">
-          <table className="pos-barcode-grid">
-            <thead>
-              <tr>
-                <th className="is-marker" />
-                <th className="is-row-no" />
-                <th className="is-barcode">Barcode</th>
-                <th>ITEM / PRODUCT DESCRIPTION</th>
-                <th className="is-other">Other Description</th>
-                <th className="is-quantity">Quantity</th>
-              </tr>
-            </thead>
-            <tbody>
-              {queue.length === 0 ? (
-                <tr>
-                  <td className="is-marker">*</td>
-                  <td className="is-row-no" />
-                  <td />
-                  <td>
-                    <button
-                      type="button"
-                      className="pos-barcode-empty-add"
-                      disabled={products.length === 0}
-                      onClick={() => {
-                        const first = products.find(
-                          (product) => activeBarcodes(product).length > 0,
-                        )
-                        if (first) addProduct(first, 1)
-                      }}
-                    >
-                      Add a product from current search
-                    </button>
-                  </td>
-                  <td />
-                  <td />
-                </tr>
-              ) : (
-                queue.map((line, index) => {
-                  const barcode = selectedBarcode(line)
-                  const barcodes = activeBarcodes(line.product)
-                  const isSelected = line.id === selectedQueueId
-
-                  return (
-                    <tr
-                      key={line.id}
-                      className={isSelected ? 'is-selected' : undefined}
-                      onClick={() => setSelectedQueueId(line.id)}
-                    >
-                      <td className="is-marker">
-                        {isSelected ? '›' : ''}
-                      </td>
-                      <td className="is-row-no">{index + 1}</td>
-
-                      <td className="is-barcode">
-                        <select
-                          value={line.barcodeUlid}
-                          onClick={(event) => event.stopPropagation()}
-                          onChange={(event) =>
-                            changeBarcode(line, event.target.value)
-                          }
-                        >
-                          {barcodes.map((option) => (
-                            <option key={option.ulid} value={option.ulid}>
-                              {option.barcode}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-
-                      <td className="is-product">
-                        <strong>
-                          {line.product.product_number}*
-                          {line.product.name.toUpperCase()}
-                        </strong>
-                      </td>
-
-                      <td className="is-other">
-                        {line.product.alternate_name ?? ''}
-                      </td>
-
-                      <td className="is-quantity">
-                        <input
-                          type="number"
-                          min={1}
-                          max={999}
-                          value={line.quantity}
-                          onClick={(event) => event.stopPropagation()}
-                          onChange={(event) =>
-                            updateQuantity(
-                              line.id,
-                              Number(event.target.value),
+          <section className="bp-grid-shell">
+            <div className="bp-grid-scroll">
+              <table className="bp-grid">
+                <thead>
+                  <tr>
+                    <th className="is-marker" />
+                    <th className="is-row-no">#</th>
+                    <th className="is-barcode">Barcode</th>
+                    <th className="is-product">ITEM / PRODUCT DESCRIPTION</th>
+                    <th className="is-other">Other Description</th>
+                    <th className="is-quantity">Quantity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {queue.length === 0 ? (
+                    <tr>
+                      <td className="is-marker">*</td>
+                      <td className="is-row-no" />
+                      <td />
+                      <td>
+                        <button
+                          type="button"
+                          className="bp-empty-add"
+                          disabled={products.length === 0}
+                          onClick={() => {
+                            const first = products.find(
+                              (product) => activeBarcodes(product).length > 0,
                             )
-                          }
-                        />
+                            if (first) addProduct(first, 1)
+                          }}
+                        >
+                          Add a product from current search
+                        </button>
                       </td>
+                      <td />
+                      <td />
                     </tr>
-                  )
-                })
-              )}
+                  ) : (
+                    queue.map((line, index) => {
+                      const barcodes = activeBarcodes(line.product)
+                      const isSelected = line.id === selectedQueueId
 
-              <tr className="pos-barcode-new-row">
-                <td className="is-marker">*</td>
-                <td className="is-row-no" />
-                <td>----</td>
-                <td>----</td>
-                <td />
-                <td />
-              </tr>
-            </tbody>
-          </table>
+                      return (
+                        <tr
+                          key={line.id}
+                          className={isSelected ? 'is-selected' : undefined}
+                          onClick={() => setSelectedQueueId(line.id)}
+                        >
+                          <td className="is-marker">
+                            {isSelected ? '›' : ''}
+                          </td>
+                          <td className="is-row-no">{index + 1}</td>
 
-          <div className="pos-barcode-grid-space" />
+                          <td className="is-barcode">
+                            <select
+                              value={line.barcodeUlid}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) =>
+                                changeBarcode(line, event.target.value)
+                              }
+                            >
+                              {barcodes.map((option) => (
+                                <option key={option.ulid} value={option.ulid}>
+                                  {option.barcode}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
 
-          <div className="pos-barcode-grid-footer">
-            <span>Record {queue.length ? 1 : 0} of {queue.length}</span>
-            <div>
-              <button type="button" onClick={printAll} disabled={!queue.length}>
-                <Printer size={13} />
+                          <td className="is-product">
+                            <strong>
+                              {line.product.product_number}*
+                              {line.product.name.toUpperCase()}
+                            </strong>
+                          </td>
+
+                          <td className="is-other">
+                            {line.product.alternate_name ?? ''}
+                          </td>
+
+                          <td className="is-quantity">
+                            <input
+                              type="number"
+                              min={1}
+                              max={999}
+                              value={line.quantity}
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) =>
+                                updateQuantity(
+                                  line.id,
+                                  Number(event.target.value),
+                                )
+                              }
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+
+                  <tr className="bp-new-row">
+                    <td className="is-marker">*</td>
+                    <td className="is-row-no" />
+                    <td>----</td>
+                    <td>----</td>
+                    <td />
+                    <td />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <footer className="bp-grid-footer">
+              <span>
+                Record {queue.length ? 1 : 0} of {queue.length}
+              </span>
+              <button
+                type="button"
+                className="bp-btn bp-btn-print-all"
+                onClick={printAll}
+                disabled={!queue.length}
+              >
+                <Printer size={14} />
                 Print All
               </button>
-            </div>
-          </div>
-        </section>
-      </main>
+            </footer>
+          </section>
+        </main>
+      </div>
     </div>
   )
 }
