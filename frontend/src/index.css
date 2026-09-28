@@ -137,6 +137,123 @@ textarea {
   letter-spacing: 0.08em;
 }
 
+.desktop-chrome-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.desktop-chrome-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 23px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--control-border, #8e97a3);
+  border-radius: var(--control-radius, 2px);
+  background: var(--skin-gradient-strong, linear-gradient(#ffffff, #e3e3e3));
+  color: var(--brand-blue, #1f4e79);
+  cursor: pointer;
+}
+
+.desktop-chrome-btn:hover {
+  background: linear-gradient(#ffffff, #d7e8f7);
+}
+
+.desktop-chrome-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: auto;
+  height: 20px;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pwa-update-banner {
+  position: fixed;
+  z-index: 1200;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border-bottom: 1px solid #8e97a3;
+  background: linear-gradient(#fff8e1, #f3e2b0);
+  color: #5c4500;
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.pwa-update-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pwa-update-btn {
+  height: 22px;
+  padding: 0 10px;
+  border: 1px solid #8e97a3;
+  border-radius: 3px;
+  background: linear-gradient(#ffffff, #dedede);
+  color: #1d2430;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pwa-update-btn.is-primary {
+  border-color: #2b6aa3;
+  background: linear-gradient(#e7f2fb, #c5daf0);
+  color: #1f4e79;
+}
+
+/* Standalone / fullscreen: fill the available window without page overflow */
+:root[data-app-mode='standalone'] .app-shell,
+:root[data-app-mode='fullscreen'] .app-shell {
+  height: 100dvh;
+  max-height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+}
+
+:root[data-theme='dark'] .desktop-chrome-btn {
+  border-color: #56616c;
+  background: linear-gradient(#343d45, #293138);
+  color: #8fc7ff;
+}
+
+:root[data-theme='dark'] .desktop-chrome-btn:hover {
+  background: linear-gradient(#3a434c, #2c3339);
+}
+
+:root[data-theme='dark'] .pwa-update-banner {
+  border-color: #5a4a20;
+  background: linear-gradient(#4a3d18, #3a3014);
+  color: #ffe7a0;
+}
+
+:root[data-theme='dark'] .pwa-update-btn {
+  border-color: #56616c;
+  background: linear-gradient(#343d45, #293138);
+  color: #edf1f5;
+}
+
+:root[data-theme='dark'] .pwa-update-btn.is-primary {
+  border-color: #5a7a94;
+  background: linear-gradient(#3a4f5f, #2a3a48);
+  color: #d7ebff;
+}
+
 .ribbon {
   flex-shrink: 0;
   background: linear-gradient(#e8eef5, #c5ced8);

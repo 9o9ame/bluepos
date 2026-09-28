@@ -7,6 +7,7 @@ import { StatusBar } from '../components/desktop/StatusBar'
 import { WorkspaceTabBar } from '../components/desktop/WorkspaceTabBar'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useAppearance } from '../features/appearance/AppearanceProvider'
+import { useAppMode } from '../features/desktop/useAppMode'
 import { WorkspaceProvider } from '../features/workspace/WorkspaceProvider'
 import { useWorkspaceShortcuts } from '../features/workspace/useWorkspaceShortcuts'
 
@@ -90,6 +91,7 @@ function AppShellFrame({
   onHome: () => void
 }) {
   useWorkspaceShortcuts()
+  useAppMode()
 
   return (
     <div className="app-shell">

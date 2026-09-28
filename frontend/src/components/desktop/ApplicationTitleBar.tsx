@@ -1,8 +1,9 @@
 import { APP_NAME } from '../../config/app'
 import type { AuthSession } from '../../types/auth'
 import { useWorkspace } from '../../features/workspace/WorkspaceProvider'
-import { BranchSwitcher } from './BranchSwitcher'
 import { AppearanceMenu } from './AppearanceMenu'
+import { BranchSwitcher } from './BranchSwitcher'
+import { DesktopChromeControls } from './DesktopChromeControls'
 import { UserAccountMenu } from './UserAccountMenu'
 
 type ApplicationTitleBarProps = {
@@ -44,6 +45,7 @@ export function ApplicationTitleBar({
         <span className="titlebar-warehouse" title="Active warehouse">
           {session.warehouse.code} — {session.warehouse.name}
         </span>
+        <DesktopChromeControls />
         <AppearanceMenu />
         <UserAccountMenu
           session={session}
