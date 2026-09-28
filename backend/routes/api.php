@@ -132,6 +132,9 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::get('/products/{productUlid}', [ProductController::class, 'show']);
         Route::patch('/products/{productUlid}', [ProductController::class, 'update']);
         Route::delete('/products/{productUlid}', [ProductController::class, 'destroy']);
+        Route::get('/products/{productUlid}/image', [ProductController::class, 'image']);
+        Route::post('/products/{productUlid}/image', [ProductController::class, 'uploadImage']);
+        Route::delete('/products/{productUlid}/image', [ProductController::class, 'deleteImage']);
         Route::put('/products/{productUlid}/barcodes', [ProductController::class, 'syncBarcodes']);
         Route::put('/products/{productUlid}/prices', [ProductController::class, 'syncPrices']);
         Route::get('/products/{productUlid}/stock', [StockController::class, 'forProduct']);

@@ -444,3 +444,87 @@ export function saveProductPrices(
     },
   )
 }
+
+function readBrowserCookie(name: string): string | null {
+  if (typeof document === 'undefined') {
+    return null
+  }
+
+  const prefix = `${name}=`
+  const part = document.cookie
+    .split(';')
+    .map((value) => value.trim())
+    .find((value) => value.startsWith(prefix))
+
+  return part ? decodeURIComponent(part.slice(prefix.length)) : null
+}
+
+async function productImageFetch(
+  ulid: string,
+  body: FormData,
+): Promise<Product> {
+  // Ensure Laravel Sanctum has issued an XSRF cookie before the multipart POST.
+  await fetch('/sanctum/csrf-cookie', {
+    credentials: 'include',
+  })
+
+  const headers = new Headers({
+    Accept: 'application/json',
+  })
+  const xsrfToken = readBrowserCookie('XSRF-TOKEN')
+
+  if (xsrfToken) {
+    headers.set('X-XSRF-TOKEN', xsrfToken)
+  }
+
+  const response = await fetch(`/api/products/${ulid}/image`, {
+    method: 'POST',
+    credentials: 'include',
+    headers,
+    body,
+  })
+
+  const payload = await response.json().catch(() => null) as
+    | Product
+    | { message?: string; errors?: Record<string, string[]> }
+    | null
+
+  if (!response.ok) {
+    const validationMessage =
+      payload &&
+      'errors' in payload &&
+      payload.errors
+        ? Object.values(payload.errors).flat()[0]
+        : null
+
+    const message =
+      validationMessage ||
+      (payload && 'message' in payload ? payload.message : null) ||
+      'Unable to upload product image.'
+
+    throw new Error(message)
+  }
+
+  return payload as Product
+}
+
+export function uploadProductImage(
+  ulid: string,
+  image: File,
+): Promise<Product> {
+  const body = new FormData()
+  body.append('image', image)
+
+  return productImageFetch(ulid, body)
+}
+
+export function deleteProductImage(
+  ulid: string,
+): Promise<Product> {
+  return apiFetch<Product>(
+    `/api/products/${ulid}/image`,
+    {
+      method: 'DELETE',
+    },
+  )
+}

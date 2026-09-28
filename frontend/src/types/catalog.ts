@@ -103,6 +103,7 @@ export type Product = {
   status: string
   is_active: boolean
   primary_barcode?: string | null
+  image_url?: string | null
 
   category?: CatalogItem | null
   subcategory?: Subcategory | null

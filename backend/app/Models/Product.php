@@ -33,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'maximum_stock',
     'rack_location',
     'description',
+    'image_path',
     'status',
     'is_active',
     'created_by',

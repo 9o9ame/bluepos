@@ -18,6 +18,8 @@ use App\Models\Product;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -104,6 +106,88 @@ class ProductController extends Controller
         $this->authorize('delete', $product);
 
         return new ProductResource($deactivateProduct->execute($product));
+    }
+
+
+    public function image(string $productUlid): mixed
+    {
+        $product = $this->catalog->product($productUlid);
+        $this->authorize('view', $product);
+
+        if (! $product->image_path || ! Storage::disk('public')->exists($product->image_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->response(
+            $product->image_path,
+            null,
+            [
+                'Cache-Control' => 'private, max-age=3600',
+            ],
+        );
+    }
+
+    public function uploadImage(
+        Request $request,
+        string $productUlid,
+        TenantContext $tenantContext,
+    ): ProductResource {
+        $product = $this->catalog->product($productUlid);
+        $this->authorize('update', $product);
+
+        $data = $request->validate([
+            'image' => [
+                'required',
+                'file',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:5120',
+            ],
+        ]);
+
+        $file = $data['image'];
+        $extension = strtolower($file->extension() ?: 'jpg');
+        $directory = 'tenants/'.$tenantContext->tenantId().'/products/'.$product->ulid;
+        $newPath = $file->storeAs(
+            $directory,
+            Str::uuid()->toString().'.'.$extension,
+            'public',
+        );
+
+        if (! is_string($newPath) || $newPath === '') {
+            abort(500, 'Unable to store product image.');
+        }
+
+        $oldPath = $product->image_path;
+        $product->image_path = $newPath;
+        $product->save();
+
+        if ($oldPath && $oldPath !== $newPath) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return new ProductResource(
+            $product->fresh()->load(CreateProductAction::with()),
+        );
+    }
+
+    public function deleteImage(string $productUlid): ProductResource
+    {
+        $product = $this->catalog->product($productUlid);
+        $this->authorize('update', $product);
+
+        $oldPath = $product->image_path;
+
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        $product->image_path = null;
+        $product->save();
+
+        return new ProductResource(
+            $product->fresh()->load(CreateProductAction::with()),
+        );
     }
 
     public function syncBarcodes(

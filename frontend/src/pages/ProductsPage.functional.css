@@ -1,25 +1,4 @@
-/*
- * BluePOS — Define Products functional additions (Phase F1)
- * Keeps the approved appearance/theme layer intact.
- */
-
-.product-def-add-new {
-  appearance: none;
-  width: 100%;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-
-.product-def-add-new svg {
-  display: block;
-  margin: 0 auto 4px;
-}
-
-.product-def-add-new:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
+/* BluePOS — Define Products functional additions. */
 
 .pdf-barcode-table tbody tr {
   cursor: default;
@@ -84,4 +63,63 @@
   min-height: 24px;
   position: relative;
   z-index: 3;
+}
+
+/* Phase F1.2 — Product image loader.
+   Keeps the original Right Click to + area and adds preview/remove behavior. */
+.product-reference-screen .product-def-image-loader {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+}
+
+.product-reference-screen .product-def-image-loader:focus-visible {
+  outline: 2px solid var(--skin-focus-ring, #2b78b8);
+  outline-offset: -2px;
+}
+
+.product-reference-screen .product-def-image-loader.has-image {
+  padding: 3px;
+}
+
+.product-reference-screen .product-def-image-input {
+  display: none;
+}
+
+.product-reference-screen .product-def-image-preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
+}
+
+.product-reference-screen .product-def-image-remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #9b2e2e;
+  border-radius: 50%;
+  background: #d84b4b;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+}
+
+.product-reference-screen .product-def-image-remove:hover {
+  background: #bd3434;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-image-loader {
+  background: #171c21;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-image-preview {
+  background: #171c21;
 }

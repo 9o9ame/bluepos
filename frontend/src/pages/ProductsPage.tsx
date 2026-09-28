@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Barcode,
   Check,
@@ -16,6 +16,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createProduct,
   deactivateProduct,
+  deleteProductImage,
   fetchBarcodeGroups,
   fetchBrands,
   fetchCategories,
@@ -27,6 +28,7 @@ import {
   saveProductBarcodes,
   saveProductPrices,
   updateProduct,
+  uploadProductImage,
 } from '../api/catalog'
 import { ApiClientError } from '../api/client'
 import {
@@ -98,6 +100,10 @@ export function ProductsPage() {
   const [section, setSection] = useState<'definition' | 'opening' | 'related'>('definition')
   const [error, setError] = useState<string | null>(null)
   const [quickEditor, setQuickEditor] = useState<QuickEditorKind | null>(null)
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
+  const [pendingImage, setPendingImage] = useState<File | null>(null)
+  const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
+  const [imageRemoveRequested, setImageRemoveRequested] = useState(false)
 
   const productsQuery = useQuery({
     queryKey: ['products', q, page],
@@ -174,6 +180,86 @@ export function ProductsPage() {
   const openingPosted = openingDocument?.status === 'posted'
   const openingLine = openingDocument?.lines?.find((line) => line.product?.ulid === selectedKey) ?? null
 
+  function clearPendingImageState() {
+    setPendingImage(null)
+    setPendingImagePreview((current) => {
+      if (current?.startsWith('blob:')) {
+        URL.revokeObjectURL(current)
+      }
+
+      return null
+    })
+    setImageRemoveRequested(false)
+
+    if (imageInputRef.current) {
+      imageInputRef.current.value = ''
+    }
+  }
+
+  function openImagePicker() {
+    if (!canSave || saveMutation.isPending) return
+    imageInputRef.current?.click()
+  }
+
+  function onProductImageSelected(file: File | null) {
+    if (!file || !canSave) return
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      setError('Product image must be JPG, PNG, or WEBP.')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Product image must be 5 MB or smaller.')
+      return
+    }
+
+    const preview = URL.createObjectURL(file)
+    setPendingImage(file)
+    setPendingImagePreview((current) => {
+      if (current?.startsWith('blob:')) {
+        URL.revokeObjectURL(current)
+      }
+
+      return preview
+    })
+    setImageRemoveRequested(false)
+    setError(null)
+
+    if (imageInputRef.current) {
+      imageInputRef.current.value = ''
+    }
+  }
+
+  function requestProductImageRemoval() {
+    const hasImage = Boolean(
+      pendingImagePreview ||
+      (!imageRemoveRequested && selected?.image_url),
+    )
+
+    if (!hasImage || !canSave) return
+
+    if (!window.confirm('Remove this product image when you save the product?')) {
+      return
+    }
+
+    setPendingImage(null)
+    setPendingImagePreview((current) => {
+      if (current?.startsWith('blob:')) {
+        URL.revokeObjectURL(current)
+      }
+
+      return null
+    })
+    setImageRemoveRequested(Boolean(selected?.image_url))
+    setError(null)
+
+    if (imageInputRef.current) {
+      imageInputRef.current.value = ''
+    }
+  }
+
   function resetForm() {
     setName('')
     setAlternateName('')
@@ -193,6 +279,7 @@ export function ProductsPage() {
     setMinimumSale('0.0000')
     setBarcodeRows([])
     setSelectedBarcodeId(null)
+    clearPendingImageState()
     setOpeningQty('')
     setOpeningUnitCost('0.0000')
     setOpeningDocument(null)
@@ -308,6 +395,8 @@ export function ProductsPage() {
     setRetail(selected.prices?.find((row) => row.price_type === 'retail')?.amount ?? '0.0000')
     setWholesale(selected.prices?.find((row) => row.price_type === 'wholesale')?.amount ?? '0.0000')
     setMinimumSale(selected.prices?.find((row) => row.price_type === 'minimum_sale')?.amount ?? '0.0000')
+
+    clearPendingImageState()
 
     const loadedBarcodes: ProductBarcodeDraft[] = (selected.barcodes ?? [])
       .filter((row) => row.is_active)
@@ -515,11 +604,21 @@ export function ProductsPage() {
         await saveProductBarcodes(saved.ulid, barcodes)
       }
 
-      return saved
+      let finalSaved = saved
+
+      if (pendingImage) {
+        finalSaved = await uploadProductImage(saved.ulid, pendingImage)
+      } else if (imageRemoveRequested && current?.image_url) {
+        finalSaved = await deleteProductImage(saved.ulid)
+      }
+
+      return finalSaved
     },
     onSuccess: async (saved) => {
+      clearPendingImageState()
       setCreating(false)
       setSelectedKey(saved.ulid)
+      queryClient.setQueryData(['product', saved.ulid], saved)
       await queryClient.invalidateQueries({ queryKey: ['products'] })
       await queryClient.invalidateQueries({ queryKey: ['product', saved.ulid] })
     },
@@ -562,21 +661,75 @@ export function ProductsPage() {
   const selectedBarcodeIndex = barcodeRows.findIndex(
     (row) => row.id === selectedBarcodeId,
   )
+  const productImagePreview =
+    pendingImagePreview ||
+    (!imageRemoveRequested ? selected?.image_url ?? null : null)
 
   return (
     <>
       <form id="inline-product-form" className="product-def product-reference-screen" onSubmit={onSubmit}>
         <aside className="product-def-rail" aria-label="Product actions">
-          <button
-            type="button"
-            className="product-def-photo product-def-add-new"
-            disabled={!canCreate}
-            title={canCreate ? 'Add a new product' : 'Product create permission required'}
-            onClick={startNewProduct}
+          <div
+            className={`product-def-photo product-def-image-loader${productImagePreview ? ' has-image' : ''}`}
+            role="button"
+            tabIndex={canSave ? 0 : -1}
+            aria-label={productImagePreview ? 'Change product image' : 'Add product image'}
+            title={
+              canSave
+                ? productImagePreview
+                  ? 'Click or right-click to replace product image'
+                  : 'Click or right-click to add product image'
+                : 'Select New or an editable product first'
+            }
+            onClick={openImagePicker}
+            onContextMenu={(event) => {
+              event.preventDefault()
+              openImagePicker()
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                openImagePicker()
+              }
+            }}
           >
-            <Plus size={24} strokeWidth={2.5} />
-            <span>Add New Product</span>
-          </button>
+            <input
+              ref={imageInputRef}
+              type="file"
+              className="product-def-image-input"
+              accept="image/jpeg,image/png,image/webp"
+              tabIndex={-1}
+              aria-hidden="true"
+              onChange={(event) =>
+                onProductImageSelected(event.target.files?.[0] ?? null)
+              }
+            />
+
+            {productImagePreview ? (
+              <img
+                src={productImagePreview}
+                alt={name ? `${name} product` : 'Product'}
+                className="product-def-image-preview"
+              />
+            ) : (
+              <span>Right Click to +</span>
+            )}
+
+            {productImagePreview && canSave ? (
+              <button
+                type="button"
+                className="product-def-image-remove"
+                title="Remove product image"
+                aria-label="Remove product image"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  requestProductImageRemoval()
+                }}
+              >
+                <X size={14} strokeWidth={3} />
+              </button>
+            ) : null}
+          </div>
 
           <button type="button" className="product-def-rail-btn" disabled title="Available in a later phase">
             <Barcode size={18} />

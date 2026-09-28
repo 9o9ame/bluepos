@@ -35,6 +35,9 @@ class ProductResource extends JsonResource
             'maximum_stock' => $this->maximum_stock,
             'rack_location' => $this->rack_location,
             'description' => $this->description,
+            'image_url' => $this->image_path
+                ? '/api/products/'.$this->ulid.'/image?v='.($this->updated_at?->getTimestamp() ?? 0)
+                : null,
             'status' => $this->status->value,
             'is_active' => $this->is_active,
             'secondary_conversion_factor' => $this->secondary_conversion_factor,
