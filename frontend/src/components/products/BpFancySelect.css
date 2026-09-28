@@ -1,0 +1,248 @@
+.bp-fancy-select {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  z-index: 2;
+}
+
+.bp-fancy-select.is-open {
+  z-index: 30;
+}
+
+.bp-fancy-select-trigger {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  height: var(--ui-control-h-md, 24px);
+  margin: 0;
+  padding: 0 2px 0 7px;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 34%, #8f9ca7);
+  border-radius: 7px;
+  background: linear-gradient(180deg, #ffffff 0%, #e8f2fb 100%);
+  color: color-mix(in srgb, var(--brand-blue, #1769aa) 58%, #1a2430);
+  font: inherit;
+  font-size: var(--ui-font-md, 11px);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(20, 40, 60, 0.06);
+  transition:
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    background 0.14s ease;
+}
+
+.bp-fancy-select-trigger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 60%, #8f9ca7);
+  background: linear-gradient(180deg, #f7fbff 0%, #d7eafb 100%);
+}
+
+.bp-fancy-select.is-open .bp-fancy-select-trigger,
+.bp-fancy-select-trigger:focus-visible {
+  outline: none;
+  border-color: var(--focus-ring, var(--brand-blue-hot, #0f7dcc));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 30%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.bp-fancy-select-trigger:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.bp-fancy-select-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bp-fancy-select-arrow {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 40%, #9db4c8);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 55%, #8ec8ff),
+    var(--brand-blue, #1769aa)
+  );
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 1px 2px rgba(20, 50, 80, 0.18);
+  flex: 0 0 auto;
+  transition: transform 0.16s ease;
+}
+
+.bp-fancy-select.is-open .bp-fancy-select-arrow {
+  transform: rotate(180deg);
+}
+
+.bp-fancy-select-menu {
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 40%, #9aa8b5);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff, #f3f8fc);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.55) inset,
+    0 14px 34px rgba(15, 40, 70, 0.28),
+    0 2px 8px rgba(15, 40, 70, 0.12);
+  animation: bp-fancy-menu-in 0.14s ease-out;
+}
+
+.bp-fancy-select-menu.is-up {
+  transform-origin: bottom center;
+}
+
+.bp-fancy-select-menu.is-down {
+  transform-origin: top center;
+}
+
+@keyframes bp-fancy-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.bp-fancy-select-menu.is-up {
+  animation-name: bp-fancy-menu-in-up;
+}
+
+@keyframes bp-fancy-menu-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.bp-fancy-select-menu-inner {
+  max-height: inherit;
+  overflow: auto;
+  padding: 4px;
+  overscroll-behavior: contain;
+}
+
+.bp-fancy-select-option {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 28px;
+  margin: 0 0 2px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #1d2a36;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.bp-fancy-select-option:last-child {
+  margin-bottom: 0;
+}
+
+.bp-fancy-select-option:hover:not(:disabled),
+.bp-fancy-select-option:focus-visible {
+  outline: none;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 18%, #fff),
+    color-mix(in srgb, var(--brand-blue, #1769aa) 10%, #fff)
+  );
+  color: var(--brand-blue, #1769aa);
+}
+
+.bp-fancy-select-option.is-selected {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand-blue, #1769aa) 88%, #0a3d66),
+    color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 85%, #1a8fd4)
+  );
+  color: #fff;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.bp-fancy-select-option.is-selected:hover:not(:disabled) {
+  color: #fff;
+  filter: brightness(1.05);
+}
+
+.bp-fancy-select-option.is-disabled,
+.bp-fancy-select-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  color: #6a7784;
+  text-decoration: line-through;
+}
+
+.bp-fancy-select-check {
+  font-size: 11px;
+  font-weight: 900;
+  opacity: 0.95;
+}
+
+:root[data-theme='dark'] .bp-fancy-select-trigger {
+  border-color: #4f6578;
+  background: linear-gradient(180deg, #2a3844, #1e2932);
+  color: #cfe6fa;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme='dark'] .bp-fancy-select-trigger:hover:not(:disabled) {
+  border-color: #6a90b0;
+  background: linear-gradient(180deg, #314554, #243440);
+}
+
+:root[data-theme='dark'] .bp-fancy-select-menu {
+  background: linear-gradient(180deg, #24303a, #1a2229);
+  border-color: #4f6578;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 14px 34px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme='dark'] .bp-fancy-select-option {
+  color: #e5edf5;
+}
+
+:root[data-theme='dark'] .bp-fancy-select-option:hover:not(:disabled),
+:root[data-theme='dark'] .bp-fancy-select-option:focus-visible {
+  background: linear-gradient(90deg, #2f4558, #263848);
+  color: #9fd0ff;
+}
+
+:root[data-theme='dark'] .bp-fancy-select-option.is-disabled,
+:root[data-theme='dark'] .bp-fancy-select-option:disabled {
+  color: #8a96a2;
+}

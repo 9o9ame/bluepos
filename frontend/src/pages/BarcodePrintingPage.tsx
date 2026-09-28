@@ -17,6 +17,7 @@ import {
   fetchProducts,
 } from '../api/catalog'
 import { BarcodeStyleOptionsModal } from '../components/products/BarcodeStyleOptionsModal'
+import { BpFancySelect } from '../components/products/BpFancySelect'
 import {
   BARCODE_TYPE_OPTIONS,
   DISPLAY_FIELD_OPTIONS,
@@ -567,72 +568,55 @@ export function BarcodePrintingPage() {
 
                 <label className="bp-field">
                   <span>Select Barcode Types</span>
-                  <select
+                  <BpFancySelect
+                    aria-label="Select Barcode Types"
                     value={barcodeType}
-                    onChange={(event) =>
-                      setBarcodeType(event.target.value as BarcodeType)
-                    }
-                  >
-                    {BARCODE_TYPE_OPTIONS.map((type) => (
-                      <option
-                        key={type}
-                        value={type}
-                        disabled={!isBarcodeTypeSupported(type)}
-                        title={
-                          isBarcodeTypeSupported(type)
-                            ? undefined
-                            : 'Not supported by the current barcode library'
-                        }
-                      >
-                        {type}
-                        {!isBarcodeTypeSupported(type) ? ' (unsupported)' : ''}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(next) => setBarcodeType(next as BarcodeType)}
+                    options={BARCODE_TYPE_OPTIONS.map((type) => ({
+                      value: type,
+                      label: isBarcodeTypeSupported(type)
+                        ? type
+                        : `${type} (unsupported)`,
+                      disabled: !isBarcodeTypeSupported(type),
+                      title: isBarcodeTypeSupported(type)
+                        ? undefined
+                        : 'Not supported by the current barcode library',
+                    }))}
+                  />
                 </label>
 
                 <label className="bp-field">
                   <span>Field to Display</span>
-                  <select
+                  <BpFancySelect
+                    aria-label="Field to Display"
                     value={displayField}
-                    onChange={(event) =>
-                      setDisplayField(
-                        event.target.value as DisplayFieldOption,
-                      )
+                    onChange={(next) =>
+                      setDisplayField(next as DisplayFieldOption)
                     }
-                  >
-                    {DISPLAY_FIELD_OPTIONS.map((option) => (
-                      <option
-                        key={option.value}
-                        value={option.value}
-                        disabled={option.disabled}
-                        title={option.title}
-                      >
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={DISPLAY_FIELD_OPTIONS.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                      disabled: option.disabled,
+                      title: option.title,
+                    }))}
+                  />
                 </label>
 
                 <label className="bp-field">
                   <span>Price Field</span>
-                  <select
+                  <BpFancySelect
+                    aria-label="Price Field"
                     value={priceField}
-                    onChange={(event) =>
-                      setPriceField(event.target.value as PriceFieldOption)
+                    onChange={(next) =>
+                      setPriceField(next as PriceFieldOption)
                     }
-                  >
-                    {PRICE_FIELD_OPTIONS.map((option) => (
-                      <option
-                        key={option.value}
-                        value={option.value}
-                        disabled={option.disabled}
-                        title={option.title}
-                      >
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={PRICE_FIELD_OPTIONS.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                      disabled: option.disabled,
+                      title: option.title,
+                    }))}
+                  />
                 </label>
 
                 <div className="bp-price-checks">
@@ -699,15 +683,19 @@ export function BarcodePrintingPage() {
               <div className="bp-printer-block">
                 <div className="bp-printer-label">On Following Printer</div>
                 <div className="bp-printer-row">
-                  <select
+                  <BpFancySelect
                     className="bp-control-full"
+                    aria-label="On Following Printer"
                     value={browserPrintDialogPrinter.id}
                     title="Browsers cannot enumerate installed Windows printers. Use the system print dialog. A BluePOS Print Bridge will enable native printer lists later."
-                  >
-                    <option value={browserPrintDialogPrinter.id}>
-                      {browserPrintDialogPrinter.name}
-                    </option>
-                  </select>
+                    onChange={() => undefined}
+                    options={[
+                      {
+                        value: browserPrintDialogPrinter.id,
+                        label: browserPrintDialogPrinter.name,
+                      },
+                    ]}
+                  />
                   <button
                     type="button"
                     className="bp-btn bp-btn-calibrate"
@@ -779,18 +767,15 @@ export function BarcodePrintingPage() {
               <label className="bp-field bp-style-field">
                 <span>Barcode Printing Style</span>
                 <div className="bp-style-row">
-                  <select
+                  <BpFancySelect
+                    aria-label="Barcode Printing Style"
                     value={printStyle}
-                    onChange={(event) =>
-                      setPrintStyle(event.target.value as BarcodeStyleId)
-                    }
-                  >
-                    {activeStyles.map((style) => (
-                      <option key={style.id} value={style.id}>
-                        {style.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(next) => setPrintStyle(next as BarcodeStyleId)}
+                    options={activeStyles.map((style) => ({
+                      value: style.id,
+                      label: style.name,
+                    }))}
+                  />
                   <button
                     type="button"
                     className="bp-btn bp-btn-icon"
@@ -889,16 +874,16 @@ export function BarcodePrintingPage() {
               </div>
 
               <div className="bp-row bp-row-range">
-                <select
+                <BpFancySelect
                   className="bp-w-code"
+                  aria-label="Auto Fill range field"
                   value={rangeMode}
-                  onChange={(event) =>
-                    setRangeMode(event.target.value as RangeMode)
-                  }
-                >
-                  <option value="product_number">Product #</option>
-                  <option value="sku">Code / SKU</option>
-                </select>
+                  onChange={(next) => setRangeMode(next as RangeMode)}
+                  options={[
+                    { value: 'product_number', label: 'Product #' },
+                    { value: 'sku', label: 'Code / SKU' },
+                  ]}
+                />
 
                 <span className="bp-label">From</span>
                 <input
