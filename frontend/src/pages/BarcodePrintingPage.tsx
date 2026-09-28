@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Barcode,
-  Check,
-  ChevronDown,
   CreditCard,
   Plus,
   Printer,
@@ -45,17 +43,6 @@ type PrintQueueLine = {
   quantity: number
 }
 
-const CUSTOMIZATION_FIELDS = [
-  'Barcode',
-  'BNS',
-  'C',
-  'DESC.',
-  'Dis 3',
-  'Dis A',
-  'Disc-Rs',
-  'Dis-Rs Amt',
-  'Expiry Date',
-] as const
 
 function activeBarcodes(product: Product): ProductBarcode[] {
   return (product.barcodes ?? []).filter(
@@ -890,28 +877,6 @@ export function BarcodePrintingPage() {
           </table>
 
           <div className="pos-barcode-grid-space" />
-
-          <div className="pos-barcode-customization">
-            <div className="pos-barcode-customization-title">
-              Customization
-              <ChevronDown size={12} />
-            </div>
-            <button type="button" className="is-minus">-</button>
-            {CUSTOMIZATION_FIELDS.map((field) => (
-              <button
-                type="button"
-                key={field}
-                disabled={!['Barcode', 'DESC.'].includes(field)}
-                title={
-                  ['Barcode', 'DESC.'].includes(field)
-                    ? 'Available'
-                    : 'Requires source data not yet implemented'
-                }
-              >
-                {field}
-              </button>
-            ))}
-          </div>
 
           <div className="pos-barcode-grid-footer">
             <span>Record {queue.length ? 1 : 0} of {queue.length}</span>

@@ -502,48 +502,6 @@
   min-height: 0;
 }
 
-.pos-barcode-customization {
-  position: absolute;
-  right: 10px;
-  bottom: 28px;
-  width: 197px;
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid #888;
-  background: #cfcfcf;
-  box-shadow: 0 1px 3px rgba(0,0,0,.15);
-}
-
-.pos-barcode-customization-title {
-  height: 21px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 5px;
-  border-bottom: 1px solid #929292;
-  background: linear-gradient(#d5d5d5, #bcbcbc);
-  color: #666;
-}
-
-.pos-barcode-customization button {
-  width: 100%;
-  height: 29px;
-  border: 0;
-  border-bottom: 1px solid #7e7e7e;
-  background: linear-gradient(#ededed, #c9c9c9);
-  color: #111;
-  font: inherit;
-  font-weight: 800;
-}
-
-.pos-barcode-customization button:disabled {
-  color: #666;
-}
-
-.pos-barcode-customization button.is-minus {
-  height: 27px;
-  font-size: 16px;
-}
 
 .pos-barcode-grid-footer {
   height: 25px;
@@ -632,22 +590,6 @@
   background: #285274;
 }
 
-:root[data-theme='dark'] .pos-barcode-customization {
-  border-color: #4b565f;
-  background: #20272d;
-}
-
-:root[data-theme='dark'] .pos-barcode-customization-title {
-  border-color: #4b565f;
-  background: linear-gradient(#303941, #252c32);
-  color: #aeb9c2;
-}
-
-:root[data-theme='dark'] .pos-barcode-customization button {
-  border-color: #47525b;
-  background: linear-gradient(#343d45, #293138);
-  color: #e8edf1;
-}
 
 :root[data-theme='dark'] .pos-barcode-left-actions button,
 :root[data-theme='dark'] .pos-barcode-autofill-row2 > button,
@@ -656,4 +598,220 @@
   border-color: #56636d;
   background: linear-gradient(#343d45, #293138);
   color: #edf2f6;
+}
+
+
+/* ==========================================================================
+   F1.8 — Preview visibility + remove customization overlay
+   The left panel is now a fixed 4-row layout:
+   settings / live barcode / style / actions.
+   No internal scrollbar is required.
+   ========================================================================== */
+
+.pos-barcode-left {
+  display: grid;
+  grid-template-rows: auto minmax(132px, 1fr) 33px 35px;
+  gap: 4px;
+  align-content: stretch;
+  overflow: hidden;
+  padding: 5px 6px;
+}
+
+.pos-barcode-settings {
+  min-height: 0;
+  padding-bottom: 4px;
+}
+
+.pos-barcode-box-title {
+  height: 19px;
+  padding: 0 7px;
+  font-size: 10px;
+}
+
+.pos-barcode-field {
+  margin: 2px 9px 0;
+}
+
+.pos-barcode-field > span {
+  margin-bottom: 1px;
+  font-size: 9px;
+  line-height: 1.05;
+}
+
+.pos-barcode-field input,
+.pos-barcode-field select,
+.pos-barcode-printer-select,
+.pos-barcode-margin-box input,
+.pos-barcode-purchase-row input,
+.pos-barcode-style-row select {
+  height: 20px;
+  padding: 1px 4px;
+  font-size: 9px;
+}
+
+.pos-barcode-old-price {
+  right: 10px;
+  bottom: 2px;
+  font-size: 8px;
+}
+
+.pos-barcode-price-row .pos-barcode-field select {
+  padding-right: 82px;
+}
+
+.pos-barcode-margin-box {
+  margin: 3px 9px 0;
+  padding: 3px 6px 4px;
+  gap: 3px 7px;
+}
+
+.pos-barcode-margin-box legend {
+  font-size: 9px;
+}
+
+.pos-barcode-margin-box label {
+  grid-template-columns: 50px minmax(0, 1fr);
+  gap: 3px;
+  font-size: 8px;
+}
+
+.pos-barcode-margin-box input {
+  height: 19px;
+}
+
+.pos-barcode-sample-row {
+  grid-template-columns: 82px minmax(0, 1fr) !important;
+}
+
+.pos-barcode-printer-title {
+  grid-template-columns: minmax(0, 1fr) 62px auto;
+  gap: 4px;
+  margin: 3px 9px 0;
+  font-size: 8px;
+}
+
+.pos-barcode-printer-title button {
+  height: 19px;
+  font-size: 8px;
+}
+
+.pos-barcode-printer-select {
+  width: calc(100% - 18px);
+  height: 20px;
+  margin: 2px 9px 0;
+}
+
+.pos-barcode-extra-options {
+  gap: 2px 9px;
+  margin: 3px 9px 0;
+  font-size: 8px;
+  line-height: 1.05;
+}
+
+.pos-barcode-extra-options .pos-barcode-check {
+  gap: 3px;
+}
+
+.pos-barcode-extra-options .pos-barcode-check input {
+  width: 11px;
+  height: 11px;
+}
+
+.pos-barcode-purchase-row {
+  grid-template-columns: auto 54px 39px;
+  gap: 3px;
+}
+
+.pos-barcode-purchase-row input {
+  width: 54px;
+  height: 19px;
+}
+
+.pos-barcode-purchase-row button {
+  height: 19px;
+  font-size: 8px;
+}
+
+.pos-barcode-preview-box {
+  width: auto;
+  height: auto;
+  min-height: 132px;
+  margin: 0 9px;
+  padding: 4px;
+  overflow: hidden;
+}
+
+.pos-barcode-preview-paper {
+  height: 100%;
+  min-height: 0;
+  justify-content: flex-start;
+}
+
+.pos-barcode-preview-svg {
+  flex: 1 1 auto;
+  width: 100%;
+  height: auto;
+  min-height: 96px;
+  max-height: none;
+  margin-top: 1px;
+}
+
+.pos-barcode-preview-paper code {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  font-size: 9px;
+}
+
+.pos-barcode-preview-paper strong {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  font-size: 10px;
+}
+
+.pos-barcode-preview-empty {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 96px;
+}
+
+.pos-barcode-style-row {
+  align-self: stretch;
+  margin: 0 9px;
+}
+
+.pos-barcode-style-row > span {
+  margin-bottom: 1px;
+  font-size: 8px;
+  line-height: 1;
+}
+
+.pos-barcode-style-row > div {
+  height: 21px;
+}
+
+.pos-barcode-style-row select {
+  height: 21px;
+}
+
+.pos-barcode-left-actions {
+  align-self: stretch;
+  grid-template-columns: 76px minmax(108px, 1fr) 76px;
+  gap: 7px;
+  margin: 0 9px;
+}
+
+.pos-barcode-left-actions button {
+  height: 33px;
+  border-radius: 5px;
+  font-size: 8px;
+}
+
+/* The main grid now remains completely unobstructed. */
+.pos-barcode-grid-shell {
+  position: relative;
+}
+
+.pos-barcode-grid-space {
+  flex: 1 1 auto;
+  min-height: 0;
 }
