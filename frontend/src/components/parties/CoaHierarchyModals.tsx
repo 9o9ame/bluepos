@@ -47,6 +47,7 @@ export function CoaHierarchyModals({
   const [mains, setMains] = useState<CoaMainHead[]>([])
 
   const [typeUlid, setTypeUlid] = useState<string | null>(null)
+  const [typeCode, setTypeCode] = useState('')
   const [typeName, setTypeName] = useState('')
   const [typeSubUlid, setTypeSubUlid] = useState('')
   const [isCash, setIsCash] = useState(false)
@@ -83,6 +84,7 @@ export function CoaHierarchyModals({
 
   function applyType(row: CoaAccountType) {
     setTypeUlid(row.ulid)
+    setTypeCode(row.code ?? '')
     setTypeName(row.name)
     setTypeSubUlid(row.sub_head?.ulid ?? row.sub_head_ulid ?? '')
     setIsCash(row.is_cash)
@@ -97,6 +99,7 @@ export function CoaHierarchyModals({
 
   function resetTypeForm(keepSub = true) {
     setTypeUlid(null)
+    setTypeCode('')
     setTypeName('')
     if (!keepSub) setTypeSubUlid('')
     setIsCash(false)
@@ -156,10 +159,15 @@ export function CoaHierarchyModals({
       setError('Description and Sub Head are required.')
       return
     }
+    if (!typeUlid && !typeCode.trim()) {
+      setError('Code is required for new Account Types.')
+      return
+    }
     setSaving(true)
     setError(null)
     const payload = {
       sub_head_ulid: typeSubUlid,
+      code: typeCode.trim() ? typeCode.trim().toUpperCase() : null,
       name: typeName.trim(),
       is_cash: isCash,
       is_bank: isBank,
@@ -173,7 +181,7 @@ export function CoaHierarchyModals({
     try {
       const saved = typeUlid
         ? await updateAccountType(typeUlid, payload)
-        : await createAccountType(payload)
+        : await createAccountType({ ...payload, code: typeCode.trim().toUpperCase() })
       await reloadLists(saved.ulid)
       onAccountTypeSaved(saved)
       onHierarchyChanged()
@@ -257,8 +265,17 @@ export function CoaHierarchyModals({
               <div className="coa-modal-split">
                 <div className="coa-modal-form">
                   <label>
-                    Description
-                    <input value={typeName} onChange={(e) => setTypeName(e.target.value)} autoFocus />
+                    Code
+                    <input
+                      value={typeCode}
+                      onChange={(e) => setTypeCode(e.target.value)}
+                      autoFocus={!typeUlid}
+                      placeholder="e.g. 0010"
+                    />
+                  </label>
+                  <label>
+                    Description / Name
+                    <input value={typeName} onChange={(e) => setTypeName(e.target.value)} autoFocus={!!typeUlid} />
                   </label>
                   <div className="coa-flag-row">
                     <label><input type="checkbox" checked={isCash} onChange={(e) => setIsCash(e.target.checked)} /> Cash</label>
@@ -318,6 +335,7 @@ export function CoaHierarchyModals({
                   <table className="coa-modal-list">
                     <thead>
                       <tr>
+                        <th>Code</th>
                         <th>Description</th>
                         <th>Sub Head</th>
                         <th>Status</th>
@@ -325,7 +343,7 @@ export function CoaHierarchyModals({
                     </thead>
                     <tbody>
                       {types.length === 0 ? (
-                        <tr><td colSpan={3} className="coa-empty">No account types</td></tr>
+                        <tr><td colSpan={4} className="coa-empty">No account types</td></tr>
                       ) : (
                         types.map((row) => (
                           <tr
@@ -333,6 +351,7 @@ export function CoaHierarchyModals({
                             className={row.ulid === typeUlid ? 'is-selected' : undefined}
                             onClick={() => applyType(row)}
                           >
+                            <td>{row.code ?? '—'}</td>
                             <td>{row.name}</td>
                             <td>{row.sub_head?.name ?? '—'}</td>
                             <td>{row.is_active ? 'Active' : 'Off'}</td>

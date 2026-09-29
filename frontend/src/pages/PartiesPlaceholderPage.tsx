@@ -684,17 +684,23 @@ export function PartiesPlaceholderPage() {
     }
   }
 
+  function clearAncillaryPartyState() {
+    setBankRows([])
+    setSelectedBankKey(null)
+    setOpeningRows([])
+    setSelectedOpeningKey(null)
+    setLedger(null)
+    setLedgerPage(1)
+    setError(null)
+  }
+
   function startNew(filter: PartyType = listFilter) {
     const nextType = CREATABLE_TYPES.includes(filter) ? filter : 'VENDORS'
     const blank = applySuggestedAccountType(nextType, emptyForm(nextType))
     applyBaseline(blank)
     setSelectedKey(null)
-    setBankRows([])
-    setSelectedBankKey(null)
-    setOpeningRows([])
-    setSelectedOpeningKey(null)
+    clearAncillaryPartyState()
     setSubTab('contact')
-    setError(null)
   }
 
   async function refresh() {
@@ -712,6 +718,7 @@ export function PartiesPlaceholderPage() {
     applyBaseline(partyToForm(party, listFilter))
     setSelectedKey(row.key)
     setError(null)
+    setLedger(null)
     setLedgerPage(1)
     void loadBanks(party.ulid, party.party_type)
     void loadOpenings(party.ulid, party.party_type)
@@ -729,6 +736,8 @@ export function PartiesPlaceholderPage() {
     const nextType = CREATABLE_TYPES.includes(next) ? next : 'VENDORS'
     applyBaseline(applySuggestedAccountType(nextType, emptyForm(nextType)))
     setSelectedKey(null)
+    clearAncillaryPartyState()
+    setSubTab('contact')
     void loadParties(next, false)
   }
 
@@ -1078,6 +1087,7 @@ export function PartiesPlaceholderPage() {
                   <label htmlFor="vca-type">Type</label>
                   <select
                     id="vca-type"
+                    title="SALES MAN is disabled in this phase"
                     value={form.ulid ? form.type : listFilter}
                     onChange={(e) => {
                       const next = e.target.value as PartyType
@@ -1093,7 +1103,14 @@ export function PartiesPlaceholderPage() {
                     }}
                   >
                     {PARTY_TYPES.map((type) => (
-                      <option key={type} value={type} disabled={Boolean(form.ulid) && !CREATABLE_TYPES.includes(type)}>
+                      <option
+                        key={type}
+                        value={type}
+                        disabled={
+                          type === 'SALES MAN' ||
+                          (Boolean(form.ulid) && !CREATABLE_TYPES.includes(type))
+                        }
+                      >
                         {type}
                       </option>
                     ))}

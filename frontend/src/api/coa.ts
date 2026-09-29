@@ -18,6 +18,7 @@ export type CoaSubHead = {
 
 export type CoaAccountType = {
   ulid: string
+  code: string | null
   name: string
   is_cash: boolean
   is_bank: boolean
@@ -43,6 +44,7 @@ export type CoaTreeNode = {
     is_active: boolean
     account_types: Array<{
       ulid: string
+      code: string | null
       name: string
       sort_order: number
       is_active: boolean
@@ -69,6 +71,7 @@ export type SubHeadPayload = {
 
 export type AccountTypePayload = {
   sub_head_ulid: string
+  code?: string | null
   name: string
   is_cash?: boolean
   is_bank?: boolean
