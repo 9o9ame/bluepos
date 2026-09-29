@@ -6,6 +6,7 @@ use App\Exceptions\ApiException;
 use App\Models\BarcodeGroup;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Subcategory;
 use App\Models\Supplier;
@@ -46,6 +47,11 @@ class TenantCatalog
     public function supplier(string $ulid): Supplier
     {
         return $this->find(Supplier::class, $ulid);
+    }
+
+    public function customer(string $ulid): Customer
+    {
+        return $this->find(Customer::class, $ulid);
     }
 
     public function warehouse(string $ulid): Warehouse

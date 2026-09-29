@@ -2,15 +2,23 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Customer;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin Supplier
+ * Unified party payload for /definition/parties.
+ *
+ * @mixin Supplier|Customer
  */
-class SupplierResource extends JsonResource
+class PartyResource extends JsonResource
 {
+    public function __construct($resource, private readonly string $partyType)
+    {
+        parent::__construct($resource);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -18,8 +26,10 @@ class SupplierResource extends JsonResource
     {
         return [
             'ulid' => $this->ulid,
+            'party_type' => $this->partyType,
             'code' => $this->code,
             'name' => $this->name,
+            'deals_in' => $this->deals_in,
             'contact_person' => $this->contact_person,
             'mobile' => $this->mobile,
             'mobile_secondary' => $this->mobile_secondary,
@@ -28,10 +38,7 @@ class SupplierResource extends JsonResource
             'email' => $this->email,
             'address' => $this->address,
             'billing_address' => $this->billing_address,
-            'deals_in' => $this->deals_in,
-            'tax_number' => $this->tax_number,
-            'notes' => $this->notes,
-            'is_active' => $this->is_active,
+            'is_active' => (bool) $this->is_active,
         ];
     }
 }

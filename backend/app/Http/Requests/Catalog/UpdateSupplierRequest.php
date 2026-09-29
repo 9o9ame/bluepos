@@ -32,6 +32,19 @@ class UpdateSupplierRequest extends FormRequest
         if ($this->exists('phone')) {
             $merge['phone'] = $this->filled('phone') ? trim((string) $this->input('phone')) : null;
         }
+        if ($this->exists('phone_secondary')) {
+            $merge['phone_secondary'] = $this->filled('phone_secondary')
+                ? trim((string) $this->input('phone_secondary'))
+                : null;
+        }
+        if ($this->exists('mobile')) {
+            $merge['mobile'] = $this->filled('mobile') ? trim((string) $this->input('mobile')) : null;
+        }
+        if ($this->exists('mobile_secondary')) {
+            $merge['mobile_secondary'] = $this->filled('mobile_secondary')
+                ? trim((string) $this->input('mobile_secondary'))
+                : null;
+        }
         if ($this->exists('email')) {
             $merge['email'] = $this->filled('email')
                 ? strtolower(trim((string) $this->input('email')))
@@ -40,6 +53,14 @@ class UpdateSupplierRequest extends FormRequest
         if ($this->exists('tax_number')) {
             $merge['tax_number'] = $this->filled('tax_number')
                 ? trim((string) $this->input('tax_number'))
+                : null;
+        }
+        if ($this->exists('deals_in')) {
+            $merge['deals_in'] = $this->filled('deals_in') ? trim((string) $this->input('deals_in')) : null;
+        }
+        if ($this->exists('billing_address')) {
+            $merge['billing_address'] = $this->filled('billing_address')
+                ? trim((string) $this->input('billing_address'))
                 : null;
         }
 
@@ -67,10 +88,15 @@ class UpdateSupplierRequest extends FormRequest
                     ->ignore(Supplier::query()->forTenant($tenantId)->where('ulid', $ulid)->value('id')),
             ],
             'name' => ['sometimes', 'required', 'string', 'max:180'],
+            'deals_in' => ['nullable', 'string', 'max:180'],
             'contact_person' => ['nullable', 'string', 'max:180'],
+            'mobile' => ['nullable', 'string', 'max:64'],
+            'mobile_secondary' => ['nullable', 'string', 'max:64'],
             'phone' => ['nullable', 'string', 'max:64'],
+            'phone_secondary' => ['nullable', 'string', 'max:64'],
             'email' => ['nullable', 'email', 'max:180'],
             'address' => ['nullable', 'string'],
+            'billing_address' => ['nullable', 'string'],
             'tax_number' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],

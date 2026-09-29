@@ -31,8 +31,13 @@ export type Supplier = {
   name: string
   contact_person: string | null
   phone: string | null
+  mobile?: string | null
+  mobile_secondary?: string | null
+  phone_secondary?: string | null
   email: string | null
   address: string | null
+  billing_address?: string | null
+  deals_in?: string | null
   tax_number: string | null
   notes: string | null
   is_active: boolean

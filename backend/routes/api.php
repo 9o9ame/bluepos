@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\Inventory\OpeningBalanceController;
 use App\Http\Controllers\Api\Inventory\StockController;
 use App\Http\Controllers\Api\MembershipController;
+use App\Http\Controllers\Api\PartyController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\Purchases\PurchaseInvoiceController;
@@ -89,6 +90,12 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::get('/settings/business', [BusinessSettingController::class, 'show']);
     Route::patch('/settings/business', [BusinessSettingController::class, 'update']);
     Route::get('/settings/entitlements', [TenantEntitlementController::class, 'show']);
+
+    Route::get('/parties', [PartyController::class, 'index']);
+    Route::post('/parties', [PartyController::class, 'store']);
+    Route::get('/parties/{partyUlid}', [PartyController::class, 'show']);
+    Route::patch('/parties/{partyUlid}', [PartyController::class, 'update']);
+    Route::delete('/parties/{partyUlid}', [PartyController::class, 'destroy']);
 
     Route::middleware('entitled:catalog')->group(function () {
         Route::get('/categories', [CategoryController::class, 'index']);
