@@ -23,6 +23,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'address',
     'billing_address',
     'account_type_id',
+    'area',
+    'invoice_restricted',
+    'credit_limit_amount',
+    'credit_limit_days',
+    'license_number',
+    'license_issued_on',
+    'license_type',
+    'license_expires_on',
+    'ignore_warranty',
+    'print_license',
+    'rf_id',
+    'store_allowed',
     'tax_number',
     'notes',
     'is_active',
@@ -37,6 +49,13 @@ class Supplier extends Model
     {
         return [
             'is_active' => 'boolean',
+            'ignore_warranty' => 'boolean',
+            'print_license' => 'boolean',
+            'invoice_restricted' => 'boolean',
+            'credit_limit_amount' => 'decimal:4',
+            'credit_limit_days' => 'integer',
+            'license_issued_on' => 'date',
+            'license_expires_on' => 'date',
         ];
     }
 

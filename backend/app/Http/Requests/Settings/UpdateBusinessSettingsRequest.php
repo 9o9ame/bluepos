@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use App\Enums\PriceType;
+use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -13,11 +14,25 @@ class UpdateBusinessSettingsRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->exists('opening_balance_equity_account_ulid')) {
+            $raw = $this->input('opening_balance_equity_account_ulid');
+            $this->merge([
+                'opening_balance_equity_account_ulid' => $raw === null || $raw === ''
+                    ? null
+                    : trim((string) $raw),
+            ]);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */
     public function rules(): array
     {
+        $tenantId = app(TenantContext::class)->tenantId();
+
         return [
             'business_name' => ['sometimes', 'required', 'string', 'max:160'],
             'legal_name' => ['nullable', 'string', 'max:160'],
@@ -38,6 +53,15 @@ class UpdateBusinessSettingsRequest extends FormRequest
             'expiry_tracking_enabled' => ['sometimes', 'boolean'],
             'batch_tracking_enabled' => ['sometimes', 'boolean'],
             'default_price_level' => ['sometimes', 'required', Rule::enum(PriceType::class)],
+            'opening_balance_equity_account_ulid' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'size:26',
+                Rule::exists('accounts', 'ulid')
+                    ->where('tenant_id', $tenantId)
+                    ->where('is_active', true),
+            ],
         ];
     }
 }

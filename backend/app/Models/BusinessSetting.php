@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'batch_tracking_enabled',
     'default_price_level',
     'next_product_number',
+    'opening_balance_equity_account_id',
 ])]
 class BusinessSetting extends Model
 {
@@ -51,5 +52,13 @@ class BusinessSetting extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * @return BelongsTo<Account, $this>
+     */
+    public function openingBalanceEquityAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'opening_balance_equity_account_id');
     }
 }

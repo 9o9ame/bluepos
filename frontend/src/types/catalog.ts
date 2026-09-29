@@ -71,6 +71,12 @@ export type BusinessSettings = {
   expiry_tracking_enabled: boolean
   batch_tracking_enabled: boolean
   default_price_level: string
+  opening_balance_equity_account_ulid: string | null
+  opening_balance_equity_account: {
+    ulid: string
+    code: string
+    name: string
+  } | null
 }
 
 export type ProductBarcode = {

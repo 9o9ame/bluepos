@@ -16,6 +16,10 @@ class BusinessSettingResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $equity = $this->relationLoaded('openingBalanceEquityAccount')
+            ? $this->openingBalanceEquityAccount
+            : $this->openingBalanceEquityAccount()->first();
+
         return [
             'ulid' => $this->ulid,
             'business_name' => $this->business_name,
@@ -37,6 +41,12 @@ class BusinessSettingResource extends JsonResource
             'expiry_tracking_enabled' => $this->expiry_tracking_enabled,
             'batch_tracking_enabled' => $this->batch_tracking_enabled,
             'default_price_level' => $this->default_price_level,
+            'opening_balance_equity_account_ulid' => $equity?->ulid,
+            'opening_balance_equity_account' => $equity ? [
+                'ulid' => $equity->ulid,
+                'code' => $equity->code,
+                'name' => $equity->name,
+            ] : null,
         ];
     }
 }

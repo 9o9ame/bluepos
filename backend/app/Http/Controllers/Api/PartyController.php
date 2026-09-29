@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Accounting\PartyLeafAccountSync;
 use App\Catalog\TenantCatalog;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
@@ -22,6 +23,7 @@ class PartyController extends Controller
     public function __construct(
         private readonly TenantCatalog $catalog,
         private readonly AuditLogger $audit,
+        private readonly PartyLeafAccountSync $leafSync,
     ) {}
 
     public function index(Request $request, TenantContext $tenantContext): JsonResponse
@@ -37,6 +39,10 @@ class PartyController extends Controller
             $vendors = Supplier::query()
                 ->forTenant($tenantContext->tenantId())
                 ->with('accountType')
+                ->when($request->boolean('expired_license'), function ($q) {
+                    $q->whereNotNull('license_expires_on')
+                        ->whereDate('license_expires_on', '<', now()->toDateString());
+                })
                 ->orderBy('name')
                 ->get()
                 ->map(fn (Supplier $supplier) => (new PartyResource($supplier, 'vendor'))->resolve());
@@ -47,15 +53,21 @@ class PartyController extends Controller
             $customers = Customer::query()
                 ->forTenant($tenantContext->tenantId())
                 ->with('accountType')
+                ->when($request->boolean('expired_license'), function ($q) {
+                    $q->whereNotNull('license_expires_on')
+                        ->whereDate('license_expires_on', '<', now()->toDateString());
+                })
                 ->orderBy('name')
                 ->get()
                 ->map(fn (Customer $customer) => (new PartyResource($customer, 'customer'))->resolve());
             $rows = $rows->concat($customers);
         }
 
-        if (in_array($type, ['all', 'account'], true) && $this->canViewAccounts()) {
+        if (in_array($type, ['all', 'account'], true) && $this->canViewAccounts() && ! $request->boolean('expired_license')) {
             $accounts = Account::query()
                 ->forTenant($tenantContext->tenantId())
+                ->whereNull('supplier_id')
+                ->whereNull('customer_id')
                 ->with('accountType')
                 ->orderBy('name')
                 ->get()
@@ -91,6 +103,7 @@ class PartyController extends Controller
 
             if ($partyType === 'vendor') {
                 $party = Supplier::query()->create($payload);
+                $this->leafSync->syncSupplier($party);
                 $this->audit->record('SUPPLIER_CREATED', [
                     'resource_type' => 'supplier',
                     'resource_ulid' => $party->ulid,
@@ -101,6 +114,7 @@ class PartyController extends Controller
 
             if ($partyType === 'customer') {
                 $party = Customer::query()->create($payload);
+                $this->leafSync->syncCustomer($party);
                 $this->audit->record('CUSTOMER_CREATED', [
                     'resource_type' => 'customer',
                     'resource_ulid' => $party->ulid,
@@ -157,11 +171,27 @@ class PartyController extends Controller
                 $attrs['account_type_id'] = $accountType->id;
             }
             if ($partyType === 'account') {
-                $attrs = array_intersect_key($attrs, array_flip(['code', 'name', 'address', 'account_type_id', 'is_active']));
+                $attrs = array_intersect_key($attrs, array_flip([
+                    'code',
+                    'name',
+                    'address',
+                    'area',
+                    'invoice_restricted',
+                    'credit_limit_amount',
+                    'credit_limit_days',
+                    'account_type_id',
+                    'is_active',
+                ]));
             }
             $party->fill($attrs);
             $party->updated_by = app(TenantContext::class)->userId();
             $party->save();
+
+            if ($partyType === 'vendor') {
+                $this->leafSync->syncSupplier($party);
+            } elseif ($partyType === 'customer') {
+                $this->leafSync->syncCustomer($party);
+            }
 
             $becameActive = ! $wasActive && (bool) $party->is_active;
             $event = match ($partyType) {

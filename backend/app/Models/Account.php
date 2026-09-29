@@ -12,7 +12,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'code',
     'name',
     'address',
+    'area',
+    'invoice_restricted',
+    'credit_limit_amount',
+    'credit_limit_days',
     'account_type_id',
+    'supplier_id',
+    'customer_id',
     'is_active',
     'created_by',
     'updated_by',
@@ -25,6 +31,9 @@ class Account extends Model
     {
         return [
             'is_active' => 'boolean',
+            'invoice_restricted' => 'boolean',
+            'credit_limit_amount' => 'decimal:4',
+            'credit_limit_days' => 'integer',
         ];
     }
 
@@ -42,5 +51,21 @@ class Account extends Model
     public function accountType(): BelongsTo
     {
         return $this->belongsTo(AccountType::class, 'account_type_id');
+    }
+
+    /**
+     * @return BelongsTo<Supplier, $this>
+     */
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
+    /**
+     * @return BelongsTo<Customer, $this>
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 }

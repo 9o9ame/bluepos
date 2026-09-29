@@ -13,15 +13,43 @@ import {
   UsersRound,
   XCircle,
 } from 'lucide-react'
+import { fetchBusinessSettings } from '../api/catalog'
 import {
+  bulkUpdateParties,
   createParty,
+  createPartyBankAccount,
+  createPartyOpeningBalance,
+  deletePartyBankAccount,
+  deletePartyOpeningBalance,
+  downloadPartyExcelTemplate,
+  ensurePartyLeafAccount,
   fetchParties,
+  fetchPartyBankAccounts,
+  fetchPartyLedger,
+  fetchPartyOpeningBalances,
+  importPartyExcel,
+  postPartyOpeningBalance,
+  previewPartyExcel,
   updateParty,
+  updatePartyBankAccount,
+  updatePartyOpeningBalance,
   type Party,
+  type PartyBankAccount,
+  type PartyExcelPreview,
+  type PartyLedger,
   type PartyListFilter,
+  type PartyOpeningBalance,
   type PartyTypeApi,
 } from '../api/parties'
-import { fetchAccountTypes, fetchCoaTree, type CoaAccountType, type CoaTreeNode } from '../api/coa'
+import {
+  fetchAccountTypes,
+  fetchCoaChart,
+  fetchCoaTree,
+  type CoaAccountType,
+  type CoaFlatRow,
+  type CoaGroupedNode,
+  type CoaTreeNode,
+} from '../api/coa'
 import { CoaHierarchyModals } from '../components/parties/CoaHierarchyModals'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import './PartiesPlaceholderPage.css'
@@ -139,8 +167,19 @@ function partyToForm(party: Party, listFilter: PartyType): FormState {
     phone2: party.phone_secondary ?? '',
     email: party.email ?? '',
     discontinued: !party.is_active,
+    invoiceRestricted: Boolean(party.invoice_restricted),
+    crLimit: party.credit_limit_amount ?? '0.0000',
+    days: String(party.credit_limit_days ?? 0),
     accountType: party.account_type?.name ?? '',
     accountTypeUlid: party.account_type_ulid ?? '',
+    license: party.license_number ?? '',
+    licenseIssue: party.license_issued_on ?? '',
+    licenseType: party.license_type || 'A',
+    licenseExp: party.license_expires_on ?? '',
+    ignoreWarranty: Boolean(party.ignore_warranty),
+    printLicense: Boolean(party.print_license),
+    rfId: party.rf_id ?? '',
+    storeAllowed: party.store_allowed ?? '',
   }
 }
 
@@ -161,7 +200,75 @@ function formSnapshot(form: FormState): string {
     email: form.email,
     discontinued: form.discontinued,
     accountTypeUlid: form.accountTypeUlid,
+    license: form.license,
+    licenseIssue: form.licenseIssue,
+    licenseType: form.licenseType,
+    licenseExp: form.licenseExp,
+    ignoreWarranty: form.ignoreWarranty,
+    printLicense: form.printLicense,
+    rfId: form.rfId,
+    storeAllowed: form.storeAllowed,
   })
+}
+
+type BankDraft = {
+  key: string
+  ulid: string | null
+  bank_name: string
+  branch_name: string
+  branch_code: string
+  city: string
+  account_number: string
+  dirty: boolean
+}
+
+type OpeningDraft = {
+  key: string
+  ulid: string | null
+  status: 'draft' | 'posted'
+  narration: string
+  debit: string
+  credit: string
+  balance: string
+  closing: string
+  dirty: boolean
+}
+
+type BulkDraft = {
+  key: string
+  ulid: string
+  party_type: PartyTypeApi
+  discontinued: boolean
+  restricted: boolean
+  code: string
+  name: string
+  typeLabel: string
+  area: string
+  account_type_ulid: string
+  account_type_name: string
+  credit_limit_amount: string
+  dirty: boolean
+}
+
+function openingClosing(debit: string, credit: string, balance = '0.0000'): string {
+  const d = Number(debit) || 0
+  const c = Number(credit) || 0
+  const b = Number(balance) || 0
+  return (b + d - c).toFixed(4)
+}
+
+function openingsFromApi(rows: PartyOpeningBalance[]): OpeningDraft[] {
+  return rows.map((row) => ({
+    key: row.ulid,
+    ulid: row.ulid,
+    status: row.status,
+    narration: row.narration ?? '',
+    debit: row.debit,
+    credit: row.credit,
+    balance: row.balance,
+    closing: row.closing,
+    dirty: false,
+  }))
 }
 
 function errMessage(err: unknown): string {
@@ -185,10 +292,31 @@ export function PartiesPlaceholderPage() {
   const [expandedRoots, setExpandedRoots] = useState<Record<string, boolean>>({})
   const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({})
   const [coaShowGrouped, setCoaShowGrouped] = useState(true)
+  const [coaFlatRows, setCoaFlatRows] = useState<CoaFlatRow[]>([])
+  const [coaGroupedRows, setCoaGroupedRows] = useState<CoaGroupedNode[]>([])
+  const [coaChartLoading, setCoaChartLoading] = useState(false)
+  const [expandedCoaMain, setExpandedCoaMain] = useState<Record<string, boolean>>({})
+  const [expandedCoaHead, setExpandedCoaHead] = useState<Record<string, boolean>>({})
+  const [expandedCoaSub, setExpandedCoaSub] = useState<Record<string, boolean>>({})
   const [bulkOnlyExpired, setBulkOnlyExpired] = useState(false)
+  const [bulkRows, setBulkRows] = useState<BulkDraft[]>([])
+  const [bulkSaving, setBulkSaving] = useState(false)
+  const [excelPreview, setExcelPreview] = useState<PartyExcelPreview | null>(null)
+  const [excelFile, setExcelFile] = useState<File | null>(null)
+  const excelInputRef = useRef<HTMLInputElement | null>(null)
   const [coaTree, setCoaTree] = useState<CoaTreeNode[]>([])
   const [accountTypes, setAccountTypes] = useState<CoaAccountType[]>([])
   const [coaModalOpen, setCoaModalOpen] = useState(false)
+  const [bankRows, setBankRows] = useState<BankDraft[]>([])
+  const [selectedBankKey, setSelectedBankKey] = useState<string | null>(null)
+  const [openingRows, setOpeningRows] = useState<OpeningDraft[]>([])
+  const [selectedOpeningKey, setSelectedOpeningKey] = useState<string | null>(null)
+  const [openingBusy, setOpeningBusy] = useState(false)
+  const [openingEquityConfigured, setOpeningEquityConfigured] = useState(false)
+  const [ledger, setLedger] = useState<PartyLedger | null>(null)
+  const [ledgerLoading, setLedgerLoading] = useState(false)
+  const [ledgerPage, setLedgerPage] = useState(1)
+  const [ensureBusy, setEnsureBusy] = useState(false)
   const baselineRef = useRef(formSnapshot(emptyForm('ALL')))
 
   const rows: PartyListRow[] = useMemo(
@@ -210,7 +338,10 @@ export function PartiesPlaceholderPage() {
     rows.length === 0
       ? 'Record 0 of 0'
       : `Record ${Math.max(selectedIndex, 0) + 1} of ${rows.length}`
-  const dirty = formSnapshot(form) !== baselineRef.current
+  const dirty =
+    formSnapshot(form) !== baselineRef.current ||
+    bankRows.some((r) => r.dirty) ||
+    openingRows.some((r) => r.dirty)
   const canSave =
     !saving &&
     form.name.trim().length > 0 &&
@@ -272,6 +403,172 @@ export function PartiesPlaceholderPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    if (viewTab !== 'coa') return
+    void loadCoaChart()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewTab, coaShowGrouped])
+
+  useEffect(() => {
+    if (subTab !== 'opening') return
+    void (async () => {
+      try {
+        const settings = await fetchBusinessSettings()
+        setOpeningEquityConfigured(Boolean(settings.opening_balance_equity_account_ulid))
+      } catch {
+        setOpeningEquityConfigured(false)
+      }
+    })()
+  }, [subTab])
+
+  useEffect(() => {
+    if (viewTab !== 'ledger') return
+    if (!form.ulid) {
+      setLedger(null)
+      return
+    }
+    const partyType = uiTypeToApi(form.type)
+    if (!partyType) {
+      setLedger(null)
+      return
+    }
+    void loadLedger(form.ulid, partyType, ledgerPage)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewTab, form.ulid, form.type, ledgerPage])
+
+  useEffect(() => {
+    if (viewTab !== 'bulk') return
+    void loadBulkRows()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewTab, bulkOnlyExpired, listFilter])
+
+  async function loadBulkRows() {
+    try {
+      const filter = uiTypeToFilter(listFilter === 'SALES MAN' ? 'ALL' : listFilter)
+      const data = await fetchParties(filter, { expiredLicense: bulkOnlyExpired })
+      setBulkRows(
+        data.map((party) => ({
+          key: `${party.party_type}:${party.ulid}`,
+          ulid: party.ulid,
+          party_type: party.party_type,
+          discontinued: !party.is_active,
+          restricted: Boolean(party.invoice_restricted),
+          code: party.code,
+          name: party.name,
+          typeLabel: typeLabel(party.party_type),
+          area: party.area ?? '',
+          account_type_ulid: party.account_type_ulid ?? '',
+          account_type_name: party.account_type?.name ?? '',
+          credit_limit_amount: party.credit_limit_amount ?? '0.0000',
+          dirty: false,
+        })),
+      )
+    } catch (err) {
+      setBulkRows([])
+      setError(errMessage(err))
+    }
+  }
+
+  function patchBulk(key: string, patch: Partial<BulkDraft>) {
+    setBulkRows((rows) =>
+      rows.map((row) => (row.key === key ? { ...row, ...patch, dirty: true } : row)),
+    )
+  }
+
+  async function saveBulkDirty() {
+    const dirty = bulkRows.filter((r) => r.dirty)
+    if (dirty.length === 0) {
+      setError('No dirty bulk rows to update.')
+      return
+    }
+    setBulkSaving(true)
+    setError(null)
+    try {
+      await bulkUpdateParties(
+        dirty.map((row) => ({
+          ulid: row.ulid,
+          party_type: row.party_type,
+          is_active: !row.discontinued,
+          invoice_restricted: row.restricted,
+          area: row.area.trim() || null,
+          account_type_ulid: row.account_type_ulid || null,
+          credit_limit_amount: row.credit_limit_amount,
+        })),
+      )
+      await loadBulkRows()
+      await loadParties(listFilter, true)
+    } catch (err) {
+      setError(errMessage(err))
+    } finally {
+      setBulkSaving(false)
+    }
+  }
+
+  async function onExcelSelected(file: File | null) {
+    setExcelFile(file)
+    setExcelPreview(null)
+    if (!file) return
+    try {
+      const preview = await previewPartyExcel(file)
+      setExcelPreview(preview)
+    } catch (err) {
+      setError(errMessage(err))
+    }
+  }
+
+  async function confirmExcelImport() {
+    if (!excelFile) return
+    try {
+      const result = await importPartyExcel(excelFile)
+      setError(`Import complete: ${result.created} created, ${result.updated} updated.`)
+      setExcelPreview(null)
+      setExcelFile(null)
+      if (excelInputRef.current) excelInputRef.current.value = ''
+      await loadBulkRows()
+      await loadParties(listFilter, true)
+    } catch (err) {
+      setError(errMessage(err))
+    }
+  }
+
+  async function loadLedger(partyUlid: string, partyType: PartyTypeApi, page: number) {
+    setLedgerLoading(true)
+    try {
+      const data = await fetchPartyLedger(partyUlid, partyType, page)
+      setLedger(data)
+    } catch (err) {
+      setLedger(null)
+      setError(errMessage(err))
+    } finally {
+      setLedgerLoading(false)
+    }
+  }
+
+  async function onEnsureLeafAccount() {
+    if (!form.ulid) {
+      setError('Select or save a party first.')
+      return
+    }
+    const partyType = uiTypeToApi(form.type)
+    if (!partyType) {
+      setError('Select Vendor, Customer, or Account.')
+      return
+    }
+    setEnsureBusy(true)
+    setError(null)
+    try {
+      const result = await ensurePartyLeafAccount(form.ulid, partyType)
+      setError(result.message)
+      if (viewTab === 'ledger') {
+        await loadLedger(form.ulid, partyType, ledgerPage)
+      }
+    } catch (err) {
+      setError(errMessage(err))
+    } finally {
+      setEnsureBusy(false)
+    }
+  }
+
   async function loadCoaTree() {
     try {
       const [tree, types] = await Promise.all([fetchCoaTree(), fetchAccountTypes()])
@@ -288,6 +585,61 @@ export function PartiesPlaceholderPage() {
     }
   }
 
+  async function loadCoaChart() {
+    setCoaChartLoading(true)
+    try {
+      const payload = await fetchCoaChart(coaShowGrouped)
+      if (payload.mode === 'flat') {
+        setCoaFlatRows(payload.flat)
+        setCoaGroupedRows([])
+      } else {
+        setCoaGroupedRows(payload.grouped)
+        setCoaFlatRows([])
+        setExpandedCoaMain((current) => {
+          if (Object.keys(current).length > 0) return current
+          const next: Record<string, boolean> = {}
+          for (const main of payload.grouped) next[main.ulid] = true
+          return next
+        })
+        setExpandedCoaHead((current) => {
+          if (Object.keys(current).length > 0) return current
+          const next: Record<string, boolean> = {}
+          for (const main of payload.grouped) {
+            for (const head of main.heads) next[head.ulid] = true
+          }
+          return next
+        })
+        setExpandedCoaSub((current) => {
+          if (Object.keys(current).length > 0) return current
+          const next: Record<string, boolean> = {}
+          for (const main of payload.grouped) {
+            for (const head of main.heads) {
+              for (const sub of head.sub_heads) next[sub.ulid] = true
+            }
+          }
+          return next
+        })
+      }
+    } catch {
+      setCoaFlatRows([])
+      setCoaGroupedRows([])
+    } finally {
+      setCoaChartLoading(false)
+    }
+  }
+
+  function toggleCoaMain(ulid: string) {
+    setExpandedCoaMain((current) => ({ ...current, [ulid]: !current[ulid] }))
+  }
+
+  function toggleCoaHead(ulid: string) {
+    setExpandedCoaHead((current) => ({ ...current, [ulid]: !current[ulid] }))
+  }
+
+  function toggleCoaSub(ulid: string) {
+    setExpandedCoaSub((current) => ({ ...current, [ulid]: !current[ulid] }))
+  }
+
   function applySuggestedAccountType(partyType: PartyType, formState: FormState): FormState {
     if (formState.accountTypeUlid) return formState
     const hint = suggestedAccountTypeName(partyType)
@@ -297,11 +649,50 @@ export function PartiesPlaceholderPage() {
     return { ...formState, accountType: match.name, accountTypeUlid: match.ulid }
   }
 
+  function banksFromApi(rows: PartyBankAccount[]): BankDraft[] {
+    return rows.map((row) => ({
+      key: row.ulid,
+      ulid: row.ulid,
+      bank_name: row.bank_name,
+      branch_name: row.branch_name ?? '',
+      branch_code: row.branch_code ?? '',
+      city: row.city ?? '',
+      account_number: row.account_number ?? '',
+      dirty: false,
+    }))
+  }
+
+  async function loadBanks(partyUlid: string, partyType: PartyTypeApi) {
+    try {
+      const rows = await fetchPartyBankAccounts(partyUlid, partyType)
+      setBankRows(banksFromApi(rows))
+      setSelectedBankKey(null)
+    } catch {
+      setBankRows([])
+      setSelectedBankKey(null)
+    }
+  }
+
+  async function loadOpenings(partyUlid: string, partyType: PartyTypeApi) {
+    try {
+      const rows = await fetchPartyOpeningBalances(partyUlid, partyType)
+      setOpeningRows(openingsFromApi(rows))
+      setSelectedOpeningKey(null)
+    } catch {
+      setOpeningRows([])
+      setSelectedOpeningKey(null)
+    }
+  }
+
   function startNew(filter: PartyType = listFilter) {
     const nextType = CREATABLE_TYPES.includes(filter) ? filter : 'VENDORS'
     const blank = applySuggestedAccountType(nextType, emptyForm(nextType))
     applyBaseline(blank)
     setSelectedKey(null)
+    setBankRows([])
+    setSelectedBankKey(null)
+    setOpeningRows([])
+    setSelectedOpeningKey(null)
     setSubTab('contact')
     setError(null)
   }
@@ -321,6 +712,9 @@ export function PartiesPlaceholderPage() {
     applyBaseline(partyToForm(party, listFilter))
     setSelectedKey(row.key)
     setError(null)
+    setLedgerPage(1)
+    void loadBanks(party.ulid, party.party_type)
+    void loadOpenings(party.ulid, party.party_type)
   }
 
   function moveSelection(index: number) {
@@ -370,20 +764,231 @@ export function PartiesPlaceholderPage() {
       address: form.address.trim() || null,
       billing_address: form.billAddress.trim() || null,
       is_active: !form.discontinued,
+      invoice_restricted: form.invoiceRestricted,
+      credit_limit_amount: form.crLimit.trim() || '0.0000',
+      credit_limit_days: Number(form.days) || 0,
+      ...(partyType === 'account'
+        ? {}
+        : {
+            license_number: form.license.trim() || null,
+            license_issued_on: form.licenseIssue || null,
+            license_type: form.licenseType || null,
+            license_expires_on: form.licenseExp || null,
+            ignore_warranty: form.ignoreWarranty,
+            print_license: form.printLicense,
+            rf_id: form.rfId.trim() || null,
+            store_allowed: form.storeAllowed || null,
+          }),
     }
 
     try {
+      const wasNew = !form.ulid
       const saved = form.ulid
         ? await updateParty(form.ulid, payload)
         : await createParty(payload)
+
+      if (wasNew && bankRows.length > 0) {
+        for (const row of bankRows) {
+          if (!row.bank_name.trim()) continue
+          await createPartyBankAccount(saved.ulid, saved.party_type, {
+            bank_name: row.bank_name.trim(),
+            branch_name: row.branch_name.trim() || null,
+            branch_code: row.branch_code.trim() || null,
+            city: row.city.trim() || null,
+            account_number: row.account_number.trim() || null,
+          })
+        }
+      } else if (!wasNew) {
+        for (const row of bankRows) {
+          if (!row.dirty || !row.bank_name.trim()) continue
+          if (row.ulid) {
+            await updatePartyBankAccount(saved.ulid, saved.party_type, row.ulid, {
+              bank_name: row.bank_name.trim(),
+              branch_name: row.branch_name.trim() || null,
+              branch_code: row.branch_code.trim() || null,
+              city: row.city.trim() || null,
+              account_number: row.account_number.trim() || null,
+            })
+          } else {
+            await createPartyBankAccount(saved.ulid, saved.party_type, {
+              bank_name: row.bank_name.trim(),
+              branch_name: row.branch_name.trim() || null,
+              branch_code: row.branch_code.trim() || null,
+              city: row.city.trim() || null,
+              account_number: row.account_number.trim() || null,
+            })
+          }
+        }
+      }
+
       await loadParties(listFilter, true)
       const next = partyToForm(saved, listFilter)
       applyBaseline(next)
       setSelectedKey(`${saved.party_type}:${saved.ulid}`)
+      await loadBanks(saved.ulid, saved.party_type)
+      await loadOpenings(saved.ulid, saved.party_type)
     } catch (err) {
       setError(errMessage(err))
     } finally {
       setSaving(false)
+    }
+  }
+
+  function addBankRow() {
+    const key = `draft-${Date.now()}`
+    setBankRows((rows) => [
+      ...rows,
+      {
+        key,
+        ulid: null,
+        bank_name: '',
+        branch_name: '',
+        branch_code: '',
+        city: '',
+        account_number: '',
+        dirty: true,
+      },
+    ])
+    setSelectedBankKey(key)
+  }
+
+  function patchBank(key: string, field: keyof BankDraft, value: string) {
+    setBankRows((rows) =>
+      rows.map((row) => (row.key === key ? { ...row, [field]: value, dirty: true } : row)),
+    )
+  }
+
+  async function removeSelectedBank() {
+    if (!selectedBankKey) return
+    const row = bankRows.find((r) => r.key === selectedBankKey)
+    if (!row) return
+    if (row.ulid && form.ulid) {
+      const partyType = uiTypeToApi(form.type)
+      if (!partyType) return
+      try {
+        await deletePartyBankAccount(form.ulid, partyType, row.ulid)
+      } catch (err) {
+        setError(errMessage(err))
+        return
+      }
+    }
+    setBankRows((rows) => rows.filter((r) => r.key !== selectedBankKey))
+    setSelectedBankKey(null)
+  }
+
+  function addOpeningRow() {
+    if (!form.ulid) {
+      setError('Save the party first, then add opening balances.')
+      return
+    }
+    const key = `draft-ob-${Date.now()}`
+    setOpeningRows((rows) => [
+      ...rows,
+      {
+        key,
+        ulid: null,
+        status: 'draft',
+        narration: '',
+        debit: '0.0000',
+        credit: '0.0000',
+        balance: '0.0000',
+        closing: '0.0000',
+        dirty: true,
+      },
+    ])
+    setSelectedOpeningKey(key)
+  }
+
+  function patchOpening(key: string, field: 'narration' | 'debit' | 'credit', value: string) {
+    setOpeningRows((rows) =>
+      rows.map((row) => {
+        if (row.key !== key || row.status === 'posted') return row
+        const next = { ...row, [field]: value, dirty: true }
+        next.closing = openingClosing(next.debit, next.credit, next.balance)
+        return next
+      }),
+    )
+  }
+
+  async function persistOpeningRow(row: OpeningDraft) {
+    const partyType = uiTypeToApi(form.type)
+    if (!partyType || !form.ulid) return
+    const debit = Number(row.debit) || 0
+    const credit = Number(row.credit) || 0
+    if (debit > 0 && credit > 0) {
+      setError('Debit and credit cannot both be positive.')
+      return
+    }
+    if (debit <= 0 && credit <= 0) {
+      setError('Opening amount requires debit or credit.')
+      return
+    }
+    setOpeningBusy(true)
+    setError(null)
+    try {
+      const payload = {
+        opening_date: new Date().toISOString().slice(0, 10),
+        narration: row.narration.trim() || null,
+        debit: debit.toFixed(4),
+        credit: credit.toFixed(4),
+      }
+      if (row.ulid) {
+        await updatePartyOpeningBalance(form.ulid, partyType, row.ulid, payload)
+      } else {
+        await createPartyOpeningBalance(form.ulid, partyType, payload)
+      }
+      await loadOpenings(form.ulid, partyType)
+    } catch (err) {
+      setError(errMessage(err))
+    } finally {
+      setOpeningBusy(false)
+    }
+  }
+
+  async function removeSelectedOpening() {
+    if (!selectedOpeningKey) return
+    const row = openingRows.find((r) => r.key === selectedOpeningKey)
+    if (!row) return
+    if (row.status === 'posted') {
+      setError('Posted opening balances are immutable.')
+      return
+    }
+    if (row.ulid && form.ulid) {
+      const partyType = uiTypeToApi(form.type)
+      if (!partyType) return
+      try {
+        await deletePartyOpeningBalance(form.ulid, partyType, row.ulid)
+      } catch (err) {
+        setError(errMessage(err))
+        return
+      }
+    }
+    setOpeningRows((rows) => rows.filter((r) => r.key !== selectedOpeningKey))
+    setSelectedOpeningKey(null)
+  }
+
+  async function postSelectedOpening() {
+    if (!selectedOpeningKey || !form.ulid) return
+    if (!openingEquityConfigured) {
+      setError('Configure Opening Balance Equity Account in Business Settings before posting.')
+      return
+    }
+    const row = openingRows.find((r) => r.key === selectedOpeningKey)
+    if (!row?.ulid || row.status === 'posted') return
+    const partyType = uiTypeToApi(form.type)
+    if (!partyType) return
+    if (row.dirty) {
+      await persistOpeningRow(row)
+    }
+    setOpeningBusy(true)
+    setError(null)
+    try {
+      await postPartyOpeningBalance(form.ulid, partyType, row.ulid)
+      await loadOpenings(form.ulid, partyType)
+    } catch (err) {
+      setError(errMessage(err))
+    } finally {
+      setOpeningBusy(false)
     }
   }
 
@@ -616,17 +1221,81 @@ export function PartiesPlaceholderPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td colSpan={5} className="parties-vca-empty">No bank accounts</td>
-                        </tr>
+                        {bankRows.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="parties-vca-empty">No bank accounts</td>
+                          </tr>
+                        ) : (
+                          bankRows.map((row) => (
+                            <tr
+                              key={row.key}
+                              className={row.key === selectedBankKey ? 'is-selected' : undefined}
+                              onClick={() => setSelectedBankKey(row.key)}
+                            >
+                              <td>
+                                <input
+                                  value={row.bank_name}
+                                  onChange={(e) => patchBank(row.key, 'bank_name', e.target.value)}
+                                  onFocus={() => setSelectedBankKey(row.key)}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  value={row.branch_name}
+                                  onChange={(e) => patchBank(row.key, 'branch_name', e.target.value)}
+                                  onFocus={() => setSelectedBankKey(row.key)}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  value={row.branch_code}
+                                  onChange={(e) => patchBank(row.key, 'branch_code', e.target.value)}
+                                  onFocus={() => setSelectedBankKey(row.key)}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  value={row.city}
+                                  onChange={(e) => patchBank(row.key, 'city', e.target.value)}
+                                  onFocus={() => setSelectedBankKey(row.key)}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  value={row.account_number}
+                                  onChange={(e) => patchBank(row.key, 'account_number', e.target.value)}
+                                  onFocus={() => setSelectedBankKey(row.key)}
+                                />
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
-                    <div className="parties-vca-mini-foot">Record 0 of 0</div>
+                    <div className="parties-vca-mini-foot parties-vca-bank-foot">
+                      <span>
+                        {bankRows.length === 0
+                          ? 'Record 0 of 0'
+                          : `Record ${Math.max(bankRows.findIndex((r) => r.key === selectedBankKey), 0) + 1} of ${bankRows.length}`}
+                      </span>
+                      <span className="parties-vca-bank-actions">
+                        <button type="button" onClick={addBankRow}>Add</button>
+                        <button type="button" disabled={!selectedBankKey} onClick={() => void removeSelectedBank()}>
+                          Remove
+                        </button>
+                      </span>
+                    </div>
                   </div>
                 ) : null}
 
                 {subTab === 'others' ? (
                   <div className="parties-vca-others">
+                    {form.type === 'ACCOUNTS' ? (
+                      <div className="parties-vca-empty" style={{ padding: 8 }}>
+                        Others details apply to Vendors and Customers only
+                      </div>
+                    ) : (
+                      <>
                     <div className="parties-vca-field-row parties-vca-others-license">
                       <label htmlFor="vca-license">License</label>
                       <input id="vca-license" value={form.license} onChange={(e) => patchForm('license', e.target.value)} />
@@ -673,6 +1342,8 @@ export function PartiesPlaceholderPage() {
                         <option value="BRANCH">BRANCH</option>
                       </select>
                     </div>
+                      </>
+                    )}
                   </div>
                 ) : null}
 
@@ -705,12 +1376,116 @@ export function PartiesPlaceholderPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr>
-                          <td colSpan={6} className="parties-vca-empty">No opening lines</td>
-                        </tr>
+                        {openingRows.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="parties-vca-empty">No opening lines</td>
+                          </tr>
+                        ) : (
+                          openingRows.map((row) => {
+                            const posted = row.status === 'posted'
+                            return (
+                              <tr
+                                key={row.key}
+                                className={row.key === selectedOpeningKey ? 'is-selected' : undefined}
+                                onClick={() => setSelectedOpeningKey(row.key)}
+                              >
+                                <td>
+                                  <input value="" disabled title="Sales person mapping deferred" placeholder="—" />
+                                </td>
+                                <td>
+                                  <input
+                                    value={row.narration}
+                                    disabled={posted || openingBusy}
+                                    onChange={(e) => patchOpening(row.key, 'narration', e.target.value)}
+                                    onFocus={() => setSelectedOpeningKey(row.key)}
+                                  />
+                                </td>
+                                <td>
+                                  <input value={row.balance} disabled readOnly />
+                                </td>
+                                <td>
+                                  <input
+                                    value={row.debit}
+                                    disabled={posted || openingBusy}
+                                    onChange={(e) => patchOpening(row.key, 'debit', e.target.value)}
+                                    onFocus={() => setSelectedOpeningKey(row.key)}
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    value={row.credit}
+                                    disabled={posted || openingBusy}
+                                    onChange={(e) => patchOpening(row.key, 'credit', e.target.value)}
+                                    onFocus={() => setSelectedOpeningKey(row.key)}
+                                  />
+                                </td>
+                                <td>
+                                  <input value={row.closing} disabled readOnly />
+                                </td>
+                              </tr>
+                            )
+                          })
+                        )}
                       </tbody>
                     </table>
-                    <div className="parties-vca-mini-foot">Opening balances post after Phase 5 journals</div>
+                    <div className="parties-vca-mini-foot parties-vca-bank-foot">
+                      <span>
+                        {openingRows.length === 0
+                          ? 'Record 0 of 0'
+                          : `Record ${Math.max(openingRows.findIndex((r) => r.key === selectedOpeningKey), 0) + 1} of ${openingRows.length}`}
+                        {!openingEquityConfigured
+                          ? ' — Configure Opening Balance Equity Account in Business Settings before posting.'
+                          : ''}
+                      </span>
+                      <span className="parties-vca-bank-actions">
+                        <button type="button" disabled={!form.ulid || openingBusy} onClick={addOpeningRow}>
+                          Add
+                        </button>
+                        <button
+                          type="button"
+                          disabled={
+                            !selectedOpeningKey ||
+                            openingBusy ||
+                            openingRows.find((r) => r.key === selectedOpeningKey)?.status === 'posted'
+                          }
+                          onClick={() => {
+                            const row = openingRows.find((r) => r.key === selectedOpeningKey)
+                            if (row) void persistOpeningRow(row)
+                          }}
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          disabled={
+                            !openingEquityConfigured ||
+                            !selectedOpeningKey ||
+                            openingBusy ||
+                            !openingRows.find((r) => r.key === selectedOpeningKey)?.ulid ||
+                            openingRows.find((r) => r.key === selectedOpeningKey)?.status === 'posted'
+                          }
+                          title={
+                            openingEquityConfigured
+                              ? undefined
+                              : 'Configure Opening Balance Equity Account in Business Settings before posting.'
+                          }
+                          onClick={() => void postSelectedOpening()}
+                        >
+                          Post
+                        </button>
+                        <button
+                          type="button"
+                          disabled={
+                            !selectedOpeningKey ||
+                            openingBusy ||
+                            openingRows.find((r) => r.key === selectedOpeningKey)?.status === 'posted'
+                          }
+                          onClick={() => void removeSelectedOpening()}
+                        >
+                          Remove
+                        </button>
+                      </span>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -931,43 +1706,112 @@ export function PartiesPlaceholderPage() {
         <div className="parties-vca-shell">
           <div className="parties-vca-ledger-head">
             <div className="parties-vca-ledger-meta">
-              <div><span>Name:</span> <strong>{form.name || '—'}</strong></div>
-              <div><span>Address:</span> <strong>{form.address || '—'}</strong></div>
-              <div><span>Area:</span> <strong>(NONE)</strong></div>
+              <div>
+                <span>Name:</span>{' '}
+                <strong>{ledger?.account.name || form.name || '—'}</strong>
+              </div>
+              <div>
+                <span>Address:</span>{' '}
+                <strong>{ledger?.account.address || form.address || '—'}</strong>
+              </div>
+              <div>
+                <span>Area:</span> <strong>{ledger?.account.area || '(NONE)'}</strong>
+              </div>
             </div>
-            <button type="button" className="parties-vca-shell-btn" disabled title="Requires parties + journals API">
+            <button
+              type="button"
+              className="parties-vca-shell-btn"
+              disabled={!form.ulid || ensureBusy || !uiTypeToApi(form.type)}
+              onClick={() => void onEnsureLeafAccount()}
+              title="Repair missing leaf account link without creating duplicates"
+            >
               <FolderPlus size={16} />
               Create Necessary A/Cs
             </button>
           </div>
           <div className="parties-vca-shell-grid-wrap">
-            <table className="parties-vca-shell-grid">
+            <table className="parties-vca-shell-grid parties-vca-ledger-grid">
               <thead>
                 <tr>
                   <th>Trans#</th>
                   <th>Date</th>
                   <th>DOC</th>
                   <th>Remarks</th>
-                  <th>Debit</th>
-                  <th>Credit</th>
-                  <th>Balance</th>
+                  <th className="is-num">Debit</th>
+                  <th className="is-num">Credit</th>
+                  <th className="is-num">Balance</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td colSpan={7} className="parties-vca-empty">Ledger posting is not implemented in VCA-1</td>
-                </tr>
+                {!form.ulid ? (
+                  <tr>
+                    <td colSpan={7} className="parties-vca-empty">
+                      Select a party to view ledger
+                    </td>
+                  </tr>
+                ) : ledgerLoading ? (
+                  <tr>
+                    <td colSpan={7} className="parties-vca-empty">
+                      Loading ledger…
+                    </td>
+                  </tr>
+                ) : !ledger || ledger.rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="parties-vca-empty">
+                      No posted ledger entries.
+                    </td>
+                  </tr>
+                ) : (
+                  ledger.rows.map((row) => (
+                    <tr key={row.line_ulid}>
+                      <td>{row.trans_no}</td>
+                      <td>{row.date}</td>
+                      <td>{row.doc}</td>
+                      <td>{row.remarks || '—'}</td>
+                      <td className="is-num">{row.debit}</td>
+                      <td className="is-num">{row.credit}</td>
+                      <td className="is-num">{row.balance}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
           <div className="parties-vca-shell-foot">
-            <span>Record 0 of 0</span>
+            <span>
+              {ledger
+                ? `Record ${ledger.rows.length} of ${ledger.pagination.total}`
+                : 'Record 0 of 0'}
+              {ledger && ledger.pagination.last_page > 1
+                ? ` — Page ${ledger.pagination.page}/${ledger.pagination.last_page}`
+                : ''}
+            </span>
             <div className="parties-vca-drcr">
               <span>Dr</span>
-              <strong>0</strong>
+              <strong>{ledger?.totals.debit ?? '0.0000'}</strong>
               <span>Cr</span>
-              <strong>0</strong>
+              <strong>{ledger?.totals.credit ?? '0.0000'}</strong>
+              <span>Bal</span>
+              <strong>{ledger?.totals.closing_balance ?? '0.0000'}</strong>
             </div>
+            {ledger && ledger.pagination.last_page > 1 ? (
+              <span className="parties-vca-bank-actions">
+                <button
+                  type="button"
+                  disabled={ledgerPage <= 1 || ledgerLoading}
+                  onClick={() => setLedgerPage((p) => Math.max(1, p - 1))}
+                >
+                  Prev
+                </button>
+                <button
+                  type="button"
+                  disabled={ledgerPage >= ledger.pagination.last_page || ledgerLoading}
+                  onClick={() => setLedgerPage((p) => p + 1)}
+                >
+                  Next
+                </button>
+              </span>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -975,7 +1819,12 @@ export function PartiesPlaceholderPage() {
       {viewTab === 'bulk' ? (
         <div className="parties-vca-shell">
           <div className="parties-vca-bulk-toolbar">
-            <button type="button" className="parties-vca-shell-btn is-update" disabled title="Bulk update awaits parties API">
+            <button
+              type="button"
+              className="parties-vca-shell-btn is-update"
+              disabled={bulkSaving || !bulkRows.some((r) => r.dirty)}
+              onClick={() => void saveBulkDirty()}
+            >
               <Save size={16} />
               Update
             </button>
@@ -1004,18 +1853,116 @@ export function PartiesPlaceholderPage() {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td colSpan={9} className="parties-vca-empty">No rows — bulk list loads with parties API</td>
-                </tr>
+                {bulkRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="parties-vca-empty">
+                      {bulkOnlyExpired ? 'No expired-license parties.' : 'No party rows.'}
+                    </td>
+                  </tr>
+                ) : (
+                  bulkRows.map((row, index) => (
+                    <tr key={row.key} className={row.dirty ? 'is-selected' : undefined}>
+                      <td>{index + 1}</td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={row.discontinued}
+                          onChange={(e) => patchBulk(row.key, { discontinued: e.target.checked })}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={row.restricted}
+                          onChange={(e) => patchBulk(row.key, { restricted: e.target.checked })}
+                        />
+                      </td>
+                      <td>{row.code}</td>
+                      <td>{row.name}</td>
+                      <td>{row.typeLabel}</td>
+                      <td>
+                        <input
+                          value={row.area}
+                          onChange={(e) => patchBulk(row.key, { area: e.target.value })}
+                        />
+                      </td>
+                      <td>
+                        <select
+                          value={row.account_type_ulid}
+                          onChange={(e) => {
+                            const ulid = e.target.value
+                            const match = accountTypes.find((t) => t.ulid === ulid)
+                            patchBulk(row.key, {
+                              account_type_ulid: ulid,
+                              account_type_name: match?.name ?? '',
+                            })
+                          }}
+                        >
+                          <option value="">—</option>
+                          {accountTypes.map((type) => (
+                            <option key={type.ulid} value={type.ulid}>
+                              {type.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <input
+                          className="is-num"
+                          value={row.credit_limit_amount}
+                          onChange={(e) => patchBulk(row.key, { credit_limit_amount: e.target.value })}
+                        />
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
           <div className="parties-vca-bulk-actions">
-            <button type="button" disabled>Export Excel Template</button>
-            <button type="button" disabled>Convert Vendor</button>
-            <button type="button" disabled>Import COA</button>
-            <button type="button" disabled>Import from Excel</button>
+            <button
+              type="button"
+              onClick={() => void downloadPartyExcelTemplate().catch((err) => setError(errMessage(err)))}
+            >
+              Export Excel Template
+            </button>
+            <button type="button" disabled title="Conversion rules not configured.">
+              Convert Vendor
+            </button>
+            <button type="button" disabled title="COA import deferred to a dedicated COA template phase (VCA-7B).">
+              Import COA
+            </button>
+            <button type="button" onClick={() => excelInputRef.current?.click()}>
+              Import from Excel
+            </button>
+            <input
+              ref={excelInputRef}
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              hidden
+              onChange={(e) => void onExcelSelected(e.target.files?.[0] ?? null)}
+            />
           </div>
+          {excelPreview ? (
+            <div className="parties-vca-bulk-preview">
+              <div>
+                Preview: {excelPreview.valid.length} valid, {excelPreview.invalid.length} invalid
+                {excelPreview.warnings.length ? ` — ${excelPreview.warnings.join(' ')}` : ''}
+              </div>
+              {excelPreview.invalid.slice(0, 5).map((row) => (
+                <div key={`inv-${row.row}`}>
+                  Row {row.row}: {row.errors.join('; ')}
+                </div>
+              ))}
+              <button
+                type="button"
+                disabled={excelPreview.valid.length === 0 || excelPreview.invalid.length > 0}
+                onClick={() => void confirmExcelImport()}
+              >
+                Confirm Import
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -1025,6 +1972,10 @@ export function PartiesPlaceholderPage() {
             <button type="button" className="parties-vca-shell-btn" disabled title="Export awaits COA API">
               <FileSpreadsheet size={16} />
               Export to XLSX
+            </button>
+            <button type="button" className="parties-vca-shell-btn" onClick={() => void loadCoaChart()} disabled={coaChartLoading}>
+              <RefreshCw size={16} />
+              Refresh
             </button>
             <label className="parties-vca-check-inline">
               <input
@@ -1046,53 +1997,96 @@ export function PartiesPlaceholderPage() {
                 </tr>
               </thead>
               <tbody>
-                {coaTree.length === 0 ? (
+                {coaChartLoading ? (
                   <tr>
                     <td colSpan={4} className="parties-vca-empty">
-                      No COA hierarchy yet — use + Account Type
+                      Loading chart…
+                    </td>
+                  </tr>
+                ) : coaShowGrouped ? (
+                  coaGroupedRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="parties-vca-empty">
+                        No leaf accounts yet — save vendors, customers, or manual accounts
+                      </td>
+                    </tr>
+                  ) : (
+                    coaGroupedRows.flatMap((main) => {
+                      const mainOpen = expandedCoaMain[main.ulid] !== false
+                      const out: ReactNode[] = [
+                        <tr key={`m-${main.ulid}`} className="parties-vca-coa-group parties-vca-coa-level-0">
+                          <td colSpan={4}>
+                            <button type="button" className="parties-vca-coa-toggle" onClick={() => toggleCoaMain(main.ulid)}>
+                              {mainOpen ? '−' : '+'}
+                            </button>
+                            {main.label}
+                          </td>
+                        </tr>,
+                      ]
+                      if (!mainOpen) return out
+                      for (const head of main.heads) {
+                        const headOpen = expandedCoaHead[head.ulid] !== false
+                        out.push(
+                          <tr key={`h-${head.ulid}`} className="parties-vca-coa-level-1">
+                            <td colSpan={4}>
+                              <button type="button" className="parties-vca-coa-toggle" onClick={() => toggleCoaHead(head.ulid)}>
+                                {headOpen ? '−' : '+'}
+                              </button>
+                              {head.label}
+                            </td>
+                          </tr>,
+                        )
+                        if (!headOpen) continue
+                        for (const sub of head.sub_heads) {
+                          const subOpen = expandedCoaSub[sub.ulid] !== false
+                          out.push(
+                            <tr key={`s-${sub.ulid}`} className="parties-vca-coa-level-2">
+                              <td colSpan={4}>
+                                <button type="button" className="parties-vca-coa-toggle" onClick={() => toggleCoaSub(sub.ulid)}>
+                                  {subOpen ? '−' : '+'}
+                                </button>
+                                {sub.label}
+                              </td>
+                            </tr>,
+                          )
+                          if (!subOpen) continue
+                          for (const leaf of sub.accounts) {
+                            out.push(
+                              <tr key={`a-${leaf.ulid}`} className="parties-vca-coa-level-3">
+                                <td colSpan={4}>{leaf.label}</td>
+                              </tr>,
+                            )
+                          }
+                        }
+                      }
+                      return out
+                    })
+                  )
+                ) : coaFlatRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="parties-vca-empty">
+                      No leaf accounts yet — save vendors, customers, or manual accounts
                     </td>
                   </tr>
                 ) : (
-                  coaTree.flatMap((main, index) => {
-                    const rows: ReactNode[] = []
-                    if (coaShowGrouped) {
-                      rows.push(
-                        <tr key={`g-${main.ulid}`} className="parties-vca-coa-group">
-                          <td colSpan={4}>{`${String(index + 1).padStart(2, '0')}-${main.name}`}</td>
-                        </tr>,
-                      )
-                    }
-                    for (const sub of main.sub_heads) {
-                      if (sub.account_types.length === 0) {
-                        rows.push(
-                          <tr key={`s-${sub.ulid}`}>
-                            <td>{main.name}</td>
-                            <td>—</td>
-                            <td>{main.name}</td>
-                            <td>{sub.name}</td>
-                          </tr>,
-                        )
-                      } else {
-                        for (const type of sub.account_types) {
-                          rows.push(
-                            <tr key={`t-${type.ulid}`}>
-                              <td>{main.name}</td>
-                              <td>{type.name}</td>
-                              <td>{main.name}</td>
-                              <td>{sub.name}</td>
-                            </tr>,
-                          )
-                        }
-                      }
-                    }
-                    return rows
-                  })
+                  coaFlatRows.map((row) => (
+                    <tr key={row.account_ulid}>
+                      <td>{row.main_head_label}</td>
+                      <td>{row.account_label}</td>
+                      <td>{row.head_label}</td>
+                      <td>{row.sub_head_label}</td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
           </div>
           <div className="parties-vca-shell-foot">
-            <span>Record 0 of 0</span>
+            <span>
+              {coaShowGrouped
+                ? `Hierarchy ${coaGroupedRows.length} main head(s)`
+                : `Record ${coaFlatRows.length} of ${coaFlatRows.length}`}
+            </span>
           </div>
         </div>
       ) : null}

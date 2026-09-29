@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\CoaChartController;
 use App\Http\Controllers\Api\AccountMainHeadController;
 use App\Http\Controllers\Api\AccountSubHeadController;
 use App\Http\Controllers\Api\AccountTypeController;
@@ -13,7 +14,11 @@ use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\Inventory\OpeningBalanceController;
 use App\Http\Controllers\Api\Inventory\StockController;
 use App\Http\Controllers\Api\MembershipController;
+use App\Http\Controllers\Api\PartyBankAccountController;
+use App\Http\Controllers\Api\PartyBulkController;
 use App\Http\Controllers\Api\PartyController;
+use App\Http\Controllers\Api\PartyLedgerController;
+use App\Http\Controllers\Api\PartyOpeningBalanceController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\Purchases\PurchaseInvoiceController;
@@ -96,10 +101,27 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::get('/parties', [PartyController::class, 'index']);
     Route::post('/parties', [PartyController::class, 'store']);
+    Route::patch('/parties/bulk', [PartyBulkController::class, 'update']);
+    Route::get('/parties/excel-template', [PartyBulkController::class, 'template']);
+    Route::post('/parties/excel/preview', [PartyBulkController::class, 'preview']);
+    Route::post('/parties/excel/import', [PartyBulkController::class, 'import']);
     Route::get('/parties/{partyUlid}', [PartyController::class, 'show']);
     Route::patch('/parties/{partyUlid}', [PartyController::class, 'update']);
     Route::delete('/parties/{partyUlid}', [PartyController::class, 'destroy']);
+    Route::get('/parties/{partyUlid}/bank-accounts', [PartyBankAccountController::class, 'index']);
+    Route::post('/parties/{partyUlid}/bank-accounts', [PartyBankAccountController::class, 'store']);
+    Route::patch('/parties/{partyUlid}/bank-accounts/{bankUlid}', [PartyBankAccountController::class, 'update']);
+    Route::delete('/parties/{partyUlid}/bank-accounts/{bankUlid}', [PartyBankAccountController::class, 'destroy']);
+    Route::get('/parties/{partyUlid}/ledger', [PartyLedgerController::class, 'show']);
+    Route::post('/parties/{partyUlid}/ensure-leaf-account', [PartyLedgerController::class, 'ensureLeafAccount']);
+    Route::get('/parties/{partyUlid}/opening-balances', [PartyOpeningBalanceController::class, 'index']);
+    Route::post('/parties/{partyUlid}/opening-balances', [PartyOpeningBalanceController::class, 'store']);
+    Route::patch('/parties/{partyUlid}/opening-balances/{openingUlid}', [PartyOpeningBalanceController::class, 'update']);
+    Route::delete('/parties/{partyUlid}/opening-balances/{openingUlid}', [PartyOpeningBalanceController::class, 'destroy']);
+    Route::post('/parties/{partyUlid}/opening-balances/{openingUlid}/post', [PartyOpeningBalanceController::class, 'post']);
 
+    Route::get('/coa/chart', [CoaChartController::class, 'show']);
+    Route::get('/coa/leaf-accounts', [CoaChartController::class, 'leafAccounts']);
     Route::get('/coa/tree', [AccountTypeController::class, 'tree']);
     Route::get('/coa/main-heads', [AccountMainHeadController::class, 'index']);
     Route::post('/coa/main-heads', [AccountMainHeadController::class, 'store']);

@@ -38,8 +38,25 @@ class StorePartyRequest extends FormRequest
                 ? strtolower(trim((string) $this->input('email')))
                 : null,
             'address' => $this->filled('address') ? trim((string) $this->input('address')) : null,
+            'area' => $this->filled('area') ? trim((string) $this->input('area')) : null,
             'billing_address' => $this->filled('billing_address')
                 ? trim((string) $this->input('billing_address'))
+                : null,
+            'license_number' => $this->filled('license_number')
+                ? trim((string) $this->input('license_number'))
+                : null,
+            'license_issued_on' => $this->filled('license_issued_on')
+                ? trim((string) $this->input('license_issued_on'))
+                : null,
+            'license_type' => $this->filled('license_type')
+                ? strtoupper(trim((string) $this->input('license_type')))
+                : null,
+            'license_expires_on' => $this->filled('license_expires_on')
+                ? trim((string) $this->input('license_expires_on'))
+                : null,
+            'rf_id' => $this->filled('rf_id') ? trim((string) $this->input('rf_id')) : null,
+            'store_allowed' => $this->filled('store_allowed')
+                ? strtoupper(trim((string) $this->input('store_allowed')))
                 : null,
         ]);
     }
@@ -75,6 +92,10 @@ class StorePartyRequest extends FormRequest
                     ->where('is_active', true),
             ],
             'address' => ['nullable', 'string'],
+            'area' => ['nullable', 'string', 'max:120'],
+            'invoice_restricted' => ['sometimes', 'boolean'],
+            'credit_limit_amount' => ['sometimes', 'regex:/^\d+(\.\d{1,4})?$/'],
+            'credit_limit_days' => ['sometimes', 'integer', 'min:0', 'max:99999'],
             'is_active' => ['sometimes', 'boolean'],
         ];
 
@@ -87,6 +108,14 @@ class StorePartyRequest extends FormRequest
             $rules['phone_secondary'] = ['nullable', 'string', 'max:64'];
             $rules['email'] = ['nullable', 'email', 'max:180'];
             $rules['billing_address'] = ['nullable', 'string'];
+            $rules['license_number'] = ['nullable', 'string', 'max:120'];
+            $rules['license_issued_on'] = ['nullable', 'date'];
+            $rules['license_type'] = ['nullable', 'string', 'max:8'];
+            $rules['license_expires_on'] = ['nullable', 'date', 'after_or_equal:license_issued_on'];
+            $rules['ignore_warranty'] = ['sometimes', 'boolean'];
+            $rules['print_license'] = ['sometimes', 'boolean'];
+            $rules['rf_id'] = ['nullable', 'string', 'max:120'];
+            $rules['store_allowed'] = ['nullable', 'string', Rule::in(['ALL', 'BRANCH'])];
         }
 
         return $rules;

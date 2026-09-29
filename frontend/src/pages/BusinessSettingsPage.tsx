@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react'
 import { RefreshCw, Save, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchBusinessSettings, saveBusinessSettings } from '../api/catalog'
+import { fetchLeafAccounts } from '../api/coa'
 import { ApiClientError } from '../api/client'
 import { DesktopButton, DesktopPanel, Field, FormGroup } from '../components/desktop/DesktopPanel'
 import { useCan } from '../features/auth/useCan'
@@ -12,6 +13,7 @@ export function BusinessSettingsPage() {
   const { closeActiveTab } = useWorkspace()
   const canManage = useCan('settings.manage')
   const query = useQuery({ queryKey: ['business-settings'], queryFn: fetchBusinessSettings })
+  const leafAccountsQuery = useQuery({ queryKey: ['coa-leaf-accounts'], queryFn: fetchLeafAccounts })
   const [error, setError] = useState<string | null>(null)
 
   const mutation = useMutation({
@@ -23,10 +25,11 @@ export function BusinessSettingsPage() {
 
   useWorkspaceHandlers({
     save: () => {
-      (document.getElementById('settings-form') as HTMLFormElement | null)?.requestSubmit()
+      ;(document.getElementById('settings-form') as HTMLFormElement | null)?.requestSubmit()
     },
     refresh: () => {
       void query.refetch()
+      void leafAccountsQuery.refetch()
     },
   })
 
@@ -58,6 +61,7 @@ export function BusinessSettingsPage() {
         expiry_tracking_enabled: form.get('expiry_tracking_enabled') === 'on',
         batch_tracking_enabled: form.get('batch_tracking_enabled') === 'on',
         default_price_level: String(form.get('default_price_level') ?? 'retail'),
+        opening_balance_equity_account_ulid: String(form.get('opening_balance_equity_account_ulid') || '') || null,
       })
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Unable to save settings.')
@@ -73,6 +77,7 @@ export function BusinessSettingsPage() {
   }
 
   const settings = query.data
+  const leafAccounts = leafAccountsQuery.data ?? []
 
   return (
     <DesktopPanel
@@ -80,7 +85,7 @@ export function BusinessSettingsPage() {
       toolbar={
         <>
           <DesktopButton icon={<Save size={13} />} label="Save" shortcut="F9" disabled={!canManage || mutation.isPending} onClick={() => (document.getElementById('settings-form') as HTMLFormElement | null)?.requestSubmit()} />
-          <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => void query.refetch()} />
+          <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => { void query.refetch(); void leafAccountsQuery.refetch() }} />
           <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
         </>
       }
@@ -149,6 +154,24 @@ export function BusinessSettingsPage() {
           <label className="desktop-field"><span>Allow negative stock (config only)</span><input type="checkbox" name="negative_stock_allowed" defaultChecked={settings.negative_stock_allowed} /></label>
           <label className="desktop-field"><span>Expiry tracking</span><input type="checkbox" name="expiry_tracking_enabled" defaultChecked={settings.expiry_tracking_enabled} /></label>
           <label className="desktop-field"><span>Batch tracking</span><input type="checkbox" name="batch_tracking_enabled" defaultChecked={settings.batch_tracking_enabled} /></label>
+        </FormGroup>
+        <FormGroup title="Accounting">
+          <Field label="Opening Balance Equity Account" span2>
+            <select
+              key={`equity-${settings.opening_balance_equity_account_ulid ?? 'none'}-${leafAccounts.length}`}
+              className="desktop-select"
+              name="opening_balance_equity_account_ulid"
+              defaultValue={settings.opening_balance_equity_account_ulid ?? ''}
+              disabled={!canManage}
+            >
+              <option value="">— Not configured —</option>
+              {leafAccounts.map((account) => (
+                <option key={account.ulid} value={account.ulid}>
+                  {account.code} — {account.name}
+                </option>
+              ))}
+            </select>
+          </Field>
         </FormGroup>
       </form>
     </DesktopPanel>

@@ -42,10 +42,25 @@ class UpdatePartyRequest extends FormRequest
             'phone_secondary',
             'address',
             'billing_address',
+            'area',
+            'license_number',
+            'license_issued_on',
+            'license_expires_on',
+            'rf_id',
         ] as $field) {
             if ($this->exists($field)) {
                 $merge[$field] = $this->filled($field) ? trim((string) $this->input($field)) : null;
             }
+        }
+        if ($this->exists('license_type')) {
+            $merge['license_type'] = $this->filled('license_type')
+                ? strtoupper(trim((string) $this->input('license_type')))
+                : null;
+        }
+        if ($this->exists('store_allowed')) {
+            $merge['store_allowed'] = $this->filled('store_allowed')
+                ? strtoupper(trim((string) $this->input('store_allowed')))
+                : null;
         }
         if ($this->exists('email')) {
             $merge['email'] = $this->filled('email')
@@ -92,6 +107,10 @@ class UpdatePartyRequest extends FormRequest
                     ->where('is_active', true),
             ],
             'address' => ['nullable', 'string'],
+            'area' => ['nullable', 'string', 'max:120'],
+            'invoice_restricted' => ['sometimes', 'boolean'],
+            'credit_limit_amount' => ['sometimes', 'regex:/^\d+(\.\d{1,4})?$/'],
+            'credit_limit_days' => ['sometimes', 'integer', 'min:0', 'max:99999'],
             'is_active' => ['sometimes', 'boolean'],
         ];
 
@@ -104,6 +123,14 @@ class UpdatePartyRequest extends FormRequest
             $rules['phone_secondary'] = ['nullable', 'string', 'max:64'];
             $rules['email'] = ['nullable', 'email', 'max:180'];
             $rules['billing_address'] = ['nullable', 'string'];
+            $rules['license_number'] = ['nullable', 'string', 'max:120'];
+            $rules['license_issued_on'] = ['nullable', 'date'];
+            $rules['license_type'] = ['nullable', 'string', 'max:8'];
+            $rules['license_expires_on'] = ['nullable', 'date', 'after_or_equal:license_issued_on'];
+            $rules['ignore_warranty'] = ['sometimes', 'boolean'];
+            $rules['print_license'] = ['sometimes', 'boolean'];
+            $rules['rf_id'] = ['nullable', 'string', 'max:120'];
+            $rules['store_allowed'] = ['nullable', 'string', Rule::in(['ALL', 'BRANCH'])];
         }
 
         return $rules;
