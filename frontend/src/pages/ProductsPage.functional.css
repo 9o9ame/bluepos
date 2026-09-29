@@ -35,8 +35,8 @@
 .product-reference-screen .pdf-barcode-box {
   display: flex;
   flex-direction: column;
-  max-height: 150px;
-  min-height: 0;
+  min-height: 150px;
+  max-height: clamp(150px, 32vh, 420px);
   overflow: hidden;
 }
 
@@ -129,13 +129,10 @@
   width: 100%;
   height: 100%;
   min-height: 92px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
+  display: grid;
+  place-items: center;
   box-sizing: border-box;
-  padding: 8px 5px;
+  padding: 0;
   border: 1px dashed rgba(50, 88, 118, .55);
   background:
     linear-gradient(180deg, rgba(255,255,255,.72), rgba(224,235,244,.78));
@@ -154,25 +151,22 @@
 }
 
 .product-reference-screen .product-def-image-icon {
-  width: 48px;
-  height: 42px;
+  width: 72%;
+  height: 72%;
+  max-width: 88px;
+  max-height: 78px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
+  border-radius: 12px;
   background: rgba(51, 132, 189, .12);
   color: #2478b5;
 }
 
-.product-reference-screen .product-def-image-empty strong {
-  font-size: 11px;
-  line-height: 1.1;
-  font-weight: 700;
-}
-
-.product-reference-screen .product-def-image-empty small {
-  font-size: 9px;
-  line-height: 1.1;
-  opacity: .78;
+.product-reference-screen .product-def-image-icon svg {
+  width: 56%;
+  height: 56%;
+  max-width: 48px;
+  max-height: 48px;
 }
 
 :root[data-theme='dark'] .product-reference-screen .product-def-image-empty {

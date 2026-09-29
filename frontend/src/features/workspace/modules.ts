@@ -28,7 +28,6 @@ import {
   ShoppingCart,
   SlidersHorizontal,
   Tag,
-  Truck,
   Undo2,
   User,
   Users,
@@ -168,15 +167,6 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     ribbon: 'definition',
     status: 'ready',
     permission: 'units.view',
-    entitlement: 'catalog',
-  },
-  {
-    key: 'suppliers',
-    title: 'Suppliers',
-    path: '/definition/suppliers',
-    ribbon: 'definition',
-    status: 'ready',
-    permission: 'suppliers.view',
     entitlement: 'catalog',
   },
   {
@@ -365,7 +355,6 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
         { id: 'subcategories', label: 'Subcategories', icon: Layers, moduleKey: 'subcategories', permission: 'categories.view', entitlement: 'catalog', status: 'ready', tone: 'blue' },
         { id: 'brands', label: 'Brands', icon: Tag, moduleKey: 'brands', permission: 'brands.view', entitlement: 'catalog', status: 'ready', tone: 'purple' },
         { id: 'units', label: 'Units', icon: Ruler, moduleKey: 'units', permission: 'units.view', entitlement: 'catalog', status: 'ready', tone: 'slate' },
-        { id: 'suppliers', label: 'Suppliers', icon: Truck, moduleKey: 'suppliers', permission: 'suppliers.view', entitlement: 'catalog', status: 'ready', tone: 'teal' },
       ],
     },
     {

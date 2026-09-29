@@ -23,7 +23,6 @@ export const BLUEPOS_RIBBON_COMMAND_ICONS: Record<string, string> = {
   subcategories: '/icons/bluepos-v2/subcategories.svg',
   brands: '/icons/bluepos-v2/brands.svg',
   units: '/icons/bluepos-v2/units.svg',
-  suppliers: '/icons/bluepos-v2/suppliers.svg',
   parties: '/icons/bluepos-v2/vendor-customer-accounts.svg',
   'opening-stock': '/icons/bluepos-v2/opening-stock.svg',
   barcodes: '/icons/bluepos-v2/barcode-printing.svg',

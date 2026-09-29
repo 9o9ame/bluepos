@@ -561,6 +561,8 @@
   margin-left: 0 !important;
   margin-right: 0 !important;
   align-self: stretch;
+  min-height: 150px;
+  max-height: clamp(150px, 32vh, 420px);
   border-radius: 10px;
   border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 25%, #a8b4c0);
   background: linear-gradient(180deg, #ffffff, #f4f8fc);

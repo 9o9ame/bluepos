@@ -28,10 +28,6 @@ const COPY: Record<QuickEditorKind, { title: string; nameLabel: string }> = {
     title: 'Edit/Define Subcategories',
     nameLabel: 'Name',
   },
-  supplier: {
-    title: 'Edit/Define Suppliers',
-    nameLabel: 'Name',
-  },
   brand: {
     title: 'Edit/Define Company',
     nameLabel: 'Name',
@@ -117,7 +113,7 @@ export function CatalogQuickEditorModal({
   }
 
   const tableColSpan =
-    activeKind === 'unit' ? 3 : activeKind === 'supplier' ? 4 : activeKind === 'subcategory' ? 3 : 2
+    activeKind === 'unit' ? 3 : activeKind === 'subcategory' ? 3 : 2
 
   return createPortal(
     <div
@@ -181,26 +177,6 @@ export function CatalogQuickEditorModal({
               />
             </div>
 
-            {activeKind === 'supplier' ? (
-              <div className="catalog-popup-form-row catalog-popup-form-row--code-name">
-                <label htmlFor="catalog-popup-phone">Phone:</label>
-                <input
-                  id="catalog-popup-phone"
-                  className="catalog-popup-normal"
-                  value={editor.phone}
-                  onChange={(event) => editor.setPhone(event.target.value)}
-                />
-
-                <label htmlFor="catalog-popup-address">Address:</label>
-                <input
-                  id="catalog-popup-address"
-                  className="catalog-popup-name"
-                  value={editor.address}
-                  onChange={(event) => editor.setAddress(event.target.value)}
-                />
-              </div>
-            ) : null}
-
             {activeKind === 'unit' ? (
               <div className="catalog-popup-form-row catalog-popup-form-row--unit-extra">
                 <label htmlFor="catalog-popup-symbol">Symbol:</label>
@@ -234,12 +210,6 @@ export function CatalogQuickEditorModal({
                   <th>{copy.nameLabel}</th>
                   {activeKind === 'subcategory' ? <th>Category</th> : null}
                   {activeKind === 'unit' ? <th>Symbol</th> : null}
-                  {activeKind === 'supplier' ? (
-                    <>
-                      <th>Phone</th>
-                      <th>Address</th>
-                    </>
-                  ) : null}
                 </tr>
               </thead>
               <tbody>
@@ -259,12 +229,6 @@ export function CatalogQuickEditorModal({
                       </td>
                     ) : null}
                     {activeKind === 'unit' ? <td>{'symbol' in row ? row.symbol : ''}</td> : null}
-                    {activeKind === 'supplier' ? (
-                      <>
-                        <td>{'phone' in row ? row.phone ?? '—' : '—'}</td>
-                        <td>{'address' in row ? row.address ?? '—' : '—'}</td>
-                      </>
-                    ) : null}
                   </tr>
                 ))}
 

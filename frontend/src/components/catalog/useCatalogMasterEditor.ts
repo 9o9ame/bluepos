@@ -5,32 +5,28 @@ import {
   createBrand,
   createCategory,
   createSubcategory,
-  createSupplier,
   createUnit,
   deactivateBarcodeGroup,
   deactivateBrand,
   deactivateCategory,
   deactivateSubcategory,
-  deactivateSupplier,
   deactivateUnit,
   fetchBarcodeGroups,
   fetchBrands,
   fetchCategories,
   fetchSubcategories,
-  fetchSuppliers,
   fetchUnits,
   updateBarcodeGroup,
   updateBrand,
   updateCategory,
   updateSubcategory,
-  updateSupplier,
   updateUnit,
 } from '../../api/catalog'
 import { useCan } from '../../features/auth/useCan'
-import type { BarcodeGroup, CatalogItem, Subcategory, Supplier, Unit } from '../../types/catalog'
+import type { BarcodeGroup, CatalogItem, Subcategory, Unit } from '../../types/catalog'
 
-export type CatalogMasterKind = 'category' | 'subcategory' | 'supplier' | 'brand' | 'unit' | 'barcode_group'
-export type CatalogMasterRecord = CatalogItem | Subcategory | Supplier | Unit | BarcodeGroup
+export type CatalogMasterKind = 'category' | 'subcategory' | 'brand' | 'unit' | 'barcode_group'
+export type CatalogMasterRecord = CatalogItem | Subcategory | Unit | BarcodeGroup
 
 type UseCatalogMasterEditorOptions = {
   enabled?: boolean
@@ -42,7 +38,6 @@ type UseCatalogMasterEditorOptions = {
 const QUERY_KEYS: Record<CatalogMasterKind, string> = {
   category: 'categories',
   subcategory: 'subcategories',
-  supplier: 'suppliers',
   brand: 'brands',
   unit: 'units',
   barcode_group: 'barcode-groups',
@@ -51,7 +46,6 @@ const QUERY_KEYS: Record<CatalogMasterKind, string> = {
 const PERMISSION_PREFIX: Record<CatalogMasterKind, string> = {
   category: 'categories',
   subcategory: 'categories',
-  supplier: 'suppliers',
   brand: 'brands',
   unit: 'units',
   barcode_group: 'barcode_groups',
@@ -73,8 +67,6 @@ export function useCatalogMasterEditor(
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
   const [allowsDecimal, setAllowsDecimal] = useState(false)
-  const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
   const [categoryUlid, setCategoryUlid] = useState(options.parentCategoryUlid ?? '')
   const [error, setError] = useState<string | null>(null)
 
@@ -104,7 +96,6 @@ export function useCatalogMasterEditor(
       if (kind === 'subcategory') {
         return fetchSubcategories(categoryUlid)
       }
-      if (kind === 'supplier') return fetchSuppliers()
       if (kind === 'brand') return fetchBrands()
       if (kind === 'unit') return fetchUnits()
       return fetchBarcodeGroups()
@@ -124,8 +115,6 @@ export function useCatalogMasterEditor(
     setName(item.name)
     setSymbol('symbol' in item ? item.symbol : '')
     setAllowsDecimal('allows_decimal' in item ? item.allows_decimal : false)
-    setPhone('phone' in item ? (item.phone ?? '') : '')
-    setAddress('address' in item ? (item.address ?? '') : '')
     if (kind === 'subcategory') {
       const sub = item as Subcategory
       const nextCategory = sub.category_ulid ?? sub.category?.ulid ?? categoryUlid
@@ -140,8 +129,6 @@ export function useCatalogMasterEditor(
     setName('')
     setSymbol('')
     setAllowsDecimal(false)
-    setPhone('')
-    setAddress('')
     setError(null)
   }
 
@@ -168,15 +155,6 @@ export function useCatalogMasterEditor(
         item = created
           ? await createSubcategory(subcategoryPayload)
           : await updateSubcategory(selectedKey, subcategoryPayload)
-      } else if (kind === 'supplier') {
-        const supplierPayload = {
-          ...payload,
-          phone: phone.trim() || null,
-          address: address.trim() || null,
-        }
-        item = created
-          ? await createSupplier(supplierPayload)
-          : await updateSupplier(selectedKey, supplierPayload)
       } else if (kind === 'brand') {
         item = created
           ? await createBrand(payload)
@@ -210,7 +188,6 @@ export function useCatalogMasterEditor(
       if (!selectedKey) return
       if (kind === 'category') await deactivateCategory(selectedKey)
       else if (kind === 'subcategory') await deactivateSubcategory(selectedKey)
-      else if (kind === 'supplier') await deactivateSupplier(selectedKey)
       else if (kind === 'brand') await deactivateBrand(selectedKey)
       else if (kind === 'unit') await deactivateUnit(selectedKey)
       else await deactivateBarcodeGroup(selectedKey)
@@ -241,8 +218,6 @@ export function useCatalogMasterEditor(
     name,
     symbol,
     allowsDecimal,
-    phone,
-    address,
     categoryUlid,
     error,
     canCreate,
@@ -255,8 +230,6 @@ export function useCatalogMasterEditor(
     setName,
     setSymbol,
     setAllowsDecimal,
-    setPhone,
-    setAddress,
     setCategoryUlid: (ulid: string) => {
       setCategoryUlid(ulid)
       setSelectedKey(null)

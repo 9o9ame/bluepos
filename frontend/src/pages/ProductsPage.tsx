@@ -861,12 +861,10 @@ export function ProductsPage() {
                 className="product-def-image-preview"
               />
             ) : (
-              <span className="product-def-image-empty">
-                <span className="product-def-image-icon" aria-hidden="true">
-                  <ImagePlus size={34} strokeWidth={1.8} />
+              <span className="product-def-image-empty" aria-hidden="true">
+                <span className="product-def-image-icon">
+                  <ImagePlus size={42} strokeWidth={1.7} />
                 </span>
-                <strong>Upload Image</strong>
-                <small>Click or right-click</small>
               </span>
             )}
 
@@ -1178,7 +1176,7 @@ export function ProductsPage() {
               />
             </div>
 
-            <div className="pdf-row">
+            <div className="pdf-row pdf-row-split">
               <label>Category</label>
               <div className="pdf-field-plus">
                 <PdfSelect
@@ -1204,10 +1202,8 @@ export function ProductsPage() {
                   <Plus size={15} strokeWidth={3} />
                 </button>
               </div>
-            </div>
 
-            <div className="pdf-row">
-              <label>Subcategory</label>
+              <label className="pdf-right-label">Subcategory</label>
               <div className="pdf-field-plus">
                 <PdfSelect
                   value={subcategoryUlid}
@@ -1244,7 +1240,7 @@ export function ProductsPage() {
               </div>
             </div>
 
-            <div className="pdf-row pdf-row-split">
+            <div className="pdf-row">
               <label>Supplier</label>
               <div className="pdf-field-plus">
                 <PdfSelect
@@ -1265,16 +1261,14 @@ export function ProductsPage() {
                 <button
                   type="button"
                   className="pdf-plus-button"
-                  title="Edit / Define Suppliers"
-                  aria-label="Edit or define suppliers"
+                  title="Open Vendor / Customer / Accounts"
+                  aria-label="Open Vendor Customer Accounts"
                   disabled={!canSave}
-                  onClick={() => setQuickEditor('supplier')}
+                  onClick={() => openModule('/definition/parties')}
                 >
                   <Plus size={15} strokeWidth={3} />
                 </button>
               </div>
-              <label className="pdf-right-label">Location</label>
-              <input className="pdf-input" value={rackLocation} readOnly={!canSave} onChange={(e) => setRackLocation(e.target.value)} />
             </div>
 
             <div className="pdf-row">
@@ -1303,7 +1297,10 @@ export function ProductsPage() {
             </div>
 
             <div className="pdf-row pdf-row-split">
-              <label>Bar.Grp</label>
+              <label>Location</label>
+              <input className="pdf-input" value={rackLocation} readOnly={!canSave} onChange={(e) => setRackLocation(e.target.value)} />
+
+              <label className="pdf-right-label">Bar.Grp</label>
               <div className="pdf-field-plus">
                 <PdfSelect
                   value={barcodeGroupUlid}
@@ -1327,8 +1324,10 @@ export function ProductsPage() {
                   <Plus size={15} strokeWidth={3} />
                 </button>
               </div>
+            </div>
 
-              <label className="pdf-right-label">Measure Unit</label>
+            <div className="pdf-row">
+              <label>Measure Unit</label>
               <div className="pdf-field-plus">
                 <PdfSelect
                   value={baseUnitUlid || units.data?.[0]?.ulid || ''}
@@ -1658,8 +1657,6 @@ export function ProductsPage() {
             const nextCategory = sub.category_ulid ?? sub.category?.ulid
             if (nextCategory) setCategoryUlid(nextCategory)
             setSubcategoryUlid(item.ulid)
-          } else if (kind === 'supplier') {
-            setPrimarySupplierUlid(item.ulid)
           } else if (kind === 'brand') {
             setBrandUlid(item.ulid)
           } else if (kind === 'unit') {
