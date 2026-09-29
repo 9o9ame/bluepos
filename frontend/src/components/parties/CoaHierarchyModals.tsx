@@ -1,5 +1,15 @@
-import { FormEvent, useEffect, useState } from 'react'
-import { RefreshCw, Save, X } from 'lucide-react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
+import {
+  ChevronFirst,
+  ChevronLast,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  RefreshCw,
+  Save,
+  X,
+  XCircle,
+} from 'lucide-react'
 import {
   createAccountType,
   createMainHead,
@@ -15,7 +25,10 @@ import {
   type CoaSubHead,
 } from '../../api/coa'
 import { ApiClientError } from '../../api/client'
+import { AnimatedSelect } from '../ui/AnimatedSelect'
+import { ToggleSwitch } from '../ui/ToggleSwitch'
 import './CoaHierarchyModals.css'
+import './CoaHierarchyModals.modern.css'
 
 type Props = {
   open: boolean
@@ -25,10 +38,65 @@ type Props = {
   onHierarchyChanged: () => void
 }
 
+type TypeDraft = {
+  key: string
+  ulid: string | null
+  code: string
+  name: string
+  is_cash: boolean
+  is_bank: boolean
+  is_receivable: boolean
+  is_payable: boolean
+  sub_head_ulid: string
+  pnl_grouping_label: string
+  hint: string
+  sort_order: string
+  is_active: boolean
+  dirty: boolean
+}
+
 function errMsg(err: unknown): string {
   if (err instanceof ApiClientError) return err.message
   if (err instanceof Error) return err.message
   return 'Request failed'
+}
+
+function toDraft(row: CoaAccountType): TypeDraft {
+  return {
+    key: row.ulid,
+    ulid: row.ulid,
+    code: row.code ?? '',
+    name: row.name,
+    is_cash: row.is_cash,
+    is_bank: row.is_bank,
+    is_receivable: row.is_receivable,
+    is_payable: row.is_payable,
+    sub_head_ulid: row.sub_head?.ulid ?? row.sub_head_ulid ?? '',
+    pnl_grouping_label: row.pnl_grouping_label ?? '',
+    hint: row.hint ?? '',
+    sort_order: String(row.sort_order ?? 0),
+    is_active: row.is_active,
+    dirty: false,
+  }
+}
+
+function blankDraft(subUlid = ''): TypeDraft {
+  return {
+    key: `new-${Date.now()}`,
+    ulid: null,
+    code: '',
+    name: '',
+    is_cash: false,
+    is_bank: false,
+    is_receivable: false,
+    is_payable: false,
+    sub_head_ulid: subUlid,
+    pnl_grouping_label: '',
+    hint: '',
+    sort_order: '0',
+    is_active: true,
+    dirty: true,
+  }
 }
 
 export function CoaHierarchyModals({
@@ -41,75 +109,48 @@ export function CoaHierarchyModals({
   const [layer, setLayer] = useState<'type' | 'sub' | 'main'>('type')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [onlyActive, setOnlyActive] = useState(false)
 
-  const [types, setTypes] = useState<CoaAccountType[]>([])
+  const [typeRows, setTypeRows] = useState<TypeDraft[]>([])
+  const [selectedTypeKey, setSelectedTypeKey] = useState<string | null>(null)
   const [subs, setSubs] = useState<CoaSubHead[]>([])
   const [mains, setMains] = useState<CoaMainHead[]>([])
-
-  const [typeUlid, setTypeUlid] = useState<string | null>(null)
-  const [typeCode, setTypeCode] = useState('')
-  const [typeName, setTypeName] = useState('')
-  const [typeSubUlid, setTypeSubUlid] = useState('')
-  const [isCash, setIsCash] = useState(false)
-  const [isBank, setIsBank] = useState(false)
-  const [isRec, setIsRec] = useState(false)
-  const [isPay, setIsPay] = useState(false)
-  const [pnlLabel, setPnlLabel] = useState('')
-  const [hint, setHint] = useState('')
-  const [typeSort, setTypeSort] = useState('0')
-  const [typeActive, setTypeActive] = useState(true)
 
   const [subUlid, setSubUlid] = useState<string | null>(null)
   const [subName, setSubName] = useState('')
   const [subMainUlid, setSubMainUlid] = useState('')
   const [subSort, setSubSort] = useState('0')
   const [subActive, setSubActive] = useState(true)
+  const [subTargetTypeKey, setSubTargetTypeKey] = useState<string | null>(null)
 
   const [mainUlid, setMainUlid] = useState<string | null>(null)
   const [mainName, setMainName] = useState('')
   const [mainSort, setMainSort] = useState('0')
   const [mainActive, setMainActive] = useState(true)
 
+  const visibleRows = useMemo(
+    () => (onlyActive ? typeRows.filter((r) => r.is_active || r.dirty || !r.ulid) : typeRows),
+    [typeRows, onlyActive],
+  )
+
+  const selectedIndex = visibleRows.findIndex((r) => r.key === selectedTypeKey)
+  const selectedRow = selectedIndex >= 0 ? visibleRows[selectedIndex] : null
+
   async function reloadLists(selectTypeUlid?: string | null) {
     const [t, s, m] = await Promise.all([fetchAccountTypes(), fetchSubHeads(), fetchMainHeads()])
-    setTypes(t)
+    const drafts = t.map(toDraft)
+    setTypeRows(drafts)
     setSubs(s)
     setMains(m)
     const pick = selectTypeUlid ?? selectedAccountTypeUlid
-    if (pick) {
-      const found = t.find((row) => row.ulid === pick)
-      if (found) applyType(found)
-    }
+    const found = pick ? drafts.find((row) => row.ulid === pick) : drafts[0]
+    setSelectedTypeKey(found?.key ?? drafts[0]?.key ?? null)
   }
 
-  function applyType(row: CoaAccountType) {
-    setTypeUlid(row.ulid)
-    setTypeCode(row.code ?? '')
-    setTypeName(row.name)
-    setTypeSubUlid(row.sub_head?.ulid ?? row.sub_head_ulid ?? '')
-    setIsCash(row.is_cash)
-    setIsBank(row.is_bank)
-    setIsRec(row.is_receivable)
-    setIsPay(row.is_payable)
-    setPnlLabel(row.pnl_grouping_label ?? '')
-    setHint(row.hint ?? '')
-    setTypeSort(String(row.sort_order ?? 0))
-    setTypeActive(row.is_active)
-  }
-
-  function resetTypeForm(keepSub = true) {
-    setTypeUlid(null)
-    setTypeCode('')
-    setTypeName('')
-    if (!keepSub) setTypeSubUlid('')
-    setIsCash(false)
-    setIsBank(false)
-    setIsRec(false)
-    setIsPay(false)
-    setPnlLabel('')
-    setHint('')
-    setTypeSort('0')
-    setTypeActive(true)
+  function patchTypeRow(key: string, patch: Partial<TypeDraft>) {
+    setTypeRows((rows) =>
+      rows.map((row) => (row.key === key ? { ...row, ...patch, dirty: true } : row)),
+    )
   }
 
   function applySub(row: CoaSubHead) {
@@ -142,46 +183,85 @@ export function CoaHierarchyModals({
     setMainActive(true)
   }
 
+  function openSubEditor(forTypeKey: string | null, preferSubUlid?: string) {
+    setError(null)
+    setSubTargetTypeKey(forTypeKey)
+    resetSubForm(true)
+    if (preferSubUlid) {
+      const current = subs.find((s) => s.ulid === preferSubUlid)
+      if (current) applySub(current)
+    }
+    setLayer('sub')
+  }
+
+  function addTypeRow() {
+    const draft = blankDraft(selectedRow?.sub_head_ulid ?? '')
+    setTypeRows((rows) => [...rows, draft])
+    setSelectedTypeKey(draft.key)
+  }
+
+  function removeSelectedDraft() {
+    if (!selectedRow) return
+    if (selectedRow.ulid) {
+      setError('Existing Account Types are deactivated via Status Off, then Save.')
+      return
+    }
+    setTypeRows((rows) => rows.filter((r) => r.key !== selectedRow.key))
+    setSelectedTypeKey(null)
+  }
+
+  function moveSelection(index: number) {
+    if (visibleRows.length === 0) return
+    const bounded = Math.min(Math.max(index, 0), visibleRows.length - 1)
+    setSelectedTypeKey(visibleRows[bounded].key)
+  }
+
   useEffect(() => {
     if (!open) return
     setLayer('type')
     setError(null)
-    resetTypeForm(false)
+    setOnlyActive(false)
     void reloadLists(selectedAccountTypeUlid).catch((err) => setError(errMsg(err)))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   if (!open) return null
 
-  async function saveType(e: FormEvent) {
-    e.preventDefault()
-    if (!typeName.trim() || !typeSubUlid) {
+  async function saveSelectedType(e?: FormEvent) {
+    e?.preventDefault()
+    if (!selectedRow) {
+      setError('Select a row to save.')
+      return
+    }
+    if (!selectedRow.name.trim() || !selectedRow.sub_head_ulid) {
       setError('Description and Sub Head are required.')
       return
     }
-    if (!typeUlid && !typeCode.trim()) {
+    if (!selectedRow.ulid && !selectedRow.code.trim()) {
       setError('Code is required for new Account Types.')
       return
     }
+
     setSaving(true)
     setError(null)
     const payload = {
-      sub_head_ulid: typeSubUlid,
-      code: typeCode.trim() ? typeCode.trim().toUpperCase() : null,
-      name: typeName.trim(),
-      is_cash: isCash,
-      is_bank: isBank,
-      is_receivable: isRec,
-      is_payable: isPay,
-      pnl_grouping_label: pnlLabel.trim() || null,
-      hint: hint.trim() || null,
-      sort_order: Number(typeSort) || 0,
-      is_active: typeActive,
+      sub_head_ulid: selectedRow.sub_head_ulid,
+      code: selectedRow.code.trim() ? selectedRow.code.trim().toUpperCase() : null,
+      name: selectedRow.name.trim(),
+      is_cash: selectedRow.is_cash,
+      is_bank: selectedRow.is_bank,
+      is_receivable: selectedRow.is_receivable,
+      is_payable: selectedRow.is_payable,
+      pnl_grouping_label: selectedRow.pnl_grouping_label.trim() || null,
+      hint: selectedRow.hint.trim() || null,
+      sort_order: Number(selectedRow.sort_order) || 0,
+      is_active: selectedRow.is_active,
     }
+
     try {
-      const saved = typeUlid
-        ? await updateAccountType(typeUlid, payload)
-        : await createAccountType({ ...payload, code: typeCode.trim().toUpperCase() })
+      const saved = selectedRow.ulid
+        ? await updateAccountType(selectedRow.ulid, payload)
+        : await createAccountType({ ...payload, code: selectedRow.code.trim().toUpperCase() })
       await reloadLists(saved.ulid)
       onAccountTypeSaved(saved)
       onHierarchyChanged()
@@ -210,7 +290,9 @@ export function CoaHierarchyModals({
       const saved = subUlid ? await updateSubHead(subUlid, payload) : await createSubHead(payload)
       const refreshed = await fetchSubHeads()
       setSubs(refreshed)
-      setTypeSubUlid(saved.ulid)
+      if (subTargetTypeKey) {
+        patchTypeRow(subTargetTypeKey, { sub_head_ulid: saved.ulid })
+      }
       applySub(saved)
       onHierarchyChanged()
       setLayer('type')
@@ -251,135 +333,232 @@ export function CoaHierarchyModals({
 
   return (
     <>
-      {layer === 'type' ? (
-        <div className="coa-modal-backdrop" style={{ zIndex: 5200 }}>
-          <div className="coa-modal coa-modal-wide" role="dialog" aria-label="Account Type Definition">
-            <div className="coa-modal-bar">
-              <span>Account Type Definition</span>
+      <div className="coa-modal-backdrop" style={{ zIndex: 5200 }}>
+        <div className="coa-modal coa-modal-sheet" role="dialog" aria-label="Account Type Definition">
+          <div className="coa-modal-bar">
+            <span>Account Type Definition</span>
+            <div className="coa-modal-bar-right">
+              <ToggleSwitch
+                label="Only Active"
+                tone="active"
+                checked={onlyActive}
+                onChange={setOnlyActive}
+              />
               <button type="button" onClick={onClose} aria-label="Close">
                 <X size={14} />
               </button>
             </div>
-            <form className="coa-modal-body" onSubmit={(e) => void saveType(e)}>
-              {error ? <div className="coa-modal-error">{error}</div> : null}
-              <div className="coa-modal-split">
-                <div className="coa-modal-form">
-                  <label>
-                    Code
-                    <input
-                      value={typeCode}
-                      onChange={(e) => setTypeCode(e.target.value)}
-                      autoFocus={!typeUlid}
-                      placeholder="e.g. 0010"
-                    />
-                  </label>
-                  <label>
-                    Description / Name
-                    <input value={typeName} onChange={(e) => setTypeName(e.target.value)} autoFocus={!!typeUlid} />
-                  </label>
-                  <div className="coa-flag-row">
-                    <label><input type="checkbox" checked={isCash} onChange={(e) => setIsCash(e.target.checked)} /> Cash</label>
-                    <label><input type="checkbox" checked={isBank} onChange={(e) => setIsBank(e.target.checked)} /> Bank</label>
-                    <label><input type="checkbox" checked={isRec} onChange={(e) => setIsRec(e.target.checked)} /> Rec</label>
-                    <label><input type="checkbox" checked={isPay} onChange={(e) => setIsPay(e.target.checked)} /> Pay</label>
-                  </div>
-                  <label className="coa-with-plus">
-                    Sub Head Account
-                    <span>
-                      <select value={typeSubUlid} onChange={(e) => setTypeSubUlid(e.target.value)}>
-                        <option value="">Select…</option>
-                        {subs.filter((s) => s.is_active || s.ulid === typeSubUlid).map((s) => (
-                          <option key={s.ulid} value={s.ulid}>
-                            {s.name}{s.main_head ? ` (${s.main_head.name})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className="coa-plus"
-                        title="Add Sub Head"
-                        onClick={() => {
-                          setError(null)
-                          resetSubForm(true)
-                          if (typeSubUlid) {
-                            const current = subs.find((s) => s.ulid === typeSubUlid)
-                            if (current) applySub(current)
-                          }
-                          setLayer('sub')
-                        }}
-                      >
-                        +
-                      </button>
-                    </span>
-                  </label>
-                  <label>
-                    P &amp; L Statement Grouping Label
-                    <input value={pnlLabel} onChange={(e) => setPnlLabel(e.target.value)} />
-                  </label>
-                  <label>
-                    Hint
-                    <input value={hint} onChange={(e) => setHint(e.target.value)} />
-                  </label>
-                  <div className="coa-inline-2">
-                    <label>
-                      Sort Order
-                      <input value={typeSort} onChange={(e) => setTypeSort(e.target.value)} />
-                    </label>
-                    <label className="coa-check-inline">
-                      <input type="checkbox" checked={typeActive} onChange={(e) => setTypeActive(e.target.checked)} />
-                      Active
-                    </label>
-                  </div>
-                </div>
-                <div className="coa-modal-list-wrap">
-                  <table className="coa-modal-list">
-                    <thead>
+          </div>
+
+          <form className="coa-modal-body coa-sheet-body" onSubmit={(e) => void saveSelectedType(e)}>
+            {error && layer === 'type' ? <div className="coa-modal-error">{error}</div> : null}
+
+              <div className="coa-sheet-wrap">
+                <table className="coa-sheet-grid">
+                  <thead>
+                    <tr>
+                      <th className="col-code">Code</th>
+                      <th className="col-name">Description of Account Type</th>
+                      <th className="col-flag">Cash</th>
+                      <th className="col-flag">Bank</th>
+                      <th className="col-flag">Rec</th>
+                      <th className="col-flag">Pay</th>
+                      <th className="col-sub">Sub Head Account</th>
+                      <th className="col-pnl">P &amp; L Statement Grouping Label</th>
+                      <th className="col-hint">Hint</th>
+                      <th className="col-sort">Sort</th>
+                      <th className="col-status">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleRows.length === 0 ? (
                       <tr>
-                        <th>Code</th>
-                        <th>Description</th>
-                        <th>Sub Head</th>
-                        <th>Status</th>
+                        <td colSpan={11} className="coa-empty">
+                          No account types — click + to add
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {types.length === 0 ? (
-                        <tr><td colSpan={4} className="coa-empty">No account types</td></tr>
-                      ) : (
-                        types.map((row) => (
-                          <tr
-                            key={row.ulid}
-                            className={row.ulid === typeUlid ? 'is-selected' : undefined}
-                            onClick={() => applyType(row)}
-                          >
-                            <td>{row.code ?? '—'}</td>
-                            <td>{row.name}</td>
-                            <td>{row.sub_head?.name ?? '—'}</td>
-                            <td>{row.is_active ? 'Active' : 'Off'}</td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                    ) : (
+                      visibleRows.map((row) => (
+                        <tr
+                          key={row.key}
+                          className={row.key === selectedTypeKey ? 'is-selected' : undefined}
+                          onClick={() => setSelectedTypeKey(row.key)}
+                        >
+                          <td>
+                            <input
+                              value={row.code}
+                              disabled={Boolean(row.ulid)}
+                              title={row.ulid ? 'Code is stable after create' : undefined}
+                              onChange={(e) => patchTypeRow(row.key, { code: e.target.value })}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={row.name}
+                              onChange={(e) => patchTypeRow(row.key, { name: e.target.value })}
+                            />
+                          </td>
+                          <td className="col-flag">
+                            <ToggleSwitch
+                              label=""
+                              title="Cash"
+                              tone="cash"
+                              checked={row.is_cash}
+                              onChange={(v) => patchTypeRow(row.key, { is_cash: v })}
+                            />
+                          </td>
+                          <td className="col-flag">
+                            <ToggleSwitch
+                              label=""
+                              title="Bank"
+                              tone="bank"
+                              checked={row.is_bank}
+                              onChange={(v) => patchTypeRow(row.key, { is_bank: v })}
+                            />
+                          </td>
+                          <td className="col-flag">
+                            <ToggleSwitch
+                              label=""
+                              title="Receivable"
+                              tone="rec"
+                              checked={row.is_receivable}
+                              onChange={(v) => patchTypeRow(row.key, { is_receivable: v })}
+                            />
+                          </td>
+                          <td className="col-flag">
+                            <ToggleSwitch
+                              label=""
+                              title="Payable"
+                              tone="pay"
+                              checked={row.is_payable}
+                              onChange={(v) => patchTypeRow(row.key, { is_payable: v })}
+                            />
+                          </td>
+                          <td>
+                            <div className="coa-sheet-sub">
+                              <AnimatedSelect
+                                value={row.sub_head_ulid}
+                                onChange={(e) => patchTypeRow(row.key, { sub_head_ulid: e.target.value })}
+                              >
+                                <option value="">Select…</option>
+                                {subs
+                                  .filter((s) => s.is_active || s.ulid === row.sub_head_ulid)
+                                  .map((s) => (
+                                    <option key={s.ulid} value={s.ulid}>
+                                      {s.name}
+                                      {s.main_head ? ` (${s.main_head.name})` : ''}
+                                    </option>
+                                  ))}
+                              </AnimatedSelect>
+                              <button
+                                type="button"
+                                className="coa-plus"
+                                title="Add / Edit Sub Head"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openSubEditor(row.key, row.sub_head_ulid)
+                                }}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </td>
+                          <td>
+                            <input
+                              value={row.pnl_grouping_label}
+                              onChange={(e) => patchTypeRow(row.key, { pnl_grouping_label: e.target.value })}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={row.hint}
+                              onChange={(e) => patchTypeRow(row.key, { hint: e.target.value })}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              className="is-num"
+                              value={row.sort_order}
+                              onChange={(e) => patchTypeRow(row.key, { sort_order: e.target.value })}
+                            />
+                          </td>
+                          <td className="col-flag">
+                            <ToggleSwitch
+                              label=""
+                              title={row.is_active ? 'Active' : 'Off'}
+                              tone="active"
+                              checked={row.is_active}
+                              onChange={(v) => patchTypeRow(row.key, { is_active: v })}
+                            />
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-              <div className="coa-modal-actions">
-                <button type="submit" disabled={saving}><Save size={14} /> Save</button>
-                <button
-                  type="button"
-                  disabled={saving}
-                  onClick={() => {
-                    resetTypeForm(true)
-                    void reloadLists(null).catch((err) => setError(errMsg(err)))
-                  }}
-                >
-                  <RefreshCw size={14} /> Refresh
-                </button>
-                <button type="button" onClick={onClose}><X size={14} /> Close</button>
+
+              <div className="coa-sheet-records">
+                {visibleRows.length} Records
+              </div>
+
+              <div className="coa-sheet-foot">
+                <div className="coa-sheet-nav" aria-label="Record navigation">
+                  <button type="button" disabled={visibleRows.length === 0} onClick={() => moveSelection(0)}>
+                    <ChevronFirst size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={selectedIndex <= 0}
+                    onClick={() => moveSelection(selectedIndex - 1)}
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <span>
+                    Record {visibleRows.length === 0 ? 0 : selectedIndex + 1} of {visibleRows.length}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={selectedIndex < 0 || selectedIndex >= visibleRows.length - 1}
+                    onClick={() => moveSelection(selectedIndex + 1)}
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={visibleRows.length === 0}
+                    onClick={() => moveSelection(visibleRows.length - 1)}
+                  >
+                    <ChevronLast size={14} />
+                  </button>
+                  <button type="button" title="Add row" onClick={addTypeRow}>
+                    <Plus size={14} />
+                  </button>
+                  <button type="button" title="Remove unsaved row" onClick={removeSelectedDraft}>
+                    <XCircle size={14} />
+                  </button>
+                </div>
+
+                <div className="coa-modal-actions">
+                  <button
+                    type="button"
+                    data-tone="refresh"
+                    disabled={saving}
+                    onClick={() => void reloadLists(selectedRow?.ulid).catch((err) => setError(errMsg(err)))}
+                  >
+                    <RefreshCw size={16} /> Refresh
+                  </button>
+                  <button type="submit" data-tone="save" disabled={saving || !selectedRow}>
+                    <Save size={16} /> Save
+                  </button>
+                  <button type="button" data-tone="close" onClick={onClose}>
+                    <X size={16} /> Close
+                  </button>
+                </div>
               </div>
             </form>
           </div>
         </div>
-      ) : null}
 
       {layer === 'sub' || layer === 'main' ? (
         <div className="coa-modal-backdrop" style={{ zIndex: 5300 }}>
@@ -401,12 +580,12 @@ export function CoaHierarchyModals({
                   <label className="coa-with-plus">
                     Main Head
                     <span>
-                      <select value={subMainUlid} onChange={(e) => setSubMainUlid(e.target.value)}>
+                      <AnimatedSelect value={subMainUlid} onChange={(e) => setSubMainUlid(e.target.value)}>
                         <option value="">Select…</option>
                         {mains.filter((m) => m.is_active || m.ulid === subMainUlid).map((m) => (
                           <option key={m.ulid} value={m.ulid}>{m.name}</option>
                         ))}
-                      </select>
+                      </AnimatedSelect>
                       <button
                         type="button"
                         className="coa-plus"
@@ -430,10 +609,7 @@ export function CoaHierarchyModals({
                       Sort Order
                       <input value={subSort} onChange={(e) => setSubSort(e.target.value)} />
                     </label>
-                    <label className="coa-check-inline">
-                      <input type="checkbox" checked={subActive} onChange={(e) => setSubActive(e.target.checked)} />
-                      Active
-                    </label>
+                    <ToggleSwitch label="Active" tone="active" checked={subActive} onChange={setSubActive} />
                   </div>
                 </div>
                 <div className="coa-modal-list-wrap">
@@ -464,19 +640,22 @@ export function CoaHierarchyModals({
                 </div>
               </div>
               <div className="coa-modal-actions">
-                <button type="submit" disabled={saving || layer !== 'sub'}><Save size={14} /> Save</button>
+                <button type="submit" data-tone="save" disabled={saving || layer !== 'sub'}>
+                  <Save size={16} /> Save
+                </button>
                 <button
                   type="button"
+                  data-tone="refresh"
                   disabled={saving || layer !== 'sub'}
                   onClick={() => {
                     resetSubForm(true)
                     void fetchSubHeads().then(setSubs).catch((err) => setError(errMsg(err)))
                   }}
                 >
-                  <RefreshCw size={14} /> Refresh
+                  <RefreshCw size={16} /> Refresh
                 </button>
-                <button type="button" onClick={() => { setError(null); setLayer('type') }}>
-                  <X size={14} /> Close
+                <button type="button" data-tone="close" onClick={() => { setError(null); setLayer('type') }}>
+                  <X size={16} /> Close
                 </button>
               </div>
             </form>
@@ -506,10 +685,7 @@ export function CoaHierarchyModals({
                       Sort Order
                       <input value={mainSort} onChange={(e) => setMainSort(e.target.value)} />
                     </label>
-                    <label className="coa-check-inline">
-                      <input type="checkbox" checked={mainActive} onChange={(e) => setMainActive(e.target.checked)} />
-                      Active
-                    </label>
+                    <ToggleSwitch label="Active" tone="active" checked={mainActive} onChange={setMainActive} />
                   </div>
                 </div>
                 <div className="coa-modal-list-wrap">
@@ -540,9 +716,11 @@ export function CoaHierarchyModals({
                 </div>
               </div>
               <div className="coa-modal-actions">
-                <button type="submit" disabled={saving}><Save size={14} /> Save</button>
-                <button type="button" onClick={() => { setError(null); setLayer('sub') }}>
-                  <X size={14} /> Close
+                <button type="submit" data-tone="save" disabled={saving}>
+                  <Save size={16} /> Save
+                </button>
+                <button type="button" data-tone="close" onClick={() => { setError(null); setLayer('sub') }}>
+                  <X size={16} /> Close
                 </button>
               </div>
             </form>

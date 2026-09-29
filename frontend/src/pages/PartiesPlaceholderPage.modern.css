@@ -1,0 +1,506 @@
+/*
+ * BluePOS — Parties (VCA) modern visual polish
+ * Soft pastel gradients, colorful accents, motion — Define Products parity.
+ * Does NOT change layout geometry, field order, or behavior.
+ */
+
+@keyframes parties-vca-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes parties-vca-tab-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 18%, transparent);
+  }
+}
+
+.parties-vca {
+  animation: parties-vca-fade-in 0.22s ease-out;
+  border-radius: 12px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 8px 28px rgba(20, 40, 70, 0.08);
+}
+
+.parties-vca-header h1 {
+  background: linear-gradient(120deg, #1769aa, #0f7dcc 45%, #2aa3e0 80%, #5ec8a0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.01em;
+}
+
+.parties-vca-title-icon {
+  color: #0f7dcc;
+  filter: drop-shadow(0 2px 4px rgba(15, 125, 204, 0.28));
+  transition: transform 0.2s ease;
+}
+
+.parties-vca:hover .parties-vca-title-icon {
+  transform: scale(1.06) rotate(-4deg);
+}
+
+.parties-vca-action {
+  transition:
+    transform 0.14s ease,
+    filter 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.parties-vca-action:hover:not(:disabled) {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 4px 12px rgba(23, 105, 170, 0.18);
+}
+
+.parties-vca-action:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.parties-vca-action.is-save {
+  border-color: #9fd4b3;
+  background: linear-gradient(180deg, #f5fff8 0%, #e2f8ea 48%, #cdeed8 100%);
+  color: #1b7a45;
+}
+
+.parties-vca-action.is-refresh {
+  border-color: #9fc4e4;
+  background: linear-gradient(180deg, #f5faff 0%, #e3f1fb 48%, #cfe4f6 100%);
+  color: #1d5f96;
+}
+
+.parties-vca-action.is-close {
+  border-color: #e7a8a8;
+  background: linear-gradient(180deg, #fff7f7 0%, #ffe3e3 48%, #ffd0d0 100%);
+  color: #b42323;
+}
+
+.parties-vca-tabs {
+  gap: 4px;
+  padding: 3px 4px 0;
+  background: linear-gradient(180deg, #eef6fd, #d9e8f6 55%, #cfe0f0);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.parties-vca-tabs button {
+  border-radius: 8px 8px 0 0;
+  transition:
+    color 0.14s ease,
+    background 0.14s ease,
+    border-color 0.14s ease,
+    transform 0.12s ease;
+}
+
+.parties-vca-tabs button:hover:not(.is-active) {
+  color: #1769aa;
+  background: color-mix(in srgb, #ffffff 70%, #d7ebff);
+  transform: translateY(-1px);
+}
+
+.parties-vca-tabs button.is-active {
+  border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 35%, #b7c8d8);
+  background: linear-gradient(180deg, #ffffff, #f3f9ff);
+  color: #0f6fb8;
+  animation: parties-vca-tab-pulse 2.4s ease-in-out infinite;
+}
+
+.parties-vca-tabs button svg {
+  transition: transform 0.16s ease;
+}
+
+.parties-vca-tabs button:hover svg,
+.parties-vca-tabs button.is-active svg {
+  transform: scale(1.08);
+}
+
+.parties-vca-main,
+.parties-vca-shell {
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(46, 168, 255, 0.07), transparent 55%),
+    radial-gradient(90% 70% at 100% 0%, rgba(94, 200, 160, 0.08), transparent 50%),
+    linear-gradient(180deg, #f7fafc, #eef3f8);
+}
+
+.parties-vca-panel {
+  border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 26%, #a8b4c0);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 249, 253, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 2px 10px rgba(20, 40, 70, 0.05);
+  animation: parties-vca-fade-in 0.2s ease-out;
+  transition: box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.parties-vca-panel:hover {
+  border-color: color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 40%, #a8b4c0);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 4px 16px rgba(23, 105, 170, 0.1);
+}
+
+.parties-vca-legend-row,
+.parties-vca-panel legend {
+  letter-spacing: 0.01em;
+}
+
+.parties-vca-subtabs button {
+  border-radius: 7px 7px 0 0;
+  transition:
+    transform 0.12s ease,
+    background 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+
+.parties-vca-subtabs button:hover:not(.is-active) {
+  transform: translateY(-1px);
+  color: #9a3d1f;
+  border-color: #e0b09a;
+  background: linear-gradient(180deg, #fff8f4, #ffe8de);
+}
+
+.parties-vca-subtabs button.is-active {
+  background: linear-gradient(180deg, #fff4ef, #ffd8c8 55%, #ffc4ae);
+  box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+.parties-vca-subpanel {
+  border-color: color-mix(in srgb, #e09a7f 35%, #c5d0da);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  animation: parties-vca-fade-in 0.16s ease-out;
+}
+
+.parties-vca input,
+.parties-vca select,
+.parties-vca textarea {
+  border-radius: 7px;
+  border-color: #b7c4d0;
+  background: linear-gradient(180deg, #ffffff, #f4f8fc);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition:
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    background 0.14s ease,
+    transform 0.1s ease;
+}
+
+.parties-vca select {
+  cursor: pointer;
+}
+
+.parties-vca input:hover,
+.parties-vca select:hover,
+.parties-vca textarea:hover {
+  border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 45%, #b7c4d0);
+}
+
+.parties-vca input:focus,
+.parties-vca select:focus,
+.parties-vca textarea:focus {
+  outline: none;
+  border-color: var(--brand-blue-hot, #0f7dcc);
+  background: #ffffff;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 22%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.parties-vca-photo {
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.parties-vca-photo:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 55%, #c5a0a0);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 6px 16px rgba(23, 105, 170, 0.18);
+}
+
+.parties-vca-photo-icon {
+  transition: transform 0.2s ease;
+}
+
+.parties-vca-photo:hover .parties-vca-photo-icon {
+  transform: scale(1.08);
+}
+
+.parties-vca-grid-wrap,
+.parties-vca-shell-grid-wrap,
+.parties-vca-mini-grid-wrap,
+.parties-vca-tree {
+  border-radius: 10px;
+  border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 24%, #a8b4c0);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 2px 10px rgba(20, 40, 70, 0.05);
+  overflow: hidden;
+}
+
+.parties-vca-grid th,
+.parties-vca-shell-grid th,
+.parties-vca-mini-grid th {
+  background: linear-gradient(180deg, #edf5fc, #d5e7f6);
+  color: #1769aa;
+}
+
+.parties-vca-grid tbody tr,
+.parties-vca-shell-grid tbody tr,
+.parties-vca-mini-grid tbody tr {
+  transition: background 0.12s ease;
+}
+
+.parties-vca-grid tbody tr:hover td,
+.parties-vca-shell-grid tbody tr:hover td,
+.parties-vca-mini-grid tbody tr:hover td {
+  background: color-mix(in srgb, #d7ebff 55%, transparent);
+}
+
+.parties-vca-grid tbody tr.is-selected td,
+.parties-vca-mini-grid tr.is-selected td {
+  background: linear-gradient(90deg, #cfe8ff, #e8f5ff) !important;
+  box-shadow: inset 3px 0 0 #0f7dcc;
+}
+
+.parties-vca-tree-summary,
+.parties-vca-tree-leaf-btn {
+  border-radius: 6px;
+  transition:
+    background 0.12s ease,
+    transform 0.12s ease,
+    color 0.12s ease;
+}
+
+.parties-vca-tree-summary:hover,
+.parties-vca-tree-leaf-btn:hover {
+  background: color-mix(in srgb, #d7ebff 70%, transparent);
+  transform: translateX(2px);
+}
+
+.parties-vca-tree-leaf-btn.is-selected {
+  background: linear-gradient(90deg, #cfe8ff, #eaf6ff);
+  color: #0f6fb8;
+  box-shadow: inset 3px 0 0 #0f7dcc;
+}
+
+.parties-vca-nav-arrows button,
+.parties-vca-record-nav button,
+.parties-vca-bank-actions button,
+.parties-vca-shell-btn,
+.parties-vca-account-type-btn,
+.parties-vca-bulk-actions button:not(:disabled) {
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.parties-vca-nav-arrows button:hover:not(:disabled),
+.parties-vca-record-nav button:hover:not(:disabled),
+.parties-vca-bank-actions button:hover:not(:disabled),
+.parties-vca-shell-btn:hover:not(:disabled),
+.parties-vca-account-type-btn:hover:not(:disabled),
+.parties-vca-bulk-actions button:hover:not(:disabled) {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(23, 105, 170, 0.16);
+}
+
+.parties-vca-account-type-btn,
+.parties-vca-shell-btn {
+  border-radius: 8px;
+  border-color: #9fc4e4;
+  background: linear-gradient(180deg, #f5faff, #cfe4f6);
+  color: #1d5f96;
+  font-weight: 800;
+}
+
+.parties-vca-shell-btn.is-update {
+  border-color: #9fd4b3;
+  background: linear-gradient(180deg, #f5fff8, #cdeed8);
+  color: #1b7a45;
+}
+
+.parties-vca-drcr strong {
+  border-radius: 6px;
+  padding: 2px 8px;
+  background: linear-gradient(180deg, #fff8d6, #ffe9a8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.parties-vca-coa-group td {
+  background: linear-gradient(90deg, #1769aa, #0f7dcc 55%, #2aa3e0) !important;
+}
+
+.parties-vca-coa-toggle {
+  border-radius: 6px;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.parties-vca-coa-toggle:hover {
+  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ---- Skins ---- */
+:root[data-skin='classic'] .parties-vca {
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+:root[data-skin='classic'] .parties-vca-action,
+:root[data-skin='classic'] .parties-vca-panel,
+:root[data-skin='classic'] .parties-vca-tabs button,
+:root[data-skin='classic'] .parties-vca input,
+:root[data-skin='classic'] .parties-vca select,
+:root[data-skin='classic'] .parties-vca-grid-wrap,
+:root[data-skin='classic'] .parties-vca-tree {
+  border-radius: 2px;
+}
+
+:root[data-skin='hybrid'] .parties-vca-tabs {
+  background: linear-gradient(180deg, #f2f7fc, #e0ebf5);
+}
+
+:root[data-skin='hybrid'] .parties-vca-subtabs button.is-active {
+  background: linear-gradient(180deg, #fff7f0, #ffdcc8);
+}
+
+:root[data-skin='advanced'] .parties-vca {
+  border-radius: 14px;
+  background:
+    radial-gradient(90% 60% at 8% 0%, rgba(42, 163, 224, 0.16), transparent 50%),
+    radial-gradient(70% 50% at 92% 8%, rgba(94, 200, 160, 0.14), transparent 45%),
+    radial-gradient(60% 40% at 50% 100%, rgba(255, 180, 120, 0.1), transparent 50%),
+    linear-gradient(180deg, #e8eef5 0%, #d8e1eb 100%);
+}
+
+:root[data-skin='advanced'] .parties-vca-action,
+:root[data-skin='advanced'] .parties-vca-panel,
+:root[data-skin='advanced'] .parties-vca-tabs button,
+:root[data-skin='advanced'] .parties-vca input,
+:root[data-skin='advanced'] .parties-vca select,
+:root[data-skin='advanced'] .parties-vca-photo,
+:root[data-skin='advanced'] .parties-vca-grid-wrap,
+:root[data-skin='advanced'] .parties-vca-tree {
+  border-radius: 12px;
+}
+
+:root[data-skin='advanced'] .parties-vca-tabs button.is-active {
+  background: linear-gradient(180deg, #ffffff, #e8f4ff);
+  border-color: #5eb8ef;
+}
+
+:root[data-skin='advanced'] .parties-vca-subtabs button.is-active {
+  background: linear-gradient(180deg, #fff0e8, #ffc9a8 60%, #ffb086);
+}
+
+/* ---- Dark ---- */
+:root[data-theme='dark'] .parties-vca {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme='dark'] .parties-vca-header h1 {
+  background: linear-gradient(120deg, #8cccff, #5ec8ff 50%, #7dffc8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+:root[data-theme='dark'] .parties-vca-tabs {
+  background: linear-gradient(180deg, #24303a, #1c252d);
+}
+
+:root[data-theme='dark'] .parties-vca-tabs button.is-active {
+  background: linear-gradient(180deg, #2d3c48, #24303a);
+  color: #8cccff;
+  border-color: #3d6f96;
+}
+
+:root[data-theme='dark'] .parties-vca-main,
+:root[data-theme='dark'] .parties-vca-shell {
+  background:
+    radial-gradient(100% 70% at 0% 0%, rgba(46, 168, 255, 0.08), transparent 50%),
+    linear-gradient(180deg, #1e262e, #171d23);
+}
+
+:root[data-theme='dark'] .parties-vca-panel {
+  background: linear-gradient(180deg, #1c242c, #171d23);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+:root[data-theme='dark'] .parties-vca input,
+:root[data-theme='dark'] .parties-vca select,
+:root[data-theme='dark'] .parties-vca textarea {
+  background: linear-gradient(180deg, #2a3640, #24303a);
+  border-color: #4f6578;
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .parties-vca input:focus,
+:root[data-theme='dark'] .parties-vca select:focus,
+:root[data-theme='dark'] .parties-vca textarea:focus {
+  background: #2f3d48;
+  box-shadow: 0 0 0 3px rgba(142, 204, 255, 0.22);
+}
+
+:root[data-theme='dark'] .parties-vca-grid th,
+:root[data-theme='dark'] .parties-vca-shell-grid th,
+:root[data-theme='dark'] .parties-vca-mini-grid th {
+  background: linear-gradient(180deg, #2d3a46, #24303a);
+  color: #8cccff;
+}
+
+:root[data-theme='dark'] .parties-vca-grid tbody tr.is-selected td,
+:root[data-theme='dark'] .parties-vca-mini-grid tr.is-selected td {
+  background: linear-gradient(90deg, #24384a, #1e2c38) !important;
+}
+
+:root[data-theme='dark'] .parties-vca-subtabs button.is-active {
+  background: linear-gradient(180deg, #4a3228, #3a261e);
+  border-color: #c48a6e;
+  color: #ffc9a8;
+}
+
+:root[data-theme='dark'][data-skin='advanced'] .parties-vca {
+  background:
+    radial-gradient(90% 60% at 8% 0%, rgba(42, 163, 224, 0.18), transparent 50%),
+    radial-gradient(70% 50% at 92% 8%, rgba(94, 200, 160, 0.12), transparent 45%),
+    linear-gradient(180deg, #1a2128, #12171c);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parties-vca,
+  .parties-vca-panel,
+  .parties-vca-subpanel,
+  .parties-vca-tabs button.is-active {
+    animation: none !important;
+  }
+
+  .parties-vca-action,
+  .parties-vca-tabs button,
+  .parties-vca-photo,
+  .parties-vca input,
+  .parties-vca select {
+    transition: none !important;
+  }
+}

@@ -1,0 +1,93 @@
+/*
+ * COA hierarchy modals — dark / skin overlays.
+ * Base palette lives in CoaHierarchyModals.css (matches CatalogQuickEditor).
+ */
+
+:root[data-theme='dark'] .coa-modal {
+  background: linear-gradient(180deg, #232b33, #1a2128);
+  color: #edf2f6;
+  border-color: #4f6578;
+}
+
+:root[data-theme='dark'] .coa-modal-body,
+:root[data-theme='dark'] .coa-modal-form {
+  background: linear-gradient(180deg, #1e262e, #171d23);
+  border-color: #4f6578;
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .coa-sheet-records,
+:root[data-theme='dark'] .coa-sheet-foot,
+:root[data-theme='dark'] .coa-modal-actions {
+  background: linear-gradient(180deg, #2a343d, #222a31);
+  border-color: #4f6578;
+  color: #9fd0ff;
+}
+
+:root[data-theme='dark'] .coa-sheet-wrap,
+:root[data-theme='dark'] .coa-modal-list-wrap {
+  background: #1a2229;
+  border-color: #4f6578;
+}
+
+:root[data-theme='dark'] .coa-sheet-grid th,
+:root[data-theme='dark'] .coa-modal-list th {
+  background: linear-gradient(180deg, #2d3a46, #24303a);
+  color: #8cccff;
+  border-color: #456178;
+}
+
+:root[data-theme='dark'] .coa-sheet-grid td,
+:root[data-theme='dark'] .coa-modal-list td {
+  border-color: #3a4753;
+}
+
+:root[data-theme='dark'] .coa-sheet-grid tbody tr:nth-child(even) td,
+:root[data-theme='dark'] .coa-modal-list tbody tr:nth-child(even) td {
+  background: #1f272f;
+}
+
+:root[data-theme='dark'] .coa-sheet-grid tbody tr.is-selected td,
+:root[data-theme='dark'] .coa-modal-list tbody tr.is-selected td {
+  background: linear-gradient(90deg, #24384a, #1e2c38) !important;
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .coa-modal-form input,
+:root[data-theme='dark'] .coa-modal-form select,
+:root[data-theme='dark'] .coa-sheet-grid input {
+  background: linear-gradient(180deg, #24303a, #1a2229);
+  border-color: #4f6578;
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .coa-sheet-grid tbody tr.is-selected input {
+  background: linear-gradient(180deg, #2a3640, #24303a);
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .coa-modal-bar-right .vca-toggle {
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .coa-flag-row {
+  background: linear-gradient(180deg, #24303a, #1e262e);
+  border-color: #4f6578;
+}
+
+:root[data-theme='dark'] .coa-sheet-nav span {
+  color: #8cccff;
+}
+
+:root[data-skin='classic'] .coa-modal,
+:root[data-skin='classic'] .coa-modal-form input,
+:root[data-skin='classic'] .coa-modal-form select,
+:root[data-skin='classic'] .coa-modal-actions button,
+:root[data-skin='classic'] .coa-plus,
+:root[data-skin='classic'] .coa-sheet-grid input {
+  border-radius: 2px;
+}
+
+:root[data-skin='advanced'] .coa-modal {
+  border-radius: 16px;
+}

@@ -55,7 +55,10 @@ import {
 } from '../api/coa'
 import { CoaHierarchyModals } from '../components/parties/CoaHierarchyModals'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import { AnimatedSelect } from '../components/ui/AnimatedSelect'
+import { ToggleSwitch } from '../components/ui/ToggleSwitch'
 import './PartiesPlaceholderPage.css'
+import './PartiesPlaceholderPage.modern.css'
 
 type DetailTab = 'contact' | 'bank' | 'others' | 'formulas' | 'opening'
 type ViewTab = 'entry' | 'ledger' | 'bulk' | 'coa'
@@ -1158,7 +1161,7 @@ export function PartiesPlaceholderPage() {
                   onChange={(e) => patchForm('code', e.target.value)}
                 />
                 <label htmlFor="vca-type">Type</label>
-                <select
+                <AnimatedSelect
                   id="vca-type"
                   title="SALES MAN is disabled in this phase"
                   value={form.ulid ? form.type : listFilter}
@@ -1187,7 +1190,7 @@ export function PartiesPlaceholderPage() {
                       {type}
                     </option>
                   ))}
-                </select>
+                </AnimatedSelect>
               </div>
 
               <div className="parties-vca-field-row parties-vca-name-deals">
@@ -1421,31 +1424,25 @@ export function PartiesPlaceholderPage() {
                     </div>
                     <div className="parties-vca-field-row parties-vca-others-license">
                       <label htmlFor="vca-lic-type">Lic Type</label>
-                      <select id="vca-lic-type" value={form.licenseType} onChange={(e) => patchForm('licenseType', e.target.value)}>
+                      <AnimatedSelect id="vca-lic-type" value={form.licenseType} onChange={(e) => patchForm('licenseType', e.target.value)}>
                         <option value="A">A</option>
                         <option value="B">B</option>
                         <option value="C">C</option>
-                      </select>
+                      </AnimatedSelect>
                       <label htmlFor="vca-exp">Exp</label>
                       <input id="vca-exp" type="date" value={form.licenseExp} onChange={(e) => patchForm('licenseExp', e.target.value)} />
                     </div>
                     <div className="parties-vca-check-row">
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={form.ignoreWarranty}
-                          onChange={(e) => patchForm('ignoreWarranty', e.target.checked)}
-                        />
-                        <span>Ignore Warranty</span>
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={form.printLicense}
-                          onChange={(e) => patchForm('printLicense', e.target.checked)}
-                        />
-                        <span>Print License</span>
-                      </label>
+                      <ToggleSwitch
+                        label="Ignore Warranty"
+                        checked={form.ignoreWarranty}
+                        onChange={(v) => patchForm('ignoreWarranty', v)}
+                      />
+                      <ToggleSwitch
+                        label="Print License"
+                        checked={form.printLicense}
+                        onChange={(v) => patchForm('printLicense', v)}
+                      />
                     </div>
                     <div className="parties-vca-field-row">
                       <label htmlFor="vca-rfid">RF ID</label>
@@ -1453,11 +1450,11 @@ export function PartiesPlaceholderPage() {
                     </div>
                     <div className="parties-vca-field-row">
                       <label htmlFor="vca-store">Store Allowed</label>
-                      <select id="vca-store" value={form.storeAllowed} onChange={(e) => patchForm('storeAllowed', e.target.value)}>
+                      <AnimatedSelect id="vca-store" value={form.storeAllowed} onChange={(e) => patchForm('storeAllowed', e.target.value)}>
                         <option value="">—</option>
                         <option value="ALL">ALL</option>
                         <option value="BRANCH">BRANCH</option>
-                      </select>
+                      </AnimatedSelect>
                     </div>
                       </>
                     )}
@@ -1611,22 +1608,18 @@ export function PartiesPlaceholderPage() {
             <fieldset className="parties-vca-panel parties-vca-account-panel">
               <legend className="parties-vca-legend-row parties-vca-account-legend">
                 <span>Account Related Information</span>
-                <label className="parties-vca-check-inline">
-                  <input
-                    type="checkbox"
-                    checked={form.discontinued}
-                    onChange={(e) => patchForm('discontinued', e.target.checked)}
-                  />
-                  <span>Discontinued</span>
-                </label>
-                <label className="parties-vca-check-inline">
-                  <input
-                    type="checkbox"
-                    checked={form.invoiceRestricted}
-                    onChange={(e) => patchForm('invoiceRestricted', e.target.checked)}
-                  />
-                  <span>Invoice Related / Restricted</span>
-                </label>
+                <ToggleSwitch
+                  label="Discontinued"
+                  tone="pay"
+                  checked={form.discontinued}
+                  onChange={(v) => patchForm('discontinued', v)}
+                />
+                <ToggleSwitch
+                  label="Invoice Related / Restricted"
+                  tone="rec"
+                  checked={form.invoiceRestricted}
+                  onChange={(v) => patchForm('invoiceRestricted', v)}
+                />
               </legend>
 
               <div className="parties-vca-account-grid">
@@ -1647,7 +1640,7 @@ export function PartiesPlaceholderPage() {
 
               <div className="parties-vca-account-type-row">
                 <label htmlFor="vca-account-type">Account Type</label>
-                <select
+                <AnimatedSelect
                   id="vca-account-type"
                   value={form.accountTypeUlid}
                   onChange={(e) => {
@@ -1663,7 +1656,7 @@ export function PartiesPlaceholderPage() {
                       {type.name}
                     </option>
                   ))}
-                </select>
+                </AnimatedSelect>
                 <button
                   type="button"
                   className="parties-vca-account-type-btn"
@@ -1945,12 +1938,11 @@ export function PartiesPlaceholderPage() {
               Update
             </button>
             <label className="parties-vca-check-inline">
-              <input
-                type="checkbox"
+              <ToggleSwitch
+                label="Only Expired Lic."
                 checked={bulkOnlyExpired}
-                onChange={(e) => setBulkOnlyExpired(e.target.checked)}
+                onChange={setBulkOnlyExpired}
               />
-              <span>Only Expired Lic.</span>
             </label>
           </div>
           <div className="parties-vca-shell-grid-wrap">
@@ -1980,17 +1972,21 @@ export function PartiesPlaceholderPage() {
                     <tr key={row.key} className={row.dirty ? 'is-selected' : undefined}>
                       <td>{index + 1}</td>
                       <td>
-                        <input
-                          type="checkbox"
+                        <ToggleSwitch
+                          label=""
+                          title="Discontinued"
+                          tone="pay"
                           checked={row.discontinued}
-                          onChange={(e) => patchBulk(row.key, { discontinued: e.target.checked })}
+                          onChange={(v) => patchBulk(row.key, { discontinued: v })}
                         />
                       </td>
                       <td>
-                        <input
-                          type="checkbox"
+                        <ToggleSwitch
+                          label=""
+                          title="Invoice Restricted"
+                          tone="rec"
                           checked={row.restricted}
-                          onChange={(e) => patchBulk(row.key, { restricted: e.target.checked })}
+                          onChange={(v) => patchBulk(row.key, { restricted: v })}
                         />
                       </td>
                       <td>{row.code}</td>
@@ -2003,7 +1999,7 @@ export function PartiesPlaceholderPage() {
                         />
                       </td>
                       <td>
-                        <select
+                        <AnimatedSelect
                           value={row.account_type_ulid}
                           onChange={(e) => {
                             const ulid = e.target.value
@@ -2020,7 +2016,7 @@ export function PartiesPlaceholderPage() {
                               {type.name}
                             </option>
                           ))}
-                        </select>
+                        </AnimatedSelect>
                       </td>
                       <td>
                         <input
@@ -2093,14 +2089,11 @@ export function PartiesPlaceholderPage() {
               <RefreshCw size={16} />
               Refresh
             </button>
-            <label className="parties-vca-check-inline">
-              <input
-                type="checkbox"
-                checked={coaShowGrouped}
-                onChange={(e) => setCoaShowGrouped(e.target.checked)}
-              />
-              <span>Show Grouped Columns Also</span>
-            </label>
+            <ToggleSwitch
+              label="Show Grouped Columns Also"
+              checked={coaShowGrouped}
+              onChange={setCoaShowGrouped}
+            />
           </div>
           <div className="parties-vca-shell-grid-wrap">
             <table className="parties-vca-shell-grid parties-vca-coa-grid">
