@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'tenant_id',
     'sub_head_id',
+    'code',
     'name',
     'is_cash',
     'is_bank',

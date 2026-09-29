@@ -39,12 +39,14 @@ class PartyTest extends TestCase
 
         $ar = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $current,
+            'code' => '0011',
             'name' => 'ACCOUNT RECEIVABLE',
             'is_receivable' => true,
         ])->assertCreated()->json('ulid');
 
         $ap = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $short,
+            'code' => '0020',
             'name' => 'ACCOUNT PAYABLE',
             'is_payable' => true,
         ])->assertCreated()->json('ulid');

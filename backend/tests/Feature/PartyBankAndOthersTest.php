@@ -21,6 +21,7 @@ class PartyBankAndOthersTest extends TestCase
         ])->assertCreated()->json('ulid');
         $ap = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $sub,
+            'code' => '0020',
             'name' => 'ACCOUNT PAYABLE',
             'is_payable' => true,
         ])->assertCreated()->json('ulid');
@@ -123,11 +124,13 @@ class PartyBankAndOthersTest extends TestCase
         ])->assertCreated()->json('ulid');
         $ar = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $sub,
+            'code' => '0011',
             'name' => 'RECEIVABLE',
             'is_receivable' => true,
         ])->assertCreated()->json('ulid');
         $cash = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $sub,
+            'code' => '0010',
             'name' => 'CASH',
             'is_cash' => true,
         ])->assertCreated()->json('ulid');

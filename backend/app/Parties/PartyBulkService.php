@@ -43,6 +43,7 @@ class PartyBulkService
         'Print License',
         'Discontinued',
         'Restricted',
+        'Account Type Code',
         'Account Type Name',
         'Credit Limit Days',
         'Credit Limit Amount',
@@ -303,6 +304,14 @@ class PartyBulkService
      */
     private function assertTemplateHeaders(array $headers): void
     {
+        if (in_array('Account Type Name', $headers, true) && ! in_array('Account Type Code', $headers, true)) {
+            throw new ApiException(
+                'VALIDATION_FAILED',
+                'Legacy template detected: Account Type Code is required. Re-download the BluePOS parties template.',
+                422,
+            );
+        }
+
         if ($headers !== self::TEMPLATE_HEADERS) {
             throw new ApiException('VALIDATION_FAILED', 'Spreadsheet headers do not match the BluePOS parties template.', 422);
         }
@@ -348,6 +357,7 @@ class PartyBulkService
             'print_license' => $bool((string) ($row['Print License'] ?? '')),
             'is_active' => ! $bool((string) ($row['Discontinued'] ?? '')),
             'invoice_restricted' => $bool((string) ($row['Restricted'] ?? '')),
+            'account_type_code' => strtoupper(trim($row['Account Type Code'] ?? '')),
             'account_type_name' => trim($row['Account Type Name'] ?? ''),
             'credit_limit_days' => trim($row['Credit Limit Days'] ?? '') === '' ? 0 : (int) $row['Credit Limit Days'],
             'credit_limit_amount' => trim($row['Credit Limit Amount'] ?? '') === '' ? '0.0000' : (string) $row['Credit Limit Amount'],
@@ -375,7 +385,8 @@ class PartyBulkService
         $rules = [
             'code' => ['required', 'string', 'max:64'],
             'name' => ['required', 'string', 'max:180'],
-            'account_type_name' => ['required', 'string', 'max:180'],
+            'account_type_code' => ['required', 'string', 'max:64'],
+            'account_type_name' => ['nullable', 'string', 'max:180'],
             'address' => ['nullable', 'string'],
             'area' => ['nullable', 'string', 'max:120'],
             'credit_limit_amount' => ['regex:/^\d+(\.\d{1,4})?$/'],
@@ -400,7 +411,7 @@ class PartyBulkService
 
         $accountType = AccountType::query()
             ->forTenant($tenantId)
-            ->whereRaw('LOWER(name) = ?', [mb_strtolower((string) $row['account_type_name'])])
+            ->where('code', (string) $row['account_type_code'])
             ->where('is_active', true)
             ->first();
         if (! $accountType) {
@@ -408,7 +419,7 @@ class PartyBulkService
                 'ok' => false,
                 'row' => $excelRow,
                 'action' => 'reject',
-                'errors' => ['Account Type Name not found for this tenant.'],
+                'errors' => ['Account Type Code not found for this tenant.'],
                 'data' => $row,
             ];
         }

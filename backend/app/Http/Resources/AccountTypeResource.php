@@ -18,6 +18,7 @@ class AccountTypeResource extends JsonResource
     {
         return [
             'ulid' => $this->ulid,
+            'code' => $this->code,
             'name' => $this->name,
             'is_cash' => (bool) $this->is_cash,
             'is_bank' => (bool) $this->is_bank,

@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Account;
+use App\Models\AccountType;
+use App\Models\Customer;
 use App\Models\Supplier;
 use App\Support\SimpleXlsx;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -26,11 +28,13 @@ class PartyBulkTest extends TestCase
         return [
             'ar' => $this->postJson('/api/coa/account-types', [
                 'sub_head_ulid' => $current,
+                'code' => '0011',
                 'name' => 'ACCOUNT RECEIVABLE',
                 'is_receivable' => true,
             ])->assertCreated()->json('ulid'),
             'ap' => $this->postJson('/api/coa/account-types', [
                 'sub_head_ulid' => $short,
+                'code' => '0020',
                 'name' => 'ACCOUNT PAYABLE',
                 'is_payable' => true,
             ])->assertCreated()->json('ulid'),
@@ -140,6 +144,7 @@ class PartyBulkTest extends TestCase
             '0',
             '0',
             '0',
+            '0020',
             'ACCOUNT PAYABLE',
             '15',
             '200.0000',
@@ -166,6 +171,7 @@ class PartyBulkTest extends TestCase
             '0',
             '0',
             '0',
+            '0020',
             'ACCOUNT PAYABLE',
             '0',
             '0.0000',
@@ -198,5 +204,74 @@ class PartyBulkTest extends TestCase
                 'area' => 'Leak',
             ]],
         ])->assertStatus(404);
+    }
+
+    public function test_excel_resolves_account_type_by_code_rejects_unknown_and_cross_tenant(): void
+    {
+        $this->signInOwner('bulk-code-a')->assertOk();
+        $coa = $this->seedTypes();
+        $typeCountBefore = AccountType::query()->count();
+
+        $xlsx = app(SimpleXlsx::class);
+        $headers = \App\Parties\PartyBulkService::TEMPLATE_HEADERS;
+
+        $unknownPath = tempnam(sys_get_temp_dir(), 'partyxlsx').'.xlsx';
+        file_put_contents($unknownPath, $xlsx->write($headers, [[
+            'VENDOR', 'V-UNK', 'Unknown Type Vendor', '', '', '', '', '', '', '', '', '', '',
+            '', '', '', '', '', '0', '0', '0', '0', '9999', 'DOES NOT EXIST', '0', '0.0000',
+        ]]));
+        $previewUnknown = $this->post('/api/parties/excel/preview', [
+            'file' => new UploadedFile($unknownPath, 'parties.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
+        ], ['Accept' => 'application/json'])->assertOk();
+        $this->assertCount(0, $previewUnknown->json('valid'));
+        $this->assertCount(1, $previewUnknown->json('invalid'));
+        $this->assertStringContainsString(
+            'Account Type Code not found',
+            implode(' ', $previewUnknown->json('invalid.0.errors')),
+        );
+        $this->assertSame($typeCountBefore, AccountType::query()->count());
+        @unlink($unknownPath);
+
+        $okPath = tempnam(sys_get_temp_dir(), 'partyxlsx').'.xlsx';
+        file_put_contents($okPath, $xlsx->write($headers, [[
+            'CUSTOMER', 'C-CODE', 'Code Customer', '', '', '', '', '', '', '', '', '', '',
+            '', '', '', '', '', '0', '0', '0', '0', '0011', 'ACCOUNT RECEIVABLE', '0', '0.0000',
+        ]]));
+        $import = $this->post('/api/parties/excel/import', [
+            'file' => new UploadedFile($okPath, 'parties.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
+            'confirm' => '1',
+        ], ['Accept' => 'application/json'])->assertOk();
+        $import->assertJsonPath('created', 1);
+        $import->assertJsonPath('updated', 0);
+        $this->assertSame($typeCountBefore, AccountType::query()->count());
+
+        $customer = Customer::query()->where('code', 'C-CODE')->first();
+        $this->assertNotNull($customer);
+        $this->assertSame(
+            AccountType::query()->where('ulid', $coa['ar'])->value('id'),
+            $customer->account_type_id,
+        );
+        $this->assertTrue(Account::query()->where('customer_id', $customer->id)->exists());
+        @unlink($okPath);
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('bulk-code-b')->assertOk();
+        // Tenant B has no 0011 — foreign tenant code must not resolve.
+        $crossPath = tempnam(sys_get_temp_dir(), 'partyxlsx').'.xlsx';
+        file_put_contents($crossPath, $xlsx->write($headers, [[
+            'VENDOR', 'V-X', 'Cross Tenant', '', '', '', '', '', '', '', '', '', '',
+            '', '', '', '', '', '0', '0', '0', '0', '0011', 'ACCOUNT RECEIVABLE', '0', '0.0000',
+        ]]));
+        $previewB = $this->post('/api/parties/excel/preview', [
+            'file' => new UploadedFile($crossPath, 'parties.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
+        ], ['Accept' => 'application/json'])->assertOk();
+        $this->assertCount(0, $previewB->json('valid'));
+        $this->assertCount(1, $previewB->json('invalid'));
+        $this->assertStringContainsString(
+            'Account Type Code not found',
+            implode(' ', $previewB->json('invalid.0.errors')),
+        );
+        $this->assertFalse(Supplier::query()->where('code', 'V-X')->exists());
+        @unlink($crossPath);
     }
 }

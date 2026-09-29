@@ -65,6 +65,7 @@ class AccountTypeController extends Controller
                         'account_types' => $sub->accountTypes->map(function (AccountType $type) {
                             return [
                                 'ulid' => $type->ulid,
+                                'code' => $type->code,
                                 'name' => $type->name,
                                 'sort_order' => (int) $type->sort_order,
                                 'is_active' => (bool) $type->is_active,
@@ -101,6 +102,7 @@ class AccountTypeController extends Controller
             $accountType = AccountType::query()->create([
                 'tenant_id' => $tenantContext->tenantId(),
                 'sub_head_id' => $subHead->id,
+                'code' => $request->validated('code'),
                 'name' => $request->validated('name'),
                 'is_cash' => $request->boolean('is_cash', false),
                 'is_bank' => $request->boolean('is_bank', false),

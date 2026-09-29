@@ -17,6 +17,7 @@ class StoreAccountTypeRequest extends FormRequest
     {
         $this->merge([
             'name' => trim((string) $this->input('name')),
+            'code' => strtoupper(trim((string) $this->input('code'))),
             'sub_head_ulid' => trim((string) $this->input('sub_head_ulid')),
             'pnl_grouping_label' => $this->filled('pnl_grouping_label')
                 ? trim((string) $this->input('pnl_grouping_label'))
@@ -38,6 +39,12 @@ class StoreAccountTypeRequest extends FormRequest
                 'string',
                 'size:26',
                 Rule::exists('account_sub_heads', 'ulid')->where('tenant_id', $tenantId),
+            ],
+            'code' => [
+                'required',
+                'string',
+                'max:64',
+                Rule::unique('account_types', 'code')->where('tenant_id', $tenantId),
             ],
             'name' => ['required', 'string', 'max:180'],
             'is_cash' => ['sometimes', 'boolean'],

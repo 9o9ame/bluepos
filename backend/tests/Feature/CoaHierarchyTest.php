@@ -33,6 +33,7 @@ class CoaHierarchyTest extends TestCase
 
         $type = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $subUlid,
+            'code' => '0010',
             'name' => 'CASH',
             'is_cash' => true,
             'is_bank' => false,
@@ -40,6 +41,7 @@ class CoaHierarchyTest extends TestCase
             'hint' => 'Petty and till cash',
             'sort_order' => 10,
         ])->assertCreated();
+        $type->assertJsonPath('code', '0010');
         $type->assertJsonPath('name', 'CASH');
         $type->assertJsonPath('is_cash', true);
         $type->assertJsonPath('sub_head.ulid', $subUlid);

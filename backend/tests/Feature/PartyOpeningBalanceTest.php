@@ -46,21 +46,25 @@ class PartyOpeningBalanceTest extends TestCase
 
         $ar = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $current,
+            'code' => '0011',
             'name' => 'ACCOUNT RECEIVABLE',
             'is_receivable' => true,
         ])->assertCreated()->json('ulid');
         $cash = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $current,
+            'code' => '0010',
             'name' => 'CASH',
             'is_cash' => true,
         ])->assertCreated()->json('ulid');
         $ap = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $short,
+            'code' => '0020',
             'name' => 'ACCOUNT PAYABLE',
             'is_payable' => true,
         ])->assertCreated()->json('ulid');
         $equity = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $eqSub,
+            'code' => '0030',
             'name' => 'OPENING BALANCE EQUITY',
         ])->assertCreated()->json('ulid');
 

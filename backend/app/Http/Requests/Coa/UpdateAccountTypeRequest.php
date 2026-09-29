@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Coa;
 
+use App\Models\AccountType;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -17,6 +18,14 @@ class UpdateAccountTypeRequest extends FormRequest
     {
         if ($this->exists('name')) {
             $this->merge(['name' => trim((string) $this->input('name'))]);
+        }
+        if ($this->exists('code')) {
+            $raw = $this->input('code');
+            $this->merge([
+                'code' => $raw === null || $raw === ''
+                    ? null
+                    : strtoupper(trim((string) $raw)),
+            ]);
         }
         if ($this->exists('sub_head_ulid')) {
             $this->merge(['sub_head_ulid' => trim((string) $this->input('sub_head_ulid'))]);
@@ -41,6 +50,8 @@ class UpdateAccountTypeRequest extends FormRequest
     public function rules(): array
     {
         $tenantId = app(TenantContext::class)->tenantId();
+        $ulid = (string) $this->route('accountTypeUlid');
+        $ignoreId = AccountType::query()->forTenant($tenantId)->where('ulid', $ulid)->value('id');
 
         return [
             'sub_head_ulid' => [
@@ -49,6 +60,15 @@ class UpdateAccountTypeRequest extends FormRequest
                 'string',
                 'size:26',
                 Rule::exists('account_sub_heads', 'ulid')->where('tenant_id', $tenantId),
+            ],
+            'code' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:64',
+                Rule::unique('account_types', 'code')
+                    ->where('tenant_id', $tenantId)
+                    ->ignore($ignoreId),
             ],
             'name' => ['sometimes', 'required', 'string', 'max:180'],
             'is_cash' => ['sometimes', 'boolean'],

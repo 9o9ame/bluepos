@@ -39,6 +39,7 @@ class CoaChartTest extends TestCase
 
         $ar = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $current,
+            'code' => '0011',
             'name' => 'ACCOUNT RECEIVABLE',
             'is_receivable' => true,
             'sort_order' => 11,
@@ -46,6 +47,7 @@ class CoaChartTest extends TestCase
 
         $cash = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $current,
+            'code' => '0010',
             'name' => 'CASH',
             'is_cash' => true,
             'sort_order' => 10,
@@ -53,6 +55,7 @@ class CoaChartTest extends TestCase
 
         $ap = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $short,
+            'code' => '0020',
             'name' => 'ACCOUNT PAYABLE',
             'is_payable' => true,
             'sort_order' => 20,

@@ -28,11 +28,13 @@ class OpeningEquityConfigTest extends TestCase
 
         $cash = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $current,
+            'code' => '0010',
             'name' => 'CASH',
             'is_cash' => true,
         ])->assertCreated()->json('ulid');
         $equity = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $cap,
+            'code' => '0030',
             'name' => 'OPENING BALANCE EQUITY',
         ])->assertCreated()->json('ulid');
 

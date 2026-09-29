@@ -30,21 +30,25 @@ class PartyLedgerTest extends TestCase
         return [
             'ar' => $this->postJson('/api/coa/account-types', [
                 'sub_head_ulid' => $current,
+                'code' => '0011',
                 'name' => 'AR',
                 'is_receivable' => true,
             ])->assertCreated()->json('ulid'),
             'cash' => $this->postJson('/api/coa/account-types', [
                 'sub_head_ulid' => $current,
+                'code' => '0010',
                 'name' => 'CASH',
                 'is_cash' => true,
             ])->assertCreated()->json('ulid'),
             'ap' => $this->postJson('/api/coa/account-types', [
                 'sub_head_ulid' => $short,
+                'code' => '0020',
                 'name' => 'AP',
                 'is_payable' => true,
             ])->assertCreated()->json('ulid'),
             'equity' => $this->postJson('/api/coa/account-types', [
                 'sub_head_ulid' => $cap,
+                'code' => '0030',
                 'name' => 'OPENING EQUITY',
             ])->assertCreated()->json('ulid'),
         ];
