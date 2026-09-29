@@ -8,6 +8,7 @@ import {
   FileSpreadsheet,
   FolderPlus,
   ImagePlus,
+  Plus,
   RefreshCw,
   Save,
   Table2,
@@ -1661,9 +1662,10 @@ export function PartiesPlaceholderPage() {
                   type="button"
                   className="parties-vca-account-type-btn"
                   title="Define Account Types"
+                  aria-label="Define Account Types"
                   onClick={() => setCoaModalOpen(true)}
                 >
-                  + Account Type
+                  <Plus size={15} strokeWidth={3} />
                 </button>
               </div>
             </fieldset>

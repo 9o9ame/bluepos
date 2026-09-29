@@ -65,12 +65,25 @@
 }
 
 /* Phase F1.2 — Product image loader.
-   Keeps the original Right Click to + area and adds preview/remove behavior. */
+   Match Vendor / Customers / Accounts: 100% rail width, outer solid +
+   inner dashed with inset padding, outer radius 10 / inner radius 8. */
+.product-reference-screen .product-def-photo,
 .product-reference-screen .product-def-image-loader {
   position: relative;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 118px;
+  min-height: 118px;
+  max-height: 148px;
+  margin: 0 0 4px;
+  padding: 4px;
   overflow: hidden;
   cursor: pointer;
   user-select: none;
+  border-radius: 10px;
 }
 
 .product-reference-screen .product-def-image-loader:focus-visible {
@@ -79,7 +92,7 @@
 }
 
 .product-reference-screen .product-def-image-loader.has-image {
-  padding: 3px;
+  padding: 4px;
 }
 
 .product-reference-screen .product-def-image-input {
@@ -92,14 +105,16 @@
   height: 100%;
   min-height: 0;
   object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
 }
 
 .product-reference-screen .product-def-image-remove {
   position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 22px;
-  height: 22px;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
   display: inline-grid;
   place-items: center;
   padding: 0;
@@ -107,6 +122,8 @@
   border-radius: 50%;
   background: #d84b4b;
   color: #fff;
+  font-size: 14px;
+  line-height: 1;
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
 }
@@ -128,15 +145,15 @@
 .product-reference-screen .product-def-image-empty {
   width: 100%;
   height: 100%;
-  min-height: 92px;
+  min-height: 0;
   display: grid;
   place-items: center;
   box-sizing: border-box;
   padding: 0;
-  border: 1px dashed rgba(50, 88, 118, .55);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.72), rgba(224,235,244,.78));
-  color: #31556f;
+  border: 1.5px dashed color-mix(in srgb, var(--brand-blue, #1769aa) 40%, #9db4c8);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f8fcff, #e5f2fb);
+  color: #1d5f96;
   text-align: center;
   transition:
     border-color .15s ease,
@@ -151,22 +168,21 @@
 }
 
 .product-reference-screen .product-def-image-icon {
-  width: 72%;
-  height: 72%;
-  max-width: 88px;
-  max-height: 78px;
+  width: 56px;
+  height: 48px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
-  background: rgba(51, 132, 189, .12);
-  color: #2478b5;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #dff0ff, #b9dbf8);
+  color: var(--brand-blue, #1769aa);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .product-reference-screen .product-def-image-icon svg {
-  width: 56%;
-  height: 56%;
-  max-width: 48px;
-  max-height: 48px;
+  width: 28px;
+  height: 28px;
+  max-width: 28px;
+  max-height: 28px;
 }
 
 :root[data-theme='dark'] .product-reference-screen .product-def-image-empty {
@@ -187,10 +203,19 @@
   color: #79c4ff;
 }
 
-:root[data-skin='advanced'] .product-reference-screen .product-def-image-empty {
+:root[data-skin='advanced'] .product-reference-screen .product-def-photo,
+:root[data-skin='advanced'] .product-reference-screen .product-def-image-loader {
+  border-radius: 10px;
+}
+
+:root[data-skin='advanced'] .product-reference-screen .product-def-image-empty,
+:root[data-skin='advanced'] .product-reference-screen .product-def-image-preview {
   border-radius: 8px;
 }
 
-:root[data-skin='classic'] .product-reference-screen .product-def-image-empty {
-  border-radius: 1px;
+:root[data-skin='classic'] .product-reference-screen .product-def-photo,
+:root[data-skin='classic'] .product-reference-screen .product-def-image-loader,
+:root[data-skin='classic'] .product-reference-screen .product-def-image-empty,
+:root[data-skin='classic'] .product-reference-screen .product-def-image-preview {
+  border-radius: 2px;
 }

@@ -275,8 +275,13 @@
 
 .parties-vca-grid tbody tr.is-selected td,
 .parties-vca-mini-grid tr.is-selected td {
-  background: linear-gradient(90deg, #cfe8ff, #e8f5ff) !important;
-  box-shadow: inset 3px 0 0 #0f7dcc;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand-blue, #1769aa) 72%, #4a7eb0),
+    color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 70%, #6aa8d8)
+  ) !important;
+  color: #fff;
+  box-shadow: none;
 }
 
 .parties-vca-tree-summary,
@@ -295,9 +300,13 @@
 }
 
 .parties-vca-tree-leaf-btn.is-selected {
-  background: linear-gradient(90deg, #cfe8ff, #eaf6ff);
-  color: #0f6fb8;
-  box-shadow: inset 3px 0 0 #0f7dcc;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand-blue, #1769aa) 72%, #4a7eb0),
+    color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 70%, #6aa8d8)
+  );
+  color: #fff;
+  box-shadow: none;
 }
 
 .parties-vca-nav-arrows button,
@@ -323,13 +332,25 @@
   box-shadow: 0 3px 8px rgba(23, 105, 170, 0.16);
 }
 
-.parties-vca-account-type-btn,
 .parties-vca-shell-btn {
   border-radius: 8px;
   border-color: #9fc4e4;
   background: linear-gradient(180deg, #f5faff, #cfe4f6);
   color: #1d5f96;
   font-weight: 800;
+}
+
+.parties-vca-account-type-btn {
+  border-radius: 7px;
+  border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 45%, #6d9aa5);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 55%, #7ec8ff),
+    var(--brand-blue, #1769aa)
+  );
+  color: #fff;
+  opacity: 1;
+  cursor: pointer;
 }
 
 .parties-vca-shell-btn.is-update {

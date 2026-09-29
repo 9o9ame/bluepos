@@ -863,7 +863,7 @@ export function ProductsPage() {
             ) : (
               <span className="product-def-image-empty" aria-hidden="true">
                 <span className="product-def-image-icon">
-                  <ImagePlus size={42} strokeWidth={1.7} />
+                  <ImagePlus size={28} strokeWidth={1.7} />
                 </span>
               </span>
             )}

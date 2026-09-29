@@ -2666,7 +2666,9 @@ textarea {
   }
 
   .product-def-photo {
-    height: 125px;
+    width: 100%;
+    height: 118px;
+    min-height: 118px;
   }
 }
 /* =========================================================
@@ -2689,10 +2691,18 @@ textarea {
   overflow: hidden;
 }
 
-/* Keep the reference-style photo area, but size it for a browser viewport. */
+/* Keep the reference-style photo area — full rail width like parties contact photo. */
 .product-def-photo {
-  height: 102px;
-  min-height: 102px;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: 118px;
+  min-height: 118px;
+  max-height: 148px;
+  margin-left: 0;
+  margin-right: 0;
+  padding: 4px;
+  box-sizing: border-box;
 }
 
 .product-def-rail {

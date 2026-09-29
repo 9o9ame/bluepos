@@ -64,11 +64,21 @@ class ReferenceCoaSeedTest extends TestCase
         $ap = AccountType::query()->forTenant((int) $tenantA->id)->where('code', '0020')->firstOrFail();
         $this->assertTrue($ap->is_payable);
 
-        $this->artisan('bluepos:seed-reference-coa', ['tenantUlid' => $tenantA->ulid])
+        $this->artisan('bluepos:seed-reference-coa', ['tenant' => $tenantA->ulid])
             ->assertSuccessful();
         $this->assertSame(6, AccountMainHead::query()->forTenant((int) $tenantA->id)->count());
         $this->assertSame(25, AccountType::query()->forTenant((int) $tenantA->id)->count());
         $this->assertSame($accountsBeforeA, Account::query()->forTenant((int) $tenantA->id)->count());
+
+        $membership = $sessionA->membership;
+        $this->artisan('bluepos:seed-reference-coa', [
+            'tenant' => $tenantA->code,
+            '--login' => $membership->username,
+        ])->assertSuccessful();
+
+        $this->artisan('bluepos:seed-reference-coa', [
+            '--email' => $sessionA->user->email,
+        ])->assertSuccessful();
     }
 
     private function assertHierarchy(Tenant $tenant, string $code, string $subName, string $mainName): void

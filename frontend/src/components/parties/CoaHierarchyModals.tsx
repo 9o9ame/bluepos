@@ -454,12 +454,13 @@ export function CoaHierarchyModals({
                                 type="button"
                                 className="coa-plus"
                                 title="Add / Edit Sub Head"
+                                aria-label="Add or edit Sub Head"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   openSubEditor(row.key, row.sub_head_ulid)
                                 }}
                               >
-                                +
+                                <Plus size={15} strokeWidth={3} />
                               </button>
                             </div>
                           </td>
@@ -590,6 +591,7 @@ export function CoaHierarchyModals({
                         type="button"
                         className="coa-plus"
                         title="Add Main Head"
+                        aria-label="Add Main Head"
                         onClick={() => {
                           setError(null)
                           resetMainForm()
@@ -600,7 +602,7 @@ export function CoaHierarchyModals({
                           setLayer('main')
                         }}
                       >
-                        +
+                        <Plus size={15} strokeWidth={3} />
                       </button>
                     </span>
                   </label>
