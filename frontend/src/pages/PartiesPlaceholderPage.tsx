@@ -7,6 +7,7 @@ import {
   ChevronRight,
   FileSpreadsheet,
   FolderPlus,
+  ImagePlus,
   RefreshCw,
   Save,
   Table2,
@@ -20,6 +21,7 @@ import {
   createPartyBankAccount,
   createPartyOpeningBalance,
   deletePartyBankAccount,
+  deletePartyImage,
   deletePartyOpeningBalance,
   downloadPartyExcelTemplate,
   ensurePartyLeafAccount,
@@ -33,6 +35,7 @@ import {
   updateParty,
   updatePartyBankAccount,
   updatePartyOpeningBalance,
+  uploadPartyImage,
   type Party,
   type PartyBankAccount,
   type PartyExcelPreview,
@@ -304,6 +307,11 @@ export function PartiesPlaceholderPage() {
   const [excelPreview, setExcelPreview] = useState<PartyExcelPreview | null>(null)
   const [excelFile, setExcelFile] = useState<File | null>(null)
   const excelInputRef = useRef<HTMLInputElement | null>(null)
+  const imageInputRef = useRef<HTMLInputElement | null>(null)
+  const [pendingImage, setPendingImage] = useState<File | null>(null)
+  const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
+  const [savedImageUrl, setSavedImageUrl] = useState<string | null>(null)
+  const [imageRemoveRequested, setImageRemoveRequested] = useState(false)
   const [coaTree, setCoaTree] = useState<CoaTreeNode[]>([])
   const [accountTypes, setAccountTypes] = useState<CoaAccountType[]>([])
   const [coaModalOpen, setCoaModalOpen] = useState(false)
@@ -692,6 +700,47 @@ export function PartiesPlaceholderPage() {
     setLedger(null)
     setLedgerPage(1)
     setError(null)
+    clearPartyImageState()
+  }
+
+  function clearPartyImageState() {
+    if (pendingImagePreview) URL.revokeObjectURL(pendingImagePreview)
+    setPendingImage(null)
+    setPendingImagePreview(null)
+    setSavedImageUrl(null)
+    setImageRemoveRequested(false)
+    if (imageInputRef.current) imageInputRef.current.value = ''
+  }
+
+  function applyPartyImage(party: Party) {
+    if (pendingImagePreview) URL.revokeObjectURL(pendingImagePreview)
+    setPendingImage(null)
+    setPendingImagePreview(null)
+    setSavedImageUrl(party.image_url)
+    setImageRemoveRequested(false)
+    if (imageInputRef.current) imageInputRef.current.value = ''
+  }
+
+  function openPartyImagePicker() {
+    imageInputRef.current?.click()
+  }
+
+  function onPartyImageSelected(file: File | null) {
+    if (!file) return
+    if (pendingImagePreview) URL.revokeObjectURL(pendingImagePreview)
+    setPendingImage(file)
+    setPendingImagePreview(URL.createObjectURL(file))
+    setImageRemoveRequested(false)
+  }
+
+  function removePartyImagePreview() {
+    if (pendingImagePreview) URL.revokeObjectURL(pendingImagePreview)
+    setPendingImage(null)
+    setPendingImagePreview(null)
+    if (savedImageUrl) {
+      setImageRemoveRequested(true)
+    }
+    if (imageInputRef.current) imageInputRef.current.value = ''
   }
 
   function startNew(filter: PartyType = listFilter) {
@@ -720,6 +769,7 @@ export function PartiesPlaceholderPage() {
     setError(null)
     setLedger(null)
     setLedgerPage(1)
+    applyPartyImage(party)
     void loadBanks(party.ulid, party.party_type)
     void loadOpenings(party.ulid, party.party_type)
   }
@@ -830,12 +880,20 @@ export function PartiesPlaceholderPage() {
         }
       }
 
+      let finalSaved = saved
+      if (pendingImage) {
+        finalSaved = await uploadPartyImage(saved.ulid, saved.party_type, pendingImage)
+      } else if (imageRemoveRequested && savedImageUrl) {
+        finalSaved = await deletePartyImage(saved.ulid, saved.party_type)
+      }
+
       await loadParties(listFilter, true)
-      const next = partyToForm(saved, listFilter)
+      const next = partyToForm(finalSaved, listFilter)
       applyBaseline(next)
-      setSelectedKey(`${saved.party_type}:${saved.ulid}`)
-      await loadBanks(saved.ulid, saved.party_type)
-      await loadOpenings(saved.ulid, saved.party_type)
+      setSelectedKey(`${finalSaved.party_type}:${finalSaved.ulid}`)
+      applyPartyImage(finalSaved)
+      await loadBanks(finalSaved.ulid, finalSaved.party_type)
+      await loadOpenings(finalSaved.ulid, finalSaved.party_type)
     } catch (err) {
       setError(errMessage(err))
     } finally {
@@ -1009,6 +1067,8 @@ export function PartiesPlaceholderPage() {
     setExpandedSubs((current) => ({ ...current, [ulid]: !current[ulid] }))
   }
 
+  const displayImageUrl = pendingImagePreview ?? (!imageRemoveRequested ? savedImageUrl : null)
+
   return (
     <div className="parties-vca">
       <header className="parties-vca-header">
@@ -1164,20 +1224,18 @@ export function PartiesPlaceholderPage() {
                 {subTab === 'contact' ? (
                   <div className="parties-vca-contact">
                     <div className="parties-vca-contact-fields">
-                      <div className="parties-vca-field-row parties-vca-field-row-top">
+                      <div className="parties-vca-field-row">
                         <label htmlFor="vca-address">Address</label>
-                        <textarea
+                        <input
                           id="vca-address"
-                          rows={2}
                           value={form.address}
                           onChange={(e) => patchForm('address', e.target.value)}
                         />
                       </div>
-                      <div className="parties-vca-field-row parties-vca-field-row-top">
+                      <div className="parties-vca-field-row">
                         <label htmlFor="vca-bill">Bill Address</label>
-                        <textarea
+                        <input
                           id="vca-bill"
-                          rows={2}
                           value={form.billAddress}
                           onChange={(e) => patchForm('billAddress', e.target.value)}
                         />
@@ -1210,14 +1268,60 @@ export function PartiesPlaceholderPage() {
                         />
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="parties-vca-photo"
-                      disabled
-                      title="Party image upload deferred — no shared media upload architecture for parties yet"
+                    <div
+                      className={`parties-vca-photo${displayImageUrl ? ' has-image' : ''}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={displayImageUrl ? 'Change party image' : 'Add party image'}
+                      title={
+                        displayImageUrl
+                          ? 'Click to replace image — Save to persist'
+                          : 'Click to add image — Save to persist'
+                      }
+                      onClick={openPartyImagePicker}
+                      onContextMenu={(e) => {
+                        e.preventDefault()
+                        openPartyImagePicker()
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          openPartyImagePicker()
+                        }
+                      }}
                     >
-                      Right Click to Add
-                    </button>
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        className="parties-vca-photo-input"
+                        accept="image/jpeg,image/png,image/webp"
+                        tabIndex={-1}
+                        aria-hidden="true"
+                        onChange={(e) => onPartyImageSelected(e.target.files?.[0] ?? null)}
+                      />
+                      {displayImageUrl ? (
+                        <>
+                          <img src={displayImageUrl} alt="" className="parties-vca-photo-preview" />
+                          <button
+                            type="button"
+                            className="parties-vca-photo-remove"
+                            title="Remove image"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removePartyImagePreview()
+                            }}
+                          >
+                            ×
+                          </button>
+                        </>
+                      ) : (
+                        <span className="parties-vca-photo-empty" aria-hidden="true">
+                          <span className="parties-vca-photo-icon">
+                            <ImagePlus size={28} strokeWidth={1.7} />
+                          </span>
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ) : null}
 

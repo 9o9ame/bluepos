@@ -57,6 +57,9 @@ class PartyResource extends JsonResource
             'print_license' => $isAccount ? false : (bool) $this->print_license,
             'rf_id' => $isAccount ? null : $this->rf_id,
             'store_allowed' => $isAccount ? null : $this->store_allowed,
+            'image_url' => $this->image_path
+                ? '/api/parties/'.$this->ulid.'/image?type='.$this->partyType.'&v='.($this->updated_at?->getTimestamp() ?? 0)
+                : null,
         ];
     }
 }

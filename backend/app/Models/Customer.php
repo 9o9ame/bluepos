@@ -33,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'print_license',
     'rf_id',
     'store_allowed',
+    'image_path',
     'is_active',
     'created_by',
     'updated_by',

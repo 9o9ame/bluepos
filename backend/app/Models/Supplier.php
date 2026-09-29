@@ -37,6 +37,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'store_allowed',
     'tax_number',
     'notes',
+    'image_path',
     'is_active',
     'created_by',
     'updated_by',

@@ -17,6 +17,8 @@ use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PartyController extends Controller
 {
@@ -232,6 +234,92 @@ class PartyController extends Controller
         });
 
         return response()->json(['ok' => true, 'archived' => true]);
+    }
+
+    public function image(Request $request, string $partyUlid): mixed
+    {
+        [$party] = $this->resolveParty($request, $partyUlid);
+        $this->authorize('view', $party);
+
+        if (! $party->image_path || ! Storage::disk('public')->exists($party->image_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->response(
+            $party->image_path,
+            null,
+            ['Cache-Control' => 'private, max-age=3600'],
+        );
+    }
+
+    public function uploadImage(Request $request, string $partyUlid, TenantContext $tenantContext): PartyResource
+    {
+        [$party, $partyType] = $this->resolveParty($request, $partyUlid);
+        $this->authorize('update', $party);
+
+        $data = $request->validate([
+            'image' => [
+                'required',
+                'file',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:5120',
+            ],
+        ]);
+
+        $file = $data['image'];
+        $extension = strtolower($file->extension() ?: 'jpg');
+        $folder = match ($partyType) {
+            'vendor' => 'suppliers',
+            'customer' => 'customers',
+            default => 'accounts',
+        };
+        $directory = 'tenants/'.$tenantContext->tenantId().'/'.$folder.'/'.$party->ulid;
+        $newPath = $file->storeAs(
+            $directory,
+            Str::uuid()->toString().'.'.$extension,
+            'public',
+        );
+
+        if (! is_string($newPath) || $newPath === '') {
+            throw new ApiException('INTERNAL_ERROR', 'Unable to store party image.', 500);
+        }
+
+        $oldPath = $party->image_path;
+        $party->image_path = $newPath;
+        $party->save();
+
+        if ($oldPath && $oldPath !== $newPath) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        $this->audit->record('PARTY_IMAGE_UPLOADED', [
+            'resource_type' => $partyType === 'vendor' ? 'supplier' : $partyType,
+            'resource_ulid' => $party->ulid,
+        ]);
+
+        return new PartyResource($party->fresh()->load('accountType'), $partyType);
+    }
+
+    public function deleteImage(Request $request, string $partyUlid): PartyResource
+    {
+        [$party, $partyType] = $this->resolveParty($request, $partyUlid);
+        $this->authorize('update', $party);
+
+        $oldPath = $party->image_path;
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        $party->image_path = null;
+        $party->save();
+
+        $this->audit->record('PARTY_IMAGE_REMOVED', [
+            'resource_type' => $partyType === 'vendor' ? 'supplier' : $partyType,
+            'resource_ulid' => $party->ulid,
+        ]);
+
+        return new PartyResource($party->fresh()->load('accountType'), $partyType);
     }
 
     /**

@@ -108,6 +108,9 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::get('/parties/{partyUlid}', [PartyController::class, 'show']);
     Route::patch('/parties/{partyUlid}', [PartyController::class, 'update']);
     Route::delete('/parties/{partyUlid}', [PartyController::class, 'destroy']);
+    Route::get('/parties/{partyUlid}/image', [PartyController::class, 'image']);
+    Route::post('/parties/{partyUlid}/image', [PartyController::class, 'uploadImage']);
+    Route::delete('/parties/{partyUlid}/image', [PartyController::class, 'deleteImage']);
     Route::get('/parties/{partyUlid}/bank-accounts', [PartyBankAccountController::class, 'index']);
     Route::post('/parties/{partyUlid}/bank-accounts', [PartyBankAccountController::class, 'store']);
     Route::patch('/parties/{partyUlid}/bank-accounts/{bankUlid}', [PartyBankAccountController::class, 'update']);

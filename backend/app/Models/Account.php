@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'code',
     'name',
     'address',
+    'image_path',
     'area',
     'invoice_restricted',
     'credit_limit_amount',

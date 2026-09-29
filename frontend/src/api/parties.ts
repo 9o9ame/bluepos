@@ -47,6 +47,7 @@ export type Party = {
   print_license: boolean
   rf_id: string | null
   store_allowed: string | null
+  image_url: string | null
 }
 
 export type PartyListFilter = 'all' | 'vendor' | 'customer' | 'account' | 'salesman'
@@ -111,6 +112,57 @@ export function updateParty(ulid: string, payload: Partial<PartyPayload> & { par
   return apiFetch<Party>(`/api/parties/${ulid}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
+  })
+}
+
+async function partyImageFetch(ulid: string, type: PartyTypeApi, body: FormData): Promise<Party> {
+  await ensureCsrfCookie()
+  const headers = new Headers()
+  const xsrfToken = readCookie('XSRF-TOKEN')
+  if (xsrfToken) {
+    headers.set('X-XSRF-TOKEN', xsrfToken)
+  }
+
+  const response = await fetch(
+    `/api/parties/${ulid}/image?type=${encodeURIComponent(type)}`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body,
+    },
+  )
+
+  const payload = (await response.json().catch(() => null)) as
+    | Party
+    | { message?: string; errors?: Record<string, string[]>; error?: { message?: string } }
+    | null
+
+  if (!response.ok) {
+    const validationMessage =
+      payload && 'errors' in payload && payload.errors
+        ? Object.values(payload.errors).flat()[0]
+        : null
+    const message =
+      validationMessage ||
+      (payload && 'error' in payload ? payload.error?.message : null) ||
+      (payload && 'message' in payload ? payload.message : null) ||
+      'Unable to upload party image.'
+    throw new ApiClientError('UPLOAD_FAILED', message ?? 'Unable to upload party image.', response.status)
+  }
+
+  return payload as Party
+}
+
+export function uploadPartyImage(ulid: string, type: PartyTypeApi, image: File): Promise<Party> {
+  const body = new FormData()
+  body.append('image', image)
+  return partyImageFetch(ulid, type, body)
+}
+
+export function deletePartyImage(ulid: string, type: PartyTypeApi): Promise<Party> {
+  return apiFetch<Party>(`/api/parties/${ulid}/image?type=${encodeURIComponent(type)}`, {
+    method: 'DELETE',
   })
 }
 
