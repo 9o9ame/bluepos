@@ -43,7 +43,7 @@
 
 .product-reference-screen .product-def-grid-search {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 72px !important;
+  grid-template-columns: minmax(0, 1fr) !important;
   align-items: center;
   gap: 7px;
   width: 100%;
@@ -57,29 +57,19 @@
   margin: 0;
 }
 
-.product-reference-screen .product-def-new-btn {
-  width: 72px;
-  min-width: 72px;
-  height: 30px;
-  margin: 0;
-  white-space: nowrap;
-}
-
 /* Give the group selector breathing room and a reference-like raised header. */
 .product-reference-screen .product-def-groupbar {
-  display: inline-flex !important;
+  display: flex !important;
   align-items: center;
-  gap: 10px !important;
+  gap: 8px !important;
   min-width: 220px;
   height: 32px;
   margin: 7px 0 4px 7px;
-  padding: 0 10px;
+  padding: 0 8px 0 10px;
   box-sizing: border-box;
 }
 
-.product-reference-screen .product-def-groupbar-label,
-.product-reference-screen .product-def-groupbar-value,
-.product-reference-screen .product-def-groupbar-arrow {
+.product-reference-screen .product-def-groupbar-label {
   display: inline-block;
   white-space: nowrap;
 }
@@ -123,12 +113,7 @@
 /* Smaller widths: keep toolbar usable instead of stacking. */
 @media (max-width: 1050px) {
   .product-reference-screen .product-def-grid-search {
-    grid-template-columns: minmax(180px, 1fr) 66px !important;
-  }
-
-  .product-reference-screen .product-def-new-btn {
-    width: 66px;
-    min-width: 66px;
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 

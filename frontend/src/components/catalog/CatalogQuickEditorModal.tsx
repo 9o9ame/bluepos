@@ -1,8 +1,7 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, RefreshCw, Save, Trash2, X } from 'lucide-react'
+import { RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { ApiClientError } from '../../api/client'
-import { useWorkspace } from '../../features/workspace/WorkspaceProvider'
 import {
   useCatalogMasterEditor,
   type CatalogMasterKind,
@@ -20,30 +19,30 @@ type CatalogQuickEditorModalProps = {
   onSaved?: (kind: QuickEditorKind, item: CatalogMasterRecord, created: boolean) => void
 }
 
-const COPY: Record<QuickEditorKind, { title: string; listTitle: string }> = {
+const COPY: Record<QuickEditorKind, { title: string; nameLabel: string }> = {
   category: {
     title: 'Edit/Define Categories',
-    listTitle: 'Edit/Define Categories',
+    nameLabel: 'Name',
   },
   subcategory: {
     title: 'Edit/Define Subcategories',
-    listTitle: 'Edit/Define Subcategories',
+    nameLabel: 'Name',
   },
   supplier: {
     title: 'Edit/Define Suppliers',
-    listTitle: 'Edit/Define Suppliers',
+    nameLabel: 'Name',
   },
   brand: {
-    title: 'Edit/Define Manufacture',
-    listTitle: 'Edit/Define Manufacture',
+    title: 'Edit/Define Company',
+    nameLabel: 'Name',
   },
   unit: {
     title: 'Edit/Define Units',
-    listTitle: 'Edit/Define Units',
+    nameLabel: 'Name',
   },
   barcode_group: {
     title: 'Edit/Define Barcode Groups',
-    listTitle: 'Edit/Define Barcode Groups',
+    nameLabel: 'Name',
   },
 }
 
@@ -56,7 +55,6 @@ export function CatalogQuickEditorModal({
 }: CatalogQuickEditorModalProps) {
   const activeKind = kind ?? 'category'
   const copy = COPY[activeKind]
-  const { openModule } = useWorkspace()
   const editor = useCatalogMasterEditor(activeKind, {
     enabled: open,
     parentCategoryUlid,
@@ -99,6 +97,11 @@ export function CatalogQuickEditorModal({
       return
     }
 
+    if (activeKind === 'subcategory' && !editor.categoryUlid) {
+      editor.setError('Category is required.')
+      return
+    }
+
     if (activeKind === 'unit' && !editor.symbol.trim()) {
       editor.setError('Symbol is required.')
       return
@@ -113,6 +116,9 @@ export function CatalogQuickEditorModal({
     }
   }
 
+  const tableColSpan =
+    activeKind === 'unit' ? 3 : activeKind === 'supplier' ? 4 : activeKind === 'subcategory' ? 3 : 2
+
   return createPortal(
     <div
       className="catalog-popup-backdrop"
@@ -122,7 +128,7 @@ export function CatalogQuickEditorModal({
       }}
     >
       <section
-        className="catalog-popup"
+        className={`catalog-popup catalog-popup--${activeKind}`}
         role="dialog"
         aria-modal="true"
         aria-label={copy.title}
@@ -135,78 +141,86 @@ export function CatalogQuickEditorModal({
           </button>
         </div>
 
-        <div className="catalog-popup-green-title">{copy.title}</div>
-
         <div className="catalog-popup-content">
-          <div className="catalog-popup-subtitle">
-            <strong>{copy.listTitle}</strong>
-            <span
-              role={activeKind === 'barcode_group' ? undefined : 'button'}
-              tabIndex={activeKind === 'barcode_group' ? undefined : 0}
-              onClick={() => {
-                const path = {
-                  category: '/definition/categories',
-                  subcategory: '/definition/subcategories',
-                  supplier: '/definition/suppliers',
-                  brand: '/definition/brands',
-                  unit: '/definition/units',
-                  barcode_group: null,
-                }[activeKind]
-                if (path) {
-                  onClose()
-                  openModule(path)
-                }
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') event.currentTarget.click()
-              }}
-            >
-              Tabular View
-            </span>
-          </div>
-
           <div className="catalog-popup-form">
-            <label>Code:</label>
-            <input
-              className="catalog-popup-code"
-              value={editor.code}
-              onChange={(event) => editor.setCode(event.target.value)}
-              autoFocus
-            />
+            {activeKind === 'subcategory' ? (
+              <div className="catalog-popup-form-row catalog-popup-form-row--full">
+                <label htmlFor="catalog-popup-category">Category:</label>
+                <select
+                  id="catalog-popup-category"
+                  className="catalog-popup-select"
+                  value={editor.categoryUlid}
+                  onChange={(event) => editor.setCategoryUlid(event.target.value)}
+                >
+                  <option value="">Select category…</option>
+                  {editor.categories.map((category) => (
+                    <option key={category.ulid} value={category.ulid}>
+                      {category.code} — {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
 
-            <label>
-              {activeKind === 'unit'
-                ? 'Unit Name:'
-                : activeKind === 'supplier'
-                  ? 'Supplier Name:'
-                  : activeKind === 'subcategory'
-                    ? 'Subcategory:'
-                    : 'Desc:'}
-            </label>
-            <input
-              className="catalog-popup-name"
-              value={editor.name}
-              onChange={(event) => editor.setName(event.target.value)}
-            />
+            <div className="catalog-popup-form-row catalog-popup-form-row--code-name">
+              <label htmlFor="catalog-popup-code">Code:</label>
+              <input
+                id="catalog-popup-code"
+                className="catalog-popup-code"
+                value={editor.code}
+                onChange={(event) => editor.setCode(event.target.value)}
+                autoFocus
+              />
+
+              <label htmlFor="catalog-popup-name">{copy.nameLabel}:</label>
+              <input
+                id="catalog-popup-name"
+                className="catalog-popup-name"
+                value={editor.name}
+                onChange={(event) => editor.setName(event.target.value)}
+              />
+            </div>
+
+            {activeKind === 'supplier' ? (
+              <div className="catalog-popup-form-row catalog-popup-form-row--code-name">
+                <label htmlFor="catalog-popup-phone">Phone:</label>
+                <input
+                  id="catalog-popup-phone"
+                  className="catalog-popup-normal"
+                  value={editor.phone}
+                  onChange={(event) => editor.setPhone(event.target.value)}
+                />
+
+                <label htmlFor="catalog-popup-address">Address:</label>
+                <input
+                  id="catalog-popup-address"
+                  className="catalog-popup-name"
+                  value={editor.address}
+                  onChange={(event) => editor.setAddress(event.target.value)}
+                />
+              </div>
+            ) : null}
 
             {activeKind === 'unit' ? (
-              <>
-                <label>Symbol:</label>
+              <div className="catalog-popup-form-row catalog-popup-form-row--unit-extra">
+                <label htmlFor="catalog-popup-symbol">Symbol:</label>
                 <input
+                  id="catalog-popup-symbol"
                   className="catalog-popup-normal"
                   value={editor.symbol}
                   onChange={(event) => editor.setSymbol(event.target.value)}
                 />
 
-                <label className="catalog-popup-checkbox">
+                <label className="catalog-popup-checkbox" htmlFor="catalog-popup-decimal">
                   <span>Allows Decimal:</span>
                   <input
+                    id="catalog-popup-decimal"
                     type="checkbox"
                     checked={editor.allowsDecimal}
                     onChange={(event) => editor.setAllowsDecimal(event.target.checked)}
                   />
                 </label>
-              </>
+              </div>
             ) : null}
           </div>
 
@@ -217,16 +231,15 @@ export function CatalogQuickEditorModal({
               <thead>
                 <tr>
                   <th>Code</th>
-                  <th>
-                    {activeKind === 'unit'
-                      ? 'Unit Name'
-                      : activeKind === 'supplier'
-                        ? 'Supplier Name'
-                        : activeKind === 'subcategory'
-                          ? 'Subcategory'
-                          : 'Desc'}
-                  </th>
+                  <th>{copy.nameLabel}</th>
+                  {activeKind === 'subcategory' ? <th>Category</th> : null}
                   {activeKind === 'unit' ? <th>Symbol</th> : null}
+                  {activeKind === 'supplier' ? (
+                    <>
+                      <th>Phone</th>
+                      <th>Address</th>
+                    </>
+                  ) : null}
                 </tr>
               </thead>
               <tbody>
@@ -238,14 +251,29 @@ export function CatalogQuickEditorModal({
                   >
                     <td>{row.code}</td>
                     <td>{row.name}</td>
+                    {activeKind === 'subcategory' ? (
+                      <td>
+                        {'category' in row && row.category
+                          ? row.category.name
+                          : editor.categories.find((c) => c.ulid === editor.categoryUlid)?.name ?? '—'}
+                      </td>
+                    ) : null}
                     {activeKind === 'unit' ? <td>{'symbol' in row ? row.symbol : ''}</td> : null}
+                    {activeKind === 'supplier' ? (
+                      <>
+                        <td>{'phone' in row ? row.phone ?? '—' : '—'}</td>
+                        <td>{'address' in row ? row.address ?? '—' : '—'}</td>
+                      </>
+                    ) : null}
                   </tr>
                 ))}
 
                 {editor.rows.length === 0 ? (
                   <tr>
-                    <td colSpan={activeKind === 'unit' ? 3 : 2} className="catalog-popup-empty">
-                      No records
+                    <td colSpan={tableColSpan} className="catalog-popup-empty">
+                      {activeKind === 'subcategory' && !editor.categoryUlid
+                        ? 'Select a category to list subcategories'
+                        : 'No records'}
                     </td>
                   </tr>
                 ) : null}
@@ -278,16 +306,6 @@ export function CatalogQuickEditorModal({
             Delete
           </button>
 
-          <button
-            type="button"
-            className="catalog-popup-action"
-            data-tone="new"
-            onClick={editor.startNew}
-          >
-            <Plus size={22} />
-            New
-          </button>
-
           <span className="catalog-popup-action-spacer" />
 
           <button
@@ -305,6 +323,7 @@ export function CatalogQuickEditorModal({
             type="button"
             className="catalog-popup-action"
             data-tone="refresh"
+            title="Refresh list and start a new record"
             onClick={() => void editor.refresh()}
           >
             <RefreshCw size={22} />

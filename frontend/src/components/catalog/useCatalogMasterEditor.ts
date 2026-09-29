@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createBarcodeGroup,
@@ -73,22 +73,36 @@ export function useCatalogMasterEditor(
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
   const [allowsDecimal, setAllowsDecimal] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [categoryUlid, setCategoryUlid] = useState(options.parentCategoryUlid ?? '')
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (kind !== 'subcategory') return
+    setCategoryUlid(options.parentCategoryUlid ?? '')
+  }, [kind, options.parentCategoryUlid])
+
+  const categoriesQuery = useQuery({
+    queryKey: ['categories'],
+    enabled: (options.enabled ?? true) && kind === 'subcategory',
+    queryFn: fetchCategories,
+  })
 
   const queryKey =
     kind === 'subcategory'
-      ? [QUERY_KEYS[kind], options.parentCategoryUlid ?? '']
+      ? [QUERY_KEYS[kind], categoryUlid || '']
       : [QUERY_KEYS[kind]]
 
   const query = useQuery({
     queryKey,
     enabled:
       (options.enabled ?? true) &&
-      (kind !== 'subcategory' || Boolean(options.parentCategoryUlid)),
+      (kind !== 'subcategory' || Boolean(categoryUlid)),
     queryFn: (): Promise<CatalogMasterRecord[]> => {
       if (kind === 'category') return fetchCategories()
       if (kind === 'subcategory') {
-        return fetchSubcategories(options.parentCategoryUlid)
+        return fetchSubcategories(categoryUlid)
       }
       if (kind === 'supplier') return fetchSuppliers()
       if (kind === 'brand') return fetchBrands()
@@ -98,6 +112,10 @@ export function useCatalogMasterEditor(
   })
 
   const rows = useMemo(() => query.data ?? [], [query.data])
+  const categories = useMemo(
+    () => (categoriesQuery.data ?? []).filter((row) => row.is_active),
+    [categoriesQuery.data],
+  )
   const selected = rows.find((row) => row.ulid === selectedKey) ?? null
 
   function select(item: CatalogMasterRecord) {
@@ -106,6 +124,13 @@ export function useCatalogMasterEditor(
     setName(item.name)
     setSymbol('symbol' in item ? item.symbol : '')
     setAllowsDecimal('allows_decimal' in item ? item.allows_decimal : false)
+    setPhone('phone' in item ? (item.phone ?? '') : '')
+    setAddress('address' in item ? (item.address ?? '') : '')
+    if (kind === 'subcategory') {
+      const sub = item as Subcategory
+      const nextCategory = sub.category_ulid ?? sub.category?.ulid ?? categoryUlid
+      if (nextCategory) setCategoryUlid(nextCategory)
+    }
     setError(null)
   }
 
@@ -115,6 +140,8 @@ export function useCatalogMasterEditor(
     setName('')
     setSymbol('')
     setAllowsDecimal(false)
+    setPhone('')
+    setAddress('')
     setError(null)
   }
 
@@ -129,12 +156,12 @@ export function useCatalogMasterEditor(
           ? await createCategory(payload)
           : await updateCategory(selectedKey, payload)
       } else if (kind === 'subcategory') {
-        if (!options.parentCategoryUlid) {
+        if (!categoryUlid) {
           throw new Error('Select a category before defining a subcategory.')
         }
 
         const subcategoryPayload = {
-          category_ulid: options.parentCategoryUlid,
+          category_ulid: categoryUlid,
           ...payload,
         }
 
@@ -142,9 +169,14 @@ export function useCatalogMasterEditor(
           ? await createSubcategory(subcategoryPayload)
           : await updateSubcategory(selectedKey, subcategoryPayload)
       } else if (kind === 'supplier') {
+        const supplierPayload = {
+          ...payload,
+          phone: phone.trim() || null,
+          address: address.trim() || null,
+        }
         item = created
-          ? await createSupplier(payload)
-          : await updateSupplier(selectedKey, payload)
+          ? await createSupplier(supplierPayload)
+          : await updateSupplier(selectedKey, supplierPayload)
       } else if (kind === 'brand') {
         item = created
           ? await createBrand(payload)
@@ -185,18 +217,33 @@ export function useCatalogMasterEditor(
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey })
+      startNew()
     },
   })
+
+  async function refresh() {
+    startNew()
+    if (kind === 'subcategory') {
+      await categoriesQuery.refetch()
+    }
+    if (kind !== 'subcategory' || categoryUlid) {
+      await query.refetch()
+    }
+  }
 
   return {
     query,
     rows,
+    categories,
     selected,
     selectedKey,
     code,
     name,
     symbol,
     allowsDecimal,
+    phone,
+    address,
+    categoryUlid,
     error,
     canCreate,
     canEdit,
@@ -208,11 +255,20 @@ export function useCatalogMasterEditor(
     setName,
     setSymbol,
     setAllowsDecimal,
+    setPhone,
+    setAddress,
+    setCategoryUlid: (ulid: string) => {
+      setCategoryUlid(ulid)
+      setSelectedKey(null)
+      setCode(options.initialCode ?? '')
+      setName('')
+      setError(null)
+    },
     setError,
     select,
     startNew,
     save: () => saveMutation.mutateAsync(),
     deactivate: () => deactivateMutation.mutateAsync(),
-    refresh: () => query.refetch(),
+    refresh,
   }
 }

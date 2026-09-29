@@ -81,7 +81,7 @@
   min-height: 36px;
   height: 36px;
   padding: 0 10px 0 6px;
-  border-radius: 999px;
+  border-radius: 8px;
   border: 1px solid #b7c4d0;
   background: linear-gradient(180deg, #ffffff 0%, #eef3f8 100%);
   color: #243040;
@@ -139,7 +139,7 @@
   width: 26px;
   height: 26px;
   flex: 0 0 auto;
-  border-radius: 999px;
+  border-radius: 7px;
   color: #fff;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
@@ -157,7 +157,7 @@
 .product-reference-screen .product-def-cmd-icon.is-red {
   background: linear-gradient(180deg, #ffb4b4, #ef6b6b);
   color: #fff;
-  border-radius: 999px;
+  border-radius: 7px;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.45),
     0 1px 3px rgba(0, 0, 0, 0.18);
@@ -505,48 +505,53 @@
   transform: translateY(0);
 }
 
-/* ---- Group bar / New button ---- */
+/* ---- Group bar filter ---- */
 .product-reference-screen .product-def-groupbar {
+  display: flex !important;
+  align-items: center;
+  gap: 8px !important;
+  width: calc(100% - 14px);
+  min-width: 0;
+  height: 32px;
+  margin: 7px 7px 4px;
+  padding: 0 8px 0 10px;
+  box-sizing: border-box;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 28%, #a8b4c0);
   background: linear-gradient(180deg, #ffffff, #e8f2fb);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
-.product-reference-screen .product-def-groupbar-arrow {
-  display: inline-grid;
-  place-items: center;
-  width: 18px;
-  height: 16px;
-  margin-left: 4px;
-  border-radius: 5px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 55%, #8ec8ff),
-    var(--brand-blue, #1769aa)
-  );
-  color: #fff;
-  font-size: 9px;
-  line-height: 1;
-}
-
-.product-reference-screen .product-def-new-btn,
-.product-reference-screen .desktop-btn.product-def-new-btn {
-  border-radius: 8px;
-  border-color: #9fd4b3;
-  background: linear-gradient(180deg, #f5fff8 0%, #e2f8ea 48%, #cdeed8 100%);
-  color: #1b7a45;
+.product-reference-screen .product-def-groupbar-label {
+  flex: 0 0 auto;
+  white-space: nowrap;
   font-weight: 800;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 1px 3px rgba(31, 143, 78, 0.12);
-  transition: transform 0.1s ease, filter 0.12s ease;
+  color: color-mix(in srgb, var(--brand-blue, #1769aa) 45%, #3a4652);
 }
 
-.product-reference-screen .product-def-new-btn:hover:not(:disabled),
-.product-reference-screen .desktop-btn.product-def-new-btn:hover:not(:disabled) {
-  filter: brightness(1.03);
-  transform: translateY(-1px);
+.product-reference-screen .product-def-groupbar > .pdf-select-shell {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 24px;
+}
+
+.product-reference-screen .product-def-groupbar > .pdf-select-shell > .pdf-select,
+.product-reference-screen .product-def-groupbar > .pdf-select-shell > select {
+  height: 24px !important;
+  min-height: 24px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-weight: 800 !important;
+  color: var(--brand-blue, #1769aa) !important;
+  padding-right: 26px !important;
+}
+
+.product-reference-screen .product-def-groupbar .pdf-select-caret {
+  width: 16px;
+  height: 14px;
+  right: 2px;
 }
 
 /* ---- Barcode box ---- */
@@ -780,13 +785,6 @@
   color: var(--brand-blue-hot, #8cccff);
 }
 
-:root[data-theme='dark'] .product-reference-screen .product-def-new-btn,
-:root[data-theme='dark'] .product-reference-screen .desktop-btn.product-def-new-btn {
-  border-color: #3f6b4f;
-  background: linear-gradient(180deg, #24352a, #2d4334);
-  color: #9be3b4;
-}
-
 :root[data-skin='classic'] .product-reference-screen {
   border-radius: 4px;
 }
@@ -844,7 +842,7 @@
 :root[data-skin='classic'] .product-reference-screen .product-def-cmd,
 :root[data-skin='hybrid'] .product-reference-screen .product-def-cmd,
 :root[data-skin='advanced'] .product-reference-screen .product-def-cmd {
-  border-radius: 999px !important;
+  border-radius: 8px !important;
   min-height: 36px;
   height: 36px;
   flex-direction: row !important;

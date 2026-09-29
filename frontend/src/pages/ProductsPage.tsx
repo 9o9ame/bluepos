@@ -187,6 +187,7 @@ export function ProductsPage() {
   const [q, setQ] = useState('')
   const [page, setPage] = useState(1)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [listCategoryUlid, setListCategoryUlid] = useState('')
   const [creating, setCreating] = useState(false)
   const [section, setSection] = useState<'definition' | 'opening' | 'related'>('definition')
   const [error, setError] = useState<string | null>(null)
@@ -197,8 +198,14 @@ export function ProductsPage() {
   const [imageRemoveRequested, setImageRemoveRequested] = useState(false)
 
   const productsQuery = useQuery({
-    queryKey: ['products', q, page],
-    queryFn: () => fetchProducts({ q, page, per_page: 50 }),
+    queryKey: ['products', q, page, listCategoryUlid],
+    queryFn: () =>
+      fetchProducts({
+        q,
+        page,
+        per_page: 50,
+        category_ulid: listCategoryUlid || undefined,
+      }),
   })
 
   const products = productsQuery.data?.data ?? []
@@ -740,7 +747,11 @@ export function ProductsPage() {
     },
     refresh: () => {
       void productsQuery.refetch()
-      if (selectedKey) void productQuery.refetch()
+      if (canCreate) {
+        startNewProduct()
+      } else if (selectedKey) {
+        void productQuery.refetch()
+      }
     },
   })
 
@@ -817,7 +828,7 @@ export function ProductsPage() {
                 ? productImagePreview
                   ? 'Click or right-click to replace product image'
                   : 'Click or right-click to add product image'
-                : 'Select New or an editable product first'
+                : 'Press Refresh for a new product, or select an editable product first'
             }
             onClick={openImagePicker}
             onContextMenu={(event) => {
@@ -927,9 +938,14 @@ export function ProductsPage() {
           <button
             type="button"
             className="product-def-cmd is-refresh"
+            title={canCreate ? 'Refresh list and start a new product' : 'Refresh product list'}
             onClick={() => {
               void productsQuery.refetch()
-              if (selectedKey) void productQuery.refetch()
+              if (canCreate) {
+                startNewProduct()
+              } else if (selectedKey) {
+                void productQuery.refetch()
+              }
             }}
           >
             <span className="product-def-cmd-icon is-blue"><RefreshCw size={17} strokeWidth={2.6} /></span>
@@ -1561,20 +1577,29 @@ export function ProductsPage() {
                   setPage(1)
                 }}
               />
-              {canCreate ? (
-                <button type="button" className="desktop-btn product-def-new-btn" onClick={startNewProduct}>
-                  <Plus size={13} /> New
-                </button>
-              ) : null}
             </div>
           </div>
 
           <div className="product-def-groupbar">
             <span className="product-def-groupbar-label">Category / Group</span>
-            <span className="product-def-groupbar-value">
-              {categories.data?.find((row) => row.ulid === categoryUlid)?.name ?? 'All Products'}
-            </span>
-            <span className="product-def-groupbar-arrow">▲</span>
+            <PdfSelect
+              className="product-def-groupbar-select"
+              value={listCategoryUlid}
+              aria-label="Filter products by category"
+              onChange={(e) => {
+                setListCategoryUlid(e.target.value)
+                setPage(1)
+              }}
+            >
+              <option value="">All Products</option>
+              {(categories.data ?? [])
+                .filter((row) => row.is_active || row.ulid === listCategoryUlid)
+                .map((row) => (
+                  <option key={row.ulid} value={row.ulid}>
+                    {row.name}
+                  </option>
+                ))}
+            </PdfSelect>
           </div>
 
           <PosDataGrid
@@ -1629,6 +1654,9 @@ export function ProductsPage() {
             setCategoryUlid(item.ulid)
             setSubcategoryUlid('')
           } else if (kind === 'subcategory') {
+            const sub = item as { category_ulid?: string | null; category?: { ulid: string } | null }
+            const nextCategory = sub.category_ulid ?? sub.category?.ulid
+            if (nextCategory) setCategoryUlid(nextCategory)
             setSubcategoryUlid(item.ulid)
           } else if (kind === 'supplier') {
             setPrimarySupplierUlid(item.ulid)
