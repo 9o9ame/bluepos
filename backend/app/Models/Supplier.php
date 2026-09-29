@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'email',
     'address',
     'billing_address',
+    'account_type_id',
     'tax_number',
     'notes',
     'is_active',
@@ -45,6 +46,14 @@ class Supplier extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * @return BelongsTo<AccountType, $this>
+     */
+    public function accountType(): BelongsTo
+    {
+        return $this->belongsTo(AccountType::class, 'account_type_id');
     }
 
     /**

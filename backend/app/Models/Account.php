@@ -11,21 +11,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'tenant_id',
     'code',
     'name',
-    'deals_in',
-    'contact_person',
-    'mobile',
-    'mobile_secondary',
-    'phone',
-    'phone_secondary',
-    'email',
     'address',
-    'billing_address',
     'account_type_id',
     'is_active',
     'created_by',
     'updated_by',
 ])]
-class Customer extends Model
+class Account extends Model
 {
     use Concerns\BelongsToTenant, HasPublicUlid;
 

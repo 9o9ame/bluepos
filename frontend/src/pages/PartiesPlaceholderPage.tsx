@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   BookOpen,
   ChevronFirst,
@@ -21,6 +21,8 @@ import {
   type PartyListFilter,
   type PartyTypeApi,
 } from '../api/parties'
+import { fetchAccountTypes, fetchCoaTree, type CoaAccountType, type CoaTreeNode } from '../api/coa'
+import { CoaHierarchyModals } from '../components/parties/CoaHierarchyModals'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import './PartiesPlaceholderPage.css'
 
@@ -39,16 +41,7 @@ type PartyListRow = {
 }
 
 const PARTY_TYPES: PartyType[] = ['VENDORS', 'CUSTOMERS', 'ACCOUNTS', 'SALES MAN', 'ALL']
-const CREATABLE_TYPES: PartyType[] = ['VENDORS', 'CUSTOMERS']
-
-const ACCOUNT_ROOTS = [
-  'ASSETS',
-  'LIABILITIES',
-  'EXPENSES',
-  'REVENUES',
-  'CAPITAL',
-  'INVENTORY',
-] as const
+const CREATABLE_TYPES: PartyType[] = ['VENDORS', 'CUSTOMERS', 'ACCOUNTS']
 
 function uiTypeToFilter(type: PartyType): PartyListFilter {
   switch (type) {
@@ -66,17 +59,28 @@ function uiTypeToFilter(type: PartyType): PartyListFilter {
 }
 
 function apiTypeToUi(type: PartyTypeApi): PartyType {
-  return type === 'vendor' ? 'VENDORS' : 'CUSTOMERS'
+  if (type === 'vendor') return 'VENDORS'
+  if (type === 'customer') return 'CUSTOMERS'
+  return 'ACCOUNTS'
 }
 
 function uiTypeToApi(type: PartyType): PartyTypeApi | null {
   if (type === 'VENDORS') return 'vendor'
   if (type === 'CUSTOMERS') return 'customer'
+  if (type === 'ACCOUNTS') return 'account'
   return null
 }
 
 function typeLabel(type: PartyTypeApi): string {
-  return type === 'vendor' ? 'VENDOR' : 'CUSTOMER'
+  if (type === 'vendor') return 'VENDOR'
+  if (type === 'customer') return 'CUSTOMER'
+  return 'ACCOUNT'
+}
+
+function suggestedAccountTypeName(partyType: PartyType): string | null {
+  if (partyType === 'CUSTOMERS') return 'ACCOUNT RECEIVABLE'
+  if (partyType === 'VENDORS') return 'ACCOUNT PAYABLE'
+  return null
 }
 
 function emptyForm(listFilter: PartyType = 'ALL') {
@@ -112,6 +116,7 @@ function emptyForm(listFilter: PartyType = 'ALL') {
     ntn: '',
     stn: '',
     accountType: '',
+    accountTypeUlid: '',
   }
 }
 
@@ -134,6 +139,8 @@ function partyToForm(party: Party, listFilter: PartyType): FormState {
     phone2: party.phone_secondary ?? '',
     email: party.email ?? '',
     discontinued: !party.is_active,
+    accountType: party.account_type?.name ?? '',
+    accountTypeUlid: party.account_type_ulid ?? '',
   }
 }
 
@@ -153,6 +160,7 @@ function formSnapshot(form: FormState): string {
     phone2: form.phone2,
     email: form.email,
     discontinued: form.discontinued,
+    accountTypeUlid: form.accountTypeUlid,
   })
 }
 
@@ -174,11 +182,13 @@ export function PartiesPlaceholderPage() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [expandedRoots, setExpandedRoots] = useState<Record<string, boolean>>({
-    ASSETS: true,
-  })
+  const [expandedRoots, setExpandedRoots] = useState<Record<string, boolean>>({})
+  const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({})
   const [coaShowGrouped, setCoaShowGrouped] = useState(true)
   const [bulkOnlyExpired, setBulkOnlyExpired] = useState(false)
+  const [coaTree, setCoaTree] = useState<CoaTreeNode[]>([])
+  const [accountTypes, setAccountTypes] = useState<CoaAccountType[]>([])
+  const [coaModalOpen, setCoaModalOpen] = useState(false)
   const baselineRef = useRef(formSnapshot(emptyForm('ALL')))
 
   const rows: PartyListRow[] = useMemo(
@@ -205,8 +215,8 @@ export function PartiesPlaceholderPage() {
     !saving &&
     form.name.trim().length > 0 &&
     form.code.trim().length > 0 &&
+    form.accountTypeUlid.trim().length > 0 &&
     CREATABLE_TYPES.includes(form.type) &&
-    listFilter !== 'ACCOUNTS' &&
     listFilter !== 'SALES MAN'
 
   const subTabs = useMemo(
@@ -257,13 +267,40 @@ export function PartiesPlaceholderPage() {
 
   useEffect(() => {
     void loadParties('ALL')
+    void loadCoaTree()
     // initial load only
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  async function loadCoaTree() {
+    try {
+      const [tree, types] = await Promise.all([fetchCoaTree(), fetchAccountTypes()])
+      setCoaTree(tree)
+      setAccountTypes(types.filter((t) => t.is_active))
+      setExpandedRoots((current) => {
+        if (Object.keys(current).length > 0) return current
+        const first = tree[0]?.ulid
+        return first ? { [first]: true } : {}
+      })
+    } catch {
+      setCoaTree([])
+      setAccountTypes([])
+    }
+  }
+
+  function applySuggestedAccountType(partyType: PartyType, formState: FormState): FormState {
+    if (formState.accountTypeUlid) return formState
+    const hint = suggestedAccountTypeName(partyType)
+    if (!hint) return formState
+    const match = accountTypes.find((t) => t.name.toUpperCase() === hint)
+    if (!match) return formState
+    return { ...formState, accountType: match.name, accountTypeUlid: match.ulid }
+  }
+
   function startNew(filter: PartyType = listFilter) {
     const nextType = CREATABLE_TYPES.includes(filter) ? filter : 'VENDORS'
-    applyBaseline(emptyForm(nextType))
+    const blank = applySuggestedAccountType(nextType, emptyForm(nextType))
+    applyBaseline(blank)
     setSelectedKey(null)
     setSubTab('contact')
     setError(null)
@@ -295,7 +332,8 @@ export function PartiesPlaceholderPage() {
   function onTypeChange(next: PartyType) {
     if (!confirmDiscard()) return
     setListFilter(next)
-    applyBaseline(emptyForm(CREATABLE_TYPES.includes(next) ? next : 'VENDORS'))
+    const nextType = CREATABLE_TYPES.includes(next) ? next : 'VENDORS'
+    applyBaseline(applySuggestedAccountType(nextType, emptyForm(nextType)))
     setSelectedKey(null)
     void loadParties(next, false)
   }
@@ -303,11 +341,15 @@ export function PartiesPlaceholderPage() {
   async function save() {
     const partyType = uiTypeToApi(form.type)
     if (!partyType) {
-      setError('ACCOUNTS and SALES MAN are not creatable in this phase.')
+      setError('SALES MAN is not creatable in this phase.')
       return
     }
     if (!form.code.trim() || !form.name.trim()) {
       setError('Code and Name are required.')
+      return
+    }
+    if (!form.accountTypeUlid.trim()) {
+      setError('Account Type is required. Create one via + Account Type if needed.')
       return
     }
 
@@ -317,6 +359,7 @@ export function PartiesPlaceholderPage() {
       party_type: partyType,
       code: form.code.trim(),
       name: form.name.trim(),
+      account_type_ulid: form.accountTypeUlid.trim(),
       deals_in: form.dealsIn.trim() || null,
       contact_person: form.contactPerson.trim() || null,
       mobile: form.mobile1.trim() || null,
@@ -344,8 +387,12 @@ export function PartiesPlaceholderPage() {
     }
   }
 
-  function toggleRoot(name: string) {
-    setExpandedRoots((current) => ({ ...current, [name]: !current[name] }))
+  function toggleRoot(ulid: string) {
+    setExpandedRoots((current) => ({ ...current, [ulid]: !current[ulid] }))
+  }
+
+  function toggleSub(ulid: string) {
+    setExpandedSubs((current) => ({ ...current, [ulid]: !current[ulid] }))
   }
 
   return (
@@ -709,19 +756,29 @@ export function PartiesPlaceholderPage() {
 
               <div className="parties-vca-account-type-row">
                 <label htmlFor="vca-account-type">Account Type</label>
-                <input
+                <select
                   id="vca-account-type"
-                  list="vca-account-type-hints"
-                  value={form.accountType}
-                  placeholder="Select when COA API exists"
-                  onChange={(e) => patchForm('accountType', e.target.value)}
-                />
-                <datalist id="vca-account-type-hints">
-                  {ACCOUNT_ROOTS.map((root) => (
-                    <option key={root} value={root} />
+                  value={form.accountTypeUlid}
+                  onChange={(e) => {
+                    const ulid = e.target.value
+                    const match = accountTypes.find((t) => t.ulid === ulid)
+                    patchForm('accountTypeUlid', ulid)
+                    patchForm('accountType', match?.name ?? '')
+                  }}
+                >
+                  <option value="">Select Account Type…</option>
+                  {accountTypes.map((type) => (
+                    <option key={type.ulid} value={type.ulid}>
+                      {type.name}
+                    </option>
                   ))}
-                </datalist>
-                <button type="button" className="parties-vca-account-type-btn" disabled title="Account types await COA API">
+                </select>
+                <button
+                  type="button"
+                  className="parties-vca-account-type-btn"
+                  title="Define Account Types"
+                  onClick={() => setCoaModalOpen(true)}
+                >
                   + Account Type
                 </button>
               </div>
@@ -745,8 +802,8 @@ export function PartiesPlaceholderPage() {
                       <td colSpan={4} className="parties-vca-empty">
                         {loading
                           ? 'Loading…'
-                          : listFilter === 'ACCOUNTS' || listFilter === 'SALES MAN'
-                            ? `${listFilter} master is not available in this phase`
+                          : listFilter === 'SALES MAN'
+                            ? 'SALES MAN master is deferred'
                             : 'No party records yet'}
                       </td>
                     </tr>
@@ -799,21 +856,71 @@ export function PartiesPlaceholderPage() {
             <div className="parties-vca-tree">
               <div className="parties-vca-tree-title">Account classification</div>
               <ul className="parties-vca-tree-list">
-                {ACCOUNT_ROOTS.map((root, index) => {
-                  const open = Boolean(expandedRoots[root])
-                  return (
-                    <li key={root} className="parties-vca-tree-node">
-                      <button type="button" className="parties-vca-tree-summary" onClick={() => toggleRoot(root)}>
-                        <span className="parties-vca-tree-toggle">{open ? '−' : '+'}</span>
-                        <span className="parties-vca-tree-label">{root}</span>
-                        <span className="parties-vca-tree-id">{index + 1}</span>
-                      </button>
-                      {open ? (
-                        <div className="parties-vca-tree-child">Child accounts appear when COA API is available</div>
-                      ) : null}
-                    </li>
-                  )
-                })}
+                {coaTree.length === 0 ? (
+                  <li className="parties-vca-tree-child">No classification yet — use + Account Type</li>
+                ) : (
+                  coaTree.map((main, index) => {
+                    const open = Boolean(expandedRoots[main.ulid])
+                    return (
+                      <li key={main.ulid} className="parties-vca-tree-node">
+                        <button type="button" className="parties-vca-tree-summary" onClick={() => toggleRoot(main.ulid)}>
+                          <span className="parties-vca-tree-toggle">{open ? '−' : '+'}</span>
+                          <span className="parties-vca-tree-label">{main.name}</span>
+                          <span className="parties-vca-tree-id">{index + 1}</span>
+                        </button>
+                        {open ? (
+                          <ul className="parties-vca-tree-list parties-vca-tree-nested">
+                            {main.sub_heads.length === 0 ? (
+                              <li className="parties-vca-tree-child">No sub heads</li>
+                            ) : (
+                              main.sub_heads.map((sub) => {
+                                const subOpen = Boolean(expandedSubs[sub.ulid])
+                                return (
+                                  <li key={sub.ulid} className="parties-vca-tree-node">
+                                    <button
+                                      type="button"
+                                      className="parties-vca-tree-summary"
+                                      onClick={() => toggleSub(sub.ulid)}
+                                    >
+                                      <span className="parties-vca-tree-toggle">{subOpen ? '−' : '+'}</span>
+                                      <span className="parties-vca-tree-label">{sub.name}</span>
+                                    </button>
+                                    {subOpen ? (
+                                      <ul className="parties-vca-tree-list parties-vca-tree-nested">
+                                        {sub.account_types.length === 0 ? (
+                                          <li className="parties-vca-tree-child">No account types</li>
+                                        ) : (
+                                          sub.account_types.map((type) => (
+                                            <li key={type.ulid} className="parties-vca-tree-child parties-vca-tree-leaf">
+                                              <button
+                                                type="button"
+                                                className={
+                                                  form.accountTypeUlid === type.ulid
+                                                    ? 'parties-vca-tree-leaf-btn is-selected'
+                                                    : 'parties-vca-tree-leaf-btn'
+                                                }
+                                                onClick={() => {
+                                                  patchForm('accountType', type.name)
+                                                  patchForm('accountTypeUlid', type.ulid)
+                                                }}
+                                              >
+                                                {type.name}
+                                              </button>
+                                            </li>
+                                          ))
+                                        )}
+                                      </ul>
+                                    ) : null}
+                                  </li>
+                                )
+                              })
+                            )}
+                          </ul>
+                        ) : null}
+                      </li>
+                    )
+                  })
+                )}
               </ul>
             </div>
           </section>
@@ -939,18 +1046,48 @@ export function PartiesPlaceholderPage() {
                 </tr>
               </thead>
               <tbody>
-                {coaShowGrouped
-                  ? ACCOUNT_ROOTS.map((root, index) => (
-                      <tr key={root} className="parties-vca-coa-group">
-                        <td colSpan={4}>{`${String(index + 1).padStart(2, '0')}-${root}`}</td>
-                      </tr>
-                    ))
-                  : null}
-                <tr>
-                  <td colSpan={4} className="parties-vca-empty">
-                    Hierarchical COA rows appear when accounts API is available
-                  </td>
-                </tr>
+                {coaTree.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="parties-vca-empty">
+                      No COA hierarchy yet — use + Account Type
+                    </td>
+                  </tr>
+                ) : (
+                  coaTree.flatMap((main, index) => {
+                    const rows: ReactNode[] = []
+                    if (coaShowGrouped) {
+                      rows.push(
+                        <tr key={`g-${main.ulid}`} className="parties-vca-coa-group">
+                          <td colSpan={4}>{`${String(index + 1).padStart(2, '0')}-${main.name}`}</td>
+                        </tr>,
+                      )
+                    }
+                    for (const sub of main.sub_heads) {
+                      if (sub.account_types.length === 0) {
+                        rows.push(
+                          <tr key={`s-${sub.ulid}`}>
+                            <td>{main.name}</td>
+                            <td>—</td>
+                            <td>{main.name}</td>
+                            <td>{sub.name}</td>
+                          </tr>,
+                        )
+                      } else {
+                        for (const type of sub.account_types) {
+                          rows.push(
+                            <tr key={`t-${type.ulid}`}>
+                              <td>{main.name}</td>
+                              <td>{type.name}</td>
+                              <td>{main.name}</td>
+                              <td>{sub.name}</td>
+                            </tr>,
+                          )
+                        }
+                      }
+                    }
+                    return rows
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -959,6 +1096,20 @@ export function PartiesPlaceholderPage() {
           </div>
         </div>
       ) : null}
+
+      <CoaHierarchyModals
+        open={coaModalOpen}
+        selectedAccountTypeUlid={form.accountTypeUlid || null}
+        onClose={() => setCoaModalOpen(false)}
+        onAccountTypeSaved={(type) => {
+          patchForm('accountType', type.name)
+          patchForm('accountTypeUlid', type.ulid)
+          void loadCoaTree()
+        }}
+        onHierarchyChanged={() => {
+          void loadCoaTree()
+        }}
+      />
     </div>
   )
 }

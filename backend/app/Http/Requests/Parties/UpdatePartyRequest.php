@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Parties;
 
+use App\Models\Account;
 use App\Models\Customer;
 use App\Models\Supplier;
 use App\Tenancy\TenantContext;
@@ -26,6 +27,11 @@ class UpdatePartyRequest extends FormRequest
         }
         if ($this->exists('name')) {
             $merge['name'] = trim((string) $this->input('name'));
+        }
+        if ($this->exists('account_type_ulid')) {
+            $merge['account_type_ulid'] = $this->filled('account_type_ulid')
+                ? trim((string) $this->input('account_type_ulid'))
+                : null;
         }
         foreach ([
             'deals_in',
@@ -58,11 +64,14 @@ class UpdatePartyRequest extends FormRequest
         $tenantId = app(TenantContext::class)->tenantId();
         $partyType = (string) $this->input('party_type');
         $ulid = (string) $this->route('partyUlid');
-        $table = $partyType === 'customer' ? 'customers' : 'suppliers';
-        $model = $partyType === 'customer' ? Customer::class : Supplier::class;
+        [$table, $model] = match ($partyType) {
+            'customer' => ['customers', Customer::class],
+            'account' => ['accounts', Account::class],
+            default => ['suppliers', Supplier::class],
+        };
 
-        return [
-            'party_type' => ['required', 'string', Rule::in(['vendor', 'customer'])],
+        $rules = [
+            'party_type' => ['required', 'string', Rule::in(['vendor', 'customer', 'account'])],
             'code' => [
                 'sometimes',
                 'required',
@@ -73,17 +82,31 @@ class UpdatePartyRequest extends FormRequest
                     ->ignore($model::query()->forTenant($tenantId)->where('ulid', $ulid)->value('id')),
             ],
             'name' => ['sometimes', 'required', 'string', 'max:180'],
-            'deals_in' => ['nullable', 'string', 'max:180'],
-            'contact_person' => ['nullable', 'string', 'max:180'],
-            'mobile' => ['nullable', 'string', 'max:64'],
-            'mobile_secondary' => ['nullable', 'string', 'max:64'],
-            'phone' => ['nullable', 'string', 'max:64'],
-            'phone_secondary' => ['nullable', 'string', 'max:64'],
-            'email' => ['nullable', 'email', 'max:180'],
+            'account_type_ulid' => [
+                'sometimes',
+                'required',
+                'string',
+                'size:26',
+                Rule::exists('account_types', 'ulid')
+                    ->where('tenant_id', $tenantId)
+                    ->where('is_active', true),
+            ],
             'address' => ['nullable', 'string'],
-            'billing_address' => ['nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],
         ];
+
+        if ($partyType !== 'account') {
+            $rules['deals_in'] = ['nullable', 'string', 'max:180'];
+            $rules['contact_person'] = ['nullable', 'string', 'max:180'];
+            $rules['mobile'] = ['nullable', 'string', 'max:64'];
+            $rules['mobile_secondary'] = ['nullable', 'string', 'max:64'];
+            $rules['phone'] = ['nullable', 'string', 'max:64'];
+            $rules['phone_secondary'] = ['nullable', 'string', 'max:64'];
+            $rules['email'] = ['nullable', 'email', 'max:180'];
+            $rules['billing_address'] = ['nullable', 'string'];
+        }
+
+        return $rules;
     }
 
     /**
@@ -91,6 +114,6 @@ class UpdatePartyRequest extends FormRequest
      */
     public function partyAttributes(): array
     {
-        return $this->safe()->except(['party_type']);
+        return $this->safe()->except(['party_type', 'account_type_ulid']);
     }
 }

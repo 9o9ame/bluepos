@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\AccountMainHeadController;
+use App\Http\Controllers\Api\AccountSubHeadController;
+use App\Http\Controllers\Api\AccountTypeController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BarcodeGroupController;
 use App\Http\Controllers\Api\BranchController;
@@ -96,6 +99,23 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::get('/parties/{partyUlid}', [PartyController::class, 'show']);
     Route::patch('/parties/{partyUlid}', [PartyController::class, 'update']);
     Route::delete('/parties/{partyUlid}', [PartyController::class, 'destroy']);
+
+    Route::get('/coa/tree', [AccountTypeController::class, 'tree']);
+    Route::get('/coa/main-heads', [AccountMainHeadController::class, 'index']);
+    Route::post('/coa/main-heads', [AccountMainHeadController::class, 'store']);
+    Route::get('/coa/main-heads/{mainHeadUlid}', [AccountMainHeadController::class, 'show']);
+    Route::patch('/coa/main-heads/{mainHeadUlid}', [AccountMainHeadController::class, 'update']);
+    Route::delete('/coa/main-heads/{mainHeadUlid}', [AccountMainHeadController::class, 'destroy']);
+    Route::get('/coa/sub-heads', [AccountSubHeadController::class, 'index']);
+    Route::post('/coa/sub-heads', [AccountSubHeadController::class, 'store']);
+    Route::get('/coa/sub-heads/{subHeadUlid}', [AccountSubHeadController::class, 'show']);
+    Route::patch('/coa/sub-heads/{subHeadUlid}', [AccountSubHeadController::class, 'update']);
+    Route::delete('/coa/sub-heads/{subHeadUlid}', [AccountSubHeadController::class, 'destroy']);
+    Route::get('/coa/account-types', [AccountTypeController::class, 'index']);
+    Route::post('/coa/account-types', [AccountTypeController::class, 'store']);
+    Route::get('/coa/account-types/{accountTypeUlid}', [AccountTypeController::class, 'show']);
+    Route::patch('/coa/account-types/{accountTypeUlid}', [AccountTypeController::class, 'update']);
+    Route::delete('/coa/account-types/{accountTypeUlid}', [AccountTypeController::class, 'destroy']);
 
     Route::middleware('entitled:catalog')->group(function () {
         Route::get('/categories', [CategoryController::class, 'index']);

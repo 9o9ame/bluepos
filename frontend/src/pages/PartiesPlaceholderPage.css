@@ -660,6 +660,33 @@
   border-bottom: 1px solid #e8eef4;
 }
 
+.parties-vca-tree-nested {
+  margin: 0;
+  padding: 0 0 0 14px;
+  list-style: none;
+}
+
+.parties-vca-tree-leaf {
+  padding: 2px 8px 2px 28px;
+}
+
+.parties-vca-tree-leaf-btn {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.parties-vca-tree-leaf-btn.is-selected,
+.parties-vca-tree-leaf-btn:hover {
+  background: #d7ebff;
+  color: #0f3f66;
+}
+
 .parties-vca-shell {
   display: flex;
   flex-direction: column;

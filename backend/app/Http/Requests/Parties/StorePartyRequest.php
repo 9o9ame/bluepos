@@ -19,6 +19,9 @@ class StorePartyRequest extends FormRequest
             'party_type' => strtolower(trim((string) $this->input('party_type'))),
             'code' => strtoupper(trim((string) $this->input('code'))),
             'name' => trim((string) $this->input('name')),
+            'account_type_ulid' => $this->filled('account_type_ulid')
+                ? trim((string) $this->input('account_type_ulid'))
+                : null,
             'deals_in' => $this->filled('deals_in') ? trim((string) $this->input('deals_in')) : null,
             'contact_person' => $this->filled('contact_person')
                 ? trim((string) $this->input('contact_person'))
@@ -48,10 +51,14 @@ class StorePartyRequest extends FormRequest
     {
         $tenantId = app(TenantContext::class)->tenantId();
         $partyType = (string) $this->input('party_type');
-        $table = $partyType === 'customer' ? 'customers' : 'suppliers';
+        $table = match ($partyType) {
+            'customer' => 'customers',
+            'account' => 'accounts',
+            default => 'suppliers',
+        };
 
-        return [
-            'party_type' => ['required', 'string', Rule::in(['vendor', 'customer'])],
+        $rules = [
+            'party_type' => ['required', 'string', Rule::in(['vendor', 'customer', 'account'])],
             'code' => [
                 'required',
                 'string',
@@ -59,17 +66,30 @@ class StorePartyRequest extends FormRequest
                 Rule::unique($table, 'code')->where('tenant_id', $tenantId),
             ],
             'name' => ['required', 'string', 'max:180'],
-            'deals_in' => ['nullable', 'string', 'max:180'],
-            'contact_person' => ['nullable', 'string', 'max:180'],
-            'mobile' => ['nullable', 'string', 'max:64'],
-            'mobile_secondary' => ['nullable', 'string', 'max:64'],
-            'phone' => ['nullable', 'string', 'max:64'],
-            'phone_secondary' => ['nullable', 'string', 'max:64'],
-            'email' => ['nullable', 'email', 'max:180'],
+            'account_type_ulid' => [
+                'required',
+                'string',
+                'size:26',
+                Rule::exists('account_types', 'ulid')
+                    ->where('tenant_id', $tenantId)
+                    ->where('is_active', true),
+            ],
             'address' => ['nullable', 'string'],
-            'billing_address' => ['nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],
         ];
+
+        if ($partyType !== 'account') {
+            $rules['deals_in'] = ['nullable', 'string', 'max:180'];
+            $rules['contact_person'] = ['nullable', 'string', 'max:180'];
+            $rules['mobile'] = ['nullable', 'string', 'max:64'];
+            $rules['mobile_secondary'] = ['nullable', 'string', 'max:64'];
+            $rules['phone'] = ['nullable', 'string', 'max:64'];
+            $rules['phone_secondary'] = ['nullable', 'string', 'max:64'];
+            $rules['email'] = ['nullable', 'email', 'max:180'];
+            $rules['billing_address'] = ['nullable', 'string'];
+        }
+
+        return $rules;
     }
 
     /**
@@ -77,8 +97,6 @@ class StorePartyRequest extends FormRequest
      */
     public function partyAttributes(): array
     {
-        $data = $this->safe()->except(['party_type']);
-
-        return $data;
+        return $this->safe()->except(['party_type', 'account_type_ulid']);
     }
 }

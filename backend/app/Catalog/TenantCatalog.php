@@ -3,6 +3,10 @@
 namespace App\Catalog;
 
 use App\Exceptions\ApiException;
+use App\Models\Account;
+use App\Models\AccountMainHead;
+use App\Models\AccountSubHead;
+use App\Models\AccountType;
 use App\Models\BarcodeGroup;
 use App\Models\Brand;
 use App\Models\Category;
@@ -52,6 +56,26 @@ class TenantCatalog
     public function customer(string $ulid): Customer
     {
         return $this->find(Customer::class, $ulid);
+    }
+
+    public function accountMainHead(string $ulid): AccountMainHead
+    {
+        return $this->find(AccountMainHead::class, $ulid);
+    }
+
+    public function accountSubHead(string $ulid): AccountSubHead
+    {
+        return $this->find(AccountSubHead::class, $ulid);
+    }
+
+    public function accountType(string $ulid): AccountType
+    {
+        return $this->find(AccountType::class, $ulid);
+    }
+
+    public function account(string $ulid): Account
+    {
+        return $this->find(Account::class, $ulid);
     }
 
     public function warehouse(string $ulid): Warehouse

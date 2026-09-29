@@ -9,29 +9,29 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'tenant_id',
-    'code',
+    'sub_head_id',
     'name',
-    'deals_in',
-    'contact_person',
-    'mobile',
-    'mobile_secondary',
-    'phone',
-    'phone_secondary',
-    'email',
-    'address',
-    'billing_address',
-    'account_type_id',
+    'is_cash',
+    'is_bank',
+    'is_receivable',
+    'is_payable',
+    'pnl_grouping_label',
+    'hint',
+    'sort_order',
     'is_active',
-    'created_by',
-    'updated_by',
 ])]
-class Customer extends Model
+class AccountType extends Model
 {
     use Concerns\BelongsToTenant, HasPublicUlid;
 
     protected function casts(): array
     {
         return [
+            'is_cash' => 'boolean',
+            'is_bank' => 'boolean',
+            'is_receivable' => 'boolean',
+            'is_payable' => 'boolean',
+            'sort_order' => 'integer',
             'is_active' => 'boolean',
         ];
     }
@@ -45,10 +45,10 @@ class Customer extends Model
     }
 
     /**
-     * @return BelongsTo<AccountType, $this>
+     * @return BelongsTo<AccountSubHead, $this>
      */
-    public function accountType(): BelongsTo
+    public function subHead(): BelongsTo
     {
-        return $this->belongsTo(AccountType::class, 'account_type_id');
+        return $this->belongsTo(AccountSubHead::class, 'sub_head_id');
     }
 }

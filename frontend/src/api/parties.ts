@@ -1,6 +1,11 @@
 import { apiFetch } from './client'
 
-export type PartyTypeApi = 'vendor' | 'customer'
+export type PartyTypeApi = 'vendor' | 'customer' | 'account'
+
+export type PartyAccountType = {
+  ulid: string
+  name: string
+}
 
 export type Party = {
   ulid: string
@@ -17,6 +22,8 @@ export type Party = {
   address: string | null
   billing_address: string | null
   is_active: boolean
+  account_type_ulid: string | null
+  account_type: PartyAccountType | null
 }
 
 export type PartyListFilter = 'all' | 'vendor' | 'customer' | 'account' | 'salesman'
@@ -25,6 +32,7 @@ export type PartyPayload = {
   party_type: PartyTypeApi
   code: string
   name: string
+  account_type_ulid: string
   deals_in?: string | null
   contact_person?: string | null
   mobile?: string | null

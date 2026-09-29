@@ -6,32 +6,23 @@ use App\Support\HasPublicUlid;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'tenant_id',
-    'code',
+    'main_head_id',
     'name',
-    'deals_in',
-    'contact_person',
-    'mobile',
-    'mobile_secondary',
-    'phone',
-    'phone_secondary',
-    'email',
-    'address',
-    'billing_address',
-    'account_type_id',
+    'sort_order',
     'is_active',
-    'created_by',
-    'updated_by',
 ])]
-class Customer extends Model
+class AccountSubHead extends Model
 {
     use Concerns\BelongsToTenant, HasPublicUlid;
 
     protected function casts(): array
     {
         return [
+            'sort_order' => 'integer',
             'is_active' => 'boolean',
         ];
     }
@@ -45,10 +36,18 @@ class Customer extends Model
     }
 
     /**
-     * @return BelongsTo<AccountType, $this>
+     * @return BelongsTo<AccountMainHead, $this>
      */
-    public function accountType(): BelongsTo
+    public function mainHead(): BelongsTo
     {
-        return $this->belongsTo(AccountType::class, 'account_type_id');
+        return $this->belongsTo(AccountMainHead::class, 'main_head_id');
+    }
+
+    /**
+     * @return HasMany<AccountType, $this>
+     */
+    public function accountTypes(): HasMany
+    {
+        return $this->hasMany(AccountType::class, 'sub_head_id');
     }
 }
