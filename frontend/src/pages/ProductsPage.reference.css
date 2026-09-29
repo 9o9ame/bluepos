@@ -84,12 +84,12 @@
   white-space: nowrap;
 }
 
-/* Bring the barcode block closer to the reference position. */
+/* Barcode block spans the form column (full width). */
 .product-reference-screen .pdf-barcode-box {
-  width: 72%;
-  margin-left: auto;
+  width: 100%;
+  margin-left: 0;
   margin-right: 0;
-  align-self: auto;
+  align-self: stretch;
 }
 
 /* Keep the editable barcode cells compact. */

@@ -1,0 +1,912 @@
+/*
+ * BluePOS — Define Products modern visual polish
+ * Soft pastel gradients, colorful accents, rounded controls.
+ * Does NOT change layout geometry, field order, or behavior.
+ */
+
+@keyframes product-modern-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.product-reference-screen {
+  border-radius: 10px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #e8eef5 0%, #d5dee8 100%);
+  border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 28%, #9aa8b5);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) inset;
+}
+
+/* ---- Left action rail ---- */
+.product-reference-screen .product-def-rail {
+  gap: 5px;
+  padding: 6px 4px;
+  background: linear-gradient(180deg, #f4f8fc 0%, #dce7f2 100%);
+  border-right-color: color-mix(in srgb, var(--brand-blue, #1769aa) 25%, #a8b4c0);
+}
+
+.product-reference-screen .product-def-rail-btn {
+  border-radius: 8px;
+  border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 30%, #9aa8b5);
+  background: linear-gradient(180deg, #ffffff 0%, #e6f1fb 100%);
+  color: color-mix(in srgb, var(--brand-blue, #1769aa) 55%, #243040);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 3px rgba(20, 40, 60, 0.08);
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.product-reference-screen .product-def-rail-btn:hover:not(:disabled) {
+  filter: brightness(1.03);
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 50%, #9aa8b5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 3px 8px rgba(23, 105, 170, 0.16);
+}
+
+.product-reference-screen .product-def-rail-btn:first-of-type,
+.product-reference-screen .product-def-rail-btn:nth-of-type(2) {
+  border-color: #8ecad4;
+  background: linear-gradient(180deg, #f4fdff 0%, #dff6fa 48%, #c5eef4 100%);
+  color: #0f6f7d;
+}
+
+.product-reference-screen .product-def-rail-btn svg {
+  color: var(--brand-blue, #1769aa);
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.5));
+}
+
+.product-reference-screen .product-def-rail-btn:first-of-type svg,
+.product-reference-screen .product-def-rail-btn:nth-of-type(2) svg {
+  color: #0f6f7d;
+}
+
+.product-reference-screen .product-def-cmd {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 10px 0 6px;
+  border-radius: 999px;
+  border: 1px solid #b7c4d0;
+  background: linear-gradient(180deg, #ffffff 0%, #eef3f8 100%);
+  color: #243040;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 3px rgba(20, 40, 60, 0.08);
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.product-reference-screen .product-def-cmd:hover:not(:disabled) {
+  filter: brightness(1.02);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 3px 8px rgba(20, 40, 60, 0.12);
+}
+
+.product-reference-screen .product-def-cmd:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  filter: grayscale(0.15);
+}
+
+.product-reference-screen .product-def-cmd-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  flex: 1 1 auto;
+}
+
+.product-reference-screen .product-def-cmd-label {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.product-reference-screen .product-def-cmd-key {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.product-reference-screen .product-def-cmd-icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.product-reference-screen .product-def-cmd-icon.is-green {
+  background: linear-gradient(180deg, #8fe0ad, #3fbf72);
+}
+
+.product-reference-screen .product-def-cmd-icon.is-blue {
+  background: linear-gradient(180deg, #8ec8f0, #3f8fd0);
+}
+
+.product-reference-screen .product-def-cmd-icon.is-red {
+  background: linear-gradient(180deg, #ffb4b4, #ef6b6b);
+  color: #fff;
+  border-radius: 999px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.product-reference-screen .product-def-cmd-icon.is-red-circle {
+  background: linear-gradient(180deg, #ffb4b4, #ef6b6b);
+  border: 0;
+  color: #fff;
+}
+
+/* Match Barcode Printing pastel action faces */
+.product-reference-screen .product-def-cmd.is-save {
+  border-color: #9fd4b3;
+  background: linear-gradient(180deg, #f5fff8 0%, #e2f8ea 48%, #cdeed8 100%);
+  color: #1b7a45;
+}
+
+.product-reference-screen .product-def-cmd.is-refresh {
+  border-color: #9fc4e4;
+  background: linear-gradient(180deg, #f5faff 0%, #e3f1fb 48%, #cfe4f6 100%);
+  color: #1d5f96;
+}
+
+.product-reference-screen .product-def-cmd.is-delete {
+  border-color: #e7a8a8;
+  background: linear-gradient(180deg, #fff7f7 0%, #ffe3e3 48%, #ffd0d0 100%);
+  color: #b42323;
+}
+
+.product-reference-screen .product-def-cmd.is-close {
+  border-color: #9fc4e4;
+  background: linear-gradient(180deg, #f5faff 0%, #e3f1fb 48%, #cfe4f6 100%);
+  color: #1d5f96;
+}
+
+.product-reference-screen .product-def-cmd.is-save .product-def-cmd-label,
+.product-reference-screen .product-def-cmd.is-save .product-def-cmd-key,
+.product-reference-screen .product-def-cmd.is-refresh .product-def-cmd-label,
+.product-reference-screen .product-def-cmd.is-refresh .product-def-cmd-key,
+.product-reference-screen .product-def-cmd.is-delete .product-def-cmd-label,
+.product-reference-screen .product-def-cmd.is-delete .product-def-cmd-key,
+.product-reference-screen .product-def-cmd.is-close .product-def-cmd-label,
+.product-reference-screen .product-def-cmd.is-close .product-def-cmd-key {
+  color: inherit;
+}
+
+/* ---- Image uploader ---- */
+.product-reference-screen .product-def-photo,
+.product-reference-screen .product-def-image-loader {
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 28%, #c5a0a0);
+  background: linear-gradient(180deg, #ffffff, #f3f7fb);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 4px rgba(20, 40, 60, 0.08);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.product-reference-screen .product-def-image-loader:hover {
+  border-color: color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 55%, #c5a0a0);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 4px 12px rgba(23, 105, 170, 0.16);
+}
+
+.product-reference-screen .product-def-image-empty {
+  border-radius: 8px;
+  border: 1.5px dashed color-mix(in srgb, var(--brand-blue, #1769aa) 40%, #9db4c8);
+  background: linear-gradient(180deg, #f8fcff, #e5f2fb);
+  color: #1d5f96;
+}
+
+.product-reference-screen .product-def-image-icon {
+  border-radius: 10px;
+  background: linear-gradient(180deg, #dff0ff, #b9dbf8);
+  color: var(--brand-blue, #1769aa);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.product-reference-screen .product-def-image-remove {
+  border-color: #e7a8a8;
+  background: linear-gradient(180deg, #ffb4b4, #ef6b6b);
+  box-shadow: 0 2px 6px rgba(180, 35, 35, 0.28);
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.product-reference-screen .product-def-image-remove:hover {
+  filter: brightness(1.06);
+  transform: scale(1.06);
+  background: linear-gradient(180deg, #ffc0c0, #e85a5a);
+}
+
+/* ---- Form shell / tabs / title ---- */
+.product-reference-screen .product-def-form {
+  background: linear-gradient(180deg, #f7fafc 0%, #eef3f8 100%);
+  border-right-color: color-mix(in srgb, var(--brand-blue, #1769aa) 20%, #b0bcc8);
+}
+
+.product-reference-screen .product-def-title {
+  color: color-mix(in srgb, var(--brand-blue, #1769aa) 55%, #b42323);
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.product-reference-screen .product-def-tabs {
+  border-bottom-color: color-mix(in srgb, var(--brand-blue, #1769aa) 22%, #b8c4d0);
+  background: linear-gradient(180deg, #eef4fa, #dce6f0);
+  gap: 4px;
+  padding: 4px 6px 0;
+}
+
+.product-reference-screen .product-def-tabs button {
+  border-radius: 8px 8px 0 0;
+  border: 1px solid transparent;
+  color: #4a5a6a;
+  font-weight: 750;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease,
+    border-color 0.14s ease;
+}
+
+.product-reference-screen .product-def-tabs button:hover:not(:disabled):not(.is-active) {
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--brand-blue, #1769aa);
+}
+
+.product-reference-screen .product-def-tabs button.is-active {
+  border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 35%, #b8c4d0);
+  background: linear-gradient(180deg, #ffffff, #e8f3fc);
+  color: var(--brand-blue, #1769aa);
+  box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+/* ---- Labels ---- */
+.product-reference-screen .pdf-row > label:first-child,
+.product-reference-screen .pdf-right-label,
+.product-reference-screen .pdf-check {
+  color: color-mix(in srgb, var(--brand-blue, #1769aa) 38%, #3a4652);
+  font-weight: 800;
+}
+
+/* ---- Text inputs ---- */
+.product-reference-screen .pdf-input:not(select),
+.product-reference-screen .product-def-grid-search .pdf-input:not(select) {
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 28%, #8f9ca7);
+  background: linear-gradient(180deg, #ffffff 0%, #f3f7fb 100%);
+  color: #1a2430;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 2px rgba(20, 40, 60, 0.05);
+  transition:
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    background 0.14s ease;
+}
+
+.product-reference-screen .pdf-input:not(select):focus {
+  outline: none;
+  border-color: var(--focus-ring, var(--brand-blue-hot, #0f7dcc));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 28%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.product-reference-screen .pdf-input:disabled,
+.product-reference-screen .pdf-input[readonly],
+.product-reference-screen .pdf-readonly {
+  background: linear-gradient(180deg, #f2f5f8, #e6ebf0);
+  border-color: #c0c8d0;
+  color: #6a7784;
+}
+
+/* Reliable dropdown caret — native select background arrows are unreliable on Windows */
+.product-reference-screen .pdf-select-shell {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.product-reference-screen .pdf-select-shell > .pdf-select,
+.product-reference-screen .pdf-select-shell > select {
+  width: 100%;
+  min-width: 0;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  padding-right: 28px !important;
+  background-image: none !important;
+  background-color: #fff !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eaf3fb 100%) !important;
+  border-radius: 7px !important;
+  border: 1px solid #8fb0c8 !important;
+  color: #1a4568 !important;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.product-reference-screen .pdf-select-shell > .pdf-select:disabled,
+.product-reference-screen .pdf-select-shell.is-disabled > .pdf-select {
+  cursor: not-allowed;
+  opacity: 0.72;
+  background: linear-gradient(180deg, #f2f5f8, #e6ebf0) !important;
+  color: #6a7784 !important;
+}
+
+.product-reference-screen .pdf-select-shell > .pdf-select:focus {
+  outline: none;
+  border-color: #0f7dcc !important;
+  box-shadow: 0 0 0 2px rgba(15, 125, 204, 0.28);
+}
+
+.product-reference-screen .pdf-select-caret {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 16px;
+  border-radius: 5px;
+  border: 1px solid #5fa3d4;
+  background: linear-gradient(180deg, #7ec8ff, #1769aa);
+  color: #fff;
+  pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 1px 2px rgba(20, 50, 80, 0.18);
+  transform: translateY(-50%) rotate(0deg);
+  transition: transform 0.18s ease;
+}
+
+.product-reference-screen .pdf-select-shell.is-open .pdf-select-caret {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.product-reference-screen .pdf-select-shell.is-disabled .pdf-select-caret {
+  opacity: 0.55;
+  filter: grayscale(0.25);
+}
+
+.product-reference-screen .pdf-field-plus {
+  align-items: stretch;
+}
+
+.product-reference-screen .pdf-field-plus > .pdf-select-shell {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+}
+
+.product-reference-screen .pdf-field-plus > .pdf-select-shell > .pdf-select {
+  height: 100%;
+  min-height: 22px;
+}
+
+.product-reference-screen .pdf-field-plus > .pdf-plus-button {
+  align-self: stretch;
+  height: auto;
+  min-height: 22px;
+}
+
+.product-reference-screen .pdf-barcode-table .pdf-select-shell {
+  height: 100%;
+}
+
+.product-reference-screen .pdf-barcode-table .pdf-select-shell > .pdf-select,
+.product-reference-screen .pdf-barcode-table .pdf-select-shell > select.pdf-barcode-input {
+  height: 18px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-right: 22px !important;
+  color: inherit !important;
+  font-weight: 600;
+}
+
+.product-reference-screen .pdf-barcode-table .pdf-select-caret {
+  width: 16px;
+  height: 14px;
+  right: 2px;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-select-shell > .pdf-select,
+:root[data-theme='dark'] .product-reference-screen .pdf-select-shell > select {
+  background: linear-gradient(180deg, #2a3844 0%, #1e2932 100%) !important;
+  border-color: #4f6578 !important;
+  color: #cfe6fa !important;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-select-caret {
+  border-color: #4a7aa0;
+  background: linear-gradient(180deg, #4a7aa0, #1769aa);
+}
+
+.product-reference-screen .pdf-input:focus,
+.product-reference-screen .pdf-select:focus,
+.product-reference-screen .pdf-barcode-input:focus {
+  outline: none;
+  border-color: var(--focus-ring, var(--brand-blue-hot, #0f7dcc));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 28%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.product-reference-screen .pdf-input:disabled,
+.product-reference-screen .pdf-select:disabled,
+.product-reference-screen .pdf-input[readonly],
+.product-reference-screen .pdf-readonly {
+  background: linear-gradient(180deg, #f2f5f8, #e6ebf0);
+  border-color: #c0c8d0;
+  color: #6a7784;
+}
+
+/* ---- Plus / quick-add buttons ---- */
+.product-reference-screen .pdf-plus-button {
+  border-radius: 7px;
+  border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 45%, #6d9aa5);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 55%, #7ec8ff),
+    var(--brand-blue, #1769aa)
+  );
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 2px 6px rgba(23, 105, 170, 0.28);
+  transition: transform 0.1s ease, filter 0.12s ease;
+}
+
+.product-reference-screen .pdf-plus-button:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.product-reference-screen .pdf-plus-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ---- Group bar / New button ---- */
+.product-reference-screen .product-def-groupbar {
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 28%, #a8b4c0);
+  background: linear-gradient(180deg, #ffffff, #e8f2fb);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.product-reference-screen .product-def-groupbar-arrow {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 16px;
+  margin-left: 4px;
+  border-radius: 5px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 55%, #8ec8ff),
+    var(--brand-blue, #1769aa)
+  );
+  color: #fff;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.product-reference-screen .product-def-new-btn,
+.product-reference-screen .desktop-btn.product-def-new-btn {
+  border-radius: 8px;
+  border-color: #9fd4b3;
+  background: linear-gradient(180deg, #f5fff8 0%, #e2f8ea 48%, #cdeed8 100%);
+  color: #1b7a45;
+  font-weight: 800;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 3px rgba(31, 143, 78, 0.12);
+  transition: transform 0.1s ease, filter 0.12s ease;
+}
+
+.product-reference-screen .product-def-new-btn:hover:not(:disabled),
+.product-reference-screen .desktop-btn.product-def-new-btn:hover:not(:disabled) {
+  filter: brightness(1.03);
+  transform: translateY(-1px);
+}
+
+/* ---- Barcode box ---- */
+.product-reference-screen .pdf-barcode-box {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  align-self: stretch;
+  border-radius: 10px;
+  border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 25%, #a8b4c0);
+  background: linear-gradient(180deg, #ffffff, #f4f8fc);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 4px rgba(20, 40, 60, 0.06);
+  overflow: hidden;
+}
+
+.product-reference-screen .pdf-barcode-table-scroll {
+  width: 100%;
+}
+
+.product-reference-screen .pdf-barcode-table {
+  width: 100% !important;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.product-reference-screen .pdf-barcode-table th,
+.product-reference-screen .pdf-barcode-table td {
+  box-sizing: border-box;
+}
+
+.product-reference-screen .pdf-barcode-table th:nth-child(1),
+.product-reference-screen .pdf-barcode-table td:nth-child(1) {
+  width: 36%;
+}
+
+.product-reference-screen .pdf-barcode-table th:nth-child(2),
+.product-reference-screen .pdf-barcode-table td:nth-child(2) {
+  width: 34%;
+}
+
+.product-reference-screen .pdf-barcode-table th:nth-child(3),
+.product-reference-screen .pdf-barcode-table td:nth-child(3) {
+  width: 18%;
+}
+
+.product-reference-screen .pdf-barcode-table th:nth-child(4),
+.product-reference-screen .pdf-barcode-table td:nth-child(4) {
+  width: 12%;
+  text-align: center;
+}
+
+.product-reference-screen .pdf-barcode-table th {
+  background: linear-gradient(180deg, #edf4fb, #d9e8f6);
+  color: var(--brand-blue, #1769aa);
+  border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 22%, #c5d2de);
+  font-weight: 800;
+}
+
+.product-reference-screen .pdf-barcode-table td {
+  border-color: #d7e1ea;
+}
+
+.product-reference-screen .pdf-barcode-table tbody tr:nth-child(even) td {
+  background: #f7fafc;
+}
+
+.product-reference-screen .pdf-barcode-table tbody tr.is-selected td {
+  background: color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 18%, #fff);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-blue, #1769aa) 45%, transparent);
+}
+
+.product-reference-screen .pdf-barcode-nav {
+  border-top: 1px solid #d0dbe6;
+  background: linear-gradient(180deg, #eef4fa, #e2ebf4);
+}
+
+.product-reference-screen .pdf-barcode-nav button {
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 30%, #9aa8b5);
+  background: linear-gradient(180deg, #ffffff, #e4eef8);
+  color: var(--brand-blue, #1769aa);
+  transition: transform 0.1s ease, background 0.12s ease;
+}
+
+.product-reference-screen .pdf-barcode-nav button:hover:not(:disabled) {
+  background: linear-gradient(180deg, #eaf5ff, #cfe6fa);
+  transform: translateY(-1px);
+}
+
+/* ---- Grid / search ---- */
+.product-reference-screen .product-def-grid-top {
+  background: linear-gradient(180deg, #f2f7fb, #e4edf5);
+  border-bottom: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 18%, #c5d2de);
+}
+
+.product-reference-screen .product-def-grid .pos-grid-wrap,
+.product-reference-screen .product-def-grid .pos-grid {
+  border-color: color-mix(in srgb, var(--brand-blue, #1769aa) 18%, #c0c9d1);
+}
+
+.product-reference-screen .product-def-grid .pos-grid th {
+  background: linear-gradient(180deg, #edf4fb, #d9e8f6);
+  color: var(--brand-blue, #1769aa);
+  font-weight: 800;
+}
+
+.product-reference-screen .product-def-grid .pos-grid tbody tr.is-selected td,
+.product-reference-screen .product-def-grid .pos-grid tbody tr[aria-selected='true'] td {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand-blue, #1769aa) 72%, #4a7eb0),
+    color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 70%, #6aa8d8)
+  );
+  color: #fff;
+}
+
+.product-reference-screen .product-inline-error {
+  border-radius: 8px;
+  border-color: #e7a8a8;
+  background: linear-gradient(180deg, #fff7f7, #ffe3e3);
+  color: #b42323;
+  animation: product-modern-fade-in 0.16s ease-out;
+}
+
+/* ---- Checks ---- */
+.product-reference-screen .pdf-check input[type='checkbox'],
+.product-reference-screen .pdf-check input[type='radio'],
+.product-reference-screen .pdf-barcode-table input[type='radio'] {
+  accent-color: var(--brand-blue, #1769aa);
+}
+
+/* ==========================================================================
+   Dark theme
+   ========================================================================== */
+
+:root[data-theme='dark'] .product-reference-screen {
+  background: linear-gradient(180deg, #1e252b, #171c21);
+  border-color: #4f6578;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-rail {
+  background: linear-gradient(180deg, #2a343d, #222a31);
+  border-right-color: #4f6578;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-rail-btn {
+  border-color: #4f6578;
+  background: linear-gradient(180deg, #2a3844, #1e2932);
+  color: #cfe6fa;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-cmd {
+  border-color: #4f6578;
+  color: #edf2f6;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-cmd.is-save {
+  border-color: #3f6b4f;
+  background: linear-gradient(180deg, #24352a, #2d4334 55%, #223328);
+  color: #9be3b4;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-cmd.is-refresh,
+:root[data-theme='dark'] .product-reference-screen .product-def-cmd.is-close {
+  border-color: #3f5f78;
+  background: linear-gradient(180deg, #243240, #2c3d4c 55%, #223038);
+  color: #9fd0ff;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-cmd.is-delete {
+  border-color: #8a4a4a;
+  background: linear-gradient(180deg, #3a2828, #4a3030 55%, #3a2424);
+  color: #ffb4b4;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-form {
+  background: linear-gradient(180deg, #20272d, #1a2128);
+  border-right-color: #4f6578;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-input,
+:root[data-theme='dark'] .product-reference-screen .pdf-select {
+  border-color: #4f6578;
+  background: linear-gradient(180deg, #24303a, #1a2229);
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-select,
+:root[data-theme='dark'] .product-reference-screen select.pdf-input,
+:root[data-theme='dark'] .product-reference-screen select.pdf-barcode-input {
+  color: #cfe6fa;
+  background-image:
+    linear-gradient(180deg, #2a3844 0%, #1e2932 100%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--brand-blue-hot, #8cccff) 55%, #4a7aa0),
+      var(--brand-blue, #1769aa)
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23ffffff' d='M1.2 1.3L6 6.1l4.8-4.8 1.1 1.1L6 8.3.1 2.4z'/%3E%3C/svg%3E") !important;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-tabs {
+  background: linear-gradient(180deg, #2a343d, #222a31);
+  border-bottom-color: #4f6578;
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-tabs button.is-active {
+  background: linear-gradient(180deg, #314554, #243440);
+  color: #9fd0ff;
+  border-color: #4f6578;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-box {
+  background: linear-gradient(180deg, #1e262e, #171d23);
+  border-color: #4f6578;
+}
+
+:root[data-theme='dark'] .product-reference-screen .pdf-barcode-table th,
+:root[data-theme='dark'] .product-reference-screen .product-def-grid .pos-grid th {
+  background: linear-gradient(180deg, #2d3a46, #24303a);
+  color: var(--brand-blue-hot, #8cccff);
+}
+
+:root[data-theme='dark'] .product-reference-screen .product-def-new-btn,
+:root[data-theme='dark'] .product-reference-screen .desktop-btn.product-def-new-btn {
+  border-color: #3f6b4f;
+  background: linear-gradient(180deg, #24352a, #2d4334);
+  color: #9be3b4;
+}
+
+:root[data-skin='classic'] .product-reference-screen {
+  border-radius: 4px;
+}
+
+/* Beat theme/skin layer specificity so modern polish applies on all skins */
+:root[data-skin='classic'] .product-reference-screen .pdf-input,
+:root[data-skin='classic'] .product-reference-screen .pdf-select,
+:root[data-skin='hybrid'] .product-reference-screen .pdf-input,
+:root[data-skin='hybrid'] .product-reference-screen .pdf-select,
+:root[data-skin='advanced'] .product-reference-screen .pdf-input,
+:root[data-skin='advanced'] .product-reference-screen .pdf-select,
+:root[data-theme='light'][data-skin='classic'] .product-reference-screen .pdf-input,
+:root[data-theme='light'][data-skin='classic'] .product-reference-screen .pdf-select,
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .pdf-input,
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .pdf-select,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-input,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-select {
+  border-radius: 7px !important;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 28%, #8f9ca7) !important;
+  background-color: transparent !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 2px rgba(20, 40, 60, 0.05) !important;
+}
+
+:root[data-skin='classic'] .product-reference-screen .pdf-select,
+:root[data-skin='hybrid'] .product-reference-screen .pdf-select,
+:root[data-skin='advanced'] .product-reference-screen .pdf-select,
+:root[data-theme='light'][data-skin='classic'] .product-reference-screen .pdf-select,
+:root[data-theme='light'][data-skin='hybrid'] .product-reference-screen .pdf-select,
+:root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pdf-select,
+:root[data-skin='classic'] .product-reference-screen select.pdf-input,
+:root[data-skin='hybrid'] .product-reference-screen select.pdf-input,
+:root[data-skin='advanced'] .product-reference-screen select.pdf-input,
+:root[data-skin='classic'] .product-reference-screen select.pdf-barcode-input,
+:root[data-skin='hybrid'] .product-reference-screen select.pdf-barcode-input,
+:root[data-skin='advanced'] .product-reference-screen select.pdf-barcode-input {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  padding-right: 28px !important;
+  background-image:
+    linear-gradient(180deg, #ffffff 0%, #eaf3fb 100%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 55%, #8ec8ff),
+      var(--brand-blue, #1769aa)
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23ffffff' d='M1.2 1.3L6 6.1l4.8-4.8 1.1 1.1L6 8.3.1 2.4z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat, no-repeat, no-repeat !important;
+  background-position: 0 0, right 3px center, right 7px center !important;
+  background-size: 100% 100%, 18px 16px, 9px 6px !important;
+  cursor: pointer;
+}
+
+:root[data-skin='classic'] .product-reference-screen .product-def-cmd,
+:root[data-skin='hybrid'] .product-reference-screen .product-def-cmd,
+:root[data-skin='advanced'] .product-reference-screen .product-def-cmd {
+  border-radius: 999px !important;
+  min-height: 36px;
+  height: 36px;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: flex-start;
+  background-image: none;
+}
+
+:root[data-skin='classic'] .product-reference-screen .product-def-cmd.is-save,
+:root[data-skin='hybrid'] .product-reference-screen .product-def-cmd.is-save,
+:root[data-skin='advanced'] .product-reference-screen .product-def-cmd.is-save {
+  background: linear-gradient(180deg, #f5fff8 0%, #e2f8ea 48%, #cdeed8 100%) !important;
+}
+
+:root[data-skin='classic'] .product-reference-screen .product-def-cmd.is-refresh,
+:root[data-skin='hybrid'] .product-reference-screen .product-def-cmd.is-refresh,
+:root[data-skin='advanced'] .product-reference-screen .product-def-cmd.is-refresh,
+:root[data-skin='classic'] .product-reference-screen .product-def-cmd.is-close,
+:root[data-skin='hybrid'] .product-reference-screen .product-def-cmd.is-close,
+:root[data-skin='advanced'] .product-reference-screen .product-def-cmd.is-close {
+  background: linear-gradient(180deg, #f5faff 0%, #e3f1fb 48%, #cfe4f6 100%) !important;
+}
+
+:root[data-skin='classic'] .product-reference-screen .product-def-cmd.is-delete,
+:root[data-skin='hybrid'] .product-reference-screen .product-def-cmd.is-delete,
+:root[data-skin='advanced'] .product-reference-screen .product-def-cmd.is-delete {
+  background: linear-gradient(180deg, #fff7f7 0%, #ffe3e3 48%, #ffd0d0 100%) !important;
+}
+
+:root[data-skin='classic'] .product-reference-screen .product-def-rail-btn,
+:root[data-skin='hybrid'] .product-reference-screen .product-def-rail-btn,
+:root[data-skin='advanced'] .product-reference-screen .product-def-rail-btn,
+:root[data-skin='classic'] .product-reference-screen .pdf-plus-button,
+:root[data-skin='hybrid'] .product-reference-screen .pdf-plus-button,
+:root[data-skin='advanced'] .product-reference-screen .pdf-plus-button {
+  border-radius: 8px !important;
+}
+
+:root[data-theme='dark'][data-skin='classic'] .product-reference-screen .pdf-input,
+:root[data-theme='dark'][data-skin='classic'] .product-reference-screen .pdf-select,
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .pdf-input,
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .pdf-select,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-input,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-select {
+  border-color: #4f6578 !important;
+  color: #edf2f6 !important;
+}
+
+:root[data-theme='dark'][data-skin='classic'] .product-reference-screen .pdf-select,
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen .pdf-select,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen .pdf-select,
+:root[data-theme='dark'][data-skin='classic'] .product-reference-screen select.pdf-input,
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen select.pdf-input,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen select.pdf-input,
+:root[data-theme='dark'][data-skin='classic'] .product-reference-screen select.pdf-barcode-input,
+:root[data-theme='dark'][data-skin='hybrid'] .product-reference-screen select.pdf-barcode-input,
+:root[data-theme='dark'][data-skin='advanced'] .product-reference-screen select.pdf-barcode-input {
+  background-image:
+    linear-gradient(180deg, #2a3844 0%, #1e2932 100%),
+    linear-gradient(180deg, #4a7aa0, #1769aa),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23ffffff' d='M1.2 1.3L6 6.1l4.8-4.8 1.1 1.1L6 8.3.1 2.4z'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat, no-repeat, no-repeat !important;
+  background-position: 0 0, right 3px center, right 7px center !important;
+  background-size: 100% 100%, 18px 16px, 9px 6px !important;
+}

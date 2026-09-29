@@ -1,7 +1,8 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { FormEvent, SelectHTMLAttributes, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Barcode,
   Check,
+  ChevronDown,
   ChevronFirst,
   ChevronLast,
   ChevronLeft,
@@ -52,6 +53,7 @@ import type { OpeningBalance } from '../types/inventory'
 import './ProductsPage.reference.css'
 import './ProductsPage.theme.css'
 import './ProductsPage.functional.css'
+import './ProductsPage.modern.css'
 
 type ProductBarcodeDraft = {
   id: string
@@ -77,6 +79,93 @@ function createBarcodeDraft(
     conversion_factor: conversionFactor,
     is_primary: isPrimary,
   }
+}
+
+function PdfSelect({
+  className,
+  onBlur,
+  onChange,
+  onMouseDown,
+  onKeyDown,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement>) {
+  const [open, setOpen] = useState(false)
+  const shellRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+
+    // Native <select> often skips blur when the list closes on Windows.
+    // Close on outside interaction, but ignore events inside this shell so
+    // the same-click mousedown can toggle the caret back down.
+    const closeOutside = (event: Event) => {
+      const target = event.target
+      if (target instanceof Node && shellRef.current?.contains(target)) return
+      setOpen(false)
+    }
+    const close = () => setOpen(false)
+    const timer = window.setTimeout(() => {
+      window.addEventListener('pointerdown', closeOutside, true)
+      window.addEventListener('keydown', closeOutside, true)
+      window.addEventListener('scroll', close, true)
+      window.addEventListener('blur', close)
+    }, 0)
+
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('pointerdown', closeOutside, true)
+      window.removeEventListener('keydown', closeOutside, true)
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('blur', close)
+    }
+  }, [open])
+
+  return (
+    <div
+      ref={shellRef}
+      className={`pdf-select-shell${open ? ' is-open' : ''}${props.disabled ? ' is-disabled' : ''}`}
+    >
+      <select
+        {...props}
+        className={['pdf-select', className].filter(Boolean).join(' ')}
+        onMouseDown={(event) => {
+          if (!props.disabled) {
+            // Toggle: second click on the closed native list restores caret.
+            setOpen((current) => !current)
+          }
+          onMouseDown?.(event)
+        }}
+        onKeyDown={(event) => {
+          if (props.disabled) {
+            onKeyDown?.(event)
+            return
+          }
+          if (event.key === 'Escape') {
+            setOpen(false)
+          } else if (
+            event.key === 'Enter' ||
+            event.key === ' ' ||
+            event.key === 'ArrowDown' ||
+            event.key === 'ArrowUp'
+          ) {
+            setOpen(true)
+          }
+          onKeyDown?.(event)
+        }}
+        onBlur={(event) => {
+          setOpen(false)
+          onBlur?.(event)
+        }}
+        onChange={(event) => {
+          setOpen(false)
+          onChange?.(event)
+        }}
+      />
+      <span className="pdf-select-caret" aria-hidden="true">
+        <ChevronDown size={11} strokeWidth={3} />
+      </span>
+    </div>
+  )
 }
 
 export function ProductsPage() {
@@ -828,27 +917,31 @@ export function ProductsPage() {
           <div className="product-def-rail-spacer" />
 
           <button type="submit" className="product-def-cmd is-save" disabled={!canSave || saveMutation.isPending}>
-            <span className="product-def-cmd-icon is-green"><Check size={22} strokeWidth={3} /></span>
-            <span>{creating ? 'Create' : 'Save'}</span>
-            <span className="product-def-cmd-key">[F9]</span>
+            <span className="product-def-cmd-icon is-green"><Check size={18} strokeWidth={3} /></span>
+            <span className="product-def-cmd-text">
+              <span className="product-def-cmd-label">{creating ? 'Create' : 'Save'}</span>
+              <span className="product-def-cmd-key">[F9]</span>
+            </span>
           </button>
 
           <button
             type="button"
-            className="product-def-cmd"
+            className="product-def-cmd is-refresh"
             onClick={() => {
               void productsQuery.refetch()
               if (selectedKey) void productQuery.refetch()
             }}
           >
-            <span className="product-def-cmd-icon is-blue"><RefreshCw size={20} /></span>
-            <span>Refresh</span>
-            <span className="product-def-cmd-key">[F8]</span>
+            <span className="product-def-cmd-icon is-blue"><RefreshCw size={17} strokeWidth={2.6} /></span>
+            <span className="product-def-cmd-text">
+              <span className="product-def-cmd-label">Refresh</span>
+              <span className="product-def-cmd-key">[F8]</span>
+            </span>
           </button>
 
           <button
             type="button"
-            className="product-def-cmd"
+            className={`product-def-cmd ${selected && !selected.is_active ? 'is-refresh' : 'is-delete'}`}
             disabled={
               creating ||
               !selected ||
@@ -927,27 +1020,27 @@ export function ProductsPage() {
               }
             >
               {selected && !selected.is_active ? (
-                <RefreshCw size={20} />
+                <RefreshCw size={17} strokeWidth={2.6} />
               ) : (
-                <X size={22} strokeWidth={3} />
+                <X size={18} strokeWidth={3.2} />
               )}
             </span>
-
-            <span>
-              {selected && !selected.is_active
-                ? 'Activate'
-                : 'Delete'}
-            </span>
-
-            <span className="product-def-cmd-key">
-              [F7]
+            <span className="product-def-cmd-text">
+              <span className="product-def-cmd-label">
+                {selected && !selected.is_active
+                  ? 'Activate'
+                  : 'Delete'}
+              </span>
+              <span className="product-def-cmd-key">[F7]</span>
             </span>
           </button>
 
-          <button type="button" className="product-def-cmd" onClick={closeActiveTab}>
-            <span className="product-def-cmd-icon is-red-circle"><X size={18} strokeWidth={3} /></span>
-            <span>Close</span>
-            <span className="product-def-cmd-key">[Esc]</span>
+          <button type="button" className="product-def-cmd is-close" onClick={closeActiveTab}>
+            <span className="product-def-cmd-icon is-red-circle"><X size={15} strokeWidth={3.2} /></span>
+            <span className="product-def-cmd-text">
+              <span className="product-def-cmd-label">Close</span>
+              <span className="product-def-cmd-key">[Esc]</span>
+            </span>
           </button>
         </aside>
 
@@ -984,8 +1077,7 @@ export function ProductsPage() {
                 <>
                   <div className="pdf-row">
                     <label>Warehouse</label>
-                    <select
-                      className="pdf-select"
+                    <PdfSelect
                       value={openingWarehouseUlid}
                       disabled={openingPosted || openingBusy}
                       onChange={(e) => setOpeningWarehouseUlid(e.target.value)}
@@ -995,7 +1087,7 @@ export function ProductsPage() {
                           {row.code} — {row.name}
                         </option>
                       ))}
-                    </select>
+                    </PdfSelect>
                   </div>
                   <div className="pdf-row pdf-row-rates">
                     <label>Opening Qty</label>
@@ -1073,8 +1165,7 @@ export function ProductsPage() {
             <div className="pdf-row">
               <label>Category</label>
               <div className="pdf-field-plus">
-                <select
-                  className="pdf-select"
+                <PdfSelect
                   value={categoryUlid}
                   disabled={!canSave}
                   onChange={(e) => {
@@ -1086,7 +1177,7 @@ export function ProductsPage() {
                   {(categories.data ?? []).filter((row) => row.is_active || row.ulid === categoryUlid).map((row) => (
                     <option key={row.ulid} value={row.ulid}>{row.name}</option>
                   ))}
-                </select>
+                </PdfSelect>
                 <button
                   type="button"
                   className="pdf-plus-button"
@@ -1102,8 +1193,7 @@ export function ProductsPage() {
             <div className="pdf-row">
               <label>Subcategory</label>
               <div className="pdf-field-plus">
-                <select
-                  className="pdf-select"
+                <PdfSelect
                   value={subcategoryUlid}
                   disabled={!canSave || !categoryUlid}
                   onChange={(e) => setSubcategoryUlid(e.target.value)}
@@ -1120,7 +1210,7 @@ export function ProductsPage() {
                         {row.name}
                       </option>
                     ))}
-                </select>
+                </PdfSelect>
                 <button
                   type="button"
                   className="pdf-plus-button"
@@ -1141,8 +1231,7 @@ export function ProductsPage() {
             <div className="pdf-row pdf-row-split">
               <label>Supplier</label>
               <div className="pdf-field-plus">
-                <select
-                  className="pdf-select"
+                <PdfSelect
                   value={primarySupplierUlid}
                   disabled={!canSave}
                   onChange={(e) => setPrimarySupplierUlid(e.target.value)}
@@ -1156,7 +1245,7 @@ export function ProductsPage() {
                     .map((row) => (
                       <option key={row.ulid} value={row.ulid}>{row.name}</option>
                     ))}
-                </select>
+                </PdfSelect>
                 <button
                   type="button"
                   className="pdf-plus-button"
@@ -1175,8 +1264,7 @@ export function ProductsPage() {
             <div className="pdf-row">
               <label>Company</label>
               <div className="pdf-field-plus">
-                <select
-                  className="pdf-select"
+                <PdfSelect
                   value={brandUlid}
                   disabled={!canSave}
                   onChange={(e) => setBrandUlid(e.target.value)}
@@ -1185,7 +1273,7 @@ export function ProductsPage() {
                   {(brands.data ?? []).filter((row) => row.is_active || row.ulid === brandUlid).map((row) => (
                     <option key={row.ulid} value={row.ulid}>{row.name}</option>
                   ))}
-                </select>
+                </PdfSelect>
                 <button
                   type="button"
                   className="pdf-plus-button"
@@ -1201,8 +1289,7 @@ export function ProductsPage() {
             <div className="pdf-row pdf-row-split">
               <label>Bar.Grp</label>
               <div className="pdf-field-plus">
-                <select
-                  className="pdf-select"
+                <PdfSelect
                   value={barcodeGroupUlid}
                   disabled={!canSave}
                   onChange={(e) => setBarcodeGroupUlid(e.target.value)}
@@ -1213,7 +1300,7 @@ export function ProductsPage() {
                     .map((row) => (
                       <option key={row.ulid} value={row.ulid}>{row.name}</option>
                     ))}
-                </select>
+                </PdfSelect>
                 <button
                   type="button"
                   className="pdf-plus-button"
@@ -1227,8 +1314,7 @@ export function ProductsPage() {
 
               <label className="pdf-right-label">Measure Unit</label>
               <div className="pdf-field-plus">
-                <select
-                  className="pdf-select"
+                <PdfSelect
                   value={baseUnitUlid || units.data?.[0]?.ulid || ''}
                   disabled={!canSave}
                   onChange={(e) => setBaseUnitUlid(e.target.value)}
@@ -1236,7 +1322,7 @@ export function ProductsPage() {
                   {(units.data ?? []).filter((unit) => unit.is_active || unit.ulid === baseUnitUlid).map((unit) => (
                     <option key={unit.ulid} value={unit.ulid}>{unit.code} — {unit.name}</option>
                   ))}
-                </select>
+                </PdfSelect>
                 <button
                   type="button"
                   className="pdf-plus-button"
@@ -1341,7 +1427,7 @@ export function ProductsPage() {
                           />
                         </td>
                         <td>
-                          <select
+                          <PdfSelect
                             className="pdf-barcode-input"
                             value={row.unit_ulid}
                             disabled={!canSave || !canBarcodes}
@@ -1364,7 +1450,7 @@ export function ProductsPage() {
                                   {unit.code}
                                 </option>
                               ))}
-                          </select>
+                          </PdfSelect>
                         </td>
                         <td>
                           <input

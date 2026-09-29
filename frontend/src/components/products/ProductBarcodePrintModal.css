@@ -5,28 +5,57 @@
   display: grid;
   place-items: center;
   padding: 18px;
-  background: rgba(0, 0, 0, .34);
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(39, 139, 209, 0.2), transparent 42%),
+    rgba(12, 20, 28, 0.42);
+  backdrop-filter: blur(4px);
+  animation: product-print-fade-in 0.16s ease-out;
+}
+
+@keyframes product-print-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes product-print-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .product-barcode-print-modal {
   width: min(720px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   overflow: auto;
-  border: 1px solid #7f8b96;
-  background: #eef1f4;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 35%, #7f8b96);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff, #f4f8fc);
   color: #1d252c;
-  box-shadow: 0 18px 48px rgba(0, 0, 0, .28);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.55) inset,
+    0 18px 48px rgba(15, 40, 70, 0.28);
   font-family: var(--app-font-family);
+  animation: product-print-rise-in 0.2s ease-out;
 }
 
 .product-barcode-print-titlebar {
-  height: 34px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-left: 10px;
-  border-bottom: 1px solid #84909b;
-  background: linear-gradient(#f8fafb, #dce2e7);
+  padding-left: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 22%, #84909b);
+  background: linear-gradient(
+    120deg,
+    color-mix(in srgb, var(--brand-blue, #1769aa) 92%, #0a3d66) 0%,
+    color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 88%, #1a8fd4) 100%
+  );
+  color: #fff;
 }
 
 .product-barcode-print-title {
@@ -38,19 +67,20 @@
 }
 
 .product-barcode-print-close {
-  width: 34px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   border: 0;
-  border-left: 1px solid #a4adb5;
+  border-left: 1px solid rgba(255, 255, 255, 0.25);
   background: transparent;
   color: inherit;
   cursor: pointer;
+  transition: background 0.12s ease;
 }
 
 .product-barcode-print-close:hover {
-  background: #d64c4c;
+  background: linear-gradient(#ff8f8f, #d62828);
   color: #fff;
 }
 
@@ -73,18 +103,48 @@
   align-items: center;
   gap: 7px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
+  color: color-mix(in srgb, var(--brand-blue, #1769aa) 38%, #3a4652);
 }
 
 .product-barcode-print-fields input,
 .product-barcode-print-fields select {
   height: 28px;
   min-width: 0;
-  border: 1px solid #9aa5ae;
-  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 28%, #9aa5ae);
+  border-radius: 7px;
+  background: linear-gradient(180deg, #ffffff, #f3f7fb);
   color: #17212a;
   padding: 3px 7px;
   font: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.product-barcode-print-fields select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 28px;
+  background-image:
+    linear-gradient(180deg, #ffffff 0%, #eaf3fb 100%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 55%, #8ec8ff),
+      var(--brand-blue, #1769aa)
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23ffffff' d='M1.2 1.3L6 6.1l4.8-4.8 1.1 1.1L6 8.3.1 2.4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-position: 0 0, right 3px center, right 7px center;
+  background-size: 100% 100%, 18px 16px, 9px 6px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.product-barcode-print-fields input:focus,
+.product-barcode-print-fields select:focus {
+  outline: none;
+  border-color: var(--focus-ring, var(--brand-blue-hot, #0f7dcc));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 28%, transparent);
 }
 
 .product-barcode-print-two {
@@ -108,25 +168,31 @@
 .product-barcode-print-check input {
   width: 15px;
   height: 15px;
+  accent-color: var(--brand-blue, #1769aa);
 }
 
 .product-barcode-print-facts {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 12px;
-  padding: 8px 9px;
-  border: 1px solid #b9c1c8;
-  background: #f8fafb;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 22%, #c5d2de);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f5faff, #e8f2fb);
   font-size: 10px;
+  color: #1d5f96;
+  font-weight: 700;
 }
 
 .product-barcode-print-error {
   margin: 0;
-  padding: 7px 8px;
-  border: 1px solid #d58a8a;
-  background: #fff0f0;
-  color: #9c1e1e;
+  padding: 7px 10px;
+  border: 1px solid #e7a8a8;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff7f7, #ffe3e3);
+  color: #b42323;
   font-size: 11px;
+  font-weight: 700;
 }
 
 .product-barcode-print-preview {
@@ -141,10 +207,11 @@
   flex-direction: column;
   align-items: stretch;
   padding: 10px 12px;
-  border: 1px solid #7e8992;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 25%, #7e8992);
+  border-radius: 10px;
   background: #fff;
   color: #000;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, .12);
+  box-shadow: 0 3px 12px rgba(23, 105, 170, 0.12);
   text-align: center;
 }
 
@@ -199,9 +266,11 @@
   display: grid;
   place-items: center;
   margin-top: 6px;
-  border: 1px dashed #aaa;
-  color: #777;
+  border: 1.5px dashed color-mix(in srgb, var(--brand-blue, #1769aa) 35%, #aaa);
+  border-radius: 8px;
+  color: #1d5f96;
   font-size: 11px;
+  background: linear-gradient(180deg, #f8fcff, #eaf3fb);
 }
 
 .product-barcode-print-preview > small {
@@ -213,32 +282,40 @@
 .product-barcode-print-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 7px;
-  padding: 9px 14px;
-  border-top: 1px solid #a4adb5;
-  background: #e1e6ea;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 18%, #c5d2de);
+  background: linear-gradient(180deg, #eef4fa, #e2ebf4);
 }
 
 .product-barcode-print-actions button {
   min-width: 92px;
-  height: 30px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid #8f9aa3;
-  background: linear-gradient(#fff, #e5e9ec);
-  color: #1f2a33;
+  border: 1px solid #9fc4e4;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #f5faff 0%, #e3f1fb 48%, #cfe4f6 100%);
+  color: #1d5f96;
   font: inherit;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: transform 0.1s ease, filter 0.12s ease;
+}
+
+.product-barcode-print-actions button:hover:not(:disabled) {
+  filter: brightness(1.03);
+  transform: translateY(-1px);
 }
 
 .product-barcode-print-actions button.is-primary {
-  border-color: #2d719f;
-  background: linear-gradient(#5ea9df, #327fb5);
-  color: #fff;
+  border-color: #9fd4b3;
+  background: linear-gradient(180deg, #f5fff8 0%, #e2f8ea 48%, #cdeed8 100%);
+  color: #1b7a45;
 }
 
 .product-barcode-print-actions button:disabled {
@@ -247,30 +324,37 @@
 }
 
 :root[data-theme='dark'] .product-barcode-print-modal {
-  border-color: #55616b;
-  background: #1d242a;
+  border-color: #4f6578;
+  background: linear-gradient(180deg, #232b33, #1a2128);
   color: #edf3f7;
 }
 
 :root[data-theme='dark'] .product-barcode-print-titlebar {
-  border-bottom-color: #4f5b65;
-  background: linear-gradient(#303941, #252c32);
+  border-bottom-color: #3d5266;
 }
 
-:root[data-theme='dark'] .product-barcode-print-close {
-  border-left-color: #4f5b65;
+:root[data-theme='dark'] .product-barcode-print-fields label:not(.product-barcode-print-check) {
+  color: #b7d7f5;
 }
 
 :root[data-theme='dark'] .product-barcode-print-fields input,
 :root[data-theme='dark'] .product-barcode-print-fields select {
-  border-color: #56636d;
-  background: #171d22;
+  border-color: #4f6578;
+  background: linear-gradient(180deg, #24303a, #1a2229);
   color: #edf3f7;
 }
 
+:root[data-theme='dark'] .product-barcode-print-fields select {
+  background-image:
+    linear-gradient(180deg, #2a3844 0%, #1e2932 100%),
+    linear-gradient(180deg, #4a7aa0, #1769aa),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23ffffff' d='M1.2 1.3L6 6.1l4.8-4.8 1.1 1.1L6 8.3.1 2.4z'/%3E%3C/svg%3E");
+}
+
 :root[data-theme='dark'] .product-barcode-print-facts {
-  border-color: #4b5862;
-  background: #242c33;
+  border-color: #4f6578;
+  background: linear-gradient(180deg, #243240, #1e2c38);
+  color: #9fd0ff;
 }
 
 :root[data-theme='dark'] .product-barcode-print-preview > small {
@@ -278,30 +362,32 @@
 }
 
 :root[data-theme='dark'] .product-barcode-print-actions {
-  border-top-color: #4d5962;
-  background: #20272d;
+  border-top-color: #4f6578;
+  background: linear-gradient(180deg, #273139, #1f262d);
 }
 
 :root[data-theme='dark'] .product-barcode-print-actions button:not(.is-primary) {
-  border-color: #56636d;
-  background: linear-gradient(#343d45, #293138);
-  color: #edf3f7;
+  border-color: #3f5f78;
+  background: linear-gradient(180deg, #243240, #2c3d4c);
+  color: #9fd0ff;
 }
 
-:root[data-skin='hybrid'] .product-barcode-print-modal {
-  border-radius: 6px;
-  overflow: hidden;
+:root[data-theme='dark'] .product-barcode-print-actions button.is-primary {
+  border-color: #3f6b4f;
+  background: linear-gradient(180deg, #24352a, #2d4334);
+  color: #9be3b4;
 }
 
+:root[data-skin='hybrid'] .product-barcode-print-modal,
 :root[data-skin='advanced'] .product-barcode-print-modal {
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
 :root[data-skin='advanced'] .product-barcode-print-fields input,
 :root[data-skin='advanced'] .product-barcode-print-fields select,
 :root[data-skin='advanced'] .product-barcode-print-actions button {
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 @media (max-width: 680px) {

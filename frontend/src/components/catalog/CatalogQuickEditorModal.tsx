@@ -260,6 +260,7 @@ export function CatalogQuickEditorModal({
           <button
             type="button"
             className="catalog-popup-action"
+            data-tone="delete"
             disabled={
               !editor.canDelete ||
               !editor.selected ||
@@ -277,7 +278,12 @@ export function CatalogQuickEditorModal({
             Delete
           </button>
 
-          <button type="button" className="catalog-popup-action" onClick={editor.startNew}>
+          <button
+            type="button"
+            className="catalog-popup-action"
+            data-tone="new"
+            onClick={editor.startNew}
+          >
             <Plus size={22} />
             New
           </button>
@@ -287,6 +293,7 @@ export function CatalogQuickEditorModal({
           <button
             type="button"
             className="catalog-popup-action"
+            data-tone="save"
             disabled={!editor.canSave || editor.isSaving}
             onClick={() => void save()}
           >
@@ -297,13 +304,19 @@ export function CatalogQuickEditorModal({
           <button
             type="button"
             className="catalog-popup-action"
+            data-tone="refresh"
             onClick={() => void editor.refresh()}
           >
             <RefreshCw size={22} />
             Refresh
           </button>
 
-          <button type="button" className="catalog-popup-action" onClick={onClose}>
+          <button
+            type="button"
+            className="catalog-popup-action"
+            data-tone="close"
+            onClick={onClose}
+          >
             <X size={22} />
             Close
           </button>
