@@ -790,41 +790,37 @@ export function BarcodePrintingPage() {
             <div className="bp-left-actions">
               <button
                 type="button"
-                className="bp-action-btn"
+                className="bp-action-btn bp-action-delete"
                 onClick={removeSelected}
                 disabled={!selectedLine}
               >
                 <span>Delete</span>
-                <Trash2 size={16} />
+                <span className="bp-action-ico" aria-hidden>
+                  <Trash2 size={14} strokeWidth={2.4} />
+                </span>
               </button>
 
               <button
                 type="button"
-                className="bp-action-btn bp-action-primary"
+                className="bp-action-btn bp-action-save"
                 onClick={saveAndPreview}
                 disabled={!selectedLine || Boolean(previewValidation)}
               >
                 <span>Save &amp; Preview</span>
-                <Save size={16} />
+                <span className="bp-action-ico" aria-hidden>
+                  <Save size={14} strokeWidth={2.4} />
+                </span>
               </button>
 
               <button
                 type="button"
-                className="bp-action-btn"
-                onClick={printAll}
-                disabled={!queue.length}
-              >
-                <span>Print All</span>
-                <Printer size={16} />
-              </button>
-
-              <button
-                type="button"
-                className="bp-action-btn"
+                className="bp-action-btn bp-action-close"
                 onClick={closeActiveTab}
               >
                 <span>Close</span>
-                <X size={16} />
+                <span className="bp-action-ico" aria-hidden>
+                  <X size={14} strokeWidth={2.6} />
+                </span>
               </button>
             </div>
           </section>
@@ -1119,7 +1115,9 @@ export function BarcodePrintingPage() {
                 onClick={printAll}
                 disabled={!queue.length}
               >
-                <Printer size={14} />
+                <span className="bp-print-ico" aria-hidden>
+                  <Printer size={14} strokeWidth={2.4} />
+                </span>
                 Print All
               </button>
             </footer>
