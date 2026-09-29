@@ -1015,7 +1015,7 @@ export function PartiesPlaceholderPage() {
         <div className="parties-vca-title-wrap">
           <h1>Vendor / Customers / Accounts</h1>
           <span className="parties-vca-title-icon" aria-hidden>
-            <UsersRound size={36} strokeWidth={1.7} />
+            <UsersRound size={26} strokeWidth={1.7} />
           </span>
         </div>
 
@@ -1033,15 +1033,15 @@ export function PartiesPlaceholderPage() {
             }
             onClick={() => void save()}
           >
-            <Save size={22} />
+            <Save size={16} />
             <span>{saving ? 'Saving…' : 'Save'}</span>
           </button>
           <button type="button" className="parties-vca-action is-refresh" disabled={loading} onClick={() => void refresh()}>
-            <RefreshCw size={22} />
+            <RefreshCw size={16} />
             <span>Refresh</span>
           </button>
           <button type="button" className="parties-vca-action is-close" onClick={closeActiveTab}>
-            <XCircle size={22} />
+            <XCircle size={16} />
             <span>Close</span>
           </button>
         </div>
@@ -1072,51 +1072,8 @@ export function PartiesPlaceholderPage() {
         <div className="parties-vca-main">
           <section className="parties-vca-left" aria-label="Party data entry">
             <fieldset className="parties-vca-panel">
-              <legend>Personal Information</legend>
-
-              <div className="parties-vca-personal-top">
-                <div className="parties-vca-field-row parties-vca-id-row">
-                  <label htmlFor="vca-id">ID</label>
-                  <input id="vca-id" value={form.ulid || '—'} readOnly title="Public ULID" />
-                  <label htmlFor="vca-code">CODE</label>
-                  <input
-                    id="vca-code"
-                    value={form.code}
-                    onChange={(e) => patchForm('code', e.target.value)}
-                  />
-                  <label htmlFor="vca-type">Type</label>
-                  <select
-                    id="vca-type"
-                    title="SALES MAN is disabled in this phase"
-                    value={form.ulid ? form.type : listFilter}
-                    onChange={(e) => {
-                      const next = e.target.value as PartyType
-                      if (form.ulid) {
-                        if (!CREATABLE_TYPES.includes(next)) {
-                          setError('Cannot change an existing party to ACCOUNTS or SALES MAN.')
-                          return
-                        }
-                        patchForm('type', next)
-                        return
-                      }
-                      onTypeChange(next)
-                    }}
-                  >
-                    {PARTY_TYPES.map((type) => (
-                      <option
-                        key={type}
-                        value={type}
-                        disabled={
-                          type === 'SALES MAN' ||
-                          (Boolean(form.ulid) && !CREATABLE_TYPES.includes(type))
-                        }
-                      >
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
+              <legend className="parties-vca-legend-row">
+                <span>Personal Information</span>
                 <div className="parties-vca-nav-arrows" aria-label="Record navigation">
                   <button type="button" disabled={rows.length === 0 || selectedIndex <= 0} onClick={() => moveSelection(selectedIndex - 1)}>
                     ←
@@ -1129,18 +1086,57 @@ export function PartiesPlaceholderPage() {
                     →
                   </button>
                 </div>
+              </legend>
+
+              <div className="parties-vca-field-row parties-vca-id-row">
+                <label htmlFor="vca-id">ID</label>
+                <input id="vca-id" value={form.ulid || '—'} readOnly title="Public ULID" />
+                <label htmlFor="vca-code">CODE</label>
+                <input
+                  id="vca-code"
+                  value={form.code}
+                  onChange={(e) => patchForm('code', e.target.value)}
+                />
+                <label htmlFor="vca-type">Type</label>
+                <select
+                  id="vca-type"
+                  title="SALES MAN is disabled in this phase"
+                  value={form.ulid ? form.type : listFilter}
+                  onChange={(e) => {
+                    const next = e.target.value as PartyType
+                    if (form.ulid) {
+                      if (!CREATABLE_TYPES.includes(next)) {
+                        setError('Cannot change an existing party to ACCOUNTS or SALES MAN.')
+                        return
+                      }
+                      patchForm('type', next)
+                      return
+                    }
+                    onTypeChange(next)
+                  }}
+                >
+                  {PARTY_TYPES.map((type) => (
+                    <option
+                      key={type}
+                      value={type}
+                      disabled={
+                        type === 'SALES MAN' ||
+                        (Boolean(form.ulid) && !CREATABLE_TYPES.includes(type))
+                      }
+                    >
+                      {type}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="parties-vca-field-row">
+              <div className="parties-vca-field-row parties-vca-name-deals">
                 <label htmlFor="vca-name">Name</label>
                 <input
                   id="vca-name"
                   value={form.name}
                   onChange={(e) => patchForm('name', e.target.value)}
                 />
-              </div>
-
-              <div className="parties-vca-field-row">
                 <label htmlFor="vca-deals">Deals In</label>
                 <input
                   id="vca-deals"
@@ -1509,10 +1505,9 @@ export function PartiesPlaceholderPage() {
             </fieldset>
 
             <fieldset className="parties-vca-panel parties-vca-account-panel">
-              <legend>Account Related Information</legend>
-
-              <div className="parties-vca-check-row">
-                <label>
+              <legend className="parties-vca-legend-row parties-vca-account-legend">
+                <span>Account Related Information</span>
+                <label className="parties-vca-check-inline">
                   <input
                     type="checkbox"
                     checked={form.discontinued}
@@ -1520,7 +1515,7 @@ export function PartiesPlaceholderPage() {
                   />
                   <span>Discontinued</span>
                 </label>
-                <label>
+                <label className="parties-vca-check-inline">
                   <input
                     type="checkbox"
                     checked={form.invoiceRestricted}
@@ -1528,7 +1523,7 @@ export function PartiesPlaceholderPage() {
                   />
                   <span>Invoice Related / Restricted</span>
                 </label>
-              </div>
+              </legend>
 
               <div className="parties-vca-account-grid">
                 <label htmlFor="vca-add">Add %</label>
