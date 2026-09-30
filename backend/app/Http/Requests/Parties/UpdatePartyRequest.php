@@ -85,6 +85,8 @@ class UpdatePartyRequest extends FormRequest
             default => ['suppliers', Supplier::class],
         };
 
+        $partyId = $model::query()->forTenant($tenantId)->where('ulid', $ulid)->value('id');
+
         $rules = [
             'party_type' => ['required', 'string', Rule::in(['vendor', 'customer', 'account'])],
             'code' => [
@@ -94,7 +96,7 @@ class UpdatePartyRequest extends FormRequest
                 'max:64',
                 Rule::unique($table, 'code')
                     ->where('tenant_id', $tenantId)
-                    ->ignore($model::query()->forTenant($tenantId)->where('ulid', $ulid)->value('id')),
+                    ->ignore($partyId),
             ],
             'name' => ['sometimes', 'required', 'string', 'max:180'],
             'account_type_ulid' => [
@@ -113,6 +115,21 @@ class UpdatePartyRequest extends FormRequest
             'credit_limit_days' => ['sometimes', 'integer', 'min:0', 'max:99999'],
             'is_active' => ['sometimes', 'boolean'],
         ];
+
+        if ($partyType === 'vendor' || $partyType === 'customer') {
+            $leafAccountId = Account::query()
+                ->forTenant($tenantId)
+                ->when(
+                    $partyType === 'vendor',
+                    fn ($q) => $q->where('supplier_id', $partyId),
+                    fn ($q) => $q->where('customer_id', $partyId),
+                )
+                ->value('id');
+
+            $rules['code'][] = Rule::unique('accounts', 'code')
+                ->where('tenant_id', $tenantId)
+                ->ignore($leafAccountId);
+        }
 
         if ($partyType !== 'account') {
             $rules['deals_in'] = ['nullable', 'string', 'max:180'];
@@ -134,6 +151,16 @@ class UpdatePartyRequest extends FormRequest
         }
 
         return $rules;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'code.unique' => 'This code is already used by another party or ledger account.',
+        ];
     }
 
     /**

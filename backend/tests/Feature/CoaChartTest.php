@@ -172,4 +172,27 @@ class CoaChartTest extends TestCase
 
         $this->getJson('/api/coa/chart')->assertOk()->assertJsonPath('flat', []);
     }
+
+    public function test_customer_code_rejects_collision_with_existing_ledger_account(): void
+    {
+        $this->signInOwner('coa-code-dup')->assertOk();
+        $coa = $this->seedCoa();
+
+        $this->postJson('/api/parties', [
+            'party_type' => 'account',
+            'code' => '1234',
+            'name' => 'Existing Leaf',
+            'account_type_ulid' => $coa['cash'],
+        ])->assertCreated();
+
+        $this->postJson('/api/parties', [
+            'party_type' => 'customer',
+            'code' => '1234',
+            'name' => 'Customer Clash',
+            'account_type_ulid' => $coa['ar'],
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonPath('error.fields.code.0', 'This code is already used by another party or ledger account.');
+    }
 }

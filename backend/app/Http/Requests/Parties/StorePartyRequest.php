@@ -99,6 +99,11 @@ class StorePartyRequest extends FormRequest
             'is_active' => ['sometimes', 'boolean'],
         ];
 
+        // Vendor/customer leaf accounts reuse party code in `accounts` — block collisions early.
+        if ($partyType === 'vendor' || $partyType === 'customer') {
+            $rules['code'][] = Rule::unique('accounts', 'code')->where('tenant_id', $tenantId);
+        }
+
         if ($partyType !== 'account') {
             $rules['deals_in'] = ['nullable', 'string', 'max:180'];
             $rules['contact_person'] = ['nullable', 'string', 'max:180'];
@@ -119,6 +124,16 @@ class StorePartyRequest extends FormRequest
         }
 
         return $rules;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'code.unique' => 'This code is already used by another party or ledger account.',
+        ];
     }
 
     /**
