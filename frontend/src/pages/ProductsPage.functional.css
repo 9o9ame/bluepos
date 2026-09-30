@@ -76,7 +76,7 @@
   min-width: 0;
   max-width: none;
   height: 118px;
-  min-height: 118px;
+  min-height: 170px;
   max-height: 148px;
   margin: 0 0 4px;
   padding: 4px;
@@ -106,7 +106,7 @@
   min-height: 0;
   object-fit: contain;
   background: #fff;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .product-reference-screen .product-def-image-remove {
@@ -210,12 +210,12 @@
 
 :root[data-skin='advanced'] .product-reference-screen .product-def-image-empty,
 :root[data-skin='advanced'] .product-reference-screen .product-def-image-preview {
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 :root[data-skin='classic'] .product-reference-screen .product-def-photo,
 :root[data-skin='classic'] .product-reference-screen .product-def-image-loader,
 :root[data-skin='classic'] .product-reference-screen .product-def-image-empty,
 :root[data-skin='classic'] .product-reference-screen .product-def-image-preview {
-  border-radius: 2px;
+  border-radius: 10px;
 }

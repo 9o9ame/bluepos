@@ -1739,7 +1739,7 @@ export function PartiesPlaceholderPage() {
               </div>
             </div>
 
-            <div className="parties-vca-tree">
+            {/* <div className="parties-vca-tree">
               <div className="parties-vca-tree-title">Account classification</div>
               <ul className="parties-vca-tree-list">
                 {coaTree.length === 0 ? (
@@ -1808,7 +1808,7 @@ export function PartiesPlaceholderPage() {
                   })
                 )}
               </ul>
-            </div>
+            </div> */}
           </section>
         </div>
       ) : null}
