@@ -73,6 +73,8 @@ class RecalculatePurchaseTotalsAction
         string $furtherTaxPct = '0',
         ?string $explicitDiscount = null,
         ?string $explicitTax = null,
+        string $calculationMethod = 'trade_after_disc',
+        string $mrp = '0',
     ): array {
         $this->assertPositiveQuantity($quantity, $conversionFactor, $unitCost);
         $this->assertPct($tradeDiscPct, 'trade_disc_pct');
@@ -108,16 +110,23 @@ class RecalculatePurchaseTotalsAction
             ]);
         }
 
-        if (bccomp($taxPct, '0', 8) === 1) {
-            $tax = bcmul($taxable, bcdiv($taxPct, '100', 12), 4);
-        } else {
-            $tax = bcadd($explicitTax ?? '0', '0', 4);
-            if (bccomp($tax, '0', 4) === -1) {
-                throw ValidationException::withMessages([
-                    'tax_amount' => 'Tax cannot be negative.',
-                ]);
-            }
+        $method = $this->normalizeCalculationMethod($calculationMethod);
+        $mrpAmount = bcadd($mrp, '0', 4);
+        if (bccomp($mrpAmount, '0', 4) === -1) {
+            throw ValidationException::withMessages([
+                'mrp' => 'MRP cannot be negative.',
+            ]);
         }
+
+        $tax = $this->resolveTaxAmount(
+            $method,
+            $quantity,
+            $gross,
+            $taxable,
+            $mrpAmount,
+            $taxPct,
+            $explicitTax,
+        );
 
         $furtherTax = bccomp($furtherTaxPct, '0', 8) === 1
             ? bcmul($taxable, bcdiv($furtherTaxPct, '100', 12), 4)
@@ -137,6 +146,67 @@ class RecalculatePurchaseTotalsAction
             'further_tax_amount' => $furtherTax,
             'line_total' => $lineTotal,
         ];
+    }
+
+    private function normalizeCalculationMethod(string $method): string
+    {
+        return match ($method) {
+            'gst_on_retail', 'gst_inclusive' => 'mrp_incl_gst',
+            'gst_on_trade' => 'trade_after_disc',
+            'disc_then_gst' => 'trade_after_disc',
+            'no_gst' => 'mrp_ex_gst',
+            default => $method,
+        };
+    }
+
+    private function resolveTaxAmount(
+        string $method,
+        string $quantity,
+        string $gross,
+        string $taxable,
+        string $mrp,
+        string $taxPct,
+        ?string $explicitTax,
+    ): string {
+        if ($method === 'manual') {
+            $tax = bcadd($explicitTax ?? '0', '0', 4);
+            if (bccomp($tax, '0', 4) === -1) {
+                throw ValidationException::withMessages([
+                    'tax_amount' => 'Tax cannot be negative.',
+                ]);
+            }
+
+            return $tax;
+        }
+
+        if (bccomp($taxPct, '0', 8) !== 1) {
+            $tax = bcadd($explicitTax ?? '0', '0', 4);
+            if (bccomp($tax, '0', 4) === -1) {
+                throw ValidationException::withMessages([
+                    'tax_amount' => 'Tax cannot be negative.',
+                ]);
+            }
+
+            return $tax;
+        }
+
+        $mrpTotal = bcmul($quantity, $mrp, 4);
+
+        $base = match ($method) {
+            'mrp_ex_gst' => $mrpTotal,
+            'mrp_incl_gst' => $mrpTotal,
+            'trade_before_disc' => $gross,
+            default => $taxable, // trade_after_disc
+        };
+
+        if ($method === 'mrp_incl_gst') {
+            // MRP stored as inclusive: tax = incl * rate / (100 + rate)
+            $denom = bcadd('100', $taxPct, 12);
+
+            return bcmul($base, bcdiv($taxPct, $denom, 12), 4);
+        }
+
+        return bcmul($base, bcdiv($taxPct, '100', 12), 4);
     }
 
     /**

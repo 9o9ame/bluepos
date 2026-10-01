@@ -485,6 +485,101 @@ class PurchaseInvoiceTest extends TestCase
         $this->assertNoInternalIds($show->json());
     }
 
+    public function test_posting_syncs_retail_price_tax_and_free_pcs_stock(): void
+    {
+        $this->signInOwner('pur-sync')->assertOk();
+        $warehouseUlid = $this->sessionWarehouseUlid();
+        $pcs = $this->unitUlid('PCS');
+
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-SYNC',
+            'name' => 'Sync Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Sync Product',
+            'base_unit_ulid' => $pcs,
+            'tax_percent' => '5',
+            'prices' => [
+                ['price_type' => 'retail', 'amount' => '90.0000'],
+            ],
+        ])->assertCreated()->json('ulid');
+
+        $invoiceUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchases/'.$invoiceUlid.'/lines', [
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '10.000000',
+            'unit_cost' => '100.0000',
+            'free_pcs' => '2.000000',
+            'mrp' => '175.5000',
+            'tax_pct' => '18',
+        ])->assertCreated();
+
+        $this->postJson('/api/purchases/'.$invoiceUlid.'/post')->assertOk();
+
+        $product = $this->getJson('/api/products/'.$productUlid)->assertOk();
+        $this->assertSame('18.00000000', $product->json('tax_percent'));
+        $retail = collect($product->json('prices'))->firstWhere('price_type', 'retail');
+        $this->assertNotNull($retail);
+        $this->assertSame('175.5000', $retail['amount']);
+
+        $productId = Product::query()->where('ulid', $productUlid)->value('id');
+        $balance = StockBalance::query()->where('product_id', $productId)->firstOrFail();
+        // 10 paid + 2 free = 12 base units; paid value 1000 diluted → 83.3333 avg
+        $this->assertSame('12.000000', (string) $balance->quantity);
+        $this->assertSame('83.3333', (string) $balance->average_cost);
+
+        $movement = StockMovement::query()
+            ->where('product_id', $productId)
+            ->where('movement_type', 'purchase')
+            ->firstOrFail();
+        $this->assertSame('12.000000', (string) $movement->quantity);
+        $this->assertSame('83.3333', (string) $movement->unit_cost);
+    }
+
+    public function test_gst_apply_on_mrp_without_gst_uses_mrp_base(): void
+    {
+        $this->signInOwner('pur-gst-mrp')->assertOk();
+        $warehouseUlid = $this->sessionWarehouseUlid();
+        $pcs = $this->unitUlid('PCS');
+
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-GST-MRP',
+            'name' => 'GST MRP Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'GST MRP Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $invoiceUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'calculation_method' => 'mrp_ex_gst',
+        ])->assertCreated()->json('ulid');
+
+        // Trade 520, MRP 500, qty 10, tax 18% → GST on MRP = 10*500*0.18 = 900 (not on trade)
+        $line = $this->postJson('/api/purchases/'.$invoiceUlid.'/lines', [
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '10.000000',
+            'unit_cost' => '520.0000',
+            'mrp' => '500.0000',
+            'tax_pct' => '18',
+            'discount_amount' => '0',
+            'tax_amount' => '0',
+        ])->assertCreated();
+
+        $line->assertJsonPath('tax_amount', '900.0000')
+            ->assertJsonPath('line_total', '6100.0000'); // 5200 + 900
+    }
+
     private function sessionWarehouseUlid(): string
     {
         return (string) $this->getJson('/api/auth/me')->assertOk()->json('warehouse.ulid');

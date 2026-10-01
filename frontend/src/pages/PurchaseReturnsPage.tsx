@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCircle2, Plus, RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { fetchSuppliers } from '../api/catalog'
 import { fetchWarehouses } from '../api/inventory'
+import { fetchPurchase } from '../api/purchases'
 import {
   createPurchaseReturn,
   createPurchaseReturnLine,
@@ -37,6 +39,8 @@ export function PurchaseReturnsPage() {
   const queryClient = useQueryClient()
   const { session } = useAuth()
   const { closeActiveTab } = useWorkspace()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const deepLinkHandled = useRef<string | null>(null)
   const canView = useCan('purchase_returns.view')
   const canCreate = useCan('purchase_returns.create')
   const canEdit = useCan('purchase_returns.edit')
@@ -154,6 +158,36 @@ export function PurchaseReturnsPage() {
     setLineQty(qtyMap)
     setError(null)
   }
+
+  useEffect(() => {
+    const purchaseParam = searchParams.get('purchase')?.trim() ?? ''
+    if (!purchaseParam || !canCreate || deepLinkHandled.current === purchaseParam) return
+
+    void (async () => {
+      try {
+        const purchase = await fetchPurchase(purchaseParam)
+        if (purchase.status !== 'posted') {
+          setError('Only posted purchase invoices can be returned.')
+          setSearchParams({}, { replace: true })
+          return
+        }
+        deepLinkHandled.current = purchaseParam
+        resetEditor()
+        setPurchaseUlid(purchase.ulid)
+        setPurchaseLabel(
+          `${purchase.document_number}${
+            purchase.supplier_invoice_number ? ` · ${purchase.supplier_invoice_number}` : ''
+          }`,
+        )
+        setWarehouseUlid(purchase.warehouse?.ulid ?? session?.warehouse.ulid ?? '')
+        setMode('editor')
+        setSearchParams({}, { replace: true })
+      } catch (err) {
+        handleError(err)
+        setSearchParams({}, { replace: true })
+      }
+    })()
+  }, [searchParams, canCreate, session?.warehouse.ulid, setSearchParams])
 
   const openMutation = useMutation({
     mutationFn: async (ulid: string) => fetchPurchaseReturn(ulid),

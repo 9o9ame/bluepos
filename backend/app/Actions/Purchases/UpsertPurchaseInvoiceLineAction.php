@@ -68,6 +68,8 @@ class UpsertPurchaseInvoiceLineAction
                 (string) ($data['further_tax_pct'] ?? '0'),
                 isset($data['discount_amount']) ? (string) $data['discount_amount'] : '0',
                 isset($data['tax_amount']) ? (string) $data['tax_amount'] : '0',
+                (string) ($invoice->calculation_method ?? 'trade_after_disc'),
+                (string) ($data['mrp'] ?? '0'),
             );
 
             $batch = $data['batch_number'] ?? null;

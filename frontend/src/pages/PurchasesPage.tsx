@@ -3,6 +3,7 @@ import {
   Plus,
   Printer,
   RefreshCw,
+  RotateCcw,
   Save,
   Search,
   Send,
@@ -12,7 +13,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchProducts, fetchSuppliers } from '../api/catalog'
+import { fetchProduct, fetchProducts, fetchSuppliers } from '../api/catalog'
 import { ApiClientError } from '../api/client'
 import { askConfirm } from '../feedback/FeedbackProvider'
 import { fetchProductStock, fetchWarehouses } from '../api/inventory'
@@ -40,8 +41,21 @@ import { useColumnLayout } from '../features/gridLayout/useColumnLayout'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
 import type { PurchaseInvoice, PurchaseInvoiceLine } from '../types/purchases'
+import {
+  applyCalcToLine,
+  computeLine,
+  sumHeaderCharges,
+  type DualMode,
+  type PurchaseCalcSettings,
+} from './purchaseLineCalc'
 import './PurchasesPage.theme.css'
 import './PurchasesPage.entry.css'
+
+type UnitOption = {
+  ulid: string
+  code: string
+  conversion_factor: string
+}
 
 type DraftLine = {
   key: string
@@ -63,6 +77,7 @@ type DraftLine = {
   tax_pct: string
   unit_ulid: string
   unit_label: string
+  unit_options: UnitOption[]
   quantity: string
   conversion_factor: string
   unit_cost: string
@@ -127,12 +142,12 @@ function todayIso() {
 function normalizeCalcMethod(value: string | null | undefined): string {
   const legacy: Record<string, string> = {
     gst_on_retail: 'mrp_incl_gst',
-    gst_on_trade: 'trade_before_disc',
+    gst_on_trade: 'trade_after_disc',
     disc_then_gst: 'trade_after_disc',
     gst_inclusive: 'mrp_incl_gst',
     no_gst: 'mrp_ex_gst',
   }
-  const v = value ?? 'trade_before_disc'
+  const v = value ?? 'trade_after_disc'
   return legacy[v] ?? v
 }
 
@@ -151,18 +166,75 @@ function amountFromPct(base: number, pct: number) {
   return ((base * pct) / 100).toFixed(4)
 }
 
-type DualMode = 'pct' | 'rs'
-
 const DEFAULT_DUAL_MODES: Record<string, DualMode> = {
-  regular_disc: 'pct',
-  special_disc: 'pct',
-  gst: 'pct',
-  disc_after_gst: 'pct',
-  further_tax: 'pct',
-  advance_tax: 'pct',
+  regular_disc: 'rs',
+  special_disc: 'rs',
+  gst: 'rs',
+  disc_after_gst: 'rs',
+  further_tax: 'rs',
+  advance_tax: 'rs',
+}
+
+function buildUnitOptions(product: Product): UnitOption[] {
+  const map = new Map<string, UnitOption>()
+  const push = (ulid: string | undefined, code: string | undefined, factor: string) => {
+    if (!ulid || !code) return
+    if (!map.has(ulid)) {
+      map.set(ulid, { ulid, code, conversion_factor: factor || '1.00000000' })
+    }
+  }
+  push(product.base_unit?.ulid, product.base_unit?.code, '1.00000000')
+  push(
+    product.secondary_unit?.ulid,
+    product.secondary_unit?.code,
+    product.secondary_conversion_factor || '1.00000000',
+  )
+  for (const barcode of product.barcodes ?? []) {
+    if (!barcode.is_active || !barcode.unit?.ulid) continue
+    push(barcode.unit.ulid, barcode.unit.code, barcode.conversion_factor || '1.00000000')
+  }
+  return [...map.values()]
+}
+
+function preferPcsUnit(
+  product: Product,
+  query: string,
+): { unit_ulid: string; unit_label: string; conversion_factor: string; unit_options: UnitOption[] } {
+  const options = buildUnitOptions(product)
+  const q = query.trim().toLowerCase()
+  const barcodeHit = product.barcodes?.find(
+    (b) => b.is_active && b.barcode.toLowerCase() === q && b.unit?.ulid,
+  )
+  if (barcodeHit?.unit) {
+    return {
+      unit_ulid: barcodeHit.unit.ulid,
+      unit_label: barcodeHit.unit.code,
+      conversion_factor: barcodeHit.conversion_factor || '1.00000000',
+      unit_options: options,
+    }
+  }
+  const pcs = options.find((option) => option.code.toUpperCase() === 'PCS')
+  if (pcs) {
+    return {
+      unit_ulid: pcs.ulid,
+      unit_label: pcs.code,
+      conversion_factor: pcs.conversion_factor,
+      unit_options: options,
+    }
+  }
+  const base = options[0]
+  return {
+    unit_ulid: base?.ulid ?? product.base_unit?.ulid ?? '',
+    unit_label: base?.code ?? product.base_unit?.code ?? '',
+    conversion_factor: base?.conversion_factor ?? '1.00000000',
+    unit_options: options,
+  }
 }
 
 function lineFromServer(line: PurchaseInvoiceLine): DraftLine {
+  const unitOptions: UnitOption[] = line.unit
+    ? [{ ulid: line.unit.ulid, code: line.unit.code, conversion_factor: line.conversion_factor }]
+    : []
   return {
     key: line.ulid,
     ulid: line.ulid,
@@ -186,6 +258,7 @@ function lineFromServer(line: PurchaseInvoiceLine): DraftLine {
     tax_pct: line.tax_pct ?? '0',
     unit_ulid: line.unit?.ulid ?? '',
     unit_label: line.unit?.code ?? '',
+    unit_options: unitOptions,
     quantity: line.quantity,
     conversion_factor: line.conversion_factor,
     unit_cost: line.unit_cost,
@@ -211,38 +284,26 @@ function lineFromServer(line: PurchaseInvoiceLine): DraftLine {
   }
 }
 
-function resolveProductSelection(product: Product, query: string): {
-  unit_ulid: string
-  unit_label: string
-  conversion_factor: string
-} {
-  const q = query.trim().toLowerCase()
-  const barcodeHit = product.barcodes?.find(
-    (b) => b.is_active && b.barcode.toLowerCase() === q && b.unit?.ulid,
-  )
-  if (barcodeHit?.unit) {
-    return {
-      unit_ulid: barcodeHit.unit.ulid,
-      unit_label: barcodeHit.unit.code,
-      conversion_factor: barcodeHit.conversion_factor || '1.00000000',
-    }
-  }
-  const base = product.base_unit
-  return {
-    unit_ulid: base?.ulid ?? '',
-    unit_label: base?.code ?? '',
-    conversion_factor: '1.00000000',
-  }
+function activeRetailAmount(product: Product): string {
+  const retail = product.prices?.find((price) => price.price_type === 'retail' && price.is_active)
+  if (retail && Number(retail.amount) > 0) return retail.amount
+  return '0.0000'
+}
+
+function moneyOrZero(value: string | null | undefined): string {
+  const n = Number(value)
+  return Number.isFinite(n) && n > 0 ? n.toFixed(4) : '0.0000'
 }
 
 export function PurchasesPage() {
   const queryClient = useQueryClient()
-  const { closeActiveTab } = useWorkspace()
+  const { closeActiveTab, openModule } = useWorkspace()
   const { session } = useAuth()
 
   const canCreate = useCan('purchases.create')
   const canEdit = useCan('purchases.edit')
   const canPost = useCan('purchases.post')
+  const canCreateReturn = useCan('purchase_returns.create')
 
   const [mode, setMode] = useState<'list' | 'editor'>('list')
   const [q, setQ] = useState('')
@@ -273,7 +334,7 @@ export function PurchasesPage() {
   const [error, setError] = useState<string | null>(null)
   const [customizationOpen, setCustomizationOpen] = useState(false)
   const [selectedLineKey, setSelectedLineKey] = useState<string | null>(null)
-  const [calcMethod, setCalcMethod] = useState('trade_before_disc')
+  const [calcMethod, setCalcMethod] = useState('trade_after_disc')
   const [shellPriceType, setShellPriceType] = useState('trade')
   const [shellTaxType, setShellTaxType] = useState('standard')
   const [shellPaymentTerms, setShellPaymentTerms] = useState('credit')
@@ -290,11 +351,16 @@ export function PurchasesPage() {
   const [shellDefaultFurtherTax, setShellDefaultFurtherTax] = useState('0')
   const [shellDefaultAdvanceTax, setShellDefaultAdvanceTax] = useState('0')
   const [discountApplyOn, setDiscountApplyOn] = useState('trade')
-  const [discInputType, setDiscInputType] = useState<'pct' | 'rs'>('pct')
+  const [discInputType, setDiscInputType] = useState<'pct' | 'rs'>('rs')
   const [autoCalcMrp, setAutoCalcMrp] = useState(true)
   const [withholdingIsPct, setWithholdingIsPct] = useState(false)
   const [advancePaid, setAdvancePaid] = useState('0.0000')
   const [dualModes, setDualModes] = useState<Record<string, DualMode>>({ ...DEFAULT_DUAL_MODES })
+
+  const calcSettings: PurchaseCalcSettings = useMemo(
+    () => ({ calcMethod, discountApplyOn, dualModes }),
+    [calcMethod, discountApplyOn, dualModes],
+  )
   const canSaveRoleDefault = useCan('roles.edit')
   const columnLayout = useColumnLayout({
     screenKey: PURCHASE_INVOICE_SCREEN,
@@ -368,15 +434,36 @@ export function PurchasesPage() {
   }, [lineProductUlids, stockQueries, warehouseUlid])
 
   function patchLine(key: string, patch: Partial<DraftLine>) {
-    setLines((prev) => prev.map((line) => (line.key === key ? { ...line, ...patch } : line)))
+    setLines((prev) =>
+      prev.map((line) => {
+        if (line.key !== key) return line
+        const merged = { ...line, ...patch }
+        return applyCalcToLine(merged, calcSettings)
+      }),
+    )
+  }
+
+  function recalculateAllLines(nextSettings?: PurchaseCalcSettings) {
+    const settings = nextSettings ?? calcSettings
+    setLines((prev) => prev.map((line) => applyCalcToLine(line, settings)))
+  }
+
+  function changeCalcMethod(value: string) {
+    const next = { ...calcSettings, calcMethod: value }
+    setCalcMethod(value)
+    recalculateAllLines(next)
+  }
+
+  function changeDiscountApplyOn(value: string) {
+    const next = { ...calcSettings, discountApplyOn: value }
+    setDiscountApplyOn(value)
+    recalculateAllLines(next)
   }
 
   function setDualMode(key: string, mode: DualMode) {
-    setDualModes((prev) => ({ ...prev, [key]: mode }))
-  }
-
-  function syncDiscountAmount(_line: DraftLine, regularRs: number, specialRs: number) {
-    return money(regularRs + specialRs)
+    const nextModes = { ...dualModes, [key]: mode }
+    setDualModes(nextModes)
+    recalculateAllLines({ ...calcSettings, dualModes: nextModes })
   }
 
   function renderDualCell(
@@ -473,35 +560,15 @@ export function PurchasesPage() {
       return <td className={cls} style={widthStyle} />
     }
 
-    const qty = Number(row.quantity) || 0
-    const unitCost = Number(row.unit_cost) || 0
-    const discountAmt = Number(row.discount_amount) || 0
-    const taxAmt = Number(row.tax_amount) || 0
-    const lineAmount =
-      Number(row.line_total ?? qty * unitCost - discountAmt + taxAmt) || 0
-    const gross = qty * unitCost
-    const regularDiscRs =
-      Number(row.regular_disc_rs) || (gross * (Number(row.regular_disc_pct) || 0)) / 100
-    const specialDiscRs =
-      Number(row.special_disc_rs) || (gross * (Number(row.special_disc_pct) || 0)) / 100
-    const afterDisc = Math.max(0, gross - regularDiscRs - specialDiscRs)
-    const taxPctVal = Number(row.tax_pct) || 0
-    const gstRs = Number(row.tax_amount) || (afterDisc * taxPctVal) / 100
-    const afterGst = afterDisc + gstRs
-    const discAfterGstPct = Number(row.disc_after_gst_pct) || 0
-    const discAfterGstRs =
-      Number(row.disc_after_gst_rs) || (afterGst * discAfterGstPct) / 100
-    const furtherBase = Math.max(0, afterGst - discAfterGstRs)
-    const furtherPct = Number(row.further_tax_pct) || 0
-    const furtherRs =
-      Number(row.further_tax_amount) || (furtherBase * furtherPct) / 100
-    const advancePct = Number(row.advance_tax_pct) || 0
-    const advanceRs =
-      Number(row.advance_tax_amount) || (furtherBase * advancePct) / 100
-    const mrpVal = Number(row.mrp) || 0
-    const mrpInGst = taxPctVal > 0 ? mrpVal * (1 + taxPctVal / 100) : mrpVal
+    const calc = computeLine(row, calcSettings)
+    const {
+      afterGst,
+      furtherBase,
+      costPerUnit,
+      mrpEx,
+      mrpIn,
+    } = calc
     const salePrice = Number(row.sale_price ?? row.mrp) || 0
-    const costPerUnit = qty > 0 ? lineAmount / qty : unitCost
     const marginRs = salePrice - costPerUnit
     const marginPct = salePrice > 0 ? (marginRs / salePrice) * 100 : 0
 
@@ -537,19 +604,66 @@ export function PurchasesPage() {
           </td>
         )
       case 'uom':
-        return <td className={cls} style={widthStyle}>{row.unit_label}</td>
+        return (
+          <td className={cls} style={widthStyle}>
+            {ctx.readOnly ? (
+              row.unit_label
+            ) : (
+              <select
+                value={row.unit_ulid}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  const option =
+                    row.unit_options.find((unit) => unit.ulid === e.target.value) ?? null
+                  if (!option) return
+                  patchLine(row.key, {
+                    unit_ulid: option.ulid,
+                    unit_label: option.code,
+                    conversion_factor: option.conversion_factor,
+                  })
+                }}
+              >
+                {(row.unit_options.length > 0
+                  ? row.unit_options
+                  : row.unit_ulid
+                    ? [{ ulid: row.unit_ulid, code: row.unit_label || 'UNIT', conversion_factor: row.conversion_factor }]
+                    : []
+                ).map((unit) => (
+                  <option key={unit.ulid} value={unit.ulid}>
+                    {unit.code}
+                  </option>
+                ))}
+              </select>
+            )}
+          </td>
+        )
       case 'mrp_ex_gst':
         return (
           <td className={cls} style={widthStyle}>
-            {editableInput(row.mrp, (value) => patchLine(row.key, { mrp: value }))}
+            {calcMethod === 'mrp_incl_gst'
+              ? money(mrpEx)
+              : editableInput(row.mrp, (value) => patchLine(row.key, { mrp: value, sale_price: value }))}
           </td>
         )
       case 'mrp_in_gst':
-        return <td className={cls} style={widthStyle}>{money(mrpInGst)}</td>
+        return (
+          <td className={cls} style={widthStyle}>
+            {calcMethod === 'mrp_incl_gst'
+              ? editableInput(row.mrp, (value) => patchLine(row.key, { mrp: value, sale_price: value }))
+              : money(mrpIn)}
+          </td>
+        )
       case 'trade_price':
         return (
           <td className={cls} style={widthStyle}>
-            {editableInput(row.unit_cost, (value) => patchLine(row.key, { unit_cost: value }))}
+            {editableInput(row.unit_cost, (value) => {
+              const patch: Partial<DraftLine> = { unit_cost: value }
+              if (autoCalcMrp && Number(row.mrp) <= 0) {
+                patch.mrp = value
+                patch.sale_price = value
+              }
+              patchLine(row.key, patch)
+            })}
           </td>
         )
       case 'regular_disc':
@@ -559,23 +673,19 @@ export function PurchasesPage() {
           widthStyle,
           row,
           ctx.readOnly,
-          gross,
-          row.regular_disc_pct || '0',
-          money(regularDiscRs),
+          calc.discountBase,
+          calc.regular_disc_pct,
+          calc.regular_disc_rs,
           (pct, rs) => {
-            const special = Number(row.special_disc_rs) || specialDiscRs
             patchLine(row.key, {
               regular_disc_pct: pct,
               regular_disc_rs: rs,
-              discount_amount: syncDiscountAmount(row, Number(rs) || 0, special),
             })
           },
           (rs, pct) => {
-            const special = Number(row.special_disc_rs) || specialDiscRs
             patchLine(row.key, {
               regular_disc_pct: pct,
               regular_disc_rs: rs,
-              discount_amount: syncDiscountAmount(row, Number(rs) || 0, special),
             })
           },
         )
@@ -586,23 +696,19 @@ export function PurchasesPage() {
           widthStyle,
           row,
           ctx.readOnly,
-          gross,
-          row.special_disc_pct || '0',
-          money(specialDiscRs),
+          calc.discountBase,
+          calc.special_disc_pct,
+          calc.special_disc_rs,
           (pct, rs) => {
-            const regular = Number(row.regular_disc_rs) || regularDiscRs
             patchLine(row.key, {
               special_disc_pct: pct,
               special_disc_rs: rs,
-              discount_amount: syncDiscountAmount(row, regular, Number(rs) || 0),
             })
           },
           (rs, pct) => {
-            const regular = Number(row.regular_disc_rs) || regularDiscRs
             patchLine(row.key, {
               special_disc_pct: pct,
               special_disc_rs: rs,
-              discount_amount: syncDiscountAmount(row, regular, Number(rs) || 0),
             })
           },
         )
@@ -613,9 +719,9 @@ export function PurchasesPage() {
           widthStyle,
           row,
           ctx.readOnly,
-          afterDisc,
-          row.tax_pct || '0',
-          money(gstRs),
+          calc.gstBase,
+          calc.tax_pct,
+          calc.tax_amount,
           (pct, rs) => patchLine(row.key, { tax_pct: pct, tax_amount: rs }),
           (rs, pct) => patchLine(row.key, { tax_pct: pct, tax_amount: rs }),
         )
@@ -627,8 +733,8 @@ export function PurchasesPage() {
           row,
           ctx.readOnly,
           afterGst,
-          row.disc_after_gst_pct || '0',
-          money(discAfterGstRs),
+          calc.disc_after_gst_pct,
+          calc.disc_after_gst_rs,
           (pct, rs) => patchLine(row.key, { disc_after_gst_pct: pct, disc_after_gst_rs: rs }),
           (rs, pct) => patchLine(row.key, { disc_after_gst_pct: pct, disc_after_gst_rs: rs }),
         )
@@ -640,8 +746,8 @@ export function PurchasesPage() {
           row,
           ctx.readOnly,
           furtherBase,
-          row.further_tax_pct || '0',
-          money(furtherRs),
+          calc.further_tax_pct,
+          calc.further_tax_amount,
           (pct, rs) => patchLine(row.key, { further_tax_pct: pct, further_tax_amount: rs }),
           (rs, pct) => patchLine(row.key, { further_tax_pct: pct, further_tax_amount: rs }),
         )
@@ -653,8 +759,8 @@ export function PurchasesPage() {
           row,
           ctx.readOnly,
           furtherBase,
-          row.advance_tax_pct || '0',
-          money(advanceRs),
+          calc.advance_tax_pct,
+          calc.advance_tax_amount,
           (pct, rs) => patchLine(row.key, { advance_tax_pct: pct, advance_tax_amount: rs }),
           (rs, pct) => patchLine(row.key, { advance_tax_pct: pct, advance_tax_amount: rs }),
         )
@@ -664,7 +770,7 @@ export function PurchasesPage() {
         return (
           <td className={cls} style={widthStyle}>
             {editableInput(row.sale_price ?? row.mrp, (value) =>
-              patchLine(row.key, { sale_price: value, mrp: value }),
+              patchLine(row.key, { sale_price: value }),
             )}
           </td>
         )
@@ -737,7 +843,6 @@ export function PurchasesPage() {
     setShellPoNo(invoice.po_number ?? '')
     setShellInvoiceType(invoice.invoice_type ?? 'tax_gst')
     setShellCurrency(invoice.currency_code ?? 'PKR')
-    setCalcMethod(normalizeCalcMethod(invoice.calculation_method))
     setShellDefaultSalesTax(invoice.default_sales_tax_pct ?? '18')
     setShellDefaultFurtherTax(invoice.default_further_tax_pct ?? '0')
     setShellDefaultAdvanceTax(invoice.default_advance_tax_pct ?? '0')
@@ -750,7 +855,46 @@ export function PurchasesPage() {
     setShellRoundOff(invoice.round_off ?? '0.0000')
     setShellTaxType(invoice.tax_type ?? 'standard')
     setShellPaymentTerms(invoice.payment_terms ?? 'credit')
-    setLines((invoice.lines ?? []).map(lineFromServer))
+    const mapped = (invoice.lines ?? []).map(lineFromServer)
+    const method = normalizeCalcMethod(invoice.calculation_method)
+    setCalcMethod(method)
+    setLines(mapped.map((line) => applyCalcToLine(line, {
+      calcMethod: method,
+      discountApplyOn,
+      dualModes,
+    })))
+    void enrichLineUnits(mapped)
+  }
+
+  async function enrichLineUnits(rows: DraftLine[]) {
+    const unique = [...new Set(rows.map((row) => row.product_ulid).filter(Boolean))]
+    if (unique.length === 0) return
+    const optionsByProduct = new Map<string, UnitOption[]>()
+    await Promise.all(
+      unique.map(async (ulid) => {
+        try {
+          const product = await fetchProduct(ulid)
+          optionsByProduct.set(ulid, buildUnitOptions(product))
+        } catch {
+          // Keep the single unit from the invoice line when product fetch fails.
+        }
+      }),
+    )
+    setLines((prev) =>
+      prev.map((line) => {
+        const options = optionsByProduct.get(line.product_ulid)
+        if (!options || options.length === 0) return line
+        const merged = [...options]
+        if (line.unit_ulid && !merged.some((unit) => unit.ulid === line.unit_ulid)) {
+          merged.unshift({
+            ulid: line.unit_ulid,
+            code: line.unit_label || 'UNIT',
+            conversion_factor: line.conversion_factor,
+          })
+        }
+        return { ...line, unit_options: merged }
+      }),
+    )
   }
 
   function resetEditor() {
@@ -774,7 +918,7 @@ export function PurchasesPage() {
     setProductQuery('')
     setError(null)
     setSelectedLineKey(null)
-    setCalcMethod('trade_before_disc')
+    setCalcMethod('trade_after_disc')
     setShellPriceType('trade')
     setShellTaxType('standard')
     setShellPaymentTerms('credit')
@@ -858,14 +1002,18 @@ export function PurchasesPage() {
 
       for (const line of lines) {
         if (!line.product_ulid || !line.unit_ulid) continue
+        const calc = computeLine(line, calcSettings)
+        const usePctDiscount =
+          discountApplyOn === 'trade' &&
+          (dualModes.regular_disc === 'pct' || dualModes.special_disc === 'pct')
         const payload = {
           product_ulid: line.product_ulid,
           unit_ulid: line.unit_ulid,
           quantity: line.quantity || '0',
           conversion_factor: line.conversion_factor || '1',
           unit_cost: line.unit_cost || '0',
-          discount_amount: line.discount_amount || '0',
-          tax_amount: line.tax_amount || '0',
+          discount_amount: calc.discount_amount,
+          tax_amount: calc.tax_amount,
           supplier_product_code: line.supplier_product_code || null,
           batch_number: line.batch_number || null,
           expiry_date: line.expiry_date || null,
@@ -877,11 +1025,14 @@ export function PurchasesPage() {
           free_pcs: line.free_pcs || '0',
           price_type: line.price_type || 'trade',
           mrp: line.mrp || '0',
-          trade_disc_pct: line.trade_disc_pct || '0',
-          regular_disc_pct: line.regular_disc_pct || '0',
-          special_disc_pct: line.special_disc_pct || '0',
-          tax_pct: line.tax_pct || '0',
-          further_tax_pct: line.further_tax_pct || '0',
+          trade_disc_pct: usePctDiscount ? line.trade_disc_pct || '0' : '0',
+          regular_disc_pct: usePctDiscount ? calc.regular_disc_pct || '0' : '0',
+          special_disc_pct: usePctDiscount ? calc.special_disc_pct || '0' : '0',
+          tax_pct:
+            calcMethod === 'manual' && dualModes.gst === 'rs'
+              ? '0'
+              : calc.tax_pct || '0',
+          further_tax_pct: calc.further_tax_pct || '0',
         }
         if (line.ulid) {
           await updatePurchaseLine(invoice.ulid, line.ulid, payload)
@@ -917,6 +1068,8 @@ export function PurchasesPage() {
       setError(null)
       void queryClient.invalidateQueries({ queryKey: ['purchases'] })
       void queryClient.invalidateQueries({ queryKey: ['purchase-line-stock'] })
+      void queryClient.invalidateQueries({ queryKey: ['products'] })
+      void queryClient.invalidateQueries({ queryKey: ['posted-purchases-lookup'] })
     },
   })
 
@@ -942,15 +1095,34 @@ export function PurchasesPage() {
     }
   }
 
-  function addProduct(product: Product) {
-    const unit = resolveProductSelection(product, productQuery)
+  async function addProduct(product: Product) {
+    const unit = preferPcsUnit(product, productQuery)
     if (!unit.unit_ulid) {
       setError('Selected product has no base unit.')
       return
     }
+
+    let unitCost = '0.0000'
+    if (warehouseUlid) {
+      try {
+        const stock = await fetchProductStock(product.ulid)
+        const match = stock.warehouses.find((row) => row.warehouse.ulid === warehouseUlid)
+        unitCost = moneyOrZero(match?.average_cost)
+      } catch {
+        // Keep zero trade price when stock lookup fails; operator can type cost.
+      }
+    }
+
+    const retail = activeRetailAmount(product)
+    const productTax = moneyOrZero(product.tax_percent)
+    const taxPct =
+      productTax !== '0.0000'
+        ? product.tax_percent
+        : shellDefaultSalesTax || '0'
+    const furtherTaxPct = shellDefaultFurtherTax || '0'
     const key = `new-${Date.now()}-${lines.length}`
-    setLines((prev) => [
-      ...prev,
+
+    const draft = applyCalcToLine(
       {
         key,
         product_ulid: product.ulid,
@@ -958,13 +1130,16 @@ export function PurchasesPage() {
         ...emptyShellFields(),
         item_code: product.product_number,
         brand_label: product.brand?.name ?? '',
-        tax_pct: product.tax_percent || '0',
+        price_type: shellPriceType || 'trade',
+        tax_pct: taxPct,
+        further_tax_pct: furtherTaxPct,
         supplier_product_code: product.supplier_product_code ?? '',
         unit_ulid: unit.unit_ulid,
         unit_label: unit.unit_label,
+        unit_options: unit.unit_options,
         quantity: '1.000000',
         conversion_factor: unit.conversion_factor,
-        unit_cost: '0.0000',
+        unit_cost: unitCost,
         discount_amount: '0.0000',
         tax_amount: '0.0000',
         batch_number: '',
@@ -976,15 +1151,24 @@ export function PurchasesPage() {
         further_tax_amount: '0.0000',
         disc_after_gst_pct: '0',
         disc_after_gst_rs: '0',
-        advance_tax_pct: '0',
+        advance_tax_pct: shellDefaultAdvanceTax || '0',
         advance_tax_amount: '0',
         regular_disc_rs: '0.0000',
         special_disc_rs: '0.0000',
-        sale_price: '0.0000',
+        mrp: retail,
+        sale_price: retail,
       },
-    ])
+      calcSettings,
+    )
+
+    setLines((prev) => [...prev, draft])
     setSelectedLineKey(key)
     setProductQuery('')
+  }
+
+  function openPurchaseReturn() {
+    if (!invoiceUlid || status !== 'posted') return
+    openModule(`/daily/purchase-return?purchase=${encodeURIComponent(invoiceUlid)}`)
   }
 
   async function removeLine(line: DraftLine) {
@@ -1010,13 +1194,33 @@ export function PurchasesPage() {
     },
   })
 
-  const previewSubtotal = useMemo(() => {
-    return lines.reduce((sum, line) => {
-      const qty = Number(line.quantity) || 0
-      const cost = Number(line.unit_cost) || 0
-      return sum + qty * cost
-    }, 0)
-  }, [lines])
+  const liveTotals = useMemo(
+    () =>
+      sumHeaderCharges({
+        lines,
+        settings: calcSettings,
+        freight: freightAmount,
+        loading: shellLoading,
+        otherCharges,
+        otherDiscount: shellOtherDiscount,
+        tradeOffer: shellTradeOffer,
+        advanceTax: shellAdvanceTax,
+        withholdingIsPct,
+        roundOff: shellRoundOff,
+      }),
+    [
+      lines,
+      calcSettings,
+      freightAmount,
+      shellLoading,
+      otherCharges,
+      shellOtherDiscount,
+      shellTradeOffer,
+      shellAdvanceTax,
+      withholdingIsPct,
+      shellRoundOff,
+    ],
+  )
 
   if (mode === 'list') {
     return (
@@ -1132,8 +1336,11 @@ export function PurchasesPage() {
 
   const editable = !readOnly && (invoiceUlid ? canEdit : canCreate)
   const selectedLine = lines.find((line) => line.key === selectedLineKey) ?? null
-  const displaySubtotal = money(subtotal || previewSubtotal)
-  const displayGrand = money(grandTotal || previewSubtotal)
+  const displaySubtotal = liveTotals.subtotal
+  const displayDiscount = liveTotals.discount_amount
+  const displayTax = liveTotals.tax_amount
+  const displayFurther = liveTotals.further_tax_amount
+  const displayGrand = liveTotals.grand_total
   const balancePayable = money(Math.max(0, (Number(displayGrand) || 0) - (Number(advancePaid) || 0)))
 
   async function removeSelectedLine() {
@@ -1251,7 +1458,7 @@ export function PurchasesPage() {
                   name="pie-calc-method"
                   checked={calcMethod === value}
                   disabled={!editable}
-                  onChange={() => setCalcMethod(value)}
+                  onChange={() => changeCalcMethod(value)}
                 />
                 <span>{label}</span>
               </label>
@@ -1272,7 +1479,7 @@ export function PurchasesPage() {
                       name="pie-discount-apply"
                       checked={discountApplyOn === value}
                       disabled={!editable}
-                      onChange={() => setDiscountApplyOn(value)}
+                      onChange={() => changeDiscountApplyOn(value)}
                     />
                     <span>{label}</span>
                   </label>
@@ -1285,7 +1492,7 @@ export function PurchasesPage() {
                   disabled={!editable}
                   onChange={(e) => setAutoCalcMrp(e.target.checked)}
                 />
-                <span>Auto calculate MRP &amp; MRP without GST</span>
+                <span>Auto calculate MRP &amp; MRP w/o GST</span>
               </label>
             </div>
           </div>
@@ -1304,12 +1511,14 @@ export function PurchasesPage() {
                   disabled={!editable}
                   onChange={() => {
                     setDiscInputType('pct')
-                    setDualModes((prev) => ({
-                      ...prev,
-                      regular_disc: 'pct',
-                      special_disc: 'pct',
-                      disc_after_gst: 'pct',
-                    }))
+                    const nextModes = {
+                      ...dualModes,
+                      regular_disc: 'pct' as DualMode,
+                      special_disc: 'pct' as DualMode,
+                      disc_after_gst: 'pct' as DualMode,
+                    }
+                    setDualModes(nextModes)
+                    recalculateAllLines({ ...calcSettings, dualModes: nextModes })
                   }}
                 />
                 Percentage (%)
@@ -1322,19 +1531,21 @@ export function PurchasesPage() {
                   disabled={!editable}
                   onChange={() => {
                     setDiscInputType('rs')
-                    setDualModes((prev) => ({
-                      ...prev,
-                      regular_disc: 'rs',
-                      special_disc: 'rs',
-                      disc_after_gst: 'rs',
-                    }))
+                    const nextModes = {
+                      ...dualModes,
+                      regular_disc: 'rs' as DualMode,
+                      special_disc: 'rs' as DualMode,
+                      disc_after_gst: 'rs' as DualMode,
+                    }
+                    setDualModes(nextModes)
+                    recalculateAllLines({ ...calcSettings, dualModes: nextModes })
                   }}
                 />
                 Amount (Rs.)
               </label>
             </div>
           </div>
-          <div className="pie-charge-pairs">
+          <div className="pie-charge-triple">
             <label>
               <span>Freight (+)</span>
               <input value={freightAmount} disabled={!editable} onChange={(e) => setFreightAmount(e.target.value)} />
@@ -1351,9 +1562,7 @@ export function PurchasesPage() {
               <span>Other Disc (−)</span>
               <input value={shellOtherDiscount} disabled={!editable} onChange={(e) => setShellOtherDiscount(e.target.value)} />
             </label>
-          </div>
-          <div className="pie-charge-triple">
-            <label>
+                        <label>
               <span>Trade Offer (−)</span>
               <input value={shellTradeOffer} disabled={!editable} onChange={(e) => setShellTradeOffer(e.target.value)} />
             </label>
@@ -1420,7 +1629,11 @@ export function PurchasesPage() {
             {productLookup.data?.data?.length ? (
               <div className="pie-lookup">
                 {productLookup.data.data.map((product) => (
-                  <button key={product.ulid} type="button" onClick={() => addProduct(product)}>
+                  <button
+                    key={product.ulid}
+                    type="button"
+                    onClick={() => void addProduct(product)}
+                  >
                     {product.product_number} · {product.name}
                     {product.sku ? ` · ${product.sku}` : ''}
                   </button>
@@ -1447,6 +1660,15 @@ export function PurchasesPage() {
               onClick={() => void onPost()}
             >
               <Send /> Post
+            </button>
+            <button
+              type="button"
+              className="pie-btn is-ghost"
+              disabled={status !== 'posted' || !invoiceUlid || !canCreateReturn}
+              onClick={openPurchaseReturn}
+              title="Create purchase return from this invoice"
+            >
+              <RotateCcw /> Return
             </button>
             <button type="button" className="pie-btn is-print" disabled>
               <Printer /> Print
@@ -1593,15 +1815,15 @@ export function PurchasesPage() {
           <div className="pie-panel-head">Sub Total / Grand Total</div>
           <div className="pie-summary-grid">
             <div><span>Sub Total</span><strong>{displaySubtotal}</strong></div>
-            <div><span>Total Discount</span><strong>{money(discountAmount)}</strong></div>
-            <div><span>Total Tax</span><strong>{money(taxAmount)}</strong></div>
-            <div><span>Further Tax</span><strong>{money(furtherTaxAmount)}</strong></div>
+            <div><span>Total Discount</span><strong>{displayDiscount}</strong></div>
+            <div><span>Total Tax</span><strong>{displayTax}</strong></div>
+            <div><span>Further Tax</span><strong>{displayFurther}</strong></div>
             <div><span>Freight (+)</span><strong>{money(freightAmount)}</strong></div>
             <div><span>Loading (+)</span><strong>{money(shellLoading)}</strong></div>
             <div><span>Other Chg (+)</span><strong>{money(otherCharges)}</strong></div>
             <div><span>Other Disc (−)</span><strong>{money(shellOtherDiscount)}</strong></div>
             <div><span>Trade Offer (−)</span><strong>{money(shellTradeOffer)}</strong></div>
-            <div><span>Withholding</span><strong>{money(shellAdvanceTax)}</strong></div>
+            <div><span>Withholding</span><strong>{liveTotals.advance_tax_amount}</strong></div>
             <div><span>Round Off</span><strong>{money(shellRoundOff)}</strong></div>
           </div>
           <div className="pie-grand">

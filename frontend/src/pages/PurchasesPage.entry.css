@@ -655,7 +655,7 @@
 
 .pie-summary-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 1px 8px;
 }
 
@@ -928,6 +928,17 @@
   align-items: center;
   justify-content: flex-end;
   background: #f5f8fb;
+}
+
+.purchase-reference-grid td.col-uom select {
+  width: 100%;
+  min-height: 20px;
+  height: 22px;
+  padding: 0 2px;
+  border: 1px solid #c5d3e2;
+  border-radius: 2px;
+  font-size: 10px;
+  background: #fff;
 }
 
 @media (max-width: 1400px) {

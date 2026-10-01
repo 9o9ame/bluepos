@@ -21,6 +21,7 @@ class PostPurchaseInvoiceAction
         private readonly PostStockMovementAction $postMovement,
         private readonly RecalculatePurchaseTotalsAction $recalculate,
         private readonly EnsureProductSupplierLinkAction $ensureSupplierLink,
+        private readonly SyncPurchaseLineToProductAction $syncProduct,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -77,16 +78,13 @@ class PostPurchaseInvoiceAction
                     ]);
                 }
 
-                $inventoryUnitCost = $this->recalculate->inventoryUnitCost(
-                    (string) $line->unit_cost,
-                    (string) $line->conversion_factor,
-                );
+                [$stockQty, $inventoryUnitCost] = $this->stockQuantityAndUnitCost($line);
 
                 $this->postMovement->execute([
                     'warehouse' => $warehouse,
                     'product' => $product,
                     'movement_type' => StockMovementType::Purchase,
-                    'quantity' => (string) $line->base_quantity,
+                    'quantity' => $stockQty,
                     'unit_cost' => $inventoryUnitCost,
                     'reference_type' => 'purchase_invoice',
                     'reference_ulid' => $invoice->ulid,
@@ -101,6 +99,8 @@ class PostPurchaseInvoiceAction
                     $supplier,
                     $line->supplier_product_code,
                 );
+
+                $this->syncProduct->execute($product, $line);
             }
 
             $invoice->status = PurchaseInvoiceStatus::Posted;
@@ -117,5 +117,35 @@ class PostPurchaseInvoiceAction
 
             return $invoice->fresh(CreatePurchaseInvoiceAction::with()) ?? $invoice;
         });
+    }
+
+    /**
+     * Free pieces increase on-hand quantity without additional purchase cost,
+     * so average cost is diluted across paid + free base quantity.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function stockQuantityAndUnitCost(PurchaseInvoiceLine $line): array
+    {
+        $paidBase = (string) $line->base_quantity;
+        $unitCost = $this->recalculate->inventoryUnitCost(
+            (string) $line->unit_cost,
+            (string) $line->conversion_factor,
+        );
+
+        $freePcs = (string) ($line->free_pcs ?? '0');
+        if (bccomp($freePcs, '0', 6) !== 1) {
+            return [$paidBase, $unitCost];
+        }
+
+        $freeBase = bcmul($freePcs, (string) $line->conversion_factor, 6);
+        $totalBase = bcadd($paidBase, $freeBase, 6);
+        $paidValue = bcmul($paidBase, $unitCost, 4);
+
+        if (bccomp($totalBase, '0', 6) !== 1) {
+            return [$paidBase, $unitCost];
+        }
+
+        return [$totalBase, bcdiv($paidValue, $totalBase, 4)];
     }
 }
