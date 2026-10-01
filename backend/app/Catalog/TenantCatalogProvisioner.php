@@ -2,6 +2,7 @@
 
 namespace App\Catalog;
 
+use App\Accounting\ReferenceCoaSeeder;
 use App\Authz\TenantRoleProvisioner;
 use App\Enums\PriceType;
 use App\Models\BusinessSetting;
@@ -10,7 +11,10 @@ use App\Models\Unit;
 
 class TenantCatalogProvisioner
 {
-    public function __construct(private readonly TenantRoleProvisioner $roleProvisioner) {}
+    public function __construct(
+        private readonly TenantRoleProvisioner $roleProvisioner,
+        private readonly ReferenceCoaSeeder $referenceCoaSeeder,
+    ) {}
 
     /**
      * @return list<array{code: string, name: string, symbol: string, allows_decimal: bool}>
@@ -67,6 +71,9 @@ class TenantCatalogProvisioner
                 ],
             );
         }
+
+        // Reference Main Heads / Sub Heads / Account Types for parties & COA.
+        $this->referenceCoaSeeder->seed($tenant);
 
         return $settings;
     }

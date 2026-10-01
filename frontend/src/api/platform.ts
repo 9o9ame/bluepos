@@ -136,6 +136,18 @@ export function activatePlatformTenant(ulid: string): Promise<PlatformTenant> {
   return apiFetch<PlatformTenant>(`/api/platform/tenants/${ulid}/activate`, { method: 'POST' })
 }
 
+export function seedPlatformTenantReferenceCoa(ulid: string) {
+  return apiFetch<{
+    ok: boolean
+    tenant_ulid: string
+    tenant_code: string
+    main_heads: number
+    sub_heads: number
+    account_types: number
+    accounts_created: number
+  }>(`/api/platform/tenants/${ulid}/seed-reference-coa`, { method: 'POST' })
+}
+
 export function assignPlatformSubscription(
   tenantUlid: string,
   input: { plan_ulid: string; status: string },

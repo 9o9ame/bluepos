@@ -22,6 +22,12 @@ class ReferenceCoaSeedTest extends TestCase
         $sessionB = $this->provisionOwner('ref-coa-b');
         $tenantB = $sessionB->tenant;
 
+        // New tenants receive reference COA during provision.
+        $this->assertSame(6, AccountMainHead::query()->forTenant((int) $tenantA->id)->count());
+        $this->assertSame(9, AccountSubHead::query()->forTenant((int) $tenantA->id)->count());
+        $this->assertSame(25, AccountType::query()->forTenant((int) $tenantA->id)->whereNotNull('code')->count());
+        $this->assertSame(6, AccountMainHead::query()->forTenant((int) $tenantB->id)->count());
+
         $accountsBeforeA = Account::query()->forTenant((int) $tenantA->id)->count();
         $accountsBeforeB = Account::query()->forTenant((int) $tenantB->id)->count();
 
@@ -43,9 +49,10 @@ class ReferenceCoaSeedTest extends TestCase
         $this->assertSame(25, AccountType::query()->forTenant((int) $tenantA->id)->whereNotNull('code')->count());
         $this->assertSame($accountsBeforeA, Account::query()->forTenant((int) $tenantA->id)->count());
 
-        $this->assertSame(0, AccountMainHead::query()->forTenant((int) $tenantB->id)->count());
-        $this->assertSame(0, AccountSubHead::query()->forTenant((int) $tenantB->id)->count());
-        $this->assertSame(0, AccountType::query()->forTenant((int) $tenantB->id)->count());
+        // Tenant B remains isolated with its own hierarchy (not emptied by seeding A).
+        $this->assertSame(6, AccountMainHead::query()->forTenant((int) $tenantB->id)->count());
+        $this->assertSame(9, AccountSubHead::query()->forTenant((int) $tenantB->id)->count());
+        $this->assertSame(25, AccountType::query()->forTenant((int) $tenantB->id)->whereNotNull('code')->count());
         $this->assertSame($accountsBeforeB, Account::query()->forTenant((int) $tenantB->id)->count());
 
         $this->assertHierarchy($tenantA, '0011', 'CURRENT ASSETS', 'ASSETS');
@@ -79,6 +86,11 @@ class ReferenceCoaSeedTest extends TestCase
         $this->artisan('bluepos:seed-reference-coa', [
             '--email' => $sessionA->user->email,
         ])->assertSuccessful();
+
+        $this->artisan('bluepos:seed-reference-coa', ['--all' => true])
+            ->assertSuccessful();
+        $this->assertSame(6, AccountMainHead::query()->forTenant((int) $tenantA->id)->count());
+        $this->assertSame(6, AccountMainHead::query()->forTenant((int) $tenantB->id)->count());
     }
 
     private function assertHierarchy(Tenant $tenant, string $code, string $subName, string $mainName): void

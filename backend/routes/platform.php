@@ -50,6 +50,8 @@ Route::prefix('platform')->group(function () {
             ->middleware('platform.can:platform.tenants.edit');
         Route::post('/tenants/{tenantUlid}/activate', [PlatformTenantController::class, 'activate'])
             ->middleware(['platform.can:platform.tenants.activate', 'platform.recent-mfa']);
+        Route::post('/tenants/{tenantUlid}/seed-reference-coa', [PlatformTenantController::class, 'seedReferenceCoa'])
+            ->middleware(['platform.can:platform.tenants.edit', 'platform.recent-mfa']);
         Route::post('/tenants/{tenantUlid}/suspend', [PlatformTenantController::class, 'suspend'])
             ->middleware(['platform.can:platform.tenants.suspend', 'platform.recent-mfa']);
         Route::delete('/tenants/{tenantUlid}', [PlatformTenantController::class, 'destroy'])

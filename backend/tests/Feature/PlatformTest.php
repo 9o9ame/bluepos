@@ -7,6 +7,9 @@ use App\Enums\DeviceStatus;
 use App\Enums\PlanStatus;
 use App\Enums\SubscriptionStatus;
 use App\Enums\TenantStatus;
+use App\Models\AccountMainHead;
+use App\Models\AccountSubHead;
+use App\Models\AccountType;
 use App\Models\Branch;
 use App\Models\Device;
 use App\Models\Membership;
@@ -252,9 +255,22 @@ class PlatformTest extends TestCase
         $this->assertTrue(
             Membership::query()->where('tenant_id', $tenant->id)->first()?->hasRoleCode(PermissionCatalogue::OWNER)
         );
+        $this->assertSame(6, AccountMainHead::query()->forTenant((int) $tenant->id)->count());
+        $this->assertSame(9, AccountSubHead::query()->forTenant((int) $tenant->id)->count());
+        $this->assertSame(25, AccountType::query()->forTenant((int) $tenant->id)->whereNotNull('code')->count());
         $this->getJson('/api/platform/tenants')
             ->assertOk()
             ->assertJsonFragment(['ulid' => $response->json('ulid'), 'admin_username' => 'owner']);
+
+        $seed = $this->postJson('/api/platform/tenants/'.$tenant->ulid.'/seed-reference-coa')
+            ->assertOk();
+        $seed->assertJsonPath('ok', true)
+            ->assertJsonPath('main_heads', 6)
+            ->assertJsonPath('sub_heads', 9)
+            ->assertJsonPath('account_types', 25);
+        $this->assertTrue(
+            PlatformAuditLog::query()->where('event', 'TENANT_REFERENCE_COA_SEEDED')->where('resource_ulid', $tenant->ulid)->exists()
+        );
     }
 
     public function test_tenant_code_must_be_unique(): void

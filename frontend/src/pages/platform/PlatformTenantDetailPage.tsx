@@ -11,6 +11,7 @@ import {
   fetchPlatformTenant,
   forceLogoutTenantAdmin,
   resetTenantAdmin,
+  seedPlatformTenantReferenceCoa,
   suspendPlatformTenant,
   updatePlatformTenant,
   upsertTenantFeature,
@@ -125,6 +126,35 @@ export function PlatformTenantDetailPage() {
             </div>
           </form>
           <p>Users / branches / devices: {tenant.users_count} / {tenant.branches_count} / {tenant.devices_count}</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded border border-slate-700 px-3 py-1 text-slate-900"
+              onClick={() => {
+                void (async () => {
+                  if (
+                    !(await askConfirm(
+                      `Seed / refresh reference Main Heads, Heads, and Account Types for ${tenant.code}? Safe to re-run (idempotent). Does not create leaf ledger accounts.`,
+                    ))
+                  ) {
+                    return
+                  }
+                  setError(null)
+                  setNotice(null)
+                  try {
+                    const result = await withRecentMfa(() => seedPlatformTenantReferenceCoa(tenant.ulid))
+                    setNotice(
+                      `Reference COA ready: ${result.main_heads} main heads, ${result.sub_heads} heads, ${result.account_types} account types.`,
+                    )
+                  } catch (err) {
+                    setError(err instanceof ApiClientError ? err.message : 'Unable to seed reference COA.')
+                  }
+                })()
+              }}
+            >
+              Seed reference COA
+            </button>
+          </div>
           <div className="flex gap-2">
             <input
               className="h-8 flex-1 rounded border border-slate-300 px-2"

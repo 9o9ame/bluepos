@@ -9,6 +9,7 @@ use App\Actions\Platform\CreatePlatformTenantAction;
 use App\Actions\Platform\DeactivateTenantAdminAction;
 use App\Actions\Platform\ForceLogoutTenantAdminAction;
 use App\Actions\Platform\ResetTenantAdminAccessAction;
+use App\Actions\Platform\SeedTenantReferenceCoaAction;
 use App\Actions\Platform\SuspendTenantAction;
 use App\Actions\Platform\UpsertTenantFeatureOverrideAction;
 use App\Actions\Platform\UpsertTenantLimitOverrideAction;
@@ -129,6 +130,24 @@ class PlatformTenantController extends Controller
     public function activate(string $tenantUlid, ActivateTenantAction $activate): PlatformTenantResource
     {
         return new PlatformTenantResource($activate->execute($this->findTenant($tenantUlid))->load('subscription.plan'));
+    }
+
+    public function seedReferenceCoa(
+        string $tenantUlid,
+        SeedTenantReferenceCoaAction $seed,
+    ): JsonResponse {
+        $tenant = $this->findTenant($tenantUlid);
+        $result = $seed->execute($tenant);
+
+        return response()->json([
+            'ok' => true,
+            'tenant_ulid' => $tenant->ulid,
+            'tenant_code' => $tenant->code,
+            'main_heads' => $result['main_heads'],
+            'sub_heads' => $result['sub_heads'],
+            'account_types' => $result['account_types'],
+            'accounts_created' => $result['accounts'],
+        ]);
     }
 
     public function suspend(Request $request, string $tenantUlid, SuspendTenantAction $suspend): PlatformTenantResource

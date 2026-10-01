@@ -12,29 +12,59 @@ use Illuminate\Support\Str;
 class SeedReferenceCoaCommand extends Command
 {
     protected $signature = 'bluepos:seed-reference-coa
-        {tenant? : Tenant ULID or tenant code (optional if --email resolves one tenant)}
+        {tenant? : Tenant ULID or tenant code (optional if --email resolves one tenant, or with --all)}
+        {--all : Seed every tenant (idempotent upsert)}
         {--login= : Membership username used at login (requires tenant code/ULID)}
         {--email= : User email (seeds that user\'s tenant; pass tenant if they have several)}';
 
-    protected $description = 'Idempotently seed reference Main Heads, Heads, and Account Types (no leaf Accounts) for a tenant — by ULID/code or by login user.';
+    protected $description = 'Idempotently seed reference Main Heads, Heads, and Account Types (no leaf Accounts) for one tenant or all tenants.';
 
     public function handle(ReferenceCoaSeeder $seeder): int
     {
+        if ($this->option('all')) {
+            return $this->seedAll($seeder);
+        }
+
         $tenant = $this->resolveTenant();
         if (! $tenant) {
             return self::FAILURE;
         }
 
         $result = $seeder->seed($tenant);
+        $this->reportTenant($tenant, $result);
 
+        return self::SUCCESS;
+    }
+
+    private function seedAll(ReferenceCoaSeeder $seeder): int
+    {
+        $tenants = Tenant::query()->orderBy('id')->get();
+        if ($tenants->isEmpty()) {
+            $this->warn('No tenants found.');
+
+            return self::SUCCESS;
+        }
+
+        $this->info('Seeding reference COA for '.$tenants->count().' tenant(s)…');
+        foreach ($tenants as $tenant) {
+            $result = $seeder->seed($tenant);
+            $this->reportTenant($tenant, $result);
+        }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @param  array{main_heads: int, sub_heads: int, account_types: int, accounts: int}  $result
+     */
+    private function reportTenant(Tenant $tenant, array $result): void
+    {
         $this->info('Reference COA seeded for '.$tenant->code.' ('.$tenant->name.').');
         $this->line('Tenant ULID: '.$tenant->ulid);
         $this->line('Main Heads upserted: '.$result['main_heads']);
         $this->line('Heads upserted: '.$result['sub_heads']);
         $this->line('Account Types upserted: '.$result['account_types']);
         $this->line('End Accounts created: '.$result['accounts']);
-
-        return self::SUCCESS;
     }
 
     private function resolveTenant(): ?Tenant
@@ -52,7 +82,7 @@ class SeedReferenceCoaCommand extends Command
         }
 
         if ($tenantArg === '') {
-            $this->error('Provide a tenant ULID/code, or --login=USERNAME with tenant, or --email=...');
+            $this->error('Provide a tenant ULID/code, --all, or --login=USERNAME with tenant, or --email=...');
 
             return null;
         }
