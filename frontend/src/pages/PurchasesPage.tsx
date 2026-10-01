@@ -1,30 +1,21 @@
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import {
-  Barcode,
-  Binoculars,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  LayoutGrid,
-  Minus,
-  Package,
   Plus,
   Printer,
-  Receipt,
   RefreshCw,
   Save,
+  Search,
   Send,
-  Table2,
+  Settings2,
+  Trash2,
   X,
   XCircle,
 } from 'lucide-react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchProducts, fetchSuppliers } from '../api/catalog'
 import { ApiClientError } from '../api/client'
-import { fetchWarehouses } from '../api/inventory'
+import { askConfirm } from '../feedback/FeedbackProvider'
+import { fetchProductStock, fetchWarehouses } from '../api/inventory'
 import {
   createPurchase,
   createPurchaseLine,
@@ -39,16 +30,37 @@ import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
+import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
+import {
+  PURCHASE_INVOICE_COLUMNS,
+  PURCHASE_INVOICE_SCREEN,
+  type ResolvedGridColumn,
+} from '../features/gridLayout/columnCatalog'
+import { useColumnLayout } from '../features/gridLayout/useColumnLayout'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
 import type { PurchaseInvoice, PurchaseInvoiceLine } from '../types/purchases'
 import './PurchasesPage.theme.css'
+import './PurchasesPage.entry.css'
 
 type DraftLine = {
   key: string
   ulid?: string
   product_ulid: string
   product_label: string
+  item_code: string
+  brand_label: string
+  hs_code: string
+  pack_size: string
+  qty_ctn: string
+  free_pcs: string
+  price_type: string
+  mrp: string
+  trade_disc_pct: string
+  regular_disc_pct: string
+  special_disc_pct: string
+  further_tax_pct: string
+  tax_pct: string
   unit_ulid: string
   unit_label: string
   quantity: string
@@ -59,32 +71,95 @@ type DraftLine = {
   supplier_product_code: string
   batch_number: string
   expiry_date: string
+  notes: string
+  location_label: string
   track_batch: boolean
   track_expiry: boolean
   line_total?: string
   base_quantity?: string
+  further_tax_amount?: string
+  disc_after_gst_pct?: string
+  disc_after_gst_rs?: string
+  advance_tax_pct?: string
+  advance_tax_amount?: string
+  regular_disc_rs?: string
+  special_disc_rs?: string
+  sale_price?: string
 }
 
-const PURCHASE_CUSTOMIZATION_FIELDS = [
-  'Barcode',
-  'BNS',
-  'C',
-  'Dis 3',
-  'Dis A',
-  'From Party',
-  'Ledger Bal',
-  'Location',
-] as const
-
-type PurchaseCustomizationField = (typeof PURCHASE_CUSTOMIZATION_FIELDS)[number]
+function emptyShellFields(): Pick<
+  DraftLine,
+  | 'item_code'
+  | 'brand_label'
+  | 'hs_code'
+  | 'pack_size'
+  | 'qty_ctn'
+  | 'free_pcs'
+  | 'price_type'
+  | 'mrp'
+  | 'trade_disc_pct'
+  | 'regular_disc_pct'
+  | 'special_disc_pct'
+  | 'further_tax_pct'
+  | 'tax_pct'
+> {
+  return {
+    item_code: '',
+    brand_label: '',
+    hs_code: '',
+    pack_size: '',
+    qty_ctn: '0',
+    free_pcs: '0',
+    price_type: 'trade',
+    mrp: '0.0000',
+    trade_disc_pct: '0',
+    regular_disc_pct: '0',
+    special_disc_pct: '0',
+    further_tax_pct: '0',
+    tax_pct: '0',
+  }
+}
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10)
 }
 
+function normalizeCalcMethod(value: string | null | undefined): string {
+  const legacy: Record<string, string> = {
+    gst_on_retail: 'mrp_incl_gst',
+    gst_on_trade: 'trade_before_disc',
+    disc_then_gst: 'trade_after_disc',
+    gst_inclusive: 'mrp_incl_gst',
+    no_gst: 'mrp_ex_gst',
+  }
+  const v = value ?? 'trade_before_disc'
+  return legacy[v] ?? v
+}
+
 function money(value: string | number | null | undefined) {
   const n = Number(value ?? 0)
   return Number.isFinite(n) ? n.toFixed(4) : '0.0000'
+}
+
+function pctFromAmount(base: number, amount: number) {
+  if (!Number.isFinite(base) || base <= 0) return '0'
+  return ((amount / base) * 100).toFixed(4)
+}
+
+function amountFromPct(base: number, pct: number) {
+  if (!Number.isFinite(base)) return '0.0000'
+  return ((base * pct) / 100).toFixed(4)
+}
+
+type DualMode = 'pct' | 'rs'
+
+const DEFAULT_DUAL_MODES: Record<string, DualMode> = {
+  regular_disc: 'pct',
+  special_disc: 'pct',
+  gst: 'pct',
+  disc_after_gst: 'pct',
+  further_tax: 'pct',
+  advance_tax: 'pct',
 }
 
 function lineFromServer(line: PurchaseInvoiceLine): DraftLine {
@@ -95,6 +170,20 @@ function lineFromServer(line: PurchaseInvoiceLine): DraftLine {
     product_label: line.product
       ? `${line.product.product_number} · ${line.product.name}`
       : '',
+    ...emptyShellFields(),
+    item_code: line.product?.product_number ?? '',
+    brand_label: line.brand_label ?? '',
+    hs_code: line.hs_code ?? '',
+    pack_size: line.pack_size ?? '',
+    qty_ctn: line.qty_ctn ?? '0',
+    free_pcs: line.free_pcs ?? '0',
+    price_type: line.price_type ?? 'trade',
+    mrp: line.mrp ?? '0.0000',
+    trade_disc_pct: line.trade_disc_pct ?? '0',
+    regular_disc_pct: line.regular_disc_pct ?? '0',
+    special_disc_pct: line.special_disc_pct ?? '0',
+    further_tax_pct: line.further_tax_pct ?? '0',
+    tax_pct: line.tax_pct ?? '0',
     unit_ulid: line.unit?.ulid ?? '',
     unit_label: line.unit?.code ?? '',
     quantity: line.quantity,
@@ -105,10 +194,20 @@ function lineFromServer(line: PurchaseInvoiceLine): DraftLine {
     supplier_product_code: line.supplier_product_code ?? '',
     batch_number: line.batch_number ?? '',
     expiry_date: line.expiry_date ?? '',
+    notes: line.notes ?? '',
+    location_label: '',
     track_batch: Boolean(line.product?.track_batch),
     track_expiry: Boolean(line.product?.track_expiry),
     line_total: line.line_total,
     base_quantity: line.base_quantity,
+    further_tax_amount: line.further_tax_amount ?? '0.0000',
+    disc_after_gst_pct: '0',
+    disc_after_gst_rs: '0',
+    advance_tax_pct: '0',
+    advance_tax_amount: '0',
+    regular_disc_rs: '0.0000',
+    special_disc_rs: '0.0000',
+    sale_price: line.mrp ?? '0.0000',
   }
 }
 
@@ -167,12 +266,40 @@ export function PurchasesPage() {
   const [subtotal, setSubtotal] = useState('0.0000')
   const [discountAmount, setDiscountAmount] = useState('0.0000')
   const [taxAmount, setTaxAmount] = useState('0.0000')
+  const [furtherTaxAmount, setFurtherTaxAmount] = useState('0.0000')
   const [grandTotal, setGrandTotal] = useState('0.0000')
   const [lines, setLines] = useState<DraftLine[]>([])
   const [productQuery, setProductQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [customizationOpen, setCustomizationOpen] = useState(false)
-  const [customGridFields, setCustomGridFields] = useState<PurchaseCustomizationField[]>([])
+  const [selectedLineKey, setSelectedLineKey] = useState<string | null>(null)
+  const [calcMethod, setCalcMethod] = useState('trade_before_disc')
+  const [shellPriceType, setShellPriceType] = useState('trade')
+  const [shellTaxType, setShellTaxType] = useState('standard')
+  const [shellPaymentTerms, setShellPaymentTerms] = useState('credit')
+  const [shellPoNo, setShellPoNo] = useState('')
+  const [shellInvoiceType, setShellInvoiceType] = useState('tax_gst')
+  const [shellCurrency, setShellCurrency] = useState('PKR')
+  const [shellBrand, setShellBrand] = useState('')
+  const [shellLoading, setShellLoading] = useState('0.0000')
+  const [shellOtherDiscount, setShellOtherDiscount] = useState('0.0000')
+  const [shellTradeOffer, setShellTradeOffer] = useState('0.0000')
+  const [shellAdvanceTax, setShellAdvanceTax] = useState('0.0000')
+  const [shellRoundOff, setShellRoundOff] = useState('0.0000')
+  const [shellDefaultSalesTax, setShellDefaultSalesTax] = useState('18')
+  const [shellDefaultFurtherTax, setShellDefaultFurtherTax] = useState('0')
+  const [shellDefaultAdvanceTax, setShellDefaultAdvanceTax] = useState('0')
+  const [discountApplyOn, setDiscountApplyOn] = useState('trade')
+  const [discInputType, setDiscInputType] = useState<'pct' | 'rs'>('pct')
+  const [autoCalcMrp, setAutoCalcMrp] = useState(true)
+  const [withholdingIsPct, setWithholdingIsPct] = useState(false)
+  const [advancePaid, setAdvancePaid] = useState('0.0000')
+  const [dualModes, setDualModes] = useState<Record<string, DualMode>>({ ...DEFAULT_DUAL_MODES })
+  const canSaveRoleDefault = useCan('roles.edit')
+  const columnLayout = useColumnLayout({
+    screenKey: PURCHASE_INVOICE_SCREEN,
+    catalog: PURCHASE_INVOICE_COLUMNS,
+  })
 
   const readOnly = status === 'posted' || status === 'cancelled'
 
@@ -210,18 +337,384 @@ export function PurchasesPage() {
   const suppliers = (suppliersQuery.data ?? []).filter((s) => s.is_active)
   const warehouses = (warehousesQuery.data ?? []).filter((w) => w.status === 'active')
   const selectedSupplier = suppliers.find((supplier) => supplier.ulid === supplierUlid)
+  const selectedWarehouse = warehouses.find((warehouse) => warehouse.ulid === warehouseUlid)
+  const warehouseLabel = selectedWarehouse
+    ? `${selectedWarehouse.code} — ${selectedWarehouse.name}`
+    : ''
 
-  function toggleCustomGridField(field: PurchaseCustomizationField) {
-    setCustomGridFields((current) =>
-      current.includes(field)
-        ? current.filter((item) => item !== field)
-        : [...current, field],
+  const lineProductUlids = useMemo(
+    () => [...new Set(lines.map((line) => line.product_ulid).filter(Boolean))],
+    [lines],
+  )
+
+  const stockQueries = useQueries({
+    queries: lineProductUlids.map((productUlid) => ({
+      queryKey: ['purchase-line-stock', productUlid, warehouseUlid] as const,
+      queryFn: () => fetchProductStock(productUlid),
+      enabled: mode === 'editor' && Boolean(productUlid && warehouseUlid),
+      staleTime: 30_000,
+    })),
+  })
+
+  const stockByProduct = useMemo(() => {
+    const map = new Map<string, string>()
+    lineProductUlids.forEach((productUlid, index) => {
+      const payload = stockQueries[index]?.data
+      if (!payload) return
+      const match = payload.warehouses.find((row) => row.warehouse.ulid === warehouseUlid)
+      map.set(productUlid, match?.quantity ?? '0.000000')
+    })
+    return map
+  }, [lineProductUlids, stockQueries, warehouseUlid])
+
+  function patchLine(key: string, patch: Partial<DraftLine>) {
+    setLines((prev) => prev.map((line) => (line.key === key ? { ...line, ...patch } : line)))
+  }
+
+  function setDualMode(key: string, mode: DualMode) {
+    setDualModes((prev) => ({ ...prev, [key]: mode }))
+  }
+
+  function syncDiscountAmount(_line: DraftLine, regularRs: number, specialRs: number) {
+    return money(regularRs + specialRs)
+  }
+
+  function renderDualCell(
+    colKey: string,
+    cls: string,
+    widthStyle: CSSProperties | undefined,
+    _row: DraftLine,
+    readOnly: boolean,
+    base: number,
+    pctValue: string,
+    rsValue: string,
+    onPct: (pct: string, rs: string) => void,
+    onRs: (rs: string, pct: string) => void,
+  ): ReactNode {
+    const mode = dualModes[colKey] ?? 'pct'
+    const pctEnabled = !readOnly && mode === 'pct'
+    const rsEnabled = !readOnly && mode === 'rs'
+    return (
+      <td className={`${cls} pie-dual-cell`} style={widthStyle}>
+        <div className="pie-dual-inputs">
+          <input
+            className={!pctEnabled ? 'is-disabled' : undefined}
+            value={pctValue}
+            disabled={!pctEnabled}
+            title="%"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              const pct = e.target.value
+              const rs = amountFromPct(base, Number(pct) || 0)
+              onPct(pct, rs)
+            }}
+          />
+          <input
+            className={!rsEnabled ? 'is-disabled' : undefined}
+            value={rsValue}
+            disabled={!rsEnabled}
+            title="Rs"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              const rs = e.target.value
+              const pct = pctFromAmount(base, Number(rs) || 0)
+              onRs(rs, pct)
+            }}
+          />
+        </div>
+      </td>
     )
   }
 
-  function customGridValue(field: PurchaseCustomizationField) {
-    if (field === 'From Party') return selectedSupplier?.name ?? ''
-    return ''
+  function renderPurchaseCell(
+    col: ResolvedGridColumn,
+    row: DraftLine | null,
+    ctx: {
+      readOnly: boolean
+      canEdit: boolean
+      supplierName: string
+      warehouseLabel: string
+      stockQty?: string
+      rowIndex?: number
+      onRemove?: () => void
+      openCustomization: () => void
+      customizationOpen: boolean
+    },
+  ): ReactNode {
+    const num = col.align === 'right' ? 'is-num' : col.align === 'center' ? 'is-center' : ''
+    const cls = [num, col.cellClass, `col-${col.key}`].filter(Boolean).join(' ')
+    const widthStyle = col.width ? { width: col.width, minWidth: col.width } : undefined
+
+    if (!row) {
+      if (col.key === 'line_no') return <td className={cls} style={widthStyle}>*</td>
+      if (col.key === 'product') {
+        return (
+          <td className={cls} style={widthStyle}>
+            <span className="purchase-reference-empty-dots">....</span>
+          </td>
+        )
+      }
+      if (col.key === 'delete') {
+        return (
+          <td className={cls} style={widthStyle}>
+            <button
+              type="button"
+              className={`purchase-reference-customize-trigger${ctx.customizationOpen ? ' is-open' : ''}`}
+              title="Customize columns"
+              aria-label="Customize columns"
+              aria-expanded={ctx.customizationOpen}
+              onClick={ctx.openCustomization}
+            >
+              −
+            </button>
+          </td>
+        )
+      }
+      return <td className={cls} style={widthStyle} />
+    }
+
+    const qty = Number(row.quantity) || 0
+    const unitCost = Number(row.unit_cost) || 0
+    const discountAmt = Number(row.discount_amount) || 0
+    const taxAmt = Number(row.tax_amount) || 0
+    const lineAmount =
+      Number(row.line_total ?? qty * unitCost - discountAmt + taxAmt) || 0
+    const gross = qty * unitCost
+    const regularDiscRs =
+      Number(row.regular_disc_rs) || (gross * (Number(row.regular_disc_pct) || 0)) / 100
+    const specialDiscRs =
+      Number(row.special_disc_rs) || (gross * (Number(row.special_disc_pct) || 0)) / 100
+    const afterDisc = Math.max(0, gross - regularDiscRs - specialDiscRs)
+    const taxPctVal = Number(row.tax_pct) || 0
+    const gstRs = Number(row.tax_amount) || (afterDisc * taxPctVal) / 100
+    const afterGst = afterDisc + gstRs
+    const discAfterGstPct = Number(row.disc_after_gst_pct) || 0
+    const discAfterGstRs =
+      Number(row.disc_after_gst_rs) || (afterGst * discAfterGstPct) / 100
+    const furtherBase = Math.max(0, afterGst - discAfterGstRs)
+    const furtherPct = Number(row.further_tax_pct) || 0
+    const furtherRs =
+      Number(row.further_tax_amount) || (furtherBase * furtherPct) / 100
+    const advancePct = Number(row.advance_tax_pct) || 0
+    const advanceRs =
+      Number(row.advance_tax_amount) || (furtherBase * advancePct) / 100
+    const mrpVal = Number(row.mrp) || 0
+    const mrpInGst = taxPctVal > 0 ? mrpVal * (1 + taxPctVal / 100) : mrpVal
+    const salePrice = Number(row.sale_price ?? row.mrp) || 0
+    const costPerUnit = qty > 0 ? lineAmount / qty : unitCost
+    const marginRs = salePrice - costPerUnit
+    const marginPct = salePrice > 0 ? (marginRs / salePrice) * 100 : 0
+
+    const editableInput = (
+      value: string,
+      onChange: (value: string) => void,
+      opts?: { type?: string; placeholder?: string },
+    ) =>
+      ctx.readOnly ? (
+        value
+      ) : (
+        <input
+          type={opts?.type ?? 'text'}
+          value={value}
+          placeholder={opts?.placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+        />
+      )
+
+    switch (col.key) {
+      case 'line_no':
+        return <td className={cls} style={widthStyle}>{(ctx.rowIndex ?? 0) + 1}</td>
+      case 'item_code':
+        return <td className={cls} style={widthStyle}>{row.item_code || '—'}</td>
+      case 'product':
+        return <td className={cls} style={widthStyle}>{row.product_label}</td>
+      case 'quantity':
+      case 'qty':
+        return (
+          <td className={cls} style={widthStyle}>
+            {editableInput(row.quantity, (value) => patchLine(row.key, { quantity: value }))}
+          </td>
+        )
+      case 'uom':
+        return <td className={cls} style={widthStyle}>{row.unit_label}</td>
+      case 'mrp_ex_gst':
+        return (
+          <td className={cls} style={widthStyle}>
+            {editableInput(row.mrp, (value) => patchLine(row.key, { mrp: value }))}
+          </td>
+        )
+      case 'mrp_in_gst':
+        return <td className={cls} style={widthStyle}>{money(mrpInGst)}</td>
+      case 'trade_price':
+        return (
+          <td className={cls} style={widthStyle}>
+            {editableInput(row.unit_cost, (value) => patchLine(row.key, { unit_cost: value }))}
+          </td>
+        )
+      case 'regular_disc':
+        return renderDualCell(
+          'regular_disc',
+          cls,
+          widthStyle,
+          row,
+          ctx.readOnly,
+          gross,
+          row.regular_disc_pct || '0',
+          money(regularDiscRs),
+          (pct, rs) => {
+            const special = Number(row.special_disc_rs) || specialDiscRs
+            patchLine(row.key, {
+              regular_disc_pct: pct,
+              regular_disc_rs: rs,
+              discount_amount: syncDiscountAmount(row, Number(rs) || 0, special),
+            })
+          },
+          (rs, pct) => {
+            const special = Number(row.special_disc_rs) || specialDiscRs
+            patchLine(row.key, {
+              regular_disc_pct: pct,
+              regular_disc_rs: rs,
+              discount_amount: syncDiscountAmount(row, Number(rs) || 0, special),
+            })
+          },
+        )
+      case 'special_disc':
+        return renderDualCell(
+          'special_disc',
+          cls,
+          widthStyle,
+          row,
+          ctx.readOnly,
+          gross,
+          row.special_disc_pct || '0',
+          money(specialDiscRs),
+          (pct, rs) => {
+            const regular = Number(row.regular_disc_rs) || regularDiscRs
+            patchLine(row.key, {
+              special_disc_pct: pct,
+              special_disc_rs: rs,
+              discount_amount: syncDiscountAmount(row, regular, Number(rs) || 0),
+            })
+          },
+          (rs, pct) => {
+            const regular = Number(row.regular_disc_rs) || regularDiscRs
+            patchLine(row.key, {
+              special_disc_pct: pct,
+              special_disc_rs: rs,
+              discount_amount: syncDiscountAmount(row, regular, Number(rs) || 0),
+            })
+          },
+        )
+      case 'gst':
+        return renderDualCell(
+          'gst',
+          cls,
+          widthStyle,
+          row,
+          ctx.readOnly,
+          afterDisc,
+          row.tax_pct || '0',
+          money(gstRs),
+          (pct, rs) => patchLine(row.key, { tax_pct: pct, tax_amount: rs }),
+          (rs, pct) => patchLine(row.key, { tax_pct: pct, tax_amount: rs }),
+        )
+      case 'disc_after_gst':
+        return renderDualCell(
+          'disc_after_gst',
+          cls,
+          widthStyle,
+          row,
+          ctx.readOnly,
+          afterGst,
+          row.disc_after_gst_pct || '0',
+          money(discAfterGstRs),
+          (pct, rs) => patchLine(row.key, { disc_after_gst_pct: pct, disc_after_gst_rs: rs }),
+          (rs, pct) => patchLine(row.key, { disc_after_gst_pct: pct, disc_after_gst_rs: rs }),
+        )
+      case 'further_tax':
+        return renderDualCell(
+          'further_tax',
+          cls,
+          widthStyle,
+          row,
+          ctx.readOnly,
+          furtherBase,
+          row.further_tax_pct || '0',
+          money(furtherRs),
+          (pct, rs) => patchLine(row.key, { further_tax_pct: pct, further_tax_amount: rs }),
+          (rs, pct) => patchLine(row.key, { further_tax_pct: pct, further_tax_amount: rs }),
+        )
+      case 'advance_tax':
+        return renderDualCell(
+          'advance_tax',
+          cls,
+          widthStyle,
+          row,
+          ctx.readOnly,
+          furtherBase,
+          row.advance_tax_pct || '0',
+          money(advanceRs),
+          (pct, rs) => patchLine(row.key, { advance_tax_pct: pct, advance_tax_amount: rs }),
+          (rs, pct) => patchLine(row.key, { advance_tax_pct: pct, advance_tax_amount: rs }),
+        )
+      case 'cost_price':
+        return <td className={cls} style={widthStyle}>{money(costPerUnit)}</td>
+      case 'sale_price':
+        return (
+          <td className={cls} style={widthStyle}>
+            {editableInput(row.sale_price ?? row.mrp, (value) =>
+              patchLine(row.key, { sale_price: value, mrp: value }),
+            )}
+          </td>
+        )
+      case 'margin':
+        return (
+          <td className={cls} style={widthStyle}>
+            <div className="pie-dual-inputs is-readonly">
+              <span>{marginPct.toFixed(1)}%</span>
+              <span>{money(marginRs)}</span>
+            </div>
+          </td>
+        )
+      case 'total_amount':
+        return <td className={cls} style={widthStyle}>{money(lineAmount)}</td>
+      case 'batch':
+        return (
+          <td className={cls} style={widthStyle}>
+            {editableInput(row.batch_number, (value) => patchLine(row.key, { batch_number: value }), {
+              placeholder: row.track_batch ? 'Req' : '',
+            })}
+          </td>
+        )
+      case 'expiry':
+        return (
+          <td className={cls} style={widthStyle}>
+            {editableInput(row.expiry_date, (value) => patchLine(row.key, { expiry_date: value }), {
+              type: 'date',
+            })}
+          </td>
+        )
+      case 'delete':
+        return (
+          <td className={cls} style={widthStyle}>
+            {ctx.readOnly || !ctx.canEdit ? null : (
+              <button
+                type="button"
+                title="Remove"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  ctx.onRemove?.()
+                }}
+              >
+                <XCircle size={16} />
+              </button>
+            )}
+          </td>
+        )
+      default:
+        return <td className={cls} style={widthStyle} />
+    }
   }
 
   function applyInvoice(invoice: PurchaseInvoice) {
@@ -239,7 +732,24 @@ export function PurchasesPage() {
     setSubtotal(invoice.subtotal)
     setDiscountAmount(invoice.discount_amount)
     setTaxAmount(invoice.tax_amount)
+    setFurtherTaxAmount(invoice.further_tax_amount ?? '0.0000')
     setGrandTotal(invoice.grand_total)
+    setShellPoNo(invoice.po_number ?? '')
+    setShellInvoiceType(invoice.invoice_type ?? 'tax_gst')
+    setShellCurrency(invoice.currency_code ?? 'PKR')
+    setCalcMethod(normalizeCalcMethod(invoice.calculation_method))
+    setShellDefaultSalesTax(invoice.default_sales_tax_pct ?? '18')
+    setShellDefaultFurtherTax(invoice.default_further_tax_pct ?? '0')
+    setShellDefaultAdvanceTax(invoice.default_advance_tax_pct ?? '0')
+    setShellPriceType(invoice.default_price_type ?? 'trade')
+    setShellBrand(invoice.brand_label ?? '')
+    setShellLoading(invoice.loading_amount ?? '0.0000')
+    setShellOtherDiscount(invoice.other_discount ?? '0.0000')
+    setShellTradeOffer(invoice.trade_offer ?? '0.0000')
+    setShellAdvanceTax(invoice.advance_tax_amount ?? '0.0000')
+    setShellRoundOff(invoice.round_off ?? '0.0000')
+    setShellTaxType(invoice.tax_type ?? 'standard')
+    setShellPaymentTerms(invoice.payment_terms ?? 'credit')
     setLines((invoice.lines ?? []).map(lineFromServer))
   }
 
@@ -258,10 +768,34 @@ export function PurchasesPage() {
     setSubtotal('0.0000')
     setDiscountAmount('0.0000')
     setTaxAmount('0.0000')
+    setFurtherTaxAmount('0.0000')
     setGrandTotal('0.0000')
     setLines([])
     setProductQuery('')
     setError(null)
+    setSelectedLineKey(null)
+    setCalcMethod('trade_before_disc')
+    setShellPriceType('trade')
+    setShellTaxType('standard')
+    setShellPaymentTerms('credit')
+    setShellPoNo('')
+    setShellInvoiceType('tax_gst')
+    setShellCurrency('PKR')
+    setShellBrand('')
+    setShellLoading('0.0000')
+    setShellOtherDiscount('0.0000')
+    setShellTradeOffer('0.0000')
+    setShellAdvanceTax('0.0000')
+    setShellRoundOff('0.0000')
+    setShellDefaultSalesTax('18')
+    setShellDefaultFurtherTax('0')
+    setShellDefaultAdvanceTax('0')
+    setDiscountApplyOn('trade')
+    setDiscInputType('pct')
+    setAutoCalcMrp(true)
+    setWithholdingIsPct(false)
+    setAdvancePaid('0.0000')
+    setDualModes({ ...DEFAULT_DUAL_MODES })
   }
 
   async function openInvoice(ulid: string) {
@@ -297,9 +831,25 @@ export function PurchasesPage() {
         invoice_date: invoiceDate,
         due_date: dueDate || null,
         supplier_invoice_number: supplierInvoiceNumber || null,
+        po_number: shellPoNo || null,
+        invoice_type: shellInvoiceType,
+        currency_code: shellCurrency,
+        calculation_method: calcMethod,
+        default_sales_tax_pct: shellDefaultSalesTax || '0',
+        default_further_tax_pct: shellDefaultFurtherTax || '0',
+        default_advance_tax_pct: shellDefaultAdvanceTax || '0',
+        default_price_type: shellPriceType,
+        brand_label: shellBrand || null,
         freight_amount: freightAmount || '0',
+        loading_amount: shellLoading || '0',
         other_charges: otherCharges || '0',
+        other_discount: shellOtherDiscount || '0',
+        trade_offer: shellTradeOffer || '0',
+        advance_tax_amount: shellAdvanceTax || '0',
+        round_off: shellRoundOff || '0',
         notes: notes || null,
+        tax_type: shellTaxType,
+        payment_terms: shellPaymentTerms,
       }
 
       let invoice = invoiceUlid
@@ -319,6 +869,19 @@ export function PurchasesPage() {
           supplier_product_code: line.supplier_product_code || null,
           batch_number: line.batch_number || null,
           expiry_date: line.expiry_date || null,
+          notes: line.notes || null,
+          brand_label: line.brand_label || null,
+          hs_code: line.hs_code || null,
+          pack_size: line.pack_size || null,
+          qty_ctn: line.qty_ctn || '0',
+          free_pcs: line.free_pcs || '0',
+          price_type: line.price_type || 'trade',
+          mrp: line.mrp || '0',
+          trade_disc_pct: line.trade_disc_pct || '0',
+          regular_disc_pct: line.regular_disc_pct || '0',
+          special_disc_pct: line.special_disc_pct || '0',
+          tax_pct: line.tax_pct || '0',
+          further_tax_pct: line.further_tax_pct || '0',
         }
         if (line.ulid) {
           await updatePurchaseLine(invoice.ulid, line.ulid, payload)
@@ -334,6 +897,7 @@ export function PurchasesPage() {
       applyInvoice(invoice)
       setError(null)
       void queryClient.invalidateQueries({ queryKey: ['purchases'] })
+      void queryClient.invalidateQueries({ queryKey: ['purchase-line-stock'] })
     },
   })
 
@@ -352,6 +916,7 @@ export function PurchasesPage() {
       applyInvoice(invoice)
       setError(null)
       void queryClient.invalidateQueries({ queryKey: ['purchases'] })
+      void queryClient.invalidateQueries({ queryKey: ['purchase-line-stock'] })
     },
   })
 
@@ -368,7 +933,7 @@ export function PurchasesPage() {
 
   async function onPost() {
     if (!canPost || readOnly) return
-    if (!window.confirm('Post this purchase? Stock will be updated and the document becomes immutable.')) return
+    if (!(await askConfirm('Post this purchase? Stock will be updated and the document becomes immutable.'))) return
     setError(null)
     try {
       await postMutation.mutateAsync()
@@ -383,12 +948,18 @@ export function PurchasesPage() {
       setError('Selected product has no base unit.')
       return
     }
+    const key = `new-${Date.now()}-${lines.length}`
     setLines((prev) => [
       ...prev,
       {
-        key: `new-${Date.now()}-${prev.length}`,
+        key,
         product_ulid: product.ulid,
         product_label: `${product.product_number} · ${product.name}`,
+        ...emptyShellFields(),
+        item_code: product.product_number,
+        brand_label: product.brand?.name ?? '',
+        tax_pct: product.tax_percent || '0',
+        supplier_product_code: product.supplier_product_code ?? '',
         unit_ulid: unit.unit_ulid,
         unit_label: unit.unit_label,
         quantity: '1.000000',
@@ -396,13 +967,23 @@ export function PurchasesPage() {
         unit_cost: '0.0000',
         discount_amount: '0.0000',
         tax_amount: '0.0000',
-        supplier_product_code: '',
         batch_number: '',
         expiry_date: '',
+        notes: '',
+        location_label: product.rack_location ?? '',
         track_batch: product.track_batch,
         track_expiry: product.track_expiry,
+        further_tax_amount: '0.0000',
+        disc_after_gst_pct: '0',
+        disc_after_gst_rs: '0',
+        advance_tax_pct: '0',
+        advance_tax_amount: '0',
+        regular_disc_rs: '0.0000',
+        special_disc_rs: '0.0000',
+        sale_price: '0.0000',
       },
     ])
+    setSelectedLineKey(key)
     setProductQuery('')
   }
 
@@ -550,593 +1131,548 @@ export function PurchasesPage() {
   }
 
   const editable = !readOnly && (invoiceUlid ? canEdit : canCreate)
-  const previewDiscountPercent = previewSubtotal > 0
-    ? ((Number(discountAmount || 0) / previewSubtotal) * 100).toFixed(2)
-    : '0.00'
+  const selectedLine = lines.find((line) => line.key === selectedLineKey) ?? null
+  const displaySubtotal = money(subtotal || previewSubtotal)
+  const displayGrand = money(grandTotal || previewSubtotal)
+  const balancePayable = money(Math.max(0, (Number(displayGrand) || 0) - (Number(advancePaid) || 0)))
+
+  async function removeSelectedLine() {
+    if (!selectedLine) return
+    await removeLine(selectedLine)
+    setSelectedLineKey(null)
+  }
 
   return (
-    <div className="purchase-reference-screen">
-      <div className="purchase-reference-subtabs">
-        <button type="button" className="purchase-reference-subtab is-active">
-          <span className="purchase-reference-tab-icon is-cyan"><Table2 /></span>
-          <span>Purchase Invoice</span>
-        </button>
-        <button type="button" className="purchase-reference-subtab" onClick={backToList}>
-          <span className="purchase-reference-tab-icon is-blue"><Binoculars /></span>
-          <span>Search</span>
-        </button>
-        <button type="button" className="purchase-reference-subtab" disabled>
-          <span className="purchase-reference-tab-icon is-multi"><LayoutGrid /></span>
-          <span>(0,Due:0) Pending Purchases</span>
-        </button>
-        <button type="button" className="purchase-reference-subtab" disabled>
-          <span className="purchase-reference-tab-icon is-orange"><Receipt /></span>
-          <span>Other Expenses</span>
-        </button>
-        <button type="button" className="purchase-reference-subtab" disabled>
-          <span className="purchase-reference-tab-icon is-green"><Package /></span>
-          <span>Product Wise</span>
-        </button>
-        <div className="purchase-reference-title">Purchase Invoice</div>
-      </div>
+    <div className="purchase-reference-screen purchase-entry-screen pie-fit-screen">
+      {error ? <div className="pie-error">{error}</div> : null}
 
-      <div className="purchase-reference-top">
-        <fieldset className="purchase-reference-options">
-          <legend>Purchase Invoice Options</legend>
-
-          <div className="purchase-reference-option-line">
-            <label>Inv#:</label>
-            <input className="purchase-reference-inv" value={documentNumber || 'Auto'} disabled />
-            <label>Date:</label>
-            <input
-              className="purchase-reference-date"
-              type="date"
-              value={invoiceDate}
-              disabled={!editable}
-              onChange={(e) => setInvoiceDate(e.target.value)}
-            />
-            <select className="purchase-reference-credit" value="credit" disabled>
-              <option value="credit">CREDIT</option>
-            </select>
-            <label>Inv #:</label>
-            <input
-              className="purchase-reference-supplier-inv"
-              value={supplierInvoiceNumber}
-              disabled={!editable}
-              onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
-            />
-          </div>
-
-          <div className="purchase-reference-from-line">
-            <label>From:</label>
-            <select
-              value={supplierUlid}
-              disabled={!editable}
-              onChange={(e) => setSupplierUlid(e.target.value)}
-            >
-              <option value="">Select supplier...</option>
-              {suppliers.map((supplier) => (
-                <option key={supplier.ulid} value={supplier.ulid}>
-                  {supplier.code} — {supplier.name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              className="purchase-reference-mini is-arrow"
-              disabled
-              title="Use Supplier master"
-            >
-              <ChevronDown size={13} />
-            </button>
-            <button
-              type="button"
-              className="purchase-reference-mini is-plus"
-              disabled
-              title="Use Supplier master"
-            >
-              <Plus size={13} />
-            </button>
-          </div>
-
-          <div className="purchase-reference-rem-line">
-            <label>Rem:</label>
-            <textarea
-              value={notes}
-              disabled={!editable}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-            />
-            <div className="purchase-reference-order">
-              <label>Order No:</label>
-              <input disabled />
-            </div>
-          </div>
-
-          <div className="purchase-reference-warehouse-line">
-            <label>Warehouse:</label>
-            <select
-              value={warehouseUlid}
-              disabled={!editable}
-              onChange={(e) => setWarehouseUlid(e.target.value)}
-            >
-              <option value="">Select warehouse...</option>
-              {warehouses.map((warehouse) => (
-                <option key={warehouse.ulid} value={warehouse.ulid}>
-                  {warehouse.code} — {warehouse.name}
-                </option>
-              ))}
-            </select>
-            <label>Due:</label>
-            <input
-              type="date"
-              value={dueDate}
-              disabled={!editable}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-            {status !== 'draft' ? (
-              <span className="purchase-reference-status">Status: {status.toUpperCase()}</span>
-            ) : null}
-          </div>
-        </fieldset>
-
-        <div className="purchase-reference-center">
-          <div className="purchase-reference-checks">
-            <label><input type="checkbox" disabled /> Payment Due</label>
-            <label><input type="checkbox" disabled /> On Hold</label>
-          </div>
-
-          <div className="purchase-reference-center-panels">
-            <div className="purchase-reference-balance">
-              <div className="purchase-reference-balance-head">
-                <button type="button" disabled>
-                  <RefreshCw size={12} />
-                  <span>Refresh</span>
-                </button>
+      <section className="pie-info-row">
+        <div className="pie-panel pie-panel-invoice">
+          <div className="pie-panel-head">Supplier / Invoice Information</div>
+          <div className="pie-field-grid">
+            <label className="pie-field pie-field-span-2">
+              <span>Supplier</span>
+              <div className="pie-field-row">
+                <select
+                  value={supplierUlid}
+                  disabled={!editable}
+                  onChange={(e) => setSupplierUlid(e.target.value)}
+                >
+                  <option value="">Select supplier...</option>
+                  {suppliers.map((supplier) => (
+                    <option key={supplier.ulid} value={supplier.ulid}>
+                      {supplier.code} — {supplier.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="pie-supplier-actions">
+                  <button type="button" className="pie-btn is-ghost" disabled title="Open supplier master">
+                    + New
+                  </button>
+                </div>
               </div>
-              <div className="purchase-reference-balance-row is-prev">
-                <span>Previous</span><strong>0</strong>
-              </div>
-              <div className="purchase-reference-balance-row is-this">
-                <span>This Bill</span><strong>{money(grandTotal || previewSubtotal)}</strong>
-              </div>
-              <div className="purchase-reference-balance-row is-total">
-                <span>Total Balance</span><strong>{money(grandTotal || previewSubtotal)}</strong>
-              </div>
-            </div>
+            </label>
+            <label className="pie-field">
+              <span>Document #</span>
+              <input value={documentNumber || 'Auto'} disabled />
+            </label>
+            <label className="pie-field">
+              <span>Supplier Inv #</span>
+              <input
+                value={supplierInvoiceNumber}
+                disabled={!editable}
+                onChange={(e) => setSupplierInvoiceNumber(e.target.value)}
+              />
+            </label>
+            <label className="pie-field">
+              <span>Invoice Date</span>
+              <input
+                type="date"
+                value={invoiceDate}
+                disabled={!editable}
+                onChange={(e) => setInvoiceDate(e.target.value)}
+              />
+            </label>
+            <label className="pie-field">
+              <span>Warehouse</span>
+              <select
+                value={warehouseUlid}
+                disabled={!editable}
+                onChange={(e) => setWarehouseUlid(e.target.value)}
+              >
+                <option value="">Select warehouse...</option>
+                {warehouses.map((warehouse) => (
+                  <option key={warehouse.ulid} value={warehouse.ulid}>
+                    {warehouse.code} — {warehouse.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="pie-field">
+              <span>Invoice Type</span>
+              <select
+                value={shellInvoiceType}
+                disabled={!editable}
+                onChange={(e) => setShellInvoiceType(e.target.value)}
+              >
+                <option value="tax_gst">Tax Invoice (GST)</option>
+                <option value="commercial">Commercial Invoice</option>
+                <option value="proforma">Proforma</option>
+              </select>
+            </label>
+            <label className="pie-field">
+              <span>Currency</span>
+              <select
+                value={shellCurrency}
+                disabled={!editable}
+                onChange={(e) => setShellCurrency(e.target.value)}
+              >
+                <option value="PKR">PKR</option>
+                <option value="USD">USD</option>
+                <option value="AED">AED</option>
+              </select>
+            </label>
+          </div>
+        </div>
 
-            <div className="purchase-reference-discount">
-              <div><span>Disc.(C)</span><strong>{money(discountAmount)}</strong></div>
-              <div><span>Disc.(%)</span><strong>{previewDiscountPercent}</strong></div>
-              <div><span>Sales Tax (%)</span><strong>0</strong></div>
+        <div className="pie-panel pie-panel-gst">
+          <div className="pie-panel-head">GST Apply On (This Bill)</div>
+          <div className="pie-radio-grid">
+            {[
+              ['mrp_incl_gst', 'MRP (Incl. GST)'],
+              ['mrp_ex_gst', 'MRP (Without GST)'],
+              ['trade_before_disc', 'Trade Price (Before Disc.)'],
+              ['trade_after_disc', 'Trade Price (After Disc.)'],
+              ['manual', 'Manual (As per Bill)'],
+            ].map(([value, label]) => (
+              <label key={value}>
+                <input
+                  type="radio"
+                  name="pie-calc-method"
+                  checked={calcMethod === value}
+                  disabled={!editable}
+                  onChange={() => setCalcMethod(value)}
+                />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+          <div className="pie-option-block pie-discount-apply">
+            <strong>Discount Apply On</strong>
+            <div className="pie-discount-apply-row">
+              <div className="pie-radio-row">
+                {[
+                  ['mrp_ex_gst', 'MRP w/o GST'],
+                  ['mrp_incl_gst', 'MRP Incl. GST'],
+                  ['trade', 'Trade price'],
+                ].map(([value, label]) => (
+                  <label key={value}>
+                    <input
+                      type="radio"
+                      name="pie-discount-apply"
+                      checked={discountApplyOn === value}
+                      disabled={!editable}
+                      onChange={() => setDiscountApplyOn(value)}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+              <label className="pie-inline-check pie-inline-check-inline">
+                <input
+                  type="checkbox"
+                  checked={autoCalcMrp}
+                  disabled={!editable}
+                  onChange={(e) => setAutoCalcMrp(e.target.checked)}
+                />
+                <span>Auto calculate MRP &amp; MRP without GST</span>
+              </label>
             </div>
           </div>
         </div>
 
-        <fieldset className="purchase-reference-amount">
-          <legend>
-            <span>Amount Options</span>
-            <span className="purchase-reference-amount-tools">
-              <button type="button" disabled>
-                <Plus size={12} />
-                <span>Add</span>
-              </button>
-              <button type="button" disabled title="Get">
-                <Package size={12} />
-                <span>Get</span>
-              </button>
-              <button type="button" disabled>
-                <Receipt size={12} />
-                <span>Import</span>
-              </button>
-            </span>
-          </legend>
-
-          <div className="purchase-reference-amount-grid">
-            <label>Amount(Rs):</label>
-            <strong className="is-cyan">{money(subtotal || previewSubtotal)}</strong>
-            <label className="is-red">Disc.:</label>
-            <strong className="is-disc-value">{money(discountAmount)}</strong>
-            <em className="is-disc-percent">{previewDiscountPercent}%</em>
-
-            <label>Others:</label>
-            <input
-              className="is-green"
-              value={otherCharges}
-              disabled={!editable}
-              onChange={(e) => setOtherCharges(e.target.value)}
-            />
-            <label className="is-red">Tax:</label>
-            <strong>{money(taxAmount)}</strong>
-            <input className="is-tax-extra" value="0" disabled />
-
-            <label>Freight:</label>
-            <input
-              className="is-green-soft"
-              value={freightAmount}
-              disabled={!editable}
-              onChange={(e) => setFreightAmount(e.target.value)}
-            />
-            <span /><span /><span />
-
-            <label className="is-net-label">Net Payable:</label>
-            <strong className="is-yellow">{money(grandTotal || previewSubtotal)}</strong>
+        <div className="pie-panel pie-panel-charges">
+          <div className="pie-panel-head">Discount Type &amp; Other Charges</div>
+          <div className=" pie-disc-input-row">
+            <strong>Discount input</strong>
+            <div className="pie-chips pie-chips-inline">
+              <label>
+                <input
+                  type="radio"
+                  name="pie-disc-input"
+                  checked={discInputType === 'pct'}
+                  disabled={!editable}
+                  onChange={() => {
+                    setDiscInputType('pct')
+                    setDualModes((prev) => ({
+                      ...prev,
+                      regular_disc: 'pct',
+                      special_disc: 'pct',
+                      disc_after_gst: 'pct',
+                    }))
+                  }}
+                />
+                Percentage (%)
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="pie-disc-input"
+                  checked={discInputType === 'rs'}
+                  disabled={!editable}
+                  onChange={() => {
+                    setDiscInputType('rs')
+                    setDualModes((prev) => ({
+                      ...prev,
+                      regular_disc: 'rs',
+                      special_disc: 'rs',
+                      disc_after_gst: 'rs',
+                    }))
+                  }}
+                />
+                Amount (Rs.)
+              </label>
+            </div>
           </div>
-        </fieldset>
-      </div>
+          <div className="pie-charge-pairs">
+            <label>
+              <span>Freight (+)</span>
+              <input value={freightAmount} disabled={!editable} onChange={(e) => setFreightAmount(e.target.value)} />
+            </label>
+            <label>
+              <span>Loading (+)</span>
+              <input value={shellLoading} disabled={!editable} onChange={(e) => setShellLoading(e.target.value)} />
+            </label>
+            <label>
+              <span>Other Chg (+)</span>
+              <input value={otherCharges} disabled={!editable} onChange={(e) => setOtherCharges(e.target.value)} />
+            </label>
+            <label>
+              <span>Other Disc (−)</span>
+              <input value={shellOtherDiscount} disabled={!editable} onChange={(e) => setShellOtherDiscount(e.target.value)} />
+            </label>
+          </div>
+          <div className="pie-charge-triple">
+            <label>
+              <span>Trade Offer (−)</span>
+              <input value={shellTradeOffer} disabled={!editable} onChange={(e) => setShellTradeOffer(e.target.value)} />
+            </label>
+            <label>
+              <span className="pie-charge-with-check">
+                Withholding
+                <span>
+                  <input
+                    type="checkbox"
+                    checked={withholdingIsPct}
+                    disabled={!editable}
+                    onChange={(e) => setWithholdingIsPct(e.target.checked)}
+                  />
+                  %
+                </span>
+              </span>
+              <input
+                value={shellAdvanceTax}
+                disabled={!editable}
+                onChange={(e) => setShellAdvanceTax(e.target.value)}
+                title={withholdingIsPct ? 'Withholding %' : 'Withholding amount'}
+              />
+            </label>
+            <label>
+              <span>Round Off</span>
+              <input value={shellRoundOff} disabled={!editable} onChange={(e) => setShellRoundOff(e.target.value)} />
+            </label>
+          </div>
+        </div>
+      </section>
 
-      {!readOnly ? (
-        <div className="purchase-f1-row">
-          <div className="purchase-f1-search">
+      <section className="pie-items">
+        <div className="pie-items-toolbar">
+          <strong className="pie-items-title">Item Details</strong>
+          <button
+            type="button"
+            className="pie-btn is-new"
+            disabled={!editable || !productQuery.trim()}
+            onClick={() => {
+              const first = productLookup.data?.data?.[0]
+              if (first) addProduct(first)
+            }}
+            title="Add first match from search"
+          >
+            <Plus /> Add Item
+          </button>
+          <button
+            type="button"
+            className="pie-btn is-danger-ghost"
+            disabled={!editable || !selectedLine}
+            onClick={() => void removeSelectedLine()}
+          >
+            <Trash2 /> Delete
+          </button>
+          <div className="pie-search">
+            <span className="pie-search-icon"><Search /></span>
             <input
               value={productQuery}
+              disabled={!editable}
               onChange={(e) => setProductQuery(e.target.value)}
-              placeholder="Search product # / SKU / name / barcode..."
-              aria-label="Product lookup"
+              placeholder="Search item / SKU / barcode..."
+              aria-label="Search item"
             />
             {productLookup.data?.data?.length ? (
-              <div className="purchase-reference-results">
+              <div className="pie-lookup">
                 {productLookup.data.data.map((product) => (
                   <button key={product.ulid} type="button" onClick={() => addProduct(product)}>
-                    {product.product_number} · {product.name}{product.sku ? ` · ${product.sku}` : ''}
+                    {product.product_number} · {product.name}
+                    {product.sku ? ` · ${product.sku}` : ''}
                   </button>
                 ))}
               </div>
             ) : null}
           </div>
-          <div className="purchase-f1-label">F1 to Add New</div>
-          <div className="purchase-f1-spacer" />
-          <button type="button" className="purchase-f1-chk" disabled>
-            <Check size={12} />
-            <span>Chk</span>
-          </button>
-        </div>
-      ) : (
-        <div className="purchase-reference-posted-strip">
-          Status: {status.toUpperCase()}
-        </div>
-      )}
-
-      {error ? <div className="purchase-reference-error">{error}</div> : null}
-
-      <div className="purchase-reference-grid-wrap">
-        <table className="purchase-reference-grid">
-          <thead>
-            <tr>
-              <th className="col-sel" />
-              <th className="col-product">ITEM / PRODUCT DESCRIPTION</th>
-              <th className="col-stock">In Stock</th>
-              <th className="col-qty">Quantity</th>
-              <th className="col-price">Price (C)</th>
-              <th className="col-disc">Disc-Rs</th>
-              <th className="col-desc">DESC.</th>
-              <th className="col-disc2">Disc</th>
-              <th className="col-disrs">Dis-Rs</th>
-              <th className="col-dispct">Dis %</th>
-              <th className="col-tax">Tax</th>
-              <th className="col-taxamt">Tax Amt</th>
-              <th className="col-at">A.T</th>
-              <th className="col-atamt">AT Amt</th>
-              <th className="col-amt">AMT</th>
-              <th className="col-batch">Batch</th>
-              <th className="col-expiry">Expiry</th>
-              <th className="col-amount">Amount</th>
-              <th className="col-margin">Margin</th>
-              <th className="col-sale">Sale Rate (N)</th>
-              {customGridFields.map((field) => (
-                <th key={field} className="col-custom">{field}</th>
-              ))}
-              <th className="col-p">P</th>
-              <th className="col-del">
-                <button
-                  type="button"
-                  className={`purchase-reference-customize-trigger${customizationOpen ? ' is-open' : ''}`}
-                  title="Customize columns"
-                  aria-label="Customize columns"
-                  aria-expanded={customizationOpen}
-                  onClick={() => setCustomizationOpen((open) => !open)}
-                >
-                  −
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {lines.length === 0 ? (
-              <tr className="is-empty">
-                <td>*</td>
-                <td><span className="purchase-reference-empty-dots">....</span></td>
-                <td /><td className="cell-yellow" /><td className="cell-yellow" />
-                <td /><td /><td /><td /><td className="cell-yellow" />
-                <td className="cell-yellow" /><td /><td /><td />
-                <td className="cell-yellow" /><td /><td /><td />
-                <td className="cell-cyan" /><td className="cell-cyan" />
-                {customGridFields.map((field) => <td key={field} className="col-custom" />)}
-                <td className="is-center col-p">
-                  <span className="purchase-reference-p-icon is-placeholder" aria-hidden>
-                    <Package size={14} />
-                  </span>
-                </td>
-                <td className="is-center col-del">
-                  <button type="button" className="is-placeholder" disabled aria-label="Remove">
-                    <XCircle size={16} />
-                  </button>
-                </td>
-              </tr>
-            ) : lines.map((row) => {
-              const qty = Number(row.quantity) || 0
-              const factor = Number(row.conversion_factor) || 0
-              const lineAmount = Number(
-                row.line_total ??
-                  (qty * (Number(row.unit_cost) || 0) -
-                    (Number(row.discount_amount) || 0) +
-                    (Number(row.tax_amount) || 0)),
-              ) || 0
-              const baseQty = row.base_quantity ?? (qty * factor).toFixed(6)
-              const discountPercent =
-                qty > 0 && Number(row.unit_cost) > 0
-                  ? ((Number(row.discount_amount || 0) / (qty * Number(row.unit_cost))) * 100).toFixed(2)
-                  : '0.00'
-
-              return (
-                <tr key={row.key}>
-                  <td className="col-sel">*</td>
-                  <td className="col-product">{row.product_label}</td>
-                  <td className="is-num">—</td>
-                  <td className="is-num cell-yellow">
-                    {readOnly ? (
-                      row.quantity
-                    ) : (
-                      <input
-                        value={row.quantity}
-                        onChange={(e) =>
-                          setLines((prev) =>
-                            prev.map((line) =>
-                              line.key === row.key ? { ...line, quantity: e.target.value } : line,
-                            ),
-                          )
-                        }
-                      />
-                    )}
-                  </td>
-                  <td className="is-num cell-yellow">
-                    {readOnly ? (
-                      money(row.unit_cost)
-                    ) : (
-                      <input
-                        value={row.unit_cost}
-                        onChange={(e) =>
-                          setLines((prev) =>
-                            prev.map((line) =>
-                              line.key === row.key ? { ...line, unit_cost: e.target.value } : line,
-                            ),
-                          )
-                        }
-                      />
-                    )}
-                  </td>
-                  <td className="is-num">
-                    {readOnly ? (
-                      money(row.discount_amount)
-                    ) : (
-                      <input
-                        value={row.discount_amount}
-                        onChange={(e) =>
-                          setLines((prev) =>
-                            prev.map((line) =>
-                              line.key === row.key
-                                ? { ...line, discount_amount: e.target.value }
-                                : line,
-                            ),
-                          )
-                        }
-                      />
-                    )}
-                  </td>
-                  <td className="is-center">{row.unit_label}</td>
-                  <td className="is-num" />
-                  <td className="is-num" />
-                  <td className="is-num cell-yellow">{discountPercent}</td>
-                  <td className="is-num cell-yellow">0</td>
-                  <td className="is-num">
-                    {readOnly ? (
-                      money(row.tax_amount)
-                    ) : (
-                      <input
-                        value={row.tax_amount}
-                        onChange={(e) =>
-                          setLines((prev) =>
-                            prev.map((line) =>
-                              line.key === row.key ? { ...line, tax_amount: e.target.value } : line,
-                            ),
-                          )
-                        }
-                      />
-                    )}
-                  </td>
-                  <td className="is-num">{row.conversion_factor}</td>
-                  <td className="is-num">{baseQty}</td>
-                  <td className="is-num cell-yellow">{money(lineAmount)}</td>
-                  <td>
-                    {readOnly ? (
-                      row.batch_number || ''
-                    ) : (
-                      <input
-                        value={row.batch_number}
-                        placeholder={row.track_batch ? 'Req' : ''}
-                        onChange={(e) =>
-                          setLines((prev) =>
-                            prev.map((line) =>
-                              line.key === row.key
-                                ? { ...line, batch_number: e.target.value }
-                                : line,
-                            ),
-                          )
-                        }
-                      />
-                    )}
-                  </td>
-                  <td>
-                    {readOnly ? (
-                      row.expiry_date || ''
-                    ) : (
-                      <input
-                        type="date"
-                        value={row.expiry_date}
-                        onChange={(e) =>
-                          setLines((prev) =>
-                            prev.map((line) =>
-                              line.key === row.key
-                                ? { ...line, expiry_date: e.target.value }
-                                : line,
-                            ),
-                          )
-                        }
-                      />
-                    )}
-                  </td>
-                  <td className="is-num">{money(lineAmount)}</td>
-                  <td className="cell-cyan" />
-                  <td className="cell-cyan" />
-                  {customGridFields.map((field) => (
-                    <td key={field} className="col-custom">
-                      {customGridValue(field)}
-                    </td>
-                  ))}
-                  <td className="is-center col-p">
-                    <span className="purchase-reference-p-icon" title="P" aria-hidden>
-                      <Package size={14} />
-                    </span>
-                  </td>
-                  <td className="is-center col-del">
-                    {readOnly || !canEdit ? null : (
-                      <button type="button" title="Remove" onClick={() => void removeLine(row)}>
-                        <XCircle size={16} />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {customizationOpen ? (
-        <aside
-          className="purchase-reference-customization"
-          role="dialog"
-          aria-label="Purchase grid customization"
-        >
-          <div className="purchase-reference-customization-titlebar">
-            <span>Customization</span>
+          <div className="pie-toolbar-actions">
+            <button type="button" className="pie-btn is-new" disabled={!canCreate} onClick={startNew}>
+              <Plus /> New
+            </button>
             <button
               type="button"
-              aria-label="Close customization"
-              onClick={() => setCustomizationOpen(false)}
+              className="pie-btn is-save"
+              disabled={readOnly || saveMutation.isPending || (invoiceUlid ? !canEdit : !canCreate)}
+              onClick={() => void onSave()}
             >
-              <XCircle size={14} />
+              <Save /> Save
+            </button>
+            <button
+              type="button"
+              className="pie-btn is-post"
+              disabled={readOnly || !canPost || postMutation.isPending}
+              onClick={() => void onPost()}
+            >
+              <Send /> Post
+            </button>
+            <button type="button" className="pie-btn is-print" disabled>
+              <Printer /> Print
+            </button>
+            <button type="button" className="pie-btn is-close" onClick={backToList}>
+              <X /> Close
             </button>
           </div>
-          <div className="purchase-reference-customization-list">
-            {PURCHASE_CUSTOMIZATION_FIELDS.map((field) => {
-              const active = customGridFields.includes(field)
-              return (
-                <button
-                  key={field}
-                  type="button"
-                  className={active ? 'is-active' : undefined}
-                  aria-pressed={active}
-                  onClick={() => toggleCustomGridField(field)}
-                >
-                  <span>{field}</span>
-                  {active ? <Check size={13} /> : null}
-                </button>
-              )
-            })}
-          </div>
-        </aside>
-      ) : null}
-
-      <div className="purchase-reference-totals">
-        <span />
-        <strong>{lines.length}</strong>
-        <strong>
-          {lines.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0).toFixed(0)}
-        </strong>
-        <span />
-        <strong>{money(discountAmount)}</strong>
-        <strong>{money(taxAmount)}</strong>
-        <strong>{money(grandTotal || previewSubtotal)}</strong>
-      </div>
-
-      <div className="purchase-reference-nav">
-        <button type="button" disabled aria-label="First"><ChevronsLeft size={12} /></button>
-        <button type="button" disabled aria-label="Prev"><ChevronLeft size={12} /></button>
-        <span>Record {lines.length ? 1 : 0} of {lines.length}</span>
-        <button type="button" disabled aria-label="Next"><ChevronRight size={12} /></button>
-        <button type="button" disabled aria-label="Last"><ChevronsRight size={12} /></button>
-        <button type="button" disabled aria-label="Add"><Plus size={11} /></button>
-        <button type="button" disabled aria-label="Remove"><Minus size={11} /></button>
-        <button type="button" disabled aria-label="Ok"><Check size={11} /></button>
-        <button type="button" disabled aria-label="Cancel"><X size={11} /></button>
-      </div>
-
-      <div className="purchase-reference-actions">
-        <button type="button" className="purchase-reference-delete" disabled>
-          <span>Delete</span>
-          <span className="purchase-reference-action-icon is-delete"><XCircle /></span>
-        </button>
-
-        <div className="purchase-reference-actions-center">
           <button
             type="button"
-            className="purchase-reference-btn-save"
-            disabled={readOnly || saveMutation.isPending || (invoiceUlid ? !canEdit : !canCreate)}
-            onClick={() => void onSave()}
-          >
-            <span>Save</span>
-            <span className="purchase-reference-action-icon is-save"><Save /></span>
-          </button>
-          <button
-            type="button"
-            className="purchase-reference-btn-post"
-            disabled={readOnly || !canPost || postMutation.isPending}
-            onClick={() => void onPost()}
-          >
-            <span>Post</span>
-            <span className="purchase-reference-action-icon is-post"><Send /></span>
-          </button>
-          <button type="button" className="purchase-reference-btn-print" disabled>
-            <span>Print</span>
-            <span className="purchase-reference-action-icon is-print"><Printer /></span>
-          </button>
-          <button
-            type="button"
-            className="purchase-reference-btn-refresh"
+            className="pie-btn is-ghost"
             disabled={!invoiceUlid}
             onClick={() => invoiceUlid && void openInvoice(invoiceUlid)}
           >
-            <span>Refresh</span>
-            <span className="purchase-reference-action-icon is-refresh"><RefreshCw /></span>
+            <RefreshCw /> Refresh
           </button>
-          <button type="button" className="purchase-reference-btn-close" onClick={backToList}>
-            <span>Close</span>
-            <span className="purchase-reference-action-icon is-close"><XCircle /></span>
+          <button
+            type="button"
+            className={`pie-btn is-settings${customizationOpen ? ' is-open' : ''}`}
+            onClick={() => setCustomizationOpen((open) => !open)}
+          >
+            <Settings2 /> Item Wise Setting
           </button>
         </div>
 
-        <div className="purchase-reference-actions-right">
-          <button type="button" disabled>
-            <span>Save &amp;<br />Barcode</span>
-            <span className="purchase-reference-action-icon is-barcode"><Barcode /></span>
-          </button>
-          <button type="button" disabled>
-            <span>Save &amp;<br />Print</span>
-            <span className="purchase-reference-action-icon is-print"><Printer /></span>
-          </button>
+        <div className="purchase-reference-grid-wrap">
+          <table className="purchase-reference-grid">
+            <thead>
+              <tr>
+                {columnLayout.visibleColumns.map((col) => (
+                  <th
+                    key={col.key}
+                    className={`col-${col.key}${col.locked ? ' is-locked' : ''}`}
+                    style={col.width ? { width: col.width, minWidth: col.width } : undefined}
+                    draggable={!col.locked}
+                    onDragStart={(event) => {
+                      if (col.locked) return
+                      event.dataTransfer.setData('text/bp-col', col.key)
+                      event.dataTransfer.effectAllowed = 'move'
+                    }}
+                    onDragOver={(event) => {
+                      if (col.locked) return
+                      event.preventDefault()
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault()
+                      const from = event.dataTransfer.getData('text/bp-col')
+                      if (from) columnLayout.moveColumn(from, col.key)
+                    }}
+                    onContextMenu={(event) => {
+                      event.preventDefault()
+                      if (!col.locked) columnLayout.hideColumn(col.key)
+                    }}
+                    title={col.locked ? col.label : `${col.label} — drag to move, right-click to hide`}
+                  >
+                    {col.key === 'delete' ? (
+                      <button
+                        type="button"
+                        className={`purchase-reference-customize-trigger${customizationOpen ? ' is-open' : ''}`}
+                        title="Customize columns"
+                        aria-label="Customize columns"
+                        aria-expanded={customizationOpen}
+                        onClick={() => setCustomizationOpen((open) => !open)}
+                      >
+                        −
+                      </button>
+                    ) : col.dualPctRs ? (
+                      <div className="pie-dual-head">
+                        <span>{col.label}</span>
+                        <div className="pie-dual-toggles">
+                          <button
+                            type="button"
+                            className={dualModes[col.key] === 'pct' ? 'is-active' : undefined}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setDualMode(col.key, 'pct')
+                            }}
+                          >
+                            %
+                          </button>
+                          <button
+                            type="button"
+                            className={dualModes[col.key] === 'rs' ? 'is-active' : undefined}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setDualMode(col.key, 'rs')
+                            }}
+                          >
+                            Rs
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      col.label
+                    )}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {lines.length === 0 ? (
+                <tr className="is-empty">
+                  {columnLayout.visibleColumns.map((col) =>
+                    renderPurchaseCell(col, null, {
+                      readOnly,
+                      canEdit,
+                      supplierName: selectedSupplier?.name ?? '',
+                      warehouseLabel,
+                      openCustomization: () => setCustomizationOpen((open) => !open),
+                      customizationOpen,
+                    }),
+                  )}
+                </tr>
+              ) : (
+                lines.map((row, rowIndex) => (
+                  <tr
+                    key={row.key}
+                    className={selectedLineKey === row.key ? 'is-selected' : undefined}
+                    onClick={() => setSelectedLineKey(row.key)}
+                  >
+                    {columnLayout.visibleColumns.map((col) =>
+                      renderPurchaseCell(col, row, {
+                        readOnly,
+                        canEdit,
+                        supplierName: selectedSupplier?.name ?? '',
+                        warehouseLabel,
+                        stockQty: stockByProduct.get(row.product_ulid),
+                        rowIndex,
+                        onRemove: () => void removeLine(row),
+                        openCustomization: () => setCustomizationOpen((open) => !open),
+                        customizationOpen,
+                      }),
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      </div>
+      </section>
+
+      <section className="pie-bottom pie-bottom-mock">
+        <div className="pie-panel pie-final">
+          <div className="pie-panel-head">Sub Total / Grand Total</div>
+          <div className="pie-summary-grid">
+            <div><span>Sub Total</span><strong>{displaySubtotal}</strong></div>
+            <div><span>Total Discount</span><strong>{money(discountAmount)}</strong></div>
+            <div><span>Total Tax</span><strong>{money(taxAmount)}</strong></div>
+            <div><span>Further Tax</span><strong>{money(furtherTaxAmount)}</strong></div>
+            <div><span>Freight (+)</span><strong>{money(freightAmount)}</strong></div>
+            <div><span>Loading (+)</span><strong>{money(shellLoading)}</strong></div>
+            <div><span>Other Chg (+)</span><strong>{money(otherCharges)}</strong></div>
+            <div><span>Other Disc (−)</span><strong>{money(shellOtherDiscount)}</strong></div>
+            <div><span>Trade Offer (−)</span><strong>{money(shellTradeOffer)}</strong></div>
+            <div><span>Withholding</span><strong>{money(shellAdvanceTax)}</strong></div>
+            <div><span>Round Off</span><strong>{money(shellRoundOff)}</strong></div>
+          </div>
+          <div className="pie-grand">
+            <span>Grand Total</span>
+            <strong>{displayGrand}</strong>
+          </div>
+        </div>
+
+        <div className="pie-panel pie-panel-payment">
+          <div className="pie-panel-head">Payment Information</div>
+          <div className="pie-payment-grid">
+            <label className="pie-field">
+              <span>Terms</span>
+              <select
+                value={shellPaymentTerms}
+                disabled={!editable}
+                onChange={(e) => setShellPaymentTerms(e.target.value)}
+              >
+                <option value="credit">Credit</option>
+                <option value="cash">Cash</option>
+                <option value="advance">Advance</option>
+              </select>
+            </label>
+            <label className="pie-field">
+              <span>Advance</span>
+              <input
+                value={advancePaid}
+                disabled={!editable}
+                onChange={(e) => setAdvancePaid(e.target.value)}
+              />
+            </label>
+            <label className="pie-field">
+              <span>Due Date</span>
+              <input
+                type="date"
+                value={dueDate}
+                disabled={!editable || shellPaymentTerms === 'cash'}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </label>
+            <div className="pie-balance-payable">
+              <span>Balance Payable</span>
+              <strong>{balancePayable}</strong>
+            </div>
+          </div>
+          <label className="pie-field pie-notes-inline">
+            <span>Notes</span>
+            <input
+              className="pie-inline-input pie-notes-fit"
+              value={notes}
+              disabled={!editable}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Notes / narration"
+            />
+          </label>
+        </div>
+      </section>
+
+      <ColumnCustomizationPanel
+        open={customizationOpen}
+        hiddenColumns={columnLayout.hiddenColumns}
+        visibleColumns={columnLayout.visibleColumns}
+        onClose={() => setCustomizationOpen(false)}
+        onShow={columnLayout.showColumn}
+        onHide={columnLayout.hideColumn}
+        onToggleLock={columnLayout.toggleLock}
+        onMove={columnLayout.moveColumn}
+        onReset={columnLayout.resetToDefaults}
+        onSaveRoleDefault={columnLayout.saveAsRoleDefault}
+        canSaveRoleDefault={canSaveRoleDefault}
+      />
     </div>
   )
 }

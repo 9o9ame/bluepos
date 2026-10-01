@@ -60,6 +60,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [tabs, setTabs] = useState<OpenWorkspaceTab[]>([HOME_TAB])
   const [ribbonTab, setRibbonTab] = useState<RibbonTabId>('definition')
   const handlersRef = useRef<WorkspaceHandlers>({})
+  const tabsRef = useRef(tabs)
+  tabsRef.current = tabs
 
   const activeModule = useMemo(() => resolveWorkspaceModule(location.pathname), [location.pathname])
   const identity = useMemo(
@@ -97,24 +99,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const closeTab = useCallback(
     (key: string) => {
-      setTabs((current) => {
+      void (async () => {
+        const current = tabsRef.current
         const target = current.find((tab) => tab.key === key)
-        if (!target || !target.closeable) {
-          return current
-        }
+        if (!target || !target.closeable) return
         if (target.dirty) {
-          const proceed = window.confirm('This workspace has unsaved changes. Close anyway?')
-          if (!proceed) {
-            return current
+          const { askConfirm } = await import('../../feedback/FeedbackProvider')
+          if (!(await askConfirm('This workspace has unsaved changes. Close anyway?'))) {
+            return
           }
         }
-        const remaining = current.filter((tab) => tab.key !== key)
-        if (identity.key === key) {
-          const fallback = remaining[remaining.length - 1] ?? HOME_TAB
-          navigate(fallback.path)
-        }
-        return remaining.length > 0 ? remaining : [HOME_TAB]
-      })
+        setTabs((latest) => {
+          const remaining = latest.filter((tab) => tab.key !== key)
+          if (identity.key === key) {
+            const fallback = remaining[remaining.length - 1] ?? HOME_TAB
+            navigate(fallback.path)
+          }
+          return remaining.length > 0 ? remaining : [HOME_TAB]
+        })
+      })()
     },
     [identity.key, navigate],
   )

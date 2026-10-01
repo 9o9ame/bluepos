@@ -332,20 +332,20 @@ textarea {
 
 .ribbon-command {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: flex-start;
-  gap: 4px;
-  min-width: 76px;
-  max-width: 108px;
-  padding: 4px 8px 3px;
+  gap: 6px;
+  min-width: 120px;
+  max-width: 168px;
+  padding: 4px 8px;
   border: 1px solid transparent;
   border-radius: 3px;
   background: transparent;
   color: var(--text-main);
   font-size: 11px;
   line-height: 1.15;
-  text-align: center;
+  text-align: left;
 }
 
 .ribbon-command:hover:not(:disabled) {
@@ -369,8 +369,9 @@ textarea {
 .ribbon-command-label {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 2px;
+  text-align: left;
 }
 
 .ribbon-icon-tile {
@@ -501,6 +502,27 @@ textarea {
   height: 100%;
   min-height: 0;
   overflow: auto;
+}
+
+.workspace-host-inner:has(.parties-vca) {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.workspace-host:has(.parties-vca),
+.workspace-host:has(.sales-reference-screen),
+.workspace-host:has(.purchase-reference-screen) {
+  position: relative;
+}
+
+.workspace-host-inner:has(.parties-vca) > .parties-vca {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
 }
 
 .statusbar {
@@ -3916,18 +3938,22 @@ textarea {
 }
 
 .ribbon-command {
-  min-width: 82px;
-  max-width: 98px;
-  min-height: 82px;
-  padding: 5px 5px 3px;
-  gap: 3px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 128px;
+  max-width: 180px;
+  min-height: 44px;
+  padding: 4px 8px;
+  gap: 8px;
   border: 1px solid transparent;
   border-radius: 0;
   background: transparent;
   color: #111;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 1.05;
+  line-height: 1.1;
+  text-align: left;
 }
 
 .ribbon-command:hover:not(:disabled) {
@@ -3943,12 +3969,15 @@ textarea {
 }
 
 .ribbon-command-label {
-  min-height: 27px;
-  align-items: flex-start;
+  min-height: 0;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
   font-family: Arial, Tahoma, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 1.02;
+  line-height: 1.15;
+  white-space: normal;
 }
 
 .ribbon-command.is-active .ribbon-command-label,
@@ -4465,6 +4494,27 @@ textarea {
 
 .purchase-reference-screen .purchase-reference-customize-trigger:hover,
 .purchase-reference-screen .purchase-reference-customize-trigger.is-open {
+  background: linear-gradient(#f7f7f7, #d3d3d3);
+  color: #0d5f92;
+}
+
+.sales-reference-screen .sales-reference-customize-trigger {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #222;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sales-reference-screen .sales-reference-customize-trigger:hover,
+.sales-reference-screen .sales-reference-customize-trigger.is-open {
   background: linear-gradient(#f7f7f7, #d3d3d3);
   color: #0d5f92;
 }
@@ -6529,8 +6579,8 @@ textarea {
 
 @media (max-width: 1250px) {
   .sales-reference-screen {
-    min-width: 1220px;
-    overflow: auto;
+    min-width: 0;
+    overflow: hidden;
   }
 }
 
@@ -7297,6 +7347,124 @@ textarea {
   text-align: right;
   font-size: 11px;
   font-weight: 700;
+}
+
+/* =========================================================
+   Sales Invoice — fluid left pane (no gap / no underlap)
+   Left content fills all space up to RETAIL INVOICE.
+   ========================================================= */
+
+.sales-reference-screen {
+  grid-template-columns: minmax(0, 1fr) 258px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sales-reference-main {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.sales-reference-pay {
+  width: 258px;
+  min-width: 258px;
+  max-width: 258px;
+  flex: 0 0 258px;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.sales-reference-grid-wrap {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.sales-reference-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+/* Product flexes; numeric cols stay compact so the row fills the left pane. */
+.sales-reference-grid .col-selector { width: 40px !important; }
+.sales-reference-grid .col-product { width: auto !important; min-width: 140px !important; }
+.sales-reference-grid .col-stock { width: 72px !important; }
+.sales-reference-grid .col-qty { width: 84px !important; }
+.sales-reference-grid .col-price { width: 78px !important; }
+.sales-reference-grid .col-amt { width: 88px !important; }
+.sales-reference-grid .col-disc { width: 72px !important; }
+.sales-reference-grid .col-discrs { width: 78px !important; }
+.sales-reference-grid .col-net { width: 96px !important; }
+.sales-reference-grid .col-delete { width: 28px !important; }
+
+.sales-reference-grid th,
+.sales-reference-grid td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Totals track the same fluid proportions as the table. */
+.sales-reference-grid-totals {
+  display: grid !important;
+  grid-template-columns:
+    40px
+    minmax(0, 1fr)
+    72px
+    84px
+    78px
+    88px
+    72px
+    78px
+    96px
+    28px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+@media (max-width: 1180px) {
+  .sales-reference-screen {
+    grid-template-columns: minmax(0, 1fr) 230px;
+  }
+
+  .sales-reference-pay {
+    width: 230px;
+    min-width: 230px;
+    max-width: 230px;
+  }
+
+  .sales-reference-grid .col-stock { width: 64px !important; }
+  .sales-reference-grid .col-qty { width: 72px !important; }
+  .sales-reference-grid .col-price { width: 68px !important; }
+  .sales-reference-grid .col-amt { width: 76px !important; }
+  .sales-reference-grid .col-disc { width: 60px !important; }
+  .sales-reference-grid .col-discrs { width: 68px !important; }
+  .sales-reference-grid .col-net { width: 84px !important; }
+
+  .sales-reference-grid-totals {
+    grid-template-columns:
+      40px
+      minmax(0, 1fr)
+      64px
+      72px
+      68px
+      76px
+      60px
+      68px
+      84px
+      28px !important;
+  }
+}
+
+@media (min-width: 1500px) {
+  .sales-reference-screen {
+    grid-template-columns: minmax(0, 1fr) 258px;
+  }
 }
 
 

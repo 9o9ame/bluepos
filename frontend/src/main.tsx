@@ -11,6 +11,7 @@ import '@fontsource/roboto-condensed/500.css'
 import '@fontsource/roboto-condensed/600.css'
 import '@fontsource/roboto-condensed/700.css'
 import { AppearanceProvider } from './features/appearance/AppearanceProvider'
+import { FeedbackProvider } from './feedback/FeedbackProvider'
 import { applyAppDisplayMode } from './features/desktop/appDisplayMode'
 import './density.css'
 import './index.css'
@@ -22,9 +23,11 @@ applyAppDisplayMode()
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AppearanceProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <FeedbackProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </FeedbackProvider>
     </AppearanceProvider>
   </StrictMode>,
 )

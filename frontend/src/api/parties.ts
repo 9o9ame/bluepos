@@ -1,4 +1,5 @@
 import { apiFetch, ApiClientError, ensureCsrfCookie } from './client'
+import { apiBusy } from '../feedback/apiBusy'
 import { readCookie } from '../utils/cookies'
 
 export type PartyTypeApi = 'vendor' | 'customer' | 'account'
@@ -37,6 +38,11 @@ export type Party = {
   invoice_restricted: boolean
   credit_limit_amount: string
   credit_limit_days: number
+  add_percent: string
+  cnic: string | null
+  ntn: string | null
+  stn: string | null
+  formulas: string | null
   account_type_ulid: string | null
   account_type: PartyAccountType | null
   license_number: string | null
@@ -70,6 +76,11 @@ export type PartyPayload = {
   invoice_restricted?: boolean
   credit_limit_amount?: string
   credit_limit_days?: number
+  add_percent?: string
+  cnic?: string | null
+  ntn?: string | null
+  stn?: string | null
+  formulas?: string | null
   is_active?: boolean
   license_number?: string | null
   license_issued_on?: string | null
@@ -117,41 +128,46 @@ export function updateParty(ulid: string, payload: Partial<PartyPayload> & { par
 
 async function partyImageFetch(ulid: string, type: PartyTypeApi, body: FormData): Promise<Party> {
   await ensureCsrfCookie()
-  const headers = new Headers()
-  const xsrfToken = readCookie('XSRF-TOKEN')
-  if (xsrfToken) {
-    headers.set('X-XSRF-TOKEN', xsrfToken)
+  apiBusy.begin('block')
+  try {
+    const headers = new Headers()
+    const xsrfToken = readCookie('XSRF-TOKEN')
+    if (xsrfToken) {
+      headers.set('X-XSRF-TOKEN', xsrfToken)
+    }
+
+    const response = await fetch(
+      `/api/parties/${ulid}/image?type=${encodeURIComponent(type)}`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers,
+        body,
+      },
+    )
+
+    const payload = (await response.json().catch(() => null)) as
+      | Party
+      | { message?: string; errors?: Record<string, string[]>; error?: { message?: string } }
+      | null
+
+    if (!response.ok) {
+      const validationMessage =
+        payload && 'errors' in payload && payload.errors
+          ? Object.values(payload.errors).flat()[0]
+          : null
+      const message =
+        validationMessage ||
+        (payload && 'error' in payload ? payload.error?.message : null) ||
+        (payload && 'message' in payload ? payload.message : null) ||
+        'Unable to upload party image.'
+      throw new ApiClientError('UPLOAD_FAILED', message ?? 'Unable to upload party image.', response.status)
+    }
+
+    return payload as Party
+  } finally {
+    apiBusy.end('block')
   }
-
-  const response = await fetch(
-    `/api/parties/${ulid}/image?type=${encodeURIComponent(type)}`,
-    {
-      method: 'POST',
-      credentials: 'include',
-      headers,
-      body,
-    },
-  )
-
-  const payload = (await response.json().catch(() => null)) as
-    | Party
-    | { message?: string; errors?: Record<string, string[]>; error?: { message?: string } }
-    | null
-
-  if (!response.ok) {
-    const validationMessage =
-      payload && 'errors' in payload && payload.errors
-        ? Object.values(payload.errors).flat()[0]
-        : null
-    const message =
-      validationMessage ||
-      (payload && 'error' in payload ? payload.error?.message : null) ||
-      (payload && 'message' in payload ? payload.message : null) ||
-      'Unable to upload party image.'
-    throw new ApiClientError('UPLOAD_FAILED', message ?? 'Unable to upload party image.', response.status)
-  }
-
-  return payload as Party
 }
 
 export function uploadPartyImage(ulid: string, type: PartyTypeApi, image: File): Promise<Party> {

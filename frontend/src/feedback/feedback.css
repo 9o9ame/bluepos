@@ -1,0 +1,300 @@
+@keyframes bp-busy-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes bp-busy-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes bp-busy-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bp-busy-orb {
+  0%, 100% { transform: scale(0.92); opacity: 0.55; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes bp-fetch-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(320%); }
+}
+
+@keyframes bp-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.bp-busy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    radial-gradient(ellipse at 20% 15%, rgba(39, 139, 209, 0.28), transparent 45%),
+    radial-gradient(ellipse at 80% 85%, rgba(94, 200, 160, 0.18), transparent 42%),
+    rgba(10, 18, 28, 0.48);
+  backdrop-filter: blur(5px);
+  animation: bp-busy-fade-in 0.16s ease-out;
+}
+
+.bp-busy-card {
+  position: relative;
+  min-width: min(280px, calc(100vw - 40px));
+  padding: 22px 24px 18px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 40%, #8e97a3);
+  background:
+    radial-gradient(90% 70% at 0% 0%, rgba(46, 168, 255, 0.16), transparent 55%),
+    linear-gradient(180deg, #ffffff, #eef5fb);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.55) inset,
+    0 22px 48px rgba(15, 40, 70, 0.32);
+  text-align: center;
+  color: #1a2a38;
+  animation: bp-busy-card-in 0.2s ease-out;
+  overflow: hidden;
+}
+
+.bp-busy-orb {
+  position: absolute;
+  inset: auto auto -30px -30px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(42, 163, 224, 0.35), transparent 70%);
+  animation: bp-busy-orb 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.bp-busy-spin {
+  color: var(--brand-blue, #1769aa);
+  animation: bp-busy-spin 0.85s linear infinite;
+  margin: 0 auto 10px;
+}
+
+.bp-busy-title {
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--brand-blue, #1769aa);
+}
+
+.bp-busy-sub {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #5a6874;
+}
+
+.bp-busy-fetch {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10040;
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--brand-blue, #1769aa) 18%, transparent);
+}
+
+.bp-busy-fetch > span {
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand-blue, #1769aa) 92%, #0a3d66),
+    #2aa3e0,
+    #5ec8a0
+  );
+  animation: bp-fetch-slide 1.05s ease-in-out infinite;
+}
+
+.bp-toast-stack {
+  position: fixed;
+  right: 16px;
+  bottom: 28px;
+  z-index: 10060;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(360px, calc(100vw - 24px));
+  pointer-events: none;
+}
+
+.bp-toast {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #b7c4d0;
+  background: linear-gradient(180deg, #ffffff, #f3f8fc);
+  box-shadow: 0 12px 28px rgba(15, 40, 70, 0.22);
+  animation: bp-toast-in 0.18s ease-out;
+  font-size: 12px;
+}
+
+.bp-toast-success {
+  border-color: #9fd4b3;
+  background: linear-gradient(180deg, #f5fff8, #e2f8ea);
+  color: #1b7a45;
+}
+
+.bp-toast-error {
+  border-color: #e7a8a8;
+  background: linear-gradient(180deg, #fff7f7, #ffe3e3);
+  color: #b42323;
+}
+
+.bp-toast-info {
+  border-color: #9fc4e4;
+  background: linear-gradient(180deg, #f5faff, #e3f1fb);
+  color: #1d5f96;
+}
+
+.bp-toast-icon {
+  display: grid;
+  place-items: center;
+  margin-top: 1px;
+}
+
+.bp-toast-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bp-toast-body strong {
+  font-weight: 800;
+}
+
+.bp-toast-body span {
+  font-weight: 600;
+  opacity: 0.92;
+  word-break: break-word;
+}
+
+.bp-toast-close {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.bp-toast-close:hover {
+  opacity: 1;
+}
+
+.bp-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10070;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(39, 139, 209, 0.2), transparent 42%),
+    rgba(12, 20, 28, 0.45);
+  backdrop-filter: blur(4px);
+  animation: bp-busy-fade-in 0.14s ease-out;
+}
+
+.bp-confirm-card {
+  width: min(420px, calc(100vw - 28px));
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 35%, #8e97a3);
+  background: linear-gradient(180deg, #ffffff, #f4f8fc);
+  box-shadow: 0 18px 48px rgba(15, 40, 70, 0.28);
+  color: #171717;
+  font-size: 12px;
+}
+
+.bp-confirm-card p {
+  margin: 0 0 14px;
+  font-weight: 700;
+  color: #243040;
+  line-height: 1.4;
+}
+
+.bp-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.bp-confirm-actions button {
+  min-width: 88px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #b7c4d0;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.bp-confirm-actions button[data-tone='close'] {
+  border-color: #9fc4e4;
+  background: linear-gradient(180deg, #f5faff, #cfe4f6);
+  color: #1d5f96;
+}
+
+.bp-confirm-actions button[data-tone='save'] {
+  border-color: #9fd4b3;
+  background: linear-gradient(180deg, #f5fff8, #cdeed8);
+  color: #1b7a45;
+}
+
+:root[data-theme='dark'] .bp-busy-card,
+:root[data-theme='dark'] .bp-confirm-card {
+  background: linear-gradient(180deg, #232b33, #1a2128);
+  border-color: #4f6578;
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .bp-busy-sub,
+:root[data-theme='dark'] .bp-confirm-card p {
+  color: #9fb0be;
+}
+
+:root[data-theme='dark'] .bp-toast {
+  background: linear-gradient(180deg, #2a3640, #1e262e);
+  border-color: #4f6578;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bp-busy-overlay,
+  .bp-busy-card,
+  .bp-busy-spin,
+  .bp-busy-orb,
+  .bp-busy-fetch > span,
+  .bp-toast {
+    animation: none !important;
+  }
+}

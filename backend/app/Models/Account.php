@@ -17,6 +17,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'invoice_restricted',
     'credit_limit_amount',
     'credit_limit_days',
+    'add_percent',
+    'cnic',
+    'ntn',
+    'stn',
+    'formulas',
     'account_type_id',
     'supplier_id',
     'customer_id',
@@ -35,6 +40,7 @@ class Account extends Model
             'invoice_restricted' => 'boolean',
             'credit_limit_amount' => 'decimal:4',
             'credit_limit_days' => 'integer',
+            'add_percent' => 'decimal:8',
         ];
     }
 

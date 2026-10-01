@@ -20,16 +20,7 @@ class CreatePurchaseInvoiceAction
     ) {}
 
     /**
-     * @param  array{
-     *     supplier_ulid: string,
-     *     warehouse_ulid: string,
-     *     invoice_date?: string,
-     *     due_date?: string|null,
-     *     supplier_invoice_number?: string|null,
-     *     freight_amount?: string,
-     *     other_charges?: string,
-     *     notes?: string|null
-     * }  $data
+     * @param  array<string, mixed>  $data
      */
     public function execute(array $data): PurchaseInvoice
     {
@@ -56,20 +47,49 @@ class CreatePurchaseInvoiceAction
                 'supplier_id' => $supplier->id,
                 'document_number' => $this->nextDocumentNumber($tenantId),
                 'supplier_invoice_number' => $data['supplier_invoice_number'] ?? null,
+                'po_number' => $data['po_number'] ?? null,
+                'invoice_type' => $data['invoice_type'] ?? 'tax_gst',
+                'currency_code' => $data['currency_code'] ?? 'PKR',
+                'calculation_method' => $data['calculation_method'] ?? 'gst_on_trade',
+                'default_sales_tax_pct' => $this->pct($data['default_sales_tax_pct'] ?? '0'),
+                'default_further_tax_pct' => $this->pct($data['default_further_tax_pct'] ?? '0'),
+                'default_advance_tax_pct' => $this->pct($data['default_advance_tax_pct'] ?? '0'),
+                'default_price_type' => $data['default_price_type'] ?? 'trade',
+                'brand_label' => $data['brand_label'] ?? null,
                 'invoice_date' => $data['invoice_date'] ?? now()->toDateString(),
                 'due_date' => $data['due_date'] ?? null,
                 'status' => PurchaseInvoiceStatus::Draft,
                 'subtotal' => '0.0000',
                 'discount_amount' => '0.0000',
                 'tax_amount' => '0.0000',
+                'further_tax_amount' => '0.0000',
                 'freight_amount' => $this->money($data['freight_amount'] ?? '0'),
+                'loading_amount' => $this->money($data['loading_amount'] ?? '0'),
                 'other_charges' => $this->money($data['other_charges'] ?? '0'),
+                'other_discount' => $this->money($data['other_discount'] ?? '0'),
+                'trade_offer' => $this->money($data['trade_offer'] ?? '0'),
+                'advance_tax_amount' => $this->money($data['advance_tax_amount'] ?? '0'),
+                'round_off' => $this->signedMoney($data['round_off'] ?? '0'),
                 'grand_total' => '0.0000',
                 'notes' => $data['notes'] ?? null,
+                'tax_type' => $data['tax_type'] ?? 'standard',
+                'payment_terms' => $data['payment_terms'] ?? 'credit',
                 'created_by' => $this->tenantContext->userId(),
             ]);
 
-            $invoice->grand_total = bcadd((string) $invoice->freight_amount, (string) $invoice->other_charges, 4);
+            $invoice->grand_total = bcadd(
+                bcadd(
+                    bcadd((string) $invoice->freight_amount, (string) $invoice->loading_amount, 4),
+                    (string) $invoice->other_charges,
+                    4,
+                ),
+                bcsub(
+                    bcadd((string) $invoice->advance_tax_amount, (string) $invoice->round_off, 4),
+                    bcadd((string) $invoice->other_discount, (string) $invoice->trade_offer, 4),
+                    4,
+                ),
+                4,
+            );
             $invoice->save();
 
             $this->audit->record('PURCHASE_CREATED', [
@@ -114,5 +134,32 @@ class CreatePurchaseInvoiceAction
         }
 
         return bcadd($value, '0', 4);
+    }
+
+    private function signedMoney(string $value): string
+    {
+        if (! preg_match('/^-?(?:0|[1-9]\d*)(?:\.\d{1,4})?$/', $value)) {
+            throw ValidationException::withMessages([
+                'round_off' => 'Round off must be a valid decimal.',
+            ]);
+        }
+
+        return bcadd($value, '0', 4);
+    }
+
+    private function pct(string $value): string
+    {
+        if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/', $value)) {
+            throw ValidationException::withMessages([
+                'percent' => 'Percentage must be a valid non-negative decimal.',
+            ]);
+        }
+        if (bccomp($value, '100', 8) === 1) {
+            throw ValidationException::withMessages([
+                'percent' => 'Percentage cannot exceed 100.',
+            ]);
+        }
+
+        return bcadd($value, '0', 8);
     }
 }

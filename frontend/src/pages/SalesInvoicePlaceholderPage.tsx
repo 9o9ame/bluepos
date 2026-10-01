@@ -10,31 +10,69 @@ import {
   StickyNote,
   XCircle,
 } from 'lucide-react'
+import { useState } from 'react'
+import { useCan } from '../features/auth/useCan'
+import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
+import {
+  SALES_INVOICE_COLUMNS,
+  SALES_INVOICE_SCREEN,
+  type ResolvedGridColumn,
+} from '../features/gridLayout/columnCatalog'
+import { useColumnLayout } from '../features/gridLayout/useColumnLayout'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import './SalesInvoicePlaceholderPage.theme.css'
 
+/** Map logical keys → original sales CSS column classes (keeps reference geometry). */
+const SALES_COL_CLASS: Record<string, string> = {
+  selector: 'col-selector',
+  product: 'col-product',
+  in_stock: 'col-stock',
+  sales_qty: 'col-qty',
+  price: 'col-price',
+  amt: 'col-amt',
+  disc_pct: 'col-disc',
+  disc_rs: 'col-discrs',
+  net_amt: 'col-net',
+  delete: 'col-delete',
+}
+
+function salesColClass(col: ResolvedGridColumn): string {
+  return SALES_COL_CLASS[col.key] ?? `col-${col.key}`
+}
+
 export function SalesInvoicePlaceholderPage() {
   const { closeActiveTab } = useWorkspace()
+  const [customizationOpen, setCustomizationOpen] = useState(false)
+  const canSaveRoleDefault = useCan('roles.edit')
+  const columnLayout = useColumnLayout({
+    screenKey: SALES_INVOICE_SCREEN,
+    catalog: SALES_INVOICE_COLUMNS,
+  })
 
   return (
     <div className="sales-reference-screen">
       <main className="sales-reference-main">
         <nav className="sales-reference-subtabs" aria-label="Sales invoice views">
           <button type="button" className="sales-reference-subtab is-active">
-            <span className="sales-reference-tab-icon is-blue"><Grid3X3 /></span>
+            <span className="sales-reference-tab-icon is-blue">
+              <Grid3X3 />
+            </span>
             <span>Sales Invoice</span>
           </button>
 
           <button type="button" className="sales-reference-subtab" disabled>
-            <span className="sales-reference-tab-icon is-yellow"><StickyNote /></span>
+            <span className="sales-reference-tab-icon is-yellow">
+              <StickyNote />
+            </span>
             <span>(0,Due:2) Pending Invoices</span>
           </button>
 
           <button type="button" className="sales-reference-subtab" disabled>
-            <span className="sales-reference-tab-icon is-multi"><ReceiptText /></span>
+            <span className="sales-reference-tab-icon is-multi">
+              <ReceiptText />
+            </span>
             <span>Expenses</span>
           </button>
-
         </nav>
 
         <section className="sales-reference-meta">
@@ -42,9 +80,15 @@ export function SalesInvoicePlaceholderPage() {
             <legend>Invoice Options</legend>
 
             <div className="sales-reference-options-head">
-              <label><input type="radio" name="sale-type" defaultChecked disabled /> Default</label>
-              <label><input type="radio" name="sale-type" disabled /> Whole Sale</label>
-              <label><input type="radio" name="sale-type" disabled /> Retail</label>
+              <label>
+                <input type="radio" name="sale-type" defaultChecked disabled /> Default
+              </label>
+              <label>
+                <input type="radio" name="sale-type" disabled /> Whole Sale
+              </label>
+              <label>
+                <input type="radio" name="sale-type" disabled /> Retail
+              </label>
 
               <div className="sales-reference-copy-from">
                 <span>Copy From:</span>
@@ -62,19 +106,25 @@ export function SalesInvoicePlaceholderPage() {
               <label>Qu #:</label>
               <div className="sales-reference-input-button">
                 <input disabled />
-                <button type="button" disabled>▼</button>
+                <button type="button" disabled>
+                  ▼
+                </button>
               </div>
 
               <label>S.Man:</label>
               <div className="sales-reference-input-button">
                 <input defaultValue="Default" disabled />
-                <button type="button" disabled>▼</button>
+                <button type="button" disabled>
+                  ▼
+                </button>
               </div>
 
               <label>To:</label>
               <div className="sales-reference-input-button sales-reference-to">
                 <input defaultValue="CASH IN HAND" disabled />
-                <button type="button" disabled>+</button>
+                <button type="button" disabled>
+                  +
+                </button>
               </div>
 
               <label>Name:</label>
@@ -89,15 +139,21 @@ export function SalesInvoicePlaceholderPage() {
             <legend>Amounts</legend>
 
             <div className="sales-reference-amounts-checks">
-              <label><input type="checkbox" disabled /> Payment Due</label>
-              <label><input type="checkbox" disabled /> On Hold</label>
+              <label>
+                <input type="checkbox" disabled /> Payment Due
+              </label>
+              <label>
+                <input type="checkbox" disabled /> On Hold
+              </label>
             </div>
 
             <div className="sales-reference-amounts-grid">
               <span />
               <strong className="is-green">-</strong>
 
-              <button type="button" disabled>Get</button>
+              <button type="button" disabled>
+                Get
+              </button>
               <label>Disc (%)</label>
               <label>Sales Tax (%)</label>
 
@@ -118,57 +174,103 @@ export function SalesInvoicePlaceholderPage() {
             aria-label="Product entry"
           />
           <div className="sales-reference-f1">F1 to Add New</div>
-          <button type="button" className="sales-reference-sale-btn" disabled>Sale</button>
+          <button type="button" className="sales-reference-sale-btn" disabled>
+            Sale
+          </button>
           <div className="sales-reference-entry-spacer" />
         </div>
 
         <div className="sales-reference-grid-wrap">
           <table className="sales-reference-grid">
             <colgroup>
-              <col className="col-selector" />
-              <col className="col-product" />
-              <col className="col-stock" />
-              <col className="col-qty" />
-              <col className="col-price" />
-              <col className="col-amt" />
-              <col className="col-disc" />
-              <col className="col-discrs" />
-              <col className="col-net" />
-              <col className="col-delete" />
+              {columnLayout.visibleColumns.map((col) => (
+                <col key={col.key} className={salesColClass(col)} />
+              ))}
             </colgroup>
 
             <thead>
               <tr>
-                <th />
-                <th>ITEM / PRODUCT DESCRIPTION</th>
-                <th>In Stock</th>
-                <th>Sales Qty</th>
-                <th>Price</th>
-                <th>AMT</th>
-                <th>Disc%</th>
-                <th>Disc-Rs</th>
-                <th>Net Amt</th>
-                <th>-</th>
+                {columnLayout.visibleColumns.map((col) => (
+                  <th
+                    key={col.key}
+                    className={salesColClass(col)}
+                    draggable={!col.locked}
+                    onDragStart={(event) => {
+                      if (col.locked) return
+                      event.dataTransfer.setData('text/bp-col', col.key)
+                      event.dataTransfer.effectAllowed = 'move'
+                    }}
+                    onDragOver={(event) => {
+                      if (col.locked) return
+                      event.preventDefault()
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault()
+                      const from = event.dataTransfer.getData('text/bp-col')
+                      if (from) columnLayout.moveColumn(from, col.key)
+                    }}
+                    onContextMenu={(event) => {
+                      event.preventDefault()
+                      if (!col.locked) columnLayout.hideColumn(col.key)
+                    }}
+                    title={
+                      col.key === 'delete'
+                        ? 'Customize columns'
+                        : col.locked
+                          ? col.label
+                          : `${col.label} — drag to move, right-click to hide`
+                    }
+                  >
+                    {col.key === 'delete' ? (
+                      <button
+                        type="button"
+                        className={`sales-reference-customize-trigger${customizationOpen ? ' is-open' : ''}`}
+                        title="Customize columns"
+                        aria-label="Customize columns"
+                        aria-expanded={customizationOpen}
+                        onClick={() => setCustomizationOpen((open) => !open)}
+                      >
+                        −
+                      </button>
+                    ) : col.key === 'selector' ? null : (
+                      col.label
+                    )}
+                  </th>
+                ))}
               </tr>
             </thead>
 
             <tbody>
               <tr className="is-entry-row">
-                <td className="sales-reference-row-arrow">›</td>
-                <td className="sales-reference-yellow">
-                  <span className="sales-reference-dots">....</span>
-                  <button type="button" className="sales-reference-product-drop" disabled>▼</button>
-                </td>
-                <td />
-                <td />
-                <td />
-                <td />
-                <td />
-                <td />
-                <td />
-                <td className="sales-reference-delete-cell">
-                  <button type="button" disabled aria-label="Delete row"><XCircle size={16} /></button>
-                </td>
+                {columnLayout.visibleColumns.map((col) => {
+                  if (col.key === 'selector') {
+                    return (
+                      <td key={col.key} className="sales-reference-row-arrow">
+                        ›
+                      </td>
+                    )
+                  }
+                  if (col.key === 'product') {
+                    return (
+                      <td key={col.key} className="sales-reference-yellow">
+                        <span className="sales-reference-dots">....</span>
+                        <button type="button" className="sales-reference-product-drop" disabled>
+                          ▼
+                        </button>
+                      </td>
+                    )
+                  }
+                  if (col.key === 'delete') {
+                    return (
+                      <td key={col.key} className="sales-reference-delete-cell">
+                        <button type="button" disabled aria-label="Delete row">
+                          <XCircle size={16} />
+                        </button>
+                      </td>
+                    )
+                  }
+                  return <td key={col.key} />
+                })}
               </tr>
             </tbody>
           </table>
@@ -184,17 +286,37 @@ export function SalesInvoicePlaceholderPage() {
 
           <div className="sales-reference-record-nav">
             <div className="sales-reference-record-controls">
-              <button type="button" disabled>⏮</button>
-              <button type="button" disabled>◀</button>
+              <button type="button" disabled>
+                ⏮
+              </button>
+              <button type="button" disabled>
+                ◀
+              </button>
               <span>Record 1 of 1</span>
-              <button type="button" disabled>▶</button>
-              <button type="button" disabled>⏭</button>
-              <button type="button" disabled>+</button>
-              <button type="button" disabled>−</button>
-              <button type="button" disabled>⌃</button>
-              <button type="button" disabled>⌄</button>
-              <button type="button" disabled>✓</button>
-              <button type="button" disabled>×</button>
+              <button type="button" disabled>
+                ▶
+              </button>
+              <button type="button" disabled>
+                ⏭
+              </button>
+              <button type="button" disabled>
+                +
+              </button>
+              <button type="button" disabled>
+                −
+              </button>
+              <button type="button" disabled>
+                ⌃
+              </button>
+              <button type="button" disabled>
+                ⌄
+              </button>
+              <button type="button" disabled>
+                ✓
+              </button>
+              <button type="button" disabled>
+                ×
+              </button>
             </div>
           </div>
         </div>
@@ -209,27 +331,37 @@ export function SalesInvoicePlaceholderPage() {
           <div className="sales-reference-actions-center">
             <button type="button" disabled>
               <span>Save [F9]</span>
-              <span className="sales-reference-action-icon is-save"><Save /></span>
+              <span className="sales-reference-action-icon is-save">
+                <Save />
+              </span>
             </button>
 
             <button type="button" disabled>
               <span>Refresh [F8]</span>
-              <span className="sales-reference-action-icon is-refresh"><RefreshCw /></span>
+              <span className="sales-reference-action-icon is-refresh">
+                <RefreshCw />
+              </span>
             </button>
 
             <button type="button" disabled>
               <span>Preview [F3]</span>
-              <span className="sales-reference-action-icon is-preview"><FileText /></span>
+              <span className="sales-reference-action-icon is-preview">
+                <FileText />
+              </span>
             </button>
 
             <button type="button" disabled>
               <span>Print [F11]</span>
-              <span className="sales-reference-action-icon is-print"><Printer /></span>
+              <span className="sales-reference-action-icon is-print">
+                <Printer />
+              </span>
             </button>
 
             <button type="button" onClick={closeActiveTab}>
               <span>Close</span>
-              <span className="sales-reference-action-icon is-close"><XCircle /></span>
+              <span className="sales-reference-action-icon is-close">
+                <XCircle />
+              </span>
             </button>
           </div>
         </footer>
@@ -242,8 +374,12 @@ export function SalesInvoicePlaceholderPage() {
           <legend>
             <span>Amount Options</span>
             <span className="sales-reference-pay-tools">
-              <button type="button" disabled title="Open"><FolderOpen size={13} /></button>
-              <button type="button" disabled title="Help"><CircleHelp size={13} /></button>
+              <button type="button" disabled title="Open">
+                <FolderOpen size={13} />
+              </button>
+              <button type="button" disabled title="Help">
+                <CircleHelp size={13} />
+              </button>
             </span>
           </legend>
 
@@ -254,7 +390,9 @@ export function SalesInvoicePlaceholderPage() {
 
           <div className="sales-reference-disc-line">
             <span>Disc (Rs):</span>
-            <label><input type="checkbox" disabled /> Cost</label>
+            <label>
+              <input type="checkbox" disabled /> Cost
+            </label>
           </div>
 
           <div className="sales-reference-disc-values">
@@ -265,7 +403,9 @@ export function SalesInvoicePlaceholderPage() {
           <label className="sales-reference-payment-label">Payment Method:</label>
           <div className="sales-reference-payment-method">
             <strong>CASH IN HAND</strong>
-            <button type="button" disabled>▼</button>
+            <button type="button" disabled>
+              ▼
+            </button>
           </div>
 
           <label className="sales-reference-remarks-label">Remarks:</label>
@@ -295,6 +435,20 @@ export function SalesInvoicePlaceholderPage() {
           <strong>-</strong>
         </div>
       </aside>
+
+      <ColumnCustomizationPanel
+        open={customizationOpen}
+        hiddenColumns={columnLayout.hiddenColumns}
+        visibleColumns={columnLayout.visibleColumns}
+        onClose={() => setCustomizationOpen(false)}
+        onShow={columnLayout.showColumn}
+        onHide={columnLayout.hideColumn}
+        onToggleLock={columnLayout.toggleLock}
+        onMove={columnLayout.moveColumn}
+        onReset={columnLayout.resetToDefaults}
+        onSaveRoleDefault={columnLayout.saveAsRoleDefault}
+        canSaveRoleDefault={canSaveRoleDefault}
+      />
     </div>
   )
 }

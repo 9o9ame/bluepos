@@ -57,17 +57,50 @@ class UpdatePurchaseInvoiceAction
                 $invoice->branch_id = $warehouse->branch_id;
             }
 
-            foreach (['supplier_invoice_number', 'invoice_date', 'due_date', 'notes'] as $field) {
+            foreach ([
+                'supplier_invoice_number',
+                'po_number',
+                'invoice_type',
+                'currency_code',
+                'calculation_method',
+                'default_price_type',
+                'brand_label',
+                'invoice_date',
+                'due_date',
+                'notes',
+                'tax_type',
+                'payment_terms',
+            ] as $field) {
                 if (array_key_exists($field, $data)) {
                     $invoice->{$field} = $data[$field];
                 }
             }
 
-            if (array_key_exists('freight_amount', $data)) {
-                $invoice->freight_amount = $this->money((string) $data['freight_amount']);
+            foreach ([
+                'default_sales_tax_pct',
+                'default_further_tax_pct',
+                'default_advance_tax_pct',
+            ] as $field) {
+                if (array_key_exists($field, $data)) {
+                    $invoice->{$field} = $this->pct((string) $data[$field]);
+                }
             }
-            if (array_key_exists('other_charges', $data)) {
-                $invoice->other_charges = $this->money((string) $data['other_charges']);
+
+            foreach ([
+                'freight_amount',
+                'loading_amount',
+                'other_charges',
+                'other_discount',
+                'trade_offer',
+                'advance_tax_amount',
+            ] as $field) {
+                if (array_key_exists($field, $data)) {
+                    $invoice->{$field} = $this->money((string) $data[$field]);
+                }
+            }
+
+            if (array_key_exists('round_off', $data)) {
+                $invoice->round_off = $this->signedMoney((string) $data['round_off']);
             }
 
             $invoice->updated_by = $this->tenantContext->userId();
@@ -92,5 +125,32 @@ class UpdatePurchaseInvoiceAction
         }
 
         return bcadd($value, '0', 4);
+    }
+
+    private function signedMoney(string $value): string
+    {
+        if (! preg_match('/^-?(?:0|[1-9]\d*)(?:\.\d{1,4})?$/', $value)) {
+            throw ValidationException::withMessages([
+                'round_off' => 'Round off must be a valid decimal.',
+            ]);
+        }
+
+        return bcadd($value, '0', 4);
+    }
+
+    private function pct(string $value): string
+    {
+        if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/', $value)) {
+            throw ValidationException::withMessages([
+                'percent' => 'Percentage must be a valid non-negative decimal.',
+            ]);
+        }
+        if (bccomp($value, '100', 8) === 1) {
+            throw ValidationException::withMessages([
+                'percent' => 'Percentage cannot exceed 100.',
+            ]);
+        }
+
+        return bcadd($value, '0', 8);
     }
 }

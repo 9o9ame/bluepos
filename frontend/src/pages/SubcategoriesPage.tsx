@@ -19,6 +19,7 @@ import {
   updateSubcategory,
 } from '../api/catalog'
 import { ApiClientError } from '../api/client'
+import { askConfirm } from '../feedback/FeedbackProvider'
 import {
   DesktopButton,
   DesktopPanel,
@@ -295,24 +296,21 @@ export function SubcategoriesPage() {
               deactivateMutation.isPending
             }
             onClick={() => {
-              if (
-                !selected ||
-                !window.confirm(
-                  `Deactivate ${selected.name}?`,
-                )
-              ) {
-                return
-              }
+              void (async () => {
+                if (!selected || !(await askConfirm(`Deactivate ${selected.name}?`))) {
+                  return
+                }
 
-              void deactivateMutation
-                .mutateAsync()
-                .catch((err) => {
-                  setError(
-                    err instanceof ApiClientError
-                      ? err.message
-                      : 'Unable to deactivate subcategory.',
-                  )
-                })
+                void deactivateMutation
+                  .mutateAsync()
+                  .catch((err) => {
+                    setError(
+                      err instanceof ApiClientError
+                        ? err.message
+                        : 'Unable to deactivate subcategory.',
+                    )
+                  })
+              })()
             }}
           />
 

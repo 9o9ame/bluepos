@@ -58,6 +58,10 @@ class StorePartyRequest extends FormRequest
             'store_allowed' => $this->filled('store_allowed')
                 ? strtoupper(trim((string) $this->input('store_allowed')))
                 : null,
+            'cnic' => $this->filled('cnic') ? trim((string) $this->input('cnic')) : null,
+            'ntn' => $this->filled('ntn') ? trim((string) $this->input('ntn')) : null,
+            'stn' => $this->filled('stn') ? trim((string) $this->input('stn')) : null,
+            'formulas' => $this->filled('formulas') ? trim((string) $this->input('formulas')) : null,
         ]);
     }
 
@@ -96,6 +100,11 @@ class StorePartyRequest extends FormRequest
             'invoice_restricted' => ['sometimes', 'boolean'],
             'credit_limit_amount' => ['sometimes', 'regex:/^\d+(\.\d{1,4})?$/'],
             'credit_limit_days' => ['sometimes', 'integer', 'min:0', 'max:99999'],
+            'add_percent' => ['sometimes', 'regex:/^\d+(\.\d{1,8})?$/'],
+            'cnic' => ['nullable', 'string', 'max:32'],
+            'ntn' => ['nullable', 'string', 'max:64'],
+            'stn' => ['nullable', 'string', 'max:64'],
+            'formulas' => ['nullable', 'string', 'max:20000'],
             'is_active' => ['sometimes', 'boolean'],
         ];
 

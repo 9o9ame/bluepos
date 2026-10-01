@@ -1,6 +1,11 @@
 import { apiFetch } from './client'
 import type { Paginated } from '../types/catalog'
-import type { PurchaseInvoice, PurchaseInvoiceLine } from '../types/purchases'
+import type {
+  PurchaseHeaderPayload,
+  PurchaseInvoice,
+  PurchaseInvoiceLine,
+  PurchaseLinePayload,
+} from '../types/purchases'
 
 export function fetchPurchases(params?: {
   q?: string
@@ -29,57 +34,21 @@ export function fetchPurchase(ulid: string) {
   return apiFetch<PurchaseInvoice>(`/api/purchases/${ulid}`)
 }
 
-export function createPurchase(payload: {
-  supplier_ulid: string
-  warehouse_ulid: string
-  invoice_date?: string
-  due_date?: string | null
-  supplier_invoice_number?: string | null
-  freight_amount?: string
-  other_charges?: string
-  notes?: string | null
-}) {
+export function createPurchase(payload: PurchaseHeaderPayload) {
   return apiFetch<PurchaseInvoice>('/api/purchases', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 }
 
-export function updatePurchase(
-  ulid: string,
-  payload: Partial<{
-    supplier_ulid: string
-    warehouse_ulid: string
-    invoice_date: string
-    due_date: string | null
-    supplier_invoice_number: string | null
-    freight_amount: string
-    other_charges: string
-    notes: string | null
-  }>,
-) {
+export function updatePurchase(ulid: string, payload: Partial<PurchaseHeaderPayload>) {
   return apiFetch<PurchaseInvoice>(`/api/purchases/${ulid}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
   })
 }
 
-export function createPurchaseLine(
-  purchaseUlid: string,
-  payload: {
-    product_ulid: string
-    unit_ulid: string
-    quantity: string
-    conversion_factor?: string
-    unit_cost: string
-    discount_amount?: string
-    tax_amount?: string
-    supplier_product_code?: string | null
-    batch_number?: string | null
-    expiry_date?: string | null
-    notes?: string | null
-  },
-) {
+export function createPurchaseLine(purchaseUlid: string, payload: PurchaseLinePayload) {
   return apiFetch<PurchaseInvoiceLine>(`/api/purchases/${purchaseUlid}/lines`, {
     method: 'POST',
     body: JSON.stringify(payload),
@@ -89,19 +58,7 @@ export function createPurchaseLine(
 export function updatePurchaseLine(
   purchaseUlid: string,
   lineUlid: string,
-  payload: Partial<{
-    product_ulid: string
-    unit_ulid: string
-    quantity: string
-    conversion_factor: string
-    unit_cost: string
-    discount_amount: string
-    tax_amount: string
-    supplier_product_code: string | null
-    batch_number: string | null
-    expiry_date: string | null
-    notes: string | null
-  }>,
+  payload: Partial<PurchaseLinePayload>,
 ) {
   return apiFetch<PurchaseInvoiceLine>(
     `/api/purchases/${purchaseUlid}/lines/${lineUlid}`,

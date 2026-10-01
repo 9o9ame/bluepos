@@ -16,6 +16,7 @@ import {
   updatePurchaseReturnLine,
 } from '../api/purchaseReturns'
 import { ApiClientError } from '../api/client'
+import { askConfirm } from '../feedback/FeedbackProvider'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -566,8 +567,10 @@ export function PurchaseReturnsPage() {
               label="Post"
               disabled={readOnly || !canPost || postMutation.isPending}
               onClick={() => {
-                if (!window.confirm('Post this purchase return and reduce stock?')) return
-                void postMutation.mutateAsync().catch(handleError)
+                void (async () => {
+                  if (!(await askConfirm('Post this purchase return and reduce stock?'))) return
+                  void postMutation.mutateAsync().catch(handleError)
+                })()
               }}
             />
             <DesktopButton

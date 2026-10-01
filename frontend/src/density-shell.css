@@ -100,18 +100,26 @@ body {
 }
 
 .ribbon-command {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
   min-width: var(--ui-ribbon-command-min-w) !important;
   max-width: var(--ui-ribbon-command-max-w) !important;
   min-height: var(--ui-ribbon-command-h) !important;
-  padding: var(--ui-gap-xs) var(--ui-pad-xs) var(--ui-gap-xs) !important;
-  gap: var(--ui-gap-xs) !important;
+  padding: var(--ui-gap-xs) var(--ui-pad-sm) !important;
+  gap: 6px !important;
   font-size: var(--ui-command-font) !important;
+  text-align: left !important;
 }
 
 .ribbon-command-label {
-  min-height: calc(var(--ui-command-font) * 2.1);
+  min-height: 0 !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  text-align: left !important;
   font-size: var(--ui-command-font) !important;
-  line-height: 1.05 !important;
+  line-height: 1.1 !important;
 }
 
 .ribbon-icon-tile {

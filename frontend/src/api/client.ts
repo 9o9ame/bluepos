@@ -1,4 +1,5 @@
 import { readCookie } from '../utils/cookies'
+import { apiBusy } from '../feedback/apiBusy'
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
@@ -48,49 +49,73 @@ export async function ensureCsrfCookie(): Promise<void> {
   csrfReady = true
 }
 
-export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+type ApiFetchOptions = RequestInit & {
+  /** Override busy overlay: block = fullscreen, fetch = top bar, none = silent */
+  busy?: 'block' | 'fetch' | 'none'
+}
+
+export async function apiFetch<T>(path: string, init: ApiFetchOptions = {}): Promise<T> {
   const method = (init.method ?? 'GET').toUpperCase()
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     await ensureCsrfCookie()
   }
 
-  const headers = new Headers(init.headers)
-  headers.set('Accept', 'application/json')
-  headers.set('X-Requested-With', 'XMLHttpRequest')
+  const { busy: busyMode, ...requestInit } = init
+  const trackBusy =
+    busyMode ??
+    (path.includes('/sanctum/csrf-cookie') || path.includes('/api/auth/me')
+      ? 'none'
+      : ['GET', 'HEAD', 'OPTIONS'].includes(method)
+        ? 'fetch'
+        : 'block')
 
-  const xsrf = readCookie('XSRF-TOKEN')
-  if (xsrf) {
-    headers.set('X-XSRF-TOKEN', xsrf)
+  if (trackBusy !== 'none') {
+    apiBusy.begin(trackBusy)
   }
 
-  if (init.body && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json')
+  try {
+    const headers = new Headers(requestInit.headers)
+    headers.set('Accept', 'application/json')
+    headers.set('X-Requested-With', 'XMLHttpRequest')
+
+    const xsrf = readCookie('XSRF-TOKEN')
+    if (xsrf) {
+      headers.set('X-XSRF-TOKEN', xsrf)
+    }
+
+    if (requestInit.body && !headers.has('Content-Type') && !(requestInit.body instanceof FormData)) {
+      headers.set('Content-Type', 'application/json')
+    }
+
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...requestInit,
+      credentials: 'include',
+      headers,
+    })
+
+    if (response.status === 204) {
+      return undefined as T
+    }
+
+    const payload = (await response.json().catch(() => ({}))) as {
+      error?: { key?: string; message?: string; fields?: Record<string, string[]>; [key: string]: unknown }
+    }
+
+    if (!response.ok) {
+      const { key, message, fields, ...extra } = payload.error ?? {}
+      throw new ApiClientError(
+        (key as string | undefined) ?? 'SERVER_ERROR',
+        (message as string | undefined) ?? 'Request failed.',
+        response.status,
+        fields,
+        extra,
+      )
+    }
+
+    return payload as T
+  } finally {
+    if (trackBusy !== 'none') {
+      apiBusy.end(trackBusy)
+    }
   }
-
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers,
-  })
-
-  if (response.status === 204) {
-    return undefined as T
-  }
-
-  const payload = (await response.json().catch(() => ({}))) as {
-    error?: { key?: string; message?: string; fields?: Record<string, string[]>; [key: string]: unknown }
-  }
-
-  if (!response.ok) {
-    const { key, message, fields, ...extra } = payload.error ?? {}
-    throw new ApiClientError(
-      (key as string | undefined) ?? 'SERVER_ERROR',
-      (message as string | undefined) ?? 'Request failed.',
-      response.status,
-      fields,
-      extra,
-    )
-  }
-
-  return payload as T
 }

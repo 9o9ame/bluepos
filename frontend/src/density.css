@@ -37,12 +37,12 @@
 
   --ui-header-h: 26px;
   --ui-ribbon-tab-h: 45px;
-  --ui-ribbon-body-h: 104px;
-  --ui-ribbon-command-h: 78px;
-  --ui-ribbon-command-min-w: 76px;
-  --ui-ribbon-command-max-w: 98px;
-  --ui-ribbon-icon-tile: 40px;
-  --ui-ribbon-icon: 32px;
+  --ui-ribbon-body-h: 58px;
+  --ui-ribbon-command-h: 40px;
+  --ui-ribbon-command-min-w: 118px;
+  --ui-ribbon-command-max-w: 170px;
+  --ui-ribbon-icon-tile: 28px;
+  --ui-ribbon-icon: 22px;
   --ui-nav-icon: 26px;
   --ui-nav-font: 13px;
   --ui-command-font: 12px;
@@ -84,12 +84,12 @@
 
     --ui-header-h: 28px;
     --ui-ribbon-tab-h: 48px;
-    --ui-ribbon-body-h: 110px;
-    --ui-ribbon-command-h: 84px;
-    --ui-ribbon-command-min-w: 80px;
-    --ui-ribbon-command-max-w: 104px;
-    --ui-ribbon-icon-tile: 44px;
-    --ui-ribbon-icon: 34px;
+    --ui-ribbon-body-h: 62px;
+    --ui-ribbon-command-h: 42px;
+    --ui-ribbon-command-min-w: 124px;
+    --ui-ribbon-command-max-w: 180px;
+    --ui-ribbon-icon-tile: 30px;
+    --ui-ribbon-icon: 24px;
     --ui-nav-icon: 28px;
     --ui-nav-font: 14px;
     --ui-command-font: 13px;
@@ -135,12 +135,12 @@
 
     --ui-header-h: 22px;
     --ui-ribbon-tab-h: 38px;
-    --ui-ribbon-body-h: 88px;
-    --ui-ribbon-command-h: 68px;
-    --ui-ribbon-command-min-w: 68px;
-    --ui-ribbon-command-max-w: 90px;
-    --ui-ribbon-icon-tile: 32px;
-    --ui-ribbon-icon: 28px;
+    --ui-ribbon-body-h: 50px;
+    --ui-ribbon-command-h: 36px;
+    --ui-ribbon-command-min-w: 110px;
+    --ui-ribbon-command-max-w: 160px;
+    --ui-ribbon-icon-tile: 24px;
+    --ui-ribbon-icon: 20px;
     --ui-nav-icon: 22px;
     --ui-nav-font: 12px;
     --ui-command-font: 11px;
@@ -156,10 +156,10 @@
 @media (max-width: 1440px) and (max-height: 800px) {
   :root {
     --ui-ribbon-tab-h: 36px;
-    --ui-ribbon-body-h: 84px;
-    --ui-ribbon-command-h: 64px;
-    --ui-ribbon-icon-tile: 30px;
-    --ui-ribbon-icon: 26px;
+    --ui-ribbon-body-h: 48px;
+    --ui-ribbon-command-h: 34px;
+    --ui-ribbon-icon-tile: 22px;
+    --ui-ribbon-icon: 18px;
     --ui-nav-icon: 20px;
     --ui-preview-h: 100px;
     --ui-preview-svg-h: 64px;
@@ -174,10 +174,10 @@
   :root[data-app-mode='fullscreen'] {
     --ui-header-h: 26px;
     --ui-ribbon-tab-h: 44px;
-    --ui-ribbon-body-h: 100px;
-    --ui-ribbon-command-h: 76px;
-    --ui-ribbon-icon-tile: 38px;
-    --ui-ribbon-icon: 30px;
+    --ui-ribbon-body-h: 56px;
+    --ui-ribbon-command-h: 40px;
+    --ui-ribbon-icon-tile: 28px;
+    --ui-ribbon-icon: 22px;
     --ui-workspace-tab-h: 26px;
     --ui-preview-h: 128px;
     --ui-preview-svg-h: 84px;

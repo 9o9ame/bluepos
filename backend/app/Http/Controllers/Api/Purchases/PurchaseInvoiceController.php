@@ -79,16 +79,7 @@ class PurchaseInvoiceController extends Controller
     {
         $this->authorize('create', PurchaseInvoice::class);
 
-        $data = $request->validate([
-            'supplier_ulid' => ['required', 'string', 'size:26'],
-            'warehouse_ulid' => ['required', 'string', 'size:26'],
-            'invoice_date' => ['nullable', 'date'],
-            'due_date' => ['nullable', 'date'],
-            'supplier_invoice_number' => ['nullable', 'string', 'max:100'],
-            'freight_amount' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
-            'other_charges' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
-            'notes' => ['nullable', 'string', 'max:5000'],
-        ]);
+        $data = $request->validate($this->headerRules());
 
         $invoice = $create->execute($data);
 
@@ -112,16 +103,7 @@ class PurchaseInvoiceController extends Controller
         $invoice = $this->findInvoice($purchaseUlid, $tenantContext);
         $this->authorize('update', $invoice);
 
-        $data = $request->validate([
-            'supplier_ulid' => ['sometimes', 'required', 'string', 'size:26'],
-            'warehouse_ulid' => ['sometimes', 'required', 'string', 'size:26'],
-            'invoice_date' => ['sometimes', 'required', 'date'],
-            'due_date' => ['nullable', 'date'],
-            'supplier_invoice_number' => ['nullable', 'string', 'max:100'],
-            'freight_amount' => ['sometimes', 'required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
-            'other_charges' => ['sometimes', 'required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
-            'notes' => ['nullable', 'string', 'max:5000'],
-        ]);
+        $data = $request->validate($this->headerRules(updating: true));
 
         return new PurchaseInvoiceResource($update->execute($invoice, $data));
     }
@@ -135,19 +117,7 @@ class PurchaseInvoiceController extends Controller
         $invoice = $this->findInvoice($purchaseUlid, $tenantContext);
         $this->authorize('update', $invoice);
 
-        $data = $request->validate([
-            'product_ulid' => ['required', 'string', 'size:26'],
-            'unit_ulid' => ['required', 'string', 'size:26'],
-            'quantity' => ['required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],
-            'conversion_factor' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/'],
-            'unit_cost' => ['required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
-            'discount_amount' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
-            'tax_amount' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
-            'supplier_product_code' => ['nullable', 'string', 'max:100'],
-            'batch_number' => ['nullable', 'string', 'max:100'],
-            'expiry_date' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string', 'max:500'],
-        ]);
+        $data = $request->validate($this->lineRules());
 
         $line = $upsert->execute($invoice, $data);
 
@@ -166,19 +136,7 @@ class PurchaseInvoiceController extends Controller
         $line = $this->findLine($invoice, $lineUlid);
         $line->loadMissing(['product', 'unit']);
 
-        $data = $request->validate([
-            'product_ulid' => ['sometimes', 'required', 'string', 'size:26'],
-            'unit_ulid' => ['sometimes', 'required', 'string', 'size:26'],
-            'quantity' => ['sometimes', 'required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],
-            'conversion_factor' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/'],
-            'unit_cost' => ['sometimes', 'required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
-            'discount_amount' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
-            'tax_amount' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
-            'supplier_product_code' => ['nullable', 'string', 'max:100'],
-            'batch_number' => ['nullable', 'string', 'max:100'],
-            'expiry_date' => ['nullable', 'date'],
-            'notes' => ['nullable', 'string', 'max:500'],
-        ]);
+        $data = $request->validate($this->lineRules(updating: true));
 
         $payload = [
             'product_ulid' => $data['product_ulid'] ?? $line->product->ulid,
@@ -196,6 +154,18 @@ class PurchaseInvoiceController extends Controller
                 ? $data['expiry_date']
                 : ($line->expiry_date?->toDateString()),
             'notes' => array_key_exists('notes', $data) ? $data['notes'] : $line->notes,
+            'brand_label' => array_key_exists('brand_label', $data) ? $data['brand_label'] : $line->brand_label,
+            'hs_code' => array_key_exists('hs_code', $data) ? $data['hs_code'] : $line->hs_code,
+            'pack_size' => array_key_exists('pack_size', $data) ? $data['pack_size'] : $line->pack_size,
+            'qty_ctn' => $data['qty_ctn'] ?? (string) $line->qty_ctn,
+            'free_pcs' => $data['free_pcs'] ?? (string) $line->free_pcs,
+            'price_type' => $data['price_type'] ?? $line->price_type,
+            'mrp' => $data['mrp'] ?? (string) $line->mrp,
+            'trade_disc_pct' => $data['trade_disc_pct'] ?? (string) $line->trade_disc_pct,
+            'regular_disc_pct' => $data['regular_disc_pct'] ?? (string) $line->regular_disc_pct,
+            'special_disc_pct' => $data['special_disc_pct'] ?? (string) $line->special_disc_pct,
+            'tax_pct' => $data['tax_pct'] ?? (string) $line->tax_pct,
+            'further_tax_pct' => $data['further_tax_pct'] ?? (string) $line->further_tax_pct,
         ];
 
         return new PurchaseInvoiceLineResource($upsert->execute($invoice, $payload, $line));
@@ -252,5 +222,79 @@ class PurchaseInvoiceController extends Controller
         }
 
         return $line;
+    }
+
+    /**
+     * @return array<string, list<string|\Illuminate\Validation\Rules\In>>
+     */
+    private function headerRules(bool $updating = false): array
+    {
+        $money = ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'];
+        $pct = ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/'];
+        $req = $updating ? ['sometimes', 'required'] : ['required'];
+
+        return [
+            'supplier_ulid' => [...$req, 'string', 'size:26'],
+            'warehouse_ulid' => [...$req, 'string', 'size:26'],
+            'invoice_date' => [$updating ? 'sometimes' : 'nullable', 'date'],
+            'due_date' => ['nullable', 'date'],
+            'supplier_invoice_number' => ['nullable', 'string', 'max:100'],
+            'po_number' => ['nullable', 'string', 'max:100'],
+            'invoice_type' => ['nullable', 'string', 'max:40'],
+            'currency_code' => ['nullable', 'string', 'size:3'],
+            'calculation_method' => ['nullable', 'string', 'max:40'],
+            'default_sales_tax_pct' => $pct,
+            'default_further_tax_pct' => $pct,
+            'default_advance_tax_pct' => $pct,
+            'default_price_type' => ['nullable', 'string', 'max:20'],
+            'brand_label' => ['nullable', 'string', 'max:120'],
+            'freight_amount' => $money,
+            'loading_amount' => $money,
+            'other_charges' => $money,
+            'other_discount' => $money,
+            'trade_offer' => $money,
+            'advance_tax_amount' => $money,
+            'round_off' => ['nullable', 'regex:/^-?(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
+            'notes' => ['nullable', 'string', 'max:5000'],
+            'tax_type' => ['nullable', 'string', 'max:40'],
+            'payment_terms' => ['nullable', 'string', 'max:40'],
+        ];
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    private function lineRules(bool $updating = false): array
+    {
+        $money = ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'];
+        $pct = ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/'];
+        $qty = ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'];
+        $req = $updating ? ['sometimes', 'required'] : ['required'];
+
+        return [
+            'product_ulid' => [...$req, 'string', 'size:26'],
+            'unit_ulid' => [...$req, 'string', 'size:26'],
+            'quantity' => [...$req, 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],
+            'conversion_factor' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/'],
+            'unit_cost' => [...$req, 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
+            'discount_amount' => $money,
+            'tax_amount' => $money,
+            'supplier_product_code' => ['nullable', 'string', 'max:100'],
+            'batch_number' => ['nullable', 'string', 'max:100'],
+            'expiry_date' => ['nullable', 'date'],
+            'notes' => ['nullable', 'string', 'max:500'],
+            'brand_label' => ['nullable', 'string', 'max:120'],
+            'hs_code' => ['nullable', 'string', 'max:40'],
+            'pack_size' => ['nullable', 'string', 'max:40'],
+            'qty_ctn' => $qty,
+            'free_pcs' => $qty,
+            'price_type' => ['nullable', 'string', 'max:20'],
+            'mrp' => $money,
+            'trade_disc_pct' => $pct,
+            'regular_disc_pct' => $pct,
+            'special_disc_pct' => $pct,
+            'tax_pct' => $pct,
+            'further_tax_pct' => $pct,
+        ];
     }
 }

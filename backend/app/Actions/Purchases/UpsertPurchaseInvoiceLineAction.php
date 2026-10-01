@@ -23,19 +23,7 @@ class UpsertPurchaseInvoiceLineAction
     ) {}
 
     /**
-     * @param  array{
-     *     product_ulid: string,
-     *     unit_ulid: string,
-     *     quantity: string,
-     *     conversion_factor?: string,
-     *     unit_cost: string,
-     *     discount_amount?: string,
-     *     tax_amount?: string,
-     *     supplier_product_code?: string|null,
-     *     batch_number?: string|null,
-     *     expiry_date?: string|null,
-     *     notes?: string|null
-     * }  $data
+     * @param  array<string, mixed>  $data
      */
     public function execute(
         PurchaseInvoice $invoice,
@@ -69,9 +57,18 @@ class UpsertPurchaseInvoiceLineAction
 
             $quantity = (string) $data['quantity'];
             $unitCost = (string) $data['unit_cost'];
-            $discount = (string) ($data['discount_amount'] ?? '0');
-            $tax = (string) ($data['tax_amount'] ?? '0');
-            $amounts = $this->recalculate->lineAmounts($quantity, $conversion, $unitCost, $discount, $tax);
+            $amounts = $this->recalculate->resolveLineMoney(
+                $quantity,
+                $conversion,
+                $unitCost,
+                (string) ($data['trade_disc_pct'] ?? '0'),
+                (string) ($data['regular_disc_pct'] ?? '0'),
+                (string) ($data['special_disc_pct'] ?? '0'),
+                (string) ($data['tax_pct'] ?? '0'),
+                (string) ($data['further_tax_pct'] ?? '0'),
+                isset($data['discount_amount']) ? (string) $data['discount_amount'] : '0',
+                isset($data['tax_amount']) ? (string) $data['tax_amount'] : '0',
+            );
 
             $batch = $data['batch_number'] ?? null;
             $expiry = $data['expiry_date'] ?? null;
@@ -86,6 +83,10 @@ class UpsertPurchaseInvoiceLineAction
                 ]);
             }
 
+            $qtyCtn = $this->qty((string) ($data['qty_ctn'] ?? '0'), 'qty_ctn');
+            $freePcs = $this->qty((string) ($data['free_pcs'] ?? '0'), 'free_pcs', allowZero: true);
+            $mrp = $this->money((string) ($data['mrp'] ?? '0'));
+
             $payload = [
                 'product_id' => $product->id,
                 'unit_id' => $unit->id,
@@ -93,13 +94,26 @@ class UpsertPurchaseInvoiceLineAction
                 'conversion_factor' => bcadd($conversion, '0', 8),
                 'base_quantity' => $amounts['base_quantity'],
                 'unit_cost' => bcadd($unitCost, '0', 4),
-                'discount_amount' => bcadd($discount, '0', 4),
-                'tax_amount' => bcadd($tax, '0', 4),
+                'discount_amount' => $amounts['discount_amount'],
+                'tax_amount' => $amounts['tax_amount'],
+                'further_tax_amount' => $amounts['further_tax_amount'],
                 'line_total' => $amounts['line_total'],
                 'supplier_product_code' => $data['supplier_product_code'] ?? null,
                 'batch_number' => is_string($batch) ? trim($batch) : null,
                 'expiry_date' => $expiry,
                 'notes' => $data['notes'] ?? null,
+                'brand_label' => $data['brand_label'] ?? null,
+                'hs_code' => $data['hs_code'] ?? null,
+                'pack_size' => $data['pack_size'] ?? null,
+                'qty_ctn' => $qtyCtn,
+                'free_pcs' => $freePcs,
+                'price_type' => $data['price_type'] ?? 'trade',
+                'mrp' => $mrp,
+                'trade_disc_pct' => bcadd((string) ($data['trade_disc_pct'] ?? '0'), '0', 8),
+                'regular_disc_pct' => bcadd((string) ($data['regular_disc_pct'] ?? '0'), '0', 8),
+                'special_disc_pct' => bcadd((string) ($data['special_disc_pct'] ?? '0'), '0', 8),
+                'tax_pct' => bcadd((string) ($data['tax_pct'] ?? '0'), '0', 8),
+                'further_tax_pct' => bcadd((string) ($data['further_tax_pct'] ?? '0'), '0', 8),
             ];
 
             if ($line) {
@@ -132,5 +146,32 @@ class UpsertPurchaseInvoiceLineAction
 
             return $line->fresh(['product', 'unit']) ?? $line;
         });
+    }
+
+    private function money(string $value): string
+    {
+        if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/', $value)) {
+            throw ValidationException::withMessages([
+                'mrp' => 'Amount must be a valid non-negative decimal.',
+            ]);
+        }
+
+        return bcadd($value, '0', 4);
+    }
+
+    private function qty(string $value, string $field, bool $allowZero = false): string
+    {
+        if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/', $value)) {
+            throw ValidationException::withMessages([
+                $field => 'Quantity must be a valid non-negative decimal.',
+            ]);
+        }
+        if (! $allowZero && bccomp($value, '0', 6) === -1) {
+            throw ValidationException::withMessages([
+                $field => 'Quantity cannot be negative.',
+            ]);
+        }
+
+        return bcadd($value, '0', 6);
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ColumnPreferenceController;
 use App\Http\Controllers\Api\CoaChartController;
 use App\Http\Controllers\Api\AccountMainHeadController;
 use App\Http\Controllers\Api\AccountSubHeadController;
@@ -98,6 +99,9 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::get('/settings/business', [BusinessSettingController::class, 'show']);
     Route::patch('/settings/business', [BusinessSettingController::class, 'update']);
     Route::get('/settings/entitlements', [TenantEntitlementController::class, 'show']);
+
+    Route::get('/column-preferences/{screenKey}', [ColumnPreferenceController::class, 'show']);
+    Route::put('/column-preferences/{screenKey}', [ColumnPreferenceController::class, 'upsert']);
 
     Route::get('/parties', [PartyController::class, 'index']);
     Route::post('/parties', [PartyController::class, 'store']);

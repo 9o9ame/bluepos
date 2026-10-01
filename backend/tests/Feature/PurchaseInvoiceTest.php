@@ -402,6 +402,89 @@ class PurchaseInvoiceTest extends TestCase
         $this->assertNoInternalIds($list->json());
     }
 
+    public function test_purchase_entry_fields_persist_and_server_recalculates_pcts(): void
+    {
+        $this->signInOwner('pur-entry')->assertOk();
+        $warehouseUlid = $this->sessionWarehouseUlid();
+        $pcs = $this->unitUlid('PCS');
+
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-ENTRY',
+            'name' => 'Entry Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Entry Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $invoice = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'po_number' => 'PO-77',
+            'invoice_type' => 'tax_gst',
+            'currency_code' => 'PKR',
+            'calculation_method' => 'gst_on_trade',
+            'default_sales_tax_pct' => '18',
+            'default_price_type' => 'trade',
+            'brand_label' => 'Nestle',
+            'freight_amount' => '100.0000',
+            'loading_amount' => '20.0000',
+            'other_charges' => '5.0000',
+            'other_discount' => '10.0000',
+            'trade_offer' => '5.0000',
+            'advance_tax_amount' => '2.0000',
+            'round_off' => '0.5000',
+            'tax_type' => 'standard',
+            'payment_terms' => 'credit',
+            'notes' => 'Entry notes',
+        ])->assertCreated();
+
+        $invoiceUlid = $invoice->json('ulid');
+        $invoice->assertJsonPath('po_number', 'PO-77')
+            ->assertJsonPath('loading_amount', '20.0000')
+            ->assertJsonPath('brand_label', 'Nestle')
+            ->assertJsonPath('payment_terms', 'credit');
+
+        // 10 * 100 = 1000; trade 10% => 900; regular 5% => 855; tax 18% => 153.9; further 1% => 8.55
+        $line = $this->postJson('/api/purchases/'.$invoiceUlid.'/lines', [
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '10.000000',
+            'unit_cost' => '100.0000',
+            'brand_label' => 'Nestle',
+            'hs_code' => '1905',
+            'pack_size' => '24',
+            'qty_ctn' => '1.000000',
+            'free_pcs' => '2.000000',
+            'price_type' => 'trade',
+            'mrp' => '150.0000',
+            'trade_disc_pct' => '10',
+            'regular_disc_pct' => '5',
+            'special_disc_pct' => '0',
+            'tax_pct' => '18',
+            'further_tax_pct' => '1',
+            'discount_amount' => '9999.0000',
+            'tax_amount' => '9999.0000',
+        ])->assertCreated();
+
+        $line->assertJsonPath('discount_amount', '145.0000')
+            ->assertJsonPath('tax_amount', '153.9000')
+            ->assertJsonPath('further_tax_amount', '8.5500')
+            ->assertJsonPath('line_total', '1017.4500')
+            ->assertJsonPath('hs_code', '1905')
+            ->assertJsonPath('free_pcs', '2.000000');
+
+        $show = $this->getJson('/api/purchases/'.$invoiceUlid)->assertOk();
+        $show->assertJsonPath('subtotal', '1000.0000')
+            ->assertJsonPath('discount_amount', '145.0000')
+            ->assertJsonPath('tax_amount', '153.9000')
+            ->assertJsonPath('further_tax_amount', '8.5500');
+        // net lines 1017.45 + freight/loading/other - discounts + advance + round_off
+        $this->assertSame('1129.9500', $show->json('grand_total'));
+        $this->assertNoInternalIds($show->json());
+    }
+
     private function sessionWarehouseUlid(): string
     {
         return (string) $this->getJson('/api/auth/me')->assertOk()->json('warehouse.ulid');

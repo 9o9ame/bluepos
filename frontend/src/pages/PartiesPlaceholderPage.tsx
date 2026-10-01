@@ -58,6 +58,7 @@ import { CoaHierarchyModals } from '../components/parties/CoaHierarchyModals'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { AnimatedSelect } from '../components/ui/AnimatedSelect'
 import { ToggleSwitch } from '../components/ui/ToggleSwitch'
+import { askConfirm, formatApiError, useFeedback } from '../feedback/FeedbackProvider'
 import './PartiesPlaceholderPage.css'
 import './PartiesPlaceholderPage.modern.css'
 
@@ -175,8 +176,13 @@ function partyToForm(party: Party, listFilter: PartyType): FormState {
     email: party.email ?? '',
     discontinued: !party.is_active,
     invoiceRestricted: Boolean(party.invoice_restricted),
+    addPercent: party.add_percent ?? '0',
     crLimit: party.credit_limit_amount ?? '0.0000',
     days: String(party.credit_limit_days ?? 0),
+    cnic: party.cnic ?? '',
+    ntn: party.ntn ?? '',
+    stn: party.stn ?? '',
+    formulaDraft: party.formulas ?? '',
     accountType: party.account_type?.name ?? '',
     accountTypeUlid: party.account_type_ulid ?? '',
     license: party.license_number ?? '',
@@ -206,6 +212,14 @@ function formSnapshot(form: FormState): string {
     phone2: form.phone2,
     email: form.email,
     discontinued: form.discontinued,
+    invoiceRestricted: form.invoiceRestricted,
+    addPercent: form.addPercent,
+    crLimit: form.crLimit,
+    days: form.days,
+    cnic: form.cnic,
+    ntn: form.ntn,
+    stn: form.stn,
+    formulaDraft: form.formulaDraft,
     accountTypeUlid: form.accountTypeUlid,
     license: form.license,
     licenseIssue: form.licenseIssue,
@@ -279,14 +293,12 @@ function openingsFromApi(rows: PartyOpeningBalance[]): OpeningDraft[] {
 }
 
 function errMessage(err: unknown): string {
-  if (err && typeof err === 'object' && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
-    return (err as { message: string }).message
-  }
-  return 'Request failed'
+  return formatApiError(err)
 }
 
 export function PartiesPlaceholderPage() {
   const { closeActiveTab } = useWorkspace()
+  const feedback = useFeedback()
   const [viewTab, setViewTab] = useState<ViewTab>('entry')
   const [subTab, setSubTab] = useState<DetailTab>('contact')
   const [listFilter, setListFilter] = useState<PartyType>('ALL')
@@ -383,9 +395,9 @@ export function PartiesPlaceholderPage() {
     setForm(next)
   }
 
-  function confirmDiscard(): boolean {
+  async function confirmDiscard(): Promise<boolean> {
     if (!dirty) return true
-    return window.confirm('Discard unsaved changes?')
+    return askConfirm('Discard unsaved changes?')
   }
 
   async function loadParties(filter: PartyType = listFilter, keepSelection = false) {
@@ -757,15 +769,15 @@ export function PartiesPlaceholderPage() {
   }
 
   async function refresh() {
-    if (!confirmDiscard()) return
+    if (!(await confirmDiscard())) return
     await loadParties(listFilter, false)
     startNew(listFilter)
     setViewTab('entry')
   }
 
-  function selectRow(row: PartyListRow) {
+  async function selectRow(row: PartyListRow) {
     if (row.key === selectedKey) return
-    if (!confirmDiscard()) return
+    if (!(await confirmDiscard())) return
     const party = parties.find((p) => p.ulid === row.ulid && p.party_type === row.partyType)
     if (!party) return
     applyBaseline(partyToForm(party, listFilter))
@@ -781,11 +793,11 @@ export function PartiesPlaceholderPage() {
   function moveSelection(index: number) {
     if (rows.length === 0) return
     const bounded = Math.min(Math.max(index, 0), rows.length - 1)
-    selectRow(rows[bounded])
+    void selectRow(rows[bounded])
   }
 
-  function onTypeChange(next: PartyType) {
-    if (!confirmDiscard()) return
+  async function onTypeChange(next: PartyType) {
+    if (!(await confirmDiscard())) return
     setListFilter(next)
     const nextType = CREATABLE_TYPES.includes(next) ? next : 'VENDORS'
     applyBaseline(applySuggestedAccountType(nextType, emptyForm(nextType)))
@@ -830,6 +842,11 @@ export function PartiesPlaceholderPage() {
       invoice_restricted: form.invoiceRestricted,
       credit_limit_amount: form.crLimit.trim() || '0.0000',
       credit_limit_days: Number(form.days) || 0,
+      add_percent: form.addPercent.trim() || '0',
+      cnic: form.cnic.trim() || null,
+      ntn: form.ntn.trim() || null,
+      stn: form.stn.trim() || null,
+      formulas: form.formulaDraft.trim() || null,
       ...(partyType === 'account'
         ? {}
         : {
@@ -898,8 +915,11 @@ export function PartiesPlaceholderPage() {
       applyPartyImage(finalSaved)
       await loadBanks(finalSaved.ulid, finalSaved.party_type)
       await loadOpenings(finalSaved.ulid, finalSaved.party_type)
+      feedback.success(wasNew ? 'Party created successfully.' : 'Party saved successfully.')
     } catch (err) {
-      setError(errMessage(err))
+      const message = errMessage(err)
+      setError(message)
+      feedback.error(message)
     } finally {
       setSaving(false)
     }
@@ -1176,7 +1196,7 @@ export function PartiesPlaceholderPage() {
                       patchForm('type', next)
                       return
                     }
-                    onTypeChange(next)
+                    void onTypeChange(next)
                   }}
                 >
                   {PARTY_TYPES.map((type) => (
@@ -1465,12 +1485,27 @@ export function PartiesPlaceholderPage() {
                 {subTab === 'formulas' ? (
                   <div className="parties-vca-formulas">
                     <div className="parties-vca-formula-list" aria-label="Formula list">
-                      <div className="parties-vca-formula-list-empty">No formulas saved</div>
+                      {form.formulaDraft
+                        .split('\n')
+                        .map((line) => line.trim())
+                        .filter(Boolean).length === 0 ? (
+                        <div className="parties-vca-formula-list-empty">No formulas saved</div>
+                      ) : (
+                        form.formulaDraft
+                          .split('\n')
+                          .map((line) => line.trim())
+                          .filter(Boolean)
+                          .map((line, index) => (
+                            <div key={`${index}-${line.slice(0, 24)}`} className="parties-vca-formula-list-item">
+                              {line}
+                            </div>
+                          ))
+                      )}
                     </div>
                     <textarea
                       className="parties-vca-formula-editor"
                       spellCheck={false}
-                      placeholder="Formula editor (visual only — not executed)"
+                      placeholder="Enter formulas (one per line). Saved with the party — not executed."
                       value={form.formulaDraft}
                       onChange={(e) => patchForm('formulaDraft', e.target.value)}
                     />
@@ -1698,7 +1733,7 @@ export function PartiesPlaceholderPage() {
                       <tr
                         key={row.key}
                         className={row.key === selectedKey ? 'is-selected' : undefined}
-                        onClick={() => selectRow(row)}
+                        onClick={() => void selectRow(row)}
                       >
                         <td>{row.no}</td>
                         <td>{row.name}</td>

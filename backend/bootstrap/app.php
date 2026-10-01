@@ -82,7 +82,26 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($e instanceof QueryException) {
                 report($e);
 
-                return ApiError::response('SERVER_ERROR', 'An unexpected error occurred.', 500);
+                $sqlState = (string) ($e->errorInfo[0] ?? '');
+                $driverCode = (string) ($e->errorInfo[1] ?? '');
+                $detail = (string) ($e->errorInfo[2] ?? $e->getMessage());
+
+                if ($sqlState === '23505' || $driverCode === '1062' || str_contains(strtolower($detail), 'unique')) {
+                    $message = 'This value is already in use and must be unique.';
+                    if (str_contains($detail, 'accounts_tenant_id_code_unique') || str_contains($detail, '(tenant_id, code)')) {
+                        $message = 'This code is already used by another party or ledger account.';
+                    } elseif (str_contains($detail, '_code_unique') || str_contains(strtolower($detail), 'code')) {
+                        $message = 'This code is already in use.';
+                    }
+
+                    return ApiError::response('CONFLICT', $message, 409);
+                }
+
+                if ($sqlState === '23503') {
+                    return ApiError::response('VALIDATION_ERROR', 'Related record is missing or cannot be linked.', 422);
+                }
+
+                return ApiError::response('SERVER_ERROR', 'An unexpected database error occurred. Please try again.', 500);
             }
 
             if ($e instanceof HttpExceptionInterface) {

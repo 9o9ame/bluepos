@@ -4,6 +4,7 @@ import { ApiClientError } from '../api/client'
 import { useCatalogMasterEditor } from '../components/catalog/useCatalogMasterEditor'
 import { DesktopButton, DesktopPanel, Field, FormGroup } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { askConfirm } from '../feedback/FeedbackProvider'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 
 export function BrandsPage() {
@@ -33,10 +34,12 @@ export function BrandsPage() {
           <DesktopButton icon={<Plus size={13} />} label="New" disabled={!editor.canCreate} onClick={editor.startNew} />
           <DesktopButton icon={<Save size={13} />} label="Save" shortcut="F9" disabled={!editor.canSave || editor.isSaving} onClick={() => (document.getElementById('brand-form') as HTMLFormElement | null)?.requestSubmit()} />
           <DesktopButton icon={<Trash2 size={13} />} label="Delete" disabled={!editor.canDelete || !editor.selected?.is_active || editor.isDeactivating} onClick={() => {
-            if (!editor.selected || !window.confirm(`Deactivate ${editor.selected.name}?`)) return
-            void editor.deactivate().catch((err) => {
-              editor.setError(err instanceof ApiClientError ? err.message : 'Unable to deactivate brand.')
-            })
+            void (async () => {
+              if (!editor.selected || !(await askConfirm(`Deactivate ${editor.selected.name}?`))) return
+              void editor.deactivate().catch((err) => {
+                editor.setError(err instanceof ApiClientError ? err.message : 'Unable to deactivate brand.')
+              })
+            })()
           }} />
           <DesktopButton
             icon={<RefreshCw size={13} />}

@@ -44,6 +44,11 @@ class PartyResource extends JsonResource
             'invoice_restricted' => (bool) $this->invoice_restricted,
             'credit_limit_amount' => bcadd((string) ($this->credit_limit_amount ?? '0'), '0', 4),
             'credit_limit_days' => (int) ($this->credit_limit_days ?? 0),
+            'add_percent' => bcadd((string) ($this->add_percent ?? '0'), '0', 8),
+            'cnic' => $this->cnic,
+            'ntn' => $this->ntn,
+            'stn' => $this->stn,
+            'formulas' => $this->formulas,
             'account_type_ulid' => $accountType?->ulid,
             'account_type' => $accountType ? [
                 'ulid' => $accountType->ulid,

@@ -47,6 +47,10 @@ class UpdatePartyRequest extends FormRequest
             'license_issued_on',
             'license_expires_on',
             'rf_id',
+            'cnic',
+            'ntn',
+            'stn',
+            'formulas',
         ] as $field) {
             if ($this->exists($field)) {
                 $merge[$field] = $this->filled($field) ? trim((string) $this->input($field)) : null;
@@ -113,6 +117,11 @@ class UpdatePartyRequest extends FormRequest
             'invoice_restricted' => ['sometimes', 'boolean'],
             'credit_limit_amount' => ['sometimes', 'regex:/^\d+(\.\d{1,4})?$/'],
             'credit_limit_days' => ['sometimes', 'integer', 'min:0', 'max:99999'],
+            'add_percent' => ['sometimes', 'regex:/^\d+(\.\d{1,8})?$/'],
+            'cnic' => ['nullable', 'string', 'max:32'],
+            'ntn' => ['nullable', 'string', 'max:64'],
+            'stn' => ['nullable', 'string', 'max:64'],
+            'formulas' => ['nullable', 'string', 'max:20000'],
             'is_active' => ['sometimes', 'boolean'],
         ];
 

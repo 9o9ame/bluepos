@@ -15,10 +15,14 @@
   flex-direction: column;
   width: 100%;
   min-width: 0;
+  min-inline-size: 0;
   max-width: 100%;
   height: 100%;
+  max-height: 100%;
   min-height: 0;
   overflow: hidden;
+  overscroll-behavior: none;
+  contain: layout paint;
   padding: clamp(4px, 0.5vh, 8px) clamp(6px, 0.6vw, 10px) 6px;
   color: var(--vca-text);
   background: linear-gradient(180deg, #e8eef5 0%, #d8e1eb 100%);
@@ -162,7 +166,7 @@
 
 .parties-vca-main {
   display: grid;
-  grid-template-columns: minmax(0, 0.36fr) minmax(0, 0.64fr);
+  grid-template-columns: minmax(0, 0.39fr) minmax(0, 0.64fr);
   gap: 8px;
   flex: 1 1 auto;
   min-height: 0;
@@ -181,6 +185,7 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+  min-inline-size: 0;
   min-height: 0;
   overflow: hidden;
 }
@@ -190,13 +195,15 @@
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
+  min-inline-size: 0;
   overflow: hidden;
 }
 
 .parties-vca-left > .parties-vca-panel:first-of-type > .parties-vca-subpanel {
-  overflow: visible;
+  overflow: auto;
   flex: 1 1 auto;
   min-height: 0;
+  min-inline-size: 0;
 }
 
 .parties-vca-left > .parties-vca-panel:first-of-type > .parties-vca-mini-grid-wrap,
@@ -208,6 +215,9 @@
   margin: 0;
   padding: 8px 8px 6px;
   min-width: 0;
+  /* Fieldsets default to min-inline-size: min-content and blow page scrollbars. */
+  min-inline-size: 0;
+  min-height: 0;
   border: 1px solid var(--vca-border);
   border-radius: 8px;
   background: linear-gradient(180deg, #ffffff, var(--vca-panel));
@@ -224,7 +234,7 @@
   display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px 12px;
+  gap: 5px 6px;
   max-width: calc(100% - 8px);
 }
 
@@ -283,7 +293,7 @@
 }
 
 .parties-vca-id-row {
-  grid-template-columns: 28px minmax(42px, 0.55fr) 42px minmax(56px, 0.7fr) 36px minmax(0, 1.1fr);
+  grid-template-columns: 28px minmax(0, 0.55fr) 42px minmax(0, 0.7fr) 36px minmax(0, 1.1fr);
   margin-top: 0;
 }
 
@@ -359,13 +369,14 @@
 
 .parties-vca-subpanel {
   min-height: 0;
+  min-inline-size: 0;
   flex: 1 1 auto;
   margin-top: 0;
   padding: 6px 8px;
   border: 1px solid var(--vca-border);
   border-radius: 0 8px 8px 8px;
   background: #fff;
-  overflow: visible;
+  overflow: auto;
 }
 
 .parties-vca-contact {
@@ -605,6 +616,8 @@
 
 .parties-vca-account-panel {
   flex: 0 0 auto;
+  min-inline-size: 0;
+  overflow: hidden;
 }
 
 .parties-vca-account-panel .parties-vca-account-grid {
@@ -634,6 +647,16 @@
   font-weight: 600;
 }
 
+.parties-vca-formula-list-item {
+  padding: 6px 8px;
+  border-bottom: 1px solid #e4ebf1;
+  color: #1a4568;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .parties-vca-formula-editor {
   min-height: 80px !important;
   font-family: ui-monospace, Consolas, monospace;
@@ -641,10 +664,11 @@
 
 .parties-vca-account-grid {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) 58px minmax(0, 1fr) 42px minmax(0, 1fr);
-  gap: 4px 6px;
+  grid-template-columns: 48px minmax(0, 1fr) 52px minmax(0, 1fr) 40px minmax(0, 1fr);
+  gap: 4px 4px;
   align-items: center;
   min-width: 0;
+  max-width: 100%;
 }
 
 .parties-vca-account-type-row {
@@ -683,8 +707,11 @@
 .parties-vca-grid-wrap,
 .parties-vca-shell-grid-wrap {
   flex: 1 1 auto;
+  min-width: 0;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--vca-border);
   border-radius: 8px 8px 0 0;
   background: #fff;
@@ -1037,12 +1064,12 @@
 @media (max-width: 1100px) {
   .parties-vca-main {
     grid-template-columns: minmax(0, 1fr);
-    overflow: auto;
+    overflow: hidden;
   }
 
   .parties-vca-left,
   .parties-vca-right {
-    min-height: 420px;
+    min-height: 0;
   }
 
   .parties-vca-contact {

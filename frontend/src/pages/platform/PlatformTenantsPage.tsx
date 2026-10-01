@@ -9,6 +9,7 @@ import {
   updatePlatformTenant,
 } from '../../api/platform'
 import { ApiClientError } from '../../api/client'
+import { askConfirm } from '../../feedback/FeedbackProvider'
 import { CredentialsOnceModal } from '../../components/platform/CredentialsOnceModal'
 import { usePlatformAuth } from '../../features/platform/PlatformAuthProvider'
 import { usePlatformCan } from '../../features/platform/usePlatformCan'
@@ -209,10 +210,12 @@ export function PlatformTenantsPage() {
                     type="button"
                     className="underline text-red-700"
                     onClick={() => {
-                      if (!window.confirm(`Cancel tenant ${tenant.code}? Mart users will be signed out. Posted history is kept.`)) {
-                        return
-                      }
-                      void run(() => withRecentMfa(() => deletePlatformTenant(tenant.ulid, 'Deleted from tenant list')))
+                      void (async () => {
+                        if (!(await askConfirm(`Cancel tenant ${tenant.code}? Mart users will be signed out. Posted history is kept.`))) {
+                          return
+                        }
+                        void run(() => withRecentMfa(() => deletePlatformTenant(tenant.ulid, 'Deleted from tenant list')))
+                      })()
                     }}
                   >
                     Delete

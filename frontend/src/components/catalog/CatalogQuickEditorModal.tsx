@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { ApiClientError } from '../../api/client'
+import { askConfirm } from '../../feedback/FeedbackProvider'
 import {
   useCatalogMasterEditor,
   type CatalogMasterKind,
@@ -260,10 +261,12 @@ export function CatalogQuickEditorModal({
               editor.isDeactivating
             }
             onClick={() => {
-              if (!editor.selected || !window.confirm(`Deactivate ${editor.selected.name}?`)) return
-              void editor.deactivate().catch((err) => {
-                editor.setError(err instanceof ApiClientError ? err.message : 'Unable to deactivate record.')
-              })
+              void (async () => {
+                if (!editor.selected || !(await askConfirm(`Deactivate ${editor.selected.name}?`))) return
+                void editor.deactivate().catch((err) => {
+                  editor.setError(err instanceof ApiClientError ? err.message : 'Unable to deactivate record.')
+                })
+              })()
             }}
           >
             <Trash2 size={22} />

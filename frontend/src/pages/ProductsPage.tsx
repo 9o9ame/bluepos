@@ -33,6 +33,7 @@ import {
   uploadProductImage,
 } from '../api/catalog'
 import { ApiClientError } from '../api/client'
+import { askConfirm } from '../feedback/FeedbackProvider'
 import {
   createOpeningBalance,
   createOpeningBalanceLine,
@@ -268,6 +269,42 @@ export function ProductsPage() {
 
   const canSave = creating ? canCreate : canEdit && Boolean(selectedKey)
   const inStockDisplay = productStock.data?.active_warehouse.quantity ?? '0.000000'
+  const purchaseRateDisplay = useMemo(() => {
+    const stock = productStock.data
+    if (!stock) return '0.0000'
+    const activeUlid = stock.active_warehouse.ulid
+    const match = stock.warehouses.find((row) => row.warehouse.ulid === activeUlid)
+    const avg = match?.average_cost
+    if (avg == null || avg === '') return '0.0000'
+    const n = Number(avg)
+    return Number.isFinite(n) ? n.toFixed(4) : '0.0000'
+  }, [productStock.data])
+
+  const marginDisplay = useMemo(() => {
+    const purchase = Number(purchaseRateDisplay)
+    const sale = Number(retail)
+    if (!Number.isFinite(purchase) || !Number.isFinite(sale) || sale <= 0) return '0.00'
+    return (((sale - purchase) / sale) * 100).toFixed(2)
+  }, [purchaseRateDisplay, retail])
+
+  function applySaleDerivedPrices(saleRaw: string, purchaseRaw: string) {
+    const sale = Number(saleRaw)
+    const purchase = Number(purchaseRaw)
+    if (!Number.isFinite(sale) || !Number.isFinite(purchase)) {
+      setWholesale('0.0000')
+      setMinimumSale('0.0000')
+      return
+    }
+    const markup = sale - purchase
+    setWholesale((sale - markup * 0.25).toFixed(4))
+    setMinimumSale((sale - markup * 0.5).toFixed(4))
+  }
+
+  function onSaleRateChange(value: string) {
+    setRetail(value)
+    applySaleDerivedPrices(value, purchaseRateDisplay)
+  }
+
   const openingTotal = useMemo(() => {
     if (!openingQty || !openingUnitCost) return '0.0000'
     const qty = Number(openingQty)
@@ -330,7 +367,7 @@ export function ProductsPage() {
     }
   }
 
-  function requestProductImageRemoval() {
+  async function requestProductImageRemoval() {
     const hasImage = Boolean(
       pendingImagePreview ||
       (!imageRemoveRequested && selected?.image_url),
@@ -338,7 +375,7 @@ export function ProductsPage() {
 
     if (!hasImage || !canSave) return
 
-    if (!window.confirm('Remove this product image when you save the product?')) {
+    if (!(await askConfirm('Remove this product image when you save the product?'))) {
       return
     }
 
@@ -594,7 +631,7 @@ export function ProductsPage() {
   async function postOpeningDraft() {
     if (!openingDocument || openingDocument.status === 'posted') return
     if (!canOpeningPost) return
-    if (!window.confirm('Post this opening balance? Stock will update and the document becomes read-only.')) {
+    if (!(await askConfirm('Post this opening balance? Stock will update and the document becomes read-only.'))) {
       return
     }
     setOpeningBusy(true)
@@ -876,7 +913,7 @@ export function ProductsPage() {
                 aria-label="Remove product image"
                 onClick={(event) => {
                   event.stopPropagation()
-                  requestProductImageRemoval()
+                  void requestProductImageRemoval()
                 }}
               >
                 <X size={14} strokeWidth={3} />
@@ -972,32 +1009,28 @@ export function ProductsPage() {
 
               // ACTIVE PRODUCT -> DEACTIVATE
               if (selected.is_active) {
-                if (
-                  !window.confirm(
-                    `Deactivate ${selected.name}?`,
-                  )
-                ) {
-                  return
-                }
+                void (async () => {
+                  if (!(await askConfirm(`Deactivate ${selected.name}?`))) {
+                    return
+                  }
+                  void deactivateProduct(selectedKey)
+                    .then(async () => {
+                      await queryClient.invalidateQueries({
+                        queryKey: ['products'],
+                      })
 
-                void deactivateProduct(selectedKey)
-                  .then(async () => {
-                    await queryClient.invalidateQueries({
-                      queryKey: ['products'],
+                      await queryClient.invalidateQueries({
+                        queryKey: ['product', selectedKey],
+                      })
                     })
-
-                    await queryClient.invalidateQueries({
-                      queryKey: ['product', selectedKey],
+                    .catch((err) => {
+                      setError(
+                        err instanceof ApiClientError
+                          ? err.message
+                          : 'Unable to deactivate product.',
+                      )
                     })
-                  })
-                  .catch((err) => {
-                    setError(
-                      err instanceof ApiClientError
-                        ? err.message
-                        : 'Unable to deactivate product.',
-                    )
-                  })
-
+                })()
                 return
               }
 
@@ -1354,18 +1387,45 @@ export function ProductsPage() {
               <label>Reorder Level</label>
               <input className="pdf-input pdf-num" value={reorderLevel} readOnly={!canSave} onChange={(e) => setReorderLevel(e.target.value)} />
               <label>Purchase Rate</label>
-              <input className="pdf-input pdf-num" disabled placeholder="—" />
-              <label>Margin</label>
-              <input className="pdf-input pdf-num" disabled placeholder="—" />
+              <input
+                className="pdf-input pdf-num pdf-readonly"
+                readOnly
+                value={creating || !selectedKey || !canViewStock ? '0.0000' : purchaseRateDisplay}
+                title={canViewStock ? 'Active warehouse average cost (read-only)' : 'Inventory view permission required'}
+              />
+              <label>Margin %</label>
+              <input
+                className="pdf-input pdf-num pdf-readonly"
+                readOnly
+                value={marginDisplay}
+                title="(Sale Rate − Purchase Rate) ÷ Sale Rate × 100"
+              />
             </div>
 
             <div className="pdf-row pdf-row-rates">
               <label>Sale Rate</label>
-              <input className="pdf-input pdf-num" value={retail} readOnly={!canSave || !canPrices} onChange={(e) => setRetail(e.target.value)} />
+              <input
+                className="pdf-input pdf-num"
+                value={retail}
+                readOnly={!canSave || !canPrices}
+                onChange={(e) => onSaleRateChange(e.target.value)}
+              />
               <label>Whole Sale</label>
-              <input className="pdf-input pdf-num" value={wholesale} readOnly={!canSave || !canPrices} onChange={(e) => setWholesale(e.target.value)} />
+              <input
+                className="pdf-input pdf-num"
+                value={wholesale}
+                readOnly={!canSave || !canPrices}
+                onChange={(e) => setWholesale(e.target.value)}
+                title="Auto: Sale − 25% of (Sale − Purchase). Editable."
+              />
               <label>Min Sale</label>
-              <input className="pdf-input pdf-num" value={minimumSale} readOnly={!canSave || !canPrices} onChange={(e) => setMinimumSale(e.target.value)} />
+              <input
+                className="pdf-input pdf-num"
+                value={minimumSale}
+                readOnly={!canSave || !canPrices}
+                onChange={(e) => setMinimumSale(e.target.value)}
+                title="Auto: Sale − 50% of (Sale − Purchase). Editable."
+              />
             </div>
 
             <div className="pdf-row pdf-row-split">

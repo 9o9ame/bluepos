@@ -17,6 +17,7 @@ import {
   upsertTenantLimit,
 } from '../../api/platform'
 import { ApiClientError } from '../../api/client'
+import { askConfirm } from '../../feedback/FeedbackProvider'
 import { CredentialsOnceModal } from '../../components/platform/CredentialsOnceModal'
 import { usePlatformAuth } from '../../features/platform/PlatformAuthProvider'
 
@@ -150,10 +151,12 @@ export function PlatformTenantDetailPage() {
                 type="button"
                 className="rounded border border-red-700 px-3 text-red-700"
                 onClick={() => {
-                  if (!window.confirm(`Cancel tenant ${tenant.code}? Mart users will be signed out. Posted history is kept.`)) {
-                    return
-                  }
-                  void run(() => deletePlatformTenant(tenant.ulid, reason || 'Deleted from tenant detail'))
+                  void (async () => {
+                    if (!(await askConfirm(`Cancel tenant ${tenant.code}? Mart users will be signed out. Posted history is kept.`))) {
+                      return
+                    }
+                    void run(() => deletePlatformTenant(tenant.ulid, reason || 'Deleted from tenant detail'))
+                  })()
                 }}
               >
                 Delete
