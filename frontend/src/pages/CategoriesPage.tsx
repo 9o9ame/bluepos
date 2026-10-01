@@ -51,7 +51,7 @@ export function CategoriesPage() {
               editor.isActivating
             }
             onClick={() => {
-              void editor.activate().catch((err) => {
+              void editor.activate().catch((err: unknown) => {
                 editor.setError(
                   err instanceof ApiClientError
                     ? err.message

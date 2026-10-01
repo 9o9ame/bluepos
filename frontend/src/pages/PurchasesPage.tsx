@@ -324,11 +324,6 @@ export function PurchasesPage() {
   const [notes, setNotes] = useState('')
   const [documentNumber, setDocumentNumber] = useState('')
   const [status, setStatus] = useState<'draft' | 'posted' | 'cancelled'>('draft')
-  const [subtotal, setSubtotal] = useState('0.0000')
-  const [discountAmount, setDiscountAmount] = useState('0.0000')
-  const [taxAmount, setTaxAmount] = useState('0.0000')
-  const [furtherTaxAmount, setFurtherTaxAmount] = useState('0.0000')
-  const [grandTotal, setGrandTotal] = useState('0.0000')
   const [lines, setLines] = useState<DraftLine[]>([])
   const [productQuery, setProductQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -784,7 +779,7 @@ export function PurchasesPage() {
           </td>
         )
       case 'total_amount':
-        return <td className={cls} style={widthStyle}>{money(lineAmount)}</td>
+        return <td className={cls} style={widthStyle}>{money(calc.line_total)}</td>
       case 'batch':
         return (
           <td className={cls} style={widthStyle}>
@@ -835,11 +830,6 @@ export function PurchasesPage() {
     setFreightAmount(invoice.freight_amount)
     setOtherCharges(invoice.other_charges)
     setNotes(invoice.notes ?? '')
-    setSubtotal(invoice.subtotal)
-    setDiscountAmount(invoice.discount_amount)
-    setTaxAmount(invoice.tax_amount)
-    setFurtherTaxAmount(invoice.further_tax_amount ?? '0.0000')
-    setGrandTotal(invoice.grand_total)
     setShellPoNo(invoice.po_number ?? '')
     setShellInvoiceType(invoice.invoice_type ?? 'tax_gst')
     setShellCurrency(invoice.currency_code ?? 'PKR')
@@ -909,11 +899,6 @@ export function PurchasesPage() {
     setFreightAmount('0.0000')
     setOtherCharges('0.0000')
     setNotes('')
-    setSubtotal('0.0000')
-    setDiscountAmount('0.0000')
-    setTaxAmount('0.0000')
-    setFurtherTaxAmount('0.0000')
-    setGrandTotal('0.0000')
     setLines([])
     setProductQuery('')
     setError(null)

@@ -61,6 +61,7 @@ export function useCatalogMasterEditor(
   const canCreate = useCan(`${permissionPrefix}.create`) || canManage
   const canEdit = useCan(`${permissionPrefix}.edit`) || canManage
   const canDelete = useCan(`${permissionPrefix}.delete`) || canManage
+  const canActivate = canEdit
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [code, setCode] = useState(options.initialCode ?? '')
@@ -198,6 +199,24 @@ export function useCatalogMasterEditor(
     },
   })
 
+  const activateMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedKey) return
+      if (kind === 'category') await updateCategory(selectedKey, { is_active: true })
+      else if (kind === 'subcategory') await updateSubcategory(selectedKey, { is_active: true })
+      else if (kind === 'brand') await updateBrand(selectedKey, { is_active: true })
+      else if (kind === 'unit') await updateUnit(selectedKey, { is_active: true })
+      else await updateBarcodeGroup(selectedKey, { is_active: true })
+    },
+    onSuccess: async () => {
+      const key = selectedKey
+      await queryClient.invalidateQueries({ queryKey })
+      const result = await query.refetch()
+      const row = (result.data ?? []).find((item) => item.ulid === key)
+      if (row) select(row)
+    },
+  })
+
   async function refresh() {
     startNew()
     if (kind === 'subcategory') {
@@ -223,9 +242,11 @@ export function useCatalogMasterEditor(
     canCreate,
     canEdit,
     canDelete,
+    canActivate,
     canSave: selectedKey ? canEdit : canCreate,
     isSaving: saveMutation.isPending,
     isDeactivating: deactivateMutation.isPending,
+    isActivating: activateMutation.isPending,
     setCode,
     setName,
     setSymbol,
@@ -242,6 +263,7 @@ export function useCatalogMasterEditor(
     startNew,
     save: () => saveMutation.mutateAsync(),
     deactivate: () => deactivateMutation.mutateAsync(),
+    activate: () => activateMutation.mutateAsync(),
     refresh,
   }
 }

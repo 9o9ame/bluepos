@@ -48,11 +48,9 @@ import {
 import {
   fetchAccountTypes,
   fetchCoaChart,
-  fetchCoaTree,
   type CoaAccountType,
   type CoaFlatRow,
   type CoaGroupedNode,
-  type CoaTreeNode,
 } from '../api/coa'
 import { CoaHierarchyModals } from '../components/parties/CoaHierarchyModals'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
@@ -308,8 +306,6 @@ export function PartiesPlaceholderPage() {
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [expandedRoots, setExpandedRoots] = useState<Record<string, boolean>>({})
-  const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({})
   const [coaShowGrouped, setCoaShowGrouped] = useState(true)
   const [coaFlatRows, setCoaFlatRows] = useState<CoaFlatRow[]>([])
   const [coaGroupedRows, setCoaGroupedRows] = useState<CoaGroupedNode[]>([])
@@ -328,7 +324,6 @@ export function PartiesPlaceholderPage() {
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
   const [savedImageUrl, setSavedImageUrl] = useState<string | null>(null)
   const [imageRemoveRequested, setImageRemoveRequested] = useState(false)
-  const [coaTree, setCoaTree] = useState<CoaTreeNode[]>([])
   const [accountTypes, setAccountTypes] = useState<CoaAccountType[]>([])
   const [coaModalOpen, setCoaModalOpen] = useState(false)
   const [bankRows, setBankRows] = useState<BankDraft[]>([])
@@ -595,16 +590,9 @@ export function PartiesPlaceholderPage() {
 
   async function loadCoaTree() {
     try {
-      const [tree, types] = await Promise.all([fetchCoaTree(), fetchAccountTypes()])
-      setCoaTree(tree)
+      const types = await fetchAccountTypes()
       setAccountTypes(types.filter((t) => t.is_active))
-      setExpandedRoots((current) => {
-        if (Object.keys(current).length > 0) return current
-        const first = tree[0]?.ulid
-        return first ? { [first]: true } : {}
-      })
     } catch {
-      setCoaTree([])
       setAccountTypes([])
     }
   }
@@ -1081,14 +1069,6 @@ export function PartiesPlaceholderPage() {
     } finally {
       setOpeningBusy(false)
     }
-  }
-
-  function toggleRoot(ulid: string) {
-    setExpandedRoots((current) => ({ ...current, [ulid]: !current[ulid] }))
-  }
-
-  function toggleSub(ulid: string) {
-    setExpandedSubs((current) => ({ ...current, [ulid]: !current[ulid] }))
   }
 
   const displayImageUrl = pendingImagePreview ?? (!imageRemoveRequested ? savedImageUrl : null)
