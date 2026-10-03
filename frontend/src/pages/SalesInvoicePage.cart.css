@@ -323,3 +323,19 @@
   font-size: 11px;
   font-weight: 600;
 }
+
+/* Posted invoice history */
+.sales-history { padding: 12px; font-size: 13px; }
+.sales-history-filters { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+.sales-history-filters input[type="date"] { margin-left: 4px; }
+.sales-history-count { margin-left: auto; color: #555; }
+.sales-history-grid { width: 100%; border-collapse: collapse; background: #fff; }
+.sales-history-grid th, .sales-history-grid td { border: 1px solid #d8d8d8; padding: 6px 8px; text-align: left; }
+.sales-history-grid th { background: #f0f0f0; }
+.sales-history-grid .num { text-align: right; }
+.sales-history-grid tbody tr { cursor: pointer; }
+.sales-history-grid tbody tr:hover { background: #f5faff; }
+.sales-history-grid tbody tr.is-open { background: #e7f1fb; }
+.sales-history-empty { text-align: center; color: #888; }
+.sales-history-pager { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
+.sales-history-detail { margin-top: 14px; border-top: 2px solid #ccc; padding-top: 10px; }

@@ -5840,7 +5840,7 @@ textarea {
 
 .sales-reference-subtab:nth-child(1) { width: 160px; }
 .sales-reference-subtab:nth-child(2) { width: 245px; }
-.sales-reference-subtab:nth-child(3) { width: 118px; }
+.sales-reference-subtab:nth-child(3) { width: 265px; }
 
 .sales-reference-subtab.is-active {
   background: linear-gradient(#e5fbff 0%, #c6eff8 44%, #94d6e6 100%);
@@ -6606,7 +6606,7 @@ textarea {
 
 .sales-reference-subtab:nth-child(1) { width: 145px; }
 .sales-reference-subtab:nth-child(2) { width: 242px; }
-.sales-reference-subtab:nth-child(3) { width: 116px; }
+.sales-reference-subtab:nth-child(3) { width: 262px; }
 
 /* The reference top form occupies only the left ~860px and leaves blank grey space. */
 .sales-reference-meta {
@@ -6936,7 +6936,7 @@ textarea {
 
 .sales-reference-subtab:nth-child(1) { width: 150px; }
 .sales-reference-subtab:nth-child(2) { width: 246px; }
-.sales-reference-subtab:nth-child(3) { width: 120px; }
+.sales-reference-subtab:nth-child(3) { width: 266px; }
 
 /* Top form: a little wider and taller, especially Amounts. */
 .sales-reference-meta {

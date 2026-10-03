@@ -191,7 +191,9 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     title: 'Sales Invoice',
     path: '/daily/sales',
     ribbon: 'daily-entries',
-    status: 'shell',
+    status: 'ready',
+    permission: 'sales.view',
+    entitlement: 'sales',
   },
   {
     key: 'sales-return',
@@ -390,7 +392,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       id: 'sales',
       caption: 'Sales',
       commands: [
-        { id: 'sales-invoice', label: 'Sales Invoice', icon: ShoppingCart, moduleKey: 'sales-invoice', status: 'shell', tone: 'blue' },
+        { id: 'sales-invoice', label: 'Sales Invoice', icon: ShoppingCart, moduleKey: 'sales-invoice', permission: 'sales.view', entitlement: 'sales', status: 'ready', tone: 'blue' },
         { id: 'sales-return', label: 'Sales Return', icon: Undo2, status: 'later', tone: 'slate' },
       ],
     },

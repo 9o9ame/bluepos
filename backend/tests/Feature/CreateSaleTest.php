@@ -264,6 +264,31 @@ class CreateSaleTest extends TestCase
         $this->getJson('/api/sales')->assertOk()->assertJsonCount(0, 'data');
     }
 
+    public function test_sales_list_filters_by_date_range(): void
+    {
+        $this->signInOwner('sale-14')->assertOk();
+        $product = $this->createProduct('Dated Sale', ['retail' => '10.0000']);
+        $this->giveStock($product, '50');
+
+        $this->postJson('/api/sales', [
+            'sale_date' => '2026-09-01',
+            'items' => [['product_ulid' => $product, 'quantity' => '1']],
+        ], $this->idem('sale-14-a'))->assertCreated();
+
+        $this->postJson('/api/sales', [
+            'sale_date' => '2026-10-02',
+            'items' => [['product_ulid' => $product, 'quantity' => '1']],
+        ], $this->idem('sale-14-b'))->assertCreated();
+
+        $this->getJson('/api/sales?date_from=2026-10-01&date_to=2026-10-31')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+
+        $this->getJson('/api/sales?date_from=2026-09-01&date_to=2026-10-31')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+    }
+
     public function test_sale_from_another_tenant_product_is_not_found(): void
     {
         $this->signInOwner('sale-13a')->assertOk();

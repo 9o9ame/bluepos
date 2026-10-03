@@ -10,17 +10,21 @@ import {
   StickyNote,
   XCircle,
 } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchProducts } from '../api/catalog'
+import { fetchParties, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
 import { createSale, fetchSale } from '../api/sales'
+import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
 import { SchemeOfferPrompt } from '../features/sales/SchemeOfferPrompt'
+import { SalesInvoiceHistory } from '../features/sales/SalesInvoiceHistory'
 import { useSaleCart } from '../features/sales/useSaleCart'
 import { useCan } from '../features/auth/useCan'
+import { useAuth } from '../features/auth/AuthProvider'
 import type { SaleOfferEvaluation } from '../types/saleSchemes'
 import type { Sale } from '../types/sales'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
@@ -31,8 +35,9 @@ import {
 } from '../features/gridLayout/columnCatalog'
 import { useColumnLayout } from '../features/gridLayout/useColumnLayout'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
-import './SalesInvoicePlaceholderPage.theme.css'
-import './SalesInvoicePlaceholderPage.cart.css'
+import type { SaleDraftLine } from '../types/sales'
+import './SalesInvoicePage.theme.css'
+import './SalesInvoicePage.cart.css'
 
 /** Map logical keys → original sales CSS column classes (keeps reference geometry). */
 const SALES_COL_CLASS: Record<string, string> = {
@@ -62,9 +67,11 @@ function outstandingAfterPayments(sale: Sale): string {
   return Math.max(total - paid, 0).toFixed(4)
 }
 
-export function SalesInvoicePlaceholderPage() {
+export function SalesInvoicePage() {
   const { closeActiveTab } = useWorkspace()
+  const [view, setView] = useState<'pos' | 'history' | 'pending'>('pos')
   const [customizationOpen, setCustomizationOpen] = useState(false)
+  const [heldCarts, setHeldCarts] = useState<Array<{ id: string; lines: SaleDraftLine[]; heldAt: string }>>([])
   const canSaveRoleDefault = useCan('roles.edit')
   const canAddPackaging = useCan('sales.give_free_packaging')
   const canApplyScheme = useCan('sales.apply_scheme')
@@ -79,12 +86,30 @@ export function SalesInvoicePlaceholderPage() {
   const [productQuery, setProductQuery] = useState('')
   const [saveError, setSaveError] = useState<string | null>(null)
   const [savedSale, setSavedSale] = useState<Sale | null>(null)
+  const [received, setReceived] = useState('')
+  const [saleDate, setSaleDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [selectedCustomer, setSelectedCustomer] = useState<Party | null>(null)
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
+  const { session } = useAuth()
+
+  const balanceDue = useMemo(() => {
+    const total = Number.parseFloat(cart.preview.grandTotal) || 0
+    const paid = Number.parseFloat(received) || 0
+    return Math.max(total - paid, 0).toFixed(2)
+  }, [cart.preview.grandTotal, received])
 
   // Product lookup for the entry row.
   const productsQuery = useQuery({
     queryKey: ['products', 'pos-entry', productQuery],
     queryFn: () => fetchProducts({ q: productQuery || undefined, per_page: 20, page: 1 }),
     enabled: productQuery.trim().length > 0,
+  })
+
+  // Customer picker options for the "To:" field.
+  const customersQuery = useQuery({
+    queryKey: ['parties', 'customers', 'pos'],
+    queryFn: () => fetchParties('customer'),
+    retry: false,
   })
 
   /**
@@ -117,12 +142,18 @@ export function SalesInvoicePlaceholderPage() {
   const idempotencyKeyRef = useRef(newSaleKey())
 
   const saveMutation = useMutation({
-    mutationFn: async () => createSale(cart.buildPayload(), idempotencyKeyRef.current),
+    mutationFn: async () =>
+      createSale(
+        { ...cart.buildPayload(), sale_date: saleDate, notes: cart.notes || null, customer_ulid: cart.customerUlid },
+        idempotencyKeyRef.current,
+      ),
     onSuccess: (sale) => {
       setSavedSale(sale)
       setSaveError(null)
       cart.clear()
+      setSelectedCustomer(null)
       setProductQuery('')
+      setReceived('')
       idempotencyKeyRef.current = newSaleKey()
     },
     onError: (err) => {
@@ -160,45 +191,148 @@ export function SalesInvoicePlaceholderPage() {
     setSavedSale(fresh)
   }
 
+  const receivedRef = useRef<HTMLInputElement | null>(null)
+
+  function parkCurrentCart() {
+    if (!cart.hasPaidLines) return
+    setHeldCarts((held) => [
+      ...held,
+      { id: `hold-${Date.now()}`, lines: cart.lines, heldAt: new Date().toLocaleTimeString() },
+    ])
+    cart.clear()
+    setReceived('')
+  }
+
+  function recallHeldCart(id: string) {
+    const held = heldCarts.find((entry) => entry.id === id)
+    if (!held) return
+    cart.restore(held.lines)
+    setHeldCarts((current) => current.filter((entry) => entry.id !== id))
+    setView('pos')
+  }
+
+  function dropHeldCart(id: string) {
+    setHeldCarts((current) => current.filter((entry) => entry.id !== id))
+  }
+
+  function refreshScreen() {
+    setSaveError(null)
+    if (savedSale) {
+      void refreshSavedSale(savedSale.ulid)
+    } else {
+      cart.clear()
+      setReceived('')
+    }
+  }
+
+  // Keyboard-first POS: F9 save, F8 refresh, F3 preview, F11 print, F12 received.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'F9') {
+        event.preventDefault()
+        if (canCreateSale && cart.hasPaidLines && !saveMutation.isPending) saveMutation.mutate()
+      } else if (event.key === 'F8') {
+        event.preventDefault()
+        refreshScreen()
+      } else if (event.key === 'F3') {
+        event.preventDefault()
+        if (savedSale) previewSaleReceipt(savedSale)
+      } else if (event.key === 'F11') {
+        event.preventDefault()
+        if (savedSale) printSaleReceipt(savedSale)
+      } else if (event.key === 'F12') {
+        event.preventDefault()
+        receivedRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  })
+
   return (
     <div className="sales-reference-screen">
       <main className="sales-reference-main">
         <nav className="sales-reference-subtabs" aria-label="Sales invoice views">
-          <button type="button" className="sales-reference-subtab is-active">
+          <button
+            type="button"
+            className={`sales-reference-subtab${view === 'pos' ? ' is-active' : ''}`}
+            onClick={() => setView('pos')}
+          >
             <span className="sales-reference-tab-icon is-blue">
               <Grid3X3 />
             </span>
             <span>Sales Invoice</span>
           </button>
 
-          <button type="button" className="sales-reference-subtab" disabled>
+          <button
+            type="button"
+            className={`sales-reference-subtab${view === 'history' ? ' is-active' : ''}`}
+            onClick={() => setView('history')}
+          >
             <span className="sales-reference-tab-icon is-yellow">
-              <StickyNote />
-            </span>
-            <span>(0,Due:2) Pending Invoices</span>
-          </button>
-
-          <button type="button" className="sales-reference-subtab" disabled>
-            <span className="sales-reference-tab-icon is-multi">
               <ReceiptText />
             </span>
-            <span>Expenses</span>
+            <span>Posted Invoices</span>
+          </button>
+
+          <button
+            type="button"
+            className={`sales-reference-subtab${view === 'pending' ? ' is-active' : ''}`}
+            onClick={() => setView('pending')}
+          >
+            <span className="sales-reference-tab-icon is-multi">
+              <StickyNote />
+            </span>
+            <span>({heldCarts.length},Due:0) Pending Invoices</span>
           </button>
         </nav>
 
+        {view === 'history' ? (
+          <SalesInvoiceHistory />
+        ) : view === 'pending' ? (
+          <div className="sales-history">
+            <h3>Pending (on hold) invoices</h3>
+            {heldCarts.length === 0 ? (
+              <p>Nothing on hold. Tick "On Hold" with lines in the cart to park one.</p>
+            ) : (
+              <table className="sales-history-grid">
+                <thead>
+                  <tr>
+                    <th>Held at</th>
+                    <th className="num">Lines</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {heldCarts.map((entry) => (
+                    <tr key={entry.id}>
+                      <td>{entry.heldAt}</td>
+                      <td className="num">{entry.lines.filter((l) => l.line_kind === 'sale').length}</td>
+                      <td>
+                        <button type="button" onClick={() => recallHeldCart(entry.id)}>Recall</button>{' '}
+                        <button type="button" onClick={() => dropHeldCart(entry.id)}>Discard</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ) : (
+        <>
         <section className="sales-reference-meta">
           <fieldset className="sales-reference-options">
             <legend>Invoice Options</legend>
 
             <div className="sales-reference-options-head">
               <label>
-                <input type="radio" name="sale-type" defaultChecked disabled /> Default
+                <input type="radio" name="sale-type" defaultChecked disabled title="Not available in this phase" /> Default
               </label>
               <label>
-                <input type="radio" name="sale-type" disabled /> Whole Sale
+                <input type="radio" name="sale-type" disabled title="Not available in this phase" /> Whole Sale
               </label>
               <label>
-                <input type="radio" name="sale-type" disabled /> Retail
+                <input type="radio" name="sale-type" disabled title="Not available in this phase" /> Retail
               </label>
 
               <div className="sales-reference-copy-from">
@@ -212,7 +346,7 @@ export function SalesInvoicePlaceholderPage() {
               <input className="is-short" placeholder="Auto" disabled />
 
               <label>Date</label>
-              <input className="is-date" defaultValue="09/24/2026" disabled />
+              <input type="date" className="is-date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} />
 
               <label>Qu #:</label>
               <div className="sales-reference-input-button">
@@ -224,26 +358,54 @@ export function SalesInvoicePlaceholderPage() {
 
               <label>S.Man:</label>
               <div className="sales-reference-input-button">
-                <input defaultValue="Default" disabled />
-                <button type="button" disabled>
-                  ▼
-                </button>
+                <input value={session?.user?.name ?? '—'} readOnly />
               </div>
 
               <label>To:</label>
               <div className="sales-reference-input-button sales-reference-to">
-                <input defaultValue="CASH IN HAND" disabled />
-                <button type="button" disabled>
-                  +
+                <input value={selectedCustomer?.name ?? 'CASH IN HAND'} readOnly />
+                <button type="button" onClick={() => setCustomerPickerOpen((open) => !open)}>
+                  ▼
                 </button>
               </div>
 
               <label>Name:</label>
-              <input disabled />
+              <input value={selectedCustomer?.name ?? ''} readOnly placeholder="Walk-in customer" />
 
               <label>CNIC:</label>
-              <input disabled />
+              <input value={selectedCustomer?.cnic ?? ''} readOnly />
             </div>
+
+            {customerPickerOpen ? (
+              <ul className="sales-pos-product-results sales-pos-customer-results">
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCustomer(null)
+                      cart.setCustomerUlid(null)
+                      setCustomerPickerOpen(false)
+                    }}
+                  >
+                    CASH IN HAND (walk-in)
+                  </button>
+                </li>
+                {(customersQuery.data ?? []).map((party) => (
+                  <li key={party.ulid}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCustomer(party)
+                        cart.setCustomerUlid(party.ulid)
+                        setCustomerPickerOpen(false)
+                      }}
+                    >
+                      <span>{party.code}</span> {party.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </fieldset>
 
           <fieldset className="sales-reference-amounts">
@@ -254,23 +416,36 @@ export function SalesInvoicePlaceholderPage() {
                 <input type="checkbox" disabled /> Payment Due
               </label>
               <label>
-                <input type="checkbox" disabled /> On Hold
+                <input
+                  type="checkbox"
+                  disabled={!cart.hasPaidLines}
+                  checked={false}
+                  onChange={() => parkCurrentCart()}
+                /> On Hold
               </label>
             </div>
 
             <div className="sales-reference-amounts-grid">
               <span />
-              <strong className="is-green">-</strong>
+              <strong className="is-green">{cart.preview.grandTotal}</strong>
 
-              <button type="button" disabled>
+              <button type="button" onClick={() => setReceived(cart.preview.grandTotal)}>
                 Get
               </button>
               <label>Disc (%)</label>
               <label>Sales Tax (%)</label>
 
-              <input defaultValue="0" disabled />
-              <input defaultValue="0" disabled />
-              <input defaultValue="0" disabled />
+              <input value="0" readOnly title="Line discounts are not part of this phase" />
+              <input
+                value={
+                  Number.parseFloat(cart.preview.subtotal) > 0
+                    ? ((Number.parseFloat(cart.preview.tax) / Number.parseFloat(cart.preview.subtotal)) * 100).toFixed(2)
+                    : '0.00'
+                }
+                readOnly
+                title="Effective tax rate from product tax settings"
+              />
+              <input value={cart.preview.subtotal} readOnly />
             </div>
           </fieldset>
 
@@ -303,12 +478,23 @@ export function SalesInvoicePlaceholderPage() {
         <div className="sales-reference-entry-row">
           <input
             className="sales-reference-product-entry"
-            disabled
-            placeholder="..."
+            value={productQuery}
+            placeholder="Type product name or number, then Enter"
             aria-label="Product entry"
+            onChange={(e) => setProductQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return
+              const first = productsQuery.data?.data?.[0]
+              if (first) addProductFromEntry(first.ulid)
+            }}
           />
           <div className="sales-reference-f1">F1 to Add New</div>
-          <button type="button" className="sales-reference-sale-btn" disabled>
+          <button
+            type="button"
+            className="sales-reference-sale-btn"
+            disabled={!canCreateSale || !cart.hasPaidLines || saveMutation.isPending}
+            onClick={() => saveMutation.mutate()}
+          >
             Sale
           </button>
           <div className="sales-reference-entry-spacer" />
@@ -486,11 +672,21 @@ export function SalesInvoicePlaceholderPage() {
                         </td>
                       )
                     }
-                    // Prices and totals are decided by the server on save.
-                    if (col.key === 'amt' || col.key === 'net_amt') {
+                    // Prices and totals are decided by the server on save;
+                    // the grid shows a preview from the product's retail price.
+                    if (col.key === 'price') {
                       return (
                         <td key={col.key} className="sales-pos-line-pending">
-                          {line.line_kind === 'sale' ? '—' : '0.00'}
+                          {line.unit_price ?? '—'}
+                        </td>
+                      )
+                    }
+                    if (col.key === 'amt' || col.key === 'net_amt') {
+                      const qty = Number.parseFloat(line.quantity) || 0
+                      const price = Number.parseFloat(line.unit_price ?? '') || 0
+                      return (
+                        <td key={col.key} className="sales-pos-line-pending">
+                          {line.line_kind === 'sale' ? (qty * price).toFixed(2) : '0.00'}
                         </td>
                       )
                     }
@@ -520,9 +716,9 @@ export function SalesInvoicePlaceholderPage() {
 
           <div className="sales-reference-grid-totals">
             <div />
-            <strong>0</strong>
-            <strong>0</strong>
-            <strong>0</strong>
+            <strong>{cart.preview.quantity}</strong>
+            <strong>{cart.preview.subtotal}</strong>
+            <strong>{cart.preview.grandTotal}</strong>
           </div>
 
           <div className="sales-reference-record-nav">
@@ -581,21 +777,29 @@ export function SalesInvoicePlaceholderPage() {
               </span>
             </button>
 
-            <button type="button" disabled>
+            <button type="button" onClick={refreshScreen}>
               <span>Refresh [F8]</span>
               <span className="sales-reference-action-icon is-refresh">
                 <RefreshCw />
               </span>
             </button>
 
-            <button type="button" disabled>
+            <button
+              type="button"
+              disabled={!savedSale}
+              onClick={() => savedSale && previewSaleReceipt(savedSale)}
+            >
               <span>Preview [F3]</span>
               <span className="sales-reference-action-icon is-preview">
                 <FileText />
               </span>
             </button>
 
-            <button type="button" disabled>
+            <button
+              type="button"
+              disabled={!savedSale}
+              onClick={() => savedSale && printSaleReceipt(savedSale)}
+            >
               <span>Print [F11]</span>
               <span className="sales-reference-action-icon is-print">
                 <Printer />
@@ -610,8 +814,11 @@ export function SalesInvoicePlaceholderPage() {
             </button>
           </div>
         </footer>
+        </>
+        )}
       </main>
 
+      {view === 'pos' ? (
       <aside className="sales-reference-pay">
         <div className="sales-reference-retail-title">RETAIL INVOICE</div>
 
@@ -654,18 +861,24 @@ export function SalesInvoicePlaceholderPage() {
           </div>
 
           <label className="sales-reference-remarks-label">Remarks:</label>
-          <textarea disabled />
+          <textarea value={cart.notes} onChange={(e) => cart.setNotes(e.target.value)} />
         </fieldset>
 
         <div className="sales-reference-total-block">
           <span>Total:</span>
-          <div>0</div>
+          <div>{cart.preview.grandTotal}</div>
         </div>
 
         <label className="sales-reference-side-label">Received (F12):</label>
         <div className="sales-reference-received">
           <span />
-          <strong>-</strong>
+          <input
+            ref={receivedRef}
+            value={received}
+            onChange={(e) => setReceived(e.target.value)}
+            inputMode="decimal"
+            aria-label="Received amount"
+          />
         </div>
 
         <label className="sales-reference-side-label">Credit Card:</label>
@@ -676,10 +889,11 @@ export function SalesInvoicePlaceholderPage() {
 
         <label className="sales-reference-side-label">Balance:</label>
         <div className="sales-reference-balance">
-          <strong>0</strong>
+          <strong>{balanceDue}</strong>
           <strong>-</strong>
         </div>
       </aside>
+      ) : null}
 
       <ColumnCustomizationPanel
         open={customizationOpen}

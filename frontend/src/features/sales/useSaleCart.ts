@@ -18,15 +18,21 @@ export function useSaleCart() {
       ulid: string
       name: string
       product_number: string
+      tax_percent?: string
+      prices?: Array<{ price_type: string; amount: string; is_active: boolean }>
     }, quantity: string) => {
       setLines((current) => {
         const existing = current.find(
           (line) => line.product_ulid === product.ulid && line.line_kind === 'sale',
         )
 
+        const unitPrice = retailPrice(product)
+
         if (existing) {
           return current.map((line) =>
-            line === existing ? { ...line, quantity: addDecimal(line.quantity, quantity) } : line,
+            line === existing
+              ? { ...line, quantity: addDecimal(line.quantity, quantity), unit_price: unitPrice ?? line.unit_price }
+              : line,
           )
         }
 
@@ -38,6 +44,8 @@ export function useSaleCart() {
             product_number: product.product_number,
             quantity,
             line_kind: 'sale' as SaleLineKind,
+            unit_price: unitPrice,
+            tax_percent: product.tax_percent,
           },
         ]
       })
@@ -134,6 +142,13 @@ export function useSaleCart() {
     setCustomerUlid(null)
   }, [])
 
+  /** Replace the cart with a previously parked one (recall). */
+  const restore = useCallback((parked: SaleDraftLine[]) => {
+    setLines(parked)
+    setNotes('')
+    setCustomerUlid(null)
+  }, [])
+
   const paidLines = useMemo(
     () => lines.filter((line) => line.line_kind === 'sale'),
     [lines],
@@ -158,6 +173,34 @@ export function useSaleCart() {
   )
 
   const hasPaidLines = paidLines.length > 0
+
+  /**
+   * Money PREVIEW only — the server recalculates on save and its figures win.
+   * Free lines are always zero. Uses simple qty × price + tax% per line.
+   */
+  const preview = useMemo(() => {
+    let qty = 0
+    let subtotal = 0
+    let tax = 0
+
+    for (const line of paidLines) {
+      const lineQty = Number.parseFloat(line.quantity) || 0
+      const price = Number.parseFloat(line.unit_price ?? '') || 0
+      const pct = Number.parseFloat(line.tax_percent ?? '') || 0
+      const lineSubtotal = lineQty * price
+
+      qty += lineQty
+      subtotal += lineSubtotal
+      tax += lineSubtotal * (pct / 100)
+    }
+
+    return {
+      quantity: qty.toFixed(6),
+      subtotal: subtotal.toFixed(2),
+      tax: tax.toFixed(2),
+      grandTotal: (subtotal + tax).toFixed(2),
+    }
+  }, [paidLines])
 
   /**
    * Display-only subtotal used to decide which schemes to show. Free lines are
@@ -194,6 +237,7 @@ export function useSaleCart() {
     hasEnoughForSchemes,
     notes,
     customerUlid,
+    preview,
     setNotes,
     setCustomerUlid,
     addProduct,
@@ -203,8 +247,17 @@ export function useSaleCart() {
     skipScheme,
     addPackaging,
     clear,
+    restore,
     buildPayload,
   }
+}
+
+/** Pick the active retail price for the client-side preview. */
+function retailPrice(product: {
+  prices?: Array<{ price_type: string; amount: string; is_active: boolean }>
+}): string | undefined {
+  const retail = product.prices?.find((p) => p.price_type === 'retail' && p.is_active)
+  return retail?.amount ?? product.prices?.find((p) => p.is_active)?.amount
 }
 
 /** Add two decimal strings without floating point drift. */

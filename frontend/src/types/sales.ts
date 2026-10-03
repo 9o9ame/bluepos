@@ -56,6 +56,9 @@ export type SaleDraftLine = {
   line_kind: SaleLineKind
   /** Only set on free_scheme lines, used for the Skip/Add bookkeeping. */
   scheme_ulid?: string
+  /** Client-side PREVIEW price (retail); the server price wins on save. */
+  unit_price?: string
+  tax_percent?: string
 }
 
 export type SalePayload = {
@@ -68,4 +71,5 @@ export type SalePayload = {
   applied_scheme_ulids?: string[]
   customer_ulid?: string | null
   notes?: string | null
+  sale_date?: string | null
 }
