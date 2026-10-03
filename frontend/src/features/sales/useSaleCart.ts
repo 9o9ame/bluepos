@@ -1,268 +1,520 @@
-import { useCallback, useMemo, useState } from 'react'
-import type { SaleDraftLine, SaleLineKind, SalePayload } from '../../types/sales'
+import { useMemo, useState } from 'react'
+import type { SaleDraftLine } from '../../types/sales'
+import type { SaleOfferEvaluation } from '../../types/saleSchemes'
 
-/**
- * Cart state for the sales screen.
- *
- * Money here is a PREVIEW only — the server recalculates price, totals and stock
- * on save and its figures win. Free lines are never added automatically: a
- * scheme only lands in the cart when the salesman presses Add.
- */
+type Scheme = SaleOfferEvaluation['schemes'][number]
+type Packaging = SaleOfferEvaluation['packaging'][number]
+
+type CartPreview = {
+  subtotal: string
+  discount: string
+  tax: string
+  grandTotal: string
+  quantity: string
+}
+
+function toNumber(value: string | number | null | undefined): number {
+  const number = Number(value ?? 0)
+
+  return Number.isFinite(number) ? number : 0
+}
+
+function money(value: number): string {
+  return value.toFixed(2)
+}
+
+function isValidQuantity(value: string): boolean {
+  return /^(?:0|[1-9]\d*)(?:\.\d{0,6})?$/.test(value)
+}
+
+function isPositiveQuantity(value: string): boolean {
+  return isValidQuantity(value) && toNumber(value) > 0
+}
+
 export function useSaleCart() {
   const [lines, setLines] = useState<SaleDraftLine[]>([])
+  const [appliedSchemes, setAppliedSchemes] = useState<
+    Array<{
+      scheme_ulid: string
+      qty: string
+    }>
+  >([])
+
+  const [skippedSchemes, setSkippedSchemes] = useState<string[]>([])
   const [notes, setNotes] = useState('')
   const [customerUlid, setCustomerUlid] = useState<string | null>(null)
 
-  const addProduct = useCallback(
-    (product: {
+  function addProduct(
+    product: {
       ulid: string
       name: string
       product_number: string
+      price?: string
+      unit_price?: string
       tax_percent?: string
-      prices?: Array<{ price_type: string; amount: string; is_active: boolean }>
-    }, quantity: string) => {
-      setLines((current) => {
-        const existing = current.find(
-          (line) => line.product_ulid === product.ulid && line.line_kind === 'sale',
-        )
-
-        const unitPrice = retailPrice(product)
-
-        if (existing) {
-          return current.map((line) =>
-            line === existing
-              ? { ...line, quantity: addDecimal(line.quantity, quantity), unit_price: unitPrice ?? line.unit_price }
-              : line,
-          )
-        }
-
-        return [
-          ...current,
-          {
-            product_ulid: product.ulid,
-            product_name: product.name,
-            product_number: product.product_number,
-            quantity,
-            line_kind: 'sale' as SaleLineKind,
-            unit_price: unitPrice,
-            tax_percent: product.tax_percent,
-          },
-        ]
-      })
     },
-    [],
-  )
+    quantity = '1.000000',
+  ) {
+    if (!isPositiveQuantity(quantity)) {
+      return
+    }
 
-  const setQuantity = useCallback((productUlid: string, quantity: string) => {
+    const existing = lines.find(
+      (line) =>
+        line.product_ulid === product.ulid &&
+        line.line_kind === 'sale',
+    )
+
+    if (existing) {
+      const newQuantity =
+        toNumber(existing.quantity) + toNumber(quantity)
+
+      setLines((current) =>
+        current.map((line) =>
+          line === existing
+            ? {
+                ...line,
+                quantity: newQuantity.toFixed(6),
+              }
+            : line,
+        ),
+      )
+
+      return
+    }
+
+    setLines((current) => [
+      ...current,
+      {
+        product_ulid: product.ulid,
+        product_name: product.name,
+        product_number: product.product_number,
+        quantity,
+        line_kind: 'sale',
+        unit_price: product.unit_price ?? product.price ?? '0',
+        tax_percent: product.tax_percent ?? '0',
+      },
+    ])
+  }
+
+  function setQuantity(productUlid: string, quantity: string) {
+    if (quantity !== '' && !isValidQuantity(quantity)) {
+      return
+    }
+
     setLines((current) =>
       current.map((line) =>
-        line.product_ulid === productUlid && line.line_kind === 'sale'
-          ? { ...line, quantity }
+        line.product_ulid === productUlid &&
+        line.line_kind === 'sale'
+          ? {
+              ...line,
+              quantity,
+            }
           : line,
       ),
     )
-  }, [])
+  }
 
-  const removeLine = useCallback((productUlid: string, lineKind: SaleLineKind) => {
+  function removeLine(
+    productUlid: string,
+    lineKind?: SaleDraftLine['line_kind'],
+  ) {
     setLines((current) =>
-      current.filter(
-        (line) => !(line.product_ulid === productUlid && line.line_kind === lineKind),
+      current.filter((line) => {
+        if (line.product_ulid !== productUlid) {
+          return true
+        }
+
+        if (lineKind && line.line_kind !== lineKind) {
+          return true
+        }
+
+        return false
+      }),
+    )
+  }
+
+  function addSchemeReward(
+    scheme: Scheme,
+    quantity = scheme.max_reward_qty,
+  ) {
+    if (!isPositiveQuantity(quantity)) {
+      return
+    }
+
+    if (toNumber(quantity) > toNumber(scheme.max_reward_qty)) {
+      return
+    }
+
+    const existing = lines.find(
+      (line) =>
+        line.line_kind === 'free_scheme' &&
+        line.scheme_ulid === scheme.ulid,
+    )
+
+    if (existing) {
+      setLines((current) =>
+        current.map((line) =>
+          line === existing
+            ? {
+                ...line,
+                quantity,
+              }
+            : line,
+        ),
+      )
+    } else {
+      setLines((current) => [
+        ...current,
+        {
+          product_ulid: scheme.reward_product.ulid,
+          product_name: scheme.reward_product.name,
+          product_number: scheme.reward_product.product_number,
+          quantity,
+          line_kind: 'free_scheme',
+          scheme_ulid: scheme.ulid,
+          unit_price: '0',
+          tax_percent: '0',
+        },
+      ])
+    }
+
+    setAppliedSchemes((current) => {
+      const existingScheme = current.find(
+        (item) => item.scheme_ulid === scheme.ulid,
+      )
+
+      if (existingScheme) {
+        return current.map((item) =>
+          item.scheme_ulid === scheme.ulid
+            ? {
+                ...item,
+                qty: quantity,
+              }
+            : item,
+        )
+      }
+
+      return [
+        ...current,
+        {
+          scheme_ulid: scheme.ulid,
+          qty: quantity,
+        },
+      ]
+    })
+
+    setSkippedSchemes((current) =>
+      current.filter((ulid) => ulid !== scheme.ulid),
+    )
+  }
+
+  function setSchemeQuantity(
+    schemeUlid: string,
+    quantity: string,
+  ) {
+    if (quantity !== '' && !isValidQuantity(quantity)) {
+      return
+    }
+
+    setAppliedSchemes((current) =>
+      current.map((item) =>
+        item.scheme_ulid === schemeUlid
+          ? {
+              ...item,
+              qty: quantity,
+            }
+          : item,
       ),
     )
-  }, [])
 
-  /** Add a scheme reward. Only ever called from an explicit Add press. */
-  const addSchemeReward = useCallback(
-    (scheme: {
-      ulid: string
-      reward_product: { ulid: string; name: string; product_number: string }
-      max_reward_qty: string
-    }) => {
-      setLines((current) => {
-        if (current.some((line) => line.scheme_ulid === scheme.ulid)) {
-          return current
-        }
+    setLines((current) =>
+      current.map((line) =>
+        line.line_kind === 'free_scheme' &&
+        line.scheme_ulid === schemeUlid
+          ? {
+              ...line,
+              quantity,
+            }
+          : line,
+      ),
+    )
+  }
 
-        return [
-          ...current,
-          {
-            product_ulid: scheme.reward_product.ulid,
-            product_name: scheme.reward_product.name,
-            product_number: scheme.reward_product.product_number,
-            quantity: scheme.max_reward_qty,
-            line_kind: 'free_scheme',
-            scheme_ulid: scheme.ulid,
-          },
-        ]
-      })
-    },
-    [],
-  )
+  function skipScheme(schemeUlid: string) {
+    setAppliedSchemes((current) =>
+      current.filter(
+        (item) => item.scheme_ulid !== schemeUlid,
+      ),
+    )
 
-  const skipScheme = useCallback((schemeUlid: string) => {
-    setLines((current) => current.filter((line) => line.scheme_ulid !== schemeUlid))
-  }, [])
+    setLines((current) =>
+      current.filter(
+        (line) =>
+          !(
+            line.line_kind === 'free_scheme' &&
+            line.scheme_ulid === schemeUlid
+          ),
+      ),
+    )
 
-  const addPackaging = useCallback(
-    (product: {
-      ulid: string
-      name: string
-      product_number: string
-      max_free_qty_per_sale?: string | null
-    }, qty: string) => {
-      setLines((current) => {
-        const existing = current.find(
-          (line) => line.product_ulid === product.ulid && line.line_kind === 'free_packaging',
-        )
+    setSkippedSchemes((current) =>
+      current.includes(schemeUlid)
+        ? current
+        : [...current, schemeUlid],
+    )
+  }
 
-        if (existing) {
-          return current.map((line) =>
-            line === existing ? { ...line, quantity: addDecimal(line.quantity, qty) } : line,
-          )
-        }
+  function addPackaging(
+    product: Packaging,
+    quantity = '1.000000',
+  ) {
+    if (!isPositiveQuantity(quantity)) {
+      return
+    }
 
-        return [
-          ...current,
-          {
-            product_ulid: product.ulid,
-            product_name: product.name,
-            product_number: product.product_number,
-            quantity: qty,
-            line_kind: 'free_packaging' as SaleLineKind,
-          },
-        ]
-      })
-    },
-    [],
-  )
+    const maxQty = product.max_free_qty_per_sale
+      ? toNumber(product.max_free_qty_per_sale)
+      : null
 
-  const clear = useCallback(() => {
+    const existing = lines.find(
+      (line) =>
+        line.line_kind === 'free_packaging' &&
+        line.product_ulid === product.ulid,
+    )
+
+    const existingQty = existing
+      ? toNumber(existing.quantity)
+      : 0
+
+    const requestedQty = toNumber(quantity)
+    const totalQty = existingQty + requestedQty
+
+    if (maxQty !== null && totalQty > maxQty) {
+      return
+    }
+
+    if (existing) {
+      setLines((current) =>
+        current.map((line) =>
+          line === existing
+            ? {
+                ...line,
+                quantity: totalQty.toFixed(6),
+              }
+            : line,
+        ),
+      )
+
+      return
+    }
+
+    setLines((current) => [
+      ...current,
+      {
+        product_ulid: product.ulid,
+        product_name: product.name,
+        product_number: product.product_number,
+        quantity,
+        line_kind: 'free_packaging',
+        unit_price: '0',
+        tax_percent: '0',
+      },
+    ])
+  }
+
+  function clear() {
     setLines([])
+    setAppliedSchemes([])
+    setSkippedSchemes([])
     setNotes('')
     setCustomerUlid(null)
-  }, [])
+  }
 
-  /** Replace the cart with a previously parked one (recall). */
-  const restore = useCallback((parked: SaleDraftLine[]) => {
-    setLines(parked)
-    setNotes('')
-    setCustomerUlid(null)
-  }, [])
+  function restore(
+    restoredLines: SaleDraftLine[],
+    restoredNotes = '',
+    restoredCustomerUlid: string | null = null,
+  ) {
+    setLines(restoredLines)
+    setNotes(restoredNotes)
+    setCustomerUlid(restoredCustomerUlid)
+
+    const schemes = restoredLines
+      .filter(
+        (line) =>
+          line.line_kind === 'free_scheme' &&
+          Boolean(line.scheme_ulid) &&
+          isPositiveQuantity(line.quantity),
+      )
+      .map((line) => ({
+        scheme_ulid: line.scheme_ulid as string,
+        qty: line.quantity,
+      }))
+
+    setAppliedSchemes(schemes)
+    setSkippedSchemes([])
+  }
 
   const paidLines = useMemo(
-    () => lines.filter((line) => line.line_kind === 'sale'),
+    () =>
+      lines.filter(
+        (line) => line.line_kind === 'sale',
+      ),
     [lines],
   )
 
   const freeLines = useMemo(
-    () => lines.filter((line) => line.line_kind !== 'sale'),
+    () =>
+      lines.filter(
+        (line) =>
+          line.line_kind === 'free_packaging' ||
+          line.line_kind === 'free_scheme',
+      ),
+    [lines],
+  )
+
+  const packagingLines = useMemo(
+    () =>
+      lines.filter(
+        (line) =>
+          line.line_kind === 'free_packaging',
+      ),
     [lines],
   )
 
   const appliedSchemeUlids = useMemo(
     () =>
-      lines
-        .filter((line) => line.line_kind === 'free_scheme' && line.scheme_ulid)
-        .map((line) => line.scheme_ulid as string),
-    [lines],
+      appliedSchemes.map(
+        (scheme) => scheme.scheme_ulid,
+      ),
+    [appliedSchemes],
   )
 
-  const packagingLines = useMemo(
-    () => lines.filter((line) => line.line_kind === 'free_packaging'),
-    [lines],
-  )
-
-  const hasPaidLines = paidLines.length > 0
-
-  /**
-   * Money PREVIEW only — the server recalculates on save and its figures win.
-   * Free lines are always zero. Uses simple qty × price + tax% per line.
-   */
-  const preview = useMemo(() => {
-    let qty = 0
+  const preview = useMemo<CartPreview>(() => {
     let subtotal = 0
-    let tax = 0
+    let quantity = 0
 
     for (const line of paidLines) {
-      const lineQty = Number.parseFloat(line.quantity) || 0
-      const price = Number.parseFloat(line.unit_price ?? '') || 0
-      const pct = Number.parseFloat(line.tax_percent ?? '') || 0
-      const lineSubtotal = lineQty * price
+      const lineQuantity = toNumber(line.quantity)
+      const unitPrice = toNumber(line.unit_price)
 
-      qty += lineQty
-      subtotal += lineSubtotal
-      tax += lineSubtotal * (pct / 100)
+      quantity += lineQuantity
+      subtotal += lineQuantity * unitPrice
     }
 
+    const discount = 0
+    const tax = 0
+    const grandTotal =
+      subtotal - discount + tax
+
     return {
-      quantity: qty.toFixed(6),
-      subtotal: subtotal.toFixed(2),
-      tax: tax.toFixed(2),
-      grandTotal: (subtotal + tax).toFixed(2),
+      subtotal: money(subtotal),
+      discount: money(discount),
+      tax: money(tax),
+      grandTotal: money(grandTotal),
+      quantity: quantity.toFixed(3),
     }
   }, [paidLines])
 
-  /**
-   * Display-only subtotal used to decide which schemes to show. Free lines are
-   * excluded because they must never help qualify a cart for another reward.
-   */
-  const hasEnoughForSchemes = hasPaidLines
+  const hasPaidLines = paidLines.length > 0
 
-  const buildPayload = useCallback((): SalePayload => {
-    const packaging: SalePayload['free_lines'] = packagingLines.map((line) => ({
-      product_ulid: line.product_ulid,
-      qty: line.quantity,
-      line_kind: 'free_packaging' as const,
-    }))
-
-    return {
-      items: paidLines.map((line) => ({
+  function buildPayload() {
+    const items = paidLines
+      .filter((line) =>
+        isPositiveQuantity(line.quantity),
+      )
+      .map((line) => ({
         product_ulid: line.product_ulid,
         quantity: line.quantity,
-      })),
-      ...(packaging.length ? { free_lines: packaging } : {}),
-      ...(appliedSchemeUlids.length ? { applied_scheme_ulids: appliedSchemeUlids } : {}),
+      }))
+
+    /*
+     * Only packaging free items are sent through free_lines.
+     * Scheme rewards are represented by applied_schemes.
+     */
+    const freePackagingLines = freeLines
+      .filter(
+        (line) =>
+          line.line_kind === 'free_packaging' &&
+          isPositiveQuantity(line.quantity),
+      )
+      .map((line) => ({
+        product_ulid: line.product_ulid,
+        qty: line.quantity,
+        line_kind: 'free_packaging' as const,
+      }))
+
+    const payload: {
+      items: Array<{
+        product_ulid: string
+        quantity: string
+      }>
+      free_lines?: Array<{
+        product_ulid: string
+        qty: string
+        line_kind: 'free_packaging'
+      }>
+      applied_schemes?: Array<{
+        scheme_ulid: string
+        qty: string
+      }>
+      customer_ulid?: string | null
+      notes?: string | null
+    } = {
+      items,
       customer_ulid: customerUlid,
       notes: notes || null,
     }
-  }, [paidLines, packagingLines, appliedSchemeUlids, customerUlid, notes])
+
+    if (freePackagingLines.length > 0) {
+      payload.free_lines = freePackagingLines
+    }
+
+    const validSchemes = appliedSchemes.filter(
+      (scheme) =>
+        isPositiveQuantity(scheme.qty),
+    )
+
+    if (validSchemes.length > 0) {
+      payload.applied_schemes = validSchemes
+    }
+
+    return payload
+  }
 
   return {
     lines,
+
     paidLines,
     freeLines,
     packagingLines,
+
+    appliedSchemes,
     appliedSchemeUlids,
-    hasPaidLines,
-    hasEnoughForSchemes,
-    notes,
-    customerUlid,
+    skippedSchemes,
+
     preview,
+    hasPaidLines,
+
+    notes,
     setNotes,
+
+    customerUlid,
     setCustomerUlid,
+
     addProduct,
     setQuantity,
     removeLine,
+
     addSchemeReward,
+    setSchemeQuantity,
     skipScheme,
+
     addPackaging,
+
     clear,
     restore,
     buildPayload,
   }
-}
-
-/** Pick the active retail price for the client-side preview. */
-function retailPrice(product: {
-  prices?: Array<{ price_type: string; amount: string; is_active: boolean }>
-}): string | undefined {
-  const retail = product.prices?.find((p) => p.price_type === 'retail' && p.is_active)
-  return retail?.amount ?? product.prices?.find((p) => p.is_active)?.amount
-}
-
-/** Add two decimal strings without floating point drift. */
-function addDecimal(a: string, b: string): string {
-  const left = Number.parseFloat(a) || 0
-  const right = Number.parseFloat(b) || 0
-  return (left + right).toFixed(6)
 }

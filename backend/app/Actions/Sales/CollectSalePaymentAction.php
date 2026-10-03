@@ -40,7 +40,7 @@ class CollectSalePaymentAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function execute(Sale $sale, array $data, string $idempotencyKey): SalePayment
     {
@@ -56,15 +56,25 @@ class CollectSalePaymentAction
         }
 
         $amount = $this->normalizeMoney((string) ($data['amount'] ?? '0'));
+
         if (bccomp($amount, '0', 4) <= 0) {
             throw ValidationException::withMessages([
                 'amount' => 'Payment amount must be greater than zero.',
             ]);
         }
 
-        $method = SalePaymentMethod::from((string) ($data['method'] ?? SalePaymentMethod::Cash->value));
+        $method = SalePaymentMethod::from(
+            (string) ($data['method'] ?? SalePaymentMethod::Cash->value)
+        );
 
-        return DB::transaction(function () use ($sale, $data, $idempotencyKey, $tenantId, $amount, $method): SalePayment {
+        return DB::transaction(function () use (
+            $sale,
+            $data,
+            $idempotencyKey,
+            $tenantId,
+            $amount,
+            $method
+        ): SalePayment {
             $existing = SalePayment::query()
                 ->forTenant($tenantId)
                 ->where('idempotency_key', $idempotencyKey)
@@ -151,7 +161,9 @@ class CollectSalePaymentAction
         });
     }
 
-    /** Grand total minus everything already paid on this sale. */
+    /**
+     * Grand total minus everything already paid on this sale.
+     */
     public function outstandingAmount(Sale $sale): string
     {
         $paid = (string) SalePayment::query()
@@ -168,10 +180,16 @@ class CollectSalePaymentAction
     private function resolveAccounts(Sale $sale, SalePaymentMethod $method): array
     {
         $tenantId = $this->tenantContext->tenantId();
-        $settings = BusinessSetting::query()->forTenant($tenantId)->first();
+
+        $settings = BusinessSetting::query()
+            ->forTenant($tenantId)
+            ->first();
 
         if ($method === SalePaymentMethod::Credit) {
-            $customerId = $sale->customer_id === null ? null : (int) $sale->customer_id;
+            $customerId = $sale->customer_id === null
+                ? null
+                : (int) $sale->customer_id;
+
             if ($customerId === null) {
                 throw new ApiException(
                     'CREDIT_REQUIRES_CUSTOMER',
@@ -180,7 +198,11 @@ class CollectSalePaymentAction
                 );
             }
 
-            $customer = Customer::query()->forTenant($tenantId)->whereKey($customerId)->first();
+            $customer = Customer::query()
+                ->forTenant($tenantId)
+                ->whereKey($customerId)
+                ->first();
+
             if (! $customer || ! $customer->is_active) {
                 throw new ApiException(
                     'CREDIT_REQUIRES_CUSTOMER',
@@ -198,10 +220,14 @@ class CollectSalePaymentAction
                 $receivable = $this->partyAccounts->syncCustomer($customer);
             }
 
-            return [$receivable, $this->clearingAccount($settings, $tenantId)];
+            return [
+                $receivable,
+                $this->clearingAccount($settings, $tenantId),
+            ];
         }
 
         $accountId = $settings?->default_cash_account_id;
+
         if (! $accountId) {
             throw new ApiException(
                 'CASH_ACCOUNT_REQUIRED',
@@ -210,7 +236,11 @@ class CollectSalePaymentAction
             );
         }
 
-        $cash = Account::query()->forTenant($tenantId)->whereKey($accountId)->first();
+        $cash = Account::query()
+            ->forTenant($tenantId)
+            ->whereKey($accountId)
+            ->first();
+
         if (! $cash || ! $cash->is_active) {
             throw new ApiException(
                 'CASH_ACCOUNT_REQUIRED',
@@ -219,11 +249,16 @@ class CollectSalePaymentAction
             );
         }
 
-        return [$cash, $this->clearingAccount($settings, $tenantId)];
+        return [
+            $cash,
+            $this->clearingAccount($settings, $tenantId),
+        ];
     }
 
-    private function clearingAccount(?BusinessSetting $settings, int $tenantId): Account
-    {
+    private function clearingAccount(
+        ?BusinessSetting $settings,
+        int $tenantId
+    ): Account {
         $accountId = $settings?->sales_clearing_account_id;
 
         if (! $accountId) {
@@ -234,7 +269,11 @@ class CollectSalePaymentAction
             );
         }
 
-        $account = Account::query()->forTenant($tenantId)->whereKey($accountId)->first();
+        $account = Account::query()
+            ->forTenant($tenantId)
+            ->whereKey($accountId)
+            ->first();
+
         if (! $account || ! $account->is_active) {
             throw new ApiException(
                 'SALES_CLEARING_ACCOUNT_REQUIRED',

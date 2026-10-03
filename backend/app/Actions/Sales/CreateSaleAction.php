@@ -27,11 +27,13 @@ use Illuminate\Validation\ValidationException;
  * Creates a posted sale.
  *
  * Every money figure is recalculated server-side with BCMath; the payload's
- * client totals are never trusted. Free packaging and free scheme lines are
- * priced at 0 but still consume stock, so stock goes out for every line.
+ * client totals are never trusted.
  *
- * Requires an Idempotency-Key: replaying the same key returns the original sale
- * instead of creating a second one.
+ * Free packaging and free scheme lines are priced at 0 but still consume
+ * stock, so stock goes out for every line.
+ *
+ * Requires an Idempotency-Key: replaying the same key returns the original
+ * sale instead of creating a second one.
  */
 class CreateSaleAction
 {
@@ -44,11 +46,12 @@ class CreateSaleAction
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param array<string, mixed> $data
      */
     public function execute(array $data, string $idempotencyKey): Sale
     {
         $tenantId = $this->tenantContext->tenantId();
+
         $idempotencyKey = trim($idempotencyKey);
 
         if ($idempotencyKey === '' || strlen($idempotencyKey) > 120) {
@@ -59,7 +62,11 @@ class CreateSaleAction
             );
         }
 
-        return DB::transaction(function () use ($data, $idempotencyKey, $tenantId): Sale {
+        return DB::transaction(function () use (
+            $data,
+            $idempotencyKey,
+            $tenantId
+        ): Sale {
             $existing = Sale::query()
                 ->forTenant($tenantId)
                 ->where('idempotency_key', $idempotencyKey)
@@ -70,9 +77,17 @@ class CreateSaleAction
                 return $existing->fresh(static::with()) ?? $existing;
             }
 
-            $warehouse = $this->resolveWarehouse($data['warehouse_ulid'] ?? null);
-            $customer = $this->resolveCustomer($data['customer_ulid'] ?? null);
-            $lines = $this->normalizeLines($data['items'] ?? []);
+            $warehouse = $this->resolveWarehouse(
+                $data['warehouse_ulid'] ?? null
+            );
+
+            $customer = $this->resolveCustomer(
+                $data['customer_ulid'] ?? null
+            );
+
+            $lines = $this->normalizeLines(
+                $data['items'] ?? []
+            );
 
             if ($lines === []) {
                 throw ValidationException::withMessages([
@@ -80,10 +95,13 @@ class CreateSaleAction
                 ]);
             }
 
-            $paidLines = array_values(array_filter(
-                $lines,
-                static fn (array $line): bool => $line['line_kind'] === SaleLineKind::Sale->value,
-            ));
+            $paidLines = array_values(
+                array_filter(
+                    $lines,
+                    static fn (array $line): bool =>
+                        $line['line_kind'] === SaleLineKind::Sale->value,
+                )
+            );
 
             if ($paidLines === []) {
                 throw ValidationException::withMessages([
@@ -91,24 +109,51 @@ class CreateSaleAction
                 ]);
             }
 
-            // Paid lines first: subtotal is derived from paid lines only, so the
-            // scheme threshold is judged on what the customer actually bought.
+            /*
+             * The scheme threshold is calculated from paid sale lines only.
+             * Free packaging and free scheme rewards never increase the
+             * qualifying sale amount.
+             */
             $paidSubtotal = '0.0000';
+
             foreach ($paidLines as $line) {
-                $paidSubtotal = bcadd($paidSubtotal, $line['line_total'], 4);
+                $paidSubtotal = bcadd(
+                    $paidSubtotal,
+                    $line['line_total'],
+                    4
+                );
             }
 
+            /*
+             * The server validates every explicitly selected free offer.
+             *
+             * No scheme is automatically added here. The salesman must
+             * explicitly send an applied_schemes entry.
+             */
             $offers = $this->validateOffers->execute(
                 $paidSubtotal,
                 $data['free_lines'] ?? [],
-                $data['applied_scheme_ulids'] ?? [],
+                $data['applied_schemes'] ?? [],
                 $data['sale_date'] ?? null,
             );
 
-            // A free line the salesman sent without a scheme is never honoured.
-            $lines = array_merge($paidLines, $this->offersToLines($offers));
+            /*
+             * Only validated server-generated free lines are persisted.
+             * Client-supplied free lines are never trusted directly.
+             */
+            $lines = array_merge(
+                $paidLines,
+                $this->offersToLines($offers)
+            );
 
-            $this->persist($lines, $warehouse, $customer, $data, $idempotencyKey, $tenantId);
+            $this->persist(
+                $lines,
+                $warehouse,
+                $customer,
+                $data,
+                $idempotencyKey,
+                $tenantId,
+            );
 
             $sale = Sale::query()
                 ->forTenant($tenantId)
@@ -130,15 +175,22 @@ class CreateSaleAction
      */
     public static function with(): array
     {
-        return ['customer', 'branch', 'warehouse', 'items.product', 'items.unit', 'items.saleScheme'];
+        return [
+            'customer',
+            'branch',
+            'warehouse',
+            'items.product',
+            'items.unit',
+            'items.saleScheme',
+        ];
     }
 
     /**
-     * @param  list<array<string, mixed>>  $offersLines
-     * @param  array<string, mixed>  $data
+     * @param list<array<string, mixed>> $lines
+     * @param array<string, mixed> $data
      */
     private function persist(
-        array $offersLines,
+        array $lines,
         Warehouse $warehouse,
         ?Customer $customer,
         array $data,
@@ -167,9 +219,10 @@ class CreateSaleAction
             'posted_at' => now(),
         ]);
 
-        foreach ($offersLines as $line) {
+        foreach ($lines as $line) {
             /** @var Product $product */
             $product = $line['product'];
+
             $quantity = $line['quantity'];
 
             $item = SaleItem::query()->create([
@@ -187,11 +240,31 @@ class CreateSaleAction
                 'notes' => $line['notes'] ?? null,
             ]);
 
-            $subtotal = bcadd($subtotal, $line['line_total'], 4);
-            $discountTotal = bcadd($discountTotal, $line['discount_amount'], 4);
-            $taxTotal = bcadd($taxTotal, $line['tax_amount'], 4);
+            $subtotal = bcadd(
+                $subtotal,
+                $line['line_total'],
+                4
+            );
 
-            // Every line consumes stock, including free packaging and scheme rewards.
+            $discountTotal = bcadd(
+                $discountTotal,
+                $line['discount_amount'],
+                4
+            );
+
+            $taxTotal = bcadd(
+                $taxTotal,
+                $line['tax_amount'],
+                4
+            );
+
+            /*
+             * Every sale line consumes stock, including:
+             *
+             * - normal sale items
+             * - free packaging
+             * - free scheme rewards
+             */
             $this->postMovement->execute([
                 'warehouse' => $warehouse,
                 'product' => $product,
@@ -201,22 +274,34 @@ class CreateSaleAction
                 'reference_ulid' => $sale->ulid,
                 'reference_line_ulid' => $item->ulid,
                 'occurred_at' => $sale->sale_date?->copy()->startOfDay() ?? now(),
-                'idempotency_key' => 'sale:'.$sale->ulid.':'.$item->ulid,
+                'idempotency_key' => 'sale:' . $sale->ulid . ':' . $item->ulid,
             ]);
         }
 
         $sale->subtotal = $subtotal;
         $sale->discount_amount = $discountTotal;
         $sale->tax_amount = $taxTotal;
-        $sale->grand_total = bcadd(bcsub($subtotal, $discountTotal, 4), $taxTotal, 4);
+
+        $sale->grand_total = bcadd(
+            bcsub($subtotal, $discountTotal, 4),
+            $taxTotal,
+            4
+        );
+
         $sale->save();
     }
 
     /**
-     * Turn the validated free packaging + scheme lines into sale item rows.
-     * Both are priced at zero — the reward must not change what the customer pays.
+     * Turn validated free packaging + scheme lines into SaleItem rows.
      *
-     * @param  array{packaging_lines: list<array<string, mixed>>, scheme_lines: list<array<string, mixed>>}  $offers
+     * Both are priced at zero because free rewards must not increase
+     * the customer's payable amount.
+     *
+     * @param array{
+     *     packaging_lines: list<array<string, mixed>>,
+     *     scheme_lines: list<array<string, mixed>>
+     * } $offers
+     *
      * @return list<array<string, mixed>>
      */
     private function offersToLines(array $offers): array
@@ -247,7 +332,8 @@ class CreateSaleAction
                 'discount_amount' => '0.0000',
                 'tax_amount' => '0.0000',
                 'line_total' => '0.0000',
-                'notes' => 'Free item from sale scheme: '.$scheme['scheme']->name,
+                'notes' => 'Free item from sale scheme: ' .
+                    $scheme['scheme']->name,
             ];
         }
 
@@ -255,10 +341,12 @@ class CreateSaleAction
     }
 
     /**
-     * Resolve and price the paid lines. Client-sent prices are ignored; the
-     * tenant's own retail price list is the only source of truth.
+     * Resolve and price paid lines.
      *
-     * @param  list<array<string, mixed>>  $items
+     * Client-sent prices are ignored. The tenant's active retail price
+     * is the only source of truth.
+     *
+     * @param list<array<string, mixed>> $items
      * @return list<array<string, mixed>>
      */
     private function normalizeLines(array $items): array
@@ -267,30 +355,51 @@ class CreateSaleAction
         $seen = [];
 
         foreach ($items as $index => $item) {
-            $kind = (string) ($item['line_kind'] ?? SaleLineKind::Sale->value);
+            $kind = (string) (
+                $item['line_kind'] ?? SaleLineKind::Sale->value
+            );
+
             if ($kind !== SaleLineKind::Sale->value) {
                 throw ValidationException::withMessages([
-                    "items.$index.line_kind" => 'Free lines are added through packaging and sale schemes.',
+                    "items.$index.line_kind" =>
+                        'Free lines are added through packaging and sale schemes.',
                 ]);
             }
 
-            $product = $this->catalog->product((string) $item['product_ulid']);
-            if ($product->status !== ProductStatus::Active || ! $product->is_active) {
+            $product = $this->catalog->product(
+                (string) $item['product_ulid']
+            );
+
+            if (
+                $product->status !== ProductStatus::Active ||
+                ! $product->is_active
+            ) {
                 throw ValidationException::withMessages([
-                    "items.$index.product_ulid" => 'This product is not available for sale.',
+                    "items.$index.product_ulid" =>
+                        'This product is not available for sale.',
                 ]);
             }
 
             if (isset($seen[$product->id])) {
                 throw ValidationException::withMessages([
-                    "items.$index.product_ulid" => 'The same product can only appear on one sale line.',
+                    "items.$index.product_ulid" =>
+                        'The same product can only appear on one sale line.',
                 ]);
             }
+
             $seen[$product->id] = true;
 
-            $quantity = $this->normalizeQuantity((string) $item['quantity']);
-            $unitPrice = $this->resolveUnitPrice($product, $this->tenantContext->tenant()->currency_code);
-            $lineTotal = bcmul($quantity, $unitPrice, 4);
+            $quantity = $this->normalizeQuantity(
+                (string) $item['quantity']
+            );
+
+            $unitPrice = $this->resolveUnitPrice($product);
+
+            $lineTotal = bcmul(
+                $quantity,
+                $unitPrice,
+                4
+            );
 
             $lines[] = [
                 'product' => $product,
@@ -308,7 +417,7 @@ class CreateSaleAction
         return $lines;
     }
 
-    private function resolveUnitPrice(Product $product, string $currency): string
+    private function resolveUnitPrice(Product $product): string
     {
         $price = ProductPrice::query()
             ->forTenant($this->tenantContext->tenantId())
@@ -316,10 +425,22 @@ class CreateSaleAction
             ->where('price_type', PriceType::Retail->value)
             ->where('is_active', true)
             ->where(function ($query): void {
-                $query->whereNull('effective_from')->orWhereDate('effective_from', '<=', today());
+                $query
+                    ->whereNull('effective_from')
+                    ->orWhereDate(
+                        'effective_from',
+                        '<=',
+                        today()
+                    );
             })
             ->where(function ($query): void {
-                $query->whereNull('effective_to')->orWhereDate('effective_to', '>=', today());
+                $query
+                    ->whereNull('effective_to')
+                    ->orWhereDate(
+                        'effective_to',
+                        '>=',
+                        today()
+                    );
             })
             ->orderByDesc('effective_from')
             ->value('amount');
@@ -330,7 +451,10 @@ class CreateSaleAction
             ]);
         }
 
-        return $this->normalizeMoney((string) $price, 'unit_price');
+        return $this->normalizeMoney(
+            (string) $price,
+            'unit_price'
+        );
     }
 
     private function resolveWarehouse(?string $ulid): Warehouse
@@ -343,13 +467,18 @@ class CreateSaleAction
 
         if ($warehouse->status !== WarehouseStatus::Active) {
             throw ValidationException::withMessages([
-                'warehouse_ulid' => 'Sales cannot be posted to an inactive warehouse.',
+                'warehouse_ulid' =>
+                    'Sales cannot be posted to an inactive warehouse.',
             ]);
         }
 
-        if ((int) $warehouse->branch_id !== $this->tenantContext->branchId()) {
+        if (
+            (int) $warehouse->branch_id !==
+            $this->tenantContext->branchId()
+        ) {
             throw ValidationException::withMessages([
-                'warehouse_ulid' => 'This warehouse is not available at your branch.',
+                'warehouse_ulid' =>
+                    'This warehouse is not available at your branch.',
             ]);
         }
 
@@ -366,7 +495,8 @@ class CreateSaleAction
 
         if (! $customer->is_active) {
             throw ValidationException::withMessages([
-                'customer_ulid' => 'This customer is not active.',
+                'customer_ulid' =>
+                    'This customer is not active.',
             ]);
         }
 
@@ -382,39 +512,83 @@ class CreateSaleAction
             ->value('document_number');
 
         $seq = 1;
-        if (is_string($latest) && preg_match('/SAL-(\d+)$/', $latest, $matches) === 1) {
+
+        if (
+            is_string($latest) &&
+            preg_match(
+                '/SAL-(\d+)$/',
+                $latest,
+                $matches
+            ) === 1
+        ) {
             $seq = (int) $matches[1] + 1;
         }
 
-        return 'SAL-'.str_pad((string) $seq, 6, '0', STR_PAD_LEFT);
+        return 'SAL-' .
+            str_pad(
+                (string) $seq,
+                6,
+                '0',
+                STR_PAD_LEFT
+            );
     }
 
     private function normalizeQuantity(string $value): string
     {
-        if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/', $value)) {
+        if (
+            ! preg_match(
+                '/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/',
+                $value
+            )
+        ) {
             throw ValidationException::withMessages([
-                'items' => 'Quantity must be a valid decimal with up to 6 places.',
+                'items' =>
+                    'Quantity must be a valid decimal with up to 6 places.',
             ]);
         }
 
-        $normalized = bcadd($value, '0', 6);
-        if (bccomp($normalized, '0', 6) <= 0) {
+        $normalized = bcadd(
+            $value,
+            '0',
+            6
+        );
+
+        if (
+            bccomp(
+                $normalized,
+                '0',
+                6
+            ) <= 0
+        ) {
             throw ValidationException::withMessages([
-                'items' => 'Quantity must be greater than zero.',
+                'items' =>
+                    'Quantity must be greater than zero.',
             ]);
         }
 
         return $normalized;
     }
 
-    private function normalizeMoney(string $value, string $field): string
-    {
-        if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/', $value)) {
+    private function normalizeMoney(
+        string $value,
+        string $field
+    ): string {
+        if (
+            ! preg_match(
+                '/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/',
+                $value
+            )
+        ) {
             throw ValidationException::withMessages([
-                $field => 'Amount must be a valid non-negative decimal with up to 4 places.',
+                $field =>
+                    'Amount must be a valid non-negative decimal with up to 4 places.',
             ]);
         }
 
-        return bcadd($value, '0', 4);
+        return bcadd(
+            $value,
+            '0',
+            4
+        );
     }
 }

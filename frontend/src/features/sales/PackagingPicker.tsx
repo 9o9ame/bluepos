@@ -6,25 +6,62 @@ type Packaging = SaleOfferEvaluation['packaging'][number]
 
 type Props = {
   packaging: Packaging[]
-  /** qty already in the cart for each packaging product. */
   currentQty: Record<string, string>
   onAdd: (product: Packaging, qty: string) => void
 }
 
-/**
- * "Add Free Item" — the salesman picks a bag/box and a quantity.
- * The system never adds packaging by itself; the server enforces the cap.
- */
-export function PackagingPicker({ packaging, currentQty, onAdd }: Props) {
+function isPositiveQuantity(value: string): boolean {
+  if (!/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/.test(value)) {
+    return false
+  }
+
+  return Number(value) > 0
+}
+
+export function PackagingPicker({
+  packaging,
+  currentQty,
+  onAdd,
+}: Props) {
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState('')
   const [qty, setQty] = useState('1')
 
-  const product = packaging.find((row) => row.ulid === selected)
+  const product = packaging.find(
+    (row) => row.ulid === selected,
+  )
+
+  const existingQty = product
+    ? Number(currentQty[product.ulid] ?? 0)
+    : 0
+
+  const requestedQty = Number(qty || 0)
+
+  const maxQty = product?.max_free_qty_per_sale
+    ? Number(product.max_free_qty_per_sale)
+    : null
+
+  const exceedsMaximum =
+    maxQty !== null &&
+    existingQty + requestedQty > maxQty
+
+  const invalidQuantity =
+    !isPositiveQuantity(qty) ||
+    exceedsMaximum
 
   function submit() {
-    if (!product) return
-    onAdd(product, qty)
+    if (!product || invalidQuantity) {
+      return
+    }
+
+    onAdd(product, Number(qty).toFixed(6))
+
+    setOpen(false)
+    setSelected('')
+    setQty('1')
+  }
+
+  function closePicker() {
     setOpen(false)
     setSelected('')
     setQty('1')
@@ -41,7 +78,8 @@ export function PackagingPicker({ packaging, currentQty, onAdd }: Props) {
         className="sales-packaging-trigger"
         onClick={() => setOpen(true)}
       >
-        <Package size={13} /> Add Free Item
+        <Package size={13} />
+        Add Free Item
       </button>
     )
   }
@@ -51,41 +89,72 @@ export function PackagingPicker({ packaging, currentQty, onAdd }: Props) {
       <select
         className="desktop-input"
         value={selected}
-        onChange={(e) => setSelected(e.target.value)}
+        onChange={(event) => {
+          setSelected(event.target.value)
+          setQty('1')
+        }}
       >
-        <option value="">— Select bag / box —</option>
+        <option value="">
+          — Select bag / box —
+        </option>
+
         {packaging.map((row) => (
-          <option key={row.ulid} value={row.ulid}>
+          <option
+            key={row.ulid}
+            value={row.ulid}
+          >
             {row.product_number} — {row.name}
-            {currentQty[row.ulid] ? ` (in cart: ${currentQty[row.ulid]})` : ''}
+            {currentQty[row.ulid]
+              ? ` (in cart: ${currentQty[row.ulid]})`
+              : ''}
           </option>
         ))}
       </select>
 
       <input
+        type="number"
         className="desktop-input sales-packaging-qty"
         value={qty}
-        onChange={(e) => setQty(e.target.value)}
+        onChange={(event) =>
+          setQty(event.target.value)
+        }
+        min="0.000001"
+        step="0.000001"
+        max={product?.max_free_qty_per_sale ?? undefined}
         inputMode="decimal"
-        aria-label="Quantity"
+        aria-label="Free item quantity"
       />
 
       <button
         type="button"
         className="sales-packaging-add"
-        disabled={!product || !qty}
+        disabled={!product || invalidQuantity}
         onClick={submit}
       >
-        <Plus size={12} /> Add
+        <Plus size={12} />
+        Add
       </button>
 
-      <button type="button" className="sales-packaging-cancel" onClick={() => setOpen(false)}>
+      <button
+        type="button"
+        className="sales-packaging-cancel"
+        onClick={closePicker}
+      >
         Cancel
       </button>
 
       {product?.max_free_qty_per_sale ? (
         <span className="sales-packaging-hint">
           Max {product.max_free_qty_per_sale} per sale
+          {existingQty > 0
+            ? ` · Already added: ${existingQty}`
+            : ''}
+        </span>
+      ) : null}
+
+      {exceedsMaximum ? (
+        <span className="sales-packaging-error">
+          Maximum free quantity exceeded.
         </span>
       ) : null}
     </div>
