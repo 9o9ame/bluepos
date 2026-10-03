@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\Purchases\PurchaseReturnController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SaleOfferController;
 use App\Http\Controllers\Api\SaleSchemeController;
+use App\Http\Controllers\Api\Sales\SaleController;
 use App\Http\Controllers\Api\SecuritySessionController;
 use App\Http\Controllers\Api\SubcategoryController;
 use App\Http\Controllers\Api\SupplierController;
@@ -203,6 +204,12 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::patch('/sale-schemes/{schemeUlid}', [SaleSchemeController::class, 'update']);
         Route::delete('/sale-schemes/{schemeUlid}', [SaleSchemeController::class, 'destroy']);
         Route::post('/sale-offers/evaluate', [SaleOfferController::class, 'evaluate']);
+    });
+
+    Route::middleware('entitled:sales')->group(function () {
+        Route::get('/sales', [SaleController::class, 'index']);
+        Route::post('/sales', [SaleController::class, 'store']);
+        Route::get('/sales/{saleUlid}', [SaleController::class, 'show']);
     });
 
     Route::middleware('entitled:inventory')->group(function () {

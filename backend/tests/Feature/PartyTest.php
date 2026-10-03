@@ -13,41 +13,51 @@ class PartyTest extends TestCase
     use DatabaseTransactions;
 
     /**
+     * A COA main-head name that provisioning does not already seed. Provisioning
+     * creates reference heads such as ASSETS/LIABILITIES, so tests must not
+     * re-create those names or they collide on the tenant+name unique index.
+     */
+    private function uniqueCoaName(string $suffix): string
+    {
+        return 'COA HEAD '.$suffix;
+    }
+
+    /**
      * @return array{main: string, sub: string, ap: string, ar: string}
      */
     private function seedCoaTypes(): array
     {
         $main = $this->postJson('/api/coa/main-heads', [
-            'name' => 'ASSETS',
+            'name' => $this->uniqueCoaName('assets'),
             'sort_order' => 1,
         ])->assertCreated()->json('ulid');
 
         $liab = $this->postJson('/api/coa/main-heads', [
-            'name' => 'LIABILITIES',
+            'name' => $this->uniqueCoaName('liabilities'),
             'sort_order' => 2,
         ])->assertCreated()->json('ulid');
 
         $current = $this->postJson('/api/coa/sub-heads', [
             'main_head_ulid' => $main,
-            'name' => 'CURRENT ASSETS',
+            'name' => 'COA CURRENT ASSETS',
         ])->assertCreated()->json('ulid');
 
         $short = $this->postJson('/api/coa/sub-heads', [
             'main_head_ulid' => $liab,
-            'name' => 'SHORT TERM LIABILITIES',
+            'name' => 'COA SHORT TERM LIABILITIES',
         ])->assertCreated()->json('ulid');
 
         $ar = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $current,
-            'code' => '0011',
-            'name' => 'ACCOUNT RECEIVABLE',
+            'code' => '9001',
+            'name' => 'COA ACCOUNT RECEIVABLE',
             'is_receivable' => true,
         ])->assertCreated()->json('ulid');
 
         $ap = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $short,
-            'code' => '0020',
-            'name' => 'ACCOUNT PAYABLE',
+            'code' => '9002',
+            'name' => 'COA ACCOUNT PAYABLE',
             'is_payable' => true,
         ])->assertCreated()->json('ulid');
 
@@ -78,7 +88,7 @@ class PartyTest extends TestCase
         $vendor->assertJsonPath('party_type', 'vendor');
         $vendor->assertJsonPath('code', 'V-01');
         $vendor->assertJsonPath('account_type_ulid', $coa['ap']);
-        $vendor->assertJsonPath('account_type.name', 'ACCOUNT PAYABLE');
+        $vendor->assertJsonPath('account_type.name', 'COA ACCOUNT PAYABLE');
         $this->assertNoInternalIds($vendor->json());
         $vendorUlid = $vendor->json('ulid');
 

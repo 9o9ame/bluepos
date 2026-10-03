@@ -1,0 +1,85 @@
+<?php
+
+namespace App\Http\Controllers\Api\Sales;
+
+use App\Actions\Sales\CreateSaleAction;
+use App\Exceptions\ApiException;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Sales\StoreSaleRequest;
+use App\Http\Resources\Sales\SaleResource;
+use App\Models\Sale;
+use App\Tenancy\TenantContext;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class SaleController extends Controller
+{
+    public function index(Request $request, TenantContext $tenantContext): mixed
+    {
+        $this->authorize('viewAny', Sale::class);
+
+        $perPage = min(max($request->integer('per_page', 25), 1), 100);
+        $query = Sale::query()
+            ->forTenant($tenantContext->tenantId())
+            ->with(['customer', 'branch', 'warehouse'])
+            ->orderByDesc('sale_date')
+            ->orderByDesc('id');
+
+        if ($request->filled('customer_ulid')) {
+            $query->whereHas('customer', fn ($q) => $q->where('ulid', (string) $request->string('customer_ulid')));
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('sale_date', '>=', (string) $request->string('date_from'));
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('sale_date', '<=', (string) $request->string('date_to'));
+        }
+
+        $page = $query->paginate($perPage);
+
+        return [
+            'data' => SaleResource::collection($page->items()),
+            'meta' => [
+                'current_page' => $page->currentPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
+                'last_page' => $page->lastPage(),
+            ],
+        ];
+    }
+
+    public function store(StoreSaleRequest $request, CreateSaleAction $create): JsonResponse
+    {
+        $this->authorize('create', Sale::class);
+
+        $idempotencyKey = (string) $request->header('Idempotency-Key', '');
+
+        $sale = $create->execute($request->validated(), $idempotencyKey);
+
+        return (new SaleResource($sale))->response()->setStatusCode(201);
+    }
+
+    public function show(string $saleUlid, TenantContext $tenantContext): SaleResource
+    {
+        $sale = $this->find($saleUlid, $tenantContext);
+        $this->authorize('view', $sale);
+
+        return new SaleResource($sale->load(CreateSaleAction::with()));
+    }
+
+    private function find(string $ulid, TenantContext $tenantContext): Sale
+    {
+        $sale = Sale::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('ulid', $ulid)
+            ->first();
+
+        if (! $sale) {
+            throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
+        }
+
+        return $sale;
+    }
+}
