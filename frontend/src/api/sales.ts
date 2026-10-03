@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { Sale, SalePayload } from '../types/sales'
+import type { Sale, SalePayment, SalePaymentMethod, SalePayload } from '../types/sales'
 
 /**
  * Post a sale. The server recalculates every money figure and revalidates
@@ -31,4 +31,24 @@ export function fetchSales(params: { page?: number; per_page?: number } = {}) {
       last_page: number
     }
   }>(`/api/sales${query ? `?${query}` : ''}`)
+}
+
+/**
+ * Collect a payment against a saved sale. Partial amounts are allowed; the
+ * server recomputes what is due and rejects anything over it.
+ */
+export function createSalePayment(
+  saleUlid: string,
+  payload: { amount: string; method: SalePaymentMethod; reference?: string | null },
+  idempotencyKey: string,
+) {
+  return apiFetch<SalePayment>(`/api/sales/${saleUlid}/payments`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 'Idempotency-Key': idempotencyKey },
+  })
+}
+
+export function fetchSale(saleUlid: string) {
+  return apiFetch<Sale>(`/api/sales/${saleUlid}`)
 }

@@ -240,3 +240,86 @@
   color: #1f6b32;
   font-weight: 600;
 }
+
+/* Payment panel */
+.sales-payment-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 5px;
+  padding: 6px 7px;
+  border: 1px solid var(--line, #c9c2ae);
+  border-radius: 3px;
+  background: #fbfbf7;
+}
+
+.sales-payment-due {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  margin-right: 4px;
+  font-size: 12px;
+}
+
+.sales-payment-due strong {
+  font-size: 14px;
+}
+
+.sales-payment-methods {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.sales-payment-method {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 3px 9px;
+  border: 1px solid var(--line, #c9c2ae);
+  border-radius: 3px;
+  background: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sales-payment-method.is-active {
+  border-color: #2f5fa8;
+  background: #eaf0fa;
+  font-weight: 600;
+}
+
+.sales-payment-amount {
+  width: 100px;
+  text-align: right;
+}
+
+.sales-payment-collect {
+  padding: 3px 14px;
+  border: 1px solid #2f9e44;
+  border-radius: 3px;
+  background: #2f9e44;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sales-payment-collect:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sales-payment-settled {
+  margin: 0;
+  color: #1f6b32;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sales-payment-error {
+  width: 100%;
+  margin: 2px 0 0;
+  color: var(--danger, #c92a2a);
+  font-size: 11px;
+  font-weight: 600;
+}

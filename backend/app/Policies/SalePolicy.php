@@ -22,4 +22,10 @@ class SalePolicy extends CatalogPolicy
     {
         return $this->permissions->can('sales.create');
     }
+
+    public function createPayment(User $user, Sale $sale): bool
+    {
+        return $this->permissions->can('payments.create')
+            && $this->sameTenant((int) $sale->tenant_id);
+    }
 }

@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Api\Sales;
 
+use App\Actions\Sales\CollectSalePaymentAction;
 use App\Actions\Sales\CreateSaleAction;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Sales\StoreSalePaymentRequest;
 use App\Http\Requests\Sales\StoreSaleRequest;
+use App\Http\Resources\Sales\SalePaymentResource;
 use App\Http\Resources\Sales\SaleResource;
 use App\Models\Sale;
+use App\Models\SalePayment;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,7 +70,44 @@ class SaleController extends Controller
         $sale = $this->find($saleUlid, $tenantContext);
         $this->authorize('view', $sale);
 
-        return new SaleResource($sale->load(CreateSaleAction::with()));
+        return new SaleResource(
+            $sale->load([...CreateSaleAction::with(), 'payments', 'payments.account'])
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function payments(string $saleUlid, TenantContext $tenantContext): mixed
+    {
+        $sale = $this->find($saleUlid, $tenantContext);
+        $this->authorize('view', $sale);
+
+        return SalePaymentResource::collection(
+            SalePayment::query()
+                ->forTenant($tenantContext->tenantId())
+                ->where('sale_id', $sale->id)
+                ->orderBy('id')
+                ->get()
+        );
+    }
+
+    public function storePayment(
+        StoreSalePaymentRequest $request,
+        string $saleUlid,
+        TenantContext $tenantContext,
+        CollectSalePaymentAction $collect,
+    ): JsonResponse {
+        $sale = $this->find($saleUlid, $tenantContext);
+        $this->authorize('createPayment', $sale);
+
+        $payment = $collect->execute(
+            $sale,
+            $request->validated(),
+            (string) $request->header('Idempotency-Key', ''),
+        );
+
+        return (new SalePaymentResource($payment))->response()->setStatusCode(201);
     }
 
     private function find(string $ulid, TenantContext $tenantContext): Sale

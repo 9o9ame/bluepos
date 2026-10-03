@@ -43,6 +43,7 @@ class SaleResource extends JsonResource
                 'name' => $this->warehouse->name,
             ]),
             'items' => SaleItemResource::collection($this->whenLoaded('items')),
+            'payments' => SalePaymentResource::collection($this->whenLoaded('payments')),
         ];
     }
 }

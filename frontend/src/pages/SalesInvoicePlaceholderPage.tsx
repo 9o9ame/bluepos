@@ -15,8 +15,9 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchProducts } from '../api/catalog'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { createSale } from '../api/sales'
+import { createSale, fetchSale } from '../api/sales'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
+import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
 import { SchemeOfferPrompt } from '../features/sales/SchemeOfferPrompt'
 import { useSaleCart } from '../features/sales/useSaleCart'
 import { useCan } from '../features/auth/useCan'
@@ -51,6 +52,16 @@ function salesColClass(col: ResolvedGridColumn): string {
   return SALES_COL_CLASS[col.key] ?? `col-${col.key}`
 }
 
+/** What the server still considers due: total minus everything paid. */
+function outstandingAfterPayments(sale: Sale): string {
+  const total = Number.parseFloat(sale.grand_total) || 0
+  const paid = (sale.payments ?? []).reduce(
+    (sum, payment) => sum + (Number.parseFloat(payment.amount) || 0),
+    0,
+  )
+  return Math.max(total - paid, 0).toFixed(4)
+}
+
 export function SalesInvoicePlaceholderPage() {
   const { closeActiveTab } = useWorkspace()
   const [customizationOpen, setCustomizationOpen] = useState(false)
@@ -58,6 +69,7 @@ export function SalesInvoicePlaceholderPage() {
   const canAddPackaging = useCan('sales.give_free_packaging')
   const canApplyScheme = useCan('sales.apply_scheme')
   const canCreateSale = useCan('sales.create')
+  const canCollectPayment = useCan('payments.create')
   const columnLayout = useColumnLayout({
     screenKey: SALES_INVOICE_SCREEN,
     catalog: SALES_INVOICE_COLUMNS,
@@ -141,6 +153,12 @@ export function SalesInvoicePlaceholderPage() {
     const list = offers?.packaging ?? []
     return canAddPackaging ? list : []
   }, [offers, canAddPackaging])
+
+  /** Re-read the sale so the due amount comes from the server, not our maths. */
+  async function refreshSavedSale(saleUlid: string) {
+    const fresh = await fetchSale(saleUlid)
+    setSavedSale(fresh)
+  }
 
   return (
     <div className="sales-reference-screen">
@@ -263,9 +281,18 @@ export function SalesInvoicePlaceholderPage() {
           {saveError ? (
             <span className="sales-pos-status-error">{saveError}</span>
           ) : savedSale ? (
-            <span className="sales-pos-status-ok">
-              Saved {savedSale.document_number} — total {savedSale.grand_total}
-            </span>
+            <>
+              <span className="sales-pos-status-ok">
+                Saved {savedSale.document_number} — total {savedSale.grand_total}
+              </span>
+              {canCollectPayment ? (
+                <SalePaymentPanel
+                  sale={savedSale}
+                  outstanding={outstandingAfterPayments(savedSale)}
+                  onCollected={() => refreshSavedSale(savedSale.ulid)}
+                />
+              ) : null}
+            </>
           ) : cart.hasPaidLines ? (
             <span>{cart.paidLines.length} line(s) ready to save</span>
           ) : (

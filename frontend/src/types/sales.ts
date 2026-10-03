@@ -1,5 +1,16 @@
 export type SaleLineKind = 'sale' | 'free_packaging' | 'free_scheme'
 
+export type SalePaymentMethod = 'cash' | 'card' | 'bank' | 'credit'
+
+export type SalePayment = {
+  ulid: string
+  method: SalePaymentMethod
+  amount: string
+  reference: string | null
+  journal_entry_ulid: string | null
+  created_at: string | null
+}
+
 export type SaleItem = {
   ulid: string
   line_kind: SaleLineKind
@@ -33,6 +44,7 @@ export type Sale = {
   branch: { ulid: string; code: string; name: string }
   warehouse: { ulid: string; code: string; name: string }
   items: SaleItem[]
+  payments?: SalePayment[]
 }
 
 /** What the salesman picks at the prompt; the server still decides the truth. */

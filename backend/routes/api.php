@@ -210,6 +210,8 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::get('/sales', [SaleController::class, 'index']);
         Route::post('/sales', [SaleController::class, 'store']);
         Route::get('/sales/{saleUlid}', [SaleController::class, 'show']);
+        Route::get('/sales/{saleUlid}/payments', [SaleController::class, 'payments']);
+        Route::post('/sales/{saleUlid}/payments', [SaleController::class, 'storePayment']);
     });
 
     Route::middleware('entitled:inventory')->group(function () {
