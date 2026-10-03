@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Products;
 
 use App\Enums\PriceType;
+use App\Models\Product;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -34,7 +35,24 @@ class StoreProductRequest extends FormRequest
                 'max:64',
                 Rule::unique('products', 'sku')->where('tenant_id', $tenantId),
             ],
-            'name' => ['required', 'string', 'max:180'],
+            'name' => [
+                'required',
+                'string',
+                'max:180',
+                function (string $attribute, mixed $value, \Closure $fail) use ($tenantId): void {
+                    $name = mb_strtolower(trim((string) $value));
+                    if ($name === '') {
+                        return;
+                    }
+                    $exists = Product::query()
+                        ->forTenant($tenantId)
+                        ->whereRaw('LOWER(name) = ?', [$name])
+                        ->exists();
+                    if ($exists) {
+                        $fail('A product with this name already exists.');
+                    }
+                },
+            ],
             'alternate_name' => ['nullable', 'string', 'max:180'],
             'category_ulid' => ['nullable', 'string', 'size:26'],
             'subcategory_ulid' => ['nullable', 'string', 'size:26'],
@@ -49,6 +67,8 @@ class StoreProductRequest extends FormRequest
             'is_taxable' => ['sometimes', 'boolean'],
             'track_batch' => ['sometimes', 'boolean'],
             'track_expiry' => ['sometimes', 'boolean'],
+            'is_packaging' => ['sometimes', 'boolean'],
+            'max_free_qty_per_sale' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/', 'numeric', 'gt:0'],
             'reorder_level' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],
             'minimum_stock' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],
             'maximum_stock' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],

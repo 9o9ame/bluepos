@@ -69,9 +69,9 @@ class SyncProductBarcodesAction
                 ];
             }
 
-            if ($primaryCount !== 1) {
+            if ($barcodes !== [] && $primaryCount !== 1) {
                 throw ValidationException::withMessages([
-                    'barcodes' => 'A product must have exactly one primary barcode.',
+                    'barcodes' => 'A product with barcodes must have exactly one primary barcode.',
                 ]);
             }
 

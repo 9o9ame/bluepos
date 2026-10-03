@@ -59,6 +59,10 @@ class ProductController extends Controller
             $query->where('brand_id', $brand->id);
         }
 
+        if ($request->boolean('packaging')) {
+            $query->where('is_packaging', true);
+        }
+
         $page = $query->paginate($perPage);
 
         return [

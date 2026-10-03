@@ -13,6 +13,7 @@ import {
   FileSpreadsheet,
   FileText,
   FolderTree,
+  Gift,
   HelpCircle,
   Info,
   Layers,
@@ -158,6 +159,15 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     ribbon: 'definition',
     status: 'ready',
     permission: 'brands.view',
+    entitlement: 'catalog',
+  },
+  {
+    key: 'sale-schemes',
+    title: 'Sale Schemes',
+    path: '/definition/sale-schemes',
+    ribbon: 'definition',
+    status: 'ready',
+    permission: 'sale_schemes.view',
     entitlement: 'catalog',
   },
   {
@@ -355,6 +365,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
         { id: 'subcategories', label: 'Subcategories', icon: Layers, moduleKey: 'subcategories', permission: 'categories.view', entitlement: 'catalog', status: 'ready', tone: 'blue' },
         { id: 'brands', label: 'Brands', icon: Tag, moduleKey: 'brands', permission: 'brands.view', entitlement: 'catalog', status: 'ready', tone: 'purple' },
         { id: 'units', label: 'Units', icon: Ruler, moduleKey: 'units', permission: 'units.view', entitlement: 'catalog', status: 'ready', tone: 'slate' },
+        { id: 'sale-schemes', label: 'Sale Schemes', icon: Gift, moduleKey: 'sale-schemes', permission: 'sale_schemes.view', entitlement: 'catalog', status: 'ready', tone: 'gold' },
       ],
     },
     {

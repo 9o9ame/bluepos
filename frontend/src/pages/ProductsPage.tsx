@@ -249,6 +249,8 @@ export function ProductsPage() {
   const [reorderLevel, setReorderLevel] = useState('')
   const [rackLocation, setRackLocation] = useState('')
   const [taxPercent, setTaxPercent] = useState('0')
+  const [isPackaging, setIsPackaging] = useState(false)
+  const [maxFreeQtyPerSale, setMaxFreeQtyPerSale] = useState('')
   const [retail, setRetail] = useState('0.0000')
   const [wholesale, setWholesale] = useState('0.0000')
   const [minimumSale, setMinimumSale] = useState('0.0000')
@@ -409,6 +411,8 @@ export function ProductsPage() {
     setReorderLevel('')
     setRackLocation('')
     setTaxPercent('0')
+    setIsPackaging(false)
+    setMaxFreeQtyPerSale('')
     setRetail('0.0000')
     setWholesale('0.0000')
     setMinimumSale('0.0000')
@@ -527,6 +531,8 @@ export function ProductsPage() {
     setReorderLevel(selected.reorder_level ?? '')
     setRackLocation(selected.rack_location ?? '')
     setTaxPercent(selected.tax_percent ?? '0')
+    setIsPackaging(selected.is_packaging ?? false)
+    setMaxFreeQtyPerSale(selected.max_free_qty_per_sale ?? '')
     setRetail(selected.prices?.find((row) => row.price_type === 'retail')?.amount ?? '0.0000')
     setWholesale(selected.prices?.find((row) => row.price_type === 'wholesale')?.amount ?? '0.0000')
     setMinimumSale(selected.prices?.find((row) => row.price_type === 'minimum_sale')?.amount ?? '0.0000')
@@ -662,9 +668,13 @@ export function ProductsPage() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const current = selected
+      const trimmedName = name.trim()
+      if (!trimmedName) {
+        throw new Error('Product name is required.')
+      }
 
       const payload = {
-        name,
+        name: trimmedName,
         alternate_name: alternateName || null,
         sku: sku || null,
         category_ulid: categoryUlid || null,
@@ -679,6 +689,8 @@ export function ProductsPage() {
         tax_percent: taxPercent,
         track_batch: current?.track_batch ?? false,
         track_expiry: current?.track_expiry ?? false,
+        is_packaging: isPackaging,
+        max_free_qty_per_sale: isPackaging && maxFreeQtyPerSale ? maxFreeQtyPerSale : null,
         reorder_level: reorderLevel || null,
         minimum_stock: current?.minimum_stock ?? null,
         maximum_stock: current?.maximum_stock ?? null,
@@ -702,41 +714,45 @@ export function ProductsPage() {
           .map((row) => ({
             barcode: row.barcode.trim(),
             unit_ulid: row.unit_ulid,
-            conversion_factor: row.conversion_factor.trim(),
+            conversion_factor: row.conversion_factor.trim() || '1.00000000',
             is_primary: row.is_primary,
           }))
           .filter((row) => row.barcode !== '')
 
-        const duplicateBarcode = barcodes.find(
-          (row, index) =>
-            barcodes.findIndex(
-              (candidate) =>
-                candidate.barcode.toLowerCase() === row.barcode.toLowerCase(),
-            ) !== index,
-        )
+        // Name-only products are allowed — skip barcode API when nothing entered.
+        // On edit, still sync an empty list so removed barcodes are cleared.
+        if (barcodes.length > 0 || !creating) {
+          const duplicateBarcode = barcodes.find(
+            (row, index) =>
+              barcodes.findIndex(
+                (candidate) =>
+                  candidate.barcode.toLowerCase() === row.barcode.toLowerCase(),
+              ) !== index,
+          )
 
-        if (duplicateBarcode) {
-          throw new Error(`Duplicate barcode: ${duplicateBarcode.barcode}`)
-        }
-
-        for (const row of barcodes) {
-          if (!row.unit_ulid) {
-            throw new Error(`Select a unit for barcode ${row.barcode}.`)
+          if (duplicateBarcode) {
+            throw new Error(`Duplicate barcode: ${duplicateBarcode.barcode}`)
           }
 
-          const factor = Number(row.conversion_factor)
-          if (!Number.isFinite(factor) || factor <= 0) {
-            throw new Error(
-              `Factor for barcode ${row.barcode} must be greater than zero.`,
-            )
+          for (const row of barcodes) {
+            if (!row.unit_ulid) {
+              throw new Error(`Select a unit for barcode ${row.barcode}.`)
+            }
+
+            const factor = Number(row.conversion_factor)
+            if (!Number.isFinite(factor) || factor <= 0) {
+              throw new Error(
+                `Factor for barcode ${row.barcode} must be greater than zero.`,
+              )
+            }
           }
-        }
 
-        if (barcodes.length > 0 && !barcodes.some((row) => row.is_primary)) {
-          barcodes[0] = { ...barcodes[0], is_primary: true }
-        }
+          if (barcodes.length > 0 && !barcodes.some((row) => row.is_primary)) {
+            barcodes[0] = { ...barcodes[0], is_primary: true }
+          }
 
-        await saveProductBarcodes(saved.ulid, barcodes)
+          await saveProductBarcodes(saved.ulid, barcodes)
+        }
       }
 
       let finalSaved = saved
@@ -1453,6 +1469,27 @@ export function ProductsPage() {
               </label>
               <label className="pdf-right-label">Tax %</label>
               <input className="pdf-input pdf-num" value={taxPercent} readOnly={!canSave} onChange={(e) => setTaxPercent(e.target.value)} />
+            </div>
+
+            <div className="pdf-row pdf-row-check">
+              <label />
+              <label className="pdf-check">
+                <input
+                  type="checkbox"
+                  disabled={!canSave}
+                  checked={isPackaging}
+                  onChange={(e) => setIsPackaging(e.target.checked)}
+                />
+                Packaging (bag / box / free-issue)
+              </label>
+              <label className="pdf-right-label">Max free/sale</label>
+              <input
+                className="pdf-input pdf-num"
+                value={maxFreeQtyPerSale}
+                readOnly={!canSave || !isPackaging}
+                placeholder={isPackaging ? 'e.g. 3' : '—'}
+                onChange={(e) => setMaxFreeQtyPerSale(e.target.value)}
+              />
             </div>
 
             <div className="pdf-barcode-box">

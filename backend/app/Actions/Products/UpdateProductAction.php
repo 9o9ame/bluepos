@@ -31,7 +31,7 @@ class UpdateProductAction
 
             $payload = [];
 
-            foreach (['product_number', 'sku', 'name', 'alternate_name', 'tax_percent', 'is_taxable', 'track_batch', 'track_expiry', 'reorder_level', 'minimum_stock', 'maximum_stock', 'rack_location', 'description', 'secondary_conversion_factor'] as $field) {
+            foreach (['product_number', 'sku', 'name', 'alternate_name', 'tax_percent', 'is_taxable', 'track_batch', 'track_expiry', 'is_packaging', 'max_free_qty_per_sale', 'reorder_level', 'minimum_stock', 'maximum_stock', 'rack_location', 'description', 'secondary_conversion_factor'] as $field) {
                 if (array_key_exists($field, $data)) {
                     $payload[$field] = $data[$field];
                 }

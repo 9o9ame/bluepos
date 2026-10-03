@@ -17,7 +17,8 @@ class SyncProductBarcodesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'barcodes' => ['required', 'array', 'min:1'],
+            // Empty list is allowed — products may be defined by name only.
+            'barcodes' => ['present', 'array'],
             'barcodes.*.barcode' => ['required', 'string', 'max:64', 'distinct'],
             'barcodes.*.unit_ulid' => ['required', 'string', 'size:26'],
             'barcodes.*.conversion_factor' => ['required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/', 'numeric', 'gt:0'],

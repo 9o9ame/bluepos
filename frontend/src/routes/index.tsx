@@ -20,6 +20,7 @@ import { PurchaseReturnsPage } from '../pages/PurchaseReturnsPage'
 import { ReportsPlaceholderPage } from '../pages/ReportsPlaceholderPage'
 import { RoleEditorPage } from '../pages/RoleEditorPage'
 import { RolesPage } from '../pages/RolesPage'
+import { SaleSchemesPage } from '../pages/SaleSchemesPage'
 import { SalesInvoicePlaceholderPage } from '../pages/SalesInvoicePlaceholderPage'
 import { SubcategoriesPage } from '../pages/SubcategoriesPage'
 import { UnitsPage } from '../pages/UnitsPage'
@@ -111,6 +112,10 @@ export function AppRoutes() {
             <Route path="/definition/products/:productUlid" element={<Navigate to="/definition/products" replace />} />
             <Route path="/definition/barcode-printing" element={<BarcodePrintingPage />} />
             <Route path="/definition/barcode-printing/:productUlid" element={<BarcodePrintingPage />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="sale_schemes.view" />}>
+            <Route path="/definition/sale-schemes" element={<SaleSchemesPage />} />
           </Route>
         </Route>
       </Route>

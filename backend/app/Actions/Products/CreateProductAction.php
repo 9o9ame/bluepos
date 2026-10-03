@@ -69,6 +69,8 @@ class CreateProductAction
                 'is_taxable' => $data['is_taxable'] ?? true,
                 'track_batch' => $data['track_batch'] ?? false,
                 'track_expiry' => $data['track_expiry'] ?? false,
+                'is_packaging' => $data['is_packaging'] ?? false,
+                'max_free_qty_per_sale' => $data['max_free_qty_per_sale'] ?? null,
                 'reorder_level' => $data['reorder_level'] ?? null,
                 'minimum_stock' => $data['minimum_stock'] ?? null,
                 'maximum_stock' => $data['maximum_stock'] ?? null,

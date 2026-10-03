@@ -30,6 +30,8 @@ class ProductResource extends JsonResource
             'is_taxable' => $this->is_taxable,
             'track_batch' => $this->track_batch,
             'track_expiry' => $this->track_expiry,
+            'is_packaging' => $this->is_packaging,
+            'max_free_qty_per_sale' => $this->max_free_qty_per_sale,
             'reorder_level' => $this->reorder_level,
             'minimum_stock' => $this->minimum_stock,
             'maximum_stock' => $this->maximum_stock,

@@ -106,6 +106,8 @@ export type Product = {
   is_taxable: boolean
   track_batch: boolean
   track_expiry: boolean
+  is_packaging: boolean
+  max_free_qty_per_sale: string | null
   reorder_level: string | null
   minimum_stock: string | null
   maximum_stock: string | null

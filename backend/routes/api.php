@@ -25,6 +25,8 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\Purchases\PurchaseInvoiceController;
 use App\Http\Controllers\Api\Purchases\PurchaseReturnController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\SaleOfferController;
+use App\Http\Controllers\Api\SaleSchemeController;
 use App\Http\Controllers\Api\SecuritySessionController;
 use App\Http\Controllers\Api\SubcategoryController;
 use App\Http\Controllers\Api\SupplierController;
@@ -194,6 +196,13 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::put('/products/{productUlid}/barcodes', [ProductController::class, 'syncBarcodes']);
         Route::put('/products/{productUlid}/prices', [ProductController::class, 'syncPrices']);
         Route::get('/products/{productUlid}/stock', [StockController::class, 'forProduct']);
+
+        Route::get('/sale-schemes', [SaleSchemeController::class, 'index']);
+        Route::post('/sale-schemes', [SaleSchemeController::class, 'store']);
+        Route::get('/sale-schemes/{schemeUlid}', [SaleSchemeController::class, 'show']);
+        Route::patch('/sale-schemes/{schemeUlid}', [SaleSchemeController::class, 'update']);
+        Route::delete('/sale-schemes/{schemeUlid}', [SaleSchemeController::class, 'destroy']);
+        Route::post('/sale-offers/evaluate', [SaleOfferController::class, 'evaluate']);
     });
 
     Route::middleware('entitled:inventory')->group(function () {

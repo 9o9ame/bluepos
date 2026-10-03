@@ -421,6 +421,21 @@ class CatalogTest extends TestCase
             'base_unit_ulid' => $masters['pcs'],
         ])->assertCreated();
 
+        // Name-only product may sync an empty barcode list.
+        $this->putJson('/api/products/'.$second->json('ulid').'/barcodes', [
+            'barcodes' => [],
+        ])->assertOk()->assertJsonCount(0, 'barcodes');
+
+        $this->postJson('/api/products', [
+            'name' => 'water',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertUnprocessable();
+
+        $this->postJson('/api/products', [
+            'name' => 'Cola 330ml',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertUnprocessable();
+
         $this->putJson('/api/products/'.$second->json('ulid').'/barcodes', [
             'barcodes' => [
                 [
