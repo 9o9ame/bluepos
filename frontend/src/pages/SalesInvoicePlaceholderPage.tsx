@@ -10,8 +10,18 @@ import {
   StickyNote,
   XCircle,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { ApiClientError } from '../api/client'
+import { fetchProducts } from '../api/catalog'
+import { evaluateSaleOffers } from '../api/saleSchemes'
+import { createSale } from '../api/sales'
+import { PackagingPicker } from '../features/sales/PackagingPicker'
+import { SchemeOfferPrompt } from '../features/sales/SchemeOfferPrompt'
+import { useSaleCart } from '../features/sales/useSaleCart'
 import { useCan } from '../features/auth/useCan'
+import type { SaleOfferEvaluation } from '../types/saleSchemes'
+import type { Sale } from '../types/sales'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
 import {
   SALES_INVOICE_COLUMNS,
@@ -21,6 +31,7 @@ import {
 import { useColumnLayout } from '../features/gridLayout/useColumnLayout'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import './SalesInvoicePlaceholderPage.theme.css'
+import './SalesInvoicePlaceholderPage.cart.css'
 
 /** Map logical keys → original sales CSS column classes (keeps reference geometry). */
 const SALES_COL_CLASS: Record<string, string> = {
@@ -44,10 +55,92 @@ export function SalesInvoicePlaceholderPage() {
   const { closeActiveTab } = useWorkspace()
   const [customizationOpen, setCustomizationOpen] = useState(false)
   const canSaveRoleDefault = useCan('roles.edit')
+  const canAddPackaging = useCan('sales.give_free_packaging')
+  const canApplyScheme = useCan('sales.apply_scheme')
+  const canCreateSale = useCan('sales.create')
   const columnLayout = useColumnLayout({
     screenKey: SALES_INVOICE_SCREEN,
     catalog: SALES_INVOICE_COLUMNS,
   })
+
+  const cart = useSaleCart()
+  const [productQuery, setProductQuery] = useState('')
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [savedSale, setSavedSale] = useState<Sale | null>(null)
+
+  // Product lookup for the entry row.
+  const productsQuery = useQuery({
+    queryKey: ['products', 'pos-entry', productQuery],
+    queryFn: () => fetchProducts({ q: productQuery || undefined, per_page: 20, page: 1 }),
+    enabled: productQuery.trim().length > 0,
+  })
+
+  /**
+   * Eligibility is advisory only. The server revalidates the threshold on save,
+   * so this just drives which options we show.
+   */
+  const offersQuery = useQuery({
+    queryKey: ['sale-offers', cart.paidLines.length, cart.appliedSchemeUlids.length],
+    queryFn: () =>
+      evaluateSaleOffers({
+        subtotal: '0.0000',
+        document_date: new Date().toISOString().slice(0, 10),
+      }),
+    enabled: cart.hasPaidLines,
+    retry: false,
+  })
+
+  const offers: SaleOfferEvaluation | undefined = offersQuery.data
+
+  const packagingQtyInCart = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const line of cart.packagingLines) {
+      map[line.product_ulid] = line.quantity
+    }
+    return map
+  }, [cart.packagingLines])
+
+  // A fresh key per attempt; a retry of the same attempt reuses it so the
+  // server replays instead of creating a second sale.
+  const idempotencyKeyRef = useRef(newSaleKey())
+
+  const saveMutation = useMutation({
+    mutationFn: async () => createSale(cart.buildPayload(), idempotencyKeyRef.current),
+    onSuccess: (sale) => {
+      setSavedSale(sale)
+      setSaveError(null)
+      cart.clear()
+      setProductQuery('')
+      idempotencyKeyRef.current = newSaleKey()
+    },
+    onError: (err) => {
+      setSavedSale(null)
+      setSaveError(
+        err instanceof ApiClientError ? err.message : 'Unable to save the sale.',
+      )
+    },
+  })
+
+  function newSaleKey(): string {
+    return `pos-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  }
+
+  function addProductFromEntry(productUlid: string) {
+    const product = productsQuery.data?.data?.find((row) => row.ulid === productUlid)
+    if (!product) return
+    cart.addProduct(product, '1.000000')
+    setProductQuery('')
+  }
+
+  const visibleSchemes = useMemo(() => {
+    const list = offers?.schemes ?? []
+    return canApplyScheme ? list : []
+  }, [offers, canApplyScheme])
+
+  const visiblePackaging = useMemo(() => {
+    const list = offers?.packaging ?? []
+    return canAddPackaging ? list : []
+  }, [offers, canAddPackaging])
 
   return (
     <div className="sales-reference-screen">
@@ -166,6 +259,20 @@ export function SalesInvoicePlaceholderPage() {
           <div className="sales-reference-meta-spacer" aria-hidden />
         </section>
 
+        <div className="sales-pos-status">
+          {saveError ? (
+            <span className="sales-pos-status-error">{saveError}</span>
+          ) : savedSale ? (
+            <span className="sales-pos-status-ok">
+              Saved {savedSale.document_number} — total {savedSale.grand_total}
+            </span>
+          ) : cart.hasPaidLines ? (
+            <span>{cart.paidLines.length} line(s) ready to save</span>
+          ) : (
+            <span>Add a product to start a sale</span>
+          )}
+        </div>
+
         <div className="sales-reference-entry-row">
           <input
             className="sales-reference-product-entry"
@@ -253,10 +360,31 @@ export function SalesInvoicePlaceholderPage() {
                   if (col.key === 'product') {
                     return (
                       <td key={col.key} className="sales-reference-yellow">
-                        <span className="sales-reference-dots">....</span>
-                        <button type="button" className="sales-reference-product-drop" disabled>
-                          ▼
-                        </button>
+                        <input
+                          className="sales-pos-product-entry"
+                          value={productQuery}
+                          placeholder="Type product name or number, then Enter"
+                          onChange={(e) => setProductQuery(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return
+                            const first = productsQuery.data?.data?.[0]
+                            if (first) addProductFromEntry(first.ulid)
+                          }}
+                        />
+                        {productQuery.trim().length > 0 && productsQuery.data?.data?.length ? (
+                          <ul className="sales-pos-product-results">
+                            {productsQuery.data.data.slice(0, 8).map((row) => (
+                              <li key={row.ulid}>
+                                <button
+                                  type="button"
+                                  onClick={() => addProductFromEntry(row.ulid)}
+                                >
+                                  <span>{row.product_number}</span> {row.name}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
                       </td>
                     )
                   }
@@ -272,8 +400,94 @@ export function SalesInvoicePlaceholderPage() {
                   return <td key={col.key} />
                 })}
               </tr>
+
+              {cart.lines.map((line) => (
+                <tr
+                  key={`${line.line_kind}-${line.product_ulid}`}
+                  className={
+                    line.line_kind === 'sale'
+                      ? 'sales-pos-line'
+                      : 'sales-pos-line is-free'
+                  }
+                >
+                  {columnLayout.visibleColumns.map((col) => {
+                    if (col.key === 'selector') {
+                      return (
+                        <td key={col.key} className="sales-reference-row-arrow">
+                          ›
+                        </td>
+                      )
+                    }
+                    if (col.key === 'product') {
+                      return (
+                        <td key={col.key}>
+                          <span className="sales-pos-line-product">
+                            {line.product_number} — {line.product_name}
+                          </span>
+                          {line.line_kind !== 'sale' ? (
+                            <span className="sales-pos-line-badge">
+                              {line.line_kind === 'free_scheme' ? 'Free scheme' : 'Free packaging'}
+                            </span>
+                          ) : null}
+                        </td>
+                      )
+                    }
+                    if (col.key === 'sales_qty') {
+                      return (
+                        <td key={col.key}>
+                          <input
+                            className="sales-pos-line-qty"
+                            value={line.quantity}
+                            disabled={line.line_kind !== 'sale'}
+                            onChange={(e) =>
+                              cart.setQuantity(line.product_ulid, e.target.value)
+                            }
+                          />
+                        </td>
+                      )
+                    }
+                    if (col.key === 'delete') {
+                      return (
+                        <td key={col.key} className="sales-reference-delete-cell">
+                          <button
+                            type="button"
+                            aria-label="Delete row"
+                            onClick={() => cart.removeLine(line.product_ulid, line.line_kind)}
+                          >
+                            <XCircle size={16} />
+                          </button>
+                        </td>
+                      )
+                    }
+                    // Prices and totals are decided by the server on save.
+                    if (col.key === 'amt' || col.key === 'net_amt') {
+                      return (
+                        <td key={col.key} className="sales-pos-line-pending">
+                          {line.line_kind === 'sale' ? '—' : '0.00'}
+                        </td>
+                      )
+                    }
+                    return <td key={col.key} />
+                  })}
+                </tr>
+              ))}
             </tbody>
           </table>
+
+          <div className="sales-pos-offers">
+            <SchemeOfferPrompt
+              schemes={visibleSchemes}
+              appliedUlids={cart.appliedSchemeUlids}
+              onAdd={cart.addSchemeReward}
+              onSkip={cart.skipScheme}
+            />
+
+            <PackagingPicker
+              packaging={visiblePackaging}
+              currentQty={packagingQtyInCart}
+              onAdd={cart.addPackaging}
+            />
+          </div>
 
           <div className="sales-reference-grid-empty" />
 
@@ -329,7 +543,11 @@ export function SalesInvoicePlaceholderPage() {
           </div>
 
           <div className="sales-reference-actions-center">
-            <button type="button" disabled>
+            <button
+              type="button"
+              disabled={!canCreateSale || !cart.hasPaidLines || saveMutation.isPending}
+              onClick={() => saveMutation.mutate()}
+            >
               <span>Save [F9]</span>
               <span className="sales-reference-action-icon is-save">
                 <Save />

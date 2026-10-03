@@ -1,0 +1,242 @@
+/* Sales POS — cart, scheme prompt and packaging picker.
+   Layered on top of the reference sales screen styles. */
+
+.sales-pos-product-entry {
+  width: 100%;
+  border: 1px solid var(--line, #c9c2ae);
+  background: #fffdf3;
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
+.sales-pos-product-results {
+  position: absolute;
+  z-index: 40;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--line, #c9c2ae);
+  box-shadow: 0 4px 10px rgb(0 0 0 / 18%);
+  max-height: 210px;
+  overflow-y: auto;
+}
+
+.sales-pos-product-results button {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  padding: 3px 6px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.sales-pos-product-results button:hover {
+  background: #eef3fb;
+}
+
+.sales-pos-product-results span {
+  color: var(--muted, #6b7280);
+  min-width: 62px;
+}
+
+.sales-pos-line td {
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
+.sales-pos-line.is-free {
+  background: #f2fbf3;
+  font-style: italic;
+}
+
+.sales-pos-line-product {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.sales-pos-line-badge {
+  padding: 0 5px;
+  border-radius: 8px;
+  background: #dff3e2;
+  color: #1f6b32;
+  font-size: 10px;
+  font-style: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.sales-pos-line-qty {
+  width: 68px;
+  padding: 1px 3px;
+  border: 1px solid var(--line, #c9c2ae);
+  font-size: 12px;
+  text-align: right;
+}
+
+.sales-pos-line-qty:disabled {
+  background: #f3f3ef;
+  color: var(--muted, #6b7280);
+}
+
+.sales-pos-line-pending {
+  color: var(--muted, #6b7280);
+  text-align: right;
+}
+
+.sales-pos-offers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px 4px;
+}
+
+/* Scheme Add / Skip prompt */
+.sales-scheme-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sales-scheme-prompt-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 7px;
+  border: 1px solid #bfe3c4;
+  border-left: 3px solid #2f9e44;
+  border-radius: 3px;
+  background: #f2fbf3;
+}
+
+.sales-scheme-prompt-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.sales-scheme-prompt-text span {
+  color: var(--muted, #6b7280);
+  font-size: 11px;
+}
+
+.sales-scheme-prompt-actions {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.sales-scheme-prompt-add {
+  padding: 2px 12px;
+  border: 1px solid #2f9e44;
+  border-radius: 3px;
+  background: #2f9e44;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sales-scheme-prompt-skip {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  padding: 2px 9px;
+  border: 1px solid #b6b6b6;
+  border-radius: 3px;
+  background: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sales-scheme-prompt-added {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  color: #1f6b32;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sales-scheme-prompt-auto {
+  color: var(--muted, #6b7280);
+  font-size: 11px;
+}
+
+/* Packaging picker */
+.sales-packaging-trigger {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  align-self: flex-start;
+  padding: 3px 11px;
+  border: 1px solid #9fb6d4;
+  border-radius: 3px;
+  background: #eef3fb;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sales-packaging-picker {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sales-packaging-qty {
+  width: 72px;
+}
+
+.sales-packaging-add {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  padding: 3px 11px;
+  border: 1px solid #2f9e44;
+  border-radius: 3px;
+  background: #2f9e44;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sales-packaging-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sales-packaging-cancel {
+  padding: 3px 9px;
+  border: 1px solid #b6b6b6;
+  border-radius: 3px;
+  background: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.sales-packaging-hint {
+  color: var(--muted, #6b7280);
+  font-size: 11px;
+}
+
+/* Status strip */
+.sales-pos-status {
+  padding: 3px 4px;
+  font-size: 12px;
+  color: var(--muted, #6b7280);
+}
+
+.sales-pos-status-error {
+  color: var(--danger, #c92a2a);
+  font-weight: 600;
+}
+
+.sales-pos-status-ok {
+  color: #1f6b32;
+  font-weight: 600;
+}
