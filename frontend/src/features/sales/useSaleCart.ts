@@ -214,7 +214,7 @@ export function useSaleCart() {
     scannedBarcode: ProductBarcode | null = null,
     availableBaseStock: string | null = null,
   ) {
-    if (!isPositiveQuantity(quantity)) return
+    if (!isPositiveQuantity(quantity)) return null
 
     const availableUnits = unitOptions(product)
     const barcodeUnit = scannedBarcode?.unit ?? null
@@ -245,7 +245,7 @@ export function useSaleCart() {
             : line,
         ),
       )
-      return
+      return existing.line_key
     }
 
     const retailPrice =
@@ -285,6 +285,7 @@ export function useSaleCart() {
     line.unit_price = priceForLine(line, priceType)
 
     setLines((current) => [...current, line])
+    return line.line_key
   }
 
   function setQuantity(lineKey: string, quantity: string) {
