@@ -782,7 +782,7 @@ export function SalesInvoicePage() {
                 </div>
 
                 <div className={`sales-customer-dropdown-shutter${customerPickerOpen ? ' is-open' : ''}`} aria-hidden={!customerPickerOpen}>
-                  <ul className="sales-pos-product-results sales-pos-customer-results">
+                  <ul className="sales-pos-customer-results">
                     <li>
                       <button
                         type="button"
