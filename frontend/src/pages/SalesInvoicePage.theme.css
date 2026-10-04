@@ -568,3 +568,185 @@
   color: #edf1f5;
   -webkit-text-fill-color: #edf1f5;
 }
+
+
+/* ==========================================================================
+   Modern visual prototype — Sales Invoice
+   Presentation only: no dimensions, spacing, positioning, or Amounts geometry.
+   ========================================================================== */
+
+:root[data-theme='light'] .sales-reference-screen {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  color: #17202a;
+}
+
+:root[data-theme='light'] .sales-reference-main {
+  background: #eef2f6;
+}
+
+:root[data-theme='light'] .sales-reference-subtabs {
+  background: #e7edf3;
+  border-bottom-color: #c7d1dc;
+}
+
+:root[data-theme='light'] .sales-reference-subtab {
+  border-color: #c7d1dc;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f5f8 100%);
+  color: #344250;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+  font-weight: 600;
+}
+
+:root[data-theme='light'] .sales-reference-subtab.is-active {
+  border-color: #9fc8e3;
+  background: #ffffff;
+  color: #12649b;
+  box-shadow: inset 0 -2px 0 #2388c9, 0 2px 8px rgba(15, 23, 42, .08);
+}
+
+:root[data-theme='light'] .sales-reference-meta,
+:root[data-theme='light'] .sales-reference-pay {
+  background: #f7f9fb;
+  border-color: #cbd5df;
+}
+
+:root[data-theme='light'] .sales-reference-options,
+:root[data-theme='light'] .sales-reference-amounts,
+:root[data-theme='light'] .sales-reference-pay-options,
+:root[data-theme='light'] .sales-reference-payment-method {
+  border-color: #cbd5df;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .07);
+}
+
+:root[data-theme='light'] .sales-reference-options legend,
+:root[data-theme='light'] .sales-reference-amounts legend,
+:root[data-theme='light'] .sales-reference-pay-options legend {
+  color: #263746;
+  font-weight: 700;
+}
+
+:root[data-theme='light'] .sales-reference-screen input:not([type='radio']):not([type='checkbox']),
+:root[data-theme='light'] .sales-reference-screen select,
+:root[data-theme='light'] .sales-reference-screen textarea {
+  border-color: #b9c5d1;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, .05);
+  transition: border-color .14s ease, box-shadow .14s ease, background-color .14s ease;
+}
+
+:root[data-theme='light'] .sales-reference-screen input:not([type='radio']):not([type='checkbox']):focus,
+:root[data-theme='light'] .sales-reference-screen select:focus,
+:root[data-theme='light'] .sales-reference-screen textarea:focus {
+  border-color: #3c94cf;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(35, 136, 201, .15), inset 0 1px 2px rgba(15, 23, 42, .04);
+}
+
+:root[data-theme='light'] .sales-reference-sale-btn,
+:root[data-theme='light'] .sales-reference-record-controls button,
+:root[data-theme='light'] .sales-reference-actions-center button,
+:root[data-theme='light'] .sales-reference-input-button button,
+:root[data-theme='light'] .sales-reference-amounts-grid button,
+:root[data-theme='light'] .sales-reference-pay-tools button,
+:root[data-theme='light'] .sales-reference-payment-method button {
+  border-color: #b9c5d1;
+  border-radius: 7px;
+  background: linear-gradient(180deg, #ffffff 0%, #eef2f6 100%);
+  color: #263746;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .10);
+  font-weight: 600;
+  transition: border-color .14s ease, box-shadow .14s ease, transform .14s ease;
+}
+
+:root[data-theme='light'] .sales-reference-sale-btn:hover,
+:root[data-theme='light'] .sales-reference-actions-center button:not(:disabled):hover,
+:root[data-theme='light'] .sales-reference-record-controls button:not(:disabled):hover {
+  border-color: #86b6d6;
+  box-shadow: 0 2px 7px rgba(15, 23, 42, .14);
+}
+
+:root[data-theme='light'] .sales-reference-entry-row {
+  background: #f7f9fb;
+  border-color: #cbd5df;
+}
+
+:root[data-theme='light'] .sales-reference-f1 {
+  color: #188348;
+  font-weight: 700;
+}
+
+:root[data-theme='light'] .sales-reference-grid-wrap,
+:root[data-theme='light'] .sales-reference-grid-empty {
+  border-color: #cbd5df;
+  background: #ffffff;
+}
+
+:root[data-theme='light'] .sales-reference-grid {
+  color: #1f2d3a;
+  background: #ffffff;
+}
+
+:root[data-theme='light'] .sales-reference-grid th {
+  border-color: #bdc9d5;
+  background: linear-gradient(180deg, #f5f8fb 0%, #e5ebf1 100%);
+  color: #243442;
+  font-weight: 700;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .85);
+}
+
+:root[data-theme='light'] .sales-reference-grid td {
+  border-color: #d7dfe7;
+}
+
+:root[data-theme='light'] .sales-reference-grid tbody tr:hover td {
+  background-color: #f4f9fd;
+}
+
+:root[data-theme='light'] .sales-reference-grid-totals,
+:root[data-theme='light'] .sales-reference-record-nav {
+  border-color: #c7d1dc;
+  background: #e9eef3;
+}
+
+:root[data-theme='light'] .sales-reference-grid-totals strong {
+  border-color: #bcc8d3;
+  border-radius: 5px;
+  background: #f8fafc;
+  color: #17202a;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, .06);
+}
+
+:root[data-theme='light'] .sales-reference-actions {
+  border-color: #c3ced9;
+  background: linear-gradient(180deg, #f4f7fa 0%, #e5ebf1 100%);
+  box-shadow: 0 -2px 8px rgba(15, 23, 42, .06);
+}
+
+:root[data-theme='light'] .sales-reference-retail-title {
+  color: #17202a;
+  letter-spacing: -.01em;
+}
+
+:root[data-theme='light'] .sales-reference-pay-head-values strong,
+:root[data-theme='light'] .sales-reference-disc-values strong {
+  border-color: #c0ccd7;
+  border-radius: 5px;
+  background: #ffffff;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, .05);
+}
+
+:root[data-theme='light'] .sales-reference-total-block > div {
+  border-radius: 7px;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, .18);
+}
+
+:root[data-theme='light'] .sales-reference-received,
+:root[data-theme='light'] .sales-reference-card,
+:root[data-theme='light'] .sales-reference-balance {
+  border-radius: 6px;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, .06);
+}
