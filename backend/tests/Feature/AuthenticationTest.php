@@ -87,4 +87,28 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('warehouse.code', 'MAIN');
         $this->assertNoInternalIds($me->json());
     }
+    public function test_user_can_update_font_appearance_preference(): void
+    {
+        $this->signInOwner('appearance-font')->assertOk();
+
+        $this->patchJson('/api/auth/appearance', [
+            'theme' => 'light',
+            'skin' => 'advanced',
+            'font' => 'inter',
+        ])->assertOk()
+            ->assertJsonPath('appearance.theme', 'light')
+            ->assertJsonPath('appearance.skin', 'advanced')
+            ->assertJsonPath('appearance.font', 'inter');
+
+        $this->getJson('/api/auth/me')
+            ->assertOk()
+            ->assertJsonPath('appearance.font', 'inter');
+
+        $this->patchJson('/api/auth/appearance', [
+            'theme' => 'light',
+            'skin' => 'advanced',
+            'font' => 'not-a-font',
+        ])->assertUnprocessable();
+    }
+
 }
