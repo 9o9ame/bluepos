@@ -14,7 +14,7 @@ import {
   type PlatformMfaInput,
 } from '../../api/platform'
 import type { PlatformUser } from '../../types/platform'
-import { authenticatePlatformSession } from './authenticatePlatformSession'
+import { authenticatePlatformSession, clearPlatformSession } from './authenticatePlatformSession'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,10 +69,10 @@ function PlatformAuthState({ children }: { children: ReactNode }) {
   })
 
   const logoutMutation = useMutation({
+    onMutate: () => client.cancelQueries({ queryKey: ['platform', 'me'], exact: true }),
     mutationFn: platformLogout,
     onSuccess: () => {
-      client.setQueryData(['platform', 'me'], null)
-      client.clear()
+      clearPlatformSession(client)
     },
   })
 

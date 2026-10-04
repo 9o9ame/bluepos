@@ -33,6 +33,8 @@
         <env name="MAIL_FROM_ADDRESS" value="no-reply@example.com"/>
         <env name="MAIL_FROM_NAME" value="BluePOS"/>
         <env name="OTP_LENGTH" value="6"/>
+        <!-- Keep exercising the retained MFA implementation; disabled-mode tests override this. -->
+        <env name="PLATFORM_MFA_ENABLED" value="true" force="true"/>
         <env name="OTP_TTL_MINUTES" value="10"/>
         <env name="OTP_RESEND_COOLDOWN_SECONDS" value="60"/>
         <env name="OTP_MAX_VERIFY_ATTEMPTS" value="5"/>

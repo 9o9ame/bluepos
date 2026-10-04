@@ -1,7 +1,38 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { QueryClient } from '@tanstack/react-query'
-import { authenticatePlatformSession } from '../src/features/platform/authenticatePlatformSession.ts'
+import { QueryClient, QueryObserver } from '@tanstack/react-query'
+import { authenticatePlatformSession, clearPlatformSession } from '../src/features/platform/authenticatePlatformSession.ts'
+
+test('sign out stays on login until a subsequent visit checks the remembered session', async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const user = { ulid: 'remembered-admin' }
+  let sessionChecks = 0
+  const options = {
+    queryKey: ['platform', 'me'],
+    queryFn: async () => { sessionChecks++; return user },
+  }
+  const observer = new QueryObserver(client, options)
+  const unsubscribe = observer.subscribe(() => {})
+  await observer.refetch()
+  client.setQueryData(['platform', 'dashboard'], { confidential: true })
+  const checksBeforeLogout = sessionChecks
+
+  await client.cancelQueries({ queryKey: options.queryKey, exact: true })
+  clearPlatformSession(client)
+  await new Promise((resolve) => setImmediate(resolve))
+  assert.equal(observer.getCurrentResult().data, null)
+  assert.equal(sessionChecks, checksBeforeLogout)
+  assert.equal(client.getQueryData(['platform', 'dashboard']), undefined)
+
+  unsubscribe()
+  const nextVisit = new QueryObserver(client, options)
+  const unsubscribeNext = nextVisit.subscribe(() => {})
+  await nextVisit.refetch()
+  assert.equal(nextVisit.getCurrentResult().data, user)
+  assert.ok(sessionChecks > checksBeforeLogout)
+  unsubscribeNext()
+  client.clear()
+})
 
 test('an old unauthorized session response cannot overwrite a verified MFA login', async () => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })

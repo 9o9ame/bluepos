@@ -2,6 +2,9 @@
 
 return [
 
+    // Temporarily frozen for the initial platform implementation.
+    'platform_mfa_enabled' => filter_var(env('PLATFORM_MFA_ENABLED', false), FILTER_VALIDATE_BOOL),
+
     'platform_dev_bypass_mfa' => filter_var(
         env('PLATFORM_DEV_BYPASS_MFA', false),
         FILTER_VALIDATE_BOOL,

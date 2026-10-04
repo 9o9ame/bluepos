@@ -24,6 +24,7 @@ use App\Models\Platform\PlatformSession;
 use App\Platform\PlatformAuditLogger;
 use App\Platform\PlatformCatalogSync;
 use App\Platform\PlatformContext;
+use App\Platform\PlatformMfaPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,6 +48,7 @@ class PlatformAuthController extends Controller
 
     public function verifyMfa(PlatformMfaVerifyRequest $request, VerifyPlatformMfaAction $verify): PlatformUserResource
     {
+        $this->requireMfaEnabled();
         $user = $verify->execute(
             $request,
             $request->validated('challenge_ulid'),
@@ -59,6 +61,7 @@ class PlatformAuthController extends Controller
 
     public function resendMfa(Request $request, ResendPlatformMfaAction $resend): never
     {
+        $this->requireMfaEnabled();
         $data = $request->validate([
             'challenge_ulid' => ['required', 'string', 'size:26'],
         ]);
@@ -95,6 +98,8 @@ class PlatformAuthController extends Controller
 
     public function confirmMfa(PlatformMfaVerifyRequest $request, ConfirmPlatformMfaAction $confirm): PlatformUserResource
     {
+        $this->requireMfaEnabled();
+
         return new PlatformUserResource($confirm->execute(
             $request,
             $request->validated('challenge_ulid'),
@@ -109,12 +114,28 @@ class PlatformAuthController extends Controller
             PlatformSession::query()->where('ulid', $ulid)->whereNull('revoked_at')->update(['revoked_at' => now()]);
         }
 
-        Auth::guard('platform')->logout();
-        Cookie::queue(Cookie::forget(Auth::guard('platform')->getRecallerName()));
+        $guard = Auth::guard('platform');
+        $retainRemember = ! app(PlatformMfaPolicy::class)->enabled()
+            && $request->session()->get(EnsurePlatformContext::REMEMBER) === true;
+        if ($retainRemember) {
+            $guard->logoutCurrentDevice();
+            // Keep the existing encrypted Laravel recaller; never mint credentials here.
+            Cookie::unqueue($guard->getRecallerName());
+        } else {
+            $guard->logout();
+            Cookie::queue(Cookie::forget($guard->getRecallerName()));
+        }
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
         return response()->json(['ok' => true]);
+    }
+
+    private function requireMfaEnabled(): void
+    {
+        if (! app(PlatformMfaPolicy::class)->enabled()) {
+            throw new ApiException('MFA_DISABLED', 'Platform MFA is temporarily disabled.', 409);
+        }
     }
 
     public function changePassword(Request $request, PlatformContext $context): JsonResponse

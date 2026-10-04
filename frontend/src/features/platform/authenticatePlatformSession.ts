@@ -2,6 +2,12 @@ import type { QueryClient } from '@tanstack/react-query'
 
 const sessionKey = ['platform', 'me'] as const
 
+export function clearPlatformSession(client: QueryClient): void {
+  // Preserve the observed query so Sign Out does not trigger immediate remember login.
+  client.setQueryData(sessionKey, null)
+  client.removeQueries({ predicate: (query) => !(query.queryKey[0] === 'platform' && query.queryKey[1] === 'me') })
+}
+
 export async function authenticatePlatformSession<T>(
   client: QueryClient,
   authenticate: () => Promise<T>,

@@ -52,7 +52,7 @@ export function PlatformAccountSecurityPage() {
 
       <div id="mfa" className="rounded border border-slate-300 bg-white p-3 text-[12px]">
         <h2 className="font-semibold">MFA</h2>
-        <p>Current MFA: Email OTP</p>
+        <p>Current MFA: {user?.mfa?.enabled ? 'Email OTP' : 'Temporarily disabled'}</p>
         <p>Status: {user?.mfa?.enabled ? 'Enabled' : 'Not enabled'}</p>
         <p className="text-slate-500">TOTP and Passkey/WebAuthn are not enabled yet.</p>
         <p>Last MFA verification: {user?.last_mfa_verified_at ?? '—'}</p>

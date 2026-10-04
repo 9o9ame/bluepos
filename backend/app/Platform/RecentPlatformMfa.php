@@ -12,10 +12,15 @@ class RecentPlatformMfa
     public function __construct(
         private readonly PlatformContext $context,
         private readonly IssuePlatformMfaChallengeAction $issue,
+        private readonly PlatformMfaPolicy $policy,
     ) {}
 
     public function assert(Request $request): void
     {
+        if (! $this->policy->enabled()) {
+            return;
+        }
+
         $user = $request->user('platform');
         $verifiedAt = $user?->last_mfa_verified_at;
         $sessionAt = $request->session()->get(EnsurePlatformContext::MFA_AT);
