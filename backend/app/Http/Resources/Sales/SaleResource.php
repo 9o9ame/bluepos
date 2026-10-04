@@ -28,6 +28,11 @@ class SaleResource extends JsonResource
             'grand_total' => $this->grand_total,
             'notes' => $this->notes,
             'posted_at' => $this->posted_at?->toIso8601String(),
+            'salesman' => $this->whenLoaded('salesman', fn () => $this->salesman === null ? null : [
+                'ulid' => $this->salesman->ulid,
+                'username' => $this->salesman->username,
+                'name' => $this->salesman->user?->name ?? $this->salesman->username,
+            ]),
             'customer' => $this->whenLoaded('customer', fn () => $this->customer === null ? null : [
                 'ulid' => $this->customer->ulid,
                 'code' => $this->customer->code,
