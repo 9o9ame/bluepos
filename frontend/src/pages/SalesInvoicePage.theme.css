@@ -1032,3 +1032,106 @@
     transition: none;
   }
 }
+
+
+/* ==========================================================================
+   Sales entry workflow refresh
+   Explicitly requested geometry changes for Invoice Options and Amounts.
+   ========================================================================== */
+
+.sales-reference-meta {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.sales-reference-options {
+  width: 100%;
+  min-width: 0;
+}
+
+.sales-reference-meta-spacer {
+  display: none !important;
+}
+
+.sales-reference-option-grid {
+  display: grid !important;
+  grid-template-columns:
+    auto minmax(72px, .55fr)
+    auto minmax(128px, .8fr)
+    auto minmax(118px, .8fr)
+    auto minmax(135px, .9fr)
+    auto minmax(170px, 1.25fr)
+    auto minmax(145px, 1fr)
+    auto minmax(130px, .9fr) !important;
+  align-items: center;
+  gap: 4px 6px !important;
+}
+
+.sales-reference-option-grid > label {
+  white-space: nowrap;
+}
+
+.sales-reference-option-grid > input,
+.sales-reference-option-grid > .sales-reference-input-button {
+  min-width: 0;
+  width: 100%;
+}
+
+.sales-reference-pay > .sales-reference-amounts {
+  margin: 0 6px 7px;
+}
+
+.sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid {
+  width: 100%;
+}
+
+/* Top entry is barcode/scanner-only. Product lookup lives in the grid entry row. */
+.sales-reference-product-entry-wrap {
+  min-width: 0;
+}
+
+.sales-reference-product-entry[aria-label='Barcode scanner input'] {
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-product-search-cell {
+  position: relative;
+  overflow: visible !important;
+}
+
+.sales-pos-product-results-grid {
+  position: absolute;
+  z-index: 950;
+  top: calc(100% - 1px);
+  left: 0;
+  width: min(520px, 72vw);
+  max-height: 260px;
+  overflow: auto;
+}
+
+.sales-reference-grid tbody tr.is-active-entry td {
+  position: relative;
+}
+
+.sales-reference-grid tbody tr.is-active-entry .sales-reference-yellow {
+  font-weight: 700;
+}
+
+.sales-reference-grid tbody tr.is-active-entry input:focus,
+.sales-reference-grid tbody tr.is-active-entry select:focus {
+  outline: 2px solid var(--skin-focus-ring, #2b6aa3);
+  outline-offset: -1px;
+}
+
+@media (max-width: 1450px) {
+  .sales-reference-option-grid {
+    grid-template-columns:
+      auto minmax(62px, .5fr)
+      auto minmax(116px, .75fr)
+      auto minmax(104px, .7fr)
+      auto minmax(122px, .8fr)
+      auto minmax(150px, 1.1fr)
+      auto minmax(132px, .9fr)
+      auto minmax(116px, .8fr) !important;
+    gap: 3px 4px !important;
+  }
+}
