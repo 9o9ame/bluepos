@@ -40,6 +40,43 @@ class CreateSaleTest extends TestCase
         $this->assertNoInternalIds($response->json());
     }
 
+    public function test_salesman_dropdown_data_and_sale_selection_are_tenant_scoped(): void
+    {
+        $this->signInOwner('sale-salesman-a')->assertOk();
+
+        $salesmanUlid = app(\App\Tenancy\TenantContext::class)->membership()->ulid;
+        $product = $this->createProduct('Salesman Item A', ['retail' => '25.0000']);
+        $this->giveStock($product, '10');
+
+        $this->getJson('/api/sales/salesmen')
+            ->assertOk()
+            ->assertJsonFragment(['ulid' => $salesmanUlid]);
+
+        $this->postJson('/api/sales', [
+            'salesman_ulid' => $salesmanUlid,
+            'items' => [
+                ['product_ulid' => $product, 'quantity' => '1'],
+            ],
+        ], $this->idem('sale-salesman-a-1'))
+            ->assertCreated()
+            ->assertJsonPath('salesman.ulid', $salesmanUlid);
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('sale-salesman-b')->assertOk();
+
+        $otherProduct = $this->createProduct('Salesman Item B', ['retail' => '25.0000']);
+        $this->giveStock($otherProduct, '10');
+
+        $this->postJson('/api/sales', [
+            'salesman_ulid' => $salesmanUlid,
+            'items' => [
+                ['product_ulid' => $otherProduct, 'quantity' => '1'],
+            ],
+        ], $this->idem('sale-salesman-b-1'))
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+    }
+
     public function test_client_sent_price_and_totals_are_ignored(): void
     {
         $this->signInOwner('sale-2')->assertOk();
