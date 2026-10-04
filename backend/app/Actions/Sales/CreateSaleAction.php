@@ -907,8 +907,7 @@ class CreateSaleAction
 
         $hasAllBranches = $membership->roles->contains(
             fn ($role): bool =>
-                $role->is_active &&
-                $role->branch_access === 'all_branches'
+                $role->is_active && $role->grantsAllBranches()
         );
 
         $hasCurrentBranch = $membership->branches->contains(
