@@ -56,6 +56,7 @@ class StoreSaleRequest extends FormRequest
         return [
             'sale_date' => ['nullable', 'date'],
             'customer_ulid' => ['nullable', 'string', 'size:26'],
+            'salesman_ulid' => ['nullable', 'string', 'size:26'],
             'warehouse_ulid' => ['nullable', 'string', 'size:26'],
             'notes' => ['nullable', 'string', 'max:2000'],
 
