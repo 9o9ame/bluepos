@@ -294,7 +294,15 @@ function errMessage(err: unknown): string {
   return formatApiError(err)
 }
 
-export function PartiesPlaceholderPage() {
+export function PartiesPlaceholderPage({
+  embedded = false,
+  onClose,
+  onSaved,
+}: {
+  embedded?: boolean
+  onClose?: () => void
+  onSaved?: (party: Party) => void
+} = {}) {
   const { closeActiveTab } = useWorkspace()
   const feedback = useFeedback()
   const [viewTab, setViewTab] = useState<ViewTab>('entry')
@@ -756,6 +764,11 @@ export function PartiesPlaceholderPage() {
     setSubTab('contact')
   }
 
+  async function closeEditor() {
+    if (!(await confirmDiscard())) return
+    ;(onClose ?? closeActiveTab)()
+  }
+
   async function refresh() {
     if (!(await confirmDiscard())) return
     await loadParties(listFilter, false)
@@ -904,6 +917,7 @@ export function PartiesPlaceholderPage() {
       await loadBanks(finalSaved.ulid, finalSaved.party_type)
       await loadOpenings(finalSaved.ulid, finalSaved.party_type)
       feedback.success(wasNew ? 'Party created successfully.' : 'Party saved successfully.')
+      onSaved?.(finalSaved)
     } catch (err) {
       const message = errMessage(err)
       setError(message)
@@ -1104,7 +1118,7 @@ export function PartiesPlaceholderPage() {
             <RefreshCw size={16} />
             <span>Refresh</span>
           </button>
-          <button type="button" className="parties-vca-action is-close" onClick={closeActiveTab}>
+          <button type="button" className="parties-vca-action is-close" onClick={() => void closeEditor()}>
             <XCircle size={16} />
             <span>Close</span>
           </button>
@@ -1118,18 +1132,22 @@ export function PartiesPlaceholderPage() {
           <UsersRound size={14} />
           <span>Data Entry Details</span>
         </button>
-        <button type="button" className={viewTab === 'ledger' ? 'is-active' : undefined} onClick={() => setViewTab('ledger')}>
-          <BookOpen size={14} />
-          <span>Ledger</span>
-        </button>
-        <button type="button" className={viewTab === 'bulk' ? 'is-active' : undefined} onClick={() => setViewTab('bulk')}>
-          <FileSpreadsheet size={14} />
-          <span>Bulk Updation</span>
-        </button>
-        <button type="button" className={viewTab === 'coa' ? 'is-active' : undefined} onClick={() => setViewTab('coa')}>
-          <Table2 size={14} />
-          <span>Chart Of Account View</span>
-        </button>
+        {!embedded ? (
+          <>
+            <button type="button" className={viewTab === 'ledger' ? 'is-active' : undefined} onClick={() => setViewTab('ledger')}>
+              <BookOpen size={14} />
+              <span>Ledger</span>
+            </button>
+            <button type="button" className={viewTab === 'bulk' ? 'is-active' : undefined} onClick={() => setViewTab('bulk')}>
+              <FileSpreadsheet size={14} />
+              <span>Bulk Updation</span>
+            </button>
+            <button type="button" className={viewTab === 'coa' ? 'is-active' : undefined} onClick={() => setViewTab('coa')}>
+              <Table2 size={14} />
+              <span>Chart Of Account View</span>
+            </button>
+          </>
+        ) : null}
       </nav>
 
       {viewTab === 'entry' ? (
