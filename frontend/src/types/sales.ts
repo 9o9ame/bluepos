@@ -5,6 +5,12 @@ export type SalePaymentMethod = 'cash' | 'card' | 'bank' | 'credit'
 /** UI/API sale price mode. "default" currently resolves to retail on the server. */
 export type SalePriceType = 'default' | 'retail' | 'wholesale'
 
+export type SalesmanOption = {
+  ulid: string
+  username: string
+  name: string
+}
+
 export type SalePayment = {
   ulid: string
   method: SalePaymentMethod
@@ -61,6 +67,7 @@ export type Sale = {
   grand_total: string
   notes: string | null
   posted_at: string | null
+  salesman?: SalesmanOption | null
   customer: {
     ulid: string
     code: string
@@ -165,6 +172,7 @@ export type SalePayload = {
   applied_schemes?: AppliedSaleScheme[]
 
   customer_ulid?: string | null
+  salesman_ulid?: string | null
   notes?: string | null
   sale_date?: string | null
 }
