@@ -844,7 +844,7 @@
 }
 
 
-/* Sales customer selector — Define Products visual language + smooth shutter. */
+/* Sales customer selector — match Define Products control without changing Sales geometry. */
 .sales-customer-dropdown-shutter {
   position: absolute;
   z-index: 55;
@@ -855,85 +855,120 @@
   max-height: 0;
   opacity: 0;
   overflow: hidden;
+  visibility: hidden;
   pointer-events: none;
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   transform-origin: top;
   transition:
-    max-height .34s cubic-bezier(.22, .61, .36, 1),
-    opacity .20s ease,
-    transform .34s cubic-bezier(.22, .61, .36, 1);
+    max-height .28s ease,
+    opacity .18s ease,
+    transform .28s ease,
+    visibility 0s linear .28s;
 }
 
 .sales-customer-dropdown-shutter.is-open {
-  max-height: 230px;
+  max-height: 214px;
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
   transform: translateY(0);
+  transition:
+    max-height .28s ease,
+    opacity .18s ease,
+    transform .28s ease,
+    visibility 0s;
 }
 
-.sales-customer-dropdown-shutter .sales-pos-customer-results {
-  position: relative;
-  inset: auto;
+.sales-pos-customer-results {
+  position: static;
+  display: block;
   width: 100%;
   max-height: 210px;
   margin: 0;
-  border: 1px solid #8fb0c8;
-  border-radius: 0;
-  background: #fff;
-  box-shadow: 0 5px 14px rgba(20, 50, 80, .16);
+  padding: 0;
   overflow-y: auto;
+  list-style: none;
+  border: 1px solid #7d9db6;
+  border-radius: 1px;
+  background: #fff;
+  color: #173f60;
+  box-shadow: 0 4px 10px rgba(32, 63, 88, .18);
 }
 
-.sales-customer-dropdown-shutter .sales-pos-customer-results li + li {
-  border-top: 1px solid #d9e3eb;
+.sales-pos-customer-results li {
+  margin: 0;
+  padding: 0;
 }
 
-.sales-customer-dropdown-shutter .sales-pos-customer-results button {
+.sales-pos-customer-results button {
+  display: flex;
+  gap: 6px;
+  width: 100%;
   min-height: 22px;
   padding: 3px 7px;
   border: 0;
   border-radius: 0;
   background: #fff;
-  color: #153e60;
-  font-weight: 500;
-  line-height: 1.25;
-  transition: background-color .14s ease, color .14s ease;
+  color: #173f60;
+  text-align: left;
+  font-size: 12px;
+  line-height: 16px;
+  cursor: pointer;
 }
 
-.sales-customer-dropdown-shutter .sales-pos-customer-results button:hover,
-.sales-customer-dropdown-shutter .sales-pos-customer-results button:focus-visible {
-  background: #1769aa;
+.sales-pos-customer-results button:hover,
+.sales-pos-customer-results button:focus-visible {
+  background: #176dcc;
   color: #fff;
   outline: none;
 }
 
-.sales-customer-dropdown-shutter .sales-pos-customer-results button:hover span,
-.sales-customer-dropdown-shutter .sales-pos-customer-results button:focus-visible span {
+.sales-pos-customer-results span {
+  min-width: 62px;
+  color: #55748d;
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-pos-customer-results button:hover span,
+.sales-pos-customer-results button:focus-visible span {
   color: #fff;
 }
 
-.sales-customer-dropdown-shutter .sales-pos-customer-results span {
-  color: #526d83;
+/* Define Products-style blue dropdown button. */
+.sales-reference-inline-caret > .sales-reference-field-caret {
+  border: 1px solid #3f8fbe !important;
+  border-radius: 5px !important;
+  background: linear-gradient(180deg, #73c8f3 0%, #2a8bc4 52%, #1472aa 100%) !important;
+  color: #fff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.48),
+    0 1px 1px rgba(25,65,95,.22) !important;
 }
 
-:root[data-theme='dark'] .sales-customer-dropdown-shutter .sales-pos-customer-results {
-  border-color: #4f6578;
-  background: #202a32;
-  box-shadow: 0 7px 18px rgba(0, 0, 0, .34);
+.sales-reference-inline-caret > .sales-reference-field-caret:hover {
+  background: linear-gradient(180deg, #83d2f8 0%, #3397ce 52%, #177bb6 100%) !important;
+  filter: none;
 }
 
-:root[data-theme='dark'] .sales-customer-dropdown-shutter .sales-pos-customer-results li + li {
-  border-top-color: #344652;
+.sales-reference-inline-caret > .sales-reference-field-caret svg {
+  display: block;
+  stroke: currentColor;
 }
 
-:root[data-theme='dark'] .sales-customer-dropdown-shutter .sales-pos-customer-results button {
+:root[data-theme='dark'] .sales-pos-customer-results {
+  border-color: #60798c;
   background: #202a32;
   color: #edf2f6;
 }
 
-:root[data-theme='dark'] .sales-customer-dropdown-shutter .sales-pos-customer-results button:hover,
-:root[data-theme='dark'] .sales-customer-dropdown-shutter .sales-pos-customer-results button:focus-visible {
-  background: #1769aa;
+:root[data-theme='dark'] .sales-pos-customer-results button {
+  background: #202a32;
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-results button:hover,
+:root[data-theme='dark'] .sales-pos-customer-results button:focus-visible {
+  background: #176dcc;
   color: #fff;
 }
 
