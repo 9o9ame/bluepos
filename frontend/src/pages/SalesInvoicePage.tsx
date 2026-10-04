@@ -427,7 +427,7 @@ export function SalesInvoicePage() {
       quantity?.focus()
       quantity?.select()
     }, 0)
-  }, [activeLineKey, cart.lines])
+  }, [activeLineKey])
 
 
   function parkCurrentCart() {
