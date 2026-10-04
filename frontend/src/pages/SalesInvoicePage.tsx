@@ -781,7 +781,7 @@ export function SalesInvoicePage() {
                   />
                 </div>
 
-                {customerPickerOpen ? (
+                <div className={`sales-customer-dropdown-shutter${customerPickerOpen ? ' is-open' : ''}`} aria-hidden={!customerPickerOpen}>
                   <ul className="sales-pos-product-results sales-pos-customer-results">
                     <li>
                       <button
@@ -811,7 +811,7 @@ export function SalesInvoicePage() {
                       </li>
                     ))}
                   </ul>
-                ) : null}
+                </div>
               </fieldset>
 
               <fieldset className="sales-reference-amounts">
