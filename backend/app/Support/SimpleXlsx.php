@@ -10,6 +10,66 @@ use ZipArchive;
  */
 class SimpleXlsx
 {
+    /** Raw source coordinates for section-based legacy workbooks. No formulas executed. */
+    public function readMatrix(string $path): array
+    {
+        $zip = new ZipArchive;
+        if ($zip->open($path) !== true) {
+            throw new ApiException('VALIDATION_FAILED', 'Unable to open XLSX workbook.', 422);
+        }
+        try {
+            $total = 0;
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $total += $zip->statIndex($i)['size'];
+            }
+            if ($zip->numFiles > 200 || $total > 40 * 1024 * 1024) {
+                throw new ApiException('VALIDATION_FAILED', 'Workbook exceeds expanded size limit.', 422);
+            }
+            $xml = (string) $zip->getFromName('xl/worksheets/sheet1.xml');
+            $sharedXml = (string) $zip->getFromName('xl/sharedStrings.xml');
+            if ($xml === '' || stripos($xml.$sharedXml, '<!DOCTYPE') !== false || stripos($xml.$sharedXml, '<!ENTITY') !== false) {
+                throw new ApiException('VALIDATION_FAILED', 'Unsupported workbook XML.', 422);
+            }
+            $shared = $this->parseSharedStrings($sharedXml);
+            $doc = @simplexml_load_string($xml, \SimpleXMLElement::class, LIBXML_NONET);
+            if (! $doc) {
+                throw new ApiException('VALIDATION_FAILED', 'Invalid workbook XML.', 422);
+            }
+            $doc->registerXPathNamespace('m', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
+            $matrix = [];
+            foreach ($doc->xpath('//m:sheetData/m:row') ?: [] as $row) {
+                $number = (int) $row['r'];
+                if ($number < 1 || $number > 15000 || count($matrix) >= 10000) {
+                    throw new ApiException('VALIDATION_FAILED', 'Workbook exceeds row limit.', 422);
+                }
+                $cells = [];
+                $formula = false;
+                foreach ($row->c as $cell) {
+                    if (! preg_match('/^([A-Z]{1,2})\d+$/', (string) $cell['r'], $match)) {
+                        throw new ApiException('VALIDATION_FAILED', 'Invalid source cell reference.', 422);
+                    }
+                    $formula = $formula || isset($cell->f);
+                    $raw = (string) $cell->v;
+                    $value = match ((string) $cell['t']) {
+                        's' => $shared[(int) $raw] ?? '',
+                        'inlineStr' => (string) $cell->is->t,
+                        default => $raw,
+                    };
+                    if (strlen($value) > 2000) {
+                        throw new ApiException('VALIDATION_FAILED', 'Source cell exceeds text limit.', 422);
+                    }
+                    $cells[$match[1]] = trim($value);
+                }
+                $matrix[$number] = ['cells' => $cells, 'formula' => $formula];
+            }
+            ksort($matrix);
+
+            return $matrix;
+        } finally {
+            $zip->close();
+        }
+    }
+
     /**
      * @param  list<string>  $headers
      * @param  list<list<string|null>>  $rows

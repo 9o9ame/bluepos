@@ -8,7 +8,7 @@ export function PlatformLoginPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [remember, setRemember] = useState(false)
+  const [remember, setRemember] = useState(true)
   const [mfaCode, setMfaCode] = useState('')
   const [challengeUlid, setChallengeUlid] = useState<string | null>(null)
   const [recoveryHint, setRecoveryHint] = useState<string | null>(null)
@@ -110,16 +110,12 @@ export function PlatformLoginPage() {
               onChange={(event) => setPassword(event.target.value)}
             />
           </label>
-          {!challengeUlid ? (
-            <label className="flex items-center gap-2 text-[12px] font-semibold">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(event) => setRemember(event.target.checked)}
-              />
-              Remember me
-            </label>
-          ) : null}
+          <label className="flex items-center gap-2 text-[12px] font-semibold">
+            <input type="checkbox" checked={remember} disabled={submitting || !!challengeUlid}
+              onChange={(event) => setRemember(event.target.checked)} />
+            Remember Me
+          </label>
+          <p className="text-[12px] text-slate-400">Remembered browsers can return without signing in again, including after Sign Out.</p>
           {challengeUlid ? (
             <>
               <p className="text-[12px] text-slate-300">

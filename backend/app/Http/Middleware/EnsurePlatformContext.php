@@ -23,6 +23,8 @@ class EnsurePlatformContext
 
     public const MFA_AT = 'platform_mfa_verified_at';
 
+    public const REMEMBER = 'platform_remember_selected';
+
     public function __construct(
         private readonly PlatformContext $context,
         private readonly EstablishPlatformSessionAction $establishSession,

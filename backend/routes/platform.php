@@ -10,6 +10,7 @@ use App\Http\Controllers\Platform\PlatformRoleController;
 use App\Http\Controllers\Platform\PlatformSettingsController;
 use App\Http\Controllers\Platform\PlatformTenantController;
 use App\Http\Controllers\Platform\PlatformUserController;
+use App\Http\Controllers\Platform\TenantImportController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('platform')->group(function () {
@@ -36,6 +37,10 @@ Route::prefix('platform')->group(function () {
     });
 
     Route::middleware(['platform', 'throttle:platform-auth'])->group(function () {
+        Route::get('/tenants/{tenantUlid}/import-warehouses', [TenantImportController::class, 'warehouses'])
+            ->middleware('platform.can:platform.tenants.import');
+        Route::post('/tenants/{tenantUlid}/imports', [TenantImportController::class, 'store'])
+            ->middleware(['platform.can:platform.tenants.import', 'platform.recent-mfa']);
         Route::get('/dashboard', [PlatformDashboardController::class, 'show'])
             ->middleware('platform.can:platform.dashboard.view');
 

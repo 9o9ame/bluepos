@@ -42,6 +42,10 @@ class LoginPlatformUserAction
 
         $device = $this->device($request, $user);
 
+        if (! $this->mfaPolicy->enabled()) {
+            return $this->establishSession->execute($request, $user, $device, $remember, false);
+        }
+
         if ($this->mfaPolicy->localBypassEnabled()) {
             return $this->establishSession->execute(
                 $request,

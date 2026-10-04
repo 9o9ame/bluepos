@@ -43,9 +43,15 @@ Public self-registration is disabled (`REGISTRATION_DISABLED`). First tenants ar
 - Laravel hashing (`bcrypt`/`argon2`). Never store plaintext.
 - Reset tokens hashed, short-lived.
 
+### Temporary platform MFA freeze
+
+Platform MFA is temporarily disabled by default (`PLATFORM_MFA_ENABLED=false`), as requested for the initial implementation. Super Admin login uses email and password and establishes a Laravel session immediately. The retained MFA implementation can be restored with `PLATFORM_MFA_ENABLED=true`. Disabled mode sends no MFA emails, creates no challenges, blocks verification/resend/confirmation endpoints, and removes the recent-MFA requirement without changing permissions or tenant isolation. It does not record fake MFA verification timestamps. Tenant/POS authentication is unchanged; password recovery email codes are separate from MFA.
+
+Remember Me is an explicit login checkbox, selected by default. It uses Laravel's encrypted HttpOnly recaller cookie; passwords are never stored in browser storage. While platform MFA is disabled, ordinary Sign Out revokes the current session but retains remembered browser access if the checkbox was selected. The current page shows login; the next visit or reload may restore authenticated access. Unchecked logins clear any old recaller cookie. Logout all, account disablement, and security-version/password changes still revoke remembered access. Remembering lasts until cookie expiry, removal, or revocation; it is not indefinite.
+
 ### Local Platform login development
 
-Platform administrators may bypass email OTP only when both settings are active:
+When platform MFA is enabled, platform administrators may bypass email OTP only when both settings are active:
 
 ```dotenv
 APP_ENV=local
@@ -56,7 +62,7 @@ In that local-only mode, a valid Platform email and password establish the Platf
 
 **Never rely on or enable this bypass outside local development.** The application ignores the flag in testing, staging, production, and every environment other than `local`.
 
-Platform login supports secure server-side Remember Me through Laravel's HttpOnly remember cookie. Explicit logout and `security_version` changes invalidate remembered access. Tenant/POS Remember Me is intentionally not supported.
+When platform MFA is enabled, explicit logout invalidates remembered access. `security_version` changes invalidate remembered access in both modes. Tenant/POS Remember Me is intentionally not supported.
 
 ### Login identifier
 

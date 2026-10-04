@@ -103,7 +103,7 @@ class TenantContext
         return (int) $this->warehouse()->getKey();
     }
 
-    public function userId(): int
+    public function userId(): ?int
     {
         return (int) $this->user()->getKey();
     }

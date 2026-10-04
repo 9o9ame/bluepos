@@ -14,6 +14,7 @@ final class PlatformPermissionCatalogue
         return [
             ['platform.dashboard.view', 'View platform dashboard', 'dashboard', null],
             ['platform.tenants.view', 'View tenants', 'tenants', null],
+            ['platform.tenants.import', 'Import tenant data', 'tenants', 'Import legacy XLSX catalog and parties with audited opening stock.'],
             ['platform.tenants.create', 'Create tenants', 'tenants', null],
             ['platform.tenants.edit', 'Edit tenants', 'tenants', null],
             ['platform.tenants.activate', 'Activate tenants', 'tenants', null],

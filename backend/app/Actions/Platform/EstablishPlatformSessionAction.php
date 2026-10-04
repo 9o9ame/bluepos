@@ -43,11 +43,22 @@ class EstablishPlatformSessionAction
 
         Auth::guard('web')->logout();
         Auth::guard('platform')->login($user, $remember);
+        if (! $remember && $request->cookie(Auth::guard('platform')->getRecallerName()) !== null) {
+            cookie()->queue(cookie()->forget(Auth::guard('platform')->getRecallerName()));
+        }
         $request->session()->regenerate();
 
-        $this->persistContext($request, $user, $device, true);
+        $mfaEnabled = $this->mfaPolicy->enabled();
+        $this->persistContext($request, $user, $device, $mfaEnabled);
+        $request->session()->put(EnsurePlatformContext::REMEMBER, $remember);
 
-        if ($localMfaBypass) {
+        if (! $mfaEnabled) {
+            $this->audit->record('PLATFORM_MFA_DISABLED', [
+                'resource_type' => 'platform_user',
+                'resource_ulid' => $user->ulid,
+                'auth_mode' => 'email_password',
+            ], $request, $user);
+        } elseif ($localMfaBypass) {
             $this->audit->record('PLATFORM_MFA_BYPASSED_LOCAL', [
                 'resource_type' => 'platform_user',
                 'resource_ulid' => $user->ulid,
@@ -64,7 +75,7 @@ class EstablishPlatformSessionAction
         $this->audit->record('PLATFORM_LOGIN_SUCCESS', [
             'resource_type' => 'platform_user',
             'resource_ulid' => $user->ulid,
-            'auth_mode' => $localMfaBypass ? 'local_development_mfa_bypass' : 'email_otp',
+            'auth_mode' => ! $mfaEnabled ? 'email_password' : ($localMfaBypass ? 'local_development_mfa_bypass' : 'email_otp'),
             'remembered' => $remember,
         ], $request, $user);
 
@@ -74,8 +85,9 @@ class EstablishPlatformSessionAction
     public function resumeRemembered(Request $request, PlatformUser $user): PlatformUser
     {
         $request->session()->regenerate();
-        $localMfaBypass = $this->mfaPolicy->localBypassEnabled();
+        $localMfaBypass = $this->mfaPolicy->enabled() && $this->mfaPolicy->localBypassEnabled();
         $this->persistContext($request, $user, null, $localMfaBypass);
+        $request->session()->put(EnsurePlatformContext::REMEMBER, true);
 
         $this->audit->record('PLATFORM_REMEMBERED_LOGIN_RESTORED', [
             'resource_type' => 'platform_user',
@@ -115,6 +127,8 @@ class EstablishPlatformSessionAction
         ];
         if ($mfaVerifiedNow) {
             $session[EnsurePlatformContext::MFA_AT] = now()->timestamp;
+        } else {
+            $request->session()->forget(EnsurePlatformContext::MFA_AT);
         }
         $request->session()->put($session);
 

@@ -11,6 +11,7 @@ import {
 import { ApiClientError } from '../../api/client'
 import { askConfirm } from '../../feedback/FeedbackProvider'
 import { CredentialsOnceModal } from '../../components/platform/CredentialsOnceModal'
+import { TenantImportModal } from '../../components/platform/TenantImportModal'
 import { usePlatformAuth } from '../../features/platform/PlatformAuthProvider'
 import { usePlatformCan } from '../../features/platform/usePlatformCan'
 import type { PlatformTenant } from '../../types/platform'
@@ -19,6 +20,8 @@ export function PlatformTenantsPage() {
   const queryClient = useQueryClient()
   const { withRecentMfa } = usePlatformAuth()
   const canEdit = usePlatformCan('platform.tenants.edit')
+  const canImport = usePlatformCan('platform.tenants.import')
+  const [importing, setImporting] = useState<PlatformTenant | null>(null)
   const canDelete = usePlatformCan('platform.tenants.delete')
   const tenantsQuery = useQuery({ queryKey: ['platform', 'tenants'], queryFn: () => fetchPlatformTenants(1) })
   const plansQuery = useQuery({ queryKey: ['platform', 'plans'], queryFn: fetchPlatformPlans })
@@ -200,6 +203,7 @@ export function PlatformTenantsPage() {
               <td>{tenant.devices_count ?? '—'}</td>
               <td>{tenant.created_at ? tenant.created_at.slice(0, 10) : '—'}</td>
               <td className="space-x-2 whitespace-nowrap p-1">
+                {canImport ? <button type="button" className="underline" onClick={() => setImporting(tenant)}>Import Data</button> : null}
                 {canEdit ? (
                   <button type="button" className="underline" onClick={() => setEditing(tenant)}>
                     Edit
@@ -236,6 +240,7 @@ export function PlatformTenantsPage() {
           }}
         />
       ) : null}
+      {importing ? <TenantImportModal key={importing.ulid} tenant={importing} onClose={() => setImporting(null)} /> : null}
       {credentials ? (
         <CredentialsOnceModal
           title="Tenant Created Successfully"

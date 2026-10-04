@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Platform;
 
 use App\Models\Platform\PlatformUser;
+use App\Platform\PlatformMfaPolicy;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,7 +29,7 @@ class PlatformUserResource extends JsonResource
             'last_mfa_verified_at' => $this->last_mfa_verified_at?->toISOString(),
             'mfa' => [
                 'method' => 'email_otp',
-                'enabled' => true,
+                'enabled' => app(PlatformMfaPolicy::class)->enabled(),
             ],
             'permissions' => $this->permissionKeys(),
             'roles' => $this->whenLoaded('roles', fn () => $this->roles->map(fn ($role) => [

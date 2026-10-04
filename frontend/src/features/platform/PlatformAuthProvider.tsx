@@ -14,6 +14,7 @@ import {
   type PlatformMfaInput,
 } from '../../api/platform'
 import type { PlatformUser } from '../../types/platform'
+import { authenticatePlatformSession, clearPlatformSession } from './authenticatePlatformSession'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,31 +52,27 @@ function PlatformAuthState({ children }: { children: ReactNode }) {
   const client = useQueryClient()
   const meQuery = useQuery({
     queryKey: ['platform', 'me'],
-    queryFn: fetchPlatformMe,
+    queryFn: ({ signal }) => fetchPlatformMe(signal),
     retry: false,
   })
   const [stepUp, setStepUp] = useState<StepUpState | null>(null)
   const stepUpWaiter = useRef<{ resolve: () => void; reject: (error: Error) => void } | null>(null)
 
   const loginMutation = useMutation({
-    mutationFn: platformLogin,
-    onSuccess: (user) => {
-      client.setQueryData(['platform', 'me'], user)
-    },
+    mutationFn: (input: PlatformLoginInput) =>
+      authenticatePlatformSession(client, () => platformLogin(input), fetchPlatformMe),
   })
 
   const mfaMutation = useMutation({
-    mutationFn: platformVerifyMfa,
-    onSuccess: (user) => {
-      client.setQueryData(['platform', 'me'], user)
-    },
+    mutationFn: (input: PlatformMfaInput) =>
+      authenticatePlatformSession(client, () => platformVerifyMfa(input), fetchPlatformMe),
   })
 
   const logoutMutation = useMutation({
+    onMutate: () => client.cancelQueries({ queryKey: ['platform', 'me'], exact: true }),
     mutationFn: platformLogout,
     onSuccess: () => {
-      client.setQueryData(['platform', 'me'], null)
-      client.clear()
+      clearPlatformSession(client)
     },
   })
 
