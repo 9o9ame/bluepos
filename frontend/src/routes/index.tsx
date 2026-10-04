@@ -23,6 +23,7 @@ import { RolesPage } from '../pages/RolesPage'
 import { SaleSchemesPage } from '../pages/SaleSchemesPage'
 import { SalesInvoicePage } from '../pages/SalesInvoicePage'
 import { SubcategoriesPage } from '../pages/SubcategoriesPage'
+import { ThemeAppearancePage } from '../pages/ThemeAppearancePage'
 import { UnitsPage } from '../pages/UnitsPage'
 import { UsersPage } from '../pages/UsersPage'
 import { WorkspacePage } from '../pages/WorkspacePage'
@@ -70,6 +71,7 @@ export function AppRoutes() {
           <Route path="/reports" element={<ReportsPlaceholderPage />} />
           <Route path="/help/about" element={<HelpAboutPage />} />
           <Route path="/administration/account" element={<AccountPage />} />
+          <Route path="/account/appearance" element={<ThemeAppearancePage />} />
           <Route path="/administration/plan" element={<PlanInfoPage />} />
           <Route path="/administration/security" element={<SecurityStatusPage />} />
 
