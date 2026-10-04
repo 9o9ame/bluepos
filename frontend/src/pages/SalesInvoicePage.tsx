@@ -18,7 +18,7 @@ import { ApiClientError } from '../api/client'
 import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
 import { fetchParties, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { createSale, createSalePayment, fetchSale } from '../api/sales'
+import { createSale, createSalePayment, fetchSale, fetchSalesmen } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
@@ -92,6 +92,7 @@ export function SalesInvoicePage() {
       customer: Party | null
       notes: string
       priceType: SalePriceType
+      salesmanUlid: string | null
     }>
   >([])
 
@@ -126,6 +127,16 @@ export function SalesInvoicePage() {
   const [partyModalOpen, setPartyModalOpen] = useState(false)
 
   const { session } = useAuth()
+  const [selectedSalesmanUlid, setSelectedSalesmanUlid] = useState<string | null>(
+    session?.membership.ulid ?? null,
+  )
+
+  const salesmenQuery = useQuery({
+    queryKey: ['sales', 'salesmen', session?.branch.ulid],
+    queryFn: fetchSalesmen,
+    enabled: canCreateSale,
+    retry: false,
+  })
 
   const balanceDue = useMemo(() => {
     const total = Number.parseFloat(cart.preview.grandTotal) || 0
@@ -223,6 +234,7 @@ export function SalesInvoicePage() {
           sale_date: saleDate,
           notes: cart.notes || null,
           customer_ulid: cart.customerUlid,
+          salesman_ulid: selectedSalesmanUlid ?? session?.membership.ulid ?? null,
         },
         idempotencyKeyRef.current,
       ),
@@ -443,6 +455,7 @@ export function SalesInvoicePage() {
         customer: selectedCustomer,
         notes: cart.notes,
         priceType: cart.priceType,
+        salesmanUlid: selectedSalesmanUlid,
       },
     ])
 
@@ -465,6 +478,7 @@ export function SalesInvoicePage() {
     )
 
     setSelectedCustomer(held.customer)
+    setSelectedSalesmanUlid(held.salesmanUlid ?? session?.membership.ulid ?? null)
     setHeldCarts((current) =>
       current.filter((entry) => entry.id !== id),
     )
@@ -814,11 +828,27 @@ export function SalesInvoicePage() {
 
                   <label>S.Man:</label>
 
-                  <div className="sales-reference-input-button">
-                    <input
-                      value={session?.user?.name ?? '—'}
-                      readOnly
-                    />
+                  <div className="sales-reference-input-button sales-reference-salesman">
+                    <select
+                      value={selectedSalesmanUlid ?? session?.membership.ulid ?? ''}
+                      onChange={(e) => setSelectedSalesmanUlid(e.target.value || null)}
+                      aria-label="Salesman"
+                    >
+                      {(salesmenQuery.data?.length
+                        ? salesmenQuery.data
+                        : session
+                          ? [{
+                              ulid: session.membership.ulid,
+                              username: session.membership.username,
+                              name: session.user.name,
+                            }]
+                          : []
+                      ).map((salesman) => (
+                        <option key={salesman.ulid} value={salesman.ulid}>
+                          {salesman.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <label>To:</label>
