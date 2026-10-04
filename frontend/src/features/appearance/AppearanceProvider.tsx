@@ -170,6 +170,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     () => ({
       theme: preferences.theme,
       skin: preferences.skin,
+      font: preferences.font,
       resolvedTheme,
       userScope,
       setTheme,
