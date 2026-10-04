@@ -356,3 +356,46 @@
 .sales-history-empty { text-align: center; color: #888; }
 .sales-history-pager { display: flex; gap: 10px; align-items: center; margin: 10px 0; }
 .sales-history-detail { margin-top: 14px; border-top: 2px solid #ccc; padding-top: 10px; }
+
+
+/* Modern visual prototype — autocomplete/cart surfaces only. */
+:root[data-theme='light'] .sales-pos-product-results {
+  margin-top: 4px;
+  border-color: #b9c7d4;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .98);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .18), 0 2px 6px rgba(15, 23, 42, .08);
+  overflow: hidden auto;
+}
+
+:root[data-theme='light'] .sales-pos-product-results button {
+  color: #1f2d3a;
+  font-weight: 500;
+  transition: background-color .12s ease, color .12s ease;
+}
+
+:root[data-theme='light'] .sales-pos-product-results button:hover,
+:root[data-theme='light'] .sales-pos-product-results button:focus-visible {
+  background: #eaf4fb;
+  color: #0f5f94;
+  outline: none;
+}
+
+:root[data-theme='light'] .sales-pos-product-results span {
+  color: #647383;
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme='light'] .sales-pos-line-badge,
+:root[data-theme='light'] .sales-scheme-prompt-row,
+:root[data-theme='light'] .sales-packaging-trigger,
+:root[data-theme='light'] .sales-payment-panel,
+:root[data-theme='light'] .sales-payment-method {
+  border-radius: 7px;
+}
+
+:root[data-theme='light'] .sales-payment-panel {
+  border-color: #c5d0db;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .07);
+}
