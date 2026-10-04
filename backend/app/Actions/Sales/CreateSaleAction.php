@@ -12,7 +12,9 @@ use App\Enums\SaleStatus;
 use App\Enums\StockMovementType;
 use App\Enums\WarehouseStatus;
 use App\Exceptions\ApiException;
+use App\Enums\MembershipStatus;
 use App\Models\Customer;
+use App\Models\Membership;
 use App\Models\Product;
 use App\Models\ProductBarcode;
 use App\Models\ProductPrice;
@@ -91,6 +93,10 @@ class CreateSaleAction
                 $data['price_type'] ?? null
             );
 
+            $salesman = $this->resolveSalesman(
+                $data['salesman_ulid'] ?? null
+            );
+
             $lines = $this->normalizeLines(
                 $data['items'] ?? [],
                 $priceType,
@@ -159,6 +165,7 @@ class CreateSaleAction
                 $lines,
                 $warehouse,
                 $customer,
+                $salesman,
                 $data,
                 $idempotencyKey,
                 $tenantId,
@@ -187,6 +194,7 @@ class CreateSaleAction
     {
         return [
             'customer',
+            'salesman.user',
             'branch',
             'warehouse',
             'items.product',
@@ -203,6 +211,7 @@ class CreateSaleAction
         array $lines,
         Warehouse $warehouse,
         ?Customer $customer,
+        Membership $salesman,
         array $data,
         string $idempotencyKey,
         int $tenantId,
@@ -217,6 +226,7 @@ class CreateSaleAction
             'branch_id' => $warehouse->branch_id,
             'warehouse_id' => $warehouse->id,
             'customer_id' => $customer?->id,
+            'salesman_membership_id' => $salesman->id,
             'document_number' => $this->nextDocumentNumber($tenantId),
             'status' => SaleStatus::Posted,
             'sale_date' => $data['sale_date'] ?? now()->toDateString(),
@@ -872,6 +882,47 @@ class CreateSaleAction
         }
 
         return $warehouse;
+    }
+
+    private function resolveSalesman(mixed $ulid): Membership
+    {
+        $ulid = is_string($ulid) ? trim($ulid) : '';
+
+        if ($ulid === '') {
+            return $this->tenantContext->membership();
+        }
+
+        $membership = Membership::query()
+            ->where('tenant_id', $this->tenantContext->tenantId())
+            ->where('ulid', $ulid)
+            ->where('status', MembershipStatus::Active->value)
+            ->with(['roles', 'branches'])
+            ->first();
+
+        if (! $membership) {
+            throw ValidationException::withMessages([
+                'salesman_ulid' => 'The selected salesman is not active for this tenant.',
+            ]);
+        }
+
+        $hasAllBranches = $membership->roles->contains(
+            fn ($role): bool =>
+                $role->is_active &&
+                $role->branch_access === 'all_branches'
+        );
+
+        $hasCurrentBranch = $membership->branches->contains(
+            fn ($branch): bool =>
+                (int) $branch->id === $this->tenantContext->branchId()
+        );
+
+        if (! $hasAllBranches && ! $hasCurrentBranch) {
+            throw ValidationException::withMessages([
+                'salesman_ulid' => 'The selected salesman is not assigned to the current branch.',
+            ]);
+        }
+
+        return $membership;
     }
 
     private function resolveCustomer(?string $ulid): ?Customer
