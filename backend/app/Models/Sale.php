@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'branch_id',
     'warehouse_id',
     'customer_id',
+    'salesman_membership_id',
     'document_number',
     'status',
     'sale_date',
@@ -79,6 +80,14 @@ class Sale extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /**
+     * @return BelongsTo<Membership, $this>
+     */
+    public function salesman(): BelongsTo
+    {
+        return $this->belongsTo(Membership::class, 'salesman_membership_id');
     }
 
     /**
