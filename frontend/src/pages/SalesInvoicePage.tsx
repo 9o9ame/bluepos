@@ -971,9 +971,7 @@ export function SalesInvoicePage() {
                 <span>
                   {cart.paidLines.length} line(s) ready to save
                 </span>
-              ) : (
-                <span>Add a product to start a sale</span>
-              )}
+              ) : null}
             </div>
 
             <div className="sales-reference-entry-row">
@@ -1407,122 +1405,6 @@ export function SalesInvoicePage() {
                 <strong>{cart.preview.grandTotal}</strong>
               </div>
 
-              <div className="sales-reference-record-nav">
-                <div className="sales-reference-record-controls">
-                  <button
-                    type="button"
-                    onClick={() => setView('history')}
-                    title="Open posted invoices"
-                  >
-                    ⏮
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (savedSale) {
-                        void refreshSavedSale(
-                          savedSale.ulid,
-                        )
-                      }
-                    }}
-                    title="Refresh current sale"
-                  >
-                    ◀
-                  </button>
-
-                  <span>Record {savedSale ? 1 : 0} of 1</span>
-
-                  <button
-                    type="button"
-                    onClick={() => setView('history')}
-                    title="Open posted invoices"
-                  >
-                    ▶
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setView('history')}
-                    title="Open posted invoices"
-                  >
-                    ⏭
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSavedSale(null)
-                      cart.clear()
-                      setReceived('')
-                      setPaymentReference('')
-                    }}
-                    title="New invoice"
-                  >
-                    +
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (cart.lines.length > 0) {
-                        cart.clear()
-                      }
-                    }}
-                    title="Clear current invoice"
-                  >
-                    −
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => receivedRef.current?.focus()}
-                    title="Focus received amount"
-                  >
-                    ⌃
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (cart.hasPaidLines) {
-                        parkCurrentCart()
-                      }
-                    }}
-                    title="Put invoice on hold"
-                  >
-                    ⌄
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={
-                      !canCreateSale ||
-                      !cart.hasPaidLines ||
-                      Boolean(stockIssue) ||
-                      isBusy
-                    }
-                    onClick={() => saveMutation.mutate()}
-                    title="Save invoice"
-                  >
-                    ✓
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      cart.clear()
-                      setSavedSale(null)
-                      setReceived('')
-                      setPaymentReference('')
-                      setSaveError(null)
-                    }}
-                    title="Cancel current entry"
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
             </div>
 
             <footer className="sales-reference-actions">
