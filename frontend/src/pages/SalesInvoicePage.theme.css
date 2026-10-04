@@ -1262,3 +1262,14 @@
   width: 100%;
   box-sizing: border-box;
 }
+
+
+.sales-reference-salesman select {
+  width: 100%;
+  min-width: 0;
+  height: 23px;
+  border: 1px solid #aaa;
+  background: #f6f6f6;
+  color: #444;
+  padding: 0 22px 0 5px;
+}
