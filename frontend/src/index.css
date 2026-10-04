@@ -6941,8 +6941,8 @@ textarea {
 /* Top form: a little wider and taller, especially Amounts. */
 .sales-reference-meta {
   grid-template-columns: 615px 258px minmax(0, 1fr);
-  min-height: 99px;
-  height: 99px;
+  min-height: 85px;
+  height: 85px;
   gap: 5px;
 }
 
