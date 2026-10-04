@@ -6,6 +6,7 @@ import type {
   CatalogItem,
   Paginated,
   Product,
+  ProductStockResponse,
   Subcategory,
   Supplier,
   Unit,
@@ -398,6 +399,14 @@ export function fetchProduct(
 ) {
   return apiFetch<Product>(
     `/api/products/${ulid}`,
+  )
+}
+
+export function fetchProductStock(
+  ulid: string,
+) {
+  return apiFetch<ProductStockResponse>(
+    `/api/products/${ulid}/stock`,
   )
 }
 

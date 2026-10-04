@@ -21,6 +21,7 @@ class SaleResource extends JsonResource
             'document_number' => $this->document_number,
             'status' => $this->status->value,
             'sale_date' => $this->sale_date?->toDateString(),
+            'price_type' => $this->price_type?->value,
             'subtotal' => $this->subtotal,
             'discount_amount' => $this->discount_amount,
             'tax_amount' => $this->tax_amount,

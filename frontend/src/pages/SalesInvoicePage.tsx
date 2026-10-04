@@ -13,7 +13,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
-import { fetchProducts } from '../api/catalog'
+import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
 import { fetchParties, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
 import { createSale, createSalePayment, fetchSale } from '../api/sales'
@@ -26,7 +26,7 @@ import { useSaleCart } from '../features/sales/useSaleCart'
 import { useCan } from '../features/auth/useCan'
 import { useAuth } from '../features/auth/AuthProvider'
 import type { SaleOfferEvaluation } from '../types/saleSchemes'
-import type { Sale, SalePaymentMethod } from '../types/sales'
+import type { Sale, SalePaymentMethod, SalePriceType } from '../types/sales'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
 import {
   SALES_INVOICE_COLUMNS,
@@ -88,6 +88,7 @@ export function SalesInvoicePage() {
       customerUlid: string | null
       customer: Party | null
       notes: string
+      priceType: SalePriceType
     }>
   >([])
 
@@ -138,6 +139,12 @@ export function SalesInvoicePage() {
     enabled: productQuery.trim().length > 0,
   })
 
+  const businessSettingsQuery = useQuery({
+    queryKey: ['settings', 'business', 'sales-stock'],
+    queryFn: fetchBusinessSettings,
+    retry: false,
+  })
+
   const customersQuery = useQuery({
     queryKey: ['parties', 'customers', 'pos'],
     queryFn: () => fetchParties('customer'),
@@ -156,13 +163,13 @@ export function SalesInvoicePage() {
   const offersQuery = useQuery({
     queryKey: [
       'sale-offers',
-      cart.preview.subtotal,
+      cart.preview.qualifyingSubtotal,
       saleDate,
       cart.appliedSchemeUlids.join(','),
     ],
     queryFn: () =>
       evaluateSaleOffers({
-        subtotal: cart.preview.subtotal,
+        subtotal: cart.preview.qualifyingSubtotal,
         document_date: saleDate,
       }),
     enabled: cart.hasPaidLines,
@@ -295,15 +302,35 @@ export function SalesInvoicePage() {
     setSavedSale(fresh)
   }
 
-  function addProductFromEntry(productUlid: string) {
-    const product = productsQuery.data?.data?.find(
-      (row) => row.ulid === productUlid,
-    )
+  async function addProductFromEntry(productUlid: string) {
+    try {
+      const [product, stock] = await Promise.all([
+        fetchProduct(productUlid),
+        fetchProductStock(productUlid),
+      ])
+      const scannedValue = productQuery.trim()
+      const scannedBarcode =
+        scannedValue === ''
+          ? null
+          : product.barcodes?.find(
+              (row) => row.is_active && row.barcode === scannedValue,
+            ) ?? null
 
-    if (!product) return
-
-    cart.addProduct(product, '1.000000')
-    setProductQuery('')
+      cart.addProduct(
+        product,
+        '1.000000',
+        scannedBarcode,
+        stock.active_warehouse.quantity,
+      )
+      setProductQuery('')
+      setSaveError(null)
+    } catch (err) {
+      setSaveError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'Unable to load the selected product.',
+      )
+    }
   }
 
   function parkCurrentCart() {
@@ -318,6 +345,7 @@ export function SalesInvoicePage() {
         customerUlid: cart.customerUlid,
         customer: selectedCustomer,
         notes: cart.notes,
+        priceType: cart.priceType,
       },
     ])
 
@@ -332,9 +360,12 @@ export function SalesInvoicePage() {
 
     if (!held) return
 
-    cart.restore(held.lines)
-    cart.setCustomerUlid(held.customerUlid)
-    cart.setNotes(held.notes)
+    cart.restore(
+      held.lines,
+      held.notes,
+      held.customerUlid,
+      held.priceType,
+    )
 
     setSelectedCustomer(held.customer)
     setHeldCarts((current) =>
@@ -370,6 +401,59 @@ export function SalesInvoicePage() {
     setReceived(value)
   }
 
+  const stockIssue = useMemo(() => {
+    if (businessSettingsQuery.data?.negative_stock_allowed !== false) {
+      return null
+    }
+
+    const byProduct = new Map<
+      string,
+      {
+        name: string
+        requiredBase: number
+        availableBase: number | null
+      }
+    >()
+
+    for (const line of cart.paidLines) {
+      const current = byProduct.get(line.product_ulid) ?? {
+        name: line.product_name,
+        requiredBase: 0,
+        availableBase:
+          line.available_base_stock === null ||
+          line.available_base_stock === undefined
+            ? null
+            : Number.parseFloat(line.available_base_stock),
+      }
+
+      const quantity = Number.parseFloat(line.quantity) || 0
+      const factor = Number.parseFloat(line.conversion_factor ?? '1') || 1
+
+      current.requiredBase += quantity * factor
+
+      if (
+        current.availableBase === null &&
+        line.available_base_stock !== null &&
+        line.available_base_stock !== undefined
+      ) {
+        current.availableBase = Number.parseFloat(line.available_base_stock)
+      }
+
+      byProduct.set(line.product_ulid, current)
+    }
+
+    for (const row of byProduct.values()) {
+      if (
+        row.availableBase !== null &&
+        row.requiredBase > row.availableBase + 0.0000005
+      ) {
+        return `Insufficient stock for ${row.name}.`
+      }
+    }
+
+    return null
+  }, [businessSettingsQuery.data?.negative_stock_allowed, cart.paidLines])
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'F9') {
@@ -378,6 +462,7 @@ export function SalesInvoicePage() {
         if (
           canCreateSale &&
           cart.hasPaidLines &&
+          !stockIssue &&
           !saveMutation.isPending &&
           !collectPaymentMutation.isPending
         ) {
@@ -410,6 +495,7 @@ export function SalesInvoicePage() {
   }, [
     canCreateSale,
     cart.hasPaidLines,
+    stockIssue,
     saveMutation.isPending,
     collectPaymentMutation.isPending,
     savedSale,
@@ -538,7 +624,8 @@ export function SalesInvoicePage() {
                     <input
                       type="radio"
                       name="sale-type"
-                      defaultChecked
+                      checked={cart.priceType === 'default'}
+                      onChange={() => cart.setPriceType('default')}
                     />{' '}
                     Default
                   </label>
@@ -547,6 +634,8 @@ export function SalesInvoicePage() {
                     <input
                       type="radio"
                       name="sale-type"
+                      checked={cart.priceType === 'wholesale'}
+                      onChange={() => cart.setPriceType('wholesale')}
                     />{' '}
                     Whole Sale
                   </label>
@@ -555,6 +644,8 @@ export function SalesInvoicePage() {
                     <input
                       type="radio"
                       name="sale-type"
+                      checked={cart.priceType === 'retail'}
+                      onChange={() => cart.setPriceType('retail')}
                     />{' '}
                     Retail
                   </label>
@@ -729,18 +820,26 @@ export function SalesInvoicePage() {
                   <label>Sales Tax (%)</label>
 
                   <input
-                    value="0"
+                    value={
+                      Number.parseFloat(cart.preview.subtotal) > 0
+                        ? (
+                            (Number.parseFloat(cart.preview.discount) /
+                              Number.parseFloat(cart.preview.subtotal)) *
+                            100
+                          ).toFixed(2)
+                        : '0.00'
+                    }
                     readOnly
-                    title="Sale-level discount is not currently supported by the sales API"
+                    title="Effective discount from sale lines"
                   />
 
                   <input
                     value={
-                      Number.parseFloat(cart.preview.subtotal) > 0
+                      Number.parseFloat(cart.preview.qualifyingSubtotal) > 0
                         ? (
                             (Number.parseFloat(cart.preview.tax) /
                               Number.parseFloat(
-                                cart.preview.subtotal,
+                                cart.preview.qualifyingSubtotal,
                               )) *
                             100
                           ).toFixed(2)
@@ -764,7 +863,11 @@ export function SalesInvoicePage() {
             </section>
 
             <div className="sales-pos-status">
-              {saveError ? (
+              {stockIssue ? (
+                <span className="sales-pos-status-error">
+                  {stockIssue}
+                </span>
+              ) : saveError ? (
                 <span className="sales-pos-status-error">
                   {saveError}
                 </span>
@@ -819,7 +922,7 @@ export function SalesInvoicePage() {
                     productsQuery.data?.data?.[0]
 
                   if (first) {
-                    addProductFromEntry(first.ulid)
+                    void addProductFromEntry(first.ulid)
                   }
                 }}
               />
@@ -834,6 +937,7 @@ export function SalesInvoicePage() {
                 disabled={
                   !canCreateSale ||
                   !cart.hasPaidLines ||
+                  Boolean(stockIssue) ||
                   isBusy
                 }
                 onClick={() => saveMutation.mutate()}
@@ -990,7 +1094,7 @@ export function SalesInvoicePage() {
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          addProductFromEntry(
+                                          void addProductFromEntry(
                                             row.ulid,
                                           )
                                         }
@@ -1035,7 +1139,7 @@ export function SalesInvoicePage() {
 
                   {cart.lines.map((line) => (
                     <tr
-                      key={`${line.line_kind}-${line.product_ulid}`}
+                      key={line.line_key}
                       className={
                         line.line_kind === 'sale'
                           ? 'sales-pos-line'
@@ -1088,7 +1192,7 @@ export function SalesInvoicePage() {
                                     line.line_kind === 'sale'
                                   ) {
                                     cart.setQuantity(
-                                      line.product_ulid,
+                                      line.line_key,
                                       e.target.value,
                                     )
                                   }
@@ -1108,14 +1212,33 @@ export function SalesInvoicePage() {
                                 type="button"
                                 aria-label="Delete row"
                                 onClick={() =>
-                                  cart.removeLine(
-                                    line.product_ulid,
-                                    line.line_kind,
-                                  )
+                                  cart.removeLine(line.line_key)
                                 }
                               >
                                 <XCircle size={16} />
                               </button>
+                            </td>
+                          )
+                        }
+
+                        const linePreview = cart.linePreview(line)
+
+                        if (col.key === 'in_stock') {
+                          const available = cart.availableStock(line)
+
+                          return (
+                            <td
+                              key={col.key}
+                              className="sales-pos-line-pending"
+                              title={
+                                line.line_kind === 'sale'
+                                  ? `Current ${session?.warehouse?.code ?? 'active warehouse'} stock in selected unit`
+                                  : undefined
+                              }
+                            >
+                              {available === null
+                                ? '—'
+                                : Number.parseFloat(available).toFixed(3)}
                             </td>
                           )
                         }
@@ -1125,34 +1248,105 @@ export function SalesInvoicePage() {
                             <td
                               key={col.key}
                               className="sales-pos-line-pending"
+                              title="Server validates the final price on Save"
                             >
-                              {line.unit_price ?? '—'}
+                              {line.line_kind === 'sale'
+                                ? Number.parseFloat(line.unit_price ?? '0').toFixed(2)
+                                : '0.00'}
                             </td>
                           )
                         }
 
-                        if (
-                          col.key === 'amt' ||
-                          col.key === 'net_amt'
-                        ) {
-                          const qty =
-                            Number.parseFloat(
-                              line.quantity,
-                            ) || 0
-
-                          const price =
-                            Number.parseFloat(
-                              line.unit_price ?? '',
-                            ) || 0
-
+                        if (col.key === 'amt') {
                           return (
-                            <td
-                              key={col.key}
-                              className="sales-pos-line-pending"
-                            >
-                              {line.line_kind === 'sale'
-                                ? (qty * price).toFixed(2)
-                                : '0.00'}
+                            <td key={col.key} className="sales-pos-line-pending">
+                              {linePreview.grossAmount}
+                            </td>
+                          )
+                        }
+
+                        if (col.key === 'disc_pct') {
+                          return (
+                            <td key={col.key}>
+                              <input
+                                className="sales-pos-line-qty"
+                                value={line.discount_percent ?? '0'}
+                                disabled={line.line_kind !== 'sale'}
+                                inputMode="decimal"
+                                onChange={(e) =>
+                                  cart.setDiscountPercent(
+                                    line.line_key,
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            </td>
+                          )
+                        }
+
+                        if (col.key === 'disc_rs') {
+                          return (
+                            <td key={col.key}>
+                              <input
+                                className="sales-pos-line-qty"
+                                value={line.discount_amount ?? '0'}
+                                disabled={line.line_kind !== 'sale'}
+                                inputMode="decimal"
+                                onChange={(e) =>
+                                  cart.setDiscountAmount(
+                                    line.line_key,
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            </td>
+                          )
+                        }
+
+                        if (col.key === 'net_amt') {
+                          return (
+                            <td key={col.key} className="sales-pos-line-pending">
+                              {linePreview.netAmount}
+                            </td>
+                          )
+                        }
+
+                        if (col.key === 'barcode') {
+                          return <td key={col.key}>{line.barcode ?? ''}</td>
+                        }
+
+                        if (col.key === 'uom') {
+                          return (
+                            <td key={col.key}>
+                              {line.line_kind === 'sale' &&
+                              (line.available_units?.length ?? 0) > 0 ? (
+                                <select
+                                  value={line.unit_ulid ?? ''}
+                                  onChange={(e) =>
+                                    cart.setLineUnit(
+                                      line.line_key,
+                                      e.target.value,
+                                    )
+                                  }
+                                  aria-label={`Unit for ${line.product_name}`}
+                                >
+                                  {(line.available_units ?? []).map((unit) => (
+                                    <option key={unit.unit_ulid} value={unit.unit_ulid}>
+                                      {unit.code}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                line.unit_code ?? ''
+                              )}
+                            </td>
+                          )
+                        }
+
+                        if (col.key === 's_tax_pct') {
+                          return (
+                            <td key={col.key} className="sales-pos-line-pending">
+                              {linePreview.taxPercent}
                             </td>
                           )
                         }
@@ -1310,6 +1504,7 @@ export function SalesInvoicePage() {
                     disabled={
                       !canCreateSale ||
                       !cart.hasPaidLines ||
+                      Boolean(stockIssue) ||
                       isBusy
                     }
                     onClick={() => saveMutation.mutate()}
@@ -1419,7 +1614,7 @@ export function SalesInvoicePage() {
       {view === 'pos' ? (
         <aside className="sales-reference-pay">
           <div className="sales-reference-retail-title">
-            RETAIL INVOICE
+            {cart.priceType === 'wholesale' ? 'WHOLESALE INVOICE' : 'RETAIL INVOICE'}
           </div>
 
           <fieldset className="sales-reference-pay-options">
@@ -1471,8 +1666,17 @@ export function SalesInvoicePage() {
             </div>
 
             <div className="sales-reference-disc-values">
-              <strong>0</strong>
-              <strong>0 %</strong>
+              <strong>{cart.preview.discount}</strong>
+              <strong>
+                {Number.parseFloat(cart.preview.subtotal) > 0
+                  ? (
+                      (Number.parseFloat(cart.preview.discount) /
+                        Number.parseFloat(cart.preview.subtotal)) *
+                      100
+                    ).toFixed(2)
+                  : '0.00'}{' '}
+                %
+              </strong>
             </div>
 
             <label className="sales-reference-payment-label">

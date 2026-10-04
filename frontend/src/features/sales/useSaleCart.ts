@@ -1,5 +1,10 @@
 import { useMemo, useState } from 'react'
-import type { SaleDraftLine } from '../../types/sales'
+import type { Product, ProductBarcode } from '../../types/catalog'
+import type {
+  SaleDraftLine,
+  SaleDraftUnitOption,
+  SalePriceType,
+} from '../../types/sales'
 import type { SaleOfferEvaluation } from '../../types/saleSchemes'
 
 type Scheme = SaleOfferEvaluation['schemes'][number]
@@ -10,17 +15,35 @@ type CartPreview = {
   discount: string
   tax: string
   grandTotal: string
+  qualifyingSubtotal: string
   quantity: string
+}
+
+type LinePreview = {
+  grossAmount: string
+  discountAmount: string
+  discountPercent: string
+  taxAmount: string
+  taxPercent: string
+  netAmount: string
 }
 
 function toNumber(value: string | number | null | undefined): number {
   const number = Number(value ?? 0)
-
   return Number.isFinite(number) ? number : 0
 }
 
 function money(value: number): string {
   return value.toFixed(2)
+}
+
+function money4(value: number): string {
+  return value.toFixed(4)
+}
+
+function factor8(value: string | null | undefined): string {
+  const number = toNumber(value)
+  return (number > 0 ? number : 1).toFixed(8)
 }
 
 function isValidQuantity(value: string): boolean {
@@ -31,142 +54,359 @@ function isPositiveQuantity(value: string): boolean {
   return isValidQuantity(value) && toNumber(value) > 0
 }
 
+function isValidPercentInput(value: string): boolean {
+  if (value === '') return true
+  if (!/^(?:0|[1-9]\d*)(?:\.\d{0,8})?$/.test(value)) return false
+  return toNumber(value) <= 100
+}
+
+function isValidMoneyInput(value: string): boolean {
+  return value === '' || /^(?:0|[1-9]\d*)(?:\.\d{0,4})?$/.test(value)
+}
+
+function resolvedPriceType(priceType: SalePriceType): 'retail' | 'wholesale' {
+  return priceType === 'wholesale' ? 'wholesale' : 'retail'
+}
+
+function unitOptions(product: Product): SaleDraftUnitOption[] {
+  const options: SaleDraftUnitOption[] = []
+  const usedUnits = new Set<string>()
+
+  if (product.base_unit?.ulid) {
+    options.push({
+      unit_ulid: product.base_unit.ulid,
+      code: product.base_unit.code,
+      name: product.base_unit.name,
+      symbol: product.base_unit.symbol,
+      allows_decimal: product.base_unit.allows_decimal,
+      conversion_factor: '1.00000000',
+      barcode: null,
+    })
+    usedUnits.add(product.base_unit.ulid)
+  }
+
+  if (product.secondary_unit?.ulid) {
+    options.push({
+      unit_ulid: product.secondary_unit.ulid,
+      code: product.secondary_unit.code,
+      name: product.secondary_unit.name,
+      symbol: product.secondary_unit.symbol,
+      allows_decimal: product.secondary_unit.allows_decimal,
+      conversion_factor: factor8(product.secondary_conversion_factor),
+      barcode: null,
+    })
+    usedUnits.add(product.secondary_unit.ulid)
+  }
+
+  for (const barcode of product.barcodes ?? []) {
+    if (!barcode.is_active || !barcode.unit?.ulid) continue
+    if (usedUnits.has(barcode.unit.ulid)) continue
+
+    options.push({
+      unit_ulid: barcode.unit.ulid,
+      code: barcode.unit.code,
+      name: barcode.unit.name,
+      symbol: barcode.unit.symbol,
+      allows_decimal: barcode.unit.allows_decimal,
+      conversion_factor: factor8(barcode.conversion_factor),
+      barcode: barcode.barcode,
+    })
+    usedUnits.add(barcode.unit.ulid)
+  }
+
+  return options
+}
+
+function priceForLine(
+  line: SaleDraftLine,
+  priceType: SalePriceType,
+): string {
+  const base =
+    resolvedPriceType(priceType) === 'wholesale'
+      ? line.wholesale_price
+      : line.retail_price
+
+  if (base === null || base === undefined || base === '') {
+    return '0.0000'
+  }
+
+  return money4(
+    toNumber(base) * toNumber(line.conversion_factor ?? '1'),
+  )
+}
+
+function newLineKey(prefix: string): string {
+  return `${prefix}:${Date.now()}:${Math.random().toString(36).slice(2, 9)}`
+}
+
+function calculateLinePreview(line: SaleDraftLine): LinePreview {
+  if (line.line_kind !== 'sale') {
+    return {
+      grossAmount: '0.00',
+      discountAmount: '0.00',
+      discountPercent: '0.00',
+      taxAmount: '0.00',
+      taxPercent: '0.00',
+      netAmount: '0.00',
+    }
+  }
+
+  const qty = toNumber(line.quantity)
+  const unitPrice = toNumber(line.unit_price)
+  const gross = qty * unitPrice
+
+  const enteredPercent = toNumber(line.discount_percent)
+  const enteredAmount = toNumber(line.discount_amount)
+
+  let discount = 0
+  let discountPercent = 0
+
+  if (enteredPercent > 0) {
+    discountPercent = Math.min(enteredPercent, 100)
+    discount = gross * (discountPercent / 100)
+  } else if (enteredAmount > 0) {
+    discount = Math.min(enteredAmount, Math.max(gross, 0))
+    discountPercent = gross > 0 ? (discount / gross) * 100 : 0
+  }
+
+  const taxable = Math.max(gross - discount, 0)
+  const taxPercent = Math.max(toNumber(line.tax_percent), 0)
+  const tax = taxable * (taxPercent / 100)
+  const net = taxable + tax
+
+  return {
+    grossAmount: money(gross),
+    discountAmount: money(discount),
+    discountPercent: discountPercent.toFixed(2),
+    taxAmount: money(tax),
+    taxPercent: taxPercent.toFixed(2),
+    netAmount: money(net),
+  }
+}
+
 export function useSaleCart() {
   const [lines, setLines] = useState<SaleDraftLine[]>([])
+  const [priceType, setPriceTypeState] = useState<SalePriceType>('default')
   const [appliedSchemes, setAppliedSchemes] = useState<
     Array<{
       scheme_ulid: string
       qty: string
     }>
   >([])
-
   const [skippedSchemes, setSkippedSchemes] = useState<string[]>([])
   const [notes, setNotes] = useState('')
   const [customerUlid, setCustomerUlid] = useState<string | null>(null)
 
-  function addProduct(
-    product: {
-      ulid: string
-      name: string
-      product_number: string
-      price?: string
-      unit_price?: string
-      tax_percent?: string
-    },
-    quantity = '1.000000',
-  ) {
-    if (!isPositiveQuantity(quantity)) {
-      return
-    }
+  function setPriceType(next: SalePriceType) {
+    setPriceTypeState(next)
+    setLines((current) =>
+      current.map((line) =>
+        line.line_kind === 'sale'
+          ? { ...line, unit_price: priceForLine(line, next) }
+          : line,
+      ),
+    )
+  }
 
+  function addProduct(
+    product: Product,
+    quantity = '1.000000',
+    scannedBarcode: ProductBarcode | null = null,
+    availableBaseStock: string | null = null,
+  ) {
+    if (!isPositiveQuantity(quantity)) return
+
+    const availableUnits = unitOptions(product)
+    const barcodeUnit = scannedBarcode?.unit ?? null
+    const selectedUnit = barcodeUnit ?? product.base_unit ?? null
+    const conversionFactor = scannedBarcode
+      ? factor8(scannedBarcode.conversion_factor)
+      : '1.00000000'
+    const barcode = scannedBarcode?.barcode ?? null
     const existing = lines.find(
       (line) =>
+        line.line_kind === 'sale' &&
         line.product_ulid === product.ulid &&
-        line.line_kind === 'sale',
+        (line.unit_ulid ?? null) === (selectedUnit?.ulid ?? null) &&
+        (line.barcode ?? null) === barcode,
     )
 
     if (existing) {
-      const newQuantity =
-        toNumber(existing.quantity) + toNumber(quantity)
-
+      const newQuantity = toNumber(existing.quantity) + toNumber(quantity)
       setLines((current) =>
         current.map((line) =>
-          line === existing
+          line.line_key === existing.line_key
             ? {
                 ...line,
                 quantity: newQuantity.toFixed(6),
+                available_base_stock:
+                  availableBaseStock ?? line.available_base_stock ?? null,
               }
             : line,
         ),
       )
-
       return
     }
 
-    setLines((current) => [
-      ...current,
-      {
-        product_ulid: product.ulid,
-        product_name: product.name,
-        product_number: product.product_number,
-        quantity,
-        line_kind: 'sale',
-        unit_price: product.unit_price ?? product.price ?? '0',
-        tax_percent: product.tax_percent ?? '0',
-      },
-    ])
+    const retailPrice =
+      product.prices?.find(
+        (row) => row.is_active && row.price_type === 'retail',
+      )?.amount ?? null
+    const wholesalePrice =
+      product.prices?.find(
+        (row) => row.is_active && row.price_type === 'wholesale',
+      )?.amount ?? null
+
+    const line: SaleDraftLine = {
+      line_key: newLineKey(`sale:${product.ulid}`),
+      product_ulid: product.ulid,
+      product_name: product.name,
+      product_number: product.product_number,
+      quantity,
+      line_kind: 'sale',
+      unit_ulid: selectedUnit?.ulid,
+      unit_code: selectedUnit?.code,
+      unit_name: selectedUnit?.name,
+      unit_symbol: selectedUnit?.symbol,
+      unit_allows_decimal: selectedUnit?.allows_decimal,
+      barcode,
+      conversion_factor: conversionFactor,
+      available_units: availableUnits,
+      available_base_stock: availableBaseStock,
+      retail_price: retailPrice,
+      wholesale_price: wholesalePrice,
+      unit_price: '0.0000',
+      discount_percent: '0',
+      discount_amount: '0',
+      tax_percent: product.is_taxable ? product.tax_percent : '0',
+      notes: null,
+    }
+
+    line.unit_price = priceForLine(line, priceType)
+
+    setLines((current) => [...current, line])
   }
 
-  function setQuantity(productUlid: string, quantity: string) {
-    if (quantity !== '' && !isValidQuantity(quantity)) {
-      return
-    }
+  function setQuantity(lineKey: string, quantity: string) {
+    if (quantity !== '' && !isValidQuantity(quantity)) return
+
+    setLines((current) =>
+      current.map((line) => {
+        if (line.line_key !== lineKey || line.line_kind !== 'sale') return line
+
+        if (
+          quantity !== '' &&
+          line.unit_allows_decimal === false &&
+          !Number.isInteger(toNumber(quantity))
+        ) {
+          return line
+        }
+
+        return { ...line, quantity }
+      }),
+    )
+  }
+
+  function setLineUnit(lineKey: string, unitUlid: string) {
+    setLines((current) =>
+      current.map((line) => {
+        if (line.line_key !== lineKey || line.line_kind !== 'sale') return line
+
+        const option = line.available_units?.find(
+          (row) => row.unit_ulid === unitUlid,
+        )
+        if (!option) return line
+
+        const barcode = option.barcode ?? null
+        const next: SaleDraftLine = {
+          ...line,
+          unit_ulid: option.unit_ulid,
+          unit_code: option.code,
+          unit_name: option.name,
+          unit_symbol: option.symbol,
+          unit_allows_decimal: option.allows_decimal,
+          barcode,
+          conversion_factor: option.conversion_factor,
+        }
+        next.unit_price = priceForLine(next, priceType)
+        return next
+      }),
+    )
+  }
+
+  function setDiscountPercent(lineKey: string, value: string) {
+    if (!isValidPercentInput(value)) return
 
     setLines((current) =>
       current.map((line) =>
-        line.product_ulid === productUlid &&
-        line.line_kind === 'sale'
+        line.line_key === lineKey && line.line_kind === 'sale'
           ? {
               ...line,
-              quantity,
+              discount_percent: value,
+              discount_amount: toNumber(value) > 0 ? '0' : line.discount_amount,
             }
           : line,
       ),
     )
   }
 
-  function removeLine(
-    productUlid: string,
-    lineKind?: SaleDraftLine['line_kind'],
-  ) {
+  function setDiscountAmount(lineKey: string, value: string) {
+    if (!isValidMoneyInput(value)) return
+
     setLines((current) =>
-      current.filter((line) => {
-        if (line.product_ulid !== productUlid) {
-          return true
-        }
-
-        if (lineKind && line.line_kind !== lineKind) {
-          return true
-        }
-
-        return false
-      }),
+      current.map((line) =>
+        line.line_key === lineKey && line.line_kind === 'sale'
+          ? {
+              ...line,
+              discount_amount: value,
+              discount_percent: toNumber(value) > 0 ? '0' : line.discount_percent,
+            }
+          : line,
+      ),
     )
+  }
+
+  function availableStock(line: SaleDraftLine): string | null {
+    if (line.line_kind !== 'sale') return null
+
+    if (
+      line.available_base_stock === null ||
+      line.available_base_stock === undefined
+    ) {
+      return null
+    }
+
+    const factor = toNumber(line.conversion_factor ?? '1')
+    if (factor <= 0) return null
+
+    return (toNumber(line.available_base_stock) / factor).toFixed(6)
+  }
+
+  function removeLine(lineKey: string) {
+    setLines((current) => current.filter((line) => line.line_key !== lineKey))
   }
 
   function addSchemeReward(
     scheme: Scheme,
     quantity = scheme.max_reward_qty,
   ) {
-    if (!isPositiveQuantity(quantity)) {
-      return
-    }
+    if (!isPositiveQuantity(quantity)) return
+    if (toNumber(quantity) > toNumber(scheme.max_reward_qty)) return
 
-    if (toNumber(quantity) > toNumber(scheme.max_reward_qty)) {
-      return
-    }
-
-    const existing = lines.find(
-      (line) =>
-        line.line_kind === 'free_scheme' &&
-        line.scheme_ulid === scheme.ulid,
-    )
+    const lineKey = `scheme:${scheme.ulid}`
+    const existing = lines.find((line) => line.line_key === lineKey)
 
     if (existing) {
       setLines((current) =>
         current.map((line) =>
-          line === existing
-            ? {
-                ...line,
-                quantity,
-              }
-            : line,
+          line.line_key === lineKey ? { ...line, quantity } : line,
         ),
       )
     } else {
       setLines((current) => [
         ...current,
         {
+          line_key: lineKey,
           product_ulid: scheme.reward_product.ulid,
           product_name: scheme.reward_product.name,
           product_number: scheme.reward_product.product_number,
@@ -174,6 +414,8 @@ export function useSaleCart() {
           line_kind: 'free_scheme',
           scheme_ulid: scheme.ulid,
           unit_price: '0',
+          discount_percent: '0',
+          discount_amount: '0',
           tax_percent: '0',
         },
       ])
@@ -186,22 +428,11 @@ export function useSaleCart() {
 
       if (existingScheme) {
         return current.map((item) =>
-          item.scheme_ulid === scheme.ulid
-            ? {
-                ...item,
-                qty: quantity,
-              }
-            : item,
+          item.scheme_ulid === scheme.ulid ? { ...item, qty: quantity } : item,
         )
       }
 
-      return [
-        ...current,
-        {
-          scheme_ulid: scheme.ulid,
-          qty: quantity,
-        },
-      ]
+      return [...current, { scheme_ulid: scheme.ulid, qty: quantity }]
     })
 
     setSkippedSchemes((current) =>
@@ -209,33 +440,19 @@ export function useSaleCart() {
     )
   }
 
-  function setSchemeQuantity(
-    schemeUlid: string,
-    quantity: string,
-  ) {
-    if (quantity !== '' && !isValidQuantity(quantity)) {
-      return
-    }
+  function setSchemeQuantity(schemeUlid: string, quantity: string) {
+    if (quantity !== '' && !isValidQuantity(quantity)) return
 
     setAppliedSchemes((current) =>
       current.map((item) =>
-        item.scheme_ulid === schemeUlid
-          ? {
-              ...item,
-              qty: quantity,
-            }
-          : item,
+        item.scheme_ulid === schemeUlid ? { ...item, qty: quantity } : item,
       ),
     )
 
     setLines((current) =>
       current.map((line) =>
-        line.line_kind === 'free_scheme' &&
-        line.scheme_ulid === schemeUlid
-          ? {
-              ...line,
-              quantity,
-            }
+        line.line_kind === 'free_scheme' && line.scheme_ulid === schemeUlid
+          ? { ...line, quantity }
           : line,
       ),
     )
@@ -243,25 +460,18 @@ export function useSaleCart() {
 
   function skipScheme(schemeUlid: string) {
     setAppliedSchemes((current) =>
-      current.filter(
-        (item) => item.scheme_ulid !== schemeUlid,
-      ),
+      current.filter((item) => item.scheme_ulid !== schemeUlid),
     )
 
     setLines((current) =>
       current.filter(
         (line) =>
-          !(
-            line.line_kind === 'free_scheme' &&
-            line.scheme_ulid === schemeUlid
-          ),
+          !(line.line_kind === 'free_scheme' && line.scheme_ulid === schemeUlid),
       ),
     )
 
     setSkippedSchemes((current) =>
-      current.includes(schemeUlid)
-        ? current
-        : [...current, schemeUlid],
+      current.includes(schemeUlid) ? current : [...current, schemeUlid],
     )
   }
 
@@ -269,55 +479,42 @@ export function useSaleCart() {
     product: Packaging,
     quantity = '1.000000',
   ) {
-    if (!isPositiveQuantity(quantity)) {
-      return
-    }
+    if (!isPositiveQuantity(quantity)) return
 
     const maxQty = product.max_free_qty_per_sale
       ? toNumber(product.max_free_qty_per_sale)
       : null
-
-    const existing = lines.find(
-      (line) =>
-        line.line_kind === 'free_packaging' &&
-        line.product_ulid === product.ulid,
-    )
-
-    const existingQty = existing
-      ? toNumber(existing.quantity)
-      : 0
-
+    const lineKey = `packaging:${product.ulid}`
+    const existing = lines.find((line) => line.line_key === lineKey)
+    const existingQty = existing ? toNumber(existing.quantity) : 0
     const requestedQty = toNumber(quantity)
     const totalQty = existingQty + requestedQty
 
-    if (maxQty !== null && totalQty > maxQty) {
-      return
-    }
+    if (maxQty !== null && totalQty > maxQty) return
 
     if (existing) {
       setLines((current) =>
         current.map((line) =>
-          line === existing
-            ? {
-                ...line,
-                quantity: totalQty.toFixed(6),
-              }
+          line.line_key === lineKey
+            ? { ...line, quantity: totalQty.toFixed(6) }
             : line,
         ),
       )
-
       return
     }
 
     setLines((current) => [
       ...current,
       {
+        line_key: lineKey,
         product_ulid: product.ulid,
         product_name: product.name,
         product_number: product.product_number,
         quantity,
         line_kind: 'free_packaging',
         unit_price: '0',
+        discount_percent: '0',
+        discount_amount: '0',
         tax_percent: '0',
       },
     ])
@@ -335,8 +532,17 @@ export function useSaleCart() {
     restoredLines: SaleDraftLine[],
     restoredNotes = '',
     restoredCustomerUlid: string | null = null,
+    restoredPriceType?: SalePriceType,
   ) {
-    setLines(restoredLines)
+    const nextPriceType = restoredPriceType ?? priceType
+    setPriceTypeState(nextPriceType)
+    setLines(
+      restoredLines.map((line) =>
+        line.line_kind === 'sale'
+          ? { ...line, unit_price: priceForLine(line, nextPriceType) }
+          : line,
+      ),
+    )
     setNotes(restoredNotes)
     setCustomerUlid(restoredCustomerUlid)
 
@@ -357,10 +563,7 @@ export function useSaleCart() {
   }
 
   const paidLines = useMemo(
-    () =>
-      lines.filter(
-        (line) => line.line_kind === 'sale',
-      ),
+    () => lines.filter((line) => line.line_kind === 'sale'),
     [lines],
   )
 
@@ -368,51 +571,45 @@ export function useSaleCart() {
     () =>
       lines.filter(
         (line) =>
-          line.line_kind === 'free_packaging' ||
-          line.line_kind === 'free_scheme',
+          line.line_kind === 'free_packaging' || line.line_kind === 'free_scheme',
       ),
     [lines],
   )
 
   const packagingLines = useMemo(
-    () =>
-      lines.filter(
-        (line) =>
-          line.line_kind === 'free_packaging',
-      ),
+    () => lines.filter((line) => line.line_kind === 'free_packaging'),
     [lines],
   )
 
   const appliedSchemeUlids = useMemo(
-    () =>
-      appliedSchemes.map(
-        (scheme) => scheme.scheme_ulid,
-      ),
+    () => appliedSchemes.map((scheme) => scheme.scheme_ulid),
     [appliedSchemes],
   )
 
   const preview = useMemo<CartPreview>(() => {
     let subtotal = 0
+    let discount = 0
+    let tax = 0
     let quantity = 0
 
     for (const line of paidLines) {
       const lineQuantity = toNumber(line.quantity)
-      const unitPrice = toNumber(line.unit_price)
-
+      const linePreview = calculateLinePreview(line)
       quantity += lineQuantity
-      subtotal += lineQuantity * unitPrice
+      subtotal += toNumber(linePreview.grossAmount)
+      discount += toNumber(linePreview.discountAmount)
+      tax += toNumber(linePreview.taxAmount)
     }
 
-    const discount = 0
-    const tax = 0
-    const grandTotal =
-      subtotal - discount + tax
+    const qualifyingSubtotal = Math.max(subtotal - discount, 0)
+    const grandTotal = qualifyingSubtotal + tax
 
     return {
       subtotal: money(subtotal),
       discount: money(discount),
       tax: money(tax),
       grandTotal: money(grandTotal),
+      qualifyingSubtotal: money(qualifyingSubtotal),
       quantity: quantity.toFixed(3),
     }
   }, [paidLines])
@@ -421,23 +618,23 @@ export function useSaleCart() {
 
   function buildPayload() {
     const items = paidLines
-      .filter((line) =>
-        isPositiveQuantity(line.quantity),
-      )
+      .filter((line) => isPositiveQuantity(line.quantity))
       .map((line) => ({
         product_ulid: line.product_ulid,
+        barcode: line.barcode || undefined,
+        unit_ulid: line.unit_ulid || undefined,
         quantity: line.quantity,
+        discount_percent:
+          toNumber(line.discount_percent) > 0 ? line.discount_percent : undefined,
+        discount_amount:
+          toNumber(line.discount_amount) > 0 ? line.discount_amount : undefined,
+        notes: line.notes || undefined,
       }))
 
-    /*
-     * Only packaging free items are sent through free_lines.
-     * Scheme rewards are represented by applied_schemes.
-     */
     const freePackagingLines = freeLines
       .filter(
         (line) =>
-          line.line_kind === 'free_packaging' &&
-          isPositiveQuantity(line.quantity),
+          line.line_kind === 'free_packaging' && isPositiveQuantity(line.quantity),
       )
       .map((line) => ({
         product_ulid: line.product_ulid,
@@ -445,56 +642,44 @@ export function useSaleCart() {
         line_kind: 'free_packaging' as const,
       }))
 
-    const payload: {
-      items: Array<{
-        product_ulid: string
-        quantity: string
-      }>
-      free_lines?: Array<{
-        product_ulid: string
-        qty: string
-        line_kind: 'free_packaging'
-      }>
-      applied_schemes?: Array<{
-        scheme_ulid: string
-        qty: string
-      }>
-      customer_ulid?: string | null
-      notes?: string | null
-    } = {
+    const payload = {
+      price_type: priceType,
       items,
       customer_ulid: customerUlid,
       notes: notes || null,
-    }
+    } as const
 
-    if (freePackagingLines.length > 0) {
-      payload.free_lines = freePackagingLines
-    }
-
-    const validSchemes = appliedSchemes.filter(
-      (scheme) =>
-        isPositiveQuantity(scheme.qty),
+    const validSchemes = appliedSchemes.filter((scheme) =>
+      isPositiveQuantity(scheme.qty),
     )
 
-    if (validSchemes.length > 0) {
-      payload.applied_schemes = validSchemes
+    return {
+      ...payload,
+      ...(freePackagingLines.length > 0
+        ? { free_lines: freePackagingLines }
+        : {}),
+      ...(validSchemes.length > 0
+        ? { applied_schemes: validSchemes }
+        : {}),
     }
-
-    return payload
   }
 
   return {
     lines,
-
     paidLines,
     freeLines,
     packagingLines,
+
+    priceType,
+    setPriceType,
 
     appliedSchemes,
     appliedSchemeUlids,
     skippedSchemes,
 
     preview,
+    linePreview: calculateLinePreview,
+    availableStock,
     hasPaidLines,
 
     notes,
@@ -505,6 +690,9 @@ export function useSaleCart() {
 
     addProduct,
     setQuantity,
+    setLineUnit,
+    setDiscountPercent,
+    setDiscountAmount,
     removeLine,
 
     addSchemeReward,

@@ -14,9 +14,11 @@ use App\Enums\WarehouseStatus;
 use App\Exceptions\ApiException;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\ProductBarcode;
 use App\Models\ProductPrice;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
@@ -85,8 +87,13 @@ class CreateSaleAction
                 $data['customer_ulid'] ?? null
             );
 
+            $priceType = $this->resolvePriceType(
+                $data['price_type'] ?? null
+            );
+
             $lines = $this->normalizeLines(
-                $data['items'] ?? []
+                $data['items'] ?? [],
+                $priceType,
             );
 
             if ($lines === []) {
@@ -117,9 +124,11 @@ class CreateSaleAction
             $paidSubtotal = '0.0000';
 
             foreach ($paidLines as $line) {
+                // Scheme qualification uses the paid amount after line discount
+                // but before tax. Tax should not make a sale qualify for a reward.
                 $paidSubtotal = bcadd(
                     $paidSubtotal,
-                    $line['line_total'],
+                    bcsub($line['gross_amount'], $line['discount_amount'], 4),
                     4
                 );
             }
@@ -153,6 +162,7 @@ class CreateSaleAction
                 $data,
                 $idempotencyKey,
                 $tenantId,
+                $priceType,
             );
 
             $sale = Sale::query()
@@ -196,6 +206,7 @@ class CreateSaleAction
         array $data,
         string $idempotencyKey,
         int $tenantId,
+        PriceType $priceType,
     ): void {
         $subtotal = '0.0000';
         $discountTotal = '0.0000';
@@ -209,6 +220,7 @@ class CreateSaleAction
             'document_number' => $this->nextDocumentNumber($tenantId),
             'status' => SaleStatus::Posted,
             'sale_date' => $data['sale_date'] ?? now()->toDateString(),
+            'price_type' => $priceType->value,
             'subtotal' => '0.0000',
             'discount_amount' => '0.0000',
             'tax_amount' => '0.0000',
@@ -229,12 +241,19 @@ class CreateSaleAction
                 'tenant_id' => $tenantId,
                 'sale_id' => $sale->id,
                 'product_id' => $product->id,
-                'unit_id' => $product->base_unit_id,
+                'unit_id' => $line['unit']->id,
+                'barcode' => $line['barcode'] ?? null,
+                'conversion_factor' => $line['conversion_factor'],
                 'line_kind' => $line['line_kind'],
                 'sale_scheme_id' => $line['sale_scheme_id'] ?? null,
                 'quantity' => $quantity,
+                'stock_quantity' => $line['stock_quantity'],
+                'price_type' => $line['price_type'],
                 'unit_price' => $line['unit_price'],
+                'gross_amount' => $line['gross_amount'],
+                'discount_percent' => $line['discount_percent'],
                 'discount_amount' => $line['discount_amount'],
+                'tax_percent' => $line['tax_percent'],
                 'tax_amount' => $line['tax_amount'],
                 'line_total' => $line['line_total'],
                 'notes' => $line['notes'] ?? null,
@@ -242,7 +261,7 @@ class CreateSaleAction
 
             $subtotal = bcadd(
                 $subtotal,
-                $line['line_total'],
+                $line['gross_amount'],
                 4
             );
 
@@ -269,7 +288,7 @@ class CreateSaleAction
                 'warehouse' => $warehouse,
                 'product' => $product,
                 'movement_type' => StockMovementType::Sale,
-                'quantity' => bcsub('0', $quantity, 6),
+                'quantity' => bcsub('0', $line['stock_quantity'], 6),
                 'reference_type' => 'sale',
                 'reference_ulid' => $sale->ulid,
                 'reference_line_ulid' => $item->ulid,
@@ -309,13 +328,26 @@ class CreateSaleAction
         $lines = [];
 
         foreach ($offers['packaging_lines'] as $packaging) {
+            /** @var Product $product */
+            $product = $packaging['product'];
+            $unit = $this->baseUnitForProduct($product);
+            $quantity = $this->normalizeQuantity((string) $packaging['qty']);
+
             $lines[] = [
-                'product' => $packaging['product'],
-                'quantity' => $packaging['qty'],
+                'product' => $product,
+                'unit' => $unit,
+                'barcode' => null,
+                'conversion_factor' => '1.00000000',
+                'quantity' => $quantity,
+                'stock_quantity' => $quantity,
+                'price_type' => null,
                 'line_kind' => SaleLineKind::FreePackaging->value,
                 'sale_scheme_id' => null,
                 'unit_price' => '0.0000',
+                'gross_amount' => '0.0000',
+                'discount_percent' => '0.00000000',
                 'discount_amount' => '0.0000',
+                'tax_percent' => '0.00000000',
                 'tax_amount' => '0.0000',
                 'line_total' => '0.0000',
                 'notes' => 'Free packaging',
@@ -323,13 +355,26 @@ class CreateSaleAction
         }
 
         foreach ($offers['scheme_lines'] as $scheme) {
+            /** @var Product $product */
+            $product = $scheme['product'];
+            $unit = $this->baseUnitForProduct($product);
+            $quantity = $this->normalizeQuantity((string) $scheme['qty']);
+
             $lines[] = [
-                'product' => $scheme['product'],
-                'quantity' => $scheme['qty'],
+                'product' => $product,
+                'unit' => $unit,
+                'barcode' => null,
+                'conversion_factor' => '1.00000000',
+                'quantity' => $quantity,
+                'stock_quantity' => $quantity,
+                'price_type' => null,
                 'line_kind' => SaleLineKind::FreeScheme->value,
                 'sale_scheme_id' => $scheme['scheme']->id,
                 'unit_price' => '0.0000',
+                'gross_amount' => '0.0000',
+                'discount_percent' => '0.00000000',
                 'discount_amount' => '0.0000',
+                'tax_percent' => '0.00000000',
                 'tax_amount' => '0.0000',
                 'line_total' => '0.0000',
                 'notes' => 'Free item from sale scheme: ' .
@@ -349,10 +394,9 @@ class CreateSaleAction
      * @param list<array<string, mixed>> $items
      * @return list<array<string, mixed>>
      */
-    private function normalizeLines(array $items): array
+    private function normalizeLines(array $items, PriceType $priceType): array
     {
         $lines = [];
-        $seen = [];
 
         foreach ($items as $index => $item) {
             $kind = (string) (
@@ -366,9 +410,12 @@ class CreateSaleAction
                 ]);
             }
 
-            $product = $this->catalog->product(
-                (string) $item['product_ulid']
-            );
+            [
+                'product' => $product,
+                'unit' => $unit,
+                'barcode' => $barcode,
+                'conversion_factor' => $conversionFactor,
+            ] = $this->resolveSaleSelection($item, $index);
 
             if (
                 $product->status !== ProductStatus::Active ||
@@ -380,35 +427,96 @@ class CreateSaleAction
                 ]);
             }
 
-            if (isset($seen[$product->id])) {
-                throw ValidationException::withMessages([
-                    "items.$index.product_ulid" =>
-                        'The same product can only appear on one sale line.',
-                ]);
-            }
-
-            $seen[$product->id] = true;
-
             $quantity = $this->normalizeQuantity(
                 (string) $item['quantity']
             );
 
-            $unitPrice = $this->resolveUnitPrice($product);
+            if (! $unit->allows_decimal && $this->hasFraction($quantity)) {
+                throw ValidationException::withMessages([
+                    "items.$index.quantity" =>
+                        'This unit does not allow decimal quantities.',
+                ]);
+            }
 
-            $lineTotal = bcmul(
+            $stockQuantity = bcmul(
+                $quantity,
+                $conversionFactor,
+                6
+            );
+
+            if (bccomp($stockQuantity, '0', 6) <= 0) {
+                throw ValidationException::withMessages([
+                    "items.$index.quantity" =>
+                        'Converted stock quantity must be greater than zero.',
+                ]);
+            }
+
+            $baseUnitPrice = $this->resolveUnitPrice(
+                $product,
+                $priceType,
+                $index
+            );
+
+            // ProductPrice is stored at base-unit level. A selected pack/carton
+            // therefore carries the base price multiplied by its conversion factor.
+            $unitPrice = bcmul(
+                $baseUnitPrice,
+                $conversionFactor,
+                4
+            );
+
+            $grossAmount = bcmul(
                 $quantity,
                 $unitPrice,
                 4
             );
 
+            [
+                'percent' => $discountPercent,
+                'amount' => $discountAmount,
+            ] = $this->resolveLineDiscount($item, $grossAmount, $index);
+
+            $taxableAmount = bcsub(
+                $grossAmount,
+                $discountAmount,
+                4
+            );
+
+            $taxPercent = $product->is_taxable
+                ? $this->normalizePercent(
+                    (string) ($product->tax_percent ?? '0'),
+                    "items.$index.tax_percent"
+                )
+                : '0.00000000';
+
+            $taxAmount = bcdiv(
+                bcmul($taxableAmount, $taxPercent, 8),
+                '100',
+                4
+            );
+
+            $lineTotal = bcadd(
+                $taxableAmount,
+                $taxAmount,
+                4
+            );
+
             $lines[] = [
                 'product' => $product,
+                'unit' => $unit,
+                'barcode' => $barcode,
+                'conversion_factor' => $conversionFactor,
                 'quantity' => $quantity,
+                'stock_quantity' => $stockQuantity,
+                'price_type' => $priceType->value,
                 'line_kind' => SaleLineKind::Sale->value,
                 'sale_scheme_id' => null,
                 'unit_price' => $unitPrice,
-                'discount_amount' => '0.0000',
-                'tax_amount' => '0.0000',
+                'gross_amount' => $grossAmount,
+                'discount_percent' => $discountPercent,
+                'discount_amount' => $discountAmount,
+                'tax_percent' => $taxPercent,
+                'tax_amount' => $taxAmount,
                 'line_total' => $lineTotal,
                 'notes' => $item['notes'] ?? null,
             ];
@@ -417,12 +525,227 @@ class CreateSaleAction
         return $lines;
     }
 
-    private function resolveUnitPrice(Product $product): string
+    /**
+     * Resolve a line discount from either percentage or fixed amount.
+     * The client may edit either Disc % or Disc Rs, but not both at once.
+     *
+     * @param array<string, mixed> $item
+     * @return array{percent: string, amount: string}
+     */
+    private function resolveLineDiscount(
+        array $item,
+        string $grossAmount,
+        int $index
+    ): array {
+        $percentRaw = trim((string) ($item['discount_percent'] ?? ''));
+        $amountRaw = trim((string) ($item['discount_amount'] ?? ''));
+
+        $percent = $percentRaw === ''
+            ? '0.00000000'
+            : $this->normalizePercent(
+                $percentRaw,
+                "items.$index.discount_percent"
+            );
+
+        $amount = $amountRaw === ''
+            ? '0.0000'
+            : $this->normalizeMoney(
+                $amountRaw,
+                "items.$index.discount_amount"
+            );
+
+        if (
+            bccomp($percent, '0', 8) === 1 &&
+            bccomp($amount, '0', 4) === 1
+        ) {
+            throw ValidationException::withMessages([
+                "items.$index.discount_amount" =>
+                    'Enter either Disc % or Disc Rs, not both.',
+            ]);
+        }
+
+        if (bccomp($percent, '0', 8) === 1) {
+            $amount = bcdiv(
+                bcmul($grossAmount, $percent, 8),
+                '100',
+                4
+            );
+        } elseif (bccomp($amount, '0', 4) === 1) {
+            if (bccomp($amount, $grossAmount, 4) === 1) {
+                throw ValidationException::withMessages([
+                    "items.$index.discount_amount" =>
+                        'Discount amount cannot exceed the line amount.',
+                ]);
+            }
+
+            if (bccomp($grossAmount, '0', 4) === 1) {
+                $percent = bcdiv(
+                    bcmul($amount, '100', 8),
+                    $grossAmount,
+                    8
+                );
+            }
+        }
+
+        if (bccomp($amount, $grossAmount, 4) === 1) {
+            throw ValidationException::withMessages([
+                "items.$index.discount_amount" =>
+                    'Discount amount cannot exceed the line amount.',
+            ]);
+        }
+
+        return [
+            'percent' => $percent,
+            'amount' => $amount,
+        ];
+    }
+
+    private function normalizePercent(string $value, string $field): string
     {
+        if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/', $value)) {
+            throw ValidationException::withMessages([
+                $field => 'Percentage must be a valid non-negative decimal with up to 8 places.',
+            ]);
+        }
+
+        $normalized = bcadd($value, '0', 8);
+
+        if (bccomp($normalized, '100', 8) === 1) {
+            throw ValidationException::withMessages([
+                $field => 'Percentage cannot exceed 100.',
+            ]);
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param array<string, mixed> $item
+     * @return array{
+     *     product: Product,
+     *     unit: Unit,
+     *     barcode: string|null,
+     *     conversion_factor: string
+     * }
+     */
+    private function resolveSaleSelection(array $item, int $index): array
+    {
+        $productUlid = trim((string) ($item['product_ulid'] ?? ''));
+        $barcodeValue = trim((string) ($item['barcode'] ?? ''));
+        $unitUlid = trim((string) ($item['unit_ulid'] ?? ''));
+
+        if ($productUlid === '' && $barcodeValue === '') {
+            throw ValidationException::withMessages([
+                "items.$index.product_ulid" =>
+                    'Select a product or scan a barcode.',
+            ]);
+        }
+
+        if ($barcodeValue !== '') {
+            $barcode = ProductBarcode::query()
+                ->forTenant($this->tenantContext->tenantId())
+                ->with(['product', 'unit'])
+                ->where('barcode', $barcodeValue)
+                ->where('is_active', true)
+                ->first();
+
+            if (! $barcode || ! $barcode->product || ! $barcode->unit) {
+                throw ValidationException::withMessages([
+                    "items.$index.barcode" =>
+                        'This barcode is not active for the current tenant.',
+                ]);
+            }
+
+            $product = $barcode->product;
+            $unit = $barcode->unit;
+
+            if ($productUlid !== '' && $product->ulid !== $productUlid) {
+                throw ValidationException::withMessages([
+                    "items.$index.barcode" =>
+                        'The scanned barcode does not belong to the selected product.',
+                ]);
+            }
+
+            if ($unitUlid !== '' && $unit->ulid !== $unitUlid) {
+                throw ValidationException::withMessages([
+                    "items.$index.unit_ulid" =>
+                        'The selected unit does not match the scanned barcode.',
+                ]);
+            }
+
+            $this->assertUnitAvailable($unit, $index);
+
+            return [
+                'product' => $product,
+                'unit' => $unit,
+                'barcode' => $barcode->barcode,
+                'conversion_factor' => $this->normalizeFactor(
+                    (string) $barcode->conversion_factor,
+                    "items.$index.barcode"
+                ),
+            ];
+        }
+
+        $product = $this->catalog->product($productUlid);
+
+        if ($unitUlid === '') {
+            $unit = $this->baseUnitForProduct($product);
+
+            return [
+                'product' => $product,
+                'unit' => $unit,
+                'barcode' => null,
+                'conversion_factor' => '1.00000000',
+            ];
+        }
+
+        $unit = Unit::query()
+            ->forTenant($this->tenantContext->tenantId())
+            ->where('ulid', $unitUlid)
+            ->first();
+
+        if (! $unit) {
+            throw ValidationException::withMessages([
+                "items.$index.unit_ulid" => 'The selected unit was not found.',
+            ]);
+        }
+
+        $this->assertUnitAvailable($unit, $index);
+
+        if ((int) $unit->id === (int) $product->base_unit_id) {
+            $factor = '1.00000000';
+        } elseif (
+            $product->secondary_unit_id !== null &&
+            (int) $unit->id === (int) $product->secondary_unit_id
+        ) {
+            $factor = $this->normalizeFactor(
+                (string) $product->secondary_conversion_factor,
+                "items.$index.unit_ulid"
+            );
+        } else {
+            throw ValidationException::withMessages([
+                "items.$index.unit_ulid" =>
+                    'This unit is not configured for the selected product.',
+            ]);
+        }
+
+        return [
+            'product' => $product,
+            'unit' => $unit,
+            'barcode' => null,
+            'conversion_factor' => $factor,
+        ];
+    }
+
+    private function resolveUnitPrice(
+        Product $product,
+        PriceType $priceType,
+        int $index
+    ): string {
         $price = ProductPrice::query()
             ->forTenant($this->tenantContext->tenantId())
             ->where('product_id', $product->id)
-            ->where('price_type', PriceType::Retail->value)
+            ->where('price_type', $priceType->value)
             ->where('is_active', true)
             ->where(function ($query): void {
                 $query
@@ -447,14 +770,80 @@ class CreateSaleAction
 
         if ($price === null) {
             throw ValidationException::withMessages([
-                'items' => 'This product has no active retail price.',
+                "items.$index.product_ulid" =>
+                    'This product has no active '.$priceType->value.' price.',
             ]);
         }
 
         return $this->normalizeMoney(
             (string) $price,
-            'unit_price'
+            "items.$index.unit_price"
         );
+    }
+
+    private function resolvePriceType(mixed $value): PriceType
+    {
+        $value = is_string($value) ? trim($value) : '';
+
+        return match ($value) {
+            '', 'default', PriceType::Retail->value => PriceType::Retail,
+            PriceType::Wholesale->value => PriceType::Wholesale,
+            default => throw ValidationException::withMessages([
+                'price_type' => 'Price type must be default, retail, or wholesale.',
+            ]),
+        };
+    }
+
+    private function baseUnitForProduct(Product $product): Unit
+    {
+        $unit = Unit::query()
+            ->forTenant($this->tenantContext->tenantId())
+            ->whereKey($product->base_unit_id)
+            ->first();
+
+        if (! $unit || ! $unit->is_active) {
+            throw ValidationException::withMessages([
+                'items' => 'The product base unit is not available for sale.',
+            ]);
+        }
+
+        return $unit;
+    }
+
+    private function assertUnitAvailable(Unit $unit, int $index): void
+    {
+        if (! $unit->is_active) {
+            throw ValidationException::withMessages([
+                "items.$index.unit_ulid" =>
+                    'The selected unit is not active.',
+            ]);
+        }
+    }
+
+    private function normalizeFactor(string $value, string $field): string
+    {
+        if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/', $value)) {
+            throw ValidationException::withMessages([
+                $field => 'Conversion factor must be a valid decimal with up to 8 places.',
+            ]);
+        }
+
+        $normalized = bcadd($value, '0', 8);
+
+        if (bccomp($normalized, '0', 8) <= 0) {
+            throw ValidationException::withMessages([
+                $field => 'Conversion factor must be greater than zero.',
+            ]);
+        }
+
+        return $normalized;
+    }
+
+    private function hasFraction(string $value): bool
+    {
+        $parts = explode('.', $value, 2);
+
+        return isset($parts[1]) && trim($parts[1], '0') !== '';
     }
 
     private function resolveWarehouse(?string $ulid): Warehouse

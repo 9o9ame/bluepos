@@ -133,6 +133,32 @@ export type Product = {
   prices?: ProductPrice[]
 }
 
+export type ProductStockResponse = {
+  product: {
+    ulid: string
+    product_number: string
+    sku: string | null
+    name: string
+  }
+  active_warehouse: {
+    ulid: string
+    code: string
+    name: string
+    quantity: string
+  }
+  total_quantity: string
+  warehouses: Array<{
+    warehouse: {
+      ulid: string
+      code: string
+      name: string
+    }
+    quantity: string
+    average_cost: string | null
+    stock_value: string | null
+  }>
+}
+
 export type Paginated<T> = {
   data: T[]
   meta: {

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Sales;
 
+use App\Enums\PriceType;
 use App\Enums\SaleLineKind;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -11,6 +12,40 @@ class StoreSaleRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+
+    protected function prepareForValidation(): void
+    {
+        /*
+         * Backward compatibility:
+         *
+         * Existing Sales tests/frontend may still send:
+         *
+         * applied_scheme_ulids: ["01...", "01..."]
+         *
+         * The current normalized contract is:
+         *
+         * applied_schemes: [
+         *     ["scheme_ulid" => "01...", "qty" => "1.000000"],
+         * ]
+         *
+         * Convert the legacy shape only when the newer payload was not sent.
+         */
+        if (
+            ! $this->has('applied_schemes') &&
+            is_array($this->input('applied_scheme_ulids'))
+        ) {
+            $this->merge([
+                'applied_schemes' => array_values(array_map(
+                    static fn (mixed $ulid): array => [
+                        'scheme_ulid' => (string) $ulid,
+                        'qty' => '1.000000',
+                    ],
+                    $this->input('applied_scheme_ulids', [])
+                )),
+            ]);
+        }
     }
 
     /**
@@ -24,9 +59,26 @@ class StoreSaleRequest extends FormRequest
             'warehouse_ulid' => ['nullable', 'string', 'size:26'],
             'notes' => ['nullable', 'string', 'max:2000'],
 
+            // "default" preserves the current behavior and resolves to retail.
+            'price_type' => [
+                'nullable',
+                Rule::in([
+                    'default',
+                    PriceType::Retail->value,
+                    PriceType::Wholesale->value,
+                ]),
+            ],
+
             'items' => ['required', 'array', 'min:1', 'max:200'],
-            'items.*.product_ulid' => ['required', 'string', 'size:26'],
+            'items.*.product_ulid' => ['nullable', 'string', 'size:26'],
+            'items.*.barcode' => ['nullable', 'string', 'max:64'],
+            'items.*.unit_ulid' => ['nullable', 'string', 'size:26'],
             'items.*.quantity' => ['required', 'string'],
+            'items.*.discount_percent' => ['nullable', 'string'],
+            'items.*.discount_amount' => ['nullable', 'string'],
+
+            // Unit price, tax and totals are intentionally NOT accepted as
+            // sources of truth. CreateSaleAction calculates them server-side.
 
             // Free lines may not be smuggled in as ordinary items.
             'items.*.line_kind' => [

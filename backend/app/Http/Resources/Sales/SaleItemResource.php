@@ -20,9 +20,17 @@ class SaleItemResource extends JsonResource
             'ulid' => $this->ulid,
             'line_kind' => $this->line_kind->value,
             'quantity' => $this->quantity,
+            'stock_quantity' => $this->stock_quantity,
+            'barcode' => $this->barcode,
+            'conversion_factor' => $this->conversion_factor,
+            'price_type' => $this->price_type?->value,
             'unit_price' => $this->unit_price,
+            'gross_amount' => $this->gross_amount,
+            'discount_percent' => $this->discount_percent,
             'discount_amount' => $this->discount_amount,
+            'tax_percent' => $this->tax_percent,
             'tax_amount' => $this->tax_amount,
+            'net_amount' => $this->line_total,
             'line_total' => $this->line_total,
             'notes' => $this->notes,
             'product' => $this->whenLoaded('product', fn () => [
@@ -33,6 +41,9 @@ class SaleItemResource extends JsonResource
             'unit' => $this->whenLoaded('unit', fn () => [
                 'ulid' => $this->unit->ulid,
                 'code' => $this->unit->code,
+                'name' => $this->unit->name,
+                'symbol' => $this->unit->symbol,
+                'allows_decimal' => $this->unit->allows_decimal,
             ]),
             'sale_scheme' => $this->whenLoaded('saleScheme', fn () => $this->saleScheme === null ? null : [
                 'ulid' => $this->saleScheme->ulid,

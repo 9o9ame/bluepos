@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PriceType;
 use App\Enums\SaleStatus;
 use App\Support\HasPublicUlid;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'document_number',
     'status',
     'sale_date',
+    'price_type',
     'subtotal',
     'discount_amount',
     'tax_amount',
@@ -38,6 +40,7 @@ class Sale extends Model
         return [
             'status' => SaleStatus::class,
             'sale_date' => 'date',
+            'price_type' => PriceType::class,
             'subtotal' => 'decimal:4',
             'discount_amount' => 'decimal:4',
             'tax_amount' => 'decimal:4',
