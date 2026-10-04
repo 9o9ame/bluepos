@@ -63,7 +63,6 @@ export function AppShell() {
         }}
         onChangePassword={() => navigate('/change-password')}
         onAccount={() => navigate('/administration/account')}
-        onAppearance={() => navigate('/account/appearance')}
         onHome={() => navigate('/')}
       />
     </WorkspaceProvider>
@@ -79,7 +78,6 @@ function AppShellFrame({
   onLogout,
   onChangePassword,
   onAccount,
-  onAppearance,
   onHome,
 }: {
   session: NonNullable<ReturnType<typeof useAuth>['session']>
@@ -90,7 +88,6 @@ function AppShellFrame({
   onLogout: () => void
   onChangePassword: () => void
   onAccount: () => void
-  onAppearance: () => void
   onHome: () => void
 }) {
   useWorkspaceShortcuts()
@@ -105,7 +102,6 @@ function AppShellFrame({
         onLogout={onLogout}
         onChangePassword={onChangePassword}
         onAccount={onAccount}
-        onAppearance={onAppearance}
       />
       <Ribbon onCalculator={() => setCalculatorOpen(true)} />
       <WorkspaceTabBar />
