@@ -1135,3 +1135,66 @@
     gap: 3px 4px !important;
   }
 }
+
+
+/* Sales invoice compact header + scrolling line area */
+.sales-reference-option-grid {
+  grid-template-columns:
+    32px 66px
+    28px 118px
+    30px 90px
+    38px 100px
+    24px 130px
+    38px 120px
+    34px 112px !important;
+  column-gap: 4px !important;
+  row-gap: 0 !important;
+  overflow: visible;
+}
+
+.sales-reference-option-grid > .sales-reference-to {
+  grid-column: auto !important;
+  width: 130px !important;
+  max-width: 130px !important;
+}
+
+.sales-reference-option-grid > input,
+.sales-reference-option-grid > .sales-reference-input-button {
+  min-width: 0 !important;
+  max-width: 100%;
+}
+
+.sales-pos-status:empty {
+  display: none;
+}
+
+.sales-reference-grid-wrap {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-gutter: stable;
+}
+
+.sales-reference-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+@media (max-width: 1450px) {
+  .sales-reference-option-grid {
+    grid-template-columns:
+      30px 60px
+      26px 108px
+      28px 82px
+      36px 92px
+      22px 118px
+      34px 108px
+      30px 100px !important;
+    column-gap: 3px !important;
+  }
+
+  .sales-reference-option-grid > .sales-reference-to {
+    width: 118px !important;
+    max-width: 118px !important;
+  }
+}
