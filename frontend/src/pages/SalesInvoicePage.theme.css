@@ -1136,32 +1136,43 @@
   }
 }
 
-
-/* Sales invoice compact header + scrolling line area */
+/* Sales invoice balanced single-line header + scrolling line area */
 .sales-reference-option-grid {
+  display: grid !important;
   grid-template-columns:
-    32px 66px
-    28px 118px
-    30px 90px
-    38px 100px
-    24px 130px
-    38px 120px
-    34px 112px !important;
-  column-gap: 4px !important;
+    34px minmax(72px, .60fr)
+    30px minmax(132px, .95fr)
+    34px minmax(118px, .85fr)
+    42px minmax(126px, .95fr)
+    24px minmax(190px, 1.45fr)
+    40px minmax(170px, 1.25fr)
+    34px minmax(130px, .95fr) !important;
+  align-items: center;
+  column-gap: 6px !important;
   row-gap: 0 !important;
-  overflow: visible;
+  width: 100%;
 }
 
-.sales-reference-option-grid > .sales-reference-to {
-  grid-column: auto !important;
-  width: 130px !important;
-  max-width: 130px !important;
+.sales-reference-option-grid > label {
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .sales-reference-option-grid > input,
 .sales-reference-option-grid > .sales-reference-input-button {
-  min-width: 0 !important;
-  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.sales-reference-option-grid > .sales-reference-to {
+  grid-column: auto !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.sales-reference-options {
+  overflow: visible;
 }
 
 .sales-pos-status:empty {
@@ -1183,18 +1194,13 @@
 @media (max-width: 1450px) {
   .sales-reference-option-grid {
     grid-template-columns:
-      30px 60px
-      26px 108px
-      28px 82px
-      36px 92px
-      22px 118px
-      34px 108px
-      30px 100px !important;
-    column-gap: 3px !important;
-  }
-
-  .sales-reference-option-grid > .sales-reference-to {
-    width: 118px !important;
-    max-width: 118px !important;
+      32px minmax(64px, .55fr)
+      28px minmax(118px, .90fr)
+      32px minmax(104px, .80fr)
+      40px minmax(112px, .88fr)
+      22px minmax(160px, 1.25fr)
+      36px minmax(145px, 1.08fr)
+      32px minmax(112px, .85fr) !important;
+    column-gap: 4px !important;
   }
 }
