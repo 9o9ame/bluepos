@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { Sale, SalePayment, SalePaymentMethod, SalePayload } from '../types/sales'
+import type { Sale, SalePayment, SalePaymentMethod, SalePayload, SalesmanOption } from '../types/sales'
 
 /**
  * Post a sale. The server recalculates every money figure and revalidates
@@ -35,6 +35,10 @@ export function fetchSales(
       last_page: number
     }
   }>(`/api/sales${query ? `?${query}` : ''}`)
+}
+
+export function fetchSalesmen() {
+  return apiFetch<SalesmanOption[]>('/api/sales/salesmen', { busy: 'none' })
 }
 
 /**
