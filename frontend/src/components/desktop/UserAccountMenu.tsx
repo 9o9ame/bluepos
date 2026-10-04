@@ -8,6 +8,7 @@ type UserAccountMenuProps = {
   onLogout: () => void
   onChangePassword: () => void
   onAccount: () => void
+  onAppearance: () => void
 }
 
 export function UserAccountMenu({
@@ -16,6 +17,7 @@ export function UserAccountMenu({
   onLogout,
   onChangePassword,
   onAccount,
+  onAppearance,
 }: UserAccountMenuProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -55,6 +57,9 @@ export function UserAccountMenu({
           </button>
           <button type="button" role="menuitem" onClick={() => { setOpen(false); onChangePassword() }}>
             Change Password
+          </button>
+          <button type="button" role="menuitem" onClick={() => { setOpen(false); onAppearance() }}>
+            Theme &amp; Appearance
           </button>
           <button type="button" role="menuitem" disabled title="Available in a later phase">
             Lock
