@@ -8,7 +8,6 @@ export function PlatformLoginPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [remember, setRemember] = useState(false)
   const [mfaCode, setMfaCode] = useState('')
   const [challengeUlid, setChallengeUlid] = useState<string | null>(null)
   const [recoveryHint, setRecoveryHint] = useState<string | null>(null)
@@ -41,7 +40,7 @@ export function PlatformLoginPage() {
         navigate(signedIn.must_change_password ? '/platform/change-password' : '/platform', { replace: true })
         return
       }
-      const signedIn = await login({ email, password, remember })
+      const signedIn = await login({ email, password, remember: true })
       navigate(signedIn.must_change_password ? '/platform/change-password' : '/platform', { replace: true })
     } catch (err) {
       if (
@@ -110,16 +109,6 @@ export function PlatformLoginPage() {
               onChange={(event) => setPassword(event.target.value)}
             />
           </label>
-          {!challengeUlid ? (
-            <label className="flex items-center gap-2 text-[12px] font-semibold">
-              <input
-                type="checkbox"
-                checked={remember}
-                onChange={(event) => setRemember(event.target.checked)}
-              />
-              Remember me
-            </label>
-          ) : null}
           {challengeUlid ? (
             <>
               <p className="text-[12px] text-slate-300">

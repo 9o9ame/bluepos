@@ -41,7 +41,7 @@ class PlatformAuthController extends Controller
             $request,
             $request->validated('email'),
             $request->validated('password'),
-            (bool) $request->boolean('remember'),
+            (bool) $request->boolean('remember', true),
         ));
     }
 

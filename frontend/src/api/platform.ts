@@ -1,4 +1,36 @@
 import { apiFetch, resetCsrf } from './client'
+
+export type TenantImportResult = {
+  ulid: string
+  format: string
+  replayed: boolean
+  status: 'processing' | 'completed'
+  processed: number
+  total: number
+  created: number
+  updated: number
+  reused: number
+  skipped: number
+  failed: number
+  stock: { posted: number; skipped: number; zero: number }
+  warnings: Array<{ source_row: number; code: string; name: string; message: string }>
+  ignored_fields: string[]
+}
+
+export function fetchTenantImportWarehouses(tenantUlid: string) {
+  return apiFetch<Array<{ ulid: string; name: string; branch_name: string | null }>>(
+    `/api/platform/tenants/${tenantUlid}/import-warehouses`,
+  )
+}
+
+export function importTenantWorkbook(tenantUlid: string, file: File, warehouseUlid: string) {
+  const body = new FormData()
+  body.append('file', file)
+  if (warehouseUlid) body.append('warehouse_ulid', warehouseUlid)
+  return apiFetch<TenantImportResult>(`/api/platform/tenants/${tenantUlid}/imports`, {
+    method: 'POST', body, busy: 'none',
+  })
+}
 import type {
   Paginated,
   PlatformAuditEvent,
