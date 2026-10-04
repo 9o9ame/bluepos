@@ -842,3 +842,103 @@
   background: linear-gradient(180deg, #315d3d, #24482f);
   color: #c7f2d0;
 }
+
+
+/* Sales customer selector — Define Products visual language + smooth shutter. */
+.sales-customer-dropdown-shutter {
+  position: absolute;
+  z-index: 55;
+  left: 7px;
+  top: 100%;
+  width: 408px;
+  max-width: calc(100vw - 24px);
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transform-origin: top;
+  transition:
+    max-height .34s cubic-bezier(.22, .61, .36, 1),
+    opacity .20s ease,
+    transform .34s cubic-bezier(.22, .61, .36, 1);
+}
+
+.sales-customer-dropdown-shutter.is-open {
+  max-height: 230px;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.sales-customer-dropdown-shutter .sales-pos-customer-results {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-height: 210px;
+  margin: 0;
+  border: 1px solid #8fb0c8;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: 0 5px 14px rgba(20, 50, 80, .16);
+  overflow-y: auto;
+}
+
+.sales-customer-dropdown-shutter .sales-pos-customer-results li + li {
+  border-top: 1px solid #d9e3eb;
+}
+
+.sales-customer-dropdown-shutter .sales-pos-customer-results button {
+  min-height: 22px;
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  color: #153e60;
+  font-weight: 500;
+  line-height: 1.25;
+  transition: background-color .14s ease, color .14s ease;
+}
+
+.sales-customer-dropdown-shutter .sales-pos-customer-results button:hover,
+.sales-customer-dropdown-shutter .sales-pos-customer-results button:focus-visible {
+  background: #1769aa;
+  color: #fff;
+  outline: none;
+}
+
+.sales-customer-dropdown-shutter .sales-pos-customer-results button:hover span,
+.sales-customer-dropdown-shutter .sales-pos-customer-results button:focus-visible span {
+  color: #fff;
+}
+
+.sales-customer-dropdown-shutter .sales-pos-customer-results span {
+  color: #526d83;
+}
+
+:root[data-theme='dark'] .sales-customer-dropdown-shutter .sales-pos-customer-results {
+  border-color: #4f6578;
+  background: #202a32;
+  box-shadow: 0 7px 18px rgba(0, 0, 0, .34);
+}
+
+:root[data-theme='dark'] .sales-customer-dropdown-shutter .sales-pos-customer-results li + li {
+  border-top-color: #344652;
+}
+
+:root[data-theme='dark'] .sales-customer-dropdown-shutter .sales-pos-customer-results button {
+  background: #202a32;
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .sales-customer-dropdown-shutter .sales-pos-customer-results button:hover,
+:root[data-theme='dark'] .sales-customer-dropdown-shutter .sales-pos-customer-results button:focus-visible {
+  background: #1769aa;
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sales-customer-dropdown-shutter {
+    transition: none;
+  }
+}
