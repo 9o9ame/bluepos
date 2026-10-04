@@ -208,6 +208,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::middleware('entitled:sales')->group(function () {
         Route::get('/sales', [SaleController::class, 'index']);
+        Route::get('/sales/salesmen', [SaleController::class, 'salesmen']);
         Route::post('/sales', [SaleController::class, 'store']);
         Route::get('/sales/{saleUlid}', [SaleController::class, 'show']);
         Route::get('/sales/{saleUlid}/payments', [SaleController::class, 'payments']);
