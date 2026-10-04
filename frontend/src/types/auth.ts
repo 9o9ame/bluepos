@@ -79,10 +79,12 @@ export type Device = {
 
 export type ThemePreference = 'system' | 'light' | 'dark'
 export type InterfaceStyle = 'classic' | 'hybrid' | 'advanced'
+export type FontPreference = 'skin-default' | 'inter' | 'roboto-condensed' | 'segoe-ui' | 'tahoma' | 'arial'
 
 export type AppearancePreferences = {
   theme: ThemePreference
   skin: InterfaceStyle
+  font: FontPreference
 }
 
 export type AuthSession = {
