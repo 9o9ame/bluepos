@@ -1,4 +1,5 @@
 import {
+  ChevronDown,
   CircleHelp,
   FileText,
   FolderOpen,
@@ -698,7 +699,7 @@ export function SalesInvoicePage() {
 
                   <label>Qu #:</label>
 
-                  <div className="sales-reference-input-button">
+                  <div className="sales-reference-input-button sales-reference-inline-caret">
                     <input
                       aria-label="Quotation number"
                       placeholder="Quotation #"
@@ -706,14 +707,16 @@ export function SalesInvoicePage() {
 
                     <button
                       type="button"
+                      className="sales-reference-field-caret"
                       onClick={() => {
                         setSaveError(
                           'Quotation lookup is not connected to the current sales API yet.',
                         )
                       }}
                       title="Quotation lookup"
+                      aria-label="Quotation lookup"
                     >
-                      ▼
+                      <ChevronDown size={12} strokeWidth={2.75} />
                     </button>
                   </div>
 
@@ -728,7 +731,7 @@ export function SalesInvoicePage() {
 
                   <label>To:</label>
 
-                  <div className="sales-reference-input-button sales-reference-to">
+                  <div className={`sales-reference-input-button sales-reference-to sales-reference-inline-caret${customerPickerOpen ? ' is-open' : ''}`}>
                     <input
                       value={
                         selectedCustomer?.name ?? 'CASH IN HAND'
@@ -738,13 +741,14 @@ export function SalesInvoicePage() {
 
                     <button
                       type="button"
+                      className="sales-reference-field-caret"
                       onClick={() =>
                         setCustomerPickerOpen((open) => !open)
                       }
                       title="Choose customer"
                       aria-label="Choose customer"
                     >
-                      ▼
+                      <ChevronDown size={12} strokeWidth={2.75} />
                     </button>
 
                     <button
