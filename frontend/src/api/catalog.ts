@@ -361,6 +361,9 @@ export function fetchProducts(
     brand_ulid?: string
     status?: string
   },
+  options?: {
+    busy?: 'block' | 'fetch' | 'none'
+  },
 ) {
   const search = new URLSearchParams()
 
@@ -391,6 +394,7 @@ export function fetchProducts(
 
   return apiFetch<Paginated<Product>>(
     `/api/products?${search.toString()}`,
+    options?.busy ? { busy: options.busy } : undefined,
   )
 }
 

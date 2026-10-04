@@ -29,5 +29,6 @@ export function evaluateSaleOffers(payload: { subtotal: string; document_date?: 
   return apiFetch<SaleOfferEvaluation>('/api/sale-offers/evaluate', {
     method: 'POST',
     body: JSON.stringify(payload),
+    busy: 'none',
   })
 }

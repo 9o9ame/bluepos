@@ -5,8 +5,21 @@
   width: 100%;
   border: 1px solid var(--line, #c9c2ae);
   background: #fffdf3;
+  color: #20242a;
+  -webkit-text-fill-color: #20242a;
   padding: 2px 4px;
   font-size: 12px;
+}
+
+.sales-reference-product-entry-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.sales-pos-product-results-top {
+  left: 0;
+  right: 0;
+  width: 100%;
 }
 
 .sales-pos-product-results {
@@ -16,6 +29,7 @@
   padding: 0;
   list-style: none;
   background: #fff;
+  color: #20242a;
   border: 1px solid var(--line, #c9c2ae);
   box-shadow: 0 4px 10px rgb(0 0 0 / 18%);
   max-height: 210px;
@@ -74,6 +88,9 @@
   width: 68px;
   padding: 1px 3px;
   border: 1px solid var(--line, #c9c2ae);
+  background: #fff;
+  color: #20242a;
+  -webkit-text-fill-color: #20242a;
   font-size: 12px;
   text-align: right;
 }

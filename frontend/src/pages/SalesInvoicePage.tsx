@@ -131,11 +131,14 @@ export function SalesInvoicePage() {
   const productsQuery = useQuery({
     queryKey: ['products', 'pos-entry', productQuery],
     queryFn: () =>
-      fetchProducts({
-        q: productQuery || undefined,
-        per_page: 20,
-        page: 1,
-      }),
+      fetchProducts(
+        {
+          q: productQuery || undefined,
+          per_page: 20,
+          page: 1,
+        },
+        { busy: 'none' },
+      ),
     enabled: productQuery.trim().length > 0,
   })
 
@@ -907,25 +910,50 @@ export function SalesInvoicePage() {
             </div>
 
             <div className="sales-reference-entry-row">
-              <input
-                className="sales-reference-product-entry"
-                value={productQuery}
-                placeholder="Type product name or number, then Enter"
-                aria-label="Product entry"
-                onChange={(e) =>
-                  setProductQuery(e.target.value)
-                }
-                onKeyDown={(e) => {
-                  if (e.key !== 'Enter') return
-
-                  const first =
-                    productsQuery.data?.data?.[0]
-
-                  if (first) {
-                    void addProductFromEntry(first.ulid)
+              <div className="sales-reference-product-entry-wrap">
+                <input
+                  className="sales-reference-product-entry"
+                  value={productQuery}
+                  placeholder="Type product name or number"
+                  aria-label="Product entry"
+                  onChange={(e) =>
+                    setProductQuery(e.target.value)
                   }
-                }}
-              />
+                  onKeyDown={(e) => {
+                    if (e.key !== 'Enter') return
+
+                    const first =
+                      productsQuery.data?.data?.[0]
+
+                    if (first) {
+                      void addProductFromEntry(first.ulid)
+                    }
+                  }}
+                />
+
+                {productQuery.trim().length > 0 &&
+                productsQuery.data?.data?.length ? (
+                  <ul className="sales-pos-product-results sales-pos-product-results-top">
+                    {productsQuery.data.data
+                      .slice(0, 8)
+                      .map((row) => (
+                        <li key={row.ulid}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void addProductFromEntry(
+                                row.ulid,
+                              )
+                            }
+                          >
+                            <span>{row.product_number}</span>{' '}
+                            {row.name}
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                ) : null}
+              </div>
 
               <div className="sales-reference-f1">
                 F1 to Add New
@@ -1063,7 +1091,7 @@ export function SalesInvoicePage() {
                             <input
                               className="sales-pos-product-entry"
                               value={productQuery}
-                              placeholder="Type product name or number, then Enter"
+                              placeholder="Type product name or number"
                               onChange={(e) =>
                                 setProductQuery(
                                   e.target.value,
@@ -1083,33 +1111,6 @@ export function SalesInvoicePage() {
                               }}
                             />
 
-                            {productQuery.trim().length > 0 &&
-                            productsQuery.data?.data
-                              ?.length ? (
-                              <ul className="sales-pos-product-results">
-                                {productsQuery.data.data
-                                  .slice(0, 8)
-                                  .map((row) => (
-                                    <li key={row.ulid}>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          void addProductFromEntry(
-                                            row.ulid,
-                                          )
-                                        }
-                                      >
-                                        <span>
-                                          {
-                                            row.product_number
-                                          }
-                                        </span>{' '}
-                                        {row.name}
-                                      </button>
-                                    </li>
-                                  ))}
-                              </ul>
-                            ) : null}
                           </td>
                         )
                       }

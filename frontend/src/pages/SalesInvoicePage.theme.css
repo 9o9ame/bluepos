@@ -490,3 +490,81 @@
 :root[data-theme='dark'][data-skin='hybrid'] .sales-reference-grid-totals strong {
   background: #252d34 !important;
 }
+
+
+/* ==========================================================================
+   Sales editable-field contrast
+   Color-only corrections; approved Sales geometry remains unchanged.
+   ========================================================================== */
+
+:root[data-theme='light'] .sales-reference-screen input:not([type='radio']):not([type='checkbox']):not(:disabled):not([readonly]),
+:root[data-theme='light'] .sales-reference-screen textarea:not(:disabled):not([readonly]),
+:root[data-theme='light'] .sales-reference-screen select:not(:disabled) {
+  background: #ffffff;
+  color: #20242a;
+  -webkit-text-fill-color: #20242a;
+}
+
+:root[data-theme='light'] .sales-reference-screen input::placeholder,
+:root[data-theme='light'] .sales-reference-screen textarea::placeholder {
+  color: #66707a;
+  -webkit-text-fill-color: #66707a;
+  opacity: 1;
+}
+
+:root[data-theme='light'] .sales-reference-screen input:disabled,
+:root[data-theme='light'] .sales-reference-screen select:disabled,
+:root[data-theme='light'] .sales-reference-screen textarea:disabled,
+:root[data-theme='light'] .sales-reference-screen input[readonly],
+:root[data-theme='light'] .sales-reference-screen textarea[readonly] {
+  background: #f0f1f2;
+  color: #68727c;
+  -webkit-text-fill-color: #68727c;
+  opacity: 1;
+}
+
+:root[data-theme='light'] .sales-reference-screen .sales-pos-product-entry {
+  background: #fff4a6;
+  color: #20242a;
+  -webkit-text-fill-color: #20242a;
+}
+
+:root[data-theme='dark'] .sales-reference-screen .sales-pos-product-entry {
+  background: #4b451e;
+  color: #fff4a6;
+  -webkit-text-fill-color: #fff4a6;
+}
+
+:root[data-theme='light'] .sales-reference-screen .sales-pos-line-qty {
+  background: #ffffff;
+  color: #20242a;
+  -webkit-text-fill-color: #20242a;
+}
+
+:root[data-theme='dark'] .sales-reference-screen .sales-pos-line-qty {
+  background: #1a2026;
+  color: #edf1f5;
+  -webkit-text-fill-color: #edf1f5;
+}
+
+:root[data-theme='dark'] .sales-reference-screen .sales-pos-line-qty:disabled {
+  background: #282f36;
+  color: #8d99a4;
+  -webkit-text-fill-color: #8d99a4;
+}
+
+:root[data-theme='light'] .sales-reference-screen .sales-reference-pay-options textarea,
+:root[data-theme='light'] .sales-reference-screen .sales-reference-pay-options > input,
+:root[data-theme='light'] .sales-reference-screen .sales-reference-received input {
+  background: #ffffff;
+  color: #20242a;
+  -webkit-text-fill-color: #20242a;
+}
+
+:root[data-theme='dark'] .sales-reference-screen .sales-reference-pay-options textarea,
+:root[data-theme='dark'] .sales-reference-screen .sales-reference-pay-options > input,
+:root[data-theme='dark'] .sales-reference-screen .sales-reference-received input {
+  background: #1a2026;
+  color: #edf1f5;
+  -webkit-text-fill-color: #edf1f5;
+}
