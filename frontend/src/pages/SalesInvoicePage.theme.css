@@ -1204,3 +1204,61 @@
     column-gap: 4px !important;
   }
 }
+
+
+/* Sales line grid: keep header and every row inside the main invoice card. */
+.sales-reference-grid-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.sales-reference-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+.sales-reference-grid .col-selector { width: 2.5% !important; }
+.sales-reference-grid .col-product { width: 46% !important; }
+.sales-reference-grid .col-stock { width: 6.5% !important; }
+.sales-reference-grid .col-qty { width: 6.5% !important; }
+.sales-reference-grid .col-price { width: 6.5% !important; }
+.sales-reference-grid .col-amt { width: 7% !important; }
+.sales-reference-grid .col-disc { width: 5.5% !important; }
+.sales-reference-grid .col-discrs { width: 6.5% !important; }
+.sales-reference-grid .col-net { width: 9% !important; }
+.sales-reference-grid .col-delete { width: 3.5% !important; }
+
+.sales-reference-grid th,
+.sales-reference-grid td {
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sales-reference-grid th {
+  text-overflow: ellipsis;
+}
+
+.sales-reference-grid td > input,
+.sales-reference-grid td > select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sales-pos-line-product,
+.sales-reference-grid td > strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sales-reference-grid-totals {
+  width: 100%;
+  box-sizing: border-box;
+}
