@@ -105,6 +105,7 @@ function AppShellFrame({
         onLogout={onLogout}
         onChangePassword={onChangePassword}
         onAccount={onAccount}
+        onAppearance={onAppearance}
       />
       <Ribbon onCalculator={() => setCalculatorOpen(true)} />
       <WorkspaceTabBar />
