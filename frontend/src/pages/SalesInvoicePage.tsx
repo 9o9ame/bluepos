@@ -765,37 +765,54 @@ export function SalesInvoicePage() {
                     </button>
 
                     <div className={`sales-customer-dropdown-shutter${customerPickerOpen ? ' is-open' : ''}`} aria-hidden={!customerPickerOpen}>
-                      <ul className="sales-pos-customer-results">
-                        <li>
+                      <div className="sales-pos-customer-grid" role="listbox" aria-label="Choose customer">
+                        <div className="sales-pos-customer-grid-head" aria-hidden="true">
+                          <span>Code</span>
+                          <span>Party Name</span>
+                          <span>Address</span>
+                          <span>Mobile</span>
+                        </div>
+
+                        <div className="sales-pos-customer-grid-body">
                           <button
                             type="button"
+                            className="sales-pos-customer-grid-row"
                             onClick={() => {
                               setSelectedCustomer(null)
                               cart.setCustomerUlid(null)
                               setCustomerPickerOpen(false)
                             }}
                           >
-                            CASH IN HAND (walk-in)
+                            <span>—</span>
+                            <strong>CASH IN HAND</strong>
+                            <span>Walk-in customer</span>
+                            <span>—</span>
                           </button>
-                        </li>
-    
-                        {(customersQuery.data ?? []).map((party) => (
-                          <li key={party.ulid}>
+
+                          {(customersQuery.data ?? []).map((party) => (
                             <button
                               type="button"
+                              className="sales-pos-customer-grid-row"
+                              key={party.ulid}
                               onClick={() => {
                                 setSelectedCustomer(party)
                                 cart.setCustomerUlid(party.ulid)
                                 setCustomerPickerOpen(false)
                               }}
                             >
-                              <span>{party.code}</span> {party.name}
+                              <span>{party.code || '—'}</span>
+                              <strong>{party.name}</strong>
+                              <span>{party.address || '—'}</span>
+                              <span>{party.mobile || party.phone || '—'}</span>
                             </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
+                          ))}
+                        </div>
+
+                        <div className="sales-pos-customer-grid-foot">
+                          {(customersQuery.data?.length ?? 0) + 1} Parties
+                        </div>
+                      </div>
+                    </div>                  </div>
 
                   <label>Name:</label>
 
