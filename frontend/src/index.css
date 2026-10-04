@@ -6706,7 +6706,6 @@ textarea {
 
 /* Reference grid has left/right breathing room and a much narrower product column. */
 .sales-reference-grid-wrap {
-  padding: 0 14px;
   background: #fff;
 }
 
@@ -7003,11 +7002,6 @@ textarea {
   flex-basis: 76px;
 }
 
-/* Grid is inset from both sides in the reference. */
-.sales-reference-grid-wrap {
-  padding-left: 15px;
-  padding-right: 15px;
-}
 
 .sales-reference-grid .col-selector { width: 50px; }
 .sales-reference-grid .col-product { width: 480px; }
