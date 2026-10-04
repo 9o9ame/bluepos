@@ -12,7 +12,7 @@ import {
   StickyNote,
   XCircle,
 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
@@ -391,7 +391,7 @@ export function SalesInvoicePage() {
   }
 
   function handleActiveFieldEnter(
-    event: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>,
+    event: ReactKeyboardEvent<HTMLInputElement | HTMLSelectElement>,
     lineKey: string,
   ) {
     if (event.key !== 'Enter') return
