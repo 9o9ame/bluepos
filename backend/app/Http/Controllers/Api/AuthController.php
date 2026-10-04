@@ -75,17 +75,20 @@ class AuthController extends Controller
         $data = $request->validate([
             'theme' => ['required', 'string', Rule::in(['system', 'light', 'dark'])],
             'skin' => ['required', 'string', Rule::in(['classic', 'hybrid', 'advanced'])],
+            'font' => ['required', 'string', Rule::in(['skin-default', 'inter', 'roboto-condensed', 'segoe-ui', 'tahoma', 'arial'])],
         ]);
 
         $user = $tenantContext->user();
         $user->appearance_theme = $data['theme'];
         $user->appearance_skin = $data['skin'];
+        $user->appearance_font = $data['font'];
         $user->save();
 
         return response()->json([
             'appearance' => [
                 'theme' => $user->appearance_theme,
                 'skin' => $user->appearance_skin,
+                'font' => $user->appearance_font ?: 'skin-default',
             ],
         ]);
     }
