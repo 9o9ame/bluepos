@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ApplicationTitleBar } from '../components/desktop/ApplicationTitleBar'
 import { CalculatorDialog } from '../components/desktop/CalculatorDialog'
 import { Ribbon } from '../components/desktop/Ribbon'
@@ -15,6 +15,7 @@ export function AppShell() {
   const { session, logout } = useAuth()
   const { setUserScope } = useAppearance()
   const navigate = useNavigate()
+  const location = useLocation()
   const [loggingOut, setLoggingOut] = useState(false)
   const [calculatorOpen, setCalculatorOpen] = useState(false)
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
@@ -64,6 +65,7 @@ export function AppShell() {
         onChangePassword={() => navigate('/change-password')}
         onAccount={() => navigate('/administration/account')}
         onHome={() => navigate('/')}
+        showStatusBar={location.pathname !== '/daily/sales'}
       />
     </WorkspaceProvider>
   )
@@ -79,6 +81,7 @@ function AppShellFrame({
   onChangePassword,
   onAccount,
   onHome,
+  showStatusBar,
 }: {
   session: NonNullable<ReturnType<typeof useAuth>['session']>
   online: boolean
@@ -89,6 +92,7 @@ function AppShellFrame({
   onChangePassword: () => void
   onAccount: () => void
   onHome: () => void
+  showStatusBar: boolean
 }) {
   useWorkspaceShortcuts()
   useAppMode()
@@ -110,7 +114,7 @@ function AppShellFrame({
           <Outlet />
         </div>
       </div>
-      <StatusBar session={session} online={online} />
+      {showStatusBar ? <StatusBar session={session} online={online} /> : null}
       <CalculatorDialog open={calculatorOpen} onClose={() => setCalculatorOpen(false)} />
     </div>
   )
