@@ -1,4 +1,4 @@
-import type { AppearancePreferences, InterfaceStyle, ThemePreference } from '../../types/auth'
+import type { AppearancePreferences, FontPreference, InterfaceStyle, ThemePreference } from '../../types/auth'
 import {
   createContext,
   useCallback,
@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 
-export type { InterfaceStyle, ThemePreference } from '../../types/auth'
+export type { FontPreference, InterfaceStyle, ThemePreference } from '../../types/auth'
 export type ResolvedTheme = 'light' | 'dark'
 
 type AppearanceContextValue = AppearancePreferences & {
@@ -17,6 +17,7 @@ type AppearanceContextValue = AppearancePreferences & {
   userScope: string | null
   setTheme: (theme: ThemePreference) => void
   setSkin: (skin: InterfaceStyle) => void
+  setFont: (font: FontPreference) => void
   setUserScope: (userUlid: string | null, serverPreferences?: AppearancePreferences | null) => void
   resetAppearance: () => void
 }
@@ -24,6 +25,7 @@ type AppearanceContextValue = AppearancePreferences & {
 const DEFAULT_PREFERENCES: AppearancePreferences = {
   theme: 'system',
   skin: 'classic',
+  font: 'skin-default',
 }
 
 const STORAGE_PREFIX = 'bluepos.appearance'
@@ -42,6 +44,10 @@ function isInterfaceStyle(value: unknown): value is InterfaceStyle {
   return value === 'classic' || value === 'hybrid' || value === 'advanced'
 }
 
+function isFontPreference(value: unknown): value is FontPreference {
+  return value === 'skin-default' || value === 'inter' || value === 'roboto-condensed' || value === 'segoe-ui' || value === 'tahoma' || value === 'arial'
+}
+
 function readStoredPreferences(userScope: string | null): AppearancePreferences {
   if (typeof window === 'undefined') {
     return DEFAULT_PREFERENCES
@@ -56,6 +62,7 @@ function readStoredPreferences(userScope: string | null): AppearancePreferences 
     return {
       theme: isThemePreference(parsed.theme) ? parsed.theme : DEFAULT_PREFERENCES.theme,
       skin: isInterfaceStyle(parsed.skin) ? parsed.skin : DEFAULT_PREFERENCES.skin,
+      font: isFontPreference(parsed.font) ? parsed.font : DEFAULT_PREFERENCES.font,
     }
   } catch {
     return DEFAULT_PREFERENCES
@@ -105,7 +112,22 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     root.dataset.theme = resolvedTheme
     root.dataset.skin = preferences.skin
     root.style.colorScheme = resolvedTheme
-  }, [preferences.theme, preferences.skin, resolvedTheme])
+    root.dataset.font = preferences.font
+
+    const fontStacks: Record<Exclude<FontPreference, 'skin-default'>, string> = {
+      inter: 'Inter, "Segoe UI", Arial, sans-serif',
+      'roboto-condensed': '"Roboto Condensed", "Arial Narrow", "Segoe UI", Arial, sans-serif',
+      'segoe-ui': '"Segoe UI", Arial, sans-serif',
+      tahoma: 'Tahoma, Arial, "Segoe UI", sans-serif',
+      arial: 'Arial, "Segoe UI", sans-serif',
+    }
+
+    if (preferences.font === 'skin-default') {
+      root.style.removeProperty('--app-font-family')
+    } else {
+      root.style.setProperty('--app-font-family', fontStacks[preferences.font])
+    }
+  }, [preferences.theme, preferences.skin, preferences.font, resolvedTheme])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -136,6 +158,10 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     setPreferences((current) => ({ ...current, skin }))
   }, [])
 
+  const setFont = useCallback((font: FontPreference) => {
+    setPreferences((current) => ({ ...current, font }))
+  }, [])
+
   const resetAppearance = useCallback(() => {
     setPreferences(DEFAULT_PREFERENCES)
   }, [])
@@ -148,16 +174,19 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       userScope,
       setTheme,
       setSkin,
+      setFont,
       setUserScope,
       resetAppearance,
     }),
     [
       preferences.theme,
       preferences.skin,
+      preferences.font,
       resolvedTheme,
       userScope,
       setTheme,
       setSkin,
+      setFont,
       setUserScope,
       resetAppearance,
     ],
