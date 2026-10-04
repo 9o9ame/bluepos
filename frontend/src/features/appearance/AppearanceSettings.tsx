@@ -1,11 +1,20 @@
 import { useState } from 'react'
 import { updateAppearance } from '../../api/auth'
-import { useAppearance, type InterfaceStyle, type ThemePreference } from './AppearanceProvider'
+import { useAppearance, type FontPreference, type InterfaceStyle, type ThemePreference } from './AppearanceProvider'
 
 const THEME_OPTIONS: Array<{ value: ThemePreference; label: string }> = [
   { value: 'system', label: 'System' },
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
+]
+
+const FONT_OPTIONS: Array<{ value: FontPreference; label: string }> = [
+  { value: 'skin-default', label: 'Interface style default' },
+  { value: 'inter', label: 'Inter' },
+  { value: 'roboto-condensed', label: 'Roboto Condensed' },
+  { value: 'segoe-ui', label: 'Segoe UI' },
+  { value: 'tahoma', label: 'Tahoma' },
+  { value: 'arial', label: 'Arial' },
 ]
 
 const SKIN_OPTIONS: Array<{ value: InterfaceStyle; label: string; description: string }> = [
@@ -27,16 +36,16 @@ const SKIN_OPTIONS: Array<{ value: InterfaceStyle; label: string; description: s
 ]
 
 export function AppearanceSettings() {
-  const { theme, skin, setTheme, setSkin, resetAppearance } = useAppearance()
+  const { theme, skin, font, setTheme, setSkin, setFont, resetAppearance } = useAppearance()
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  async function persist(nextTheme: ThemePreference, nextSkin: InterfaceStyle) {
+  async function persist(nextTheme: ThemePreference, nextSkin: InterfaceStyle, nextFont: FontPreference) {
     setSaving(true)
     setSaveError(null)
 
     try {
-      await updateAppearance({ theme: nextTheme, skin: nextSkin })
+      await updateAppearance({ theme: nextTheme, skin: nextSkin, font: nextFont })
     } catch {
       setSaveError('Could not save appearance preference. Your local selection is still active.')
     } finally {
@@ -58,7 +67,7 @@ export function AppearanceSettings() {
                 checked={theme === option.value}
                 onChange={() => {
                   setTheme(option.value)
-                  void persist(option.value, skin)
+                  void persist(option.value, skin, font)
                 }}
               />
               <span>{option.label}</span>
@@ -82,7 +91,7 @@ export function AppearanceSettings() {
                 checked={skin === option.value}
                 onChange={() => {
                   setSkin(option.value)
-                  void persist(theme, option.value)
+                  void persist(theme, option.value, font)
                 }}
               />
               <span className="appearance-skin-title">{option.label}</span>
@@ -90,6 +99,25 @@ export function AppearanceSettings() {
             </label>
           ))}
         </div>
+      </div>
+
+      <div className="appearance-settings-group">
+        <label className="appearance-settings-heading" htmlFor="appearance-font">Font Family</label>
+        <select
+          id="appearance-font"
+          className="desktop-select"
+          value={font}
+          disabled={saving}
+          onChange={(event) => {
+            const nextFont = event.target.value as FontPreference
+            setFont(nextFont)
+            void persist(theme, skin, nextFont)
+          }}
+        >
+          {FONT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
       </div>
 
       {saveError ? <div className="appearance-save-error">{saveError}</div> : null}
@@ -103,7 +131,7 @@ export function AppearanceSettings() {
           disabled={saving}
           onClick={() => {
             resetAppearance()
-            void persist('system', 'classic')
+            void persist('system', 'classic', 'skin-default')
           }}
         >
           Reset to Default
