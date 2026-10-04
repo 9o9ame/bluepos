@@ -750,3 +750,38 @@
   border-radius: 6px;
   box-shadow: inset 0 1px 2px rgba(15, 23, 42, .06);
 }
+
+/* Sales customer quick-add control. Keeps the approved Sales field footprint intact. */
+.sales-reference-to {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px 22px;
+  align-items: stretch;
+}
+
+.sales-reference-to > input {
+  min-width: 0;
+}
+
+.sales-reference-to > button {
+  min-width: 22px;
+  width: 22px;
+  padding: 0;
+}
+
+.sales-reference-to .sales-reference-party-add {
+  display: grid;
+  place-items: center;
+  border-color: #69ad7b;
+  background: linear-gradient(180deg, #eaffee, #a9ddb4);
+  color: #176b32;
+}
+
+.sales-reference-to .sales-reference-party-add:hover {
+  background: linear-gradient(180deg, #f2fff4, #98d6a5);
+}
+
+:root[data-theme='dark'] .sales-reference-to .sales-reference-party-add {
+  border-color: #4f8a61;
+  background: linear-gradient(180deg, #315d3d, #24482f);
+  color: #c7f2d0;
+}
