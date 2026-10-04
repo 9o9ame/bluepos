@@ -1,4 +1,4 @@
-import type { AppearancePreferences, FontPreference, InterfaceStyle, ThemePreference } from '../../types/auth'
+import type { AppearancePreferences, DensityPreference, FontPreference, InterfaceStyle, PrimaryTheme, RadiusPreference, ShadowPreference, ThemePreference } from '../../types/auth'
 import {
   createContext,
   useCallback,
@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 
-export type { FontPreference, InterfaceStyle, ThemePreference } from '../../types/auth'
+export type { DensityPreference, FontPreference, InterfaceStyle, PrimaryTheme, RadiusPreference, ShadowPreference, ThemePreference } from '../../types/auth'
 export type ResolvedTheme = 'light' | 'dark'
 
 type AppearanceContextValue = AppearancePreferences & {
@@ -18,6 +18,11 @@ type AppearanceContextValue = AppearancePreferences & {
   setTheme: (theme: ThemePreference) => void
   setSkin: (skin: InterfaceStyle) => void
   setFont: (font: FontPreference) => void
+  setPrimaryTheme: (primaryTheme: PrimaryTheme) => void
+  setDensity: (density: DensityPreference) => void
+  setRadius: (radius: RadiusPreference) => void
+  setShadow: (shadow: ShadowPreference) => void
+  setAnimations: (animations: boolean) => void
   setUserScope: (userUlid: string | null, serverPreferences?: AppearancePreferences | null) => void
   resetAppearance: () => void
 }
@@ -26,6 +31,11 @@ const DEFAULT_PREFERENCES: AppearancePreferences = {
   theme: 'system',
   skin: 'classic',
   font: 'skin-default',
+  primaryTheme: 'blue',
+  density: 'comfortable',
+  radius: 'medium',
+  shadow: 'soft',
+  animations: true,
 }
 
 const STORAGE_PREFIX = 'bluepos.appearance'
@@ -48,6 +58,11 @@ function isFontPreference(value: unknown): value is FontPreference {
   return value === 'skin-default' || value === 'inter' || value === 'roboto-condensed' || value === 'segoe-ui' || value === 'tahoma' || value === 'arial'
 }
 
+function isPrimaryTheme(value: unknown): value is PrimaryTheme { return ['indigo', 'blue', 'emerald', 'teal', 'purple', 'slate'].includes(String(value)) }
+function isDensity(value: unknown): value is DensityPreference { return value === 'compact' || value === 'comfortable' }
+function isRadius(value: unknown): value is RadiusPreference { return value === 'small' || value === 'medium' || value === 'large' }
+function isShadow(value: unknown): value is ShadowPreference { return value === 'none' || value === 'soft' || value === 'normal' }
+
 function readStoredPreferences(userScope: string | null): AppearancePreferences {
   if (typeof window === 'undefined') {
     return DEFAULT_PREFERENCES
@@ -63,6 +78,11 @@ function readStoredPreferences(userScope: string | null): AppearancePreferences 
       theme: isThemePreference(parsed.theme) ? parsed.theme : DEFAULT_PREFERENCES.theme,
       skin: isInterfaceStyle(parsed.skin) ? parsed.skin : DEFAULT_PREFERENCES.skin,
       font: isFontPreference(parsed.font) ? parsed.font : DEFAULT_PREFERENCES.font,
+      primaryTheme: isPrimaryTheme(parsed.primaryTheme) ? parsed.primaryTheme : DEFAULT_PREFERENCES.primaryTheme,
+      density: isDensity(parsed.density) ? parsed.density : DEFAULT_PREFERENCES.density,
+      radius: isRadius(parsed.radius) ? parsed.radius : DEFAULT_PREFERENCES.radius,
+      shadow: isShadow(parsed.shadow) ? parsed.shadow : DEFAULT_PREFERENCES.shadow,
+      animations: typeof parsed.animations === 'boolean' ? parsed.animations : DEFAULT_PREFERENCES.animations,
     }
   } catch {
     return DEFAULT_PREFERENCES
@@ -113,6 +133,11 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     root.dataset.skin = preferences.skin
     root.style.colorScheme = resolvedTheme
     root.dataset.font = preferences.font
+    root.dataset.primaryTheme = preferences.primaryTheme
+    root.dataset.density = preferences.density
+    root.dataset.radius = preferences.radius
+    root.dataset.shadow = preferences.shadow
+    root.dataset.animations = preferences.animations ? 'on' : 'off'
 
     const fontStacks: Record<Exclude<FontPreference, 'skin-default'>, string> = {
       inter: 'Inter, "Segoe UI", Arial, sans-serif',
@@ -127,7 +152,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     } else {
       root.style.setProperty('--app-font-family', fontStacks[preferences.font])
     }
-  }, [preferences.theme, preferences.skin, preferences.font, resolvedTheme])
+  }, [preferences, resolvedTheme])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -162,6 +187,12 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     setPreferences((current) => ({ ...current, font }))
   }, [])
 
+  const setPrimaryTheme = useCallback((primaryTheme: PrimaryTheme) => setPreferences((current) => ({ ...current, primaryTheme })), [])
+  const setDensity = useCallback((density: DensityPreference) => setPreferences((current) => ({ ...current, density })), [])
+  const setRadius = useCallback((radius: RadiusPreference) => setPreferences((current) => ({ ...current, radius })), [])
+  const setShadow = useCallback((shadow: ShadowPreference) => setPreferences((current) => ({ ...current, shadow })), [])
+  const setAnimations = useCallback((animations: boolean) => setPreferences((current) => ({ ...current, animations })), [])
+
   const resetAppearance = useCallback(() => {
     setPreferences(DEFAULT_PREFERENCES)
   }, [])
@@ -171,11 +202,21 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       theme: preferences.theme,
       skin: preferences.skin,
       font: preferences.font,
+      primaryTheme: preferences.primaryTheme,
+      density: preferences.density,
+      radius: preferences.radius,
+      shadow: preferences.shadow,
+      animations: preferences.animations,
       resolvedTheme,
       userScope,
       setTheme,
       setSkin,
       setFont,
+      setPrimaryTheme,
+      setDensity,
+      setRadius,
+      setShadow,
+      setAnimations,
       setUserScope,
       resetAppearance,
     }),
@@ -183,11 +224,21 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
       preferences.theme,
       preferences.skin,
       preferences.font,
+      preferences.primaryTheme,
+      preferences.density,
+      preferences.radius,
+      preferences.shadow,
+      preferences.animations,
       resolvedTheme,
       userScope,
       setTheme,
       setSkin,
       setFont,
+      setPrimaryTheme,
+      setDensity,
+      setRadius,
+      setShadow,
+      setAnimations,
       setUserScope,
       resetAppearance,
     ],
