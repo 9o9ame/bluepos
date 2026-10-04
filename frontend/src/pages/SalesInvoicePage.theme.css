@@ -844,94 +844,149 @@
 }
 
 
-/* Sales customer selector — match Define Products control without changing Sales geometry. */
+/* Sales customer selector — wide party grid like the reference POS picker. */
 .sales-customer-dropdown-shutter {
   position: absolute;
-  z-index: 55;
-  left: 7px;
-  top: 100%;
-  width: 408px;
-  max-width: calc(100vw - 24px);
+  z-index: 80;
+  left: 0;
+  top: calc(100% + 2px);
+  width: min(920px, calc(100vw - 48px));
   max-height: 0;
   opacity: 0;
   overflow: hidden;
   visibility: hidden;
   pointer-events: none;
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   transform-origin: top;
-  transition:
-    max-height .28s ease,
-    opacity .18s ease,
-    transform .28s ease,
-    visibility 0s linear .28s;
+  transition: max-height .28s ease, opacity .16s ease, transform .28s ease, visibility 0s linear .28s;
 }
 
 .sales-customer-dropdown-shutter.is-open {
-  max-height: 214px;
+  max-height: 286px;
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
   transform: translateY(0);
-  transition:
-    max-height .28s ease,
-    opacity .18s ease,
-    transform .28s ease,
-    visibility 0s;
+  transition: max-height .28s ease, opacity .16s ease, transform .28s ease, visibility 0s;
 }
 
-.sales-pos-customer-results {
-  position: static;
-  display: block;
+.sales-pos-customer-grid {
   width: 100%;
-  max-height: 210px;
-  margin: 0;
-  padding: 0;
-  overflow-y: auto;
-  list-style: none;
-  border: 1px solid #7d9db6;
-  border-radius: 1px;
+  border: 1px solid #7894aa;
   background: #fff;
   color: #173f60;
-  box-shadow: 0 4px 10px rgba(32, 63, 88, .18);
-}
-
-.sales-pos-customer-results li {
-  margin: 0;
-  padding: 0;
-}
-
-.sales-pos-customer-results button {
-  display: flex;
-  gap: 6px;
-  width: 100%;
-  min-height: 22px;
-  padding: 3px 7px;
-  border: 0;
-  border-radius: 0;
-  background: #fff;
-  color: #173f60;
-  text-align: left;
+  box-shadow: 0 5px 12px rgba(31, 58, 78, .22);
   font-size: 12px;
-  line-height: 16px;
+}
+
+.sales-pos-customer-grid-head,
+.sales-pos-customer-grid-row {
+  display: grid !important;
+  grid-template-columns: 105px minmax(220px, 1.25fr) minmax(260px, 2fr) 130px;
+  align-items: center;
+}
+
+.sales-pos-customer-grid-head {
+  min-height: 25px;
+  border-bottom: 1px solid #8fa6b7;
+  background: linear-gradient(180deg, #f9fbfc, #dce6ed);
+  color: #263e50;
+  font-weight: 700;
+  text-align: center;
+}
+
+.sales-pos-customer-grid-head > span {
+  padding: 4px 7px;
+  border-right: 1px solid #aabac6;
+}
+
+.sales-pos-customer-grid-body {
+  max-height: 225px;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.sales-pos-customer-grid-row {
+  width: 100% !important;
+  min-height: 24px !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #d1dce4 !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+  color: #173f60 !important;
+  box-shadow: none !important;
+  font: inherit !important;
+  line-height: 1.25 !important;
+  text-align: left !important;
   cursor: pointer;
 }
 
-.sales-pos-customer-results button:hover,
-.sales-pos-customer-results button:focus-visible {
-  background: #176dcc;
-  color: #fff;
-  outline: none;
+.sales-pos-customer-grid-row > span,
+.sales-pos-customer-grid-row > strong {
+  display: block;
+  min-width: 0;
+  padding: 4px 7px;
+  overflow: hidden;
+  border-right: 1px solid #d8e1e7;
+  color: inherit;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.sales-pos-customer-results span {
-  min-width: 62px;
-  color: #55748d;
-  font-variant-numeric: tabular-nums;
+.sales-pos-customer-grid-row > strong {
+  font-weight: 600;
 }
 
-.sales-pos-customer-results button:hover span,
-.sales-pos-customer-results button:focus-visible span {
-  color: #fff;
+.sales-pos-customer-grid-row:hover,
+.sales-pos-customer-grid-row:focus-visible {
+  background: #2d72b5 !important;
+  color: #fff !important;
+  outline: none !important;
+}
+
+.sales-pos-customer-grid-foot {
+  min-height: 23px;
+  padding: 4px 8px;
+  border-top: 1px solid #8fa6b7;
+  background: linear-gradient(180deg, #e8edf1, #c9d2d9);
+  color: #263e50;
+  font-weight: 700;
+  text-align: center;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid,
+:root[data-theme='dark'] .sales-pos-customer-grid-body {
+  border-color: #60798c;
+  background: #202a32;
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-head,
+:root[data-theme='dark'] .sales-pos-customer-grid-foot {
+  border-color: #60798c;
+  background: linear-gradient(180deg, #354652, #283640);
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-row {
+  border-color: #40515e !important;
+  background: #202a32 !important;
+  color: #edf2f6 !important;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-row:hover,
+:root[data-theme='dark'] .sales-pos-customer-grid-row:focus-visible {
+  background: #176dcc !important;
+  color: #fff !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sales-customer-dropdown-shutter {
+    transition: none;
+  }
 }
 
 /* Define Products-style blue dropdown button. */
