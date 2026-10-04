@@ -64,8 +64,8 @@ export function platformResendMfa(challengeUlid: string): Promise<void> {
   })
 }
 
-export function fetchPlatformMe(): Promise<PlatformUser> {
-  return apiFetch<PlatformUser>('/api/platform/auth/me')
+export function fetchPlatformMe(signal?: AbortSignal): Promise<PlatformUser> {
+  return apiFetch<PlatformUser>('/api/platform/auth/me', { signal })
 }
 
 export function platformLogin(input: PlatformLoginInput): Promise<PlatformUser> {

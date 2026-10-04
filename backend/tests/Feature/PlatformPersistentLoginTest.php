@@ -12,6 +12,21 @@ class PlatformPersistentLoginTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_mfa_session_survives_a_new_request_using_only_the_session_cookie(): void
+    {
+        config(['session.driver' => 'database']);
+        $user = $this->createPlatformAdmin('persist-cookie');
+        $this->signInPlatformUser($user);
+        $sessionId = session()->getId();
+
+        Auth::forgetGuards();
+        app('session')->forgetDrivers();
+        $this->withCredentials()->withCookie(config('session.cookie'), $sessionId)
+            ->getJson('/api/platform/auth/me')
+            ->assertOk()->assertJsonPath('email', $user->email);
+        $this->assertNotNull(session(EnsurePlatformContext::MFA_AT));
+    }
+
     public function test_email_password_without_code_keeps_mfa_and_defaults_to_remember_after_verification(): void
     {
         $user = $this->createPlatformAdmin('persist-default');
