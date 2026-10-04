@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { updateAppearance } from '../../api/auth'
 import {
   useAppearance,
@@ -32,24 +31,20 @@ const PRIMARY_OPTIONS: Array<{ value: PrimaryTheme; label: string }> = [
 export function AppearanceSettings() {
   const appearance = useAppearance()
   const { theme, skin, font, primaryTheme, density, radius, shadow, animations } = appearance
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
-
   async function persist(overrides: Partial<Parameters<typeof updateAppearance>[0]> = {}) {
-    setSaving(true); setSaveError(null)
     try {
       await updateAppearance({ theme, skin, font, primaryTheme, density, radius, shadow, animations, ...overrides })
     } catch {
-      setSaveError('Could not save appearance preference. Your local selection is still active.')
-    } finally { setSaving(false) }
+      // Local appearance remains active; persistence can retry on the next change.
+    }
   }
 
   function choices<T extends string>(label: string, value: T, options: Array<{ value: T; label: string }>, select: (next: T) => void, key: string) {
     return <div className="appearance-settings-group">
       <div className="appearance-settings-heading">{label}</div>
       <div className="appearance-option-row" role="radiogroup" aria-label={label}>
-        {options.map((option) => <label key={option.value} className="appearance-radio">
-          <input type="radio" name={`appearance-${key}`} value={option.value} checked={value === option.value}
+        {options.map((option) => <label key={option.value} className={`appearance-choice${value === option.value ? ' is-selected' : ''}`}>
+          <input className="appearance-choice-input" type="radio" name={`appearance-${key}`} value={option.value} checked={value === option.value}
             onChange={() => { select(option.value); void persist({ [key]: option.value }) }} />
           <span>{option.label}</span>
         </label>)}
@@ -66,8 +61,8 @@ export function AppearanceSettings() {
     <div className="appearance-settings-group">
       <div className="appearance-settings-heading">UI Animations</div>
       <div className="appearance-option-row">
-        <label className="appearance-radio"><input type="radio" name="appearance-animations" checked={animations} onChange={() => { appearance.setAnimations(true); void persist({ animations: true }) }} /><span>On</span></label>
-        <label className="appearance-radio"><input type="radio" name="appearance-animations" checked={!animations} onChange={() => { appearance.setAnimations(false); void persist({ animations: false }) }} /><span>Off</span></label>
+        <label className={`appearance-choice${animations ? ' is-selected' : ''}`}><input className="appearance-choice-input" type="radio" name="appearance-animations" checked={animations} onChange={() => { appearance.setAnimations(true); void persist({ animations: true }) }} /><span>On</span></label>
+        <label className={`appearance-choice${!animations ? ' is-selected' : ''}`}><input className="appearance-choice-input" type="radio" name="appearance-animations" checked={!animations} onChange={() => { appearance.setAnimations(false); void persist({ animations: false }) }} /><span>Off</span></label>
       </div>
     </div>
     <div className="appearance-settings-group">
@@ -82,14 +77,12 @@ export function AppearanceSettings() {
     </div>
     <div className="appearance-settings-group">
       <label className="appearance-settings-heading" htmlFor="appearance-font">Font Family</label>
-      <select id="appearance-font" className="desktop-select" value={font} disabled={saving}
+      <select id="appearance-font" className="desktop-select" value={font}
         onChange={(event) => { const next = event.target.value as FontPreference; appearance.setFont(next); void persist({ font: next }) }}>
         {FONT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>
     </div>
-    {saveError ? <div className="appearance-save-error">{saveError}</div> : null}
-    <div className="appearance-settings-actions"><span className="appearance-save-state" aria-live="polite">{saving ? 'Saving…' : ''}</span>
-      <button type="button" className="desktop-btn" disabled={saving} onClick={() => {
+    <div className="appearance-settings-actions"><button type="button" className="desktop-btn" onClick={() => {
         appearance.resetAppearance()
         void persist({ theme: 'system', skin: 'classic', font: 'skin-default', primaryTheme: 'blue', density: 'comfortable', radius: 'medium', shadow: 'soft', animations: true })
       }}>Reset to Default</button>
