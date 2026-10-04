@@ -107,6 +107,8 @@ export function SalesInvoicePage() {
   const cart = useSaleCart()
 
   const [productQuery, setProductQuery] = useState('')
+  const [barcodeQuery, setBarcodeQuery] = useState('')
+  const [activeLineKey, setActiveLineKey] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [savedSale, setSavedSale] = useState<Sale | null>(null)
 
@@ -211,6 +213,7 @@ export function SalesInvoicePage() {
 
   const idempotencyKeyRef = useRef(newSaleKey())
   const receivedRef = useRef<HTMLInputElement | null>(null)
+  const productSearchRef = useRef<HTMLInputElement | null>(null)
 
   const saveMutation = useMutation({
     mutationFn: async () =>
@@ -309,13 +312,15 @@ export function SalesInvoicePage() {
     setSavedSale(fresh)
   }
 
-  async function addProductFromEntry(productUlid: string) {
+  async function addProductFromEntry(
+    productUlid: string,
+    scannedValue = '',
+  ) {
     try {
       const [product, stock] = await Promise.all([
         fetchProduct(productUlid),
         fetchProductStock(productUlid),
       ])
-      const scannedValue = productQuery.trim()
       const scannedBarcode =
         scannedValue === ''
           ? null
@@ -323,13 +328,18 @@ export function SalesInvoicePage() {
               (row) => row.is_active && row.barcode === scannedValue,
             ) ?? null
 
-      cart.addProduct(
+      const lineKey = cart.addProduct(
         product,
         '1.000000',
         scannedBarcode,
         stock.active_warehouse.quantity,
       )
+
+      if (!lineKey) return
+
+      setActiveLineKey(lineKey)
       setProductQuery('')
+      setBarcodeQuery('')
       setSaveError(null)
     } catch (err) {
       setSaveError(
@@ -339,6 +349,86 @@ export function SalesInvoicePage() {
       )
     }
   }
+
+  async function addProductFromBarcode() {
+    const barcode = barcodeQuery.trim()
+    if (!barcode) return
+
+    try {
+      const page = await fetchProducts(
+        { q: barcode, per_page: 20, page: 1 },
+        { busy: 'none' },
+      )
+      const match = page.data.find((product) =>
+        product.barcodes?.some(
+          (row) => row.is_active && row.barcode === barcode,
+        ),
+      )
+
+      if (!match) {
+        setSaveError(`No product found for barcode ${barcode}.`)
+        return
+      }
+
+      await addProductFromEntry(match.ulid, barcode)
+    } catch (err) {
+      setSaveError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'Unable to resolve the scanned barcode.',
+      )
+    }
+  }
+
+  function finishActiveLine(lineKey: string) {
+    if (activeLineKey !== lineKey) return
+
+    setActiveLineKey(null)
+    window.setTimeout(() => {
+      productSearchRef.current?.focus()
+      productSearchRef.current?.select()
+    }, 0)
+  }
+
+  function handleActiveFieldEnter(
+    event: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>,
+    lineKey: string,
+  ) {
+    if (event.key !== 'Enter') return
+
+    event.preventDefault()
+    const row = event.currentTarget.closest('tr')
+    if (!row) return
+
+    const fields = Array.from(
+      row.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+        '[data-sale-editable="true"]:not(:disabled)',
+      ),
+    )
+    const currentIndex = fields.indexOf(event.currentTarget)
+    const next = fields[currentIndex + 1]
+
+    if (next) {
+      next.focus()
+      if (next instanceof HTMLInputElement) next.select()
+      return
+    }
+
+    finishActiveLine(lineKey)
+  }
+
+  useEffect(() => {
+    if (!activeLineKey) return
+
+    window.setTimeout(() => {
+      const quantity = document.querySelector<HTMLInputElement>(
+        `[data-sale-line="${activeLineKey}"] [data-sale-field="sales_qty"]`,
+      )
+      quantity?.focus()
+      quantity?.select()
+    }, 0)
+  }, [activeLineKey, cart.lines])
+
 
   function parkCurrentCart() {
     if (!cart.hasPaidLines) return
@@ -400,6 +490,8 @@ export function SalesInvoicePage() {
     setReceived('')
     setPaymentReference('')
     setProductQuery('')
+    setBarcodeQuery('')
+    setActiveLineKey(null)
   }
 
   function setReceivedAmount(value: string) {
@@ -832,82 +924,7 @@ export function SalesInvoicePage() {
 
               </fieldset>
 
-              <fieldset className="sales-reference-amounts">
-                <legend>Amounts</legend>
 
-                <div className="sales-reference-amounts-checks">
-                  <label>
-                    <input type="checkbox" />
-                    {' '}Payment Due
-                  </label>
-
-                  <label>
-                    <input
-                      type="checkbox"
-                      disabled={!cart.hasPaidLines}
-                      checked={false}
-                      onChange={() => parkCurrentCart()}
-                    />
-                    {' '}On Hold
-                  </label>
-                </div>
-
-                <div className="sales-reference-amounts-grid">
-                  <span />
-
-                  <strong className="is-green">
-                    {cart.preview.grandTotal}
-                  </strong>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setReceived(cart.preview.grandTotal)
-                    }
-                    disabled={!cart.hasPaidLines}
-                  >
-                    Get
-                  </button>
-
-                  <label>Disc (%)</label>
-                  <label>Sales Tax (%)</label>
-
-                  <input
-                    value={
-                      Number.parseFloat(cart.preview.subtotal) > 0
-                        ? (
-                            (Number.parseFloat(cart.preview.discount) /
-                              Number.parseFloat(cart.preview.subtotal)) *
-                            100
-                          ).toFixed(2)
-                        : '0.00'
-                    }
-                    readOnly
-                    title="Effective discount from sale lines"
-                  />
-
-                  <input
-                    value={
-                      Number.parseFloat(cart.preview.qualifyingSubtotal) > 0
-                        ? (
-                            (Number.parseFloat(cart.preview.tax) /
-                              Number.parseFloat(
-                                cart.preview.qualifyingSubtotal,
-                              )) *
-                            100
-                          ).toFixed(2)
-                        : '0.00'
-                    }
-                    readOnly
-                    title="Effective tax rate from product tax settings"
-                  />
-
-                  <input
-                    value={cart.preview.subtotal}
-                    readOnly
-                  />
-                </div>
-              </fieldset>
 
               <div
                 className="sales-reference-meta-spacer"
@@ -963,46 +980,18 @@ export function SalesInvoicePage() {
               <div className="sales-reference-product-entry-wrap">
                 <input
                   className="sales-reference-product-entry"
-                  value={productQuery}
-                  placeholder="Type product name or number"
-                  aria-label="Product entry"
-                  onChange={(e) =>
-                    setProductQuery(e.target.value)
-                  }
+                  value={barcodeQuery}
+                  placeholder="Scan barcode"
+                  aria-label="Barcode scanner input"
+                  autoComplete="off"
+                  onChange={(e) => setBarcodeQuery(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key !== 'Enter') return
-
-                    const first =
-                      productsQuery.data?.data?.[0]
-
-                    if (first) {
-                      void addProductFromEntry(first.ulid)
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      void addProductFromBarcode()
                     }
                   }}
                 />
-
-                {productQuery.trim().length > 0 &&
-                productsQuery.data?.data?.length ? (
-                  <ul className="sales-pos-product-results sales-pos-product-results-top">
-                    {productsQuery.data.data
-                      .slice(0, 8)
-                      .map((row) => (
-                        <li key={row.ulid}>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              void addProductFromEntry(
-                                row.ulid,
-                              )
-                            }
-                          >
-                            <span>{row.product_number}</span>{' '}
-                            {row.name}
-                          </button>
-                        </li>
-                      ))}
-                  </ul>
-                ) : null}
               </div>
 
               <div className="sales-reference-f1">
@@ -1119,112 +1108,193 @@ export function SalesInvoicePage() {
                 </thead>
 
                 <tbody>
-                  <tr className="is-entry-row">
-                    {columnLayout.visibleColumns.map((col) => {
-                      if (col.key === 'selector') {
-                        return (
-                          <td
-                            key={col.key}
-                            className="sales-reference-row-arrow"
+                  {activeLineKey
+                    ? cart.lines
+                        .filter((line) => line.line_key === activeLineKey)
+                        .map((line) => (
+                          <tr
+                            key={line.line_key}
+                            className="is-entry-row sales-pos-line is-active-entry"
+                            data-sale-line={line.line_key}
                           >
-                            ›
-                          </td>
-                        )
-                      }
+                            {columnLayout.visibleColumns.map((col) => {
+                              if (col.key === 'selector') {
+                                return <td key={col.key} className="sales-reference-row-arrow">›</td>
+                              }
 
-                      if (col.key === 'product') {
-                        return (
-                          <td
-                            key={col.key}
-                            className="sales-reference-yellow"
-                          >
-                            <input
-                              className="sales-pos-product-entry"
-                              value={productQuery}
-                              placeholder="Type product name or number"
-                              onChange={(e) =>
-                                setProductQuery(
-                                  e.target.value,
+                              if (col.key === 'product') {
+                                return (
+                                  <td key={col.key} className="sales-reference-yellow">
+                                    <strong>{line.product_number} — {line.product_name}</strong>
+                                  </td>
                                 )
                               }
-                              onKeyDown={(e) => {
-                                if (e.key !== 'Enter') return
 
-                                const first =
-                                  productsQuery.data?.data?.[0]
-
-                                if (first) {
-                                  addProductFromEntry(
-                                    first.ulid,
-                                  )
-                                }
-                              }}
-                            />
-
-                          </td>
-                        )
-                      }
-
-                      if (col.key === 'delete') {
-                        return (
-                          <td
-                            key={col.key}
-                            className="sales-reference-delete-cell"
-                          >
-                            <button
-                              type="button"
-                              aria-label="Delete entry row"
-                              onClick={() =>
-                                setProductQuery('')
+                              if (col.key === 'sales_qty') {
+                                return (
+                                  <td key={col.key}>
+                                    <input
+                                      className="sales-pos-line-qty"
+                                      data-sale-editable="true"
+                                      data-sale-field="sales_qty"
+                                      value={line.quantity}
+                                      onChange={(e) => cart.setQuantity(line.line_key, e.target.value)}
+                                      onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)}
+                                    />
+                                  </td>
+                                )
                               }
-                            >
-                              <XCircle size={16} />
-                            </button>
-                          </td>
-                        )
-                      }
 
-                      return <td key={col.key} />
-                    })}
-                  </tr>
+                              if (col.key === 'delete') {
+                                return (
+                                  <td key={col.key} className="sales-reference-delete-cell">
+                                    <button type="button" aria-label="Delete entry row" onClick={() => {
+                                      cart.removeLine(line.line_key)
+                                      setActiveLineKey(null)
+                                      window.setTimeout(() => productSearchRef.current?.focus(), 0)
+                                    }}>
+                                      <XCircle size={16} />
+                                    </button>
+                                  </td>
+                                )
+                              }
 
-                  {cart.lines.map((line) => (
+                              const linePreview = cart.linePreview(line)
+
+                              if (col.key === 'in_stock') {
+                                const available = cart.availableStock(line)
+                                return <td key={col.key} className="sales-pos-line-pending">{available === null ? '—' : Number.parseFloat(available).toFixed(3)}</td>
+                              }
+
+                              if (col.key === 'price') {
+                                return <td key={col.key} className="sales-pos-line-pending">{Number.parseFloat(line.unit_price ?? '0').toFixed(2)}</td>
+                              }
+
+                              if (col.key === 'amt') {
+                                return <td key={col.key} className="sales-pos-line-pending">{linePreview.grossAmount}</td>
+                              }
+
+                              if (col.key === 'disc_pct') {
+                                return (
+                                  <td key={col.key}>
+                                    <input className="sales-pos-line-qty" data-sale-editable="true" value={line.discount_percent ?? '0'} inputMode="decimal"
+                                      onChange={(e) => cart.setDiscountPercent(line.line_key, e.target.value)}
+                                      onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)} />
+                                  </td>
+                                )
+                              }
+
+                              if (col.key === 'disc_rs') {
+                                return (
+                                  <td key={col.key}>
+                                    <input className="sales-pos-line-qty" data-sale-editable="true" value={line.discount_amount ?? '0'} inputMode="decimal"
+                                      onChange={(e) => cart.setDiscountAmount(line.line_key, e.target.value)}
+                                      onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)} />
+                                  </td>
+                                )
+                              }
+
+                              if (col.key === 'net_amt') {
+                                return <td key={col.key} className="sales-pos-line-pending">{linePreview.netAmount}</td>
+                              }
+
+                              if (col.key === 'barcode') return <td key={col.key}>{line.barcode ?? ''}</td>
+
+                              if (col.key === 'uom') {
+                                return (
+                                  <td key={col.key}>
+                                    {(line.available_units?.length ?? 0) > 0 ? (
+                                      <select
+                                        data-sale-editable="true"
+                                        value={line.unit_ulid ?? ''}
+                                        onChange={(e) => cart.setLineUnit(line.line_key, e.target.value)}
+                                        onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)}
+                                        aria-label={`Unit for ${line.product_name}`}
+                                      >
+                                        {(line.available_units ?? []).map((unit) => (
+                                          <option key={unit.unit_ulid} value={unit.unit_ulid}>{unit.code}</option>
+                                        ))}
+                                      </select>
+                                    ) : line.unit_code ?? ''}
+                                  </td>
+                                )
+                              }
+
+                              if (col.key === 's_tax_pct') {
+                                return <td key={col.key} className="sales-pos-line-pending">{linePreview.taxPercent}</td>
+                              }
+
+                              return <td key={col.key} />
+                            })}
+                          </tr>
+                        ))
+                    : (
+                      <tr className="is-entry-row">
+                        {columnLayout.visibleColumns.map((col) => {
+                          if (col.key === 'selector') {
+                            return <td key={col.key} className="sales-reference-row-arrow">›</td>
+                          }
+
+                          if (col.key === 'product') {
+                            return (
+                              <td key={col.key} className="sales-reference-yellow sales-product-search-cell">
+                                <input
+                                  ref={productSearchRef}
+                                  className="sales-pos-product-entry"
+                                  value={productQuery}
+                                  placeholder="Search product name or number"
+                                  autoComplete="off"
+                                  onChange={(e) => setProductQuery(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key !== 'Enter') return
+                                    const first = productsQuery.data?.data?.[0]
+                                    if (first) {
+                                      e.preventDefault()
+                                      void addProductFromEntry(first.ulid)
+                                    }
+                                  }}
+                                />
+                                {productQuery.trim().length > 0 && productsQuery.data?.data?.length ? (
+                                  <ul className="sales-pos-product-results sales-pos-product-results-grid">
+                                    {productsQuery.data.data.slice(0, 8).map((row) => (
+                                      <li key={row.ulid}>
+                                        <button type="button" onClick={() => void addProductFromEntry(row.ulid)}>
+                                          <span>{row.product_number}</span> {row.name}
+                                        </button>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                ) : null}
+                              </td>
+                            )
+                          }
+
+                          if (col.key === 'delete') {
+                            return <td key={col.key} className="sales-reference-delete-cell"><button type="button" aria-label="Clear product search" onClick={() => setProductQuery('')}><XCircle size={16} /></button></td>
+                          }
+
+                          return <td key={col.key} />
+                        })}
+                      </tr>
+                    )}
+
+                  {cart.lines
+                    .filter((line) => line.line_key !== activeLineKey)
+                    .map((line) => (
                     <tr
                       key={line.line_key}
-                      className={
-                        line.line_kind === 'sale'
-                          ? 'sales-pos-line'
-                          : 'sales-pos-line is-free'
-                      }
+                      className={line.line_kind === 'sale' ? 'sales-pos-line' : 'sales-pos-line is-free'}
                     >
                       {columnLayout.visibleColumns.map((col) => {
                         if (col.key === 'selector') {
-                          return (
-                            <td
-                              key={col.key}
-                              className="sales-reference-row-arrow"
-                            >
-                              ›
-                            </td>
-                          )
+                          return <td key={col.key} className="sales-reference-row-arrow">›</td>
                         }
 
                         if (col.key === 'product') {
                           return (
                             <td key={col.key}>
-                              <span className="sales-pos-line-product">
-                                {line.product_number} —{' '}
-                                {line.product_name}
-                              </span>
-
-                              {line.line_kind !== 'sale' ? (
-                                <span className="sales-pos-line-badge">
-                                  {line.line_kind ===
-                                  'free_scheme'
-                                    ? 'Free scheme'
-                                    : 'Free packaging'}
-                                </span>
-                              ) : null}
+                              <span className="sales-pos-line-product">{line.product_number} — {line.product_name}</span>
+                              {line.line_kind !== 'sale' ? <span className="sales-pos-line-badge">{line.line_kind === 'free_scheme' ? 'Free scheme' : 'Free packaging'}</span> : null}
                             </td>
                           )
                         }
@@ -1232,176 +1302,50 @@ export function SalesInvoicePage() {
                         if (col.key === 'sales_qty') {
                           return (
                             <td key={col.key}>
-                              <input
-                                className="sales-pos-line-qty"
-                                value={line.quantity}
-                                disabled={
-                                  line.line_kind !== 'sale'
-                                }
-                                onChange={(e) => {
-                                  if (
-                                    line.line_kind === 'sale'
-                                  ) {
-                                    cart.setQuantity(
-                                      line.line_key,
-                                      e.target.value,
-                                    )
-                                  }
-                                }}
-                              />
+                              <input className="sales-pos-line-qty" value={line.quantity} disabled={line.line_kind !== 'sale'}
+                                onChange={(e) => { if (line.line_kind === 'sale') cart.setQuantity(line.line_key, e.target.value) }} />
                             </td>
                           )
                         }
 
                         if (col.key === 'delete') {
-                          return (
-                            <td
-                              key={col.key}
-                              className="sales-reference-delete-cell"
-                            >
-                              <button
-                                type="button"
-                                aria-label="Delete row"
-                                onClick={() =>
-                                  cart.removeLine(line.line_key)
-                                }
-                              >
-                                <XCircle size={16} />
-                              </button>
-                            </td>
-                          )
+                          return <td key={col.key} className="sales-reference-delete-cell"><button type="button" aria-label="Delete row" onClick={() => cart.removeLine(line.line_key)}><XCircle size={16} /></button></td>
                         }
 
                         const linePreview = cart.linePreview(line)
 
                         if (col.key === 'in_stock') {
                           const available = cart.availableStock(line)
-
-                          return (
-                            <td
-                              key={col.key}
-                              className="sales-pos-line-pending"
-                              title={
-                                line.line_kind === 'sale'
-                                  ? `Current ${session?.warehouse?.code ?? 'active warehouse'} stock in selected unit`
-                                  : undefined
-                              }
-                            >
-                              {available === null
-                                ? '—'
-                                : Number.parseFloat(available).toFixed(3)}
-                            </td>
-                          )
+                          return <td key={col.key} className="sales-pos-line-pending">{available === null ? '—' : Number.parseFloat(available).toFixed(3)}</td>
                         }
 
-                        if (col.key === 'price') {
-                          return (
-                            <td
-                              key={col.key}
-                              className="sales-pos-line-pending"
-                              title="Server validates the final price on Save"
-                            >
-                              {line.line_kind === 'sale'
-                                ? Number.parseFloat(line.unit_price ?? '0').toFixed(2)
-                                : '0.00'}
-                            </td>
-                          )
-                        }
-
-                        if (col.key === 'amt') {
-                          return (
-                            <td key={col.key} className="sales-pos-line-pending">
-                              {linePreview.grossAmount}
-                            </td>
-                          )
-                        }
+                        if (col.key === 'price') return <td key={col.key} className="sales-pos-line-pending">{line.line_kind === 'sale' ? Number.parseFloat(line.unit_price ?? '0').toFixed(2) : '0.00'}</td>
+                        if (col.key === 'amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.grossAmount}</td>
 
                         if (col.key === 'disc_pct') {
-                          return (
-                            <td key={col.key}>
-                              <input
-                                className="sales-pos-line-qty"
-                                value={line.discount_percent ?? '0'}
-                                disabled={line.line_kind !== 'sale'}
-                                inputMode="decimal"
-                                onChange={(e) =>
-                                  cart.setDiscountPercent(
-                                    line.line_key,
-                                    e.target.value,
-                                  )
-                                }
-                              />
-                            </td>
-                          )
+                          return <td key={col.key}><input className="sales-pos-line-qty" value={line.discount_percent ?? '0'} disabled={line.line_kind !== 'sale'} inputMode="decimal" onChange={(e) => cart.setDiscountPercent(line.line_key, e.target.value)} /></td>
                         }
 
                         if (col.key === 'disc_rs') {
-                          return (
-                            <td key={col.key}>
-                              <input
-                                className="sales-pos-line-qty"
-                                value={line.discount_amount ?? '0'}
-                                disabled={line.line_kind !== 'sale'}
-                                inputMode="decimal"
-                                onChange={(e) =>
-                                  cart.setDiscountAmount(
-                                    line.line_key,
-                                    e.target.value,
-                                  )
-                                }
-                              />
-                            </td>
-                          )
+                          return <td key={col.key}><input className="sales-pos-line-qty" value={line.discount_amount ?? '0'} disabled={line.line_kind !== 'sale'} inputMode="decimal" onChange={(e) => cart.setDiscountAmount(line.line_key, e.target.value)} /></td>
                         }
 
-                        if (col.key === 'net_amt') {
-                          return (
-                            <td key={col.key} className="sales-pos-line-pending">
-                              {linePreview.netAmount}
-                            </td>
-                          )
-                        }
-
-                        if (col.key === 'barcode') {
-                          return <td key={col.key}>{line.barcode ?? ''}</td>
-                        }
+                        if (col.key === 'net_amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.netAmount}</td>
+                        if (col.key === 'barcode') return <td key={col.key}>{line.barcode ?? ''}</td>
 
                         if (col.key === 'uom') {
                           return (
                             <td key={col.key}>
-                              {line.line_kind === 'sale' &&
-                              (line.available_units?.length ?? 0) > 0 ? (
-                                <select
-                                  value={line.unit_ulid ?? ''}
-                                  onChange={(e) =>
-                                    cart.setLineUnit(
-                                      line.line_key,
-                                      e.target.value,
-                                    )
-                                  }
-                                  aria-label={`Unit for ${line.product_name}`}
-                                >
-                                  {(line.available_units ?? []).map((unit) => (
-                                    <option key={unit.unit_ulid} value={unit.unit_ulid}>
-                                      {unit.code}
-                                    </option>
-                                  ))}
+                              {line.line_kind === 'sale' && (line.available_units?.length ?? 0) > 0 ? (
+                                <select value={line.unit_ulid ?? ''} onChange={(e) => cart.setLineUnit(line.line_key, e.target.value)} aria-label={`Unit for ${line.product_name}`}>
+                                  {(line.available_units ?? []).map((unit) => <option key={unit.unit_ulid} value={unit.unit_ulid}>{unit.code}</option>)}
                                 </select>
-                              ) : (
-                                line.unit_code ?? ''
-                              )}
+                              ) : line.unit_code ?? ''}
                             </td>
                           )
                         }
 
-                        if (col.key === 's_tax_pct') {
-                          return (
-                            <td key={col.key} className="sales-pos-line-pending">
-                              {linePreview.taxPercent}
-                            </td>
-                          )
-                        }
-
+                        if (col.key === 's_tax_pct') return <td key={col.key} className="sales-pos-line-pending">{linePreview.taxPercent}</td>
                         return <td key={col.key} />
                       })}
                     </tr>
@@ -1667,6 +1611,83 @@ export function SalesInvoicePage() {
           <div className="sales-reference-retail-title">
             {cart.priceType === 'wholesale' ? 'WHOLESALE INVOICE' : 'RETAIL INVOICE'}
           </div>
+
+          <fieldset className="sales-reference-amounts">
+            <legend>Amounts</legend>
+
+            <div className="sales-reference-amounts-checks">
+              <label>
+                <input type="checkbox" />
+                {' '}Payment Due
+              </label>
+
+              <label>
+                <input
+                  type="checkbox"
+                  disabled={!cart.hasPaidLines}
+                  checked={false}
+                  onChange={() => parkCurrentCart()}
+                />
+                {' '}On Hold
+              </label>
+            </div>
+
+            <div className="sales-reference-amounts-grid">
+              <span />
+
+              <strong className="is-green">
+                {cart.preview.grandTotal}
+              </strong>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setReceived(cart.preview.grandTotal)
+                }
+                disabled={!cart.hasPaidLines}
+              >
+                Get
+              </button>
+
+              <label>Disc (%)</label>
+              <label>Sales Tax (%)</label>
+
+              <input
+                value={
+                  Number.parseFloat(cart.preview.subtotal) > 0
+                    ? (
+                        (Number.parseFloat(cart.preview.discount) /
+                          Number.parseFloat(cart.preview.subtotal)) *
+                        100
+                      ).toFixed(2)
+                    : '0.00'
+                }
+                readOnly
+                title="Effective discount from sale lines"
+              />
+
+              <input
+                value={
+                  Number.parseFloat(cart.preview.qualifyingSubtotal) > 0
+                    ? (
+                        (Number.parseFloat(cart.preview.tax) /
+                          Number.parseFloat(
+                            cart.preview.qualifyingSubtotal,
+                          )) *
+                        100
+                      ).toFixed(2)
+                    : '0.00'
+                }
+                readOnly
+                title="Effective tax rate from product tax settings"
+              />
+
+              <input
+                value={cart.preview.subtotal}
+                readOnly
+              />
+            </div>
+          </fieldset>
 
           <fieldset className="sales-reference-pay-options">
             <legend>
