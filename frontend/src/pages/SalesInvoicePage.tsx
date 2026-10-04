@@ -763,6 +763,38 @@ export function SalesInvoicePage() {
                     >
                       <Plus size={12} strokeWidth={2.6} />
                     </button>
+
+                    <div className={`sales-customer-dropdown-shutter${customerPickerOpen ? ' is-open' : ''}`} aria-hidden={!customerPickerOpen}>
+                      <ul className="sales-pos-customer-results">
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCustomer(null)
+                              cart.setCustomerUlid(null)
+                              setCustomerPickerOpen(false)
+                            }}
+                          >
+                            CASH IN HAND (walk-in)
+                          </button>
+                        </li>
+    
+                        {(customersQuery.data ?? []).map((party) => (
+                          <li key={party.ulid}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedCustomer(party)
+                                cart.setCustomerUlid(party.ulid)
+                                setCustomerPickerOpen(false)
+                              }}
+                            >
+                              <span>{party.code}</span> {party.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
 
                   <label>Name:</label>
@@ -781,37 +813,6 @@ export function SalesInvoicePage() {
                   />
                 </div>
 
-                <div className={`sales-customer-dropdown-shutter${customerPickerOpen ? ' is-open' : ''}`} aria-hidden={!customerPickerOpen}>
-                  <ul className="sales-pos-customer-results">
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedCustomer(null)
-                          cart.setCustomerUlid(null)
-                          setCustomerPickerOpen(false)
-                        }}
-                      >
-                        CASH IN HAND (walk-in)
-                      </button>
-                    </li>
-
-                    {(customersQuery.data ?? []).map((party) => (
-                      <li key={party.ulid}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedCustomer(party)
-                            cart.setCustomerUlid(party.ulid)
-                            setCustomerPickerOpen(false)
-                          }}
-                        >
-                          <span>{party.code}</span> {party.name}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
               </fieldset>
 
               <fieldset className="sales-reference-amounts">
