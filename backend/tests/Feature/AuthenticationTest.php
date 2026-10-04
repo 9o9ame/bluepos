@@ -95,10 +95,20 @@ class AuthenticationTest extends TestCase
             'theme' => 'light',
             'skin' => 'advanced',
             'font' => 'inter',
+            'primaryTheme' => 'emerald',
+            'density' => 'compact',
+            'radius' => 'large',
+            'shadow' => 'normal',
+            'animations' => false,
         ])->assertOk()
             ->assertJsonPath('appearance.theme', 'light')
             ->assertJsonPath('appearance.skin', 'advanced')
-            ->assertJsonPath('appearance.font', 'inter');
+            ->assertJsonPath('appearance.font', 'inter')
+            ->assertJsonPath('appearance.primaryTheme', 'emerald')
+            ->assertJsonPath('appearance.density', 'compact')
+            ->assertJsonPath('appearance.radius', 'large')
+            ->assertJsonPath('appearance.shadow', 'normal')
+            ->assertJsonPath('appearance.animations', false);
 
         $this->getJson('/api/auth/me')
             ->assertOk()
@@ -108,6 +118,11 @@ class AuthenticationTest extends TestCase
             'theme' => 'light',
             'skin' => 'advanced',
             'font' => 'not-a-font',
+            'primaryTheme' => 'emerald',
+            'density' => 'compact',
+            'radius' => 'large',
+            'shadow' => 'normal',
+            'animations' => false,
         ])->assertUnprocessable();
     }
 
