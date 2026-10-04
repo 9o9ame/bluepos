@@ -3,6 +3,7 @@ import {
   FileText,
   FolderOpen,
   Grid3X3,
+  Plus,
   Printer,
   ReceiptText,
   RefreshCw,
@@ -20,6 +21,7 @@ import { createSale, createSalePayment, fetchSale } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
+import { SalesPartyModal } from '../features/sales/SalesPartyModal'
 import { SchemeOfferPrompt } from '../features/sales/SchemeOfferPrompt'
 import { SalesInvoiceHistory } from '../features/sales/SalesInvoiceHistory'
 import { useSaleCart } from '../features/sales/useSaleCart'
@@ -118,6 +120,7 @@ export function SalesInvoicePage() {
 
   const [selectedCustomer, setSelectedCustomer] = useState<Party | null>(null)
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
+  const [partyModalOpen, setPartyModalOpen] = useState(false)
 
   const { session } = useAuth()
 
@@ -402,6 +405,16 @@ export function SalesInvoicePage() {
     if (!/^(?:\d*)?(?:\.\d{0,4})?$/.test(value)) return
 
     setReceived(value)
+  }
+
+  async function handlePartySaved(party: Party) {
+    if (party.party_type !== 'customer') return
+
+    setSelectedCustomer(party)
+    cart.setCustomerUlid(party.ulid)
+    setCustomerPickerOpen(false)
+    setPartyModalOpen(false)
+    await customersQuery.refetch()
   }
 
   const stockIssue = useMemo(() => {
@@ -728,8 +741,23 @@ export function SalesInvoicePage() {
                       onClick={() =>
                         setCustomerPickerOpen((open) => !open)
                       }
+                      title="Choose customer"
+                      aria-label="Choose customer"
                     >
                       ▼
+                    </button>
+
+                    <button
+                      type="button"
+                      className="sales-reference-party-add"
+                      onClick={() => {
+                        setCustomerPickerOpen(false)
+                        setPartyModalOpen(true)
+                      }}
+                      title="Add or manage Vendor / Customer / Account"
+                      aria-label="Add or manage Vendor / Customer / Account"
+                    >
+                      <Plus size={12} strokeWidth={2.6} />
                     </button>
                   </div>
 
@@ -1775,6 +1803,13 @@ export function SalesInvoicePage() {
             <strong>-</strong>
           </div>
         </aside>
+      ) : null}
+
+      {partyModalOpen ? (
+        <SalesPartyModal
+          onClose={() => setPartyModalOpen(false)}
+          onSaved={(party) => void handlePartySaved(party)}
+        />
       ) : null}
 
       <ColumnCustomizationPanel
