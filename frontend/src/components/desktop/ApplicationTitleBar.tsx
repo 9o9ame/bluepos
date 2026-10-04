@@ -13,6 +13,7 @@ type ApplicationTitleBarProps = {
   onLogout: () => void
   onChangePassword: () => void
   onAccount: () => void
+  onAppearance: () => void
 }
 
 export function ApplicationTitleBar({
@@ -22,6 +23,7 @@ export function ApplicationTitleBar({
   onLogout,
   onChangePassword,
   onAccount,
+  onAppearance,
 }: ApplicationTitleBarProps) {
   const { tabs, activeKey } = useWorkspace()
   const active = tabs.find((tab) => tab.key === activeKey)
@@ -53,6 +55,7 @@ export function ApplicationTitleBar({
           onLogout={onLogout}
           onChangePassword={onChangePassword}
           onAccount={onAccount}
+          onAppearance={onAppearance}
         />
       </div>
     </header>
