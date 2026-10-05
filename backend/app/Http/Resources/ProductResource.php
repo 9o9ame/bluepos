@@ -81,7 +81,9 @@ class ProductResource extends JsonResource
 
                     return [
                         'in_stock' => $balance?->quantity ?? '0.000000',
-                        'average_cost' => $balance?->average_cost,
+                        'average_cost' => app(\App\Authz\PermissionService::class)->can('inventory.view')
+                            ? $balance?->average_cost
+                            : null,
                     ];
                 },
             ),
