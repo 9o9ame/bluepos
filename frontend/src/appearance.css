@@ -1107,3 +1107,136 @@ html #root :where(.field-error, .validation-error, .form-error, .sales-return-er
 html[data-animations='off'] #root .desktop-btn:active:not(:disabled) {
   transform: none;
 }
+
+
+/* ---------- AUTH + PLATFORM SHELL UNIFICATION ---------- */
+.auth-layout {
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--ui-accent) 86%, white), var(--ui-accent-strong)) !important;
+  color: var(--ui-text);
+  font-family: var(--app-font-family);
+}
+
+.auth-card {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.auth-card-header {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface-subtle) !important;
+}
+
+.auth-brand {
+  color: var(--ui-accent) !important;
+}
+
+.auth-title,
+.auth-card-body {
+  color: var(--ui-text) !important;
+}
+
+.auth-card :where(input, select, textarea, button) {
+  font-family: var(--app-font-family);
+  border-radius: var(--control-radius);
+}
+
+.auth-card :where(input, select, textarea):focus-visible,
+.platform-shell :where(input, select, textarea, button, a):focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.platform-shell {
+  background: var(--ui-bg) !important;
+  color: var(--ui-text) !important;
+  font-family: var(--app-font-family);
+}
+
+.platform-header {
+  border-color: var(--ui-border) !important;
+  background: color-mix(in srgb, var(--ui-accent-strong) 78%, #101820) !important;
+  color: white !important;
+  box-shadow: var(--ui-card-shadow);
+}
+
+.platform-header .text-amber-400 {
+  color: color-mix(in srgb, var(--ui-accent) 34%, #ffd166) !important;
+}
+
+.platform-nav {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface-subtle) !important;
+  color: var(--ui-text) !important;
+}
+
+.platform-main {
+  background: var(--ui-bg) !important;
+  color: var(--ui-text) !important;
+}
+
+.platform-account-trigger,
+.platform-access-toggle,
+.platform-nav-item {
+  border-radius: var(--control-radius) !important;
+  transition:
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    border-color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast);
+}
+
+.platform-account-trigger {
+  border-color: color-mix(in srgb, white 28%, var(--ui-accent)) !important;
+  color: white !important;
+  box-shadow: var(--ui-control-shadow);
+}
+
+.platform-account-menu {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.platform-account-menu-item {
+  color: var(--ui-text) !important;
+}
+
+.platform-account-menu-item:hover,
+.platform-access-toggle:hover,
+.platform-nav-item:hover {
+  background: var(--ui-accent-soft) !important;
+  color: var(--ui-text) !important;
+}
+
+.platform-account-menu-signout {
+  border-color: var(--ui-border) !important;
+  color: var(--ui-danger) !important;
+}
+
+.platform-nav-item.bg-slate-950 {
+  background: var(--ui-accent) !important;
+  color: white !important;
+}
+
+.platform-access-toggle {
+  color: var(--ui-text) !important;
+}
+
+html[data-radius] :where(.auth-card, .platform-account-menu) {
+  border-radius: var(--panel-radius) !important;
+}
+
+html[data-shadow] :where(.auth-card, .platform-account-menu) {
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+html[data-animations='off'] :where(.auth-layout, .auth-card, .platform-shell, .platform-shell *) {
+  transition: none !important;
+  animation: none !important;
+}
