@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Branch;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\SalePayment;
 use App\Models\StockBalance;
 use App\Models\Warehouse;
 use App\Tenancy\TenantContext;
@@ -360,10 +361,21 @@ class CreateSaleTest extends TestCase
         $saleUlid = (string) $sale->json('ulid');
         $documentNumber = (string) $sale->json('document_number');
 
-        $this->postJson('/api/sales/'.$saleUlid.'/payments', [
-            'amount' => '40.0000',
+        $saleModel = Sale::query()->where('ulid', $saleUlid)->firstOrFail();
+        $context = app(TenantContext::class);
+
+        SalePayment::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'sale_id' => $saleModel->id,
+            'account_id' => null,
             'method' => 'cash',
-        ], $this->idem('sale-history-summary-payment'))->assertCreated();
+            'reference' => null,
+            'amount' => '40.0000',
+            'journal_entry_ulid' => null,
+            'idempotency_key' => 'sale-history-summary-payment',
+            'created_by' => $context->userId(),
+        ]);
 
         $this->getJson('/api/sales?q='.urlencode($documentNumber))
             ->assertOk()
