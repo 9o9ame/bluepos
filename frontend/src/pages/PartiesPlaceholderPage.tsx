@@ -939,7 +939,7 @@ export function PartiesPlaceholderPage({
       return
     }
 
-    const manualAccount = form.type === 'ACCOUNTS'
+    const manualAccount = form.type === 'ACCOUNTS' && !form.identityUlid && Boolean(form.ulid)
     if (manualAccount && !form.accountTypeUlid.trim()) {
       setError('Account Type is required. Create one via + Account Type if needed.')
       return
@@ -956,6 +956,10 @@ export function PartiesPlaceholderPage({
       }
       if (form.types.includes('customer') && !form.customerAccountTypeUlid.trim()) {
         setError('Customer Account Type is required.')
+        return
+      }
+      if (form.types.includes('account') && !form.accountAccountTypeUlid.trim()) {
+        setError('Account Account Type is required.')
         return
       }
     }
@@ -1021,8 +1025,8 @@ export function PartiesPlaceholderPage({
       } else {
         const requestedPrimary = uiTypeToApi(form.type)
         const primaryType: PartyBusinessType =
-          requestedPrimary && requestedPrimary !== 'account' && form.types.includes(requestedPrimary)
-            ? requestedPrimary
+          requestedPrimary && form.types.includes(requestedPrimary as PartyBusinessType)
+            ? requestedPrimary as PartyBusinessType
             : form.types[0]
 
         const payload: PartyProfilePayload = {
@@ -1033,6 +1037,9 @@ export function PartiesPlaceholderPage({
             : null,
           customer_account_type_ulid: form.types.includes('customer')
             ? form.customerAccountTypeUlid
+            : null,
+          account_account_type_ulid: form.types.includes('account')
+            ? form.accountAccountTypeUlid
             : null,
           ...common,
         }
