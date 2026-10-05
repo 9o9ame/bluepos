@@ -531,6 +531,24 @@ export function SalesReturnsPage() {
                   </div>
                 </div>
 
+                <button
+                  type="button"
+                  className="sales-return-header-refresh"
+                  title="Refresh selected sale and balances"
+                  onClick={() => {
+                    setCustomerSelectOpen(false)
+                    setSalesmanSelectOpen(false)
+                    if (saleUlid) {
+                      void returnableQuery.refetch()
+                    } else {
+                      void saleLookup.refetch()
+                    }
+                  }}
+                >
+                  <RefreshCw size={12} />
+                  Refresh
+                </button>
+
                 <div className="sales-return-balance-chip is-previous">
                   <span>Previous</span>
                   <strong>{money(previousBalance)}</strong>
@@ -538,32 +556,85 @@ export function SalesReturnsPage() {
 
                 <div className="sales-return-option-group is-from">
                   <label>From:</label>
-                  <div className={`sales-return-party-select-wrap${customerSelectOpen ? ' is-open' : ''}`}>
-                    <select
-                      className="sales-return-party-select is-customer"
-                      value={customerFilterUlid}
+                  <div className={`sales-return-detail-picker is-customer${customerSelectOpen ? ' is-open' : ''}`}>
+                    <button
+                      type="button"
+                      className="sales-return-detail-control"
                       disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
-                      onFocus={() => setCustomerSelectOpen(true)}
-                      onBlur={() => setCustomerSelectOpen(false)}
-                      onChange={(e) => {
-                        setCustomerFilterUlid(e.target.value)
-                        setSaleUlid('')
-                        setSaleLabel('')
-                        setLineQty({})
-                        setSalePickerOpen(true)
-                        setCustomerSelectOpen(false)
+                      onClick={() => {
+                        setSalesmanSelectOpen(false)
+                        setSalePickerOpen(false)
+                        setCustomerSelectOpen((open) => !open)
                       }}
+                      aria-expanded={customerSelectOpen}
+                      aria-label="Choose customer"
                     >
-                      <option value="">All / CASH IN HAND</option>
-                      {(customersQuery.data ?? []).map((customer) => (
-                        <option key={customer.ulid} value={customer.ulid}>
-                          {customer.code} — {customer.name}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="sales-return-select-caret" aria-hidden="true">
-                      <ChevronDown size={12} strokeWidth={2.75} />
-                    </span>
+                      <span>
+                        {customerFilterUlid
+                          ? (() => {
+                              const customer = (customersQuery.data ?? []).find((row) => row.ulid === customerFilterUlid)
+                              return customer ? `${customer.code} — ${customer.name}` : 'Selected customer'
+                            })()
+                          : 'All / CASH IN HAND'}
+                      </span>
+                      <span className="sales-return-detail-caret" aria-hidden="true">
+                        <ChevronDown size={12} strokeWidth={2.75} />
+                      </span>
+                    </button>
+
+                    <div
+                      className={`sales-return-detail-dropdown${customerSelectOpen ? ' is-open' : ''}`}
+                      aria-hidden={!customerSelectOpen}
+                    >
+                      <div className="sales-return-detail-head">
+                        <span>Code</span>
+                        <span>Name</span>
+                        <span>Address</span>
+                        <span>Mobile</span>
+                      </div>
+                      <div className="sales-return-detail-body">
+                        <button
+                          type="button"
+                          className="sales-return-detail-row"
+                          onClick={() => {
+                            setCustomerFilterUlid('')
+                            setSaleUlid('')
+                            setSaleLabel('')
+                            setLineQty({})
+                            setCustomerSelectOpen(false)
+                            setSalePickerOpen(true)
+                          }}
+                        >
+                          <span>—</span>
+                          <strong>ALL / CASH IN HAND</strong>
+                          <span>Walk-in / all customers</span>
+                          <span>—</span>
+                        </button>
+                        {(customersQuery.data ?? []).map((customer) => (
+                          <button
+                            type="button"
+                            className="sales-return-detail-row"
+                            key={customer.ulid}
+                            onClick={() => {
+                              setCustomerFilterUlid(customer.ulid)
+                              setSaleUlid('')
+                              setSaleLabel('')
+                              setLineQty({})
+                              setCustomerSelectOpen(false)
+                              setSalePickerOpen(true)
+                            }}
+                          >
+                            <span>{customer.code || '—'}</span>
+                            <strong>{customer.name}</strong>
+                            <span>{customer.address || '—'}</span>
+                            <span>{customer.mobile || customer.phone || '—'}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="sales-return-detail-foot">
+                        {(customersQuery.data?.length ?? 0) + 1} account(s)
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -588,32 +659,85 @@ export function SalesReturnsPage() {
 
                 <div className="sales-return-option-group is-salesman">
                   <label>S.Man:</label>
-                  <div className={`sales-return-party-select-wrap${salesmanSelectOpen ? ' is-open' : ''}`}>
-                    <select
-                      className="sales-return-party-select is-salesman"
-                      value={salesmanFilterUlid}
+                  <div className={`sales-return-detail-picker is-salesman${salesmanSelectOpen ? ' is-open' : ''}`}>
+                    <button
+                      type="button"
+                      className="sales-return-detail-control"
                       disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
-                      onFocus={() => setSalesmanSelectOpen(true)}
-                      onBlur={() => setSalesmanSelectOpen(false)}
-                      onChange={(e) => {
-                        setSalesmanFilterUlid(e.target.value)
-                        setSaleUlid('')
-                        setSaleLabel('')
-                        setLineQty({})
-                        setSalePickerOpen(true)
-                        setSalesmanSelectOpen(false)
+                      onClick={() => {
+                        setCustomerSelectOpen(false)
+                        setSalePickerOpen(false)
+                        setSalesmanSelectOpen((open) => !open)
                       }}
+                      aria-expanded={salesmanSelectOpen}
+                      aria-label="Choose salesman"
                     >
-                      <option value="">All salesmen</option>
-                      {(salesmenQuery.data ?? []).map((salesman) => (
-                        <option key={salesman.ulid} value={salesman.ulid}>
-                          {salesman.code} — {salesman.name}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="sales-return-select-caret" aria-hidden="true">
-                      <ChevronDown size={12} strokeWidth={2.75} />
-                    </span>
+                      <span>
+                        {salesmanFilterUlid
+                          ? (() => {
+                              const salesman = (salesmenQuery.data ?? []).find((row) => row.ulid === salesmanFilterUlid)
+                              return salesman ? `${salesman.code} — ${salesman.name}` : 'Selected salesman'
+                            })()
+                          : 'All salesmen'}
+                      </span>
+                      <span className="sales-return-detail-caret" aria-hidden="true">
+                        <ChevronDown size={12} strokeWidth={2.75} />
+                      </span>
+                    </button>
+
+                    <div
+                      className={`sales-return-detail-dropdown${salesmanSelectOpen ? ' is-open' : ''}`}
+                      aria-hidden={!salesmanSelectOpen}
+                    >
+                      <div className="sales-return-detail-head">
+                        <span>Code</span>
+                        <span>Name</span>
+                        <span>Address</span>
+                        <span>Mobile</span>
+                      </div>
+                      <div className="sales-return-detail-body">
+                        <button
+                          type="button"
+                          className="sales-return-detail-row"
+                          onClick={() => {
+                            setSalesmanFilterUlid('')
+                            setSaleUlid('')
+                            setSaleLabel('')
+                            setLineQty({})
+                            setSalesmanSelectOpen(false)
+                            setSalePickerOpen(true)
+                          }}
+                        >
+                          <span>—</span>
+                          <strong>ALL SALESMEN</strong>
+                          <span>—</span>
+                          <span>—</span>
+                        </button>
+                        {(salesmenQuery.data ?? []).map((salesman) => (
+                          <button
+                            type="button"
+                            className="sales-return-detail-row"
+                            key={salesman.ulid}
+                            onClick={() => {
+                              setSalesmanFilterUlid(salesman.ulid)
+                              setSaleUlid('')
+                              setSaleLabel('')
+                              setLineQty({})
+                              setSalesmanSelectOpen(false)
+                              setSalePickerOpen(true)
+                            }}
+                          >
+                            <span>{salesman.code || '—'}</span>
+                            <strong>{salesman.name}</strong>
+                            <span>{salesman.address || '—'}</span>
+                            <span>{salesman.mobile || '—'}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="sales-return-detail-foot">
+                        {(salesmenQuery.data?.length ?? 0) + 1} salesman option(s)
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
