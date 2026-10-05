@@ -713,6 +713,7 @@ export function SalesInvoicePage() {
     }
 
     cart.clear()
+    setRecalledHoldUlid(null)
     setSelectedCustomer(null)
     setReceived('')
     setPaymentReference('')
