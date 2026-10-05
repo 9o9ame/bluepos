@@ -1688,3 +1688,179 @@
     min-width: 1030px;
   }
 }
+
+
+/* ==========================================================================
+   Ultra-compact Sales Return header — minimize vertical and horizontal waste.
+   ========================================================================== */
+.sales-return-entry {
+  padding-top: 3px;
+}
+
+.sales-return-head {
+  grid-template-columns: minmax(0, 1fr) 250px !important;
+  gap: 4px !important;
+}
+
+.sales-return-head fieldset {
+  padding: 2px 5px 4px !important;
+  border-radius: 5px !important;
+}
+
+.sales-return-head legend {
+  padding: 0 4px !important;
+  font-size: 8px !important;
+  line-height: 10px;
+}
+
+.sales-return-fields {
+  gap: 2px !important;
+  min-height: 23px;
+}
+
+.sales-return-option-group {
+  gap: 2px !important;
+}
+
+.sales-return-option-group > label {
+  font-size: 7.5px !important;
+  line-height: 10px;
+}
+
+.sales-return-option-group.is-ret { width: 72px !important; }
+.sales-return-option-group.is-date { width: 126px !important; }
+.sales-return-option-group.is-sales { width: 180px !important; }
+.sales-return-option-group.is-from { width: 152px !important; }
+.sales-return-option-group.is-remarks { width: 128px !important; }
+.sales-return-option-group.is-salesman { width: 150px !important; }
+
+.sales-return-fields .sales-return-option-group > input,
+.sales-return-fields .sales-return-sale-input,
+.sales-return-fields .sales-return-sale-input > input,
+.sales-return-fields .sales-return-party-select {
+  height: 22px !important;
+  min-height: 22px !important;
+  font-size: 8px !important;
+}
+
+.sales-return-sale-input > svg {
+  left: 5px !important;
+  width: 11px;
+  height: 11px;
+}
+
+.sales-return-sale-input > input {
+  padding-left: 20px !important;
+  padding-right: 23px !important;
+}
+
+.sales-return-sale-trigger {
+  width: 21px !important;
+  height: 20px !important;
+}
+
+.sales-return-select-caret {
+  right: 2px !important;
+  width: 16px !important;
+  height: 14px !important;
+  margin-top: -7px !important;
+  border-radius: 4px !important;
+}
+
+.sales-return-header-refresh {
+  width: 52px !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  padding: 0 3px !important;
+  gap: 2px !important;
+  font-size: 7.5px !important;
+}
+
+.sales-return-header-refresh svg {
+  width: 10px;
+  height: 10px;
+}
+
+.sales-return-balance-chip {
+  grid-template-rows: 8px 13px !important;
+  width: 56px !important;
+  height: 22px !important;
+  border-radius: 3px !important;
+}
+
+.sales-return-balance-chip.is-total-balance {
+  width: 63px !important;
+}
+
+.sales-return-balance-chip > span {
+  padding: 0 2px !important;
+  font-size: 6px !important;
+  line-height: 8px !important;
+}
+
+.sales-return-balance-chip > strong {
+  padding: 0 3px !important;
+  font-size: 8px !important;
+  line-height: 13px !important;
+}
+
+.sales-return-party-select {
+  padding-left: 4px !important;
+  padding-right: 22px !important;
+}
+
+.sales-return-amounts {
+  gap: 0 !important;
+}
+
+.sales-return-amounts > div {
+  min-height: 21px !important;
+  grid-template-columns: 1fr 88px !important;
+}
+
+.sales-return-amounts span {
+  font-size: 8px !important;
+}
+
+.sales-return-amounts strong {
+  padding: 1px 4px !important;
+  font-size: 10px !important;
+}
+
+.sales-return-amounts .is-net strong {
+  font-size: 12px !important;
+}
+
+.sales-return-grid-wrap {
+  margin-top: 3px !important;
+}
+
+/* Keep the picker visually attached to the compact Sales# field. */
+.sales-return-option-group.is-sales .sales-return-sale-results {
+  left: 33px !important;
+  top: calc(100% + 2px) !important;
+  width: min(860px, calc(100vw - 390px)) !important;
+}
+
+@media (max-width: 1450px) {
+  .sales-return-head {
+    grid-template-columns: minmax(0, 1fr) 235px !important;
+  }
+
+  .sales-return-option-group.is-ret { width: 68px !important; }
+  .sales-return-option-group.is-date { width: 118px !important; }
+  .sales-return-option-group.is-sales { width: 166px !important; }
+  .sales-return-option-group.is-from { width: 138px !important; }
+  .sales-return-option-group.is-remarks { width: 115px !important; }
+  .sales-return-option-group.is-salesman { width: 137px !important; }
+
+  .sales-return-header-refresh { width: 48px !important; }
+  .sales-return-balance-chip { width: 51px !important; }
+  .sales-return-balance-chip.is-total-balance { width: 58px !important; }
+}
+
+@media (max-width: 1180px) {
+  .sales-return-fields {
+    min-width: 940px !important;
+  }
+}
