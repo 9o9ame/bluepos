@@ -921,27 +921,38 @@ export function PartiesPlaceholderPage({
   }
 
   async function save() {
-    const partyType = uiTypeToApi(form.type)
-    if (!partyType) {
-      setError('SALES MAN is not creatable in this phase.')
-      return
-    }
     if (!form.code.trim() || !form.name.trim()) {
       setError('Code and Name are required.')
       return
     }
-    if (!form.accountTypeUlid.trim()) {
+
+    const manualAccount = form.type === 'ACCOUNTS'
+    if (manualAccount && !form.accountTypeUlid.trim()) {
       setError('Account Type is required. Create one via + Account Type if needed.')
       return
     }
 
+    if (!manualAccount) {
+      if (form.types.length === 0) {
+        setError('Select at least one Type.')
+        return
+      }
+      if (form.types.includes('vendor') && !form.vendorAccountTypeUlid.trim()) {
+        setError('Vendor Account Type is required.')
+        return
+      }
+      if (form.types.includes('customer') && !form.customerAccountTypeUlid.trim()) {
+        setError('Customer Account Type is required.')
+        return
+      }
+    }
+
     setSaving(true)
     setError(null)
-    const payload = {
-      party_type: partyType,
+
+    const common = {
       code: form.code.trim(),
       name: form.name.trim(),
-      account_type_ulid: form.accountTypeUlid.trim(),
       deals_in: form.dealsIn.trim() || null,
       contact_person: form.contactPerson.trim() || null,
       mobile: form.mobile1.trim() || null,
@@ -960,30 +971,70 @@ export function PartiesPlaceholderPage({
       ntn: form.ntn.trim() || null,
       stn: form.stn.trim() || null,
       formulas: form.formulaDraft.trim() || null,
-      ...(partyType === 'account'
-        ? {}
-        : {
-            license_number: form.license.trim() || null,
-            license_issued_on: form.licenseIssue || null,
-            license_type: form.licenseType || null,
-            license_expires_on: form.licenseExp || null,
-            ignore_warranty: form.ignoreWarranty,
-            print_license: form.printLicense,
-            rf_id: form.rfId.trim() || null,
-            store_allowed: form.storeAllowed || null,
-          }),
+      license_number: form.license.trim() || null,
+      license_issued_on: form.licenseIssue || null,
+      license_type: form.licenseType || null,
+      license_expires_on: form.licenseExp || null,
+      ignore_warranty: form.ignoreWarranty,
+      print_license: form.printLicense,
+      rf_id: form.rfId.trim() || null,
+      store_allowed: form.storeAllowed || null,
     }
 
     try {
-      const wasNew = !form.ulid
-      const saved = form.ulid
-        ? await updateParty(form.ulid, payload)
-        : await createParty(payload)
+      const wasNew = manualAccount ? !form.ulid : !form.identityUlid
+      let saved: Party
 
-      if (wasNew && bankRows.length > 0) {
+      if (manualAccount) {
+        const payload = {
+          party_type: 'account' as const,
+          code: common.code,
+          name: common.name,
+          account_type_ulid: form.accountTypeUlid.trim(),
+          address: common.address,
+          is_active: common.is_active,
+          invoice_restricted: common.invoice_restricted,
+          credit_limit_amount: common.credit_limit_amount,
+          credit_limit_days: common.credit_limit_days,
+          add_percent: common.add_percent,
+          cnic: common.cnic,
+          ntn: common.ntn,
+          stn: common.stn,
+          formulas: common.formulas,
+        }
+        saved = form.ulid
+          ? await updateParty(form.ulid, payload)
+          : await createParty(payload)
+      } else {
+        const requestedPrimary = uiTypeToApi(form.type)
+        const primaryType: PartyBusinessType =
+          requestedPrimary && requestedPrimary !== 'account' && form.types.includes(requestedPrimary)
+            ? requestedPrimary
+            : form.types[0]
+
+        const payload: PartyProfilePayload = {
+          party_types: form.types,
+          primary_type: primaryType,
+          vendor_account_type_ulid: form.types.includes('vendor')
+            ? form.vendorAccountTypeUlid
+            : null,
+          customer_account_type_ulid: form.types.includes('customer')
+            ? form.customerAccountTypeUlid
+            : null,
+          ...common,
+        }
+
+        saved = form.identityUlid
+          ? await updatePartyProfile(form.identityUlid, payload)
+          : await createPartyProfile(payload)
+      }
+
+      const financial = partyFinancialContext(saved)
+
+      if (financial && wasNew && bankRows.length > 0) {
         for (const row of bankRows) {
           if (!row.bank_name.trim()) continue
-          await createPartyBankAccount(saved.ulid, saved.party_type, {
+          await createPartyBankAccount(financial.ulid, financial.type, {
             bank_name: row.bank_name.trim(),
             branch_name: row.branch_name.trim() || null,
             branch_code: row.branch_code.trim() || null,
@@ -991,11 +1042,11 @@ export function PartiesPlaceholderPage({
             account_number: row.account_number.trim() || null,
           })
         }
-      } else if (!wasNew) {
+      } else if (financial && !wasNew) {
         for (const row of bankRows) {
           if (!row.dirty || !row.bank_name.trim()) continue
           if (row.ulid) {
-            await updatePartyBankAccount(saved.ulid, saved.party_type, row.ulid, {
+            await updatePartyBankAccount(financial.ulid, financial.type, row.ulid, {
               bank_name: row.bank_name.trim(),
               branch_name: row.branch_name.trim() || null,
               branch_code: row.branch_code.trim() || null,
@@ -1003,7 +1054,7 @@ export function PartiesPlaceholderPage({
               account_number: row.account_number.trim() || null,
             })
           } else {
-            await createPartyBankAccount(saved.ulid, saved.party_type, {
+            await createPartyBankAccount(financial.ulid, financial.type, {
               bank_name: row.bank_name.trim(),
               branch_name: row.branch_name.trim() || null,
               branch_code: row.branch_code.trim() || null,
@@ -1015,19 +1066,37 @@ export function PartiesPlaceholderPage({
       }
 
       let finalSaved = saved
-      if (pendingImage) {
-        finalSaved = await uploadPartyImage(saved.ulid, saved.party_type, pendingImage)
-      } else if (imageRemoveRequested && savedImageUrl) {
-        finalSaved = await deletePartyImage(saved.ulid, saved.party_type)
+      if (financial && pendingImage) {
+        await uploadPartyImage(financial.ulid, financial.type, pendingImage)
+        if (saved.identity_ulid) {
+          finalSaved = await fetchPartyProfile(saved.identity_ulid)
+        } else {
+          finalSaved = await fetchParty(financial.ulid, financial.type)
+        }
+      } else if (financial && imageRemoveRequested && savedImageUrl) {
+        await deletePartyImage(financial.ulid, financial.type)
+        if (saved.identity_ulid) {
+          finalSaved = await fetchPartyProfile(saved.identity_ulid)
+        } else {
+          finalSaved = await fetchParty(financial.ulid, financial.type)
+        }
       }
 
       await loadParties(listFilter, true)
       const next = partyToForm(finalSaved, listFilter)
       applyBaseline(next)
-      setSelectedKey(`${finalSaved.party_type}:${finalSaved.ulid}`)
+      setSelectedKey(partyKey(finalSaved))
       applyPartyImage(finalSaved)
-      await loadBanks(finalSaved.ulid, finalSaved.party_type)
-      await loadOpenings(finalSaved.ulid, finalSaved.party_type)
+
+      const finalFinancial = partyFinancialContext(finalSaved)
+      if (finalFinancial) {
+        await loadBanks(finalFinancial.ulid, finalFinancial.type)
+        await loadOpenings(finalFinancial.ulid, finalFinancial.type)
+      } else {
+        setBankRows([])
+        setOpeningRows([])
+      }
+
       feedback.success(wasNew ? 'Party created successfully.' : 'Party saved successfully.')
       onSaved?.(finalSaved)
     } catch (err) {
