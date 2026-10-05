@@ -100,7 +100,7 @@ export function SalesInvoiceHistory() {
   }
 
   return (
-    <section className="sales-history" aria-label="Posted invoices">
+    <section className="sales-history sales-posted-history" aria-label="Posted invoices">
       <header className="sales-history-toolbar">
         <div className="sales-history-search">
           <Search size={15} aria-hidden="true" />
