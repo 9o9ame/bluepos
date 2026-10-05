@@ -98,7 +98,7 @@ class AuthenticationTest extends TestCase
             'primaryTheme' => 'emerald',
             'density' => 'compact',
             'radius' => 'large',
-            'shadow' => 'normal',
+            'shadow' => '3d',
             'animations' => false,
         ])->assertOk()
             ->assertJsonPath('appearance.theme', 'light')
@@ -107,7 +107,7 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('appearance.primaryTheme', 'emerald')
             ->assertJsonPath('appearance.density', 'compact')
             ->assertJsonPath('appearance.radius', 'large')
-            ->assertJsonPath('appearance.shadow', 'normal')
+            ->assertJsonPath('appearance.shadow', '3d')
             ->assertJsonPath('appearance.animations', false);
 
         $this->getJson('/api/auth/me')
