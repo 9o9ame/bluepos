@@ -2258,24 +2258,24 @@
 
 
 /* ==========================================================================
-   Return Invoice Options — 2 rows with clear left/right grouping.
-   Left = operational fields. Right = balance widgets.
+   Return Invoice Options — two compact rows with reference-style left/right zoning.
+   Left = return controls. Right = Previous / Total Balance / This Bill.
+   Amount Options remains the separate right-hand fieldset.
    ========================================================================== */
 .sales-return-fields {
   display: grid !important;
   grid-template-columns:
-    minmax(78px, .55fr)
-    minmax(132px, .82fr)
-    minmax(220px, 1.35fr)
-    64px
-    minmax(190px, 1.15fr)
-    minmax(170px, 1fr)
-    minmax(190px, 1.15fr)
-    minmax(80px, .48fr)
-    minmax(80px, .48fr) !important;
+    minmax(86px, .55fr)
+    minmax(142px, .82fr)
+    minmax(230px, 1.35fr)
+    minmax(195px, 1.12fr)
+    18px
+    minmax(82px, .48fr)
+    minmax(86px, .50fr)
+    minmax(82px, .48fr) !important;
   grid-template-areas:
-    "ret date sales refresh from spacer previous thisbill thisbill"
-    "salesman salesman remarks remarks remarks spacer total total total" !important;
+    "ret date sales from spacer previous total thisbill"
+    "salesman salesman remarks remarks spacer . . ." !important;
   align-items: center !important;
   gap: 5px 6px !important;
   width: 100% !important;
@@ -2285,11 +2285,6 @@
 .sales-return-option-group.is-ret { grid-area: ret !important; }
 .sales-return-option-group.is-date { grid-area: date !important; }
 .sales-return-option-group.is-sales { grid-area: sales !important; }
-.sales-return-header-refresh {
-  grid-area: refresh !important;
-  position: static !important;
-  width: 100% !important;
-}
 .sales-return-option-group.is-from { grid-area: from !important; }
 .sales-return-option-group.is-salesman { grid-area: salesman !important; }
 .sales-return-option-group.is-remarks { grid-area: remarks !important; }
@@ -2299,40 +2294,50 @@
   width: 100% !important;
 }
 
-.sales-return-balance-chip.is-this-bill {
-  grid-area: thisbill !important;
-  width: 100% !important;
-}
-
 .sales-return-balance-chip.is-total-balance {
   grid-area: total !important;
   width: 100% !important;
 }
 
-/* Create a visual breathing gap between the left controls and right balances. */
+.sales-return-balance-chip.is-this-bill {
+  grid-area: thisbill !important;
+  width: 100% !important;
+}
+
 .sales-return-fields::before {
   content: "";
   grid-area: spacer;
   min-width: 8px;
 }
 
-.sales-return-option-group.is-salesman,
-.sales-return-option-group.is-remarks {
+.sales-return-option-group,
+.sales-return-option-group > input,
+.sales-return-option-group > .sales-return-sale-search,
+.sales-return-option-group > .sales-return-party-select-wrap {
   min-width: 0;
+}
+
+.sales-return-option-group > input,
+.sales-return-option-group > .sales-return-sale-search,
+.sales-return-option-group > .sales-return-party-select-wrap {
+  width: 100%;
+}
+
+.sales-return-option-group.is-sales .sales-return-sale-results {
+  left: 0 !important;
 }
 
 @media (max-width: 1450px) {
   .sales-return-fields {
     grid-template-columns:
-      minmax(72px, .52fr)
-      minmax(120px, .78fr)
-      minmax(195px, 1.25fr)
-      58px
-      minmax(165px, 1.05fr)
-      minmax(150px, .92fr)
-      minmax(168px, 1.05fr)
-      minmax(74px, .45fr)
-      minmax(74px, .45fr) !important;
+      minmax(78px, .52fr)
+      minmax(128px, .78fr)
+      minmax(205px, 1.25fr)
+      minmax(170px, 1.03fr)
+      14px
+      minmax(76px, .45fr)
+      minmax(80px, .47fr)
+      minmax(76px, .45fr) !important;
     gap: 4px 5px !important;
   }
 }
@@ -2344,6 +2349,6 @@
   }
 
   .sales-return-fields {
-    min-width: 1080px !important;
+    min-width: 980px !important;
   }
 }
