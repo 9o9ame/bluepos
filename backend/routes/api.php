@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SaleOfferController;
 use App\Http\Controllers\Api\SaleSchemeController;
 use App\Http\Controllers\Api\Sales\SaleController;
+use App\Http\Controllers\Api\Sales\SaleHoldController;
 use App\Http\Controllers\Api\SecuritySessionController;
 use App\Http\Controllers\Api\SubcategoryController;
 use App\Http\Controllers\Api\SupplierController;
@@ -215,6 +216,10 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::middleware('entitled:sales')->group(function () {
         Route::get('/sales', [SaleController::class, 'index']);
         Route::get('/sales/salesmen', [SaleController::class, 'salesmen']);
+        Route::get('/sales/holds', [SaleHoldController::class, 'index']);
+        Route::post('/sales/holds', [SaleHoldController::class, 'store']);
+        Route::get('/sales/holds/{holdUlid}', [SaleHoldController::class, 'show']);
+        Route::delete('/sales/holds/{holdUlid}', [SaleHoldController::class, 'destroy']);
         Route::post('/sales', [SaleController::class, 'store']);
         Route::get('/sales/{saleUlid}', [SaleController::class, 'show']);
         Route::get('/sales/{saleUlid}/payments', [SaleController::class, 'payments']);
