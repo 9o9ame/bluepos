@@ -513,18 +513,14 @@ export function PartiesPlaceholderPage({
 
   useEffect(() => {
     if (viewTab !== 'ledger') return
-    if (!form.ulid) {
+    const financial = formFinancialContext()
+    if (!financial) {
       setLedger(null)
       return
     }
-    const partyType = uiTypeToApi(form.type)
-    if (!partyType) {
-      setLedger(null)
-      return
-    }
-    void loadLedger(form.ulid, partyType, ledgerPage)
+    void loadLedger(financial.ulid, financial.type, ledgerPage)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewTab, form.ulid, form.type, ledgerPage])
+  }, [viewTab, form.ulid, form.vendorUlid, form.customerUlid, form.type, ledgerPage])
 
   useEffect(() => {
     if (viewTab !== 'bulk') return
@@ -635,22 +631,18 @@ export function PartiesPlaceholderPage({
   }
 
   async function onEnsureLeafAccount() {
-    if (!form.ulid) {
-      setError('Select or save a party first.')
-      return
-    }
-    const partyType = uiTypeToApi(form.type)
-    if (!partyType) {
-      setError('Select Vendor, Customer, or Account.')
+    const financial = formFinancialContext()
+    if (!financial) {
+      setError('Select or save a Vendor, Customer, or Account first.')
       return
     }
     setEnsureBusy(true)
     setError(null)
     try {
-      const result = await ensurePartyLeafAccount(form.ulid, partyType)
+      const result = await ensurePartyLeafAccount(financial.ulid, financial.type)
       setError(result.message)
       if (viewTab === 'ledger') {
-        await loadLedger(form.ulid, partyType, ledgerPage)
+        await loadLedger(financial.ulid, financial.type, ledgerPage)
       }
     } catch (err) {
       setError(errMessage(err))
@@ -1136,11 +1128,10 @@ export function PartiesPlaceholderPage({
     if (!selectedBankKey) return
     const row = bankRows.find((r) => r.key === selectedBankKey)
     if (!row) return
-    if (row.ulid && form.ulid) {
-      const partyType = uiTypeToApi(form.type)
-      if (!partyType) return
+    const financial = formFinancialContext()
+    if (row.ulid && financial) {
       try {
-        await deletePartyBankAccount(form.ulid, partyType, row.ulid)
+        await deletePartyBankAccount(financial.ulid, financial.type, row.ulid)
       } catch (err) {
         setError(errMessage(err))
         return
@@ -1151,8 +1142,8 @@ export function PartiesPlaceholderPage({
   }
 
   function addOpeningRow() {
-    if (!form.ulid) {
-      setError('Save the party first, then add opening balances.')
+    if (!formFinancialContext()) {
+      setError('Save a Vendor, Customer, or Account first, then add opening balances.')
       return
     }
     const key = `draft-ob-${Date.now()}`
@@ -1185,8 +1176,8 @@ export function PartiesPlaceholderPage({
   }
 
   async function persistOpeningRow(row: OpeningDraft) {
-    const partyType = uiTypeToApi(form.type)
-    if (!partyType || !form.ulid) return
+    const financial = formFinancialContext()
+    if (!financial) return
     const debit = Number(row.debit) || 0
     const credit = Number(row.credit) || 0
     if (debit > 0 && credit > 0) {
@@ -1207,11 +1198,11 @@ export function PartiesPlaceholderPage({
         credit: credit.toFixed(4),
       }
       if (row.ulid) {
-        await updatePartyOpeningBalance(form.ulid, partyType, row.ulid, payload)
+        await updatePartyOpeningBalance(financial.ulid, financial.type, row.ulid, payload)
       } else {
-        await createPartyOpeningBalance(form.ulid, partyType, payload)
+        await createPartyOpeningBalance(financial.ulid, financial.type, payload)
       }
-      await loadOpenings(form.ulid, partyType)
+      await loadOpenings(financial.ulid, financial.type)
     } catch (err) {
       setError(errMessage(err))
     } finally {
@@ -1227,11 +1218,10 @@ export function PartiesPlaceholderPage({
       setError('Posted opening balances are immutable.')
       return
     }
-    if (row.ulid && form.ulid) {
-      const partyType = uiTypeToApi(form.type)
-      if (!partyType) return
+    const financial = formFinancialContext()
+    if (row.ulid && financial) {
       try {
-        await deletePartyOpeningBalance(form.ulid, partyType, row.ulid)
+        await deletePartyOpeningBalance(financial.ulid, financial.type, row.ulid)
       } catch (err) {
         setError(errMessage(err))
         return
@@ -1242,23 +1232,22 @@ export function PartiesPlaceholderPage({
   }
 
   async function postSelectedOpening() {
-    if (!selectedOpeningKey || !form.ulid) return
+    const financial = formFinancialContext()
+    if (!selectedOpeningKey || !financial) return
     if (!openingEquityConfigured) {
       setError('Configure Opening Balance Equity Account in Business Settings before posting.')
       return
     }
     const row = openingRows.find((r) => r.key === selectedOpeningKey)
     if (!row?.ulid || row.status === 'posted') return
-    const partyType = uiTypeToApi(form.type)
-    if (!partyType) return
     if (row.dirty) {
       await persistOpeningRow(row)
     }
     setOpeningBusy(true)
     setError(null)
     try {
-      await postPartyOpeningBalance(form.ulid, partyType, row.ulid)
-      await loadOpenings(form.ulid, partyType)
+      await postPartyOpeningBalance(financial.ulid, financial.type, row.ulid)
+      await loadOpenings(financial.ulid, financial.type)
     } catch (err) {
       setError(errMessage(err))
     } finally {
@@ -1758,7 +1747,7 @@ export function PartiesPlaceholderPage({
                           : ''}
                       </span>
                       <span className="parties-vca-bank-actions">
-                        <button type="button" disabled={!form.ulid || openingBusy} onClick={addOpeningRow}>
+                        <button type="button" disabled={!formFinancialContext() || openingBusy} onClick={addOpeningRow}>
                           Add
                         </button>
                         <button
@@ -2079,7 +2068,7 @@ export function PartiesPlaceholderPage({
             <button
               type="button"
               className="parties-vca-shell-btn"
-              disabled={!form.ulid || ensureBusy || !uiTypeToApi(form.type)}
+              disabled={!formFinancialContext() || ensureBusy}
               onClick={() => void onEnsureLeafAccount()}
               title="Repair missing leaf account link without creating duplicates"
             >
