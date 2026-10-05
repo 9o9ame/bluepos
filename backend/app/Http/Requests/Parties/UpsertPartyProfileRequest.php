@@ -34,12 +34,12 @@ class UpsertPartyProfileRequest extends FormRequest
         $types = $this->input('party_types', []);
 
         return [
-            'party_types' => ['required', 'array', 'min:1', 'max:3'],
-            'party_types.*' => ['required', 'string', Rule::in(['vendor', 'customer', 'salesman'])],
+            'party_types' => ['required', 'array', 'min:1', 'max:4'],
+            'party_types.*' => ['required', 'string', Rule::in(['vendor', 'customer', 'account', 'salesman'])],
             'primary_type' => [
                 'required',
                 'string',
-                Rule::in(['vendor', 'customer', 'salesman']),
+                Rule::in(['vendor', 'customer', 'account', 'salesman']),
                 function (string $attribute, mixed $value, \Closure $fail) use ($types): void {
                     if (! in_array($value, is_array($types) ? $types : [], true)) {
                         $fail('Primary type must be one of the selected party types.');
@@ -50,6 +50,13 @@ class UpsertPartyProfileRequest extends FormRequest
             'name' => ['required', 'string', 'max:180'],
             'vendor_account_type_ulid' => [
                 Rule::requiredIf(fn (): bool => in_array('vendor', is_array($types) ? $types : [], true)),
+                'nullable',
+                'string',
+                'size:26',
+                Rule::exists('account_types', 'ulid')->where('tenant_id', $tenantId)->where('is_active', true),
+            ],
+            'account_account_type_ulid' => [
+                Rule::requiredIf(fn (): bool => in_array('account', is_array($types) ? $types : [], true)),
                 'nullable',
                 'string',
                 'size:26',
@@ -99,6 +106,7 @@ class UpsertPartyProfileRequest extends FormRequest
             'primary_type',
             'vendor_account_type_ulid',
             'customer_account_type_ulid',
+            'account_account_type_ulid',
         ]);
     }
 }
