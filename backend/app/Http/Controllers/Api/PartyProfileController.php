@@ -148,10 +148,7 @@ class PartyProfileController extends Controller
             return;
         }
 
-        abort_unless(
-            $permissions->can('customers.view') || $permissions->can('suppliers.view') || $permissions->can('sales.create'),
-            403
-        );
+        abort_unless($this->allowedViewTypes($permissions) !== [], 403);
     }
 
     /**
