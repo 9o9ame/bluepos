@@ -132,7 +132,7 @@ function NavItem({
       end={end}
       className={({ isActive }) =>
         `platform-nav-item mb-1 block rounded px-2 py-1.5 text-[12px] font-semibold ${indent ? 'ml-3' : ''} ${
-          isActive ? 'bg-slate-950 text-amber-300' : 'text-[var(--ui-text)] hover:bg-[var(--ui-accent-soft)]'
+          isActive ? 'bg-[var(--ui-accent)] text-white' : 'text-[var(--ui-text)] hover:bg-[var(--ui-accent-soft)]'
         }`
       }
     >
