@@ -20,6 +20,14 @@ class BusinessSettingResource extends JsonResource
             ? $this->openingBalanceEquityAccount
             : $this->openingBalanceEquityAccount()->first();
 
+        $cash = $this->relationLoaded('defaultCashAccount')
+            ? $this->defaultCashAccount
+            : $this->defaultCashAccount()->first();
+
+        $clearing = $this->relationLoaded('salesClearingAccount')
+            ? $this->salesClearingAccount
+            : $this->salesClearingAccount()->first();
+
         return [
             'ulid' => $this->ulid,
             'business_name' => $this->business_name,
@@ -46,6 +54,18 @@ class BusinessSettingResource extends JsonResource
                 'ulid' => $equity->ulid,
                 'code' => $equity->code,
                 'name' => $equity->name,
+            ] : null,
+            'default_cash_account_ulid' => $cash?->ulid,
+            'default_cash_account' => $cash ? [
+                'ulid' => $cash->ulid,
+                'code' => $cash->code,
+                'name' => $cash->name,
+            ] : null,
+            'sales_clearing_account_ulid' => $clearing?->ulid,
+            'sales_clearing_account' => $clearing ? [
+                'ulid' => $clearing->ulid,
+                'code' => $clearing->code,
+                'name' => $clearing->name,
             ] : null,
         ];
     }
