@@ -2352,3 +2352,337 @@
     min-width: 980px !important;
   }
 }
+
+
+/* ==========================================================================
+   Reference-style Sales Return header + detailed From / S.Man pickers.
+   Keep the entry header compact; detail grids open only on demand.
+   ========================================================================== */
+.sales-return-fields {
+  grid-template-columns:
+    minmax(86px, .55fr)
+    minmax(142px, .82fr)
+    minmax(230px, 1.35fr)
+    70px
+    minmax(82px, .48fr)
+    minmax(86px, .50fr)
+    minmax(82px, .48fr)
+    minmax(100px, .58fr) !important;
+  grid-template-areas:
+    "ret date sales refresh previous total thisbill thisbill"
+    "from from salesman salesman remarks remarks remarks remarks" !important;
+  gap: 5px 6px !important;
+  overflow: visible !important;
+}
+
+.sales-return-header-refresh {
+  grid-area: refresh !important;
+  position: static !important;
+  width: 100% !important;
+  height: 25px !important;
+  min-height: 25px !important;
+}
+
+.sales-return-option-group.is-from { grid-area: from !important; }
+.sales-return-option-group.is-salesman { grid-area: salesman !important; }
+.sales-return-option-group.is-remarks { grid-area: remarks !important; }
+
+.sales-return-fields::before {
+  content: none !important;
+}
+
+.sales-return-detail-picker {
+  position: relative;
+  z-index: 55;
+  width: 100%;
+  min-width: 0;
+}
+
+.sales-return-detail-picker.is-open {
+  z-index: 120;
+}
+
+.sales-return-detail-control {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 25px;
+  padding: 0 2px 0 7px;
+  border: 1px solid #b49f00;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, #fffef2 0%, #fff97c 47%, #efe82f 51%, #ddd400 100%);
+  color: #26313a;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.9),
+    inset 0 -1px 0 rgba(107,96,0,.16),
+    0 1px 2px rgba(75,67,0,.12);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sales-return-detail-control > span:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sales-return-detail-control:disabled {
+  opacity: .82;
+  cursor: default;
+}
+
+.sales-return-detail-caret {
+  display: grid;
+  flex: 0 0 20px;
+  place-items: center;
+  width: 20px;
+  height: 18px;
+  margin-left: 4px;
+  border: 1px solid #3f8fbe;
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, #73c8f3 0%, #2a8bc4 52%, #1472aa 100%);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.48),
+    0 1px 1px rgba(25,65,95,.22);
+  transform: rotate(0deg);
+  transform-origin: center;
+  transition: transform .18s ease, filter .12s ease;
+}
+
+.sales-return-detail-picker.is-open .sales-return-detail-caret {
+  transform: rotate(180deg);
+}
+
+.sales-return-detail-control:hover:not(:disabled) .sales-return-detail-caret {
+  filter: brightness(1.08);
+}
+
+.sales-return-detail-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  width: min(980px, calc(100vw - 370px));
+  max-height: 0;
+  overflow: hidden;
+  border: 0 solid #527fa0;
+  border-radius: 6px;
+  background: #f8fbfd;
+  box-shadow: none;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px) scaleY(.96);
+  transform-origin: top;
+  transition:
+    max-height .22s ease,
+    opacity .15s ease,
+    transform .18s ease,
+    border-width .01s linear .18s,
+    box-shadow .18s ease;
+}
+
+.sales-return-detail-dropdown.is-open {
+  max-height: 330px;
+  border-width: 1px;
+  box-shadow:
+    0 10px 22px rgba(28,57,80,.24),
+    0 3px 7px rgba(28,57,80,.15),
+    inset 0 1px 0 rgba(255,255,255,.94);
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scaleY(1);
+  transition:
+    max-height .24s ease,
+    opacity .16s ease,
+    transform .18s ease,
+    border-width .01s linear,
+    box-shadow .18s ease;
+}
+
+.sales-return-option-group.is-salesman .sales-return-detail-dropdown {
+  left: -120px;
+}
+
+.sales-return-detail-head,
+.sales-return-detail-row {
+  display: grid;
+  grid-template-columns: 110px minmax(220px, 1.15fr) minmax(260px, 1.45fr) 140px;
+  align-items: center;
+}
+
+.sales-return-detail-head {
+  min-height: 28px;
+  border-bottom: 1px solid #3e7195;
+  background:
+    linear-gradient(180deg, #fbfdff 0%, #ddecf6 18%, #a9d0e8 52%, #78afd1 53%, #5b95bb 100%);
+  color: #123b59;
+  text-shadow: 0 1px 0 rgba(255,255,255,.72);
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.sales-return-detail-head > span,
+.sales-return-detail-row > * {
+  min-width: 0;
+  padding: 0 7px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sales-return-detail-head > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-right: 1px solid rgba(60,105,137,.28);
+}
+
+.sales-return-detail-body {
+  max-height: 250px;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #6da6ca #e9f2f8;
+}
+
+.sales-return-detail-row {
+  width: 100%;
+  min-height: 27px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #d7e3eb;
+  background: linear-gradient(180deg, #fff 0%, #f6fafd 100%);
+  color: #21455f;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.sales-return-detail-row:nth-child(even) {
+  background: linear-gradient(180deg, #f4f9fd 0%, #eaf3f9 100%);
+}
+
+.sales-return-detail-row:hover,
+.sales-return-detail-row:focus-visible {
+  background:
+    linear-gradient(180deg, #4ba6e2 0%, #2585c8 48%, #126daf 52%, #0d5f9b 100%);
+  color: #fff;
+  outline: none;
+}
+
+.sales-return-detail-row > strong {
+  color: #0d5f9b;
+  font-weight: 900;
+}
+
+.sales-return-detail-row:hover > strong,
+.sales-return-detail-row:focus-visible > strong {
+  color: #fff;
+}
+
+.sales-return-detail-foot {
+  min-height: 24px;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border-top: 1px solid #6f95af;
+  background:
+    linear-gradient(180deg, #eef5f9 0%, #d3e1e9 48%, #bdced9 52%, #aebfca 100%);
+  color: #2c4f67;
+  text-align: center;
+  text-shadow: 0 1px 0 rgba(255,255,255,.75);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+:root[data-theme='dark'] .sales-return-detail-control {
+  border-color: #82772e;
+  background: linear-gradient(180deg, #51491d 0%, #423b18 100%);
+  color: #fff4a6;
+}
+
+:root[data-theme='dark'] .sales-return-detail-caret {
+  border-color: #5fa3d4;
+  background:
+    linear-gradient(180deg, #4aa3e0 0%, #267fb9 52%, #1769aa 100%);
+}
+
+:root[data-theme='dark'] .sales-return-detail-dropdown {
+  border-color: #446c88;
+  background: #1c252c;
+}
+
+:root[data-theme='dark'] .sales-return-detail-dropdown.is-open {
+  box-shadow: 0 10px 24px rgba(0,0,0,.42);
+}
+
+:root[data-theme='dark'] .sales-return-detail-head {
+  border-color: #3b6684;
+  background:
+    linear-gradient(180deg, #45667d 0%, #35576e 48%, #29495f 52%, #213d50 100%);
+  color: #eef8ff;
+  text-shadow: 0 1px 0 rgba(0,0,0,.45);
+}
+
+:root[data-theme='dark'] .sales-return-detail-row {
+  border-color: #354652;
+  background: linear-gradient(180deg, #253039 0%, #202a32 100%);
+  color: #dce9f1;
+}
+
+:root[data-theme='dark'] .sales-return-detail-row:nth-child(even) {
+  background: linear-gradient(180deg, #2a3741 0%, #24313a 100%);
+}
+
+:root[data-theme='dark'] .sales-return-detail-row > strong {
+  color: #dce9f1;
+}
+
+:root[data-theme='dark'] .sales-return-detail-foot {
+  border-color: #506879;
+  background: linear-gradient(180deg, #354652, #283640);
+  color: #dce9f1;
+  text-shadow: none;
+}
+
+@media (max-width: 1450px) {
+  .sales-return-fields {
+    grid-template-columns:
+      minmax(78px, .52fr)
+      minmax(128px, .78fr)
+      minmax(205px, 1.25fr)
+      64px
+      minmax(76px, .45fr)
+      minmax(80px, .47fr)
+      minmax(76px, .45fr)
+      minmax(92px, .55fr) !important;
+  }
+
+  .sales-return-detail-control {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .sales-return-fields {
+    min-width: 980px !important;
+  }
+
+  .sales-return-detail-dropdown {
+    width: min(820px, calc(100vw - 250px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sales-return-detail-caret,
+  .sales-return-detail-dropdown {
+    transition: none !important;
+  }
+}
