@@ -51,6 +51,11 @@ class AuthSessionResource extends JsonResource
                 'theme' => $this->user->appearance_theme ?: 'system',
                 'skin' => $this->user->appearance_skin ?: 'classic',
                 'font' => $this->user->appearance_font ?: 'skin-default',
+                'primaryTheme' => $this->user->appearance_primary_theme ?: 'blue',
+                'density' => $this->user->appearance_density ?: 'comfortable',
+                'radius' => $this->user->appearance_radius ?: 'medium',
+                'shadow' => $this->user->appearance_shadow ?: 'soft',
+                'animations' => (bool) $this->user->appearance_animations,
             ],
             'entitlements' => [
                 'plan' => $subscription?->plan ? [

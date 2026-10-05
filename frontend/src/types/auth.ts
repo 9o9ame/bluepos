@@ -80,11 +80,20 @@ export type Device = {
 export type ThemePreference = 'system' | 'light' | 'dark'
 export type InterfaceStyle = 'classic' | 'hybrid' | 'advanced'
 export type FontPreference = 'skin-default' | 'inter' | 'roboto-condensed' | 'segoe-ui' | 'tahoma' | 'arial'
+export type PrimaryTheme = 'indigo' | 'blue' | 'emerald' | 'teal' | 'purple' | 'slate'
+export type DensityPreference = 'compact' | 'comfortable'
+export type RadiusPreference = 'small' | 'medium' | 'large'
+export type ShadowPreference = 'none' | 'soft' | 'normal'
 
 export type AppearancePreferences = {
   theme: ThemePreference
   skin: InterfaceStyle
   font: FontPreference
+  primaryTheme: PrimaryTheme
+  density: DensityPreference
+  radius: RadiusPreference
+  shadow: ShadowPreference
+  animations: boolean
 }
 
 export type AuthSession = {

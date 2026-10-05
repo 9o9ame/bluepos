@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { APP_NAME } from '../../config/app'
 import type { AuthSession } from '../../types/auth'
 import { useWorkspace } from '../../features/workspace/WorkspaceProvider'
@@ -24,6 +25,7 @@ export function ApplicationTitleBar({
   onAccount,
 }: ApplicationTitleBarProps) {
   const { tabs, activeKey } = useWorkspace()
+  const [appearanceOpen, setAppearanceOpen] = useState(false)
   const active = tabs.find((tab) => tab.key === activeKey)
 
   return (
@@ -46,13 +48,14 @@ export function ApplicationTitleBar({
           {session.warehouse.code} — {session.warehouse.name}
         </span>
         <DesktopChromeControls />
-        <AppearanceMenu />
+        <AppearanceMenu open={appearanceOpen} onOpenChange={setAppearanceOpen} />
         <UserAccountMenu
           session={session}
           busy={busy}
           onLogout={onLogout}
           onChangePassword={onChangePassword}
           onAccount={onAccount}
+          onAppearance={() => setAppearanceOpen(true)}
         />
       </div>
     </header>

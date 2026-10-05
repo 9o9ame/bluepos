@@ -669,3 +669,223 @@ body,
     inset 0 1px 0 rgba(255,255,255,.85),
     0 1px 2px rgba(0,0,0,.18);
 }
+
+
+/* ---------- USER APPEARANCE PREFERENCES ---------- */
+:root[data-primary-theme='indigo'] { --appearance-accent: #4f46e5; --skin-focus-ring: #4f46e5; }
+:root[data-primary-theme='blue'] { --appearance-accent: #2563eb; --skin-focus-ring: #2563eb; }
+:root[data-primary-theme='emerald'] { --appearance-accent: #059669; --skin-focus-ring: #059669; }
+:root[data-primary-theme='teal'] { --appearance-accent: #0d9488; --skin-focus-ring: #0d9488; }
+:root[data-primary-theme='purple'] { --appearance-accent: #7c3aed; --skin-focus-ring: #7c3aed; }
+:root[data-primary-theme='slate'] { --appearance-accent: #475569; --skin-focus-ring: #475569; }
+
+:root[data-density='compact'] { --appearance-spacing-scale: .88; }
+:root[data-density='comfortable'] { --appearance-spacing-scale: 1.04; }
+:root[data-density='compact'] .appearance-settings { gap: 8px; }
+:root[data-density='comfortable'] .appearance-settings { gap: 12px; }
+
+:root[data-radius='small'] { --control-radius: 2px; --panel-radius: 2px; --appearance-control-radius: 2px; --appearance-panel-radius: 2px; }
+:root[data-radius='medium'] { --control-radius: 5px; --panel-radius: 5px; --appearance-control-radius: 5px; --appearance-panel-radius: 5px; }
+:root[data-radius='large'] { --control-radius: 9px; --panel-radius: 9px; --appearance-control-radius: 9px; --appearance-panel-radius: 9px; }
+
+:root[data-shadow='none'] { --button-shadow: none; --panel-shadow: none; }
+:root[data-shadow='soft'] { --button-shadow: 0 1px 2px rgba(15,23,42,.08); --panel-shadow: 0 1px 4px rgba(15,23,42,.08); }
+:root[data-shadow='normal'] { --button-shadow: 0 2px 4px rgba(15,23,42,.14); --panel-shadow: 0 4px 12px rgba(15,23,42,.14); }
+
+:root[data-animations='off'] *, :root[data-animations='off'] *::before, :root[data-animations='off'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* Draggable appearance modal + reference-style choice buttons */
+.appearance-menu-panel-draggable {
+  position: fixed;
+  top: 72px;
+  right: 24px;
+  z-index: 1200;
+  width: min(620px, calc(100vw - 32px));
+  max-height: calc(100vh - 96px);
+  overflow: auto;
+}
+.appearance-drag-handle {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+}
+.appearance-choice {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--appearance-border);
+  border-radius: var(--control-radius);
+  background: var(--surface-1);
+  color: var(--appearance-text);
+  box-shadow: var(--button-shadow);
+  cursor: pointer;
+  font-family: var(--app-font-family);
+  font-size: 11px;
+  font-weight: 600;
+}
+.appearance-choice:hover {
+  border-color: var(--appearance-accent);
+}
+.appearance-choice.is-selected {
+  border-color: var(--appearance-accent);
+  background: color-mix(in srgb, var(--appearance-accent) 12%, var(--surface-1));
+  color: var(--appearance-accent);
+  box-shadow: inset 0 0 0 1px var(--appearance-accent), var(--button-shadow);
+}
+.appearance-choice-input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.appearance-skin-card input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+}
+.appearance-skin-card.is-selected {
+  background: color-mix(in srgb, var(--appearance-accent) 10%, var(--appearance-surface-soft));
+  color: var(--appearance-accent);
+}
+
+/* User-selected typography is application-wide, including controls and page-specific screens. */
+:root[data-font] body,
+:root[data-font] body *,
+:root[data-font] button,
+:root[data-font] input,
+:root[data-font] select,
+:root[data-font] textarea,
+:root[data-font] table {
+  font-family: var(--app-font-family) !important;
+}
+
+
+/* ---------- GLOBAL USER APPEARANCE OVERRIDES ---------- */
+/*
+ * Loaded after density-shell.css. These selectors intentionally make the
+ * authenticated user's appearance preferences the final visual layer while
+ * leaving page geometry and business UI structure unchanged.
+ */
+
+/* Primary theme also drives BluePOS's legacy/shared brand tokens. */
+:root[data-primary-theme='indigo'] { --appearance-accent:#4f46e5; --skin-focus-ring:#4f46e5; --brand-blue:#4f46e5; --brand-blue-hot:#6366f1; --focus-ring:#4f46e5; --selected-row:color-mix(in srgb,#4f46e5 24%,white); --hover-row:color-mix(in srgb,#4f46e5 10%,white); }
+:root[data-primary-theme='blue'] { --appearance-accent:#2563eb; --skin-focus-ring:#2563eb; --brand-blue:#2563eb; --brand-blue-hot:#3b82f6; --focus-ring:#2563eb; --selected-row:color-mix(in srgb,#2563eb 24%,white); --hover-row:color-mix(in srgb,#2563eb 10%,white); }
+:root[data-primary-theme='emerald'] { --appearance-accent:#059669; --skin-focus-ring:#059669; --brand-blue:#059669; --brand-blue-hot:#10b981; --focus-ring:#059669; --selected-row:color-mix(in srgb,#059669 24%,white); --hover-row:color-mix(in srgb,#059669 10%,white); }
+:root[data-primary-theme='teal'] { --appearance-accent:#0d9488; --skin-focus-ring:#0d9488; --brand-blue:#0d9488; --brand-blue-hot:#14b8a6; --focus-ring:#0d9488; --selected-row:color-mix(in srgb,#0d9488 24%,white); --hover-row:color-mix(in srgb,#0d9488 10%,white); }
+:root[data-primary-theme='purple'] { --appearance-accent:#7c3aed; --skin-focus-ring:#7c3aed; --brand-blue:#7c3aed; --brand-blue-hot:#8b5cf6; --focus-ring:#7c3aed; --selected-row:color-mix(in srgb,#7c3aed 24%,white); --hover-row:color-mix(in srgb,#7c3aed 10%,white); }
+:root[data-primary-theme='slate'] { --appearance-accent:#475569; --skin-focus-ring:#475569; --brand-blue:#475569; --brand-blue-hot:#64748b; --focus-ring:#475569; --selected-row:color-mix(in srgb,#475569 24%,white); --hover-row:color-mix(in srgb,#475569 10%,white); }
+
+/* Font preference must win over page-specific font declarations, including !important. */
+html[data-font] #root,
+html[data-font] #root .app-shell,
+html[data-font] #root .app-shell * {
+  font-family: var(--app-font-family) !important;
+}
+
+/* Explicit density selection overrides viewport-derived density tokens globally. */
+:root[data-density='compact'] {
+  --ui-density: compact;
+  --ui-font-xs:9px; --ui-font-sm:9.5px; --ui-font-md:10.5px; --ui-font-lg:11px; --ui-font-xl:12px; --ui-font-title:12.5px;
+  --ui-control-h-sm:20px; --ui-control-h-md:22px; --ui-control-h-lg:26px;
+  --ui-icon-sm:11px; --ui-icon-md:13px; --ui-icon-lg:16px;
+  --ui-gap-xs:2px; --ui-gap-sm:4px; --ui-gap-md:6px; --ui-gap-lg:8px;
+  --ui-pad-xs:3px; --ui-pad-sm:4px; --ui-pad-md:6px;
+  --ui-header-h:22px; --ui-ribbon-tab-h:38px; --ui-ribbon-body-h:50px; --ui-ribbon-command-h:36px;
+  --ui-ribbon-command-min-w:110px; --ui-ribbon-command-max-w:160px;
+  --ui-ribbon-icon-tile:24px; --ui-ribbon-icon:20px; --ui-nav-icon:22px;
+  --ui-nav-font:12px; --ui-command-font:11px; --ui-workspace-tab-h:22px; --ui-statusbar-h:20px;
+}
+:root[data-density='comfortable'] {
+  --ui-density: comfortable;
+  --ui-font-xs:10px; --ui-font-sm:11px; --ui-font-md:12px; --ui-font-lg:13px; --ui-font-xl:14px; --ui-font-title:15px;
+  --ui-control-h-sm:23px; --ui-control-h-md:26px; --ui-control-h-lg:30px;
+  --ui-icon-sm:13px; --ui-icon-md:15px; --ui-icon-lg:19px;
+  --ui-gap-xs:4px; --ui-gap-sm:7px; --ui-gap-md:9px; --ui-gap-lg:13px;
+  --ui-pad-xs:5px; --ui-pad-sm:7px; --ui-pad-md:9px;
+  --ui-header-h:28px; --ui-ribbon-tab-h:48px; --ui-ribbon-body-h:62px; --ui-ribbon-command-h:42px;
+  --ui-ribbon-command-min-w:124px; --ui-ribbon-command-max-w:180px;
+  --ui-ribbon-icon-tile:30px; --ui-ribbon-icon:24px; --ui-nav-icon:28px;
+  --ui-nav-font:14px; --ui-command-font:13px; --ui-workspace-tab-h:28px; --ui-statusbar-h:24px;
+}
+
+/* Radius preference applies to shared controls and visual containers only. */
+html[data-radius] #root .app-shell :where(
+  button, input, select, textarea,
+  .desktop-btn, .desktop-input, .desktop-select, .desktop-textarea,
+  .desktop-panel, .form-group, .pos-grid-wrap, .calc-card,
+  .account-menu-panel, .ribbon-menu, .appearance-menu-panel,
+  .appearance-skin-card, .appearance-choice
+) {
+  border-radius: var(--control-radius) !important;
+}
+html[data-radius] #root .app-shell :where(
+  .desktop-panel, .form-group, .pos-grid-wrap, .calc-card,
+  .account-menu-panel, .ribbon-menu, .appearance-menu-panel
+) {
+  border-radius: var(--panel-radius) !important;
+}
+
+/* Card shadow preference applies across shared cards/panels; controls use button shadow. */
+html[data-shadow] #root .app-shell :where(
+  .desktop-panel, .form-group, .pos-grid-wrap, .calc-card,
+  .account-menu-panel, .ribbon-menu, .appearance-menu-panel,
+  .appearance-skin-card
+) {
+  box-shadow: var(--panel-shadow) !important;
+}
+html[data-shadow] #root .app-shell :where(
+  .desktop-btn, .account-menu-btn, .titlebar-select, .quick-command,
+  .desktop-input, .desktop-select, .appearance-choice
+) {
+  box-shadow: var(--button-shadow) !important;
+}
+
+/* Accent visible across common interactive chrome, without altering semantic danger/success colors. */
+html[data-primary-theme] #root .app-shell :where(
+  .titlebar-logo, .appearance-menu-trigger,
+  .appearance-choice.is-selected, .appearance-skin-card.is-selected
+) {
+  color: var(--appearance-accent) !important;
+}
+html[data-primary-theme] #root .app-shell :where(
+  .appearance-choice.is-selected, .appearance-skin-card.is-selected
+) {
+  border-color: var(--appearance-accent) !important;
+}
+html[data-primary-theme] #root .app-shell :where(
+  button, input, select, textarea
+):focus-visible {
+  outline-color: var(--appearance-accent) !important;
+}
+
+/* Animation preference is global; OS reduced-motion still always wins. */
+html[data-animations='off'] #root *,
+html[data-animations='off'] #root *::before,
+html[data-animations='off'] #root *::after {
+  animation-duration:0.001ms !important;
+  animation-iteration-count:1 !important;
+  transition-duration:0.001ms !important;
+  transition-delay:0ms !important;
+  scroll-behavior:auto !important;
+}

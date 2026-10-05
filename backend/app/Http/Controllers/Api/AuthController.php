@@ -76,12 +76,22 @@ class AuthController extends Controller
             'theme' => ['required', 'string', Rule::in(['system', 'light', 'dark'])],
             'skin' => ['required', 'string', Rule::in(['classic', 'hybrid', 'advanced'])],
             'font' => ['required', 'string', Rule::in(['skin-default', 'inter', 'roboto-condensed', 'segoe-ui', 'tahoma', 'arial'])],
+            'primaryTheme' => ['required', 'string', Rule::in(['indigo', 'blue', 'emerald', 'teal', 'purple', 'slate'])],
+            'density' => ['required', 'string', Rule::in(['compact', 'comfortable'])],
+            'radius' => ['required', 'string', Rule::in(['small', 'medium', 'large'])],
+            'shadow' => ['required', 'string', Rule::in(['none', 'soft', 'normal'])],
+            'animations' => ['required', 'boolean'],
         ]);
 
         $user = $tenantContext->user();
         $user->appearance_theme = $data['theme'];
         $user->appearance_skin = $data['skin'];
         $user->appearance_font = $data['font'];
+        $user->appearance_primary_theme = $data['primaryTheme'];
+        $user->appearance_density = $data['density'];
+        $user->appearance_radius = $data['radius'];
+        $user->appearance_shadow = $data['shadow'];
+        $user->appearance_animations = $data['animations'];
         $user->save();
 
         return response()->json([
@@ -89,6 +99,11 @@ class AuthController extends Controller
                 'theme' => $user->appearance_theme,
                 'skin' => $user->appearance_skin,
                 'font' => $user->appearance_font ?: 'skin-default',
+                'primaryTheme' => $user->appearance_primary_theme ?: 'blue',
+                'density' => $user->appearance_density ?: 'comfortable',
+                'radius' => $user->appearance_radius ?: 'medium',
+                'shadow' => $user->appearance_shadow ?: 'soft',
+                'animations' => (bool) $user->appearance_animations,
             ],
         ]);
     }

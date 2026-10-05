@@ -46,6 +46,7 @@ export function updateAppearance(input: UpdateAppearanceInput): Promise<UpdateAp
   return apiFetch<UpdateAppearanceResponse>('/api/auth/appearance', {
     method: 'PATCH',
     body: JSON.stringify(input),
+    busy: 'none',
   })
 }
 

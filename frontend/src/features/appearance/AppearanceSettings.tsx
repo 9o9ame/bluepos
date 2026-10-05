@@ -1,142 +1,91 @@
-import { useState } from 'react'
 import { updateAppearance } from '../../api/auth'
-import { useAppearance, type FontPreference, type InterfaceStyle, type ThemePreference } from './AppearanceProvider'
+import {
+  useAppearance,
+  type DensityPreference,
+  type FontPreference,
+  type InterfaceStyle,
+  type PrimaryTheme,
+  type RadiusPreference,
+  type ShadowPreference,
+  type ThemePreference,
+} from './AppearanceProvider'
 
 const THEME_OPTIONS: Array<{ value: ThemePreference; label: string }> = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: 'System' }, { value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' },
 ]
-
 const FONT_OPTIONS: Array<{ value: FontPreference; label: string }> = [
-  { value: 'skin-default', label: 'Interface style default' },
-  { value: 'inter', label: 'Inter' },
-  { value: 'roboto-condensed', label: 'Roboto Condensed' },
-  { value: 'segoe-ui', label: 'Segoe UI' },
-  { value: 'tahoma', label: 'Tahoma' },
-  { value: 'arial', label: 'Arial' },
+  { value: 'skin-default', label: 'Interface style default' }, { value: 'inter', label: 'Inter' },
+  { value: 'roboto-condensed', label: 'Roboto Condensed' }, { value: 'segoe-ui', label: 'Segoe UI' },
+  { value: 'tahoma', label: 'Tahoma' }, { value: 'arial', label: 'Arial' },
 ]
-
 const SKIN_OPTIONS: Array<{ value: InterfaceStyle; label: string; description: string }> = [
-  {
-    value: 'classic',
-    label: 'Classic',
-    description: 'Dense Windows POS style with classic gradients and detailed icons.',
-  },
-  {
-    value: 'hybrid',
-    label: 'Hybrid',
-    description: 'Classic POS workflow with cleaner surfaces and premium icons.',
-  },
-  {
-    value: 'advanced',
-    label: 'Advanced',
-    description: 'Modern visual treatment while preserving the same workflow and controls.',
-  },
+  { value: 'classic', label: 'Classic', description: 'Dense Windows POS style with classic gradients and detailed icons.' },
+  { value: 'hybrid', label: 'Hybrid', description: 'Classic POS workflow with cleaner surfaces and premium icons.' },
+  { value: 'advanced', label: 'Advanced', description: 'Modern visual treatment while preserving the same workflow and controls.' },
+]
+const PRIMARY_OPTIONS: Array<{ value: PrimaryTheme; label: string }> = [
+  { value: 'indigo', label: 'Indigo' }, { value: 'blue', label: 'Blue' }, { value: 'emerald', label: 'Emerald' },
+  { value: 'teal', label: 'Teal' }, { value: 'purple', label: 'Purple' }, { value: 'slate', label: 'Slate' },
 ]
 
 export function AppearanceSettings() {
-  const { theme, skin, font, setTheme, setSkin, setFont, resetAppearance } = useAppearance()
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
-
-  async function persist(nextTheme: ThemePreference, nextSkin: InterfaceStyle, nextFont: FontPreference) {
-    setSaving(true)
-    setSaveError(null)
-
+  const appearance = useAppearance()
+  const { theme, skin, font, primaryTheme, density, radius, shadow, animations } = appearance
+  async function persist(overrides: Partial<Parameters<typeof updateAppearance>[0]> = {}) {
     try {
-      await updateAppearance({ theme: nextTheme, skin: nextSkin, font: nextFont })
+      await updateAppearance({ theme, skin, font, primaryTheme, density, radius, shadow, animations, ...overrides })
     } catch {
-      setSaveError('Could not save appearance preference. Your local selection is still active.')
-    } finally {
-      setSaving(false)
+      // Local appearance remains active; persistence can retry on the next change.
     }
   }
 
-  return (
-    <section className="appearance-settings" aria-label="Appearance settings">
-      <div className="appearance-settings-group">
-        <div className="appearance-settings-heading">Theme</div>
-        <div className="appearance-option-row" role="radiogroup" aria-label="Theme">
-          {THEME_OPTIONS.map((option) => (
-            <label key={option.value} className="appearance-radio">
-              <input
-                type="radio"
-                name="appearance-theme"
-                value={option.value}
-                checked={theme === option.value}
-                onChange={() => {
-                  setTheme(option.value)
-                  void persist(option.value, skin, font)
-                }}
-              />
-              <span>{option.label}</span>
-            </label>
-          ))}
-        </div>
+  function choices<T extends string>(label: string, value: T, options: Array<{ value: T; label: string }>, select: (next: T) => void, key: string) {
+    return <div className="appearance-settings-group">
+      <div className="appearance-settings-heading">{label}</div>
+      <div className="appearance-option-row" role="radiogroup" aria-label={label}>
+        {options.map((option) => <label key={option.value} className={`appearance-choice${value === option.value ? ' is-selected' : ''}`}>
+          <input className="appearance-choice-input" type="radio" name={`appearance-${key}`} value={option.value} checked={value === option.value}
+            onChange={() => { select(option.value); void persist({ [key]: option.value }) }} />
+          <span>{option.label}</span>
+        </label>)}
       </div>
+    </div>
+  }
 
-      <div className="appearance-settings-group">
-        <div className="appearance-settings-heading">Interface Style</div>
-        <div className="appearance-skin-grid" role="radiogroup" aria-label="Interface style">
-          {SKIN_OPTIONS.map((option) => (
-            <label
-              key={option.value}
-              className={`appearance-skin-card${skin === option.value ? ' is-selected' : ''}`}
-            >
-              <input
-                type="radio"
-                name="appearance-skin"
-                value={option.value}
-                checked={skin === option.value}
-                onChange={() => {
-                  setSkin(option.value)
-                  void persist(theme, option.value, font)
-                }}
-              />
-              <span className="appearance-skin-title">{option.label}</span>
-              <span className="appearance-skin-description">{option.description}</span>
-            </label>
-          ))}
-        </div>
+  return <section className="appearance-settings" aria-label="Appearance settings">
+    {choices('Theme', theme, THEME_OPTIONS, appearance.setTheme, 'theme')}
+    {choices('Primary theme', primaryTheme, PRIMARY_OPTIONS, appearance.setPrimaryTheme, 'primaryTheme')}
+    {choices('Density', density, [{ value: 'compact', label: 'Compact' }, { value: 'comfortable', label: 'Comfortable' }] as Array<{value: DensityPreference; label: string}>, appearance.setDensity, 'density')}
+    {choices('Border radius', radius, [{ value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' }] as Array<{value: RadiusPreference; label: string}>, appearance.setRadius, 'radius')}
+    {choices('Card shadow', shadow, [{ value: 'none', label: 'None' }, { value: 'soft', label: 'Soft' }, { value: 'normal', label: 'Normal' }] as Array<{value: ShadowPreference; label: string}>, appearance.setShadow, 'shadow')}
+    <div className="appearance-settings-group">
+      <div className="appearance-settings-heading">UI Animations</div>
+      <div className="appearance-option-row">
+        <label className={`appearance-choice${animations ? ' is-selected' : ''}`}><input className="appearance-choice-input" type="radio" name="appearance-animations" checked={animations} onChange={() => { appearance.setAnimations(true); void persist({ animations: true }) }} /><span>On</span></label>
+        <label className={`appearance-choice${!animations ? ' is-selected' : ''}`}><input className="appearance-choice-input" type="radio" name="appearance-animations" checked={!animations} onChange={() => { appearance.setAnimations(false); void persist({ animations: false }) }} /><span>Off</span></label>
       </div>
-
-      <div className="appearance-settings-group">
-        <label className="appearance-settings-heading" htmlFor="appearance-font">Font Family</label>
-        <select
-          id="appearance-font"
-          className="desktop-select"
-          value={font}
-          disabled={saving}
-          onChange={(event) => {
-            const nextFont = event.target.value as FontPreference
-            setFont(nextFont)
-            void persist(theme, skin, nextFont)
-          }}
-        >
-          {FONT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </select>
+    </div>
+    <div className="appearance-settings-group">
+      <div className="appearance-settings-heading">Interface Style</div>
+      <div className="appearance-skin-grid" role="radiogroup" aria-label="Interface style">
+        {SKIN_OPTIONS.map((option) => <label key={option.value} className={`appearance-skin-card${skin === option.value ? ' is-selected' : ''}`}>
+          <input type="radio" name="appearance-skin" value={option.value} checked={skin === option.value}
+            onChange={() => { appearance.setSkin(option.value); void persist({ skin: option.value }) }} />
+          <span className="appearance-skin-title">{option.label}</span><span className="appearance-skin-description">{option.description}</span>
+        </label>)}
       </div>
-
-      {saveError ? <div className="appearance-save-error">{saveError}</div> : null}
-      <div className="appearance-settings-actions">
-        <span className="appearance-save-state" aria-live="polite">
-          {saving ? 'Saving…' : ''}
-        </span>
-        <button
-          type="button"
-          className="desktop-btn"
-          disabled={saving}
-          onClick={() => {
-            resetAppearance()
-            void persist('system', 'classic', 'skin-default')
-          }}
-        >
-          Reset to Default
-        </button>
-      </div>
-    </section>
-  )
+    </div>
+    <div className="appearance-settings-group">
+      <label className="appearance-settings-heading" htmlFor="appearance-font">Font Family</label>
+      <select id="appearance-font" className="desktop-select" value={font}
+        onChange={(event) => { const next = event.target.value as FontPreference; appearance.setFont(next); void persist({ font: next }) }}>
+        {FONT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+    </div>
+    <div className="appearance-settings-actions"><button type="button" className="desktop-btn" onClick={() => {
+        appearance.resetAppearance()
+        void persist({ theme: 'system', skin: 'classic', font: 'skin-default', primaryTheme: 'blue', density: 'comfortable', radius: 'medium', shadow: 'soft', animations: true })
+      }}>Reset to Default</button>
+    </div>
+  </section>
 }
