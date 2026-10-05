@@ -1993,3 +1993,132 @@
     min-width: 920px !important;
   }
 }
+
+
+/* ==========================================================================
+   Readability correction — match Sales Invoice control sizing.
+   Keep the 2-row layout, restore normal POS font and control heights.
+   ========================================================================== */
+.sales-return-head legend {
+  font-size: 10px !important;
+  line-height: 12px !important;
+}
+
+.sales-return-fields {
+  gap: 5px 7px !important;
+  min-height: 56px !important;
+}
+
+.sales-return-option-group {
+  gap: 4px !important;
+}
+
+.sales-return-option-group > label {
+  font-size: 10px !important;
+  line-height: 12px !important;
+  font-weight: 900 !important;
+}
+
+.sales-return-fields .sales-return-option-group > input,
+.sales-return-fields .sales-return-sale-input,
+.sales-return-fields .sales-return-sale-input > input,
+.sales-return-fields .sales-return-party-select {
+  height: 25px !important;
+  min-height: 25px !important;
+  font-size: 10px !important;
+}
+
+.sales-return-fields .sales-return-option-group > input,
+.sales-return-fields .sales-return-sale-input > input,
+.sales-return-fields .sales-return-party-select {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.sales-return-sale-input > svg {
+  width: 13px !important;
+  height: 13px !important;
+  left: 7px !important;
+}
+
+.sales-return-sale-input > input {
+  padding-left: 25px !important;
+  padding-right: 28px !important;
+}
+
+.sales-return-sale-trigger {
+  width: 25px !important;
+  height: 23px !important;
+}
+
+.sales-return-select-caret {
+  width: 18px !important;
+  height: 16px !important;
+  margin-top: -8px !important;
+}
+
+.sales-return-header-refresh {
+  height: 25px !important;
+  min-height: 25px !important;
+  font-size: 10px !important;
+  padding: 0 6px !important;
+}
+
+.sales-return-header-refresh svg {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.sales-return-balance-chip {
+  grid-template-rows: 10px 15px !important;
+  height: 25px !important;
+}
+
+.sales-return-balance-chip > span {
+  font-size: 8px !important;
+  line-height: 10px !important;
+}
+
+.sales-return-balance-chip > strong {
+  font-size: 10px !important;
+  line-height: 15px !important;
+}
+
+.sales-return-party-select {
+  padding-left: 7px !important;
+  padding-right: 26px !important;
+}
+
+.sales-return-head fieldset {
+  padding-top: 4px !important;
+  padding-bottom: 6px !important;
+}
+
+.sales-return-amounts > div {
+  min-height: 25px !important;
+}
+
+.sales-return-amounts span {
+  font-size: 10px !important;
+}
+
+.sales-return-amounts strong {
+  font-size: 11px !important;
+}
+
+.sales-return-amounts .is-net strong {
+  font-size: 14px !important;
+}
+
+@media (max-width: 1450px) {
+  .sales-return-option-group > label {
+    font-size: 9px !important;
+  }
+
+  .sales-return-fields .sales-return-option-group > input,
+  .sales-return-fields .sales-return-sale-input > input,
+  .sales-return-fields .sales-return-party-select,
+  .sales-return-header-refresh {
+    font-size: 9px !important;
+  }
+}
