@@ -49,6 +49,8 @@ class SaleResource extends JsonResource
                 'ulid' => $this->salesmanParty->ulid,
                 'code' => $this->salesmanParty->code,
                 'name' => $this->salesmanParty->name,
+                'address' => $this->salesmanParty->address,
+                'mobile' => $this->salesmanParty->mobile ?: $this->salesmanParty->phone,
             ]),
             'customer' => $this->whenLoaded('customer', fn () => $this->customer === null ? null : [
                 'ulid' => $this->customer->ulid,
