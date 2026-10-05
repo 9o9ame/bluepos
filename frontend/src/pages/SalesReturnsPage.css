@@ -1461,3 +1461,230 @@
     transition: none;
   }
 }
+
+
+/* ==========================================================================
+   Reference-style single-line Return Invoice Options.
+   The fieldset stays one row; numeric balance widgets sit inline with controls.
+   ========================================================================== */
+.sales-return-fields {
+  display: flex !important;
+  align-items: center;
+  gap: 4px !important;
+  min-width: 0;
+  width: 100%;
+  overflow: visible;
+}
+
+.sales-return-option-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
+.sales-return-option-group > label {
+  flex: 0 0 auto;
+  color: #294c64;
+  font-size: 9px;
+  font-weight: 900;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.sales-return-option-group > input,
+.sales-return-option-group > .sales-return-sale-search,
+.sales-return-option-group > .sales-return-party-select-wrap {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sales-return-option-group.is-ret { width: 86px; }
+.sales-return-option-group.is-ret > input { width: 50px; }
+
+.sales-return-option-group.is-date { width: 145px; }
+.sales-return-option-group.is-date > input { width: 108px; }
+
+.sales-return-option-group.is-sales {
+  width: 215px;
+  position: relative;
+  z-index: 45;
+}
+
+.sales-return-option-group.is-from { width: 178px; }
+.sales-return-option-group.is-remarks { width: 150px; }
+.sales-return-option-group.is-salesman { width: 175px; }
+
+.sales-return-header-refresh {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 67px;
+  height: 25px;
+  padding: 0 5px;
+  border: 1px solid #668ba5;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, #ffffff 0%, #e3eef5 47%, #b9d4e4 51%, #8db5cf 100%);
+  color: #1a4867;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    0 1px 2px rgba(34,67,90,.15);
+  font: inherit;
+  font-size: 9px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.sales-return-header-refresh:hover {
+  border-color: #2f80b4;
+  background:
+    linear-gradient(180deg, #fff 0%, #ecf8ff 47%, #b9e1f5 51%, #83badb 100%);
+}
+
+.sales-return-header-refresh:active > svg {
+  transform: rotate(180deg);
+  transition: transform .18s ease;
+}
+
+.sales-return-balance-chip {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-rows: 10px 15px;
+  width: 72px;
+  height: 25px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid #91a6b4;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #f8fbfd 0%, #dce6ec 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.92),
+    0 1px 1px rgba(40,67,84,.10);
+}
+
+.sales-return-balance-chip > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  color: #456174;
+  font-size: 7px;
+  font-weight: 950;
+  line-height: 10px;
+  white-space: nowrap;
+}
+
+.sales-return-balance-chip > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 4px;
+  color: #183f59;
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-return-balance-chip.is-this-bill {
+  border-color: #79a98a;
+  background: linear-gradient(180deg, #f7fff8 0%, #d7eddd 100%);
+}
+
+.sales-return-balance-chip.is-this-bill > span,
+.sales-return-balance-chip.is-this-bill > strong {
+  color: #216d38;
+}
+
+.sales-return-balance-chip.is-total-balance {
+  width: 78px;
+  border-color: #d1a064;
+  background: linear-gradient(180deg, #fffdf9 0%, #f1dfc8 100%);
+}
+
+.sales-return-balance-chip.is-total-balance > span,
+.sales-return-balance-chip.is-total-balance > strong {
+  color: #9b4d0a;
+}
+
+.sales-return-fields .sales-return-sale-input,
+.sales-return-fields .sales-return-party-select,
+.sales-return-fields .sales-return-option-group > input {
+  height: 25px;
+}
+
+.sales-return-fields .sales-return-sale-input > input {
+  height: 25px;
+}
+
+.sales-return-option-group.is-sales .sales-return-sale-results {
+  left: 38px;
+  width: min(900px, calc(100vw - 420px));
+}
+
+:root[data-theme='dark'] .sales-return-balance-chip {
+  border-color: #4e6676;
+  background: linear-gradient(180deg, #31404b 0%, #26323a 100%);
+}
+
+:root[data-theme='dark'] .sales-return-balance-chip > span,
+:root[data-theme='dark'] .sales-return-balance-chip > strong {
+  color: #e5eff5;
+}
+
+:root[data-theme='dark'] .sales-return-balance-chip.is-this-bill {
+  border-color: #51785b;
+  background: linear-gradient(180deg, #284332 0%, #203528 100%);
+}
+
+:root[data-theme='dark'] .sales-return-balance-chip.is-this-bill > span,
+:root[data-theme='dark'] .sales-return-balance-chip.is-this-bill > strong {
+  color: #bce8c6;
+}
+
+:root[data-theme='dark'] .sales-return-balance-chip.is-total-balance {
+  border-color: #7b684f;
+  background: linear-gradient(180deg, #443526 0%, #382c21 100%);
+}
+
+:root[data-theme='dark'] .sales-return-balance-chip.is-total-balance > span,
+:root[data-theme='dark'] .sales-return-balance-chip.is-total-balance > strong {
+  color: #f2cfaa;
+}
+
+@media (max-width: 1450px) {
+  .sales-return-fields {
+    gap: 3px !important;
+  }
+
+  .sales-return-option-group.is-ret { width: 80px; }
+  .sales-return-option-group.is-date { width: 137px; }
+  .sales-return-option-group.is-sales { width: 190px; }
+  .sales-return-option-group.is-from { width: 158px; }
+  .sales-return-option-group.is-remarks { width: 132px; }
+  .sales-return-option-group.is-salesman { width: 158px; }
+
+  .sales-return-header-refresh { width: 61px; }
+  .sales-return-balance-chip { width: 64px; }
+  .sales-return-balance-chip.is-total-balance { width: 70px; }
+
+  .sales-return-option-group > label {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .sales-return-head > fieldset:first-child {
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+
+  .sales-return-fields {
+    width: max-content;
+    min-width: 1030px;
+  }
+}
