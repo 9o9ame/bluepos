@@ -501,6 +501,20 @@ export function PartiesPlaceholderPage({
   }, [viewTab, coaShowGrouped])
 
   useEffect(() => {
+    if (accountTypes.length === 0 || form.type === 'ACCOUNTS') return
+
+    setForm((current) => {
+      const suggested = applySuggestedProfileAccountTypes(current)
+      return suggested.vendorAccountTypeUlid === current.vendorAccountTypeUlid
+        && suggested.customerAccountTypeUlid === current.customerAccountTypeUlid
+        ? current
+        : suggested
+    })
+    // Only react when account-type catalogue becomes available.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountTypes])
+
+  useEffect(() => {
     if (subTab !== 'opening') return
     void (async () => {
       try {
@@ -738,12 +752,12 @@ export function PartiesPlaceholderPage({
     let next = { ...formState }
 
     if (next.types.includes('vendor') && !next.vendorAccountTypeUlid) {
-      const match = accountTypes.find((t) => t.name.toUpperCase() === 'ACCOUNT PAYABLE')
+      const match = accountTypes.find((t) => t.is_active && t.is_payable)
       if (match) next = { ...next, vendorAccountTypeUlid: match.ulid }
     }
 
     if (next.types.includes('customer') && !next.customerAccountTypeUlid) {
-      const match = accountTypes.find((t) => t.name.toUpperCase() === 'ACCOUNT RECEIVABLE')
+      const match = accountTypes.find((t) => t.is_active && t.is_receivable)
       if (match) next = { ...next, customerAccountTypeUlid: match.ulid }
     }
 
