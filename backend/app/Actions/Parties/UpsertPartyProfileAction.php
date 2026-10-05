@@ -111,6 +111,28 @@ class UpsertPartyProfileAction
 
             if (! in_array('account', $types, true) && $account) {
                 $account->is_active = false;
+
+                $otherFinancialActive =
+                    in_array('vendor', $types, true)
+                    || in_array('customer', $types, true);
+
+                if ($otherFinancialActive && $account->code === $profile->code) {
+                    $historicalCode = $profile->code.'-A';
+                    $conflict = Account::query()
+                        ->forTenant($tenantId)
+                        ->where('code', $historicalCode)
+                        ->where('id', '<>', $account->id)
+                        ->exists();
+
+                    if ($conflict) {
+                        throw ValidationException::withMessages([
+                            'code' => 'A ledger account already uses '.$historicalCode.'. Choose another party code before changing types.',
+                        ]);
+                    }
+
+                    $account->code = $historicalCode;
+                }
+
                 $account->updated_by = $this->tenantContext->userId();
                 $account->save();
             }
