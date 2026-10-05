@@ -124,6 +124,7 @@ function typeLabel(type: PartyTypeApi): string {
 function defaultBusinessTypes(type: PartyType): PartyBusinessType[] {
   if (type === 'CUSTOMERS') return ['customer']
   if (type === 'SALES MAN') return ['salesman']
+  if (type === 'ACCOUNTS') return ['account']
   if (type === 'VENDORS' || type === 'ALL') return ['vendor']
   return []
 }
@@ -140,6 +141,7 @@ function emptyForm(listFilter: PartyType = 'ALL') {
     identityUlid: '',
     vendorUlid: '',
     customerUlid: '',
+    accountUlid: '',
     code: '',
     type: listFilter,
     types: defaultBusinessTypes(listFilter),
@@ -174,6 +176,7 @@ function emptyForm(listFilter: PartyType = 'ALL') {
     accountTypeUlid: '',
     vendorAccountTypeUlid: '',
     customerAccountTypeUlid: '',
+    accountAccountTypeUlid: '',
   }
 }
 
@@ -186,9 +189,10 @@ function partyToForm(party: Party, listFilter: PartyType): FormState {
     identityUlid: party.identity_ulid ?? '',
     vendorUlid: party.vendor_ulid ?? '',
     customerUlid: party.customer_ulid ?? '',
+    accountUlid: party.account_ulid ?? '',
     code: party.code,
     type: apiTypeToUi(party.party_type),
-    types: party.party_types ?? (party.party_type === 'account' ? [] : [party.party_type as PartyBusinessType]),
+    types: party.party_types ?? (party.identity_ulid ? [party.party_type as PartyBusinessType] : (party.party_type === 'account' ? [] : [party.party_type as PartyBusinessType])),
     name: party.name,
     dealsIn: party.deals_in ?? '',
     address: party.address ?? '',
@@ -212,6 +216,7 @@ function partyToForm(party: Party, listFilter: PartyType): FormState {
     accountTypeUlid: party.account_type_ulid ?? '',
     vendorAccountTypeUlid: party.vendor_account_type_ulid ?? (party.party_type === 'vendor' ? party.account_type_ulid ?? '' : ''),
     customerAccountTypeUlid: party.customer_account_type_ulid ?? (party.party_type === 'customer' ? party.account_type_ulid ?? '' : ''),
+    accountAccountTypeUlid: party.account_account_type_ulid ?? (party.identity_ulid && party.party_type === 'account' ? party.account_type_ulid ?? '' : ''),
     license: party.license_number ?? '',
     licenseIssue: party.license_issued_on ?? '',
     licenseType: party.license_type || 'A',
@@ -229,6 +234,7 @@ function formSnapshot(form: FormState): string {
     identityUlid: form.identityUlid,
     vendorUlid: form.vendorUlid,
     customerUlid: form.customerUlid,
+    accountUlid: form.accountUlid,
     code: form.code,
     type: form.type,
     types: form.types,
@@ -254,6 +260,7 @@ function formSnapshot(form: FormState): string {
     accountTypeUlid: form.accountTypeUlid,
     vendorAccountTypeUlid: form.vendorAccountTypeUlid,
     customerAccountTypeUlid: form.customerAccountTypeUlid,
+    accountAccountTypeUlid: form.accountAccountTypeUlid,
     license: form.license,
     licenseIssue: form.licenseIssue,
     licenseType: form.licenseType,
@@ -334,7 +341,7 @@ function partyKey(party: Party): string {
 }
 
 function partyTypeSummary(party: Party): string {
-  if (party.party_type === 'account') return 'ACCOUNT'
+  if (party.party_type === 'account' && !party.identity_ulid) return 'ACCOUNT'
   const types = party.party_types ?? [party.party_type as PartyBusinessType]
   return types.map((type) => typeLabel(type)).join(' + ')
 }
@@ -416,7 +423,7 @@ export function PartiesPlaceholderPage({
     formSnapshot(form) !== baselineRef.current ||
     bankRows.some((r) => r.dirty) ||
     openingRows.some((r) => r.dirty)
-  const isManualAccount = form.type === 'ACCOUNTS'
+  const isManualAccount = form.type === 'ACCOUNTS' && !form.identityUlid && Boolean(form.ulid)
   const canSave =
     !saving &&
     form.name.trim().length > 0 &&
@@ -426,7 +433,8 @@ export function PartiesPlaceholderPage({
       ? form.accountTypeUlid.trim().length > 0
       : form.types.length > 0 &&
         (!form.types.includes('vendor') || form.vendorAccountTypeUlid.trim().length > 0) &&
-        (!form.types.includes('customer') || form.customerAccountTypeUlid.trim().length > 0))
+        (!form.types.includes('customer') || form.customerAccountTypeUlid.trim().length > 0) &&
+        (!form.types.includes('account') || form.accountAccountTypeUlid.trim().length > 0))
 
   const subTabs = useMemo(
     () =>
