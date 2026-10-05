@@ -108,16 +108,10 @@ export function SalesPendingInvoices({
     try {
       const hold = await fetchSaleHold(holdUlid)
       await onRecallHeld(hold)
-
-      try {
-        await deleteSaleHold(holdUlid)
-        await holdsQuery.refetch()
-      } catch {
-        feedback.error(
-          'The sale was recalled, but its server hold could not be removed. It is still safe in On Hold.',
-          'On Hold',
-        )
-      }
+      feedback.success(
+        'Held sale recalled. The server recovery copy will remain until the sale is posted or held again.',
+        'On Hold',
+      )
     } catch (err) {
       feedback.error(
         err instanceof Error ? err.message : 'Unable to recall this held sale.',
