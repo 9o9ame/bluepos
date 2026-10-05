@@ -14,6 +14,7 @@ use App\Models\Account;
 use App\Models\Customer;
 use App\Models\PartyProfile;
 use App\Models\Supplier;
+use App\Parties\PartyProfileBridge;
 use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +29,7 @@ class PartyController extends Controller
         private readonly TenantCatalog $catalog,
         private readonly AuditLogger $audit,
         private readonly PartyLeafAccountSync $leafSync,
+        private readonly PartyProfileBridge $profileBridge,
     ) {}
 
     public function index(Request $request, TenantContext $tenantContext): JsonResponse
@@ -156,7 +158,16 @@ class PartyController extends Controller
             return $party->load('accountType');
         });
 
-        return (new PartyResource($party, $partyType))->response()->setStatusCode(201);
+        if ($partyType === 'vendor') {
+            $this->profileBridge->ensureSupplier($party);
+        } elseif ($partyType === 'customer') {
+            $this->profileBridge->ensureCustomer($party);
+        }
+
+        return (new PartyResource(
+            $party->refresh()->load(['accountType', 'partyProfile.types', 'partyProfile.supplier.accountType', 'partyProfile.customer.accountType']),
+            $partyType
+        ))->response()->setStatusCode(201);
     }
 
     public function show(Request $request, string $partyUlid): PartyResource
@@ -221,7 +232,16 @@ class PartyController extends Controller
             ]);
         });
 
-        return new PartyResource($party->refresh()->load('accountType'), $partyType);
+        if ($partyType === 'vendor') {
+            $this->profileBridge->ensureSupplier($party);
+        } elseif ($partyType === 'customer') {
+            $this->profileBridge->ensureCustomer($party);
+        }
+
+        return new PartyResource(
+            $party->refresh()->load(['accountType', 'partyProfile.types', 'partyProfile.supplier.accountType', 'partyProfile.customer.accountType']),
+            $partyType
+        );
     }
 
     public function destroy(Request $request, string $partyUlid): JsonResponse
