@@ -22,6 +22,7 @@ class PartyProfileResource extends JsonResource
         $primary = $this->primaryType === 'vendor' ? $supplier : ($this->primaryType === 'customer' ? $customer : null);
         $accountType = $primary?->accountType;
         $publicUlid = $primary?->ulid ?? $this->ulid;
+        $imageBacking = $primary ?? $customer ?? $supplier;
 
         return [
             'ulid' => $publicUlid,
@@ -63,8 +64,10 @@ class PartyProfileResource extends JsonResource
             'print_license' => (bool) $this->print_license,
             'rf_id' => $this->rf_id,
             'store_allowed' => $this->store_allowed,
-            'image_url' => $primary && $this->image_path
-                ? '/api/parties/'.$primary->ulid.'/image?type='.$this->primaryType.'&v='.($this->updated_at?->getTimestamp() ?? 0)
+            'image_url' => $imageBacking && $this->image_path
+                ? '/api/parties/'.$imageBacking->ulid.'/image?type='
+                    .($imageBacking instanceof \App\Models\Customer ? 'customer' : 'vendor')
+                    .'&v='.($this->updated_at?->getTimestamp() ?? 0)
                 : null,
         ];
     }
