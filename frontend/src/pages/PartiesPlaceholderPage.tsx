@@ -1844,35 +1844,81 @@ export function PartiesPlaceholderPage({
                 <input id="vca-stn" value={form.stn} onChange={(e) => patchForm('stn', e.target.value)} />
               </div>
 
-              <div className="parties-vca-account-type-row">
-                <label htmlFor="vca-account-type">Account Type</label>
-                <AnimatedSelect
-                  id="vca-account-type"
-                  value={form.accountTypeUlid}
-                  onChange={(e) => {
-                    const ulid = e.target.value
-                    const match = accountTypes.find((t) => t.ulid === ulid)
-                    patchForm('accountTypeUlid', ulid)
-                    patchForm('accountType', match?.name ?? '')
-                  }}
-                >
-                  <option value="">Select Account Type…</option>
-                  {accountTypes.map((type) => (
-                    <option key={type.ulid} value={type.ulid}>
-                      {type.name}
-                    </option>
-                  ))}
-                </AnimatedSelect>
-                <button
-                  type="button"
-                  className="parties-vca-account-type-btn"
-                  title="Define Account Types"
-                  aria-label="Define Account Types"
-                  onClick={() => setCoaModalOpen(true)}
-                >
-                  <Plus size={15} strokeWidth={3} />
-                </button>
-              </div>
+              {form.type === 'ACCOUNTS' ? (
+                <div className="parties-vca-account-type-row">
+                  <label htmlFor="vca-account-type">Account Type</label>
+                  <AnimatedSelect
+                    id="vca-account-type"
+                    value={form.accountTypeUlid}
+                    onChange={(e) => {
+                      const ulid = e.target.value
+                      const match = accountTypes.find((t) => t.ulid === ulid)
+                      patchForm('accountTypeUlid', ulid)
+                      patchForm('accountType', match?.name ?? '')
+                    }}
+                  >
+                    <option value="">Select Account Type…</option>
+                    {accountTypes.map((type) => (
+                      <option key={type.ulid} value={type.ulid}>{type.name}</option>
+                    ))}
+                  </AnimatedSelect>
+                  <button
+                    type="button"
+                    className="parties-vca-account-type-btn"
+                    title="Define Account Types"
+                    aria-label="Define Account Types"
+                    onClick={() => setCoaModalOpen(true)}
+                  >
+                    <Plus size={15} strokeWidth={3} />
+                  </button>
+                </div>
+              ) : (
+                <div className="parties-vca-profile-account-types">
+                  {form.types.includes('vendor') ? (
+                    <div className="parties-vca-account-type-row">
+                      <label htmlFor="vca-vendor-account-type">Vendor A/C Type</label>
+                      <AnimatedSelect
+                        id="vca-vendor-account-type"
+                        value={form.vendorAccountTypeUlid}
+                        onChange={(e) => patchForm('vendorAccountTypeUlid', e.target.value)}
+                      >
+                        <option value="">Select vendor account type…</option>
+                        {accountTypes.map((type) => (
+                          <option key={type.ulid} value={type.ulid}>{type.name}</option>
+                        ))}
+                      </AnimatedSelect>
+                      <button type="button" className="parties-vca-account-type-btn" title="Define Account Types" onClick={() => setCoaModalOpen(true)}>
+                        <Plus size={15} strokeWidth={3} />
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {form.types.includes('customer') ? (
+                    <div className="parties-vca-account-type-row">
+                      <label htmlFor="vca-customer-account-type">Customer A/C Type</label>
+                      <AnimatedSelect
+                        id="vca-customer-account-type"
+                        value={form.customerAccountTypeUlid}
+                        onChange={(e) => patchForm('customerAccountTypeUlid', e.target.value)}
+                      >
+                        <option value="">Select customer account type…</option>
+                        {accountTypes.map((type) => (
+                          <option key={type.ulid} value={type.ulid}>{type.name}</option>
+                        ))}
+                      </AnimatedSelect>
+                      <button type="button" className="parties-vca-account-type-btn" title="Define Account Types" onClick={() => setCoaModalOpen(true)}>
+                        <Plus size={15} strokeWidth={3} />
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {form.types.length === 1 && form.types[0] === 'salesman' ? (
+                    <div className="parties-vca-salesman-account-note">
+                      Salesman-only parties do not require a ledger account type.
+                    </div>
+                  ) : null}
+                </div>
+              )}
             </fieldset>
           </section>
 
@@ -1891,11 +1937,7 @@ export function PartiesPlaceholderPage({
                   {rows.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="parties-vca-empty">
-                        {loading
-                          ? 'Loading…'
-                          : listFilter === 'SALES MAN'
-                            ? 'SALES MAN master is deferred'
-                            : 'No party records yet'}
+                        {loading ? 'Loading…' : 'No party records yet'}
                       </td>
                     </tr>
                   ) : (
