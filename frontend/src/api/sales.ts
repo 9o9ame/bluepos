@@ -17,13 +17,24 @@ export function createSale(payload: SalePayload, idempotencyKey: string) {
 }
 
 export function fetchSales(
-  params: { page?: number; per_page?: number; date_from?: string; date_to?: string } = {},
+  params: {
+    page?: number
+    per_page?: number
+    date_from?: string
+    date_to?: string
+    q?: string
+    salesman_ulid?: string
+    status?: 'posted' | 'void'
+  } = {},
 ) {
   const search = new URLSearchParams()
   if (params.page) search.set('page', String(params.page))
   if (params.per_page) search.set('per_page', String(params.per_page))
   if (params.date_from) search.set('date_from', params.date_from)
   if (params.date_to) search.set('date_to', params.date_to)
+  if (params.q) search.set('q', params.q)
+  if (params.salesman_ulid) search.set('salesman_ulid', params.salesman_ulid)
+  if (params.status) search.set('status', params.status)
   const query = search.toString()
 
   return apiFetch<{
@@ -34,7 +45,7 @@ export function fetchSales(
       total: number
       last_page: number
     }
-  }>(`/api/sales${query ? `?${query}` : ''}`)
+  }>(`/api/sales${query ? `?${query}` : ''}`, { busy: 'none' })
 }
 
 export function fetchSalesmen() {
