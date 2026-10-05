@@ -76,6 +76,19 @@ class SaleController extends Controller
             }
         }
 
+        if ($request->boolean('due_only')) {
+            $query
+                ->where('status', SaleStatus::Posted->value)
+                ->whereRaw(
+                    'sales.grand_total > COALESCE((
+                        SELECT SUM(sp.amount)
+                        FROM sale_payments sp
+                        WHERE sp.sale_id = sales.id
+                          AND sp.tenant_id = sales.tenant_id
+                    ), 0)'
+                );
+        }
+
         if ($request->filled('date_from')) {
             $query->whereDate('sale_date', '>=', (string) $request->string('date_from'));
         }
