@@ -350,6 +350,8 @@ export function SalesInvoicePage() {
       cart.clear()
       setSelectedCustomer(null)
       setProductQuery('')
+      setActiveProductQuery('')
+      setActiveProductPickerOpen(false)
       setCustomerPickerOpen(false)
       setSalesmanPickerOpen(false)
 
@@ -584,6 +586,8 @@ export function SalesInvoicePage() {
     setSelectedCustomer(null)
     setReceived('')
     setPaymentReference('')
+    setActiveProductQuery('')
+    setActiveProductPickerOpen(false)
   }
 
   function recallHeldCart(id: string) {
@@ -625,6 +629,8 @@ export function SalesInvoicePage() {
     setReceived('')
     setPaymentReference('')
     setProductQuery('')
+    setActiveProductQuery('')
+    setActiveProductPickerOpen(false)
     setBarcodeQuery('')
     setActiveLineKey(null)
     setCustomerPickerOpen(false)
@@ -699,6 +705,18 @@ export function SalesInvoicePage() {
 
     return null
   }, [businessSettingsQuery.data?.negative_stock_allowed, cart.paidLines])
+
+  useEffect(() => {
+    if (stockIssue) {
+      feedback.error(stockIssue, 'Stock warning')
+    }
+  }, [feedback, stockIssue])
+
+  useEffect(() => {
+    if (saveError) {
+      feedback.error(saveError, 'Sales Invoice')
+    }
+  }, [feedback, saveError])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -1136,15 +1154,7 @@ export function SalesInvoicePage() {
             </section>
 
             <div className="sales-pos-status">
-              {stockIssue ? (
-                <span className="sales-pos-status-error">
-                  {stockIssue}
-                </span>
-              ) : saveError ? (
-                <span className="sales-pos-status-error">
-                  {saveError}
-                </span>
-              ) : savedSale ? (
+              {savedSale ? (
                 <>
                   <span className="sales-pos-status-ok">
                     Saved {savedSale.document_number} — total{' '}
@@ -1161,19 +1171,11 @@ export function SalesInvoicePage() {
                   {canCollectPayment ? (
                     <SalePaymentPanel
                       sale={savedSale}
-                      outstanding={outstandingAfterPayments(
-                        savedSale,
-                      )}
-                      onCollected={() =>
-                        refreshSavedSale(savedSale.ulid)
-                      }
+                      outstanding={outstandingAfterPayments(savedSale)}
+                      onCollected={() => refreshSavedSale(savedSale.ulid)}
                     />
                   ) : null}
                 </>
-              ) : cart.hasPaidLines ? (
-                <span>
-                  {cart.paidLines.length} line(s) ready to save
-                </span>
               ) : null}
             </div>
 
@@ -1213,7 +1215,14 @@ export function SalesInvoicePage() {
                 {isBusy ? 'Saving...' : 'Sale'}
               </button>
 
-              <div className="sales-reference-entry-spacer" />
+              <div
+                className={`sales-reference-entry-status${stockIssue || saveError ? ' is-error' : cart.hasPaidLines ? ' is-ready' : ''}`}
+                role={stockIssue || saveError ? 'alert' : 'status'}
+              >
+                {stockIssue ?? saveError ?? (cart.hasPaidLines
+                  ? `${cart.paidLines.length} line(s) ready to save`
+                  : '')}
+              </div>
             </div>
 
             <div className="sales-reference-grid-wrap">
@@ -1325,8 +1334,48 @@ export function SalesInvoicePage() {
 
                               if (col.key === 'product') {
                                 return (
-                                  <td key={col.key} className="sales-reference-yellow">
-                                    <strong>{line.product_number} — {line.product_name}</strong>
+                                  <td key={col.key} className="sales-reference-yellow sales-product-search-cell">
+                                    <input
+                                      className="sales-pos-product-entry is-active-product"
+                                      value={activeProductQuery}
+                                      aria-label="Change product"
+                                      autoComplete="off"
+                                      onFocus={() => {
+                                        if (!activeProductQuery) {
+                                          setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
+                                        }
+                                      }}
+                                      onChange={(e) => {
+                                        setActiveProductQuery(e.target.value)
+                                        setActiveProductPickerOpen(true)
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Escape') {
+                                          setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
+                                          setActiveProductPickerOpen(false)
+                                          return
+                                        }
+                                        if (e.key !== 'Enter') return
+                                        const first = activeProductsQuery.data?.data?.[0]
+                                        if (first) {
+                                          e.preventDefault()
+                                          void addProductFromEntry(first.ulid, '', line.line_key)
+                                        }
+                                      }}
+                                    />
+
+                                    {activeProductPickerOpen &&
+                                    activeProductQuery.trim().length > 0 &&
+                                    activeProductsQuery.data?.data?.length ? (
+                                      <ProductLookupGrid
+                                        rows={activeProductsQuery.data.data}
+                                        total={activeProductsQuery.data.meta.total}
+                                        priceType={cart.priceType}
+                                        onSelect={(product) =>
+                                          void addProductFromEntry(product.ulid, '', line.line_key)
+                                        }
+                                      />
+                                    ) : null}
                                   </td>
                                 )
                               }
@@ -1352,6 +1401,8 @@ export function SalesInvoicePage() {
                                     <button type="button" aria-label="Delete entry row" onClick={() => {
                                       cart.removeLine(line.line_key)
                                       setActiveLineKey(null)
+                                      setActiveProductQuery('')
+                                      setActiveProductPickerOpen(false)
                                       window.setTimeout(() => productSearchRef.current?.focus(), 0)
                                     }}>
                                       <XCircle size={16} />
@@ -1456,51 +1507,12 @@ export function SalesInvoicePage() {
                                   }}
                                 />
                                 {productQuery.trim().length > 0 && productsQuery.data?.data?.length ? (
-                                  <div className="sales-pos-product-results-grid" role="listbox" aria-label="Choose product">
-                                    <div className="sales-pos-product-grid-head" aria-hidden="true">
-                                      <span>Product #</span>
-                                      <span>Barcode</span>
-                                      <span>Product Name</span>
-                                      <span>Category</span>
-                                      <span>Brand</span>
-                                      <span>Unit</span>
-                                      <span>Retail</span>
-                                    </div>
-
-                                    <div className="sales-pos-product-grid-body">
-                                      {productsQuery.data.data.slice(0, 10).map((row) => {
-                                        const barcode =
-                                          row.primary_barcode ??
-                                          row.barcodes?.find((barcodeRow) => barcodeRow.is_primary && barcodeRow.is_active)?.barcode ??
-                                          row.barcodes?.find((barcodeRow) => barcodeRow.is_active)?.barcode ??
-                                          '—'
-                                        const retail =
-                                          row.prices?.find((price) => price.is_active && price.price_type === 'retail')?.amount ??
-                                          '—'
-
-                                        return (
-                                          <button
-                                            type="button"
-                                            className="sales-pos-product-grid-row"
-                                            key={row.ulid}
-                                            onClick={() => void addProductFromEntry(row.ulid)}
-                                          >
-                                            <span>{row.product_number}</span>
-                                            <span>{barcode}</span>
-                                            <strong>{row.name}</strong>
-                                            <span>{row.category?.name ?? '—'}</span>
-                                            <span>{row.brand?.name ?? '—'}</span>
-                                            <span>{row.base_unit?.symbol ?? row.base_unit?.code ?? '—'}</span>
-                                            <span>{retail}</span>
-                                          </button>
-                                        )
-                                      })}
-                                    </div>
-
-                                    <div className="sales-pos-product-grid-foot">
-                                      Showing {Math.min(productsQuery.data.data.length, 10)} of {productsQuery.data.meta.total} Products
-                                    </div>
-                                  </div>
+                                  <ProductLookupGrid
+                                    rows={productsQuery.data.data}
+                                    total={productsQuery.data.meta.total}
+                                    priceType={cart.priceType}
+                                    onSelect={(product) => void addProductFromEntry(product.ulid)}
+                                  />
                                 ) : null}
                               </td>
                             )
