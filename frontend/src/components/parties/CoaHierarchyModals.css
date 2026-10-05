@@ -638,3 +638,40 @@
     animation: none !important;
   }
 }
+
+
+/* ---------- COA BASE TOKEN BRIDGE ---------- */
+.coa-modal-backdrop {
+  background: color-mix(in srgb, #000 42%, transparent) !important;
+}
+
+.coa-modal :where(
+  .coa-modal-body,
+  .coa-modal-list-wrap,
+  .coa-sheet-wrap
+) {
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  border-color: var(--ui-border) !important;
+}
+
+.coa-modal :where(.coa-modal-list, .coa-sheet-grid) th {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface-subtle))
+  ) !important;
+  color: var(--ui-text) !important;
+  border-color: var(--ui-border) !important;
+}
+
+.coa-modal :where(.coa-modal-list, .coa-sheet-grid) td {
+  color: var(--ui-text) !important;
+  border-color: color-mix(in srgb, var(--ui-border) 58%, transparent) !important;
+}
+
+.coa-modal :where(.coa-modal-list, .coa-sheet-grid) tr.is-selected td {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface)) !important;
+}
+
+.coa-modal-error { color: var(--ui-danger) !important; }
