@@ -708,6 +708,7 @@ export function SalesReturnsPage() {
                     </div>
                   </div>
                 </div>
+                </div>
 
                 <div className="sales-return-fields-right">
                   <button
