@@ -42,29 +42,29 @@ export function PlatformForgotPasswordPage() {
   }
 
   return (
-    <div className="platform-auth-page flex min-h-screen items-center justify-center bg-slate-950 p-4">
-      <div className="platform-auth-card w-full max-w-md rounded border border-slate-700 bg-slate-900 p-5 text-slate-100 shadow-xl">
-        <div className="text-[11px] font-black tracking-[0.18em] text-amber-400">BLUEPOS PLATFORM</div>
+    <div className="platform-auth-page flex min-h-screen items-center justify-center bg-[var(--ui-bg)] p-4">
+      <div className="platform-auth-card w-full max-w-md rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-5 text-[var(--ui-text)] shadow-xl">
+        <div className="text-[11px] font-black tracking-[0.18em] text-[var(--ui-accent)]">BLUEPOS PLATFORM</div>
         <h1 className="mb-4 text-lg font-semibold">Forgot password</h1>
         {done ? (
           <p className="text-[13px]">
             Password updated.{' '}
-            <Link className="font-semibold text-amber-400" to="/platform/login">
+            <Link className="font-semibold text-[var(--ui-accent)]" to="/platform/login">
               Sign in
             </Link>
           </p>
         ) : sent ? (
           <form className="space-y-3" onSubmit={onReset}>
-            <p className="text-[12px] text-slate-300">{message}</p>
+            <p className="text-[12px] text-[var(--ui-text-muted)]">{message}</p>
             <input
-              className="h-9 w-full rounded border border-slate-600 bg-slate-800 px-2 text-[12px]"
+              className="h-9 w-full rounded border border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] px-2 text-[12px]"
               placeholder="Reset code"
               value={token}
               onChange={(event) => setToken(event.target.value)}
               required
             />
             <input
-              className="h-9 w-full rounded border border-slate-600 bg-slate-800 px-2 text-[12px]"
+              className="h-9 w-full rounded border border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] px-2 text-[12px]"
               type="password"
               placeholder="New password"
               value={password}
@@ -73,7 +73,7 @@ export function PlatformForgotPasswordPage() {
               minLength={8}
             />
             <input
-              className="h-9 w-full rounded border border-slate-600 bg-slate-800 px-2 text-[12px]"
+              className="h-9 w-full rounded border border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] px-2 text-[12px]"
               type="password"
               placeholder="Confirm password"
               value={confirm}
@@ -81,27 +81,27 @@ export function PlatformForgotPasswordPage() {
               required
               minLength={8}
             />
-            {error ? <p className="text-[12px] text-red-300">{error}</p> : null}
-            <button type="submit" className="h-9 w-full rounded bg-amber-500 text-sm font-semibold text-slate-950">
+            {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
+            <button type="submit" className="h-9 w-full rounded bg-[var(--ui-accent)] text-sm font-semibold text-white">
               Reset password
             </button>
           </form>
         ) : (
           <form className="space-y-3" onSubmit={onRequest}>
             <input
-              className="h-9 w-full rounded border border-slate-600 bg-slate-800 px-2 text-[12px]"
+              className="h-9 w-full rounded border border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] px-2 text-[12px]"
               type="email"
               placeholder="Platform email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
             />
-            {error ? <p className="text-[12px] text-red-300">{error}</p> : null}
-            <button type="submit" className="h-9 w-full rounded bg-amber-500 text-sm font-semibold text-slate-950">
+            {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
+            <button type="submit" className="h-9 w-full rounded bg-[var(--ui-accent)] text-sm font-semibold text-white">
               Send reset instructions
             </button>
             <p className="text-center text-[12px]">
-              <Link className="font-semibold text-amber-400" to="/platform/login">
+              <Link className="font-semibold text-[var(--ui-accent)]" to="/platform/login">
                 Back to login
               </Link>
             </p>
