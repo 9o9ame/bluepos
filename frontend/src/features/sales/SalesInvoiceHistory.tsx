@@ -114,7 +114,7 @@ export function SalesInvoiceHistory() {
     <section className="sales-history sales-posted-history" aria-label="Posted invoices">
       <div className="sales-history-summary">
         <div>
-          <span>PAGE TOTAL</span>
+          <span>LOADED TOTAL</span>
           <strong>{summary.total.toFixed(2)}</strong>
         </div>
         <div className="is-paid">
@@ -144,7 +144,7 @@ export function SalesInvoiceHistory() {
               className="sales-history-search-clear"
               onClick={() => {
                 setSearchText('')
-                }}
+              }}
               aria-label="Clear search"
             >
               <X size={13} />
@@ -216,7 +216,7 @@ export function SalesInvoiceHistory() {
         </button>
 
         <div className="sales-history-count">
-          {listQuery.isFetching
+          {listQuery.isFetching && !listQuery.isFetchingNextPage
             ? 'Searching…'
             : meta
               ? `${meta.total} invoice(s)`
