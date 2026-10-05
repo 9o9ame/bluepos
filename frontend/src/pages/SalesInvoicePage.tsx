@@ -26,6 +26,7 @@ import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
 import { SalesPartyModal } from '../features/sales/SalesPartyModal'
 import { SchemeOfferPrompt } from '../features/sales/SchemeOfferPrompt'
 import { SalesInvoiceHistory } from '../features/sales/SalesInvoiceHistory'
+import { SalesPendingInvoices } from '../features/sales/SalesPendingInvoices'
 import { useSaleCart } from '../features/sales/useSaleCart'
 import { useCan } from '../features/auth/useCan'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -836,7 +837,7 @@ export function SalesInvoicePage() {
               <StickyNote />
             </span>
             <span>
-              ({heldCarts.length},Due:0) Pending Invoices
+              ({heldCarts.length}) Pending / Due Invoices
             </span>
           </button>
         </nav>
@@ -844,63 +845,11 @@ export function SalesInvoicePage() {
         {view === 'history' ? (
           <SalesInvoiceHistory />
         ) : view === 'pending' ? (
-          <div className="sales-history">
-            <h3>Pending (on hold) invoices</h3>
-
-            {heldCarts.length === 0 ? (
-              <p>
-                Nothing on hold. Tick "On Hold" with lines in the
-                cart to park one.
-              </p>
-            ) : (
-              <table className="sales-history-grid">
-                <thead>
-                  <tr>
-                    <th>Held at</th>
-                    <th className="num">Lines</th>
-                    <th>Customer</th>
-                    <th></th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {heldCarts.map((entry) => (
-                    <tr key={entry.id}>
-                      <td>{entry.heldAt}</td>
-
-                      <td className="num">
-                        {
-                          entry.lines.filter(
-                            (line) => line.line_kind === 'sale',
-                          ).length
-                        }
-                      </td>
-
-                      <td>
-                        {entry.customer?.name ?? 'CASH IN HAND'}
-                      </td>
-
-                      <td>
-                        <button
-                          type="button"
-                          onClick={() => recallHeldCart(entry.id)}
-                        >
-                          Recall
-                        </button>{' '}
-
-                        <button
-                          type="button"
-                          onClick={() => dropHeldCart(entry.id)}
-                        >
-                          Discard
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          <SalesPendingInvoices
+            heldCarts={heldCarts}
+            onRecallHeld={recallHeldCart}
+            onDiscardHeld={dropHeldCart}
+          />
         ) : (
           <>
             <section className="sales-reference-meta">
