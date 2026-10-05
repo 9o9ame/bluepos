@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\SaleOfferController;
 use App\Http\Controllers\Api\SaleSchemeController;
 use App\Http\Controllers\Api\Sales\SaleController;
 use App\Http\Controllers\Api\Sales\SaleHoldController;
+use App\Http\Controllers\Api\Sales\SaleReturnController;
 use App\Http\Controllers\Api\SecuritySessionController;
 use App\Http\Controllers\Api\SubcategoryController;
 use App\Http\Controllers\Api\SupplierController;
@@ -224,6 +225,17 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::get('/sales/{saleUlid}', [SaleController::class, 'show']);
         Route::get('/sales/{saleUlid}/payments', [SaleController::class, 'payments']);
         Route::post('/sales/{saleUlid}/payments', [SaleController::class, 'storePayment']);
+
+        Route::get('/sales/{saleUlid}/returnable-lines', [SaleReturnController::class, 'returnableLines']);
+        Route::get('/sales-returns', [SaleReturnController::class, 'index']);
+        Route::post('/sales-returns', [SaleReturnController::class, 'store']);
+        Route::get('/sales-returns/product-wise', [SaleReturnController::class, 'productWise']);
+        Route::get('/sales-returns/{returnUlid}', [SaleReturnController::class, 'show']);
+        Route::patch('/sales-returns/{returnUlid}', [SaleReturnController::class, 'update']);
+        Route::post('/sales-returns/{returnUlid}/lines', [SaleReturnController::class, 'storeLine']);
+        Route::patch('/sales-returns/{returnUlid}/lines/{lineUlid}', [SaleReturnController::class, 'updateLine']);
+        Route::delete('/sales-returns/{returnUlid}/lines/{lineUlid}', [SaleReturnController::class, 'destroyLine']);
+        Route::post('/sales-returns/{returnUlid}/post', [SaleReturnController::class, 'post']);
     });
 
     Route::middleware('entitled:inventory')->group(function () {
