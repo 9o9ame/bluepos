@@ -220,6 +220,9 @@ class PartyProfileController extends Controller
         if ($permissions->can('suppliers.view') || $permissions->can('suppliers.manage')) {
             $types[] = 'vendor';
         }
+        if ($permissions->can('accounts.view') || $permissions->can('accounts.manage')) {
+            $types[] = 'account';
+        }
         if (
             $permissions->can('sales.create')
             || $permissions->can('customers.view')
@@ -240,6 +243,9 @@ class PartyProfileController extends Controller
         }
         if ($types->contains('vendor') && ($permissions->can('suppliers.view') || $permissions->can('suppliers.manage'))) {
             return 'vendor';
+        }
+        if ($types->contains('account') && ($permissions->can('accounts.view') || $permissions->can('accounts.manage'))) {
+            return 'account';
         }
         if ($types->contains('salesman')) {
             return 'salesman';
