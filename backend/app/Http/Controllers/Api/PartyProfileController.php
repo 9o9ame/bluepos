@@ -73,8 +73,8 @@ class PartyProfileController extends Controller
             null,
             $request->profileAttributes(),
             $types,
-            $request->validated('vendor_account_type_ulid'),
-            $request->validated('customer_account_type_ulid'),
+            $request->validated()['vendor_account_type_ulid'] ?? null,
+            $request->validated()['customer_account_type_ulid'] ?? null,
         );
 
         return (new PartyProfileResource($profile, (string) $request->validated('primary_type')))
@@ -151,13 +151,17 @@ class PartyProfileController extends Controller
     {
         foreach ($types as $type) {
             if ($type === 'vendor') {
-                $this->authorize($ability === 'create' ? 'create' : 'update', Supplier::class);
+                $key = $ability === 'create' ? 'suppliers.create' : ($ability === 'view' ? 'suppliers.view' : 'suppliers.edit');
+                abort_unless($permissions->can($key) || $permissions->can('suppliers.manage'), 403);
                 continue;
             }
+
             if ($type === 'customer') {
-                $this->authorize($ability === 'create' ? 'create' : 'update', Customer::class);
+                $key = $ability === 'create' ? 'customers.create' : ($ability === 'view' ? 'customers.view' : 'customers.edit');
+                abort_unless($permissions->can($key) || $permissions->can('customers.manage'), 403);
                 continue;
             }
+
             if ($type === 'salesman') {
                 abort_unless(
                     $permissions->can('customers.manage')
