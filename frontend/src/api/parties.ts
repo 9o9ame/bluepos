@@ -2,7 +2,8 @@ import { apiFetch, ApiClientError, ensureCsrfCookie } from './client'
 import { apiBusy } from '../feedback/apiBusy'
 import { readCookie } from '../utils/cookies'
 
-export type PartyTypeApi = 'vendor' | 'customer' | 'account'
+export type PartyTypeApi = 'vendor' | 'customer' | 'account' | 'salesman'
+export type PartyBusinessType = 'vendor' | 'customer' | 'salesman'
 
 export type PartyAccountType = {
   ulid: string
@@ -22,6 +23,12 @@ export type PartyBankAccount = {
 export type Party = {
   ulid: string
   party_type: PartyTypeApi
+  identity_ulid?: string
+  party_types?: PartyBusinessType[]
+  vendor_ulid?: string | null
+  customer_ulid?: string | null
+  vendor_account_type_ulid?: string | null
+  customer_account_type_ulid?: string | null
   code: string
   name: string
   deals_in: string | null
@@ -92,6 +99,42 @@ export type PartyPayload = {
   store_allowed?: string | null
 }
 
+export type PartyProfilePayload = {
+  party_types: PartyBusinessType[]
+  primary_type: PartyBusinessType
+  code: string
+  name: string
+  vendor_account_type_ulid?: string | null
+  customer_account_type_ulid?: string | null
+  deals_in?: string | null
+  contact_person?: string | null
+  mobile?: string | null
+  mobile_secondary?: string | null
+  phone?: string | null
+  phone_secondary?: string | null
+  email?: string | null
+  address?: string | null
+  billing_address?: string | null
+  area?: string | null
+  invoice_restricted?: boolean
+  credit_limit_amount?: string
+  credit_limit_days?: number
+  add_percent?: string
+  cnic?: string | null
+  ntn?: string | null
+  stn?: string | null
+  formulas?: string | null
+  is_active?: boolean
+  license_number?: string | null
+  license_issued_on?: string | null
+  license_type?: string | null
+  license_expires_on?: string | null
+  ignore_warranty?: boolean
+  print_license?: boolean
+  rf_id?: string | null
+  store_allowed?: string | null
+}
+
 export type PartyBankPayload = {
   bank_name: string
   branch_name?: string | null
@@ -106,6 +149,29 @@ export function fetchParties(type: PartyListFilter = 'all', options?: { expiredL
   params.set('type', type && type !== 'all' ? type : 'all')
   if (options?.expiredLicense) params.set('expired_license', '1')
   return apiFetch<{ data: Party[] }>(`/api/parties?${params.toString()}`).then((res) => res.data)
+}
+
+export function fetchPartyProfiles(type: 'all' | PartyBusinessType = 'all') {
+  const params = new URLSearchParams({ type })
+  return apiFetch<{ data: Party[] }>(`/api/party-profiles?${params.toString()}`).then((res) => res.data)
+}
+
+export function fetchPartyProfile(identityUlid: string) {
+  return apiFetch<Party>(`/api/party-profiles/${identityUlid}`)
+}
+
+export function createPartyProfile(payload: PartyProfilePayload) {
+  return apiFetch<Party>('/api/party-profiles', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updatePartyProfile(identityUlid: string, payload: PartyProfilePayload) {
+  return apiFetch<Party>(`/api/party-profiles/${identityUlid}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
 }
 
 export function fetchParty(ulid: string, type: PartyTypeApi) {
