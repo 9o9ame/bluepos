@@ -3079,3 +3079,37 @@
     min-width: 1140px !important;
   }
 }
+
+
+/* Slight readability increase for the Sales Return header only. */
+.sales-return-head legend {
+  font-size: 11px !important;
+}
+
+.sales-return-option-group > label,
+.sales-return-detail-control,
+.sales-return-fields .sales-return-option-group > input,
+.sales-return-fields .sales-return-sale-input > input,
+.sales-return-header-refresh {
+  font-size: 11px !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > span {
+  font-size: 9px !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > strong {
+  font-size: 11px !important;
+}
+
+.sales-return-amounts span {
+  font-size: 11px !important;
+}
+
+.sales-return-amounts strong {
+  font-size: 12px !important;
+}
+
+.sales-return-amounts .is-net strong {
+  font-size: 15px !important;
+}
