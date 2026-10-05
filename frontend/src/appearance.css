@@ -672,13 +672,6 @@ body,
 
 
 /* ---------- USER APPEARANCE PREFERENCES ---------- */
-:root[data-primary-theme='indigo'] { --appearance-accent: #4f46e5; --skin-focus-ring: #4f46e5; }
-:root[data-primary-theme='blue'] { --appearance-accent: #2563eb; --skin-focus-ring: #2563eb; }
-:root[data-primary-theme='emerald'] { --appearance-accent: #059669; --skin-focus-ring: #059669; }
-:root[data-primary-theme='teal'] { --appearance-accent: #0d9488; --skin-focus-ring: #0d9488; }
-:root[data-primary-theme='purple'] { --appearance-accent: #7c3aed; --skin-focus-ring: #7c3aed; }
-:root[data-primary-theme='slate'] { --appearance-accent: #475569; --skin-focus-ring: #475569; }
-
 :root[data-density='compact'] { --appearance-spacing-scale: .88; }
 :root[data-density='comfortable'] { --appearance-spacing-scale: 1.04; }
 :root[data-density='compact'] .appearance-settings { gap: 8px; }
@@ -712,12 +705,6 @@ body,
     0 16px 32px rgba(0,0,0,.28);
 }
 
-:root[data-animations='off'] *, :root[data-animations='off'] *::before, :root[data-animations='off'] *::after {
-  animation-duration: 0.001ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.001ms !important;
-  scroll-behavior: auto !important;
-}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -815,6 +802,14 @@ body,
 :root[data-primary-theme='teal'] { --appearance-accent:#0d9488; --skin-focus-ring:#0d9488; --brand-blue:#0d9488; --brand-blue-hot:#14b8a6; --focus-ring:#0d9488; --selected-row:color-mix(in srgb,#0d9488 24%,white); --hover-row:color-mix(in srgb,#0d9488 10%,white); }
 :root[data-primary-theme='purple'] { --appearance-accent:#7c3aed; --skin-focus-ring:#7c3aed; --brand-blue:#7c3aed; --brand-blue-hot:#8b5cf6; --focus-ring:#7c3aed; --selected-row:color-mix(in srgb,#7c3aed 24%,white); --hover-row:color-mix(in srgb,#7c3aed 10%,white); }
 :root[data-primary-theme='slate'] { --appearance-accent:#475569; --skin-focus-ring:#475569; --brand-blue:#475569; --brand-blue-hot:#64748b; --focus-ring:#475569; --selected-row:color-mix(in srgb,#475569 24%,white); --hover-row:color-mix(in srgb,#475569 10%,white); }
+
+/* Dark theme uses brighter accent variants for contrast while preserving the selected hue family. */
+:root[data-theme='dark'][data-primary-theme='indigo'] { --appearance-accent:#818cf8; --skin-focus-ring:#818cf8; --brand-blue:#818cf8; --brand-blue-hot:#a5b4fc; --focus-ring:#818cf8; }
+:root[data-theme='dark'][data-primary-theme='blue'] { --appearance-accent:#60a5fa; --skin-focus-ring:#60a5fa; --brand-blue:#60a5fa; --brand-blue-hot:#93c5fd; --focus-ring:#60a5fa; }
+:root[data-theme='dark'][data-primary-theme='emerald'] { --appearance-accent:#34d399; --skin-focus-ring:#34d399; --brand-blue:#34d399; --brand-blue-hot:#6ee7b7; --focus-ring:#34d399; }
+:root[data-theme='dark'][data-primary-theme='teal'] { --appearance-accent:#2dd4bf; --skin-focus-ring:#2dd4bf; --brand-blue:#2dd4bf; --brand-blue-hot:#5eead4; --focus-ring:#2dd4bf; }
+:root[data-theme='dark'][data-primary-theme='purple'] { --appearance-accent:#a78bfa; --skin-focus-ring:#a78bfa; --brand-blue:#a78bfa; --brand-blue-hot:#c4b5fd; --focus-ring:#a78bfa; }
+:root[data-theme='dark'][data-primary-theme='slate'] { --appearance-accent:#94a3b8; --skin-focus-ring:#94a3b8; --brand-blue:#94a3b8; --brand-blue-hot:#cbd5e1; --focus-ring:#94a3b8; }
 
 /* Font preference must win over page-specific font declarations, including !important. */
 html[data-font] #root,
@@ -944,6 +939,7 @@ html[data-animations='off'] #root *::after {
   --ui-warning: #f0ad4e;
   --ui-danger: #ff7670;
   --ui-info: #6bb9e8;
+  --ui-accent-strong: color-mix(in srgb, var(--appearance-accent) 78%, white);
 }
 
 /* Shared panels/cards. */
@@ -1846,4 +1842,82 @@ html[data-animations='off'] :where(.platform-auth-page, .platform-main) * {
 html[data-animations='off'] .auth-card * {
   transition: none !important;
   animation: none !important;
+}
+
+
+/* ---------- FINAL APPEARANCE VERIFICATION CLEANUP ---------- */
+/* Preserve tab geometry while still honoring the selected radius. */
+html[data-radius] #root :where(.ribbon-tab, .workspace-tab) {
+  border-radius: var(--control-radius) var(--control-radius) 0 0 !important;
+}
+
+/* Shared shell text/menu surfaces must not leak legacy light-only colors into dark mode. */
+html #root :where(
+  .titlebar-center,
+  .titlebar-meta,
+  .ribbon-group-caption,
+  .workspace-tab,
+  .statusbar
+) {
+  color: var(--ui-text-muted);
+}
+
+html #root .ribbon-menu button {
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+
+html #root .ribbon-menu button:hover:not(:disabled) {
+  background: var(--ui-accent);
+  color: #fff;
+}
+
+html #root .ribbon-menu button:disabled {
+  color: var(--ui-text-muted);
+  background: var(--ui-surface-muted);
+}
+
+/* User density preference must remain visible on auth and platform surfaces too. */
+html[data-density] #root :where(.auth-card, .platform-auth-card, .platform-main) {
+  font-size: var(--ui-font-md);
+}
+
+html[data-density] #root :where(.auth-card, .platform-auth-card) :where(
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  button
+) {
+  min-height: var(--ui-control-h-lg) !important;
+  height: var(--ui-control-h-lg) !important;
+  font-size: var(--ui-font-md) !important;
+}
+
+html[data-density] #root .platform-main :where(
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea
+) {
+  font-size: var(--ui-font-md) !important;
+}
+
+html[data-density='compact'] #root .platform-main {
+  padding: var(--ui-pad-sm) !important;
+}
+
+html[data-density='comfortable'] #root .platform-main {
+  padding: var(--ui-pad-md) !important;
+}
+
+/* All shared disabled controls use the same visual language. */
+html #root :where(
+  .desktop-btn,
+  .ribbon-command,
+  .quick-command,
+  .auth-card button,
+  .platform-auth-card button,
+  .platform-main button
+):disabled {
+  color: var(--ui-text-muted);
+  cursor: not-allowed;
+  opacity: .66;
 }
