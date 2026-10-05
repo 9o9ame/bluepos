@@ -199,6 +199,10 @@ class RefundSaleReturnAction
 
     public function refundableAmount(SaleReturn $document): string
     {
+        if ($document->status !== SaleReturnStatus::Posted) {
+            return '0.0000';
+        }
+
         $tenantId = (int) $document->tenant_id;
 
         $sale = Sale::query()
