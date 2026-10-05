@@ -15,6 +15,7 @@ use App\Models\PartyProfile;
 use App\Models\Sale;
 use App\Models\SalePayment;
 use App\Enums\SaleStatus;
+use App\Enums\SaleReturnStatus;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,6 +32,9 @@ class SaleController extends Controller
             ->where('branch_id', $tenantContext->branchId())
             ->with(['customer', 'salesmanParty', 'branch', 'warehouse'])
             ->withSum('payments as paid_amount', 'amount')
+            ->withSum([
+                'saleReturns as returned_amount' => fn ($q) => $q->where('status', SaleReturnStatus::Posted->value),
+            ], 'grand_total')
             ->orderByDesc('sale_date')
             ->orderByDesc('id');
 
@@ -80,12 +84,19 @@ class SaleController extends Controller
             $query
                 ->where('status', SaleStatus::Posted->value)
                 ->whereRaw(
-                    'sales.grand_total > COALESCE((
+                    '(sales.grand_total - COALESCE((
+                        SELECT SUM(sr.grand_total)
+                        FROM sale_returns sr
+                        WHERE sr.sale_id = sales.id
+                          AND sr.tenant_id = sales.tenant_id
+                          AND sr.status = ?
+                    ), 0)) > COALESCE((
                         SELECT SUM(sp.amount)
                         FROM sale_payments sp
                         WHERE sp.sale_id = sales.id
                           AND sp.tenant_id = sales.tenant_id
-                    ), 0)'
+                    ), 0)',
+                    [SaleReturnStatus::Posted->value],
                 );
         }
 
