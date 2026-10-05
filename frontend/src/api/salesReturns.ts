@@ -4,6 +4,7 @@ import type {
   ReturnableSaleResponse,
   SaleReturn,
   SaleReturnLine,
+  SaleReturnRefund,
   SaleReturnProductWiseRow,
 } from '../types/salesReturns'
 
@@ -134,4 +135,21 @@ export function fetchSaleReturnProductWise(params?: {
     `/api/sales-returns/product-wise${suffix}`,
     { busy: 'none' },
   )
+}
+
+
+export function createSaleReturnRefund(
+  returnUlid: string,
+  payload: {
+    amount: string
+    method: 'cash' | 'card' | 'bank' | 'credit'
+    reference?: string | null
+  },
+  idempotencyKey: string,
+) {
+  return apiFetch<SaleReturnRefund>(`/api/sales-returns/${returnUlid}/refunds`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 'Idempotency-Key': idempotencyKey },
+  })
 }
