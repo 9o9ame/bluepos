@@ -1360,37 +1360,28 @@ export function PartiesPlaceholderPage({
                   value={form.code}
                   onChange={(e) => patchForm('code', e.target.value)}
                 />
-                <label htmlFor="vca-type">Type</label>
-                <AnimatedSelect
-                  id="vca-type"
-                  title="SALES MAN is disabled in this phase"
-                  value={form.ulid ? form.type : listFilter}
-                  onChange={(e) => {
-                    const next = e.target.value as PartyType
-                    if (form.ulid) {
-                      if (!CREATABLE_TYPES.includes(next)) {
-                        setError('Cannot change an existing party to ACCOUNTS or SALES MAN.')
-                        return
-                      }
-                      patchForm('type', next)
-                      return
-                    }
-                    void onTypeChange(next)
-                  }}
-                >
-                  {PARTY_TYPES.map((type) => (
-                    <option
-                      key={type}
-                      value={type}
-                      disabled={
-                        type === 'SALES MAN' ||
-                        (Boolean(form.ulid) && !CREATABLE_TYPES.includes(type))
-                      }
-                    >
-                      {type}
-                    </option>
-                  ))}
-                </AnimatedSelect>
+                <label>Type</label>
+                {form.type === 'ACCOUNTS' ? (
+                  <input value="ACCOUNT" readOnly title="Manual ledger accounts remain a separate accounting master." />
+                ) : (
+                  <PartyTypeMultiSelect
+                    value={form.types}
+                    onChange={(nextTypes) => {
+                      setForm((current) => {
+                        const currentApi = uiTypeToApi(current.type)
+                        const primary =
+                          currentApi && currentApi !== 'account' && nextTypes.includes(currentApi)
+                            ? current.type
+                            : apiTypeToUi(nextTypes[0])
+                        return applySuggestedProfileAccountTypes({
+                          ...current,
+                          type: primary,
+                          types: nextTypes,
+                        })
+                      })
+                    }}
+                  />
+                )}
               </div>
 
               <div className="parties-vca-field-row parties-vca-name-deals">
