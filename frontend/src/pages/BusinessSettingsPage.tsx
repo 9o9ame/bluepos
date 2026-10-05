@@ -62,6 +62,8 @@ export function BusinessSettingsPage() {
         batch_tracking_enabled: form.get('batch_tracking_enabled') === 'on',
         default_price_level: String(form.get('default_price_level') ?? 'retail'),
         opening_balance_equity_account_ulid: String(form.get('opening_balance_equity_account_ulid') || '') || null,
+        default_cash_account_ulid: String(form.get('default_cash_account_ulid') || '') || null,
+        sales_clearing_account_ulid: String(form.get('sales_clearing_account_ulid') || '') || null,
       })
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Unable to save settings.')
@@ -162,6 +164,40 @@ export function BusinessSettingsPage() {
               className="desktop-select"
               name="opening_balance_equity_account_ulid"
               defaultValue={settings.opening_balance_equity_account_ulid ?? ''}
+              disabled={!canManage}
+            >
+              <option value="">— Not configured —</option>
+              {leafAccounts.map((account) => (
+                <option key={account.ulid} value={account.ulid}>
+                  {account.code} — {account.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Default Cash / Payment Account">
+            <select
+              key={`cash-${settings.default_cash_account_ulid ?? 'none'}-${leafAccounts.length}`}
+              className="desktop-select"
+              name="default_cash_account_ulid"
+              defaultValue={settings.default_cash_account_ulid ?? ''}
+              disabled={!canManage}
+            >
+              <option value="">— Not configured —</option>
+              {leafAccounts.map((account) => (
+                <option key={account.ulid} value={account.ulid}>
+                  {account.code} — {account.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Sales Clearing / Settlement Account">
+            <select
+              key={`clearing-${settings.sales_clearing_account_ulid ?? 'none'}-${leafAccounts.length}`}
+              className="desktop-select"
+              name="sales_clearing_account_ulid"
+              defaultValue={settings.sales_clearing_account_ulid ?? ''}
               disabled={!canManage}
             >
               <option value="">— Not configured —</option>
