@@ -181,6 +181,7 @@ class UpsertPartyProfileAction
         array $types,
         ?Supplier $supplier,
         ?Customer $customer,
+        ?Account $account,
     ): void {
         $tenantId = $this->tenantContext->tenantId();
         $code = (string) $profile->code;
@@ -207,9 +208,9 @@ class UpsertPartyProfileAction
             }
         }
 
-        $leafIds = collect();
+        $leafIds = collect([$account?->id])->filter();
         if ($supplier || $customer) {
-            $leafIds = Account::query()
+            $linkedLeafIds = Account::query()
                 ->forTenant($tenantId)
                 ->where(function ($q) use ($supplier, $customer): void {
                     if ($supplier) {
@@ -220,20 +221,25 @@ class UpsertPartyProfileAction
                     }
                 })
                 ->pluck('id');
+            $leafIds = $leafIds->merge($linkedLeafIds)->unique()->values();
         }
 
-        $both = in_array('vendor', $types, true) && in_array('customer', $types, true);
-        if ($both && mb_strlen($code) > 62) {
+        $financialTypes = array_values(array_intersect($types, ['vendor', 'customer', 'account']));
+        $multiFinancial = count($financialTypes) > 1;
+        if ($multiFinancial && mb_strlen($code) > 62) {
             throw ValidationException::withMessages([
-                'code' => 'Vendor + Customer party codes may be at most 62 characters.',
+                'code' => 'Multi-role financial party codes may be at most 62 characters.',
             ]);
         }
+
         $codes = [];
-        if (in_array('vendor', $types, true)) {
-            $codes[] = $both ? $code.'-V' : $code;
-        }
-        if (in_array('customer', $types, true)) {
-            $codes[] = $both ? $code.'-C' : $code;
+        foreach ($financialTypes as $financialType) {
+            $suffix = match ($financialType) {
+                'vendor' => '-V',
+                'customer' => '-C',
+                default => '-A',
+            };
+            $codes[] = $multiFinancial ? $code.$suffix : $code;
         }
 
         foreach (array_unique($codes) as $leafCode) {
@@ -290,6 +296,49 @@ class UpsertPartyProfileAction
             ...$payload,
             'created_by' => $this->tenantContext->userId(),
             'updated_by' => $this->tenantContext->userId(),
+        ]);
+    }
+
+    private function upsertAccount(PartyProfile $profile, ?Account $account, int $accountTypeId): Account
+    {
+        $financialTypes = $profile->types
+            ->pluck('type')
+            ->intersect(['vendor', 'customer', 'account'])
+            ->values();
+        $code = $financialTypes->count() > 1 ? $profile->code.'-A' : $profile->code;
+
+        $payload = [
+            'party_profile_id' => $profile->id,
+            'code' => $code,
+            'name' => $profile->name,
+            'address' => $profile->address,
+            'image_path' => $profile->image_path,
+            'area' => $profile->area,
+            'invoice_restricted' => (bool) ($profile->invoice_restricted ?? false),
+            'credit_limit_amount' => $profile->credit_limit_amount ?? '0.0000',
+            'credit_limit_days' => $profile->credit_limit_days ?? 0,
+            'add_percent' => $profile->add_percent ?? '0.00000000',
+            'cnic' => $profile->cnic,
+            'ntn' => $profile->ntn,
+            'stn' => $profile->stn,
+            'formulas' => $profile->formulas,
+            'account_type_id' => $accountTypeId,
+            'supplier_id' => null,
+            'customer_id' => null,
+            'is_active' => (bool) ($profile->is_active ?? true),
+            'updated_by' => $this->tenantContext->userId(),
+        ];
+
+        if ($account) {
+            $account->fill($payload);
+            $account->save();
+            return $account;
+        }
+
+        return Account::query()->create([
+            'tenant_id' => $profile->tenant_id,
+            ...$payload,
+            'created_by' => $this->tenantContext->userId(),
         ]);
     }
 
