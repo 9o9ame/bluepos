@@ -136,6 +136,14 @@ class Product extends Model
     }
 
     /**
+     * @return HasMany<StockBalance, $this>
+     */
+    public function stockBalances(): HasMany
+    {
+        return $this->hasMany(StockBalance::class);
+    }
+
+    /**
      * @return HasMany<ProductSupplier, $this>
      */
     public function productSuppliers(): HasMany
