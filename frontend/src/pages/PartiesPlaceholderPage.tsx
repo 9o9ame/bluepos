@@ -531,10 +531,18 @@ export function PartiesPlaceholderPage({
 
   async function loadBulkRows() {
     try {
-      const filter = uiTypeToFilter(listFilter === 'SALES MAN' ? 'ALL' : listFilter)
+      if (listFilter === 'SALES MAN') {
+        setBulkRows([])
+        return
+      }
+
+      const filter = uiTypeToFilter(listFilter)
       const data = await fetchParties(filter, { expiredLicense: bulkOnlyExpired })
+      const bulkSafe = data.filter(
+        (party) => party.party_type !== 'salesman' && (party.party_types?.length ?? 1) <= 1,
+      )
       setBulkRows(
-        data.map((party) => ({
+        bulkSafe.map((party) => ({
           key: `${party.party_type}:${party.ulid}`,
           ulid: party.ulid,
           party_type: party.party_type,
