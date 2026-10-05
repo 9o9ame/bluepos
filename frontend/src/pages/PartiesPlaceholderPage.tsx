@@ -120,6 +120,13 @@ function typeLabel(type: PartyTypeApi): string {
   return 'ACCOUNT'
 }
 
+function defaultBusinessTypes(type: PartyType): PartyBusinessType[] {
+  if (type === 'CUSTOMERS') return ['customer']
+  if (type === 'SALES MAN') return ['salesman']
+  if (type === 'VENDORS' || type === 'ALL') return ['vendor']
+  return []
+}
+
 function suggestedAccountTypeName(partyType: PartyType): string | null {
   if (partyType === 'CUSTOMERS') return 'ACCOUNT RECEIVABLE'
   if (partyType === 'VENDORS') return 'ACCOUNT PAYABLE'
@@ -129,8 +136,10 @@ function suggestedAccountTypeName(partyType: PartyType): string | null {
 function emptyForm(listFilter: PartyType = 'ALL') {
   return {
     ulid: '',
+    identityUlid: '',
     code: '',
     type: listFilter,
+    types: defaultBusinessTypes(listFilter),
     name: '',
     dealsIn: '',
     address: '',
@@ -160,6 +169,8 @@ function emptyForm(listFilter: PartyType = 'ALL') {
     stn: '',
     accountType: '',
     accountTypeUlid: '',
+    vendorAccountTypeUlid: '',
+    customerAccountTypeUlid: '',
   }
 }
 
@@ -169,8 +180,10 @@ function partyToForm(party: Party, listFilter: PartyType): FormState {
   return {
     ...emptyForm(listFilter),
     ulid: party.ulid,
+    identityUlid: party.identity_ulid ?? '',
     code: party.code,
     type: apiTypeToUi(party.party_type),
+    types: party.party_types ?? (party.party_type === 'account' ? [] : [party.party_type as PartyBusinessType]),
     name: party.name,
     dealsIn: party.deals_in ?? '',
     address: party.address ?? '',
@@ -192,6 +205,8 @@ function partyToForm(party: Party, listFilter: PartyType): FormState {
     formulaDraft: party.formulas ?? '',
     accountType: party.account_type?.name ?? '',
     accountTypeUlid: party.account_type_ulid ?? '',
+    vendorAccountTypeUlid: party.vendor_account_type_ulid ?? (party.party_type === 'vendor' ? party.account_type_ulid ?? '' : ''),
+    customerAccountTypeUlid: party.customer_account_type_ulid ?? (party.party_type === 'customer' ? party.account_type_ulid ?? '' : ''),
     license: party.license_number ?? '',
     licenseIssue: party.license_issued_on ?? '',
     licenseType: party.license_type || 'A',
@@ -206,8 +221,10 @@ function partyToForm(party: Party, listFilter: PartyType): FormState {
 function formSnapshot(form: FormState): string {
   return JSON.stringify({
     ulid: form.ulid,
+    identityUlid: form.identityUlid,
     code: form.code,
     type: form.type,
+    types: form.types,
     name: form.name,
     dealsIn: form.dealsIn,
     address: form.address,
@@ -228,6 +245,8 @@ function formSnapshot(form: FormState): string {
     stn: form.stn,
     formulaDraft: form.formulaDraft,
     accountTypeUlid: form.accountTypeUlid,
+    vendorAccountTypeUlid: form.vendorAccountTypeUlid,
+    customerAccountTypeUlid: form.customerAccountTypeUlid,
     license: form.license,
     licenseIssue: form.licenseIssue,
     licenseType: form.licenseType,
