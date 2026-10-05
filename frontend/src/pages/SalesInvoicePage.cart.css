@@ -1364,3 +1364,31 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Posted and Pending/Due views use the full Sales workspace.
+   The POS entry view deliberately keeps its frozen right payment column. */
+.sales-reference-screen.is-full-workspace-view {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.sales-reference-screen.is-full-workspace-view > .sales-reference-main {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0;
+}
+
+.sales-reference-screen.is-full-workspace-view .sales-posted-history,
+.sales-reference-screen.is-full-workspace-view .sales-pending-view {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.sales-reference-screen.is-full-workspace-view .sales-history-grid-wrap,
+.sales-reference-screen.is-full-workspace-view .sales-pending-grid-wrap {
+  width: 100%;
+  max-width: none;
+}
