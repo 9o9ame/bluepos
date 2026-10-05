@@ -124,6 +124,7 @@ export function SalesInvoicePage() {
 
   const [selectedCustomer, setSelectedCustomer] = useState<Party | null>(null)
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
+  const [salesmanPickerOpen, setSalesmanPickerOpen] = useState(false)
   const [partyModalOpen, setPartyModalOpen] = useState(false)
 
   const { session } = useAuth()
@@ -137,6 +138,11 @@ export function SalesInvoicePage() {
     enabled: canCreateSale,
     retry: false,
   })
+
+  const selectedSalesman = useMemo(
+    () => (salesmenQuery.data ?? []).find((row) => row.ulid === selectedSalesmanUlid) ?? null,
+    [salesmenQuery.data, selectedSalesmanUlid],
+  )
 
   const balanceDue = useMemo(() => {
     const total = Number.parseFloat(cart.preview.grandTotal) || 0
@@ -249,6 +255,8 @@ export function SalesInvoicePage() {
       cart.clear()
       setSelectedCustomer(null)
       setProductQuery('')
+      setCustomerPickerOpen(false)
+      setSalesmanPickerOpen(false)
 
       idempotencyKeyRef.current = newSaleKey()
 
@@ -506,6 +514,8 @@ export function SalesInvoicePage() {
     setProductQuery('')
     setBarcodeQuery('')
     setActiveLineKey(null)
+    setCustomerPickerOpen(false)
+    setSalesmanPickerOpen(false)
   }
 
   function setReceivedAmount(value: string) {
@@ -828,19 +838,77 @@ export function SalesInvoicePage() {
 
                   <label>S.Man:</label>
 
-                  <div className="sales-reference-input-button sales-reference-salesman">
-                    <select
-                      value={selectedSalesmanUlid ?? ''}
-                      onChange={(e) => setSelectedSalesmanUlid(e.target.value || null)}
+                  <div className={`sales-reference-input-button sales-reference-salesman sales-reference-inline-caret${salesmanPickerOpen ? ' is-open' : ''}`}>
+                    <input
+                      value={selectedSalesman ? `${selectedSalesman.code} — ${selectedSalesman.name}` : ''}
+                      readOnly
+                      placeholder="Select salesman"
                       aria-label="Salesman"
+                    />
+
+                    <button
+                      type="button"
+                      className="sales-reference-field-caret"
+                      onClick={() => {
+                        setCustomerPickerOpen(false)
+                        setSalesmanPickerOpen((open) => !open)
+                      }}
+                      title="Choose salesman"
+                      aria-label="Choose salesman"
                     >
-                      <option value="">Select salesman…</option>
-                      {(salesmenQuery.data ?? []).map((salesman) => (
-                        <option key={salesman.ulid} value={salesman.ulid}>
-                          {salesman.code} — {salesman.name}
-                        </option>
-                      ))}
-                    </select>
+                      <ChevronDown size={12} strokeWidth={2.75} />
+                    </button>
+
+                    <div
+                      className={`sales-salesman-dropdown-shutter${salesmanPickerOpen ? ' is-open' : ''}`}
+                      aria-hidden={!salesmanPickerOpen}
+                    >
+                      <div className="sales-pos-salesman-grid" role="listbox" aria-label="Choose salesman">
+                        <div className="sales-pos-salesman-grid-head" aria-hidden="true">
+                          <span>Code</span>
+                          <span>Name</span>
+                          <span>Address</span>
+                          <span>Mobile</span>
+                        </div>
+
+                        <div className="sales-pos-salesman-grid-body">
+                          <button
+                            type="button"
+                            className="sales-pos-salesman-grid-row"
+                            onClick={() => {
+                              setSelectedSalesmanUlid(null)
+                              setSalesmanPickerOpen(false)
+                            }}
+                          >
+                            <span>—</span>
+                            <strong>NO SALESMAN</strong>
+                            <span>—</span>
+                            <span>—</span>
+                          </button>
+
+                          {(salesmenQuery.data ?? []).map((salesman) => (
+                            <button
+                              type="button"
+                              className="sales-pos-salesman-grid-row"
+                              key={salesman.ulid}
+                              onClick={() => {
+                                setSelectedSalesmanUlid(salesman.ulid)
+                                setSalesmanPickerOpen(false)
+                              }}
+                            >
+                              <span>{salesman.code || '—'}</span>
+                              <strong>{salesman.name}</strong>
+                              <span>{salesman.address || '—'}</span>
+                              <span>{salesman.mobile || '—'}</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="sales-pos-salesman-grid-foot">
+                          {salesmenQuery.data?.length ?? 0} Salesmen
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <label>To:</label>
@@ -1275,15 +1343,51 @@ export function SalesInvoicePage() {
                                   }}
                                 />
                                 {productQuery.trim().length > 0 && productsQuery.data?.data?.length ? (
-                                  <ul className="sales-pos-product-results sales-pos-product-results-grid">
-                                    {productsQuery.data.data.slice(0, 8).map((row) => (
-                                      <li key={row.ulid}>
-                                        <button type="button" onClick={() => void addProductFromEntry(row.ulid)}>
-                                          <span>{row.product_number}</span> {row.name}
-                                        </button>
-                                      </li>
-                                    ))}
-                                  </ul>
+                                  <div className="sales-pos-product-results-grid" role="listbox" aria-label="Choose product">
+                                    <div className="sales-pos-product-grid-head" aria-hidden="true">
+                                      <span>Product #</span>
+                                      <span>Barcode</span>
+                                      <span>Product Name</span>
+                                      <span>Category</span>
+                                      <span>Brand</span>
+                                      <span>Unit</span>
+                                      <span>Retail</span>
+                                    </div>
+
+                                    <div className="sales-pos-product-grid-body">
+                                      {productsQuery.data.data.slice(0, 10).map((row) => {
+                                        const barcode =
+                                          row.primary_barcode ??
+                                          row.barcodes?.find((barcodeRow) => barcodeRow.is_primary && barcodeRow.is_active)?.barcode ??
+                                          row.barcodes?.find((barcodeRow) => barcodeRow.is_active)?.barcode ??
+                                          '—'
+                                        const retail =
+                                          row.prices?.find((price) => price.is_active && price.price_type === 'retail')?.amount ??
+                                          '—'
+
+                                        return (
+                                          <button
+                                            type="button"
+                                            className="sales-pos-product-grid-row"
+                                            key={row.ulid}
+                                            onClick={() => void addProductFromEntry(row.ulid)}
+                                          >
+                                            <span>{row.product_number}</span>
+                                            <span>{barcode}</span>
+                                            <strong>{row.name}</strong>
+                                            <span>{row.category?.name ?? '—'}</span>
+                                            <span>{row.brand?.name ?? '—'}</span>
+                                            <span>{row.base_unit?.symbol ?? row.base_unit?.code ?? '—'}</span>
+                                            <span>{retail}</span>
+                                          </button>
+                                        )
+                                      })}
+                                    </div>
+
+                                    <div className="sales-pos-product-grid-foot">
+                                      Showing {Math.min(productsQuery.data.data.length, 10)} of {productsQuery.data.meta.total} Products
+                                    </div>
+                                  </div>
                                 ) : null}
                               </td>
                             )
