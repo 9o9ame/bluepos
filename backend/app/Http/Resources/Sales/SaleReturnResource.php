@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Sales;
 
+use App\Actions\Sales\RefundSaleReturnAction;
 use App\Models\SaleReturn;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -22,10 +23,8 @@ class SaleReturnResource extends JsonResource
             $refundedAmount = bcadd((string) $this->getAttribute('refunded_amount'), '0', 4);
         }
 
-        $refundBalance = bcsub((string) $this->grand_total, $refundedAmount, 4);
-        if (bccomp($refundBalance, '0.0000', 4) < 0) {
-            $refundBalance = '0.0000';
-        }
+        $refundBalance = app(RefundSaleReturnAction::class)
+            ->refundableAmount($this->resource);
 
         return [
             'ulid' => $this->ulid,
