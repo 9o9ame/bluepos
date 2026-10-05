@@ -1378,8 +1378,8 @@ export function PartiesPlaceholderPage({
                   onChange={(e) => patchForm('code', e.target.value)}
                 />
                 <label>Type</label>
-                {form.type === 'ACCOUNTS' ? (
-                  <input value="ACCOUNT" readOnly title="Manual ledger accounts remain a separate accounting master." />
+                {isManualAccount ? (
+                  <input value="ACCOUNT" readOnly title="Legacy standalone ledger account." />
                 ) : (
                   <PartyTypeMultiSelect
                     value={form.types}
@@ -1861,7 +1861,7 @@ export function PartiesPlaceholderPage({
                 <input id="vca-stn" value={form.stn} onChange={(e) => patchForm('stn', e.target.value)} />
               </div>
 
-              {form.type === 'ACCOUNTS' ? (
+              {isManualAccount ? (
                 <div className="parties-vca-account-type-row">
                   <label htmlFor="vca-account-type">Account Type</label>
                   <AnimatedSelect
@@ -1919,6 +1919,25 @@ export function PartiesPlaceholderPage({
                         onChange={(e) => patchForm('customerAccountTypeUlid', e.target.value)}
                       >
                         <option value="">Select customer account type…</option>
+                        {accountTypes.map((type) => (
+                          <option key={type.ulid} value={type.ulid}>{type.name}</option>
+                        ))}
+                      </AnimatedSelect>
+                      <button type="button" className="parties-vca-account-type-btn" title="Define Account Types" onClick={() => setCoaModalOpen(true)}>
+                        <Plus size={15} strokeWidth={3} />
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {form.types.includes('account') ? (
+                    <div className="parties-vca-account-type-row">
+                      <label htmlFor="vca-profile-account-type">Account A/C Type</label>
+                      <AnimatedSelect
+                        id="vca-profile-account-type"
+                        value={form.accountAccountTypeUlid}
+                        onChange={(e) => patchForm('accountAccountTypeUlid', e.target.value)}
+                      >
+                        <option value="">Select account type…</option>
                         {accountTypes.map((type) => (
                           <option key={type.ulid} value={type.ulid}>{type.name}</option>
                         ))}
