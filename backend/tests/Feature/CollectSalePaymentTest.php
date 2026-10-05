@@ -66,6 +66,40 @@ class CollectSalePaymentTest extends TestCase
         $this->assertSame(2, SalePayment::query()->where('sale_id', $this->saleId($sale))->count());
     }
 
+    public function test_due_only_sales_list_excludes_fully_paid_sales_and_keeps_partial_balances(): void
+    {
+        $this->signInOwner('pay-due-list')->assertOk();
+        $this->configureAccounts();
+
+        $unpaid = $this->createSale('pay-due-unpaid', '100.0000');
+        $partial = $this->createSale('pay-due-partial', '100.0000');
+        $paid = $this->createSale('pay-due-paid', '100.0000');
+
+        $this->postJson('/api/sales/'.$partial.'/payments', [
+            'amount' => '40.0000',
+            'method' => 'cash',
+        ], $this->idem('pay-due-partial-payment'))->assertCreated();
+
+        $this->postJson('/api/sales/'.$paid.'/payments', [
+            'amount' => '100.0000',
+            'method' => 'cash',
+        ], $this->idem('pay-due-full-payment'))->assertCreated();
+
+        $response = $this->getJson('/api/sales?due_only=1&status=posted')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+
+        $ulids = collect($response->json('data'))->pluck('ulid')->all();
+
+        $this->assertContains($unpaid, $ulids);
+        $this->assertContains($partial, $ulids);
+        $this->assertNotContains($paid, $ulids);
+
+        $partialRow = collect($response->json('data'))->firstWhere('ulid', $partial);
+        $this->assertSame('40.0000', $partialRow['paid_amount']);
+        $this->assertSame('60.0000', $partialRow['balance_due']);
+    }
+
     public function test_payment_cannot_exceed_the_outstanding_balance(): void
     {
         $this->signInOwner('pay-3')->assertOk();
