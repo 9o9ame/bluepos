@@ -1864,3 +1864,132 @@
     min-width: 940px !important;
   }
 }
+
+
+/* ==========================================================================
+   Return Invoice Options — exactly two full-width rows.
+   Row 1: Ret# / Date / Sales# / Refresh / Previous / From / This Bill
+   Row 2: Remarks / Total Balance / S.Man
+   ========================================================================== */
+.sales-return-head > fieldset:first-child {
+  overflow: visible !important;
+}
+
+.sales-return-fields {
+  display: grid !important;
+  grid-template-columns:
+    minmax(78px, .55fr)
+    minmax(132px, .85fr)
+    minmax(210px, 1.45fr)
+    64px
+    72px
+    minmax(190px, 1.25fr)
+    74px !important;
+  grid-template-areas:
+    "ret date sales refresh previous from thisbill"
+    "remarks remarks remarks total salesman salesman salesman";
+  gap: 3px 5px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  align-items: center;
+}
+
+.sales-return-option-group.is-ret {
+  grid-area: ret;
+  width: auto !important;
+}
+
+.sales-return-option-group.is-date {
+  grid-area: date;
+  width: auto !important;
+}
+
+.sales-return-option-group.is-sales {
+  grid-area: sales;
+  width: auto !important;
+}
+
+.sales-return-header-refresh {
+  grid-area: refresh;
+  width: 100% !important;
+}
+
+.sales-return-balance-chip.is-previous {
+  grid-area: previous;
+  width: 100% !important;
+}
+
+.sales-return-option-group.is-from {
+  grid-area: from;
+  width: auto !important;
+}
+
+.sales-return-balance-chip.is-this-bill {
+  grid-area: thisbill;
+  width: 100% !important;
+}
+
+.sales-return-option-group.is-remarks {
+  grid-area: remarks;
+  width: auto !important;
+}
+
+.sales-return-balance-chip.is-total-balance {
+  grid-area: total;
+  width: 100% !important;
+}
+
+.sales-return-option-group.is-salesman {
+  grid-area: salesman;
+  width: auto !important;
+}
+
+.sales-return-option-group {
+  min-width: 0;
+}
+
+.sales-return-option-group > input,
+.sales-return-option-group > .sales-return-sale-search,
+.sales-return-option-group > .sales-return-party-select-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.sales-return-option-group.is-ret > input,
+.sales-return-option-group.is-date > input {
+  width: 100% !important;
+}
+
+.sales-return-option-group.is-remarks > input {
+  width: 100% !important;
+}
+
+.sales-return-option-group.is-sales .sales-return-sale-results {
+  left: 0 !important;
+  width: min(900px, calc(100vw - 380px)) !important;
+}
+
+@media (max-width: 1450px) {
+  .sales-return-fields {
+    grid-template-columns:
+      minmax(70px, .55fr)
+      minmax(120px, .82fr)
+      minmax(185px, 1.35fr)
+      58px
+      66px
+      minmax(165px, 1.15fr)
+      68px !important;
+    gap: 3px 4px !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .sales-return-head > fieldset:first-child {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+  }
+
+  .sales-return-fields {
+    min-width: 920px !important;
+  }
+}
