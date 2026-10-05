@@ -3113,3 +3113,37 @@
 .sales-return-amounts .is-net strong {
   font-size: 15px !important;
 }
+
+
+/* Slightly larger Sales Return header typography for easier reading. */
+.sales-return-head legend {
+  font-size: 12px !important;
+}
+
+.sales-return-option-group > label,
+.sales-return-detail-control,
+.sales-return-fields .sales-return-option-group > input,
+.sales-return-fields .sales-return-sale-input > input,
+.sales-return-header-refresh {
+  font-size: 12px !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > span {
+  font-size: 10px !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > strong {
+  font-size: 12px !important;
+}
+
+.sales-return-amounts span {
+  font-size: 12px !important;
+}
+
+.sales-return-amounts strong {
+  font-size: 13px !important;
+}
+
+.sales-return-amounts .is-net strong {
+  font-size: 16px !important;
+}
