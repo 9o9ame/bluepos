@@ -2686,3 +2686,93 @@
     transition: none !important;
   }
 }
+
+
+/* ==========================================================================
+   Final Sales Return header spacing:
+   keep Refresh directly beside Sales# and create a clear visual gap before
+   the balance widgets on the right.
+   ========================================================================== */
+.sales-return-fields {
+  grid-template-columns:
+    minmax(86px, .55fr)
+    minmax(142px, .82fr)
+    minmax(230px, 1.35fr)
+    72px
+    minmax(195px, 1.12fr)
+    minmax(180px, 1.05fr)
+    minmax(190px, 1.15fr)
+    28px
+    minmax(82px, .48fr)
+    minmax(86px, .50fr)
+    minmax(82px, .48fr) !important;
+  grid-template-areas:
+    "ret date sales refresh from salesman remarks gap previous total thisbill"
+    "ret date sales refresh from salesman remarks gap previous total thisbill" !important;
+  align-items: center !important;
+  gap: 5px 6px !important;
+}
+
+.sales-return-fields::after {
+  content: "";
+  grid-area: gap;
+  min-width: 28px;
+}
+
+.sales-return-header-refresh {
+  grid-area: refresh !important;
+  position: static !important;
+  width: 72px !important;
+  min-width: 72px !important;
+  height: 25px !important;
+  min-height: 25px !important;
+  z-index: 2;
+}
+
+.sales-return-option-group.is-from { grid-area: from !important; }
+.sales-return-option-group.is-salesman { grid-area: salesman !important; }
+.sales-return-option-group.is-remarks { grid-area: remarks !important; }
+
+.sales-return-balance-chip.is-previous {
+  grid-area: previous !important;
+  width: 100% !important;
+}
+
+.sales-return-balance-chip.is-total-balance {
+  grid-area: total !important;
+  width: 100% !important;
+}
+
+.sales-return-balance-chip.is-this-bill {
+  grid-area: thisbill !important;
+  width: 100% !important;
+}
+
+@media (max-width: 1450px) {
+  .sales-return-fields {
+    grid-template-columns:
+      minmax(78px, .52fr)
+      minmax(128px, .78fr)
+      minmax(205px, 1.25fr)
+      68px
+      minmax(170px, 1.03fr)
+      minmax(160px, .98fr)
+      minmax(165px, 1.03fr)
+      22px
+      minmax(76px, .45fr)
+      minmax(80px, .47fr)
+      minmax(76px, .45fr) !important;
+    gap: 4px 5px !important;
+  }
+
+  .sales-return-header-refresh {
+    width: 68px !important;
+    min-width: 68px !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .sales-return-fields {
+    min-width: 1180px !important;
+  }
+}
