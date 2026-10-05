@@ -41,6 +41,7 @@ class SaleReturnTest extends TestCase
 
         $returnable = $this->getJson('/api/sales/'.$saleUlid.'/returnable-lines')
             ->assertOk()
+            ->assertJsonPath('sale.previous_balance', '400.0000')
             ->assertJsonPath('data.0.original_quantity', '4.000000')
             ->assertJsonPath('data.0.remaining_returnable_quantity', '4.000000')
             ->assertJsonPath('data.0.unit_price', '100.0000');
@@ -142,6 +143,7 @@ class SaleReturnTest extends TestCase
 
         $this->getJson('/api/sales/'.$saleUlid.'/returnable-lines')
             ->assertOk()
+            ->assertJsonPath('sale.previous_balance', '150.0000')
             ->assertJsonPath('data.0.already_returned_quantity', '4.000000')
             ->assertJsonPath('data.0.remaining_returnable_quantity', '6.000000');
 
