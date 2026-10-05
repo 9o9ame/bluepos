@@ -16,10 +16,18 @@ class UpdateBusinessSettingsRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->exists('opening_balance_equity_account_ulid')) {
-            $raw = $this->input('opening_balance_equity_account_ulid');
+        foreach ([
+            'opening_balance_equity_account_ulid',
+            'default_cash_account_ulid',
+            'sales_clearing_account_ulid',
+        ] as $field) {
+            if (! $this->exists($field)) {
+                continue;
+            }
+
+            $raw = $this->input($field);
             $this->merge([
-                'opening_balance_equity_account_ulid' => $raw === null || $raw === ''
+                $field => $raw === null || $raw === ''
                     ? null
                     : trim((string) $raw),
             ]);
@@ -54,6 +62,24 @@ class UpdateBusinessSettingsRequest extends FormRequest
             'batch_tracking_enabled' => ['sometimes', 'boolean'],
             'default_price_level' => ['sometimes', 'required', Rule::enum(PriceType::class)],
             'opening_balance_equity_account_ulid' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'size:26',
+                Rule::exists('accounts', 'ulid')
+                    ->where('tenant_id', $tenantId)
+                    ->where('is_active', true),
+            ],
+            'default_cash_account_ulid' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'size:26',
+                Rule::exists('accounts', 'ulid')
+                    ->where('tenant_id', $tenantId)
+                    ->where('is_active', true),
+            ],
+            'sales_clearing_account_ulid' => [
                 'sometimes',
                 'nullable',
                 'string',
