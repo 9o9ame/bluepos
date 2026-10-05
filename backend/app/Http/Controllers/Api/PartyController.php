@@ -302,6 +302,7 @@ class PartyController extends Controller
         $oldPath = $party->image_path;
         $party->image_path = $newPath;
         $party->save();
+        $this->syncProfileImage($party, $newPath);
 
         if ($oldPath && $oldPath !== $newPath) {
             Storage::disk('public')->delete($oldPath);
@@ -327,6 +328,7 @@ class PartyController extends Controller
 
         $party->image_path = null;
         $party->save();
+        $this->syncProfileImage($party, null);
 
         $this->audit->record('PARTY_IMAGE_REMOVED', [
             'resource_type' => $partyType === 'vendor' ? 'supplier' : $partyType,
@@ -387,6 +389,32 @@ class PartyController extends Controller
         return $this->userCan('customers.view')
             || $this->userCan('suppliers.view')
             || $this->userCan('sales.create');
+    }
+
+    private function syncProfileImage(Supplier|Customer|Account $party, ?string $path): void
+    {
+        $profileId = (int) ($party->getAttribute('party_profile_id') ?? 0);
+        if ($profileId <= 0) {
+            return;
+        }
+
+        $userId = app(TenantContext::class)->userId();
+
+        PartyProfile::query()
+            ->whereKey($profileId)
+            ->update([
+                'image_path' => $path,
+                'updated_by' => $userId,
+                'updated_at' => now(),
+            ]);
+
+        Supplier::query()
+            ->where('party_profile_id', $profileId)
+            ->update(['image_path' => $path, 'updated_by' => $userId, 'updated_at' => now()]);
+
+        Customer::query()
+            ->where('party_profile_id', $profileId)
+            ->update(['image_path' => $path, 'updated_by' => $userId, 'updated_at' => now()]);
     }
 
     private function userCan(string $permission): bool
