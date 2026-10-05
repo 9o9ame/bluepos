@@ -1240,3 +1240,101 @@ html[data-animations='off'] :where(.auth-layout, .auth-card, .platform-shell, .p
   transition: none !important;
   animation: none !important;
 }
+
+
+/* ---------- SHARED DESKTOP COMPONENT VISUAL CONTRACT ---------- */
+html #root .desktop-panel-header,
+html #root .form-group-title {
+  border-color: var(--ui-border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 13%, var(--ui-surface-subtle))
+  );
+  color: var(--ui-accent-strong);
+}
+
+html #root .desktop-toolbar,
+html #root .desktop-panel-footer,
+html #root .grid-pane-toolbar,
+html #root .grid-pane-footer {
+  border-color: var(--ui-border);
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle));
+  color: var(--ui-text);
+}
+
+html #root .form-group {
+  background: var(--ui-surface);
+}
+
+html #root .form-group-title {
+  font-weight: 700;
+}
+
+html #root .desktop-field {
+  color: var(--ui-text-muted);
+}
+
+html #root .desktop-btn .shortcut {
+  color: var(--ui-text-muted);
+}
+
+html #root .desktop-btn.is-primary .shortcut {
+  color: color-mix(in srgb, white 78%, var(--ui-accent));
+}
+
+html #root .pos-grid th {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 15%, var(--ui-surface-subtle))
+  );
+  color: var(--ui-text);
+  border-color: var(--ui-border);
+}
+
+html #root .pos-grid td {
+  background-color: var(--ui-surface);
+  color: var(--ui-text);
+  border-color: color-mix(in srgb, var(--ui-border) 58%, transparent);
+}
+
+html #root .pos-grid tbody tr:hover td {
+  background: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface));
+}
+
+html #root .pos-grid tbody tr.is-selected td {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface));
+}
+
+html #root :where(.report-list button, .quick-command) {
+  border-color: var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  transition:
+    background-color var(--ui-transition-fast),
+    border-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast);
+}
+
+html #root :where(.report-list button, .quick-command):hover:not(:disabled) {
+  border-color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+
+html #root .report-list button.is-active {
+  border-color: var(--ui-accent);
+  background: var(--ui-accent);
+  color: white;
+}
+
+html[data-density='compact'] #root :where(.form-group-body, .desktop-panel-body) {
+  padding: var(--ui-pad-sm);
+}
+
+html[data-density='comfortable'] #root :where(.form-group-body, .desktop-panel-body) {
+  padding: var(--ui-pad-md);
+}
