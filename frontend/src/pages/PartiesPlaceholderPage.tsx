@@ -351,10 +351,11 @@ export function PartiesPlaceholderPage({
 } = {}) {
   const { closeActiveTab } = useWorkspace()
   const feedback = useFeedback()
+  const initialPartyFilter: PartyType = embedded ? 'CUSTOMERS' : 'ALL'
   const [viewTab, setViewTab] = useState<ViewTab>('entry')
   const [subTab, setSubTab] = useState<DetailTab>('contact')
-  const [listFilter, setListFilter] = useState<PartyType>('ALL')
-  const [form, setForm] = useState(() => emptyForm('ALL'))
+  const [listFilter, setListFilter] = useState<PartyType>(initialPartyFilter)
+  const [form, setForm] = useState(() => emptyForm(initialPartyFilter))
   const [parties, setParties] = useState<Party[]>([])
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -390,7 +391,7 @@ export function PartiesPlaceholderPage({
   const [ledgerLoading, setLedgerLoading] = useState(false)
   const [ledgerPage, setLedgerPage] = useState(1)
   const [ensureBusy, setEnsureBusy] = useState(false)
-  const baselineRef = useRef(formSnapshot(emptyForm('ALL')))
+  const baselineRef = useRef(formSnapshot(emptyForm(initialPartyFilter)))
 
   const rows: PartyListRow[] = useMemo(
     () =>
@@ -487,7 +488,7 @@ export function PartiesPlaceholderPage({
   }
 
   useEffect(() => {
-    void loadParties('ALL')
+    void loadParties(initialPartyFilter)
     void loadCoaTree()
     // initial load only
     // eslint-disable-next-line react-hooks/exhaustive-deps
