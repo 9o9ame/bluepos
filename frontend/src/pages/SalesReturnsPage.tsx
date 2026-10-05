@@ -179,9 +179,14 @@ export function SalesReturnsPage() {
     )
   }, [returnable, lineQty])
 
-  const previousBalance = Number(returnableQuery.data?.sale.previous_balance ?? 0)
+  const currentOutstanding = Number(returnableQuery.data?.sale.previous_balance ?? 0)
   const thisBill = readOnly ? Number(document?.grand_total ?? 0) : liveTotals.total
-  const totalBalance = Math.max(0, previousBalance - thisBill)
+  const previousBalance =
+    document?.status === 'posted' ? currentOutstanding + thisBill : currentOutstanding
+  const totalBalance =
+    document?.status === 'posted'
+      ? currentOutstanding
+      : Math.max(0, currentOutstanding - thisBill)
 
   function handleError(err: unknown) {
     const message =
