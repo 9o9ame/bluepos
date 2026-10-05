@@ -80,10 +80,10 @@ export function PlatformLoginPage() {
   }
 
   return (
-    <div className="platform-auth-page flex min-h-screen items-center justify-center bg-slate-950 p-4">
-      <div className="platform-auth-card w-full max-w-md rounded border border-slate-700 bg-slate-900 text-slate-100 shadow-xl">
-        <div className="border-b border-slate-700 px-5 py-3">
-          <div className="text-[11px] font-black tracking-[0.18em] text-amber-400">BLUEPOS PLATFORM</div>
+    <div className="platform-auth-page flex min-h-screen items-center justify-center bg-[var(--ui-bg)] p-4">
+      <div className="platform-auth-card w-full max-w-md rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] text-[var(--ui-text)] shadow-xl">
+        <div className="border-b border-[var(--ui-border)] px-5 py-3">
+          <div className="text-[11px] font-black tracking-[0.18em] text-[var(--ui-accent)]">BLUEPOS PLATFORM</div>
           <h1 className="text-lg font-semibold">Platform Administration</h1>
         </div>
         <form className="space-y-3 px-5 py-4" onSubmit={onSubmit}>
@@ -94,7 +94,7 @@ export function PlatformLoginPage() {
               required
               type="email"
               autoComplete="username"
-              className="mt-1 h-9 w-full rounded border border-slate-600 bg-slate-800 px-2"
+              className="mt-1 h-9 w-full rounded border border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] px-2"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
@@ -105,7 +105,7 @@ export function PlatformLoginPage() {
               type="password"
               required={!challengeUlid}
               autoComplete="current-password"
-              className="mt-1 h-9 w-full rounded border border-slate-600 bg-slate-800 px-2"
+              className="mt-1 h-9 w-full rounded border border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] px-2"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
@@ -115,26 +115,26 @@ export function PlatformLoginPage() {
               onChange={(event) => setRemember(event.target.checked)} />
             Remember Me
           </label>
-          <p className="text-[12px] text-slate-400">Remembered browsers can return without signing in again, including after Sign Out.</p>
+          <p className="text-[12px] text-[var(--ui-text-muted)]">Remembered browsers can return without signing in again, including after Sign Out.</p>
           {challengeUlid ? (
             <>
-              <p className="text-[12px] text-slate-300">
+              <p className="text-[12px] text-[var(--ui-text-muted)]">
                 Additional verification is required{recoveryHint ? ` (${recoveryHint})` : ''}.
               </p>
-              {deliveryHint ? <p className="text-[12px] text-amber-300">{deliveryHint}</p> : null}
+              {deliveryHint ? <p className="text-[12px] text-[var(--ui-warning)]">{deliveryHint}</p> : null}
               <label className="block text-[12px] font-semibold">
                 Verification code
                 <input
                   required
                   inputMode="numeric"
-                  className="mt-1 h-9 w-full rounded border border-slate-600 bg-slate-800 px-2"
+                  className="mt-1 h-9 w-full rounded border border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] px-2"
                   value={mfaCode}
                   onChange={(event) => setMfaCode(event.target.value)}
                 />
               </label>
               <button
                 type="button"
-                className="text-[12px] font-semibold text-amber-400 underline disabled:opacity-60"
+                className="text-[12px] font-semibold text-[var(--ui-accent)] underline disabled:opacity-60"
                 disabled={resending}
                 onClick={() => void onResend()}
               >
@@ -142,16 +142,16 @@ export function PlatformLoginPage() {
               </button>
             </>
           ) : null}
-          {error ? <p className="text-[12px] text-red-300">{error}</p> : null}
+          {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
           <button
             type="submit"
-            className="h-9 w-full rounded bg-amber-500 text-sm font-semibold text-slate-950 disabled:opacity-60"
+            className="h-9 w-full rounded bg-[var(--ui-accent)] text-sm font-semibold text-white disabled:opacity-60"
             disabled={submitting}
           >
             {submitting ? 'Signing in…' : challengeUlid ? 'Verify' : 'Login'}
           </button>
-          <p className="text-center text-[12px] text-slate-400">
-            <Link className="font-semibold text-amber-400" to="/platform/forgot-password">
+          <p className="text-center text-[12px] text-[var(--ui-text-muted)]">
+            <Link className="font-semibold text-[var(--ui-accent)]" to="/platform/forgot-password">
               Forgot password
             </Link>
           </p>
