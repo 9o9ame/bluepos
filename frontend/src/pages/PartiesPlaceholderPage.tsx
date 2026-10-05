@@ -354,7 +354,7 @@ export function PartiesPlaceholderPage({
   const initialPartyFilter: PartyType = embedded ? 'CUSTOMERS' : 'ALL'
   const [viewTab, setViewTab] = useState<ViewTab>('entry')
   const [subTab, setSubTab] = useState<DetailTab>('contact')
-  const [listFilter, setListFilter] = useState<PartyType>(initialPartyFilter)
+  const [listFilter] = useState<PartyType>(initialPartyFilter)
   const [form, setForm] = useState(() => emptyForm(initialPartyFilter))
   const [parties, setParties] = useState<Party[]>([])
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
