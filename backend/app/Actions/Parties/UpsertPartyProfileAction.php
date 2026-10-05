@@ -30,6 +30,7 @@ class UpsertPartyProfileAction
         array $types,
         ?string $vendorAccountTypeUlid,
         ?string $customerAccountTypeUlid,
+        ?string $accountAccountTypeUlid,
     ): PartyProfile {
         $types = array_values(array_unique($types));
         sort($types);
@@ -40,6 +41,7 @@ class UpsertPartyProfileAction
             $types,
             $vendorAccountTypeUlid,
             $customerAccountTypeUlid,
+            $accountAccountTypeUlid,
         ): PartyProfile {
             $tenantId = $this->tenantContext->tenantId();
             $isNew = $profile === null;
@@ -74,6 +76,10 @@ class UpsertPartyProfileAction
                 ->forTenant($tenantId)
                 ->where('party_profile_id', $profile->id)
                 ->first();
+            $account = Account::query()
+                ->forTenant($tenantId)
+                ->where('party_profile_id', $profile->id)
+                ->first();
 
             $vendorAccountTypeId = in_array('vendor', $types, true)
                 ? $this->resolveAccountTypeId($vendorAccountTypeUlid, $supplier?->account_type_id, 'vendor_account_type_ulid')
@@ -81,8 +87,11 @@ class UpsertPartyProfileAction
             $customerAccountTypeId = in_array('customer', $types, true)
                 ? $this->resolveAccountTypeId($customerAccountTypeUlid, $customer?->account_type_id, 'customer_account_type_ulid')
                 : null;
+            $accountAccountTypeId = in_array('account', $types, true)
+                ? $this->resolveAccountTypeId($accountAccountTypeUlid, $account?->account_type_id, 'account_account_type_ulid')
+                : null;
 
-            $this->assertBackingCodesAvailable($profile, $types, $supplier, $customer);
+            $this->assertBackingCodesAvailable($profile, $types, $supplier, $customer, $account);
 
             PartyProfileType::query()->where('party_profile_id', $profile->id)->delete();
             foreach ($types as $type) {
@@ -93,11 +102,17 @@ class UpsertPartyProfileAction
             }
 
             if (! in_array('vendor', $types, true) && $supplier) {
-                $this->deactivateRemovedBacking($supplier, 'vendor', $profile, in_array('customer', $types, true));
+                $this->deactivateRemovedBacking($supplier, 'vendor', $profile, in_array('customer', $types, true) || in_array('account', $types, true));
             }
 
             if (! in_array('customer', $types, true) && $customer) {
-                $this->deactivateRemovedBacking($customer, 'customer', $profile, in_array('vendor', $types, true));
+                $this->deactivateRemovedBacking($customer, 'customer', $profile, in_array('vendor', $types, true) || in_array('account', $types, true));
+            }
+
+            if (! in_array('account', $types, true) && $account) {
+                $account->is_active = false;
+                $account->updated_by = $this->tenantContext->userId();
+                $account->save();
             }
 
             if (in_array('vendor', $types, true)) {
@@ -110,7 +125,11 @@ class UpsertPartyProfileAction
                 $this->leafSync->syncCustomer($customer);
             }
 
-            return $profile->fresh(['types', 'supplier.accountType', 'customer.accountType']) ?? $profile;
+            if (in_array('account', $types, true)) {
+                $account = $this->upsertAccount($profile, $account, (int) $accountAccountTypeId);
+            }
+
+            return $profile->fresh(['types', 'supplier.accountType', 'customer.accountType', 'account.accountType']) ?? $profile;
         });
     }
 
