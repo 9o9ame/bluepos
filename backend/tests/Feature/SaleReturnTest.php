@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\StockBalance;
 use App\Models\StockMovement;
+use App\Models\Warehouse;
+use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -66,6 +69,12 @@ class SaleReturnTest extends TestCase
 
         $this->assertNoInternalIds($posted->json());
         $this->assertSame('7.000000', $this->stockFor($product));
+        $balance = StockBalance::query()
+            ->where('warehouse_id', app(TenantContext::class)->warehouseId())
+            ->where('product_id', Product::query()->where('ulid', $product)->value('id'))
+            ->firstOrFail();
+        $this->assertSame('10.0000', (string) $balance->average_cost);
+        $this->assertSame('70.0000', (string) $balance->stock_value);
 
         $movement = StockMovement::query()
             ->where('movement_type', 'sale_return')
@@ -156,6 +165,57 @@ class SaleReturnTest extends TestCase
         ])->assertStatus(422);
 
         $this->assertSame('20.000000', $this->stockFor($product));
+    }
+
+    public function test_sales_returns_are_scoped_to_active_branch_and_warehouse(): void
+    {
+        $this->signInOwner('sr-branch')->assertOk();
+        $context = app(TenantContext::class);
+
+        $otherBranch = Branch::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => 'SR-B2',
+            'name' => 'Sales Return Branch 2',
+            'status' => 'active',
+            'is_default' => false,
+        ]);
+
+        $otherWarehouse = Warehouse::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $otherBranch->id,
+            'code' => 'SR-W2',
+            'name' => 'Sales Return Warehouse 2',
+            'status' => 'active',
+            'is_default' => true,
+        ]);
+
+        $foreignBranchSale = Sale::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $otherBranch->id,
+            'warehouse_id' => $otherWarehouse->id,
+            'customer_id' => null,
+            'salesman_party_profile_id' => null,
+            'document_number' => 'SAL-SR-B2-001',
+            'status' => 'posted',
+            'sale_date' => '2026-10-05',
+            'price_type' => 'retail',
+            'subtotal' => '10.0000',
+            'discount_amount' => '0.0000',
+            'tax_amount' => '0.0000',
+            'grand_total' => '10.0000',
+            'notes' => null,
+            'idempotency_key' => 'sr-branch-sale',
+            'created_by' => $context->userId(),
+            'posted_at' => now(),
+        ]);
+
+        $this->getJson('/api/sales/'.$foreignBranchSale->ulid.'/returnable-lines')
+            ->assertNotFound();
+
+        $this->postJson('/api/sales-returns', [
+            'sale_ulid' => $foreignBranchSale->ulid,
+        ], $this->idem('sr-branch-return'))
+            ->assertNotFound();
     }
 
     public function test_sales_return_creation_is_idempotent_and_tenant_scoped(): void
