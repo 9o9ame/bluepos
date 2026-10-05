@@ -107,6 +107,7 @@ export type ReturnableSaleResponse = {
     document_number: string
     sale_date: string
     grand_total: string
+    previous_balance: string
     customer: SaleReturnRef | null
     salesman: SaleReturnRef | null
   }
