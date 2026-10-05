@@ -40,6 +40,7 @@ class PartyProfile extends Model
     public function types(): HasMany { return $this->hasMany(PartyProfileType::class); }
     public function supplier(): HasOne { return $this->hasOne(Supplier::class); }
     public function customer(): HasOne { return $this->hasOne(Customer::class); }
+    public function account(): HasOne { return $this->hasOne(Account::class); }
 
     public function hasType(string $type): bool
     {
