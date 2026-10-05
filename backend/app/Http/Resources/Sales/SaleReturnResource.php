@@ -12,6 +12,21 @@ class SaleReturnResource extends JsonResource
     /** @return array<string,mixed> */
     public function toArray(Request $request): array
     {
+        $refundedAmount = '0.0000';
+
+        if ($this->relationLoaded('refunds')) {
+            foreach ($this->refunds as $refund) {
+                $refundedAmount = bcadd($refundedAmount, (string) $refund->amount, 4);
+            }
+        } elseif ($this->getAttribute('refunded_amount') !== null) {
+            $refundedAmount = bcadd((string) $this->getAttribute('refunded_amount'), '0', 4);
+        }
+
+        $refundBalance = bcsub((string) $this->grand_total, $refundedAmount, 4);
+        if (bccomp($refundBalance, '0.0000', 4) < 0) {
+            $refundBalance = '0.0000';
+        }
+
         return [
             'ulid' => $this->ulid,
             'document_number' => $this->document_number,
@@ -21,8 +36,8 @@ class SaleReturnResource extends JsonResource
             'discount_amount' => $this->discount_amount,
             'tax_amount' => $this->tax_amount,
             'grand_total' => $this->grand_total,
-            'refund_amount' => $this->refund_amount,
-            'balance_due' => bcsub((string) $this->grand_total, (string) $this->refund_amount, 4),
+            'refund_amount' => $refundedAmount,
+            'balance_due' => $refundBalance,
             'reason' => $this->reason,
             'notes' => $this->notes,
             'posted_at' => $this->posted_at?->toIso8601String(),
@@ -53,6 +68,7 @@ class SaleReturnResource extends JsonResource
                 'name' => $this->warehouse->name,
             ]),
             'lines' => SaleReturnLineResource::collection($this->whenLoaded('lines')),
+            'refunds' => SaleReturnRefundResource::collection($this->whenLoaded('refunds')),
         ];
     }
 }
