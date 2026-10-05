@@ -84,6 +84,7 @@ class UpdateBusinessSettingsRequest extends FormRequest
                 'nullable',
                 'string',
                 'size:26',
+                'different:default_cash_account_ulid',
                 Rule::exists('accounts', 'ulid')
                     ->where('tenant_id', $tenantId)
                     ->where('is_active', true),
