@@ -360,6 +360,7 @@ export function fetchProducts(
     category_ulid?: string
     brand_ulid?: string
     status?: string
+    sales_lookup?: boolean
   },
   options?: {
     busy?: 'block' | 'fetch' | 'none'
@@ -385,6 +386,10 @@ export function fetchProducts(
 
   if (params.status) {
     search.set('status', params.status)
+  }
+
+  if (params.sales_lookup) {
+    search.set('sales_lookup', '1')
   }
 
   search.set(
