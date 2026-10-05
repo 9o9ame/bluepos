@@ -1135,7 +1135,7 @@ export function ProductsPage() {
           {section === 'opening' ? (
             <div className="product-def-fields">
               {creating || !selectedKey ? (
-                <p className="text-[12px] text-[var(--muted)]">Save the product first, then enter opening stock.</p>
+                <p className="text-[12px] text-[var(--ui-text-muted)]">Save the product first, then enter opening stock.</p>
               ) : (
                 <>
                   <div className="pdf-row">
