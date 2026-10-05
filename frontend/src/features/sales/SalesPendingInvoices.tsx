@@ -1,5 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Eye, Printer, RotateCcw, Search } from 'lucide-react'
 import { deleteSaleHold, fetchSale, fetchSaleHold, fetchSaleHolds, fetchSales, fetchSalesmen } from '../../api/sales'
 import { useCan } from '../auth/useCan'
@@ -25,7 +25,6 @@ export function SalesPendingInvoices({
   const { session } = useAuth()
   const feedback = useFeedback()
   const [holdBusyUlid, setHoldBusyUlid] = useState<string | null>(null)
-  const [page, setPage] = useState(1)
   const [searchText, setSearchText] = useState('')
   const search = useDeferredValue(searchText.trim())
   const [dateFrom, setDateFrom] = useState('')
@@ -46,12 +45,13 @@ export function SalesPendingInvoices({
     retry: false,
   })
 
-  const dueQuery = useQuery({
-    queryKey: ['sales', 'due', page, search, dateFrom, dateTo, salesmanUlid],
-    queryFn: () =>
+  const dueQuery = useInfiniteQuery({
+    queryKey: ['sales', 'due', search, dateFrom, dateTo, salesmanUlid],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
       fetchSales({
-        page,
-        per_page: 25,
+        page: pageParam,
+        per_page: 40,
         q: search || undefined,
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined,
@@ -59,6 +59,10 @@ export function SalesPendingInvoices({
         status: 'posted',
         due_only: true,
       }),
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.current_page < lastPage.meta.last_page
+        ? lastPage.meta.current_page + 1
+        : undefined,
     retry: false,
   })
 
@@ -69,8 +73,8 @@ export function SalesPendingInvoices({
     retry: false,
   })
 
-  const rows: Sale[] = dueQuery.data?.data ?? []
-  const meta = dueQuery.data?.meta
+  const rows: Sale[] = dueQuery.data?.pages.flatMap((page) => page.data) ?? []
+  const meta = dueQuery.data?.pages[0]?.meta
 
   const totals = useMemo(
     () =>
@@ -98,7 +102,6 @@ export function SalesPendingInvoices({
     setDateFrom('')
     setDateTo('')
     setSalesmanUlid('')
-    setPage(1)
   }
 
   async function recallHold(holdUlid: string) {
@@ -137,6 +140,15 @@ export function SalesPendingInvoices({
       )
     } finally {
       setHoldBusyUlid(null)
+    }
+  }
+
+  function loadMoreDueOnScroll(element: HTMLDivElement) {
+    if (!dueQuery.hasNextPage || dueQuery.isFetchingNextPage) return
+
+    const remaining = element.scrollHeight - element.scrollTop - element.clientHeight
+    if (remaining < 140) {
+      void dueQuery.fetchNextPage()
     }
   }
 
@@ -208,6 +220,21 @@ export function SalesPendingInvoices({
           <strong>{meta?.total ?? 0}</strong>
         </header>
 
+        <div className="sales-due-summary">
+          <div>
+            <span>PAGE TOTAL</span>
+            <strong>{totals.total.toFixed(2)}</strong>
+          </div>
+          <div className="is-paid">
+            <span>PAID</span>
+            <strong>{totals.paid.toFixed(2)}</strong>
+          </div>
+          <div className="is-due">
+            <span>DUE</span>
+            <strong>{totals.due.toFixed(2)}</strong>
+          </div>
+        </div>
+
         <div className="sales-due-toolbar">
           <div className="sales-due-search">
             <Search size={14} aria-hidden="true" />
@@ -215,7 +242,6 @@ export function SalesPendingInvoices({
               value={searchText}
               onChange={(e) => {
                 setSearchText(e.target.value)
-                setPage(1)
               }}
               placeholder="Invoice #, customer, salesman…"
               aria-label="Search due invoices"
@@ -229,7 +255,6 @@ export function SalesPendingInvoices({
               value={dateFrom}
               onChange={(e) => {
                 setDateFrom(e.target.value)
-                setPage(1)
               }}
             />
           </label>
@@ -241,7 +266,6 @@ export function SalesPendingInvoices({
               value={dateTo}
               onChange={(e) => {
                 setDateTo(e.target.value)
-                setPage(1)
               }}
             />
           </label>
@@ -252,7 +276,6 @@ export function SalesPendingInvoices({
               value={salesmanUlid}
               onChange={(e) => {
                 setSalesmanUlid(e.target.value)
-                setPage(1)
               }}
             >
               <option value="">All</option>
@@ -270,22 +293,10 @@ export function SalesPendingInvoices({
           </button>
         </div>
 
-        <div className="sales-due-summary">
-          <div>
-            <span>PAGE TOTAL</span>
-            <strong>{totals.total.toFixed(2)}</strong>
-          </div>
-          <div className="is-paid">
-            <span>PAID</span>
-            <strong>{totals.paid.toFixed(2)}</strong>
-          </div>
-          <div className="is-due">
-            <span>DUE</span>
-            <strong>{totals.due.toFixed(2)}</strong>
-          </div>
-        </div>
-
-        <div className="sales-pending-grid-wrap">
+        <div
+          className="sales-pending-grid-wrap sales-due-grid-wrap"
+          onScroll={(event) => loadMoreDueOnScroll(event.currentTarget)}
+        >
           <table className="sales-pending-grid">
             <thead>
               <tr>
@@ -328,24 +339,14 @@ export function SalesPendingInvoices({
           </table>
         </div>
 
-        <div className="sales-due-pager">
-          <button
-            type="button"
-            disabled={page <= 1 || dueQuery.isFetching}
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-          >
-            ◀ Previous
-          </button>
-          <span>
-            Page {meta?.current_page ?? page} of {meta?.last_page ?? 1}
-          </span>
-          <button
-            type="button"
-            disabled={!meta || page >= meta.last_page || dueQuery.isFetching}
-            onClick={() => setPage((current) => current + 1)}
-          >
-            Next ▶
-          </button>
+        <div className="sales-infinite-status" role="status">
+          {dueQuery.isFetchingNextPage
+            ? 'Loading more due invoices…'
+            : dueQuery.hasNextPage
+              ? `Scroll for more · ${rows.length} of ${meta?.total ?? rows.length}`
+              : rows.length > 0
+                ? `All ${rows.length} due invoice(s) loaded`
+                : ''}
         </div>
 
         {openUlid ? (
