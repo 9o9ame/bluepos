@@ -494,12 +494,12 @@ export function PurchaseReturnsPage() {
         </div>
 
         {!document?.ulid && purchaseLookup.data?.data?.length ? (
-          <div className="mb-2 max-h-36 overflow-auto border border-[var(--border)] bg-white text-[11px]">
+          <div className="mb-2 max-h-36 overflow-auto border border-[var(--ui-border)] bg-[var(--ui-surface)] text-[11px]">
             {purchaseLookup.data.data.map((purchase) => (
               <button
                 key={purchase.ulid}
                 type="button"
-                className="block w-full px-2 py-1 text-left hover:bg-[var(--row-hover)]"
+                className="block w-full px-2 py-1 text-left hover:bg-[var(--ui-accent-soft)]"
                 onClick={() => {
                   setPurchaseUlid(purchase.ulid)
                   setPurchaseLabel(
