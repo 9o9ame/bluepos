@@ -1999,3 +1999,57 @@
     linear-gradient(180deg, #258fd2 0%, #1577b8 50%, #0f659f 51%, #0b588d 100%) !important;
   color: #fff !important;
 }
+
+
+/* Completed Sales rows are visually final but can be reopened with a double-click. */
+.sales-reference-grid tbody tr.is-completed-entry {
+  cursor: default;
+  background: linear-gradient(180deg, #fbfdff 0%, #f2f7fb 100%);
+}
+
+.sales-reference-grid tbody tr.is-completed-entry:hover {
+  background: linear-gradient(180deg, #eef7fd 0%, #e2f0fa 100%);
+}
+
+.sales-reference-grid tbody tr.is-completed-entry td {
+  color: #26475e;
+}
+
+.sales-reference-grid tbody tr.is-completed-entry .sales-pos-line-product {
+  color: #123f63;
+  font-weight: 750;
+}
+
+.sales-pos-line-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  color: #284b62;
+}
+
+.sales-reference-grid tbody tr.is-completed-entry td.col-uom,
+.sales-reference-grid tbody tr.is-completed-entry .col-uom {
+  text-align: center;
+}
+
+.sales-reference-grid tbody tr.is-completed-entry .sales-reference-delete-cell button {
+  opacity: .78;
+}
+
+.sales-reference-grid tbody tr.is-completed-entry:hover .sales-reference-delete-cell button {
+  opacity: 1;
+}
+
+:root[data-theme='dark'] .sales-reference-grid tbody tr.is-completed-entry {
+  background: linear-gradient(180deg, #25313a 0%, #202a32 100%);
+}
+
+:root[data-theme='dark'] .sales-reference-grid tbody tr.is-completed-entry:hover {
+  background: linear-gradient(180deg, #2c3a45 0%, #25323b 100%);
+}
+
+:root[data-theme='dark'] .sales-reference-grid tbody tr.is-completed-entry td,
+:root[data-theme='dark'] .sales-pos-line-value,
+:root[data-theme='dark'] .sales-reference-grid tbody tr.is-completed-entry .sales-pos-line-product {
+  color: #dce9f1;
+}
