@@ -573,7 +573,11 @@ export function SalesReturnsPage() {
                               </span>
                             </button>
                           ))}
-                          {!saleLookup.isFetching && (saleLookup.data?.data.length ?? 0) === 0 ? (
+                          {saleLookup.isError ? (
+                            <div className="sales-return-sale-results-empty">
+                              Could not load posted sales. Use Refresh and try again.
+                            </div>
+                          ) : !saleLookup.isFetching && (saleLookup.data?.data.length ?? 0) === 0 ? (
                             <div className="sales-return-sale-results-empty">
                               No posted sales match this search.
                             </div>
@@ -773,6 +777,7 @@ export function SalesReturnsPage() {
                     type="button"
                     className="sales-return-header-refresh"
                     title="Refresh selected sale and balances"
+                    disabled={returnableQuery.isFetching || saleLookup.isFetching}
                     onClick={() => {
                       setCustomerSelectOpen(false)
                       setSalesmanSelectOpen(false)
@@ -857,7 +862,7 @@ export function SalesReturnsPage() {
                           title={`Maximum returnable: ${row.remaining_returnable_quantity}`}
                           onChange={(e) => {
                             const value = e.target.value
-                            if (value !== '' && !/^\d*(?:\.\d{0,6})?$/.test(value)) {
+                            if (value !== '' && !/^\d+(?:\.\d{0,6})?$/.test(value)) {
                               return
                             }
 
@@ -885,7 +890,24 @@ export function SalesReturnsPage() {
                     <td className="num">{money(row.line_total)}</td>
                   </tr>
                 ))}
-                {saleUlid && returnable.length === 0 && !returnableQuery.isFetching ? (
+                {saleUlid && returnableQuery.isFetching ? (
+                  <tr>
+                    <td colSpan={11} className="sales-return-empty">
+                      Loading returnable sale lines…
+                    </td>
+                  </tr>
+                ) : null}
+                {saleUlid && returnableQuery.isError ? (
+                  <tr>
+                    <td colSpan={11} className="sales-return-empty">
+                      Could not load returnable sale lines. Use Refresh and try again.
+                    </td>
+                  </tr>
+                ) : null}
+                {saleUlid &&
+                !returnableQuery.isFetching &&
+                !returnableQuery.isError &&
+                returnable.length === 0 ? (
                   <tr>
                     <td colSpan={11} className="sales-return-empty">
                       This sale has no remaining returnable quantity.
@@ -1044,6 +1066,12 @@ export function SalesReturnsPage() {
             </button>
           </div>
 
+          {historyQuery.isError ? (
+            <div className="sales-return-error">
+              Could not load Sales Return history. Use View or Refresh to try again.
+            </div>
+          ) : null}
+
           <PosDataGrid
             columns={[
               { key: 'document_number', header: 'Inv#', width: 110 },
@@ -1095,6 +1123,12 @@ export function SalesReturnsPage() {
               Show
             </button>
           </div>
+
+          {productWiseQuery.isError ? (
+            <div className="sales-return-error">
+              Could not load Product Wise Sales Return data. Use Show or Refresh to try again.
+            </div>
+          ) : null}
 
           <PosDataGrid
             columns={[
