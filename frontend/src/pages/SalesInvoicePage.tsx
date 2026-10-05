@@ -128,7 +128,7 @@ export function SalesInvoicePage() {
 
   const { session } = useAuth()
   const [selectedSalesmanUlid, setSelectedSalesmanUlid] = useState<string | null>(
-    session?.membership.ulid ?? null,
+    null,
   )
 
   const salesmenQuery = useQuery({
@@ -234,7 +234,7 @@ export function SalesInvoicePage() {
           sale_date: saleDate,
           notes: cart.notes || null,
           customer_ulid: cart.customerUlid,
-          salesman_ulid: selectedSalesmanUlid ?? session?.membership.ulid ?? null,
+          salesman_ulid: selectedSalesmanUlid,
         },
         idempotencyKeyRef.current,
       ),
@@ -478,7 +478,7 @@ export function SalesInvoicePage() {
     )
 
     setSelectedCustomer(held.customer)
-    setSelectedSalesmanUlid(held.salesmanUlid ?? session?.membership.ulid ?? null)
+    setSelectedSalesmanUlid(held.salesmanUlid ?? null)
     setHeldCarts((current) =>
       current.filter((entry) => entry.id !== id),
     )
@@ -830,22 +830,14 @@ export function SalesInvoicePage() {
 
                   <div className="sales-reference-input-button sales-reference-salesman">
                     <select
-                      value={selectedSalesmanUlid ?? session?.membership.ulid ?? ''}
+                      value={selectedSalesmanUlid ?? ''}
                       onChange={(e) => setSelectedSalesmanUlid(e.target.value || null)}
                       aria-label="Salesman"
                     >
-                      {(salesmenQuery.data?.length
-                        ? salesmenQuery.data
-                        : session
-                          ? [{
-                              ulid: session.membership.ulid,
-                              username: session.membership.username,
-                              name: session.user.name,
-                            }]
-                          : []
-                      ).map((salesman) => (
+                      <option value="">Select salesman…</option>
+                      {(salesmenQuery.data ?? []).map((salesman) => (
                         <option key={salesman.ulid} value={salesman.ulid}>
-                          {salesman.name}
+                          {salesman.code} — {salesman.name}
                         </option>
                       ))}
                     </select>
