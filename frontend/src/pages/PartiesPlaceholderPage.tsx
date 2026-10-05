@@ -468,7 +468,11 @@ export function PartiesPlaceholderPage({
     try {
       let data: Party[]
       if (filter === 'ACCOUNTS') {
-        data = await fetchParties('account')
+        const [profiles, legacyAccounts] = await Promise.all([
+          fetchPartyProfiles('account'),
+          fetchParties('account'),
+        ])
+        data = [...profiles, ...legacyAccounts]
       } else if (filter === 'ALL') {
         const [profiles, accounts] = await Promise.all([
           fetchPartyProfiles('all'),
@@ -509,7 +513,7 @@ export function PartiesPlaceholderPage({
   }, [viewTab, coaShowGrouped])
 
   useEffect(() => {
-    if (accountTypes.length === 0 || form.type === 'ACCOUNTS') return
+    if (accountTypes.length === 0 || (form.type === 'ACCOUNTS' && !form.identityUlid && Boolean(form.ulid))) return
 
     setForm((current) => {
       const suggested = applySuggestedProfileAccountTypes(current)
@@ -773,19 +777,23 @@ export function PartiesPlaceholderPage({
   }
 
   function partyFinancialContext(party: Party): { ulid: string; type: 'vendor' | 'customer' | 'account' } | null {
-    if (party.party_type === 'account') return { ulid: party.ulid, type: 'account' }
+    if (party.party_type === 'account' && !party.identity_ulid) return { ulid: party.ulid, type: 'account' }
+    if (party.party_type === 'account' && party.account_ulid) return { ulid: party.account_ulid, type: 'account' }
     if (party.party_type === 'vendor' && party.vendor_ulid) return { ulid: party.vendor_ulid, type: 'vendor' }
     if (party.party_type === 'customer' && party.customer_ulid) return { ulid: party.customer_ulid, type: 'customer' }
     if (party.customer_ulid) return { ulid: party.customer_ulid, type: 'customer' }
+    if (party.account_ulid) return { ulid: party.account_ulid, type: 'account' }
     if (party.vendor_ulid) return { ulid: party.vendor_ulid, type: 'vendor' }
     return null
   }
 
   function formFinancialContext(): { ulid: string; type: 'vendor' | 'customer' | 'account' } | null {
-    if (form.type === 'ACCOUNTS' && form.ulid) return { ulid: form.ulid, type: 'account' }
+    if (form.type === 'ACCOUNTS' && form.identityUlid && form.accountUlid) return { ulid: form.accountUlid, type: 'account' }
+    if (form.type === 'ACCOUNTS' && !form.identityUlid && form.ulid) return { ulid: form.ulid, type: 'account' }
     if (form.type === 'CUSTOMERS' && form.customerUlid) return { ulid: form.customerUlid, type: 'customer' }
     if (form.type === 'VENDORS' && form.vendorUlid) return { ulid: form.vendorUlid, type: 'vendor' }
     if (form.customerUlid) return { ulid: form.customerUlid, type: 'customer' }
+    if (form.accountUlid) return { ulid: form.accountUlid, type: 'account' }
     if (form.vendorUlid) return { ulid: form.vendorUlid, type: 'vendor' }
     return null
   }
@@ -879,9 +887,7 @@ export function PartiesPlaceholderPage({
   function startNew(filter: PartyType = listFilter) {
     const nextType = CREATABLE_TYPES.includes(filter) ? filter : 'VENDORS'
     const base = emptyForm(nextType)
-    const blank = nextType === 'ACCOUNTS'
-      ? applySuggestedAccountType(nextType, base)
-      : applySuggestedProfileAccountTypes(base)
+    const blank = applySuggestedProfileAccountTypes(base)
     applyBaseline(blank)
     setSelectedKey(null)
     clearAncillaryPartyState()
