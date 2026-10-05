@@ -62,6 +62,13 @@ class UpsertPartyProfileRequest extends FormRequest
                 'size:26',
                 Rule::exists('account_types', 'ulid')->where('tenant_id', $tenantId)->where('is_active', true),
             ],
+            'account_account_type_ulid' => [
+                Rule::requiredIf(fn (): bool => in_array('account', is_array($types) ? $types : [], true)),
+                'nullable',
+                'string',
+                'size:26',
+                Rule::exists('account_types', 'ulid')->where('tenant_id', $tenantId)->where('is_active', true),
+            ],
             'customer_account_type_ulid' => [
                 Rule::requiredIf(fn (): bool => in_array('customer', is_array($types) ? $types : [], true)),
                 'nullable',
@@ -106,6 +113,7 @@ class UpsertPartyProfileRequest extends FormRequest
             'primary_type',
             'vendor_account_type_ulid',
             'customer_account_type_ulid',
+            'account_account_type_ulid',
             'account_account_type_ulid',
         ]);
     }
