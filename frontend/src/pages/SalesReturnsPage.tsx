@@ -76,6 +76,8 @@ export function SalesReturnsPage() {
   const [salePickerOpen, setSalePickerOpen] = useState(false)
   const [customerFilterUlid, setCustomerFilterUlid] = useState('')
   const [salesmanFilterUlid, setSalesmanFilterUlid] = useState('')
+  const [customerSelectOpen, setCustomerSelectOpen] = useState(false)
+  const [salesmanSelectOpen, setSalesmanSelectOpen] = useState(false)
   const [returnDate, setReturnDate] = useState(today())
   const [reason, setReason] = useState('')
   const [notes, setNotes] = useState('')
@@ -514,25 +516,33 @@ export function SalesReturnsPage() {
                 </div>
 
                 <label>From:</label>
-                <select
-                  className="sales-return-party-select is-customer"
-                  value={customerFilterUlid}
-                  disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
-                  onChange={(e) => {
-                    setCustomerFilterUlid(e.target.value)
-                    setSaleUlid('')
-                    setSaleLabel('')
-                    setLineQty({})
-                    setSalePickerOpen(true)
-                  }}
-                >
-                  <option value="">All / CASH IN HAND</option>
-                  {(customersQuery.data ?? []).map((customer) => (
-                    <option key={customer.ulid} value={customer.ulid}>
-                      {customer.code} — {customer.name}
-                    </option>
-                  ))}
-                </select>
+                <div className={`sales-return-party-select-wrap${customerSelectOpen ? ' is-open' : ''}`}>
+                  <select
+                    className="sales-return-party-select is-customer"
+                    value={customerFilterUlid}
+                    disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
+                    onFocus={() => setCustomerSelectOpen(true)}
+                    onBlur={() => setCustomerSelectOpen(false)}
+                    onChange={(e) => {
+                      setCustomerFilterUlid(e.target.value)
+                      setSaleUlid('')
+                      setSaleLabel('')
+                      setLineQty({})
+                      setSalePickerOpen(true)
+                      setCustomerSelectOpen(false)
+                    }}
+                  >
+                    <option value="">All / CASH IN HAND</option>
+                    {(customersQuery.data ?? []).map((customer) => (
+                      <option key={customer.ulid} value={customer.ulid}>
+                        {customer.code} — {customer.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="sales-return-select-caret" aria-hidden="true">
+                    <ChevronDown size={12} strokeWidth={2.75} />
+                  </span>
+                </div>
 
                 <label>Remarks:</label>
                 <input
@@ -542,25 +552,33 @@ export function SalesReturnsPage() {
                 />
 
                 <label>S.Man:</label>
-                <select
-                  className="sales-return-party-select is-salesman"
-                  value={salesmanFilterUlid}
-                  disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
-                  onChange={(e) => {
-                    setSalesmanFilterUlid(e.target.value)
-                    setSaleUlid('')
-                    setSaleLabel('')
-                    setLineQty({})
-                    setSalePickerOpen(true)
-                  }}
-                >
-                  <option value="">All salesmen</option>
-                  {(salesmenQuery.data ?? []).map((salesman) => (
-                    <option key={salesman.ulid} value={salesman.ulid}>
-                      {salesman.code} — {salesman.name}
-                    </option>
-                  ))}
-                </select>
+                <div className={`sales-return-party-select-wrap${salesmanSelectOpen ? ' is-open' : ''}`}>
+                  <select
+                    className="sales-return-party-select is-salesman"
+                    value={salesmanFilterUlid}
+                    disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
+                    onFocus={() => setSalesmanSelectOpen(true)}
+                    onBlur={() => setSalesmanSelectOpen(false)}
+                    onChange={(e) => {
+                      setSalesmanFilterUlid(e.target.value)
+                      setSaleUlid('')
+                      setSaleLabel('')
+                      setLineQty({})
+                      setSalePickerOpen(true)
+                      setSalesmanSelectOpen(false)
+                    }}
+                  >
+                    <option value="">All salesmen</option>
+                    {(salesmenQuery.data ?? []).map((salesman) => (
+                      <option key={salesman.ulid} value={salesman.ulid}>
+                        {salesman.code} — {salesman.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="sales-return-select-caret" aria-hidden="true">
+                    <ChevronDown size={12} strokeWidth={2.75} />
+                  </span>
+                </div>
 
                 <label>Reason:</label>
                 <input
