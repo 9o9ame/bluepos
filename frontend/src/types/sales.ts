@@ -9,6 +9,8 @@ export type SalesmanOption = {
   ulid: string
   code: string
   name: string
+  address: string | null
+  mobile: string | null
 }
 
 export type SalePayment = {
