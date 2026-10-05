@@ -1109,3 +1109,23 @@ html[data-animations='off'] .purchase-entry-screen * {
   transition: none !important;
   animation: none !important;
 }
+
+
+/* ---------- PURCHASE GRAND TOTAL TOKEN CLEANUP ---------- */
+.pie-grand {
+  border-color: var(--ui-success) !important;
+  border-radius: var(--control-radius) !important;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ui-success) 10%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-success) 28%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-success) 48%, var(--ui-surface))
+  ) !important;
+  color: color-mix(in srgb, var(--ui-success) 78%, var(--ui-text)) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.pie-grand strong {
+  color: color-mix(in srgb, var(--ui-success) 84%, var(--ui-text)) !important;
+  text-shadow: none !important;
+}
