@@ -10,8 +10,7 @@ use App\Http\Requests\Sales\StoreSalePaymentRequest;
 use App\Http\Requests\Sales\StoreSaleRequest;
 use App\Http\Resources\Sales\SalePaymentResource;
 use App\Http\Resources\Sales\SaleResource;
-use App\Enums\MembershipStatus;
-use App\Models\Membership;
+use App\Models\PartyProfile;
 use App\Models\Sale;
 use App\Models\SalePayment;
 use App\Tenancy\TenantContext;
@@ -60,30 +59,16 @@ class SaleController extends Controller
     {
         $this->authorize('create', Sale::class);
 
-        $branchId = $tenantContext->branchId();
-
-        return Membership::query()
-            ->where('tenant_id', $tenantContext->tenantId())
-            ->where('status', MembershipStatus::Active->value)
-            ->with(['user', 'roles', 'branches'])
-            ->orderBy('id')
+        return PartyProfile::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('is_active', true)
+            ->whereHas('types', fn ($q) => $q->where('type', 'salesman'))
+            ->orderBy('name')
             ->get()
-            ->filter(function (Membership $membership) use ($branchId): bool {
-                $hasAllBranches = $membership->roles->contains(
-                    fn ($role): bool => $role->is_active && $role->grantsAllBranches()
-                );
-
-                $hasCurrentBranch = $membership->branches->contains(
-                    fn ($branch): bool => (int) $branch->id === $branchId
-                );
-
-                return $hasAllBranches || $hasCurrentBranch;
-            })
-            ->values()
-            ->map(fn (Membership $membership): array => [
-                'ulid' => $membership->ulid,
-                'username' => $membership->username,
-                'name' => $membership->user?->name ?? $membership->username,
+            ->map(fn (PartyProfile $profile): array => [
+                'ulid' => $profile->ulid,
+                'code' => $profile->code,
+                'name' => $profile->name,
             ])
             ->all();
     }
