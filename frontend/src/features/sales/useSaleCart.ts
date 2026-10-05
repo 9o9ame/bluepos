@@ -215,6 +215,7 @@ export function useSaleCart() {
     scannedBarcode: ProductBarcode | null = null,
     availableBaseStock: string | null = null,
   ): SaleDraftLine {
+    const availableUnits = unitOptions(product)
     const barcodeUnit = scannedBarcode?.unit ?? null
     const selectedUnit = barcodeUnit ?? product.base_unit ?? null
     const conversionFactor = scannedBarcode
@@ -267,7 +268,6 @@ export function useSaleCart() {
   ) {
     if (!isPositiveQuantity(quantity)) return null
 
-    const availableUnits = unitOptions(product)
     const barcodeUnit = scannedBarcode?.unit ?? null
     const selectedUnit = barcodeUnit ?? product.base_unit ?? null
     const barcode = scannedBarcode?.barcode ?? null
