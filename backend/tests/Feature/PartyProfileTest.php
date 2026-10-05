@@ -19,8 +19,8 @@ class PartyProfileTest extends TestCase
     {
         $this->signInOwner('party-profile-multi')->assertOk();
 
-        $payable = $this->accountTypeUlid('ACCOUNT PAYABLE');
-        $receivable = $this->accountTypeUlid('ACCOUNT RECEIVABLE');
+        $payable = $this->accountTypeUlid('payable');
+        $receivable = $this->accountTypeUlid('receivable');
 
         $response = $this->postJson('/api/party-profiles', [
             'party_types' => ['vendor', 'customer', 'salesman'],
@@ -160,16 +160,23 @@ class PartyProfileTest extends TestCase
         ])->assertNotFound();
     }
 
-    private function accountTypeUlid(string $name): string
+    private function accountTypeUlid(string $kind): string
     {
         $tenantId = app(TenantContext::class)->tenantId();
 
-        $ulid = AccountType::query()
+        $query = AccountType::query()
             ->forTenant($tenantId)
-            ->whereRaw('UPPER(name) = ?', [strtoupper($name)])
-            ->value('ulid');
+            ->where('is_active', true);
 
-        $this->assertNotNull($ulid, 'Missing account type '.$name);
+        if ($kind === 'payable') {
+            $query->where('is_payable', true);
+        } else {
+            $query->where('is_receivable', true);
+        }
+
+        $ulid = $query->value('ulid');
+
+        $this->assertNotNull($ulid, 'Missing active '.$kind.' account type.');
 
         return (string) $ulid;
     }
