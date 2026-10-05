@@ -129,12 +129,6 @@ function defaultBusinessTypes(type: PartyType): PartyBusinessType[] {
   return []
 }
 
-function suggestedAccountTypeName(partyType: PartyType): string | null {
-  if (partyType === 'CUSTOMERS') return 'ACCOUNT RECEIVABLE'
-  if (partyType === 'VENDORS') return 'ACCOUNT PAYABLE'
-  return null
-}
-
 function emptyForm(listFilter: PartyType = 'ALL') {
   return {
     ulid: '',
@@ -749,16 +743,6 @@ export function PartiesPlaceholderPage({
   function toggleCoaSub(ulid: string) {
     setExpandedCoaSub((current) => ({ ...current, [ulid]: !current[ulid] }))
   }
-
-  function applySuggestedAccountType(partyType: PartyType, formState: FormState): FormState {
-    if (formState.accountTypeUlid) return formState
-    const hint = suggestedAccountTypeName(partyType)
-    if (!hint) return formState
-    const match = accountTypes.find((t) => t.name.toUpperCase() === hint)
-    if (!match) return formState
-    return { ...formState, accountType: match.name, accountTypeUlid: match.ulid }
-  }
-
 
   function applySuggestedProfileAccountTypes(formState: FormState): FormState {
     let next = { ...formState }
