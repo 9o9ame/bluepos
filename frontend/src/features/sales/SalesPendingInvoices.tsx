@@ -222,7 +222,7 @@ export function SalesPendingInvoices({
 
         <div className="sales-due-summary">
           <div>
-            <span>PAGE TOTAL</span>
+            <span>LOADED TOTAL</span>
             <strong>{totals.total.toFixed(2)}</strong>
           </div>
           <div className="is-paid">
