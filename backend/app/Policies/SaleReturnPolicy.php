@@ -34,4 +34,11 @@ class SaleReturnPolicy extends CatalogPolicy
         return $this->permissions->can('sales.return')
             && $this->sameTenant((int) $document->tenant_id);
     }
+
+    public function refund(User $user, SaleReturn $document): bool
+    {
+        return $this->permissions->can('sales.return')
+            && $this->permissions->can('payments.create')
+            && $this->sameTenant((int) $document->tenant_id);
+    }
 }
