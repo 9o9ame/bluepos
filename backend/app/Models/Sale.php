@@ -105,4 +105,12 @@ class Sale extends Model
     {
         return $this->hasMany(SalePayment::class, 'sale_id');
     }
+
+    /**
+     * @return HasMany<SaleReturn, $this>
+     */
+    public function saleReturns(): HasMany
+    {
+        return $this->hasMany(SaleReturn::class, 'sale_id');
+    }
 }
