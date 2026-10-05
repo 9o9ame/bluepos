@@ -399,3 +399,42 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ---------- PRODUCT BARCODE MODAL DESIGN SYSTEM MIGRATION ---------- */
+.product-barcode-print-modal {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+.product-barcode-print-titlebar,
+.product-barcode-print-actions {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+  color: var(--ui-text) !important;
+}
+.product-barcode-print-modal :where(input, select, textarea),
+.product-barcode-print-close,
+.product-barcode-print-actions button {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+.product-barcode-print-modal :where(input, select, textarea):focus-visible,
+.product-barcode-print-close:focus-visible,
+.product-barcode-print-actions button:focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+.product-barcode-print-actions .is-primary {
+  background: var(--ui-accent) !important;
+  border-color: var(--ui-accent-strong) !important;
+  color: #fff !important;
+}
+.product-barcode-print-error { color: var(--ui-danger) !important; }
+html[data-animations='off'] .product-barcode-print-modal * { transition: none !important; animation: none !important; }
