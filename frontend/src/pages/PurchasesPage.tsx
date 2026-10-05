@@ -1272,7 +1272,7 @@ export function PurchasesPage() {
             <option value="posted">Posted</option>
           </select>
         </div>
-        {error ? <div className="text-[12px] text-red-700 mb-2">{error}</div> : null}
+        {error ? <div className="text-[12px] text-[var(--ui-danger)] mb-2">{error}</div> : null}
         <PosDataGrid
           columns={[
             { key: 'document_number', header: 'Document #', width: 110 },
