@@ -138,6 +138,8 @@ function emptyForm(listFilter: PartyType = 'ALL') {
   return {
     ulid: '',
     identityUlid: '',
+    vendorUlid: '',
+    customerUlid: '',
     code: '',
     type: listFilter,
     types: defaultBusinessTypes(listFilter),
@@ -182,6 +184,8 @@ function partyToForm(party: Party, listFilter: PartyType): FormState {
     ...emptyForm(listFilter),
     ulid: party.ulid,
     identityUlid: party.identity_ulid ?? '',
+    vendorUlid: party.vendor_ulid ?? '',
+    customerUlid: party.customer_ulid ?? '',
     code: party.code,
     type: apiTypeToUi(party.party_type),
     types: party.party_types ?? (party.party_type === 'account' ? [] : [party.party_type as PartyBusinessType]),
@@ -223,6 +227,8 @@ function formSnapshot(form: FormState): string {
   return JSON.stringify({
     ulid: form.ulid,
     identityUlid: form.identityUlid,
+    vendorUlid: form.vendorUlid,
+    customerUlid: form.customerUlid,
     code: form.code,
     type: form.type,
     types: form.types,
@@ -749,6 +755,15 @@ export function PartiesPlaceholderPage({
     if (party.party_type === 'customer' && party.customer_ulid) return { ulid: party.customer_ulid, type: 'customer' }
     if (party.customer_ulid) return { ulid: party.customer_ulid, type: 'customer' }
     if (party.vendor_ulid) return { ulid: party.vendor_ulid, type: 'vendor' }
+    return null
+  }
+
+  function formFinancialContext(): { ulid: string; type: 'vendor' | 'customer' | 'account' } | null {
+    if (form.type === 'ACCOUNTS' && form.ulid) return { ulid: form.ulid, type: 'account' }
+    if (form.type === 'CUSTOMERS' && form.customerUlid) return { ulid: form.customerUlid, type: 'customer' }
+    if (form.type === 'VENDORS' && form.vendorUlid) return { ulid: form.vendorUlid, type: 'vendor' }
+    if (form.customerUlid) return { ulid: form.customerUlid, type: 'customer' }
+    if (form.vendorUlid) return { ulid: form.vendorUlid, type: 'vendor' }
     return null
   }
 
