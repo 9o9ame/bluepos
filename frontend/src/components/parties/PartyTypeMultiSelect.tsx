@@ -3,6 +3,7 @@ import type { PartyBusinessType } from '../../api/parties'
 const OPTIONS: Array<{ value: PartyBusinessType; label: string }> = [
   { value: 'vendor', label: 'Vendor' },
   { value: 'customer', label: 'Customer' },
+  { value: 'account', label: 'Account' },
   { value: 'salesman', label: 'Salesman' },
 ]
 
