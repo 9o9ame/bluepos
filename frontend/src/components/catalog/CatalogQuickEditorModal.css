@@ -454,3 +454,57 @@
   border-color: #4f6578;
   color: #edf2f6;
 }
+
+
+/* ---------- CATALOG MODAL DESIGN SYSTEM MIGRATION ---------- */
+.catalog-popup-backdrop { background: color-mix(in srgb, #000 40%, transparent) !important; }
+.catalog-popup {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+.catalog-popup-windowbar,
+.catalog-popup-records {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+  color: var(--ui-text) !important;
+}
+.catalog-popup :where(input, select, textarea) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+.catalog-popup :where(input, select, textarea):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+.catalog-popup-action {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+.catalog-popup-action:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+.catalog-popup-grid th {
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+  color: var(--ui-text) !important;
+  border-color: var(--ui-border) !important;
+}
+.catalog-popup-grid td {
+  color: var(--ui-text) !important;
+  border-color: color-mix(in srgb, var(--ui-border) 58%, transparent) !important;
+}
+.catalog-popup-grid tr.is-selected td {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface)) !important;
+}
+.catalog-popup-error { color: var(--ui-danger) !important; }
+html[data-animations='off'] .catalog-popup * { transition: none !important; animation: none !important; }
