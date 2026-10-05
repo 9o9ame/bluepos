@@ -8,6 +8,7 @@ use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Parties\UpsertPartyProfileRequest;
 use App\Http\Resources\PartyProfileResource;
+use App\Models\Account;
 use App\Models\Customer;
 use App\Models\PartyProfile;
 use App\Models\Supplier;
@@ -23,7 +24,7 @@ class PartyProfileController extends Controller
         PermissionService $permissions,
     ): JsonResponse {
         $type = strtolower(trim((string) $request->query('type', 'all')));
-        if (! in_array($type, ['all', 'vendor', 'customer', 'salesman'], true)) {
+        if (! in_array($type, ['all', 'vendor', 'customer', 'account', 'salesman'], true)) {
             throw new ApiException('VALIDATION_FAILED', 'Invalid party profile type filter.', 422);
         }
 
@@ -33,7 +34,7 @@ class PartyProfileController extends Controller
 
         $profiles = PartyProfile::query()
             ->forTenant($tenantContext->tenantId())
-            ->with(['types', 'supplier.accountType', 'customer.accountType'])
+            ->with(['types', 'supplier.accountType', 'customer.accountType', 'account.accountType'])
             ->when(
                 $type !== 'all',
                 fn ($q) => $q->whereHas('types', fn ($t) => $t->where('type', $type)),
@@ -113,7 +114,7 @@ class PartyProfileController extends Controller
         $profile = PartyProfile::query()
             ->forTenant($tenantContext->tenantId())
             ->where('ulid', $ulid)
-            ->with(['types', 'supplier.accountType', 'customer.accountType'])
+            ->with(['types', 'supplier.accountType', 'customer.accountType', 'account.accountType'])
             ->first();
 
         if (! $profile) {
