@@ -1583,3 +1583,165 @@ html[data-animations='off'] #root :where(
 ) {
   transition: none !important;
 }
+
+
+/* ---------- PLATFORM PAGE TOKEN BRIDGE ---------- */
+.platform-auth-page {
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--ui-accent) 42%, #101820), #0f1720) !important;
+  color: var(--ui-text) !important;
+  font-family: var(--app-font-family);
+}
+
+.platform-auth-card {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.platform-auth-card :where(input, select, textarea) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface-subtle) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.platform-auth-card :where(input, select, textarea):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.platform-auth-card :where(input, select, textarea):disabled {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+.platform-auth-card button[type='submit'] {
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.platform-auth-card button:not([type='submit']) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.platform-auth-card .text-amber-400,
+.platform-auth-card .text-amber-300,
+.platform-auth-page.text-amber-300 {
+  color: var(--ui-accent) !important;
+}
+
+.platform-auth-card .text-red-300 { color: var(--ui-danger) !important; }
+.platform-auth-card :where(.text-slate-300, .text-slate-400) { color: var(--ui-text-muted) !important; }
+
+/* Platform pages use Tailwind utility classes heavily; scope a compatibility
+ * layer to platform only so Theme & Appearance wins without changing markup/layout.
+ */
+.platform-main :where(.bg-white, .bg-slate-50, .bg-slate-100) {
+  background-color: var(--ui-surface) !important;
+}
+
+.platform-main :where(.bg-slate-200) {
+  background-color: var(--ui-surface-subtle) !important;
+}
+
+.platform-main :where(.bg-slate-800, .bg-slate-900, .bg-slate-950) {
+  background-color: color-mix(in srgb, var(--ui-accent-strong) 72%, #101820) !important;
+}
+
+.platform-main :where(
+  .border-slate-100,
+  .border-slate-200,
+  .border-slate-300,
+  .border-slate-600,
+  .border-slate-700,
+  .border-slate-900
+) {
+  border-color: var(--ui-border) !important;
+}
+
+.platform-main :where(
+  .text-slate-400,
+  .text-slate-500,
+  .text-slate-600
+) {
+  color: var(--ui-text-muted) !important;
+}
+
+.platform-main :where(
+  .text-slate-800,
+  .text-slate-900,
+  .text-slate-950
+) {
+  color: var(--ui-text) !important;
+}
+
+.platform-main .text-red-700,
+.platform-main .text-red-300 { color: var(--ui-danger) !important; }
+
+.platform-main .text-emerald-800 { color: var(--ui-success) !important; }
+
+.platform-main :where(.text-amber-300, .text-amber-400) { color: var(--ui-warning) !important; }
+
+.platform-main .bg-red-700 {
+  background-color: var(--ui-danger) !important;
+  color: #fff !important;
+}
+
+.platform-main .bg-emerald-700 {
+  background-color: var(--ui-success) !important;
+  color: #fff !important;
+}
+
+.platform-main .bg-amber-500 {
+  background-color: var(--ui-warning) !important;
+  color: #fff !important;
+}
+
+.platform-main :where(
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea
+) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background-color: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.platform-main :where(
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea
+):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.platform-main :where(button, a.rounded) {
+  border-radius: var(--control-radius) !important;
+}
+
+.platform-main :where(.rounded, .rounded-md, .rounded-lg) {
+  border-radius: var(--panel-radius) !important;
+}
+
+.platform-main :where(.shadow, .shadow-md, .shadow-lg, .shadow-xl) {
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+html[data-animations='off'] :where(.platform-auth-page, .platform-main) * {
+  transition: none !important;
+  animation: none !important;
+}
