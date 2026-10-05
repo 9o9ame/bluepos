@@ -19,10 +19,11 @@ class PartyProfileResource extends JsonResource
         $types = $this->types->pluck('type')->values()->all();
         $supplier = $this->supplier;
         $customer = $this->customer;
-        $primary = $this->primaryType === 'vendor' ? $supplier : ($this->primaryType === 'customer' ? $customer : null);
+        $account = $this->account;
+        $primary = $this->primaryType === 'vendor' ? $supplier : ($this->primaryType === 'customer' ? $customer : ($this->primaryType === 'account' ? $account : null));
         $accountType = $primary?->accountType;
         $publicUlid = $primary?->ulid ?? $this->ulid;
-        $imageBacking = $primary ?? $customer ?? $supplier;
+        $imageBacking = $primary ?? $customer ?? $supplier ?? $account;
 
         return [
             'ulid' => $publicUlid,
@@ -31,8 +32,10 @@ class PartyProfileResource extends JsonResource
             'party_types' => $types,
             'vendor_ulid' => $supplier?->ulid,
             'customer_ulid' => $customer?->ulid,
+            'account_ulid' => $account?->ulid,
             'vendor_account_type_ulid' => $supplier?->accountType?->ulid,
             'customer_account_type_ulid' => $customer?->accountType?->ulid,
+            'account_account_type_ulid' => $account?->accountType?->ulid,
             'code' => $this->code,
             'name' => $this->name,
             'deals_in' => $this->deals_in,
@@ -66,7 +69,7 @@ class PartyProfileResource extends JsonResource
             'store_allowed' => $this->store_allowed,
             'image_url' => $imageBacking && $this->image_path
                 ? '/api/parties/'.$imageBacking->ulid.'/image?type='
-                    .($imageBacking instanceof \App\Models\Customer ? 'customer' : 'vendor')
+                    .($imageBacking instanceof \App\Models\Customer ? 'customer' : ($imageBacking instanceof \App\Models\Account ? 'account' : 'vendor'))
                     .'&v='.($this->updated_at?->getTimestamp() ?? 0)
                 : null,
         ];
