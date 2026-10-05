@@ -30,7 +30,7 @@ import { WorkspacePage } from '../pages/WorkspacePage'
 
 function Splash() {
   return (
-    <div className="grid h-screen place-items-center bg-[var(--titlebar-bg)] text-sm text-white">
+    <div className="grid h-screen place-items-center bg-[var(--ui-bg)] text-sm text-[var(--ui-text)]">
       Loading BluePOS…
     </div>
   )
