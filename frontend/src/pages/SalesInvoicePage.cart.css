@@ -1899,3 +1899,78 @@
     margin-left: auto;
   }
 }
+
+
+/* Pending/Due totals now use the empty right side of the filter row. */
+.sales-due-toolbar {
+  align-items: center;
+}
+
+.sales-due-toolbar-summary {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.sales-due-toolbar-summary > div {
+  display: grid;
+  min-width: 78px;
+  padding: 2px 6px;
+  border: 1px solid #a1b6c4;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #fff 0%, #e7edf1 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
+  text-align: right;
+}
+
+.sales-due-toolbar-summary span {
+  color: #6a7e8c;
+  font-size: 7px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: .25px;
+}
+
+.sales-due-toolbar-summary strong {
+  margin-top: 1px;
+  color: #173f5c;
+  font-size: 11px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-due-toolbar-summary .is-paid {
+  border-color: #79ad87;
+  background: linear-gradient(180deg, #f8fff9 0%, #d9efdf 100%);
+}
+
+.sales-due-toolbar-summary .is-paid strong {
+  color: #187237;
+}
+
+.sales-due-toolbar-summary .is-due {
+  border-color: #d7a26e;
+  background: linear-gradient(180deg, #fffdf8 0%, #f5e2cb 100%);
+}
+
+.sales-due-toolbar-summary .is-due strong {
+  color: #a6530c;
+}
+
+:root[data-theme='dark'] .sales-due-toolbar-summary > div {
+  border-color: #4e6473;
+  background: linear-gradient(180deg, #2c3942 0%, #242f37 100%);
+}
+
+:root[data-theme='dark'] .sales-due-toolbar-summary strong {
+  color: #edf4f8;
+}
+
+@media (max-width: 1100px) {
+  .sales-due-toolbar-summary {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+}
