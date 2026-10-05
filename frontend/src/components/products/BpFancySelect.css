@@ -246,3 +246,39 @@
 :root[data-theme='dark'] .bp-fancy-select-option:disabled {
   color: #8a96a2;
 }
+
+
+/* ---------- FANCY SELECT DESIGN SYSTEM MIGRATION ---------- */
+.bp-fancy-select-trigger,
+.bp-fancy-select-menu {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+.bp-fancy-select-menu { box-shadow: var(--ui-card-shadow) !important; }
+.bp-fancy-select-trigger:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+.bp-fancy-select-trigger:focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+.bp-fancy-select-option {
+  color: var(--ui-text) !important;
+}
+.bp-fancy-select-option:hover,
+.bp-fancy-select-option.is-selected {
+  background: var(--ui-accent-soft) !important;
+  color: var(--ui-accent-strong) !important;
+}
+.bp-fancy-select-arrow,
+.bp-fancy-select-check { color: var(--ui-accent) !important; }
+.bp-fancy-select.is-disabled .bp-fancy-select-trigger {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+}
+html[data-animations='off'] .bp-fancy-select * { transition: none !important; animation: none !important; }
