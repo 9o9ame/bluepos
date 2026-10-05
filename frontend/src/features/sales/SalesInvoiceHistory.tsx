@@ -112,21 +112,6 @@ export function SalesInvoiceHistory() {
 
   return (
     <section className="sales-history sales-posted-history" aria-label="Posted invoices">
-      <div className="sales-history-summary">
-        <div>
-          <span>LOADED TOTAL</span>
-          <strong>{summary.total.toFixed(2)}</strong>
-        </div>
-        <div className="is-paid">
-          <span>PAID</span>
-          <strong>{summary.paid.toFixed(2)}</strong>
-        </div>
-        <div className="is-due">
-          <span>DUE</span>
-          <strong>{summary.due.toFixed(2)}</strong>
-        </div>
-      </div>
-
       <header className="sales-history-toolbar">
         <div className="sales-history-search">
           <Search size={15} aria-hidden="true" />
@@ -214,6 +199,21 @@ export function SalesInvoiceHistory() {
           <RotateCcw size={14} />
           Reset
         </button>
+
+        <div className="sales-history-toolbar-summary">
+          <div>
+            <span>LOADED TOTAL</span>
+            <strong>{summary.total.toFixed(2)}</strong>
+          </div>
+          <div className="is-paid">
+            <span>PAID</span>
+            <strong>{summary.paid.toFixed(2)}</strong>
+          </div>
+          <div className="is-due">
+            <span>DUE</span>
+            <strong>{summary.due.toFixed(2)}</strong>
+          </div>
+        </div>
 
         <div className="sales-history-count">
           {listQuery.isFetching && !listQuery.isFetchingNextPage
@@ -305,7 +305,7 @@ export function SalesInvoiceHistory() {
             ) : detailQuery.data ? (
               <>
                 <header className="sales-history-detail-head">
-                  <div>
+                  <div className="sales-history-detail-identity">
                     <span className="sales-history-detail-kicker">POSTED INVOICE</span>
                     <h3>{detailQuery.data.document_number}</h3>
                     <p>
@@ -313,6 +313,15 @@ export function SalesInvoiceHistory() {
                       {detailQuery.data.customer?.name ?? 'CASH IN HAND'} ·{' '}
                       {detailQuery.data.salesman?.name ?? 'No salesman'}
                     </p>
+                  </div>
+
+                  <div className="sales-history-detail-totals">
+                    <div><span>Subtotal</span><strong>{money(detailQuery.data.subtotal)}</strong></div>
+                    <div><span>Discount</span><strong>{money(detailQuery.data.discount_amount)}</strong></div>
+                    <div><span>Tax</span><strong>{money(detailQuery.data.tax_amount)}</strong></div>
+                    <div><span>Total</span><strong>{money(detailQuery.data.grand_total)}</strong></div>
+                    <div className="is-paid"><span>Paid</span><strong>{money(detailQuery.data.paid_amount)}</strong></div>
+                    <div className="is-due"><span>Due</span><strong>{money(detailQuery.data.balance_due)}</strong></div>
                   </div>
 
                   <div className="sales-history-detail-actions">
@@ -336,15 +345,6 @@ export function SalesInvoiceHistory() {
                     </button>
                   </div>
                 </header>
-
-                <div className="sales-history-detail-totals">
-                  <div><span>Subtotal</span><strong>{money(detailQuery.data.subtotal)}</strong></div>
-                  <div><span>Discount</span><strong>{money(detailQuery.data.discount_amount)}</strong></div>
-                  <div><span>Tax</span><strong>{money(detailQuery.data.tax_amount)}</strong></div>
-                  <div><span>Total</span><strong>{money(detailQuery.data.grand_total)}</strong></div>
-                  <div className="is-paid"><span>Paid</span><strong>{money(detailQuery.data.paid_amount)}</strong></div>
-                  <div className="is-due"><span>Due</span><strong>{money(detailQuery.data.balance_due)}</strong></div>
-                </div>
 
                 <div className="sales-history-detail-grid-wrap">
                   <table className="sales-history-grid is-detail-grid">
