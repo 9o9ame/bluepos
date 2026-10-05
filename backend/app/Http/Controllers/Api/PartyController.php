@@ -8,9 +8,11 @@ use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Parties\StorePartyRequest;
 use App\Http\Requests\Parties\UpdatePartyRequest;
+use App\Http\Resources\PartyProfileResource;
 use App\Http\Resources\PartyResource;
 use App\Models\Account;
 use App\Models\Customer;
+use App\Models\PartyProfile;
 use App\Models\Supplier;
 use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
@@ -40,7 +42,8 @@ class PartyController extends Controller
         if (in_array($type, ['all', 'vendor'], true) && $this->canViewVendors()) {
             $vendors = Supplier::query()
                 ->forTenant($tenantContext->tenantId())
-                ->with('accountType')
+                ->where(function ($q) { $q->whereNull('party_profile_id')->orWhereHas('partyProfile.types', fn ($t) => $t->where('type', 'vendor')); })
+                ->with(['accountType', 'partyProfile.types', 'partyProfile.supplier.accountType', 'partyProfile.customer.accountType'])
                 ->when($request->boolean('expired_license'), function ($q) {
                     $q->whereNotNull('license_expires_on')
                         ->whereDate('license_expires_on', '<', now()->toDateString());
@@ -54,7 +57,8 @@ class PartyController extends Controller
         if (in_array($type, ['all', 'customer'], true) && $this->canViewCustomers()) {
             $customers = Customer::query()
                 ->forTenant($tenantContext->tenantId())
-                ->with('accountType')
+                ->where(function ($q) { $q->whereNull('party_profile_id')->orWhereHas('partyProfile.types', fn ($t) => $t->where('type', 'customer')); })
+                ->with(['accountType', 'partyProfile.types', 'partyProfile.supplier.accountType', 'partyProfile.customer.accountType'])
                 ->when($request->boolean('expired_license'), function ($q) {
                     $q->whereNotNull('license_expires_on')
                         ->whereDate('license_expires_on', '<', now()->toDateString());
@@ -77,7 +81,17 @@ class PartyController extends Controller
             $rows = $rows->concat($accounts);
         }
 
-        // salesman: no safe staff mapping yet — empty contribution.
+        if (in_array($type, ['all', 'salesman'], true) && $this->canViewSalesmen()) {
+            $salesmen = PartyProfile::query()
+                ->forTenant($tenantContext->tenantId())
+                ->where('is_active', true)
+                ->whereHas('types', fn ($q) => $q->where('type', 'salesman'))
+                ->with(['types', 'supplier.accountType', 'customer.accountType'])
+                ->orderBy('name')
+                ->get()
+                ->map(fn (PartyProfile $profile) => (new PartyProfileResource($profile, 'salesman'))->resolve());
+            $rows = $rows->concat($salesmen);
+        }
 
         $sorted = $rows
             ->sortBy(fn (array $row) => mb_strtolower((string) $row['name']), SORT_NATURAL)
@@ -366,6 +380,13 @@ class PartyController extends Controller
     private function canViewAccounts(): bool
     {
         return $this->userCan('accounts.view') || $this->userCan('accounts.manage');
+    }
+
+    private function canViewSalesmen(): bool
+    {
+        return $this->userCan('customers.view')
+            || $this->userCan('suppliers.view')
+            || $this->userCan('sales.create');
     }
 
     private function userCan(string $permission): bool
