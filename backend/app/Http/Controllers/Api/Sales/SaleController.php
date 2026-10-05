@@ -13,6 +13,7 @@ use App\Http\Resources\Sales\SaleResource;
 use App\Models\PartyProfile;
 use App\Models\Sale;
 use App\Models\SalePayment;
+use App\Enums\SaleStatus;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,12 +27,52 @@ class SaleController extends Controller
         $perPage = min(max($request->integer('per_page', 25), 1), 100);
         $query = Sale::query()
             ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
             ->with(['customer', 'salesmanParty', 'branch', 'warehouse'])
+            ->withSum('payments as paid_amount', 'amount')
             ->orderByDesc('sale_date')
             ->orderByDesc('id');
 
         if ($request->filled('customer_ulid')) {
             $query->whereHas('customer', fn ($q) => $q->where('ulid', (string) $request->string('customer_ulid')));
+        }
+
+        if ($request->filled('salesman_ulid')) {
+            $query->whereHas(
+                'salesmanParty',
+                fn ($q) => $q->where('ulid', (string) $request->string('salesman_ulid'))
+            );
+        }
+
+        if ($request->filled('status')) {
+            $status = SaleStatus::tryFrom((string) $request->string('status'));
+
+            if (! $status) {
+                throw new ApiException('VALIDATION_ERROR', 'Invalid sale status filter.', 422);
+            }
+
+            $query->where('status', $status->value);
+        }
+
+        if ($request->filled('q')) {
+            $term = trim((string) $request->string('q'));
+
+            if ($term !== '') {
+                $query->where(function ($saleQuery) use ($term): void {
+                    $saleQuery
+                        ->where('document_number', 'ilike', '%'.$term.'%')
+                        ->orWhereHas('customer', function ($customerQuery) use ($term): void {
+                            $customerQuery
+                                ->where('code', 'ilike', '%'.$term.'%')
+                                ->orWhere('name', 'ilike', '%'.$term.'%');
+                        })
+                        ->orWhereHas('salesmanParty', function ($salesmanQuery) use ($term): void {
+                            $salesmanQuery
+                                ->where('code', 'ilike', '%'.$term.'%')
+                                ->orWhere('name', 'ilike', '%'.$term.'%');
+                        });
+                });
+            }
         }
 
         if ($request->filled('date_from')) {
@@ -135,6 +176,7 @@ class SaleController extends Controller
     {
         $sale = Sale::query()
             ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
             ->where('ulid', $ulid)
             ->first();
 
