@@ -22,6 +22,7 @@ import { RoleEditorPage } from '../pages/RoleEditorPage'
 import { RolesPage } from '../pages/RolesPage'
 import { SaleSchemesPage } from '../pages/SaleSchemesPage'
 import { SalesInvoicePage } from '../pages/SalesInvoicePage'
+import { SalesReturnsPage } from '../pages/SalesReturnsPage'
 import { SubcategoriesPage } from '../pages/SubcategoriesPage'
 import { UnitsPage } from '../pages/UnitsPage'
 import { UsersPage } from '../pages/UsersPage'
@@ -61,6 +62,9 @@ export function AppRoutes() {
           <Route path="/" element={<WorkspacePage />} />
           <Route path="/definition/parties" element={<PartiesPlaceholderPage />} />
           <Route path="/daily/sales" element={<SalesInvoicePage />} />
+          <Route element={<RequirePermission permission="sales.return" />}>
+            <Route path="/daily/sales-return" element={<SalesReturnsPage />} />
+          </Route>
           <Route element={<RequirePermission permission="purchases.view" />}>
             <Route path="/daily/purchases" element={<PurchasesPage />} />
           </Route>
