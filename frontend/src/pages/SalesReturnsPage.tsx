@@ -179,6 +179,10 @@ export function SalesReturnsPage() {
     )
   }, [returnable, lineQty])
 
+  const previousBalance = Number(returnableQuery.data?.sale.previous_balance ?? 0)
+  const thisBill = readOnly ? Number(document?.grand_total ?? 0) : liveTotals.total
+  const totalBalance = Math.max(0, previousBalance - thisBill)
+
   function handleError(err: unknown) {
     const message =
       err instanceof ApiClientError || err instanceof Error
@@ -429,163 +433,200 @@ export function SalesReturnsPage() {
             <fieldset>
               <legend>Return Invoice Options</legend>
               <div className="sales-return-fields">
-                <label>Ret#:</label>
-                <input value={document?.document_number ?? 'Auto'} readOnly />
-                <label>Date:</label>
-                <input
-                  type="date"
-                  value={returnDate}
-                  disabled={readOnly}
-                  onChange={(e) => setReturnDate(e.target.value)}
-                />
+                <div className="sales-return-option-group is-ret">
+                  <label>Ret#:</label>
+                  <input value={document?.document_number ?? 'Auto'} readOnly />
+                </div>
 
-                <label>Sales#:</label>
-                <div className={`sales-return-sale-search${salePickerOpen ? ' is-open' : ''}`}>
-                  <div className="sales-return-sale-input">
-                    <Search size={13} aria-hidden="true" />
-                    <input
-                      value={saleLabel || saleSearch}
-                      disabled={Boolean(document?.ulid) || readOnly}
-                      placeholder="Invoice #, customer or salesman"
-                      onFocus={() => {
-                        if (!document?.ulid && !readOnly) setSalePickerOpen(true)
-                      }}
+                <div className="sales-return-option-group is-date">
+                  <label>Date:</label>
+                  <input
+                    type="date"
+                    value={returnDate}
+                    disabled={readOnly}
+                    onChange={(e) => setReturnDate(e.target.value)}
+                  />
+                </div>
+
+                <div className="sales-return-option-group is-sales">
+                  <label>Sales#:</label>
+                  <div className={`sales-return-sale-search${salePickerOpen ? ' is-open' : ''}`}>
+                    <div className="sales-return-sale-input">
+                      <Search size={13} aria-hidden="true" />
+                      <input
+                        value={saleLabel || saleSearch}
+                        disabled={Boolean(document?.ulid) || readOnly}
+                        placeholder="Invoice #, customer or salesman"
+                        onFocus={() => {
+                          if (!document?.ulid && !readOnly) setSalePickerOpen(true)
+                        }}
+                        onChange={(e) => {
+                          setSaleSearch(e.target.value)
+                          setSaleLabel('')
+                          setSaleUlid('')
+                          setLineQty({})
+                          setSalePickerOpen(true)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') setSalePickerOpen(false)
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="sales-return-sale-trigger"
+                        disabled={Boolean(document?.ulid) || readOnly}
+                        onClick={() => setSalePickerOpen((open) => !open)}
+                        aria-label="Open posted sales"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+
+                    {!document?.ulid && salePickerOpen ? (
+                      <div className="sales-return-sale-results">
+                        <div className="sales-return-sale-results-head">
+                          <span>Invoice #</span>
+                          <span>Date</span>
+                          <span>Customer</span>
+                          <span>Salesman</span>
+                          <span>Total</span>
+                          <span>Due</span>
+                        </div>
+                        <div className="sales-return-sale-results-body">
+                          {(saleLookup.data?.data ?? []).map((sale) => (
+                            <button
+                              key={sale.ulid}
+                              type="button"
+                              onClick={() => void selectSale(sale)}
+                            >
+                              <strong>{sale.document_number}</strong>
+                              <span>{sale.sale_date}</span>
+                              <span>{sale.customer?.name ?? 'CASH IN HAND'}</span>
+                              <span>{sale.salesman?.name ?? '—'}</span>
+                              <span>{money(sale.grand_total)}</span>
+                              <span className={Number(sale.balance_due) > 0 ? 'is-due' : 'is-paid'}>
+                                {money(sale.balance_due)}
+                              </span>
+                            </button>
+                          ))}
+                          {!saleLookup.isFetching && (saleLookup.data?.data.length ?? 0) === 0 ? (
+                            <div className="sales-return-sale-results-empty">
+                              No posted sales match this search.
+                            </div>
+                          ) : null}
+                          {saleLookup.isFetching ? (
+                            <div className="sales-return-sale-results-empty">Searching posted sales…</div>
+                          ) : null}
+                        </div>
+                        <div className="sales-return-sale-results-foot">
+                          {(saleLookup.data?.meta.total ?? 0)} posted invoice(s)
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="sales-return-header-refresh"
+                  title="Refresh selected sale and balances"
+                  onClick={() => {
+                    if (saleUlid) {
+                      void returnableQuery.refetch()
+                    } else {
+                      void saleLookup.refetch()
+                    }
+                  }}
+                >
+                  <RefreshCw size={12} />
+                  Refresh
+                </button>
+
+                <div className="sales-return-balance-chip is-previous">
+                  <span>Previous</span>
+                  <strong>{money(previousBalance)}</strong>
+                </div>
+
+                <div className="sales-return-option-group is-from">
+                  <label>From:</label>
+                  <div className={`sales-return-party-select-wrap${customerSelectOpen ? ' is-open' : ''}`}>
+                    <select
+                      className="sales-return-party-select is-customer"
+                      value={customerFilterUlid}
+                      disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
+                      onFocus={() => setCustomerSelectOpen(true)}
+                      onBlur={() => setCustomerSelectOpen(false)}
                       onChange={(e) => {
-                        setSaleSearch(e.target.value)
-                        setSaleLabel('')
+                        setCustomerFilterUlid(e.target.value)
                         setSaleUlid('')
+                        setSaleLabel('')
                         setLineQty({})
                         setSalePickerOpen(true)
+                        setCustomerSelectOpen(false)
                       }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Escape') setSalePickerOpen(false)
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="sales-return-sale-trigger"
-                      disabled={Boolean(document?.ulid) || readOnly}
-                      onClick={() => setSalePickerOpen((open) => !open)}
-                      aria-label="Open posted sales"
                     >
-                      <ChevronDown size={14} />
-                    </button>
+                      <option value="">All / CASH IN HAND</option>
+                      {(customersQuery.data ?? []).map((customer) => (
+                        <option key={customer.ulid} value={customer.ulid}>
+                          {customer.code} — {customer.name}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="sales-return-select-caret" aria-hidden="true">
+                      <ChevronDown size={12} strokeWidth={2.75} />
+                    </span>
                   </div>
-
-                  {!document?.ulid && salePickerOpen ? (
-                    <div className="sales-return-sale-results">
-                      <div className="sales-return-sale-results-head">
-                        <span>Invoice #</span>
-                        <span>Date</span>
-                        <span>Customer</span>
-                        <span>Salesman</span>
-                        <span>Total</span>
-                        <span>Due</span>
-                      </div>
-                      <div className="sales-return-sale-results-body">
-                        {(saleLookup.data?.data ?? []).map((sale) => (
-                          <button
-                            key={sale.ulid}
-                            type="button"
-                            onClick={() => void selectSale(sale)}
-                          >
-                            <strong>{sale.document_number}</strong>
-                            <span>{sale.sale_date}</span>
-                            <span>{sale.customer?.name ?? 'CASH IN HAND'}</span>
-                            <span>{sale.salesman?.name ?? '—'}</span>
-                            <span>{money(sale.grand_total)}</span>
-                            <span className={Number(sale.balance_due) > 0 ? 'is-due' : 'is-paid'}>
-                              {money(sale.balance_due)}
-                            </span>
-                          </button>
-                        ))}
-                        {!saleLookup.isFetching && (saleLookup.data?.data.length ?? 0) === 0 ? (
-                          <div className="sales-return-sale-results-empty">
-                            No posted sales match this search.
-                          </div>
-                        ) : null}
-                        {saleLookup.isFetching ? (
-                          <div className="sales-return-sale-results-empty">Searching posted sales…</div>
-                        ) : null}
-                      </div>
-                      <div className="sales-return-sale-results-foot">
-                        {(saleLookup.data?.meta.total ?? 0)} posted invoice(s)
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
 
-                <label>From:</label>
-                <div className={`sales-return-party-select-wrap${customerSelectOpen ? ' is-open' : ''}`}>
-                  <select
-                    className="sales-return-party-select is-customer"
-                    value={customerFilterUlid}
-                    disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
-                    onFocus={() => setCustomerSelectOpen(true)}
-                    onBlur={() => setCustomerSelectOpen(false)}
-                    onChange={(e) => {
-                      setCustomerFilterUlid(e.target.value)
-                      setSaleUlid('')
-                      setSaleLabel('')
-                      setLineQty({})
-                      setSalePickerOpen(true)
-                      setCustomerSelectOpen(false)
-                    }}
-                  >
-                    <option value="">All / CASH IN HAND</option>
-                    {(customersQuery.data ?? []).map((customer) => (
-                      <option key={customer.ulid} value={customer.ulid}>
-                        {customer.code} — {customer.name}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="sales-return-select-caret" aria-hidden="true">
-                    <ChevronDown size={12} strokeWidth={2.75} />
-                  </span>
+                <div className="sales-return-balance-chip is-this-bill">
+                  <span>This Bill</span>
+                  <strong>{money(thisBill)}</strong>
                 </div>
 
-                <label>Remarks:</label>
-                <input
-                  value={notes}
-                  disabled={readOnly}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-
-                <label>S.Man:</label>
-                <div className={`sales-return-party-select-wrap${salesmanSelectOpen ? ' is-open' : ''}`}>
-                  <select
-                    className="sales-return-party-select is-salesman"
-                    value={salesmanFilterUlid}
-                    disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
-                    onFocus={() => setSalesmanSelectOpen(true)}
-                    onBlur={() => setSalesmanSelectOpen(false)}
-                    onChange={(e) => {
-                      setSalesmanFilterUlid(e.target.value)
-                      setSaleUlid('')
-                      setSaleLabel('')
-                      setLineQty({})
-                      setSalePickerOpen(true)
-                      setSalesmanSelectOpen(false)
-                    }}
-                  >
-                    <option value="">All salesmen</option>
-                    {(salesmenQuery.data ?? []).map((salesman) => (
-                      <option key={salesman.ulid} value={salesman.ulid}>
-                        {salesman.code} — {salesman.name}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="sales-return-select-caret" aria-hidden="true">
-                    <ChevronDown size={12} strokeWidth={2.75} />
-                  </span>
+                <div className="sales-return-option-group is-remarks">
+                  <label>Remarks:</label>
+                  <input
+                    value={notes}
+                    disabled={readOnly}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
                 </div>
 
-                <label>Reason:</label>
-                <input
-                  value={reason}
-                  disabled={readOnly}
-                  onChange={(e) => setReason(e.target.value)}
-                />
+                <div className="sales-return-balance-chip is-total-balance">
+                  <span>Total Balance</span>
+                  <strong>{money(totalBalance)}</strong>
+                </div>
+
+                <div className="sales-return-option-group is-salesman">
+                  <label>S.Man:</label>
+                  <div className={`sales-return-party-select-wrap${salesmanSelectOpen ? ' is-open' : ''}`}>
+                    <select
+                      className="sales-return-party-select is-salesman"
+                      value={salesmanFilterUlid}
+                      disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
+                      onFocus={() => setSalesmanSelectOpen(true)}
+                      onBlur={() => setSalesmanSelectOpen(false)}
+                      onChange={(e) => {
+                        setSalesmanFilterUlid(e.target.value)
+                        setSaleUlid('')
+                        setSaleLabel('')
+                        setLineQty({})
+                        setSalePickerOpen(true)
+                        setSalesmanSelectOpen(false)
+                      }}
+                    >
+                      <option value="">All salesmen</option>
+                      {(salesmenQuery.data ?? []).map((salesman) => (
+                        <option key={salesman.ulid} value={salesman.ulid}>
+                          {salesman.code} — {salesman.name}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="sales-return-select-caret" aria-hidden="true">
+                      <ChevronDown size={12} strokeWidth={2.75} />
+                    </span>
+                  </div>
+                </div>
               </div>
             </fieldset>
 
