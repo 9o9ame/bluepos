@@ -220,21 +220,6 @@ export function SalesPendingInvoices({
           <strong>{meta?.total ?? 0}</strong>
         </header>
 
-        <div className="sales-due-summary">
-          <div>
-            <span>LOADED TOTAL</span>
-            <strong>{totals.total.toFixed(2)}</strong>
-          </div>
-          <div className="is-paid">
-            <span>PAID</span>
-            <strong>{totals.paid.toFixed(2)}</strong>
-          </div>
-          <div className="is-due">
-            <span>DUE</span>
-            <strong>{totals.due.toFixed(2)}</strong>
-          </div>
-        </div>
-
         <div className="sales-due-toolbar">
           <div className="sales-due-search">
             <Search size={14} aria-hidden="true" />
@@ -291,6 +276,21 @@ export function SalesPendingInvoices({
             <RotateCcw size={13} />
             Reset
           </button>
+
+          <div className="sales-due-toolbar-summary">
+            <div>
+              <span>LOADED TOTAL</span>
+              <strong>{totals.total.toFixed(2)}</strong>
+            </div>
+            <div className="is-paid">
+              <span>PAID</span>
+              <strong>{totals.paid.toFixed(2)}</strong>
+            </div>
+            <div className="is-due">
+              <span>DUE</span>
+              <strong>{totals.due.toFixed(2)}</strong>
+            </div>
+          </div>
         </div>
 
         <div
