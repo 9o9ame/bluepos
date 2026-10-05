@@ -531,29 +531,6 @@ export function SalesReturnsPage() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  className="sales-return-header-refresh"
-                  title="Refresh selected sale and balances"
-                  onClick={() => {
-                    setCustomerSelectOpen(false)
-                    setSalesmanSelectOpen(false)
-                    if (saleUlid) {
-                      void returnableQuery.refetch()
-                    } else {
-                      void saleLookup.refetch()
-                    }
-                  }}
-                >
-                  <RefreshCw size={12} />
-                  Refresh
-                </button>
-
-                <div className="sales-return-balance-chip is-previous">
-                  <span>Previous</span>
-                  <strong>{money(previousBalance)}</strong>
-                </div>
-
                 <div className="sales-return-option-group is-from">
                   <label>From:</label>
                   <div className={`sales-return-detail-picker is-customer${customerSelectOpen ? ' is-open' : ''}`}>
@@ -638,11 +615,6 @@ export function SalesReturnsPage() {
                   </div>
                 </div>
 
-                <div className="sales-return-balance-chip is-this-bill">
-                  <span>This Bill</span>
-                  <strong>{money(thisBill)}</strong>
-                </div>
-
                 <div className="sales-return-option-group is-remarks">
                   <label>Remarks:</label>
                   <input
@@ -650,11 +622,6 @@ export function SalesReturnsPage() {
                     disabled={readOnly}
                     onChange={(e) => setNotes(e.target.value)}
                   />
-                </div>
-
-                <div className="sales-return-balance-chip is-total-balance">
-                  <span>Total Balance</span>
-                  <strong>{money(totalBalance)}</strong>
                 </div>
 
                 <div className="sales-return-option-group is-salesman">
@@ -740,6 +707,41 @@ export function SalesReturnsPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+            </fieldset>
+
+            <fieldset className="sales-return-summary">
+              <button
+                type="button"
+                className="sales-return-header-refresh"
+                title="Refresh selected sale and balances"
+                onClick={() => {
+                  setCustomerSelectOpen(false)
+                  setSalesmanSelectOpen(false)
+                  if (saleUlid) {
+                    void returnableQuery.refetch()
+                  } else {
+                    void saleLookup.refetch()
+                  }
+                }}
+              >
+                <RefreshCw size={12} />
+                Refresh
+              </button>
+
+              <div className="sales-return-balance-chip is-previous">
+                <span>Previous</span>
+                <strong>{money(previousBalance)}</strong>
+              </div>
+
+              <div className="sales-return-balance-chip is-this-bill">
+                <span>This Bill</span>
+                <strong>{money(thisBill)}</strong>
+              </div>
+
+              <div className="sales-return-balance-chip is-total-balance">
+                <span>Total Balance</span>
+                <strong>{money(totalBalance)}</strong>
               </div>
             </fieldset>
 
