@@ -1371,7 +1371,7 @@ export function PartiesPlaceholderPage({
                       setForm((current) => {
                         const currentApi = uiTypeToApi(current.type)
                         const primary =
-                          currentApi && currentApi !== 'account' && nextTypes.includes(currentApi)
+                          currentApi && nextTypes.includes(currentApi)
                             ? current.type
                             : apiTypeToUi(nextTypes[0])
                         return applySuggestedProfileAccountTypes({
