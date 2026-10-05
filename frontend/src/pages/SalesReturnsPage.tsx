@@ -1,11 +1,13 @@
 import { useMemo, useRef, useState } from 'react'
-import { CheckCircle2, ChevronDown, FileText, RefreshCw, RotateCcw, Save, Search, UserRound, X } from 'lucide-react'
+import { Banknote, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, RefreshCw, RotateCcw, Save, Search, Wallet, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
-import { fetchSales } from '../api/sales'
+import { fetchSales, fetchSalesmen } from '../api/sales'
+import { fetchParties } from '../api/parties'
 import {
   createSaleReturn,
   createSaleReturnLine,
+  createSaleReturnRefund,
   deleteSaleReturnLine,
   fetchReturnableSaleLines,
   fetchSaleReturn,
@@ -20,7 +22,7 @@ import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { askConfirm, useFeedback } from '../feedback/FeedbackProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
-import type { Sale } from '../types/sales'
+import type { Sale, SalePaymentMethod } from '../types/sales'
 import type { SaleReturn } from '../types/salesReturns'
 import './SalesReturnsPage.css'
 
@@ -44,11 +46,16 @@ function newReturnKey(): string {
   return `sale-return-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
+function newRefundKey(): string {
+  return `sale-return-refund-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
 export function SalesReturnsPage() {
   const queryClient = useQueryClient()
   const feedback = useFeedback()
   const { closeActiveTab } = useWorkspace()
   const canReturn = useCan('sales.return')
+  const canRefund = useCan('payments.create')
 
   const [view, setView] = useState<ViewMode>('entry')
   const [document, setDocument] = useState<SaleReturn | null>(null)
@@ -56,11 +63,16 @@ export function SalesReturnsPage() {
   const [saleLabel, setSaleLabel] = useState('')
   const [saleSearch, setSaleSearch] = useState('')
   const [salePickerOpen, setSalePickerOpen] = useState(false)
+  const [customerFilterUlid, setCustomerFilterUlid] = useState('')
+  const [salesmanFilterUlid, setSalesmanFilterUlid] = useState('')
   const [returnDate, setReturnDate] = useState(today())
   const [reason, setReason] = useState('')
   const [notes, setNotes] = useState('')
   const [lineQty, setLineQty] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
+  const [refundAmount, setRefundAmount] = useState('')
+  const [refundMethod, setRefundMethod] = useState<SalePaymentMethod>('cash')
+  const [refundReference, setRefundReference] = useState('')
 
   const [historySearch, setHistorySearch] = useState('')
   const [dateFrom, setDateFrom] = useState('')
@@ -71,13 +83,30 @@ export function SalesReturnsPage() {
   const [productDateTo, setProductDateTo] = useState(today())
 
   const createKeyRef = useRef(newReturnKey())
+  const refundKeyRef = useRef(newRefundKey())
   const readOnly = document?.status === 'posted'
 
+  const customersQuery = useQuery({
+    queryKey: ['sales-return', 'customers'],
+    queryFn: () => fetchParties('customer'),
+    enabled: view === 'entry' && canReturn,
+    retry: false,
+  })
+
+  const salesmenQuery = useQuery({
+    queryKey: ['sales-return', 'salesmen'],
+    queryFn: fetchSalesmen,
+    enabled: view === 'entry' && canReturn,
+    retry: false,
+  })
+
   const saleLookup = useQuery({
-    queryKey: ['sales', 'return-sale-lookup', saleSearch],
+    queryKey: ['sales', 'return-sale-lookup', saleSearch, customerFilterUlid, salesmanFilterUlid],
     queryFn: () =>
       fetchSales({
         q: saleSearch || undefined,
+        customer_ulid: customerFilterUlid || undefined,
+        salesman_ulid: salesmanFilterUlid || undefined,
         status: 'posted',
         per_page: 20,
       }),
@@ -152,12 +181,18 @@ export function SalesReturnsPage() {
     setSaleLabel('')
     setSaleSearch('')
     setSalePickerOpen(false)
+    setCustomerFilterUlid('')
+    setSalesmanFilterUlid('')
     setReturnDate(today())
     setReason('')
     setNotes('')
     setLineQty({})
     setError(null)
+    setRefundAmount('')
+    setRefundMethod('cash')
+    setRefundReference('')
     createKeyRef.current = newReturnKey()
+    refundKeyRef.current = newRefundKey()
   }
 
   function loadDocument(row: SaleReturn) {
@@ -167,6 +202,9 @@ export function SalesReturnsPage() {
     setReturnDate(row.return_date)
     setReason(row.reason ?? '')
     setNotes(row.notes ?? '')
+    setCustomerFilterUlid(row.customer?.ulid ?? '')
+    setSalesmanFilterUlid(row.salesman?.ulid ?? '')
+    setRefundAmount(row.balance_due)
     const nextQty: Record<string, string> = {}
     for (const line of row.lines ?? []) {
       if (line.original_sale_item_ulid) {
@@ -182,6 +220,8 @@ export function SalesReturnsPage() {
     setSaleLabel(sale.document_number)
     setSaleSearch('')
     setSalePickerOpen(false)
+    setCustomerFilterUlid(sale.customer?.ulid ?? '')
+    setSalesmanFilterUlid(sale.salesman?.ulid ?? '')
     setDocument(null)
     setLineQty({})
     setError(null)
@@ -279,6 +319,34 @@ export function SalesReturnsPage() {
       await queryClient.invalidateQueries({ queryKey: ['sales-returns'] })
       await queryClient.invalidateQueries({ queryKey: ['sales', 'returnable-lines', saleUlid] })
       feedback.success('Sales return posted and stock restored.', 'Sales Return')
+    },
+    onError: handleError,
+  })
+
+  const refundMutation = useMutation({
+    mutationFn: async () => {
+      if (!document?.ulid || document.status !== 'posted') {
+        throw new Error('Post the Sales Return before recording a refund.')
+      }
+
+      return createSaleReturnRefund(
+        document.ulid,
+        {
+          amount: refundAmount,
+          method: refundMethod,
+          reference: refundReference || null,
+        },
+        refundKeyRef.current,
+      )
+    },
+    onSuccess: async () => {
+      refundKeyRef.current = newRefundKey()
+      setRefundReference('')
+      const refreshed = await fetchSaleReturn(document?.ulid as string)
+      loadDocument(refreshed)
+      await queryClient.invalidateQueries({ queryKey: ['sales-returns'] })
+      await queryClient.invalidateQueries({ queryKey: ['sales'] })
+      feedback.success('Sales Return refund recorded.', 'Sales Return')
     },
     onError: handleError,
   })
@@ -435,16 +503,25 @@ export function SalesReturnsPage() {
                 </div>
 
                 <label>From:</label>
-                <div className="sales-return-linked-field is-customer">
-                  <UserRound size={13} />
-                  <span>
-                    {returnableQuery.data?.sale.customer
-                      ? `${returnableQuery.data.sale.customer.code} — ${returnableQuery.data.sale.customer.name}`
-                      : document?.customer
-                        ? `${document.customer.code} — ${document.customer.name}`
-                        : 'CASH IN HAND'}
-                  </span>
-                </div>
+                <select
+                  className="sales-return-party-select is-customer"
+                  value={customerFilterUlid}
+                  disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
+                  onChange={(e) => {
+                    setCustomerFilterUlid(e.target.value)
+                    setSaleUlid('')
+                    setSaleLabel('')
+                    setLineQty({})
+                    setSalePickerOpen(true)
+                  }}
+                >
+                  <option value="">All / CASH IN HAND</option>
+                  {(customersQuery.data ?? []).map((customer) => (
+                    <option key={customer.ulid} value={customer.ulid}>
+                      {customer.code} — {customer.name}
+                    </option>
+                  ))}
+                </select>
 
                 <label>Remarks:</label>
                 <input
@@ -454,16 +531,25 @@ export function SalesReturnsPage() {
                 />
 
                 <label>S.Man:</label>
-                <div className="sales-return-linked-field is-salesman">
-                  <UserRound size={13} />
-                  <span>
-                    {returnableQuery.data?.sale.salesman
-                      ? `${returnableQuery.data.sale.salesman.code} — ${returnableQuery.data.sale.salesman.name}`
-                      : document?.salesman
-                        ? `${document.salesman.code} — ${document.salesman.name}`
-                        : 'No salesman'}
-                  </span>
-                </div>
+                <select
+                  className="sales-return-party-select is-salesman"
+                  value={salesmanFilterUlid}
+                  disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
+                  onChange={(e) => {
+                    setSalesmanFilterUlid(e.target.value)
+                    setSaleUlid('')
+                    setSaleLabel('')
+                    setLineQty({})
+                    setSalePickerOpen(true)
+                  }}
+                >
+                  <option value="">All salesmen</option>
+                  {(salesmenQuery.data ?? []).map((salesman) => (
+                    <option key={salesman.ulid} value={salesman.ulid}>
+                      {salesman.code} — {salesman.name}
+                    </option>
+                  ))}
+                </select>
 
                 <label>Reason:</label>
                 <input
@@ -556,11 +642,72 @@ export function SalesReturnsPage() {
 
           <footer className="sales-return-footer">
             <div className="sales-return-settlement">
-              <label>Cash Paid:</label>
-              <strong>{money(document?.refund_amount ?? 0)}</strong>
-              <label>Balance:</label>
-              <strong>{money(readOnly ? document?.balance_due : liveTotals.total)}</strong>
-              <small>Refund settlement will be enabled with Sales financial reversal posting.</small>
+              <div className="sales-return-refund-summary">
+                <label>Refunded:</label>
+                <strong>{money(document?.refund_amount ?? 0)}</strong>
+                <label>Balance:</label>
+                <strong>{money(readOnly ? document?.balance_due : liveTotals.total)}</strong>
+              </div>
+
+              {document?.status === 'posted' && Number(document.balance_due) > 0 ? (
+                <div className="sales-return-refund-panel">
+                  <div className="sales-return-refund-methods">
+                    {[
+                      ['cash', 'Cash', Banknote],
+                      ['card', 'Card', CreditCard],
+                      ['bank', 'Bank', Landmark],
+                      ['credit', 'On account', Wallet],
+                    ].map(([value, label, Icon]) => {
+                      const MethodIcon = Icon as typeof Banknote
+                      return (
+                        <button
+                          key={value as string}
+                          type="button"
+                          className={refundMethod === value ? 'is-active' : ''}
+                          disabled={!canRefund || refundMutation.isPending}
+                          onClick={() => setRefundMethod(value as SalePaymentMethod)}
+                        >
+                          <MethodIcon size={12} />
+                          {label as string}
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  <input
+                    className="sales-return-refund-amount"
+                    value={refundAmount}
+                    inputMode="decimal"
+                    disabled={!canRefund || refundMutation.isPending}
+                    aria-label="Refund amount"
+                    onChange={(e) => setRefundAmount(e.target.value)}
+                  />
+                  <input
+                    className="sales-return-refund-reference"
+                    value={refundReference}
+                    disabled={!canRefund || refundMutation.isPending}
+                    placeholder="Reference"
+                    onChange={(e) => setRefundReference(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="sales-return-refund-submit"
+                    disabled={
+                      !canRefund ||
+                      refundMutation.isPending ||
+                      !(Number(refundAmount) > 0) ||
+                      Number(refundAmount) > Number(document.balance_due)
+                    }
+                    onClick={() => refundMutation.mutate()}
+                  >
+                    {refundMutation.isPending ? 'Refunding…' : 'Refund'}
+                  </button>
+                </div>
+              ) : document?.status === 'posted' ? (
+                <small className="sales-return-refund-complete">Refund fully settled.</small>
+              ) : (
+                <small>Post the Sales Return before refund settlement.</small>
+              )}
             </div>
 
             <div className="sales-return-actions">
@@ -644,7 +791,7 @@ export function SalesReturnsPage() {
                 render: (row) => row.salesman?.name ?? '—',
               },
               { key: 'grand_total', header: 'Net', width: 110, align: 'right' },
-              { key: 'refund_amount', header: 'Cash Paid', width: 110, align: 'right' },
+              { key: 'refund_amount', header: 'Refunded', width: 110, align: 'right' },
               { key: 'balance_due', header: 'Balance', width: 110, align: 'right' },
               {
                 key: 'status',
