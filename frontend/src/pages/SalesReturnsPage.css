@@ -3147,3 +3147,125 @@
 .sales-return-amounts .is-net strong {
   font-size: 16px !important;
 }
+
+
+/* ---------- SALES RETURN DESIGN SYSTEM MIGRATION ---------- */
+.sales-return-screen {
+  color: var(--ui-text) !important;
+}
+
+.sales-return-head > fieldset,
+.sales-return-amounts,
+.sales-return-refund-panel,
+.sales-return-detail-dropdown,
+.sales-return-sale-results,
+.sales-return-grid-wrap {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+  border-radius: var(--panel-radius) !important;
+}
+
+.sales-return-tabs button,
+.sales-return-header-refresh,
+.sales-return-actions button,
+.sales-return-refund-submit,
+.sales-return-detail-control,
+.sales-return-sale-trigger {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  transition:
+    border-color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast),
+    transform var(--ui-transition-fast) !important;
+}
+
+.sales-return-tabs button:hover,
+.sales-return-header-refresh:hover:not(:disabled),
+.sales-return-actions button:hover:not(:disabled),
+.sales-return-detail-control:hover:not(:disabled),
+.sales-return-sale-trigger:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+
+.sales-return-tabs button.is-active {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+}
+
+.sales-return-screen :where(input, select, textarea) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.sales-return-screen :where(input, select, textarea):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.sales-return-screen :where(input, select, textarea):disabled {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+.sales-return-balance-chip,
+.sales-return-refund-summary {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface-subtle) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.sales-return-detail-head,
+.sales-return-sale-results-head {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface-subtle))
+  ) !important;
+  color: var(--ui-text) !important;
+  border-color: var(--ui-border) !important;
+}
+
+.sales-return-detail-row,
+.sales-return-sale-results-body > * {
+  border-color: color-mix(in srgb, var(--ui-border) 58%, transparent) !important;
+}
+
+.sales-return-detail-row:hover,
+.sales-return-sale-results-body > *:hover {
+  background: var(--ui-accent-soft) !important;
+}
+
+.sales-return-error { color: var(--ui-danger) !important; }
+.sales-return-sale-results .is-paid { color: var(--ui-success) !important; }
+.sales-return-sale-results .is-due { color: var(--ui-warning) !important; }
+
+.sales-return-detail-caret,
+.sales-return-select-caret {
+  border-color: var(--ui-accent) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 58%, white),
+    var(--ui-accent)
+  ) !important;
+  color: #fff !important;
+}
+
+html[data-animations='off'] .sales-return-screen * {
+  transition: none !important;
+  animation: none !important;
+}
