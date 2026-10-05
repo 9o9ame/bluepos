@@ -16,6 +16,21 @@ class SaleResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $paidAmount = '0.0000';
+
+        if ($this->relationLoaded('payments')) {
+            foreach ($this->payments as $payment) {
+                $paidAmount = bcadd($paidAmount, (string) $payment->amount, 4);
+            }
+        } elseif ($this->getAttribute('paid_amount') !== null) {
+            $paidAmount = bcadd((string) $this->getAttribute('paid_amount'), '0', 4);
+        }
+
+        $balanceDue = bcsub((string) $this->grand_total, $paidAmount, 4);
+        if (bccomp($balanceDue, '0.0000', 4) < 0) {
+            $balanceDue = '0.0000';
+        }
+
         return [
             'ulid' => $this->ulid,
             'document_number' => $this->document_number,
@@ -26,6 +41,8 @@ class SaleResource extends JsonResource
             'discount_amount' => $this->discount_amount,
             'tax_amount' => $this->tax_amount,
             'grand_total' => $this->grand_total,
+            'paid_amount' => $paidAmount,
+            'balance_due' => $balanceDue,
             'notes' => $this->notes,
             'posted_at' => $this->posted_at?->toIso8601String(),
             'salesman' => $this->whenLoaded('salesmanParty', fn () => $this->salesmanParty === null ? null : [
