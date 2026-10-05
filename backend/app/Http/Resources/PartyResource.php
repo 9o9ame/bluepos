@@ -24,10 +24,20 @@ class PartyResource extends JsonResource
     {
         $accountType = $this->relationLoaded('accountType') ? $this->accountType : $this->accountType()->first();
         $isAccount = $this->partyType === 'account';
+        $profile = ! $isAccount && $this->relationLoaded('partyProfile') ? $this->partyProfile : null;
+        $profileTypes = $profile?->relationLoaded('types')
+            ? $profile->types->pluck('type')->values()->all()
+            : [$this->partyType];
 
         return [
             'ulid' => $this->ulid,
+            'identity_ulid' => $profile?->ulid,
             'party_type' => $this->partyType,
+            'party_types' => $isAccount ? [] : $profileTypes,
+            'vendor_ulid' => $profile?->supplier?->ulid ?? ($this->partyType === 'vendor' ? $this->ulid : null),
+            'customer_ulid' => $profile?->customer?->ulid ?? ($this->partyType === 'customer' ? $this->ulid : null),
+            'vendor_account_type_ulid' => $profile?->supplier?->accountType?->ulid,
+            'customer_account_type_ulid' => $profile?->customer?->accountType?->ulid,
             'code' => $this->code,
             'name' => $this->name,
             'deals_in' => $isAccount ? null : $this->deals_in,
