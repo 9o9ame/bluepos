@@ -184,7 +184,7 @@ export function SaleSchemesPage() {
       }
     >
       {error ? <p className="mb-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
-      <p className="mb-3 text-[12px] text-[var(--muted)]">
+      <p className="mb-3 text-[12px] text-[var(--ui-text-muted)]">
         Admin chooses <strong>Salesman decides</strong> (Add/Skip) or <strong>Auto</strong> (apply when eligible).
         Packaging bags/boxes are separate — mark products as Packaging in Define Products.
       </p>
