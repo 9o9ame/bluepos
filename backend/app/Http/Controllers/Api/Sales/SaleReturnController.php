@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Sales;
 use App\Actions\Sales\CreateSaleReturnAction;
 use App\Actions\Sales\DeleteSaleReturnLineAction;
 use App\Actions\Sales\PostSaleReturnAction;
+use App\Actions\Sales\RefundSaleReturnAction;
 use App\Actions\Sales\RecalculateSaleReturnTotalsAction;
 use App\Actions\Sales\UpdateSaleReturnAction;
 use App\Actions\Sales\UpsertSaleReturnLineAction;
@@ -12,7 +13,9 @@ use App\Enums\SaleReturnStatus;
 use App\Enums\SaleStatus;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Sales\StoreSaleReturnRefundRequest;
 use App\Http\Resources\Sales\SaleReturnLineResource;
+use App\Http\Resources\Sales\SaleReturnRefundResource;
 use App\Http\Resources\Sales\SaleReturnResource;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -35,6 +38,7 @@ class SaleReturnController extends Controller
             ->where('branch_id', $tenantContext->branchId())
             ->where('warehouse_id', $tenantContext->warehouseId())
             ->with(['sale', 'customer', 'salesmanParty', 'branch', 'warehouse'])
+            ->withSum('refunds as refunded_amount', 'amount')
             ->orderByDesc('return_date')
             ->orderByDesc('id');
 
@@ -224,6 +228,26 @@ class SaleReturnController extends Controller
         $this->authorize('post', $document);
 
         return new SaleReturnResource($post->execute($document));
+    }
+
+    public function storeRefund(
+        StoreSaleReturnRefundRequest $request,
+        string $returnUlid,
+        TenantContext $tenantContext,
+        RefundSaleReturnAction $refund,
+    ): JsonResponse {
+        $document = $this->findDocument($returnUlid, $tenantContext);
+        $this->authorize('refund', $document);
+
+        $settlement = $refund->execute(
+            $document,
+            $request->validated(),
+            (string) $request->header('Idempotency-Key', ''),
+        );
+
+        return (new SaleReturnRefundResource($settlement))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function returnableLines(
