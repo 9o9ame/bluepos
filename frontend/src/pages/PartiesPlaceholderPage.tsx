@@ -322,6 +322,17 @@ function errMessage(err: unknown): string {
   return formatApiError(err)
 }
 
+function partyKey(party: Party): string {
+  return party.identity_ulid ? `profile:${party.identity_ulid}` : `${party.party_type}:${party.ulid}`
+}
+
+function partyTypeSummary(party: Party): string {
+  if (party.party_type === 'account') return 'ACCOUNT'
+  const types = party.party_types ?? [party.party_type as PartyBusinessType]
+  return types.map((type) => typeLabel(type)).join(' + ')
+}
+
+
 export function PartiesPlaceholderPage({
   embedded = false,
   onClose,
@@ -377,13 +388,13 @@ export function PartiesPlaceholderPage({
   const rows: PartyListRow[] = useMemo(
     () =>
       parties.map((party, index) => ({
-        key: `${party.party_type}:${party.ulid}`,
+        key: partyKey(party),
         ulid: party.ulid,
         partyType: party.party_type,
         no: String(index + 1),
         name: party.name,
         address: party.address ?? '',
-        type: typeLabel(party.party_type),
+        type: partyTypeSummary(party),
       })),
     [parties],
   )
@@ -397,13 +408,17 @@ export function PartiesPlaceholderPage({
     formSnapshot(form) !== baselineRef.current ||
     bankRows.some((r) => r.dirty) ||
     openingRows.some((r) => r.dirty)
+  const isManualAccount = form.type === 'ACCOUNTS'
   const canSave =
     !saving &&
     form.name.trim().length > 0 &&
     form.code.trim().length > 0 &&
-    form.accountTypeUlid.trim().length > 0 &&
     CREATABLE_TYPES.includes(form.type) &&
-    listFilter !== 'SALES MAN'
+    (isManualAccount
+      ? form.accountTypeUlid.trim().length > 0
+      : form.types.length > 0 &&
+        (!form.types.includes('vendor') || form.vendorAccountTypeUlid.trim().length > 0) &&
+        (!form.types.includes('customer') || form.customerAccountTypeUlid.trim().length > 0))
 
   const subTabs = useMemo(
     () =>
@@ -435,12 +450,25 @@ export function PartiesPlaceholderPage({
     setLoading(true)
     setError(null)
     try {
-      const data = await fetchParties(uiTypeToFilter(filter))
+      let data: Party[]
+      if (filter === 'ACCOUNTS') {
+        data = await fetchParties('account')
+      } else if (filter === 'ALL') {
+        const [profiles, accounts] = await Promise.all([
+          fetchPartyProfiles('all'),
+          fetchParties('account'),
+        ])
+        data = [...profiles, ...accounts]
+      } else {
+        const type = uiTypeToFilter(filter) as PartyBusinessType
+        data = await fetchPartyProfiles(type)
+      }
+
       setParties(data)
       if (!keepSelection) {
         setSelectedKey(null)
       } else if (selectedKey) {
-        const stillThere = data.some((p) => `${p.party_type}:${p.ulid}` === selectedKey)
+        const stillThere = data.some((party) => partyKey(party) === selectedKey)
         if (!stillThere) setSelectedKey(null)
       }
     } catch (err) {
