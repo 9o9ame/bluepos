@@ -29,12 +29,15 @@ class PartyProfileController extends Controller
 
         $this->authorizeViewType($type, $permissions);
 
+        $allowedTypes = $this->allowedViewTypes($permissions);
+
         $profiles = PartyProfile::query()
             ->forTenant($tenantContext->tenantId())
             ->with(['types', 'supplier.accountType', 'customer.accountType'])
             ->when(
                 $type !== 'all',
-                fn ($q) => $q->whereHas('types', fn ($t) => $t->where('type', $type))
+                fn ($q) => $q->whereHas('types', fn ($t) => $t->where('type', $type)),
+                fn ($q) => $q->whereHas('types', fn ($t) => $t->whereIn('type', $allowedTypes)),
             )
             ->orderBy('name')
             ->get();
@@ -179,17 +182,44 @@ class PartyProfileController extends Controller
         $this->authorizeRequestedTypes($profile->types->pluck('type')->all(), $permissions, $ability);
     }
 
+    /**
+     * @return list<string>
+     */
+    private function allowedViewTypes(PermissionService $permissions): array
+    {
+        $types = [];
+
+        if ($permissions->can('customers.view') || $permissions->can('customers.manage')) {
+            $types[] = 'customer';
+        }
+        if ($permissions->can('suppliers.view') || $permissions->can('suppliers.manage')) {
+            $types[] = 'vendor';
+        }
+        if (
+            $permissions->can('sales.create')
+            || $permissions->can('customers.view')
+            || $permissions->can('suppliers.view')
+        ) {
+            $types[] = 'salesman';
+        }
+
+        return array_values(array_unique($types));
+    }
+
     private function primaryTypeFor(PartyProfile $profile, PermissionService $permissions): string
     {
         $types = $profile->types->pluck('type');
 
-        if ($types->contains('customer') && $permissions->can('customers.view')) {
+        if ($types->contains('customer') && ($permissions->can('customers.view') || $permissions->can('customers.manage'))) {
             return 'customer';
         }
-        if ($types->contains('vendor') && $permissions->can('suppliers.view')) {
+        if ($types->contains('vendor') && ($permissions->can('suppliers.view') || $permissions->can('suppliers.manage'))) {
             return 'vendor';
         }
+        if ($types->contains('salesman')) {
+            return 'salesman';
+        }
 
-        return 'salesman';
+        throw new ApiException('FORBIDDEN', 'You are not allowed to view this party.', 403);
     }
 }
