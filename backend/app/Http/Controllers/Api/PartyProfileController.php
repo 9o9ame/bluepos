@@ -79,6 +79,7 @@ class PartyProfileController extends Controller
             $types,
             $request->validated()['vendor_account_type_ulid'] ?? null,
             $request->validated()['customer_account_type_ulid'] ?? null,
+            $request->validated()['account_account_type_ulid'] ?? null,
         );
 
         return (new PartyProfileResource($profile, (string) $request->validated('primary_type')))
@@ -103,7 +104,8 @@ class PartyProfileController extends Controller
             $request->profileAttributes(),
             $requested,
             $request->validated('vendor_account_type_ulid'),
-            $request->validated('customer_account_type_ulid'),
+            $request->validated()['customer_account_type_ulid'] ?? null,
+            $request->validated()['account_account_type_ulid'] ?? null,
         );
 
         return new PartyProfileResource($profile, (string) $request->validated('primary_type'));
