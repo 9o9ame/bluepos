@@ -13,6 +13,7 @@ use App\Models\BusinessSetting;
 use App\Models\Customer;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
+use App\Models\SalePayment;
 use App\Models\SaleReturn;
 use App\Models\SaleReturnRefund;
 use App\Security\AuditLogger;
@@ -99,6 +100,40 @@ class RefundSaleReturnAction
                 throw ValidationException::withMessages([
                     'amount' => 'Refund cannot exceed the remaining refund balance of '.$refundable.'.',
                 ]);
+            }
+
+            if ($method !== SalePaymentMethod::Credit) {
+                $collectedByMethod = bcadd(
+                    (string) SalePayment::query()
+                        ->where('tenant_id', $tenantId)
+                        ->where('sale_id', $document->sale_id)
+                        ->where('method', $method->value)
+                        ->sum('amount'),
+                    '0',
+                    4,
+                );
+
+                $alreadyRefundedByMethod = bcadd(
+                    (string) SaleReturnRefund::query()
+                        ->where('tenant_id', $tenantId)
+                        ->where('method', $method->value)
+                        ->whereHas('saleReturn', fn ($query) => $query->where('sale_id', $document->sale_id))
+                        ->sum('amount'),
+                    '0',
+                    4,
+                );
+
+                $availableByMethod = bcsub($collectedByMethod, $alreadyRefundedByMethod, 4);
+                if (bccomp($availableByMethod, '0', 4) < 0) {
+                    $availableByMethod = '0.0000';
+                }
+
+                if (bccomp($amount, $availableByMethod, 4) > 0) {
+                    throw ValidationException::withMessages([
+                        'amount' => ucfirst($method->value).' refund cannot exceed the unrefunded '
+                            .$method->value.' payment amount of '.$availableByMethod.'.',
+                    ]);
+                }
             }
 
             [$debitAccount, $creditAccount] = $this->resolveAccounts($document, $method);
