@@ -1974,3 +1974,138 @@
     justify-content: flex-end;
   }
 }
+
+
+/* ---------- SALES CART FINAL TOKEN BRIDGE ---------- */
+/* Visual-only. Frozen Sales Invoice geometry remains unchanged. */
+.sales-reference-screen :where(
+  .sales-pos-product-results,
+  .sales-payment-panel,
+  .sales-history,
+  .sales-history-detail,
+  .sales-history-grid-wrap,
+  .sales-history-detail-grid-wrap,
+  .sales-hold-section,
+  .sales-due-section,
+  .sales-pending-grid-wrap,
+  .sales-due-grid-wrap
+) {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+  border-radius: var(--panel-radius) !important;
+}
+
+.sales-reference-screen :where(
+  .sales-payment-method,
+  .sales-payment-collect,
+  .sales-history-reset,
+  .sales-history-search-clear,
+  .sales-history-detail-actions button,
+  .sales-pending-actions button,
+  .sales-due-reset,
+  .sales-scheme-prompt-add,
+  .sales-scheme-prompt-skip,
+  .sales-packaging-add,
+  .sales-packaging-cancel
+) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  transition:
+    border-color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast) !important;
+}
+
+.sales-reference-screen :where(
+  .sales-payment-method,
+  .sales-payment-collect,
+  .sales-history-reset,
+  .sales-history-search-clear,
+  .sales-history-detail-actions button,
+  .sales-pending-actions button,
+  .sales-due-reset,
+  .sales-scheme-prompt-add,
+  .sales-scheme-prompt-skip,
+  .sales-packaging-add,
+  .sales-packaging-cancel
+):hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+
+.sales-reference-screen .sales-payment-method.is-active {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+}
+
+.sales-reference-screen :where(
+  .sales-payment-amount,
+  .sales-history-search,
+  .sales-history-filter,
+  .sales-due-search,
+  .sales-packaging-qty
+) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.sales-reference-screen :where(
+  .sales-payment-amount,
+  .sales-history-search,
+  .sales-history-filter,
+  .sales-due-search,
+  .sales-packaging-qty
+):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.sales-reference-screen :where(.sales-history-detail-head, .sales-pending-section-head, .sales-due-detail-head) {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-reference-screen :where(.sales-history-grid, .sales-pending-grid) th {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface-subtle))
+  ) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-reference-screen :where(.sales-history-grid, .sales-pending-grid) td {
+  border-color: color-mix(in srgb, var(--ui-border) 58%, transparent) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-reference-screen .sales-pos-status-error,
+.sales-reference-screen .sales-payment-error,
+.sales-reference-screen .sales-history-status.is-void,
+.sales-reference-screen .is-danger { color: var(--ui-danger) !important; }
+
+.sales-reference-screen .sales-pos-status-ok,
+.sales-reference-screen .sales-payment-settled,
+.sales-reference-screen .sales-history-status.is-paid,
+.sales-reference-screen .is-paid-value { color: var(--ui-success) !important; }
+
+.sales-reference-screen .sales-history-status.is-partial,
+.sales-reference-screen .is-due-value { color: var(--ui-warning) !important; }
+
+html[data-animations='off'] .sales-reference-screen * {
+  transition: none !important;
+  animation: none !important;
+}
