@@ -42,13 +42,13 @@ export function PlatformShell() {
         <div className="relative text-[12px]">
           <button
             type="button"
-            className="rounded border border-slate-600 px-2 py-1"
+            className="platform-account-trigger rounded border border-slate-600 px-2 py-1"
             onClick={() => setMenuOpen((open) => !open)}
           >
             {user?.name ?? user?.email} ▾
           </button>
           {menuOpen ? (
-            <div className="absolute right-0 z-20 mt-1 w-52 rounded border border-slate-700 bg-slate-900 py-1 shadow-lg">
+            <div className="platform-account-menu absolute right-0 z-20 mt-1 w-52 rounded border border-slate-700 bg-slate-900 py-1 shadow-lg">
               {[
                 ['/platform/account/profile', 'My Profile'],
                 ['/platform/account/password', 'Change Password'],
@@ -60,7 +60,7 @@ export function PlatformShell() {
                 <button
                   key={to}
                   type="button"
-                  className="block w-full px-3 py-1.5 text-left hover:bg-slate-800"
+                  className="platform-account-menu-item block w-full px-3 py-1.5 text-left hover:bg-slate-800"
                   onClick={() => {
                     setMenuOpen(false)
                     navigate(to)
@@ -71,7 +71,7 @@ export function PlatformShell() {
               ))}
               <button
                 type="button"
-                className="block w-full border-t border-slate-700 px-3 py-1.5 text-left hover:bg-slate-800"
+                className="platform-account-menu-item platform-account-menu-signout block w-full border-t border-slate-700 px-3 py-1.5 text-left hover:bg-slate-800"
                 onClick={() => {
                   setMenuOpen(false)
                   void logout()
@@ -92,7 +92,7 @@ export function PlatformShell() {
             <div className="mt-2">
               <button
                 type="button"
-                className="mb-1 w-full rounded px-2 py-1.5 text-left text-[12px] font-semibold text-slate-800 hover:bg-slate-300"
+                className="platform-access-toggle mb-1 w-full rounded px-2 py-1.5 text-left text-[12px] font-semibold text-slate-800 hover:bg-slate-300"
                 onClick={() => setAccessOpen((open) => !open)}
               >
                 Platform Access {accessOpen ? '▾' : '▸'}
@@ -131,7 +131,7 @@ function NavItem({
       to={to}
       end={end}
       className={({ isActive }) =>
-        `mb-1 block rounded px-2 py-1.5 text-[12px] font-semibold ${indent ? 'ml-3' : ''} ${
+        `platform-nav-item mb-1 block rounded px-2 py-1.5 text-[12px] font-semibold ${indent ? 'ml-3' : ''} ${
           isActive ? 'bg-slate-950 text-amber-300' : 'text-slate-800 hover:bg-slate-300'
         }`
       }
