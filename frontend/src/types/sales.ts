@@ -7,7 +7,7 @@ export type SalePriceType = 'default' | 'retail' | 'wholesale'
 
 export type SalesmanOption = {
   ulid: string
-  username: string
+  code: string
   name: string
 }
 
