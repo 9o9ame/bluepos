@@ -26,7 +26,7 @@ class SaleController extends Controller
         $perPage = min(max($request->integer('per_page', 25), 1), 100);
         $query = Sale::query()
             ->forTenant($tenantContext->tenantId())
-            ->with(['customer', 'branch', 'warehouse'])
+            ->with(['customer', 'salesmanParty', 'branch', 'warehouse'])
             ->orderByDesc('sale_date')
             ->orderByDesc('id');
 
