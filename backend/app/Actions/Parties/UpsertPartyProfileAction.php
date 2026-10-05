@@ -43,6 +43,7 @@ class UpsertPartyProfileAction
         ): PartyProfile {
             $tenantId = $this->tenantContext->tenantId();
             $isNew = $profile === null;
+            $originalCode = $profile?->code;
 
             if ($profile && (int) $profile->tenant_id !== $tenantId) {
                 throw ValidationException::withMessages([
@@ -62,7 +63,7 @@ class UpsertPartyProfileAction
                 $profile->created_by = $this->tenantContext->userId();
             }
 
-            $this->assertProfileCodeAvailable($profile);
+            $this->assertProfileCodeAvailable($profile, $originalCode);
             $profile->save();
 
             $supplier = Supplier::query()
@@ -134,12 +135,16 @@ class UpsertPartyProfileAction
         return (int) $id;
     }
 
-    private function assertProfileCodeAvailable(PartyProfile $profile): void
+    private function assertProfileCodeAvailable(PartyProfile $profile, ?string $originalCode): void
     {
+        if ($profile->exists && $originalCode === $profile->code) {
+            return;
+        }
+
         $exists = PartyProfile::query()
             ->forTenant($this->tenantContext->tenantId())
             ->where('code', $profile->code)
-            ->when($profile->exists, fn ($q) => $q->whereKeyNot($profile->id))
+            ->when($profile->exists, fn ($q) => $q->where('id', '<>', $profile->id))
             ->exists();
 
         if ($exists) {
@@ -165,7 +170,7 @@ class UpsertPartyProfileAction
             $exists = Supplier::query()
                 ->forTenant($tenantId)
                 ->where('code', $code)
-                ->when($supplier, fn ($q) => $q->whereKeyNot($supplier->id))
+                ->when($supplier, fn ($q) => $q->where('id', '<>', $supplier->id))
                 ->exists();
             if ($exists) {
                 throw ValidationException::withMessages(['code' => 'This code is already used by another vendor.']);
@@ -176,7 +181,7 @@ class UpsertPartyProfileAction
             $exists = Customer::query()
                 ->forTenant($tenantId)
                 ->where('code', $code)
-                ->when($customer, fn ($q) => $q->whereKeyNot($customer->id))
+                ->when($customer, fn ($q) => $q->where('id', '<>', $customer->id))
                 ->exists();
             if ($exists) {
                 throw ValidationException::withMessages(['code' => 'This code is already used by another customer.']);
