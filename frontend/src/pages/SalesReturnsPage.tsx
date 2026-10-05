@@ -28,6 +28,17 @@ import './SalesReturnsPage.css'
 
 type ViewMode = 'entry' | 'search' | 'product'
 
+const REFUND_METHODS: Array<{
+  value: SalePaymentMethod
+  label: string
+  icon: typeof Banknote
+}> = [
+  { value: 'cash', label: 'Cash', icon: Banknote },
+  { value: 'card', label: 'Card', icon: CreditCard },
+  { value: 'bank', label: 'Bank', icon: Landmark },
+  { value: 'credit', label: 'On account', icon: Wallet },
+]
+
 function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
@@ -652,26 +663,18 @@ export function SalesReturnsPage() {
               {document?.status === 'posted' && Number(document.balance_due) > 0 ? (
                 <div className="sales-return-refund-panel">
                   <div className="sales-return-refund-methods">
-                    {[
-                      ['cash', 'Cash', Banknote],
-                      ['card', 'Card', CreditCard],
-                      ['bank', 'Bank', Landmark],
-                      ['credit', 'On account', Wallet],
-                    ].map(([value, label, Icon]) => {
-                      const MethodIcon = Icon as typeof Banknote
-                      return (
-                        <button
-                          key={value as string}
-                          type="button"
-                          className={refundMethod === value ? 'is-active' : ''}
-                          disabled={!canRefund || refundMutation.isPending}
-                          onClick={() => setRefundMethod(value as SalePaymentMethod)}
-                        >
-                          <MethodIcon size={12} />
-                          {label as string}
-                        </button>
-                      )
-                    })}
+                    {REFUND_METHODS.map(({ value, label, icon: Icon }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={refundMethod === value ? 'is-active' : ''}
+                        disabled={!canRefund || refundMutation.isPending}
+                        onClick={() => setRefundMethod(value)}
+                      >
+                        <Icon size={12} />
+                        {label}
+                      </button>
+                    ))}
                   </div>
 
                   <input
