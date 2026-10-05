@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'tenant_id',
+    'party_profile_id',
     'code',
     'name',
     'address',
@@ -50,6 +51,11 @@ class Account extends Model
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    public function partyProfile(): BelongsTo
+    {
+        return $this->belongsTo(PartyProfile::class);
     }
 
     /**
