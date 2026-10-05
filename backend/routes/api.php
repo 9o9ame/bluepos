@@ -236,6 +236,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::patch('/sales-returns/{returnUlid}/lines/{lineUlid}', [SaleReturnController::class, 'updateLine']);
         Route::delete('/sales-returns/{returnUlid}/lines/{lineUlid}', [SaleReturnController::class, 'destroyLine']);
         Route::post('/sales-returns/{returnUlid}/post', [SaleReturnController::class, 'post']);
+        Route::post('/sales-returns/{returnUlid}/refunds', [SaleReturnController::class, 'storeRefund']);
     });
 
     Route::middleware('entitled:inventory')->group(function () {
