@@ -2167,3 +2167,14 @@ html[data-animations='off'] .sales-reference-screen * {
   transition: none !important;
   animation: none !important;
 }
+
+
+/* ---------- SALES INVOICE FINAL SHADOW CLEANUP ---------- */
+/* Visual-only: preserve frozen Amounts geometry while honoring Radius/Card Shadow. */
+.sales-reference-total-block > div,
+.sales-reference-received,
+.sales-reference-card,
+.sales-reference-balance {
+  border-radius: var(--control-radius) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
