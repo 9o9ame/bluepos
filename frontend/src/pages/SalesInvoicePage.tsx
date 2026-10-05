@@ -427,9 +427,20 @@ export function SalesInvoicePage() {
     setSavedSale(fresh)
   }
 
+  function focusLineQuantity(lineKey: string) {
+    window.setTimeout(() => {
+      const quantity = document.querySelector<HTMLInputElement>(
+        `[data-sale-line="${lineKey}"] [data-sale-field="sales_qty"]`,
+      )
+      quantity?.focus()
+      quantity?.select()
+    }, 0)
+  }
+
   async function addProductFromEntry(
     productUlid: string,
     scannedValue = '',
+    replaceLineKey: string | null = null,
   ) {
     try {
       const [product, stock] = await Promise.all([
@@ -443,7 +454,7 @@ export function SalesInvoicePage() {
               (row) => row.is_active && row.barcode === scannedValue,
             ) ?? null
 
-      const lineKey = cart.addProduct(
+      const lineKey = replaceLineKey ?? cart.addProduct(
         product,
         '1.000000',
         scannedBarcode,
@@ -452,10 +463,22 @@ export function SalesInvoicePage() {
 
       if (!lineKey) return
 
+      if (replaceLineKey) {
+        cart.replaceProduct(
+          replaceLineKey,
+          product,
+          scannedBarcode,
+          stock.active_warehouse.quantity,
+        )
+      }
+
       setActiveLineKey(lineKey)
+      setActiveProductQuery(`${product.product_number} — ${product.name}`)
+      setActiveProductPickerOpen(false)
       setProductQuery('')
       setBarcodeQuery('')
       setSaveError(null)
+      focusLineQuantity(lineKey)
     } catch (err) {
       setSaveError(
         err instanceof ApiClientError
@@ -499,6 +522,8 @@ export function SalesInvoicePage() {
     if (activeLineKey !== lineKey) return
 
     setActiveLineKey(null)
+    setActiveProductQuery('')
+    setActiveProductPickerOpen(false)
     window.setTimeout(() => {
       productSearchRef.current?.focus()
       productSearchRef.current?.select()
@@ -534,14 +559,7 @@ export function SalesInvoicePage() {
 
   useEffect(() => {
     if (!activeLineKey) return
-
-    window.setTimeout(() => {
-      const quantity = document.querySelector<HTMLInputElement>(
-        `[data-sale-line="${activeLineKey}"] [data-sale-field="sales_qty"]`,
-      )
-      quantity?.focus()
-      quantity?.select()
-    }, 0)
+    focusLineQuantity(activeLineKey)
   }, [activeLineKey])
 
 
