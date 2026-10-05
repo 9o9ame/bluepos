@@ -1821,14 +1821,14 @@
 }
 
 .sales-posted-history .sales-history-detail-totals span {
-  font-size: 7px;
-  line-height: 1;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .sales-posted-history .sales-history-detail-totals strong {
   margin-top: 1px;
-  font-size: 10px;
-  line-height: 1.05;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .sales-posted-history .sales-history-detail-actions {
