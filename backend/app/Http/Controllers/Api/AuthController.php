@@ -79,7 +79,7 @@ class AuthController extends Controller
             'primaryTheme' => ['required', 'string', Rule::in(['indigo', 'blue', 'emerald', 'teal', 'purple', 'slate'])],
             'density' => ['required', 'string', Rule::in(['compact', 'comfortable'])],
             'radius' => ['required', 'string', Rule::in(['small', 'medium', 'large'])],
-            'shadow' => ['required', 'string', Rule::in(['none', 'soft', 'normal'])],
+            'shadow' => ['required', 'string', Rule::in(['none', 'soft', 'normal', '3d'])],
             'animations' => ['required', 'boolean'],
         ]);
 
