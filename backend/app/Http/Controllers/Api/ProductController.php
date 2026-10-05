@@ -33,6 +33,15 @@ class ProductController extends Controller
         $query = Product::query()
             ->forTenant($tenantContext->tenantId())
             ->with(['category', 'brand', 'barcodeGroup', 'baseUnit', 'barcodes.unit', 'prices', 'primaryProductSupplier.supplier'])
+            ->when(
+                $request->boolean('sales_lookup'),
+                fn ($products) => $products->with([
+                    'stockBalances' => fn ($balances) => $balances
+                        ->where('tenant_id', $tenantContext->tenantId())
+                        ->where('branch_id', $tenantContext->branchId())
+                        ->where('warehouse_id', $tenantContext->warehouseId()),
+                ]),
+            )
             ->orderBy('product_number');
 
         if ($request->filled('q')) {
