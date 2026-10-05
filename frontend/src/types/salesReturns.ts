@@ -1,3 +1,17 @@
+export type SaleReturnRefund = {
+  ulid: string
+  method: 'cash' | 'card' | 'bank' | 'credit'
+  amount: string
+  reference: string | null
+  journal_entry_ulid: string | null
+  account?: {
+    ulid: string
+    code: string
+    name: string
+  } | null
+  created_at: string | null
+}
+
 export type SaleReturnStatus = 'draft' | 'posted'
 
 export type SaleReturnRef = {
@@ -53,6 +67,7 @@ export type SaleReturn = {
   reason: string | null
   notes: string | null
   posted_at: string | null
+  refunds?: SaleReturnRefund[]
   original_sale?: {
     ulid: string
     document_number: string
