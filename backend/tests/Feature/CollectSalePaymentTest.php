@@ -161,6 +161,59 @@ class CollectSalePaymentTest extends TestCase
         $this->assertSame(0, SalePayment::query()->count());
     }
 
+    public function test_business_settings_can_configure_payment_accounts_by_ulid(): void
+    {
+        $this->signInOwner('pay-settings')->assertOk();
+
+        $cash = $this->leafAccount('SETTINGS CASH', '9201');
+        $clearing = $this->leafAccount('SETTINGS CLEARING', '9202');
+
+        $response = $this->patchJson('/api/settings/business', [
+            'default_cash_account_ulid' => $cash->ulid,
+            'sales_clearing_account_ulid' => $clearing->ulid,
+        ])->assertOk();
+
+        $response
+            ->assertJsonPath('default_cash_account_ulid', $cash->ulid)
+            ->assertJsonPath('default_cash_account.ulid', $cash->ulid)
+            ->assertJsonPath('sales_clearing_account_ulid', $clearing->ulid)
+            ->assertJsonPath('sales_clearing_account.ulid', $clearing->ulid);
+
+        $settings = BusinessSetting::query()
+            ->forTenant(app(\App\Tenancy\TenantContext::class)->tenantId())
+            ->firstOrFail();
+
+        $this->assertSame($cash->id, (int) $settings->default_cash_account_id);
+        $this->assertSame($clearing->id, (int) $settings->sales_clearing_account_id);
+
+        $sale = $this->createSale('pay-settings', '100.0000');
+
+        $this->postJson('/api/sales/'.$sale.'/payments', [
+            'amount' => '100.0000',
+            'method' => 'cash',
+        ], $this->idem('pay-settings-collect'))
+            ->assertCreated()
+            ->assertJsonPath('amount', '100.0000');
+
+        $this->assertSame('0.0000', $this->outstanding($sale));
+    }
+
+    public function test_business_settings_reject_payment_accounts_from_another_tenant(): void
+    {
+        $this->signInOwner('pay-settings-a')->assertOk();
+        $foreignCash = $this->leafAccount('FOREIGN CASH', '9301');
+        $foreignClearing = $this->leafAccount('FOREIGN CLEARING', '9302');
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('pay-settings-b')->assertOk();
+
+        $this->patchJson('/api/settings/business', [
+            'default_cash_account_ulid' => $foreignCash->ulid,
+            'sales_clearing_account_ulid' => $foreignClearing->ulid,
+        ])->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+    }
+
     public function test_payment_fails_clearly_when_accounts_are_not_configured(): void
     {
         $this->signInOwner('pay-7')->assertOk();
