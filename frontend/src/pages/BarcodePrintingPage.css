@@ -1332,3 +1332,107 @@
   background: #4a2525;
   color: #ffb8b8;
 }
+
+
+/* ---------- BARCODE DESIGN SYSTEM MIGRATION ---------- */
+.bp-workspace {
+  color: var(--ui-text) !important;
+}
+
+.bp-panel,
+.bp-settings-panel,
+.bp-preview-paper,
+.bp-grid-shell {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+  border-radius: var(--panel-radius) !important;
+}
+
+.bp-panel-title,
+.bp-grid-footer {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+  color: var(--ui-text) !important;
+}
+
+.bp-btn,
+.bp-action-btn,
+.bp-select-btn,
+.bp-btn-print-all,
+.bp-fancy-select {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  transition:
+    border-color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast) !important;
+}
+
+.bp-btn:hover:not(:disabled),
+.bp-action-btn:hover:not(:disabled),
+.bp-select-btn:hover:not(:disabled),
+.bp-btn-print-all:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+
+.bp-btn-print-all,
+.bp-action-save {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+}
+
+.bp-action-delete,
+.bp-action-close,
+.bp-error { color: var(--ui-danger) !important; }
+
+.bp-workspace :where(input, select, textarea) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.bp-workspace :where(input, select, textarea):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.bp-workspace :where(input, select, textarea):disabled {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+.bp-grid th {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface-subtle))
+  ) !important;
+  color: var(--ui-text) !important;
+}
+
+.bp-grid td {
+  border-color: color-mix(in srgb, var(--ui-border) 58%, transparent) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+}
+
+.bp-grid tr.is-selected td {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface)) !important;
+}
+
+html[data-animations='off'] .bp-workspace * {
+  transition: none !important;
+  animation: none !important;
+}
