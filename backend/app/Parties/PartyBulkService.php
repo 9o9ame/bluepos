@@ -52,6 +52,7 @@ class PartyBulkService
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly PartyLeafAccountSync $leafSync,
+        private readonly PartyProfileBridge $profileBridge,
         private readonly AuditLogger $audit,
         private readonly SimpleXlsx $xlsx,
     ) {}
@@ -141,8 +142,10 @@ class PartyBulkService
 
                 if ($partyType === 'vendor') {
                     $this->leafSync->syncSupplier($party);
+                    $this->profileBridge->ensureSupplier($party);
                 } elseif ($partyType === 'customer') {
                     $this->leafSync->syncCustomer($party);
+                    $this->profileBridge->ensureCustomer($party);
                 }
 
                 $out[] = (new PartyResource($party->fresh()->load('accountType'), $partyType))->resolve();
@@ -257,8 +260,10 @@ class PartyBulkService
 
                 if ($partyType === 'vendor') {
                     $this->leafSync->syncSupplier($party);
+                    $this->profileBridge->ensureSupplier($party);
                 } elseif ($partyType === 'customer') {
                     $this->leafSync->syncCustomer($party);
+                    $this->profileBridge->ensureCustomer($party);
                 }
 
                 $data[] = [
