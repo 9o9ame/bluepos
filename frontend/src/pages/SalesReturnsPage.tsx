@@ -418,10 +418,10 @@ export function SalesReturnsPage() {
 
             <fieldset className="sales-return-amounts">
               <legend>Amount Options</legend>
-              <div><span>Amount:</span><strong>{money(document?.subtotal ?? liveTotals.subtotal)}</strong></div>
-              <div><span>Disc (Rs):</span><strong>{money(document?.discount_amount ?? liveTotals.discount)}</strong></div>
-              <div><span>Tax:</span><strong>{money(document?.tax_amount ?? liveTotals.tax)}</strong></div>
-              <div className="is-net"><span>Net:</span><strong>{money(document?.grand_total ?? liveTotals.total)}</strong></div>
+              <div><span>Amount:</span><strong>{money(readOnly ? document?.subtotal : liveTotals.subtotal)}</strong></div>
+              <div><span>Disc (Rs):</span><strong>{money(readOnly ? document?.discount_amount : liveTotals.discount)}</strong></div>
+              <div><span>Tax:</span><strong>{money(readOnly ? document?.tax_amount : liveTotals.tax)}</strong></div>
+              <div className="is-net"><span>Net:</span><strong>{money(readOnly ? document?.grand_total : liveTotals.total)}</strong></div>
             </fieldset>
           </section>
 
@@ -501,7 +501,7 @@ export function SalesReturnsPage() {
               <label>Cash Paid:</label>
               <strong>{money(document?.refund_amount ?? 0)}</strong>
               <label>Balance:</label>
-              <strong>{money(document?.balance_due ?? document?.grand_total ?? liveTotals.total)}</strong>
+              <strong>{money(readOnly ? document?.balance_due : liveTotals.total)}</strong>
               <small>Refund settlement will be enabled with Sales financial reversal posting.</small>
             </div>
 
