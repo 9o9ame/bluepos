@@ -179,6 +179,43 @@ export function SalesReturnsPage() {
     )
   }, [returnable, lineQty])
 
+  const returnEntryState = useMemo(() => {
+    let positiveLineCount = 0
+    let validationError: string | null = null
+
+    for (const row of returnable) {
+      const raw = (lineQty[row.sale_item_ulid] ?? '').trim()
+      if (raw === '') continue
+
+      if (!/^\d+(?:\.\d{0,6})?$/.test(raw)) {
+        validationError = `Return quantity for ${row.product.name} must use up to 6 decimal places.`
+        break
+      }
+
+      const selected = Number(raw)
+      if (!Number.isFinite(selected) || selected < 0) {
+        validationError = `Return quantity for ${row.product.name} is invalid.`
+        break
+      }
+
+      if (selected === 0) continue
+
+      const remaining = Number(row.remaining_returnable_quantity) || 0
+      if (selected > remaining) {
+        validationError = `Return quantity for ${row.product.name} cannot exceed ${row.remaining_returnable_quantity}.`
+        break
+      }
+
+      positiveLineCount += 1
+    }
+
+    return {
+      positiveLineCount,
+      validationError,
+      hasReturnQuantity: positiveLineCount > 0,
+    }
+  }, [returnable, lineQty])
+
   const currentOutstanding = Number(returnableQuery.data?.sale.previous_balance ?? 0)
   const thisBill = readOnly ? Number(document?.grand_total ?? 0) : liveTotals.total
   const previousBalance =
@@ -261,6 +298,9 @@ export function SalesReturnsPage() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!saleUlid) throw new Error('Select a posted sale invoice first.')
+      if (returnEntryState.validationError) {
+        throw new Error(returnEntryState.validationError)
+      }
 
       let current = document
 
@@ -333,6 +373,13 @@ export function SalesReturnsPage() {
 
   const postMutation = useMutation({
     mutationFn: async () => {
+      if (!returnEntryState.hasReturnQuantity) {
+        throw new Error('Enter at least one return quantity before posting.')
+      }
+      if (returnEntryState.validationError) {
+        throw new Error(returnEntryState.validationError)
+      }
+
       const saved = await saveMutation.mutateAsync()
       return postSaleReturn(saved.ulid)
     },
@@ -474,7 +521,18 @@ export function SalesReturnsPage() {
                           setSalePickerOpen(true)
                         }}
                         onKeyDown={(e) => {
-                          if (e.key === 'Escape') setSalePickerOpen(false)
+                          if (e.key === 'Escape') {
+                            setSalePickerOpen(false)
+                            return
+                          }
+
+                          if (e.key === 'Enter' && salePickerOpen) {
+                            const first = saleLookup.data?.data?.[0]
+                            if (first) {
+                              e.preventDefault()
+                              void selectSale(first)
+                            }
+                          }
                         }}
                       />
                       <button
@@ -791,12 +849,32 @@ export function SalesReturnsPage() {
                           inputMode="decimal"
                           value={lineQty[row.sale_item_ulid] ?? ''}
                           placeholder="0"
-                          onChange={(e) =>
+                          aria-label={`Return quantity for ${row.product.name}`}
+                          aria-invalid={
+                            Number(lineQty[row.sale_item_ulid] ?? 0) >
+                            Number(row.remaining_returnable_quantity)
+                          }
+                          title={`Maximum returnable: ${row.remaining_returnable_quantity}`}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            if (value !== '' && !/^\d*(?:\.\d{0,6})?$/.test(value)) {
+                              return
+                            }
+
                             setLineQty((prev) => ({
                               ...prev,
-                              [row.sale_item_ulid]: e.target.value,
+                              [row.sale_item_ulid]: value,
                             }))
-                          }
+                          }}
+                          onBlur={() => {
+                            const value = lineQty[row.sale_item_ulid]
+                            if (!value || Number(value) === 0) return
+
+                            setLineQty((prev) => ({
+                              ...prev,
+                              [row.sale_item_ulid]: qty(value),
+                            }))
+                          }}
                         />
                       )}
                     </td>
@@ -825,7 +903,11 @@ export function SalesReturnsPage() {
             </table>
           </div>
 
-          {error ? <div className="sales-return-error">{error}</div> : null}
+          {returnEntryState.validationError ? (
+            <div className="sales-return-error">{returnEntryState.validationError}</div>
+          ) : error ? (
+            <div className="sales-return-error">{error}</div>
+          ) : null}
 
           <footer className="sales-return-footer">
             <div className="sales-return-settlement">
@@ -893,13 +975,26 @@ export function SalesReturnsPage() {
               <DesktopButton
                 icon={<Save size={13} />}
                 label="Save"
-                disabled={readOnly || saveMutation.isPending}
+                disabled={
+                  readOnly ||
+                  !saleUlid ||
+                  saveMutation.isPending ||
+                  postMutation.isPending ||
+                  Boolean(returnEntryState.validationError)
+                }
                 onClick={() => void saveMutation.mutateAsync().catch(handleError)}
               />
               <DesktopButton
                 icon={<CheckCircle2 size={13} />}
                 label="Post"
-                disabled={readOnly || postMutation.isPending}
+                disabled={
+                  readOnly ||
+                  !saleUlid ||
+                  !returnEntryState.hasReturnQuantity ||
+                  saveMutation.isPending ||
+                  postMutation.isPending ||
+                  Boolean(returnEntryState.validationError)
+                }
                 onClick={() => {
                   void (async () => {
                     if (!(await askConfirm('Post this Sales Return and add returned stock back to the warehouse?'))) {
