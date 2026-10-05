@@ -910,3 +910,101 @@
   background-position: 0 0, right 3px center, right 7px center !important;
   background-size: 100% 100%, 18px 16px, 9px 6px !important;
 }
+
+
+/* ---------- PRODUCTS FINAL TOKEN BRIDGE ---------- */
+/* Loaded after ProductsPage.theme.css; keep page geometry, replace visual constants. */
+.product-reference-screen :where(
+  .product-def-rail,
+  .product-def-photo,
+  .product-def-form,
+  .pdf-barcode-box,
+  .product-def-grid,
+  .product-def-grid-top,
+  .product-def-groupbar
+) {
+  border-color: var(--ui-border) !important;
+  color: var(--ui-text) !important;
+}
+
+.product-reference-screen :where(
+  .product-def-photo,
+  .product-def-form,
+  .pdf-barcode-box,
+  .product-def-grid
+) {
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+  border-radius: var(--panel-radius) !important;
+}
+
+.product-reference-screen :where(
+  .product-def-title,
+  .product-def-grid-top,
+  .product-def-groupbar
+) {
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+}
+
+.product-reference-screen :where(
+  .product-def-rail-btn,
+  .product-def-cmd,
+  .pdf-plus-button,
+  .product-def-new-btn,
+  .product-def-image-loader,
+  .product-def-image-remove
+) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.product-reference-screen :where(
+  .product-def-rail-btn,
+  .product-def-cmd,
+  .pdf-plus-button,
+  .product-def-new-btn,
+  .product-def-image-loader,
+  .product-def-image-remove
+):hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+
+.product-reference-screen :where(.pdf-input, .pdf-select, .pdf-barcode-input, .product-def-grid-search) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  color: var(--ui-text) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.product-reference-screen :where(.pdf-input, .pdf-select, .pdf-barcode-input, .product-def-grid-search):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.product-reference-screen :where(.pdf-input, .pdf-select, .pdf-readonly):disabled,
+.product-reference-screen .pdf-readonly {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+.product-reference-screen .product-def-tabs .is-active {
+  border-color: var(--ui-accent) !important;
+  color: var(--ui-accent-strong) !important;
+}
+
+.product-reference-screen .product-def-cmd.is-green { color: var(--ui-success) !important; }
+.product-reference-screen .product-def-cmd.is-blue { color: var(--ui-info) !important; }
+.product-reference-screen .product-def-cmd.is-red,
+.product-reference-screen .product-def-cmd.is-red-circle,
+.product-reference-screen .product-inline-error { color: var(--ui-danger) !important; }
+
+html[data-animations='off'] .product-reference-screen * {
+  transition: none !important;
+  animation: none !important;
+}
