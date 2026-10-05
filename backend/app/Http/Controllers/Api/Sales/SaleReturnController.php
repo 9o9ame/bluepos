@@ -19,6 +19,7 @@ use App\Http\Resources\Sales\SaleReturnRefundResource;
 use App\Http\Resources\Sales\SaleReturnResource;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\SalePayment;
 use App\Models\SaleReturn;
 use App\Models\SaleReturnLine;
 use App\Tenancy\TenantContext;
@@ -313,6 +314,58 @@ class SaleReturnController extends Controller
             ];
         }
 
+        $customerSales = Sale::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
+            ->where('warehouse_id', $tenantContext->warehouseId())
+            ->where('status', SaleStatus::Posted->value)
+            ->when(
+                $sale->customer_id === null,
+                fn ($query) => $query->whereNull('customer_id'),
+                fn ($query) => $query->where('customer_id', $sale->customer_id),
+            )
+            ->sum('grand_total');
+
+        $customerReturns = SaleReturn::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
+            ->where('warehouse_id', $tenantContext->warehouseId())
+            ->where('status', SaleReturnStatus::Posted->value)
+            ->when(
+                $sale->customer_id === null,
+                fn ($query) => $query->whereNull('customer_id'),
+                fn ($query) => $query->where('customer_id', $sale->customer_id),
+            )
+            ->sum('grand_total');
+
+        $customerPayments = SalePayment::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
+            ->whereHas('sale', function ($query) use ($tenantContext, $sale): void {
+                $query
+                    ->where('warehouse_id', $tenantContext->warehouseId())
+                    ->when(
+                        $sale->customer_id === null,
+                        fn ($customerQuery) => $customerQuery->whereNull('customer_id'),
+                        fn ($customerQuery) => $customerQuery->where('customer_id', $sale->customer_id),
+                    );
+            })
+            ->sum('amount');
+
+        $previousBalance = bcsub(
+            bcsub(
+                bcadd((string) $customerSales, '0', 4),
+                bcadd((string) $customerReturns, '0', 4),
+                4,
+            ),
+            bcadd((string) $customerPayments, '0', 4),
+            4,
+        );
+
+        if (bccomp($previousBalance, '0', 4) < 0) {
+            $previousBalance = '0.0000';
+        }
+
         return response()->json([
             'sale' => [
                 'ulid' => $sale->ulid,
@@ -329,6 +382,7 @@ class SaleReturnController extends Controller
                     'name' => $sale->salesmanParty->name,
                 ] : null,
                 'grand_total' => $sale->grand_total,
+                'previous_balance' => $previousBalance,
             ],
             'data' => $rows,
         ]);
