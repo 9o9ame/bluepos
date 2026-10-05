@@ -1784,3 +1784,66 @@ html[data-animations='off'] :where(.platform-auth-page, .platform-main) * {
   --selected-row: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface));
   --hover-row: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface));
 }
+
+
+/* ---------- TENANT AUTH FORM TOKEN BRIDGE ---------- */
+.auth-card :where(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.auth-card :where(input:not([type='checkbox']):not([type='radio']), select, textarea):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.auth-card :where(input, select, textarea, button):disabled {
+  color: var(--ui-text-muted) !important;
+  opacity: .72;
+}
+
+.auth-card button {
+  border-radius: var(--control-radius) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  transition:
+    border-color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast) !important;
+}
+
+.auth-card button[type='submit'] {
+  border-color: var(--ui-accent-strong) !important;
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+}
+
+.auth-card button[type='button']:not(.appearance-menu-trigger) {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+}
+
+.auth-card button:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+}
+
+.auth-card a {
+  color: var(--ui-accent) !important;
+}
+
+.auth-card :where(.text-slate-500, .text-slate-600) {
+  color: var(--ui-text-muted) !important;
+}
+
+.auth-card .text-red-700 { color: var(--ui-danger) !important; }
+.auth-card .text-amber-800 { color: var(--ui-warning) !important; }
+
+html[data-animations='off'] .auth-card * {
+  transition: none !important;
+  animation: none !important;
+}
