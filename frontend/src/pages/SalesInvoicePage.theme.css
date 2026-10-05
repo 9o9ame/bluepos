@@ -1273,3 +1273,275 @@
   color: #444;
   padding: 0 22px 0 5px;
 }
+
+
+/* Reference-style Sales lookup grids.
+   Popups open back into the invoice card and never extend beneath the right payment panel. */
+.sales-reference-to,
+.sales-reference-salesman {
+  position: relative;
+}
+
+.sales-customer-dropdown-shutter,
+.sales-salesman-dropdown-shutter {
+  left: auto !important;
+  right: 0 !important;
+  width: min(760px, calc(100vw - 360px)) !important;
+  max-width: calc(100vw - 360px);
+}
+
+.sales-salesman-dropdown-shutter {
+  position: absolute;
+  z-index: 82;
+  top: calc(100% + 2px);
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transform-origin: top;
+  transition: max-height .24s ease, opacity .14s ease, transform .24s ease, visibility 0s linear .24s;
+}
+
+.sales-salesman-dropdown-shutter.is-open {
+  max-height: 286px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition: max-height .24s ease, opacity .14s ease, transform .24s ease, visibility 0s;
+}
+
+.sales-pos-salesman-grid {
+  width: 100%;
+  border: 1px solid #7894aa;
+  background: #fff;
+  color: #173f60;
+  box-shadow: 0 5px 12px rgba(31, 58, 78, .22);
+  font-size: 12px;
+}
+
+.sales-pos-salesman-grid-head,
+.sales-pos-salesman-grid-row {
+  display: grid !important;
+  grid-template-columns: 105px minmax(210px, 1.2fr) minmax(230px, 1.6fr) 125px;
+  align-items: center;
+}
+
+.sales-pos-salesman-grid-head {
+  min-height: 25px;
+  border-bottom: 1px solid #8fa6b7;
+  background: linear-gradient(180deg, #f9fbfc, #dce6ed);
+  color: #263e50;
+  font-weight: 700;
+  text-align: center;
+}
+
+.sales-pos-salesman-grid-head > span,
+.sales-pos-salesman-grid-row > span,
+.sales-pos-salesman-grid-row > strong {
+  display: block;
+  min-width: 0;
+  padding: 4px 7px;
+  overflow: hidden;
+  border-right: 1px solid #d8e1e7;
+  color: inherit;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sales-pos-salesman-grid-body {
+  max-height: 225px;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.sales-pos-salesman-grid-row {
+  width: 100% !important;
+  min-height: 24px !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #d1dce4 !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+  color: #173f60 !important;
+  box-shadow: none !important;
+  font: inherit !important;
+  line-height: 1.25 !important;
+  text-align: left !important;
+  cursor: pointer;
+}
+
+.sales-pos-salesman-grid-row > strong {
+  font-weight: 600;
+}
+
+.sales-pos-salesman-grid-row:hover,
+.sales-pos-salesman-grid-row:focus-visible {
+  background: #2d72b5 !important;
+  color: #fff !important;
+  outline: none !important;
+}
+
+.sales-pos-salesman-grid-foot {
+  min-height: 23px;
+  padding: 4px 8px;
+  border-top: 1px solid #8fa6b7;
+  background: linear-gradient(180deg, #e8edf1, #c9d2d9);
+  color: #263e50;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Product search suggestions use the same data-grid language as the reference app. */
+.sales-pos-product-results-grid {
+  position: absolute;
+  z-index: 950;
+  top: calc(100% - 1px);
+  left: 0;
+  width: min(820px, calc(100vw - 360px)) !important;
+  max-width: calc(100vw - 360px);
+  max-height: 310px;
+  overflow: hidden !important;
+  border: 1px solid #7894aa;
+  background: #fff;
+  color: #173f60;
+  box-shadow: 0 5px 12px rgba(31, 58, 78, .22);
+  font-size: 11px;
+}
+
+.sales-pos-product-grid-head,
+.sales-pos-product-grid-row {
+  display: grid !important;
+  grid-template-columns:
+    86px
+    132px
+    minmax(220px, 1.65fr)
+    minmax(110px, .85fr)
+    minmax(100px, .8fr)
+    65px
+    82px;
+  align-items: center;
+}
+
+.sales-pos-product-grid-head {
+  min-height: 25px;
+  border-bottom: 1px solid #8fa6b7;
+  background: linear-gradient(180deg, #f9fbfc, #dce6ed);
+  color: #263e50;
+  font-weight: 700;
+  text-align: center;
+}
+
+.sales-pos-product-grid-head > span,
+.sales-pos-product-grid-row > span,
+.sales-pos-product-grid-row > strong {
+  display: block;
+  min-width: 0;
+  padding: 4px 6px;
+  overflow: hidden;
+  border-right: 1px solid #d8e1e7;
+  color: inherit;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sales-pos-product-grid-body {
+  max-height: 250px;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.sales-pos-product-grid-row {
+  width: 100% !important;
+  min-height: 24px !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid #d1dce4 !important;
+  border-radius: 0 !important;
+  background: #fff !important;
+  color: #173f60 !important;
+  box-shadow: none !important;
+  font: inherit !important;
+  line-height: 1.25 !important;
+  text-align: left !important;
+  cursor: pointer;
+}
+
+.sales-pos-product-grid-row > strong {
+  font-weight: 650;
+}
+
+.sales-pos-product-grid-row:hover,
+.sales-pos-product-grid-row:focus-visible {
+  background: #2d72b5 !important;
+  color: #fff !important;
+  outline: none !important;
+}
+
+.sales-pos-product-grid-foot {
+  min-height: 23px;
+  padding: 4px 8px;
+  border-top: 1px solid #8fa6b7;
+  background: linear-gradient(180deg, #e8edf1, #c9d2d9);
+  color: #263e50;
+  font-weight: 700;
+  text-align: center;
+}
+
+:root[data-theme='dark'] .sales-pos-salesman-grid,
+:root[data-theme='dark'] .sales-pos-salesman-grid-body,
+:root[data-theme='dark'] .sales-pos-product-results-grid,
+:root[data-theme='dark'] .sales-pos-product-grid-body {
+  border-color: #60798c;
+  background: #202a32;
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .sales-pos-salesman-grid-head,
+:root[data-theme='dark'] .sales-pos-salesman-grid-foot,
+:root[data-theme='dark'] .sales-pos-product-grid-head,
+:root[data-theme='dark'] .sales-pos-product-grid-foot {
+  border-color: #60798c;
+  background: linear-gradient(180deg, #354652, #283640);
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .sales-pos-salesman-grid-row,
+:root[data-theme='dark'] .sales-pos-product-grid-row {
+  border-color: #40515e !important;
+  background: #202a32 !important;
+  color: #edf2f6 !important;
+}
+
+:root[data-theme='dark'] .sales-pos-salesman-grid-row:hover,
+:root[data-theme='dark'] .sales-pos-salesman-grid-row:focus-visible,
+:root[data-theme='dark'] .sales-pos-product-grid-row:hover,
+:root[data-theme='dark'] .sales-pos-product-grid-row:focus-visible {
+  background: #176dcc !important;
+  color: #fff !important;
+}
+
+@media (max-width: 1100px) {
+  .sales-customer-dropdown-shutter,
+  .sales-salesman-dropdown-shutter {
+    width: min(620px, calc(100vw - 300px)) !important;
+    max-width: calc(100vw - 300px);
+  }
+
+  .sales-pos-product-results-grid {
+    width: min(700px, calc(100vw - 300px)) !important;
+    max-width: calc(100vw - 300px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sales-salesman-dropdown-shutter {
+    transition: none;
+  }
+}
