@@ -95,4 +95,10 @@ class SaleReturn extends Model
     {
         return $this->hasMany(SaleReturnLine::class);
     }
+
+    /** @return HasMany<SaleReturnRefund, $this> */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(SaleReturnRefund::class);
+    }
 }
