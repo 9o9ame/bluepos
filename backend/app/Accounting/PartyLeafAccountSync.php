@@ -87,11 +87,15 @@ class PartyLeafAccountSync
 
         $types = PartyProfileType::query()
             ->where('party_profile_id', $profileId)
-            ->whereIn('type', ['vendor', 'customer'])
+            ->whereIn('type', ['vendor', 'customer', 'account'])
             ->pluck('type');
 
-        if ($types->contains('vendor') && $types->contains('customer')) {
-            return $code.($type === 'vendor' ? '-V' : '-C');
+        if ($types->count() > 1) {
+            return $code.match ($type) {
+                'vendor' => '-V',
+                'customer' => '-C',
+                default => '-A',
+            };
         }
 
         return $code;
