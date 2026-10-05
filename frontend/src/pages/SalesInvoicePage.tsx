@@ -17,9 +17,9 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
 import type { Product } from '../types/catalog'
-import { fetchParties, type Party } from '../api/parties'
+import { fetchParties, fetchParty, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { createSale, createSalePayment, fetchSale, fetchSalesmen } from '../api/sales'
+import { createSale, createSaleHold, createSalePayment, fetchSale, fetchSaleHolds, fetchSalesmen } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
@@ -31,7 +31,7 @@ import { useSaleCart } from '../features/sales/useSaleCart'
 import { useCan } from '../features/auth/useCan'
 import { useAuth } from '../features/auth/AuthProvider'
 import type { SaleOfferEvaluation } from '../types/saleSchemes'
-import type { Sale, SalePaymentMethod, SalePriceType } from '../types/sales'
+import type { Sale, SaleHold, SalePaymentMethod, SalePriceType } from '../types/sales'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
 import {
   SALES_INVOICE_COLUMNS,
@@ -78,6 +78,10 @@ function newSaleKey(): string {
 
 function newPaymentKey(): string {
   return `pos-payment-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function newHoldKey(): string {
+  return `pos-hold-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 function productLookupPrice(product: Product, priceType: SalePriceType): string {
@@ -158,19 +162,6 @@ export function SalesInvoicePage() {
   const [view, setView] = useState<'pos' | 'history' | 'pending'>('pos')
   const [customizationOpen, setCustomizationOpen] = useState(false)
 
-  const [heldCarts, setHeldCarts] = useState<
-    Array<{
-      id: string
-      lines: SaleDraftLine[]
-      heldAt: string
-      customerUlid: string | null
-      customer: Party | null
-      notes: string
-      priceType: SalePriceType
-      salesmanUlid: string | null
-    }>
-  >([])
-
   const canSaveRoleDefault = useCan('roles.edit')
   const canCreateSale = useCan('sales.create')
   const canCollectPayment = useCan('payments.create')
@@ -213,6 +204,13 @@ export function SalesInvoicePage() {
     queryKey: ['sales', 'salesmen', session?.branch.ulid],
     queryFn: fetchSalesmen,
     enabled: canCreateSale,
+    retry: false,
+  })
+
+  const holdsQuery = useQuery({
+    queryKey: ['sales', 'holds', session?.branch.ulid, session?.warehouse.ulid],
+    queryFn: fetchSaleHolds,
+    enabled: Boolean(session),
     retry: false,
   })
 
@@ -325,6 +323,7 @@ export function SalesInvoicePage() {
   )
 
   const idempotencyKeyRef = useRef(newSaleKey())
+  const holdIdempotencyKeyRef = useRef(newHoldKey())
   const receivedRef = useRef<HTMLInputElement | null>(null)
   const productSearchRef = useRef<HTMLInputElement | null>(null)
 
@@ -386,6 +385,56 @@ export function SalesInvoicePage() {
         err instanceof ApiClientError
           ? err.message
           : 'Unable to save the sale.',
+      )
+    },
+  })
+
+  const holdMutation = useMutation({
+    mutationFn: () =>
+      createSaleHold(
+        {
+          sale_date: saleDate,
+          customer_ulid: cart.customerUlid,
+          salesman_ulid: selectedSalesmanUlid,
+          notes: cart.notes || null,
+          price_type: cart.priceType,
+          lines: cart.lines.map((line) => ({
+            product_ulid: line.product_ulid,
+            line_kind: line.line_kind,
+            unit_ulid: line.unit_ulid ?? null,
+            scheme_ulid: line.scheme_ulid ?? null,
+            barcode: line.barcode ?? null,
+            quantity: line.quantity,
+            discount_percent: line.discount_percent ?? '0',
+            discount_amount: line.discount_amount ?? '0',
+            notes: line.notes ?? null,
+          })),
+        },
+        holdIdempotencyKeyRef.current,
+      ),
+
+    onSuccess: async () => {
+      holdIdempotencyKeyRef.current = newHoldKey()
+      setSaveError(null)
+      cart.clear()
+      setSelectedCustomer(null)
+      setSelectedSalesmanUlid(null)
+      setReceived('')
+      setPaymentReference('')
+      setProductQuery('')
+      setActiveProductQuery('')
+      setActiveProductPickerOpen(false)
+      setBarcodeQuery('')
+      setActiveLineKey(null)
+      await holdsQuery.refetch()
+      feedback.success('Sale moved to On Hold.', 'Sales Invoice')
+    },
+
+    onError: (err) => {
+      setSaveError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'Unable to place this sale on hold.',
       )
     },
   })
@@ -591,54 +640,39 @@ export function SalesInvoicePage() {
 
 
   function parkCurrentCart() {
-    if (!cart.hasPaidLines) return
-
-    setHeldCarts((held) => [
-      ...held,
-      {
-        id: `hold-${Date.now()}`,
-        lines: cart.lines,
-        heldAt: new Date().toLocaleTimeString(),
-        customerUlid: cart.customerUlid,
-        customer: selectedCustomer,
-        notes: cart.notes,
-        priceType: cart.priceType,
-        salesmanUlid: selectedSalesmanUlid,
-      },
-    ])
-
-    cart.clear()
-    setSelectedCustomer(null)
-    setReceived('')
-    setPaymentReference('')
-    setActiveProductQuery('')
-    setActiveProductPickerOpen(false)
+    if (!cart.hasPaidLines || holdMutation.isPending) return
+    holdMutation.mutate()
   }
 
-  function recallHeldCart(id: string) {
-    const held = heldCarts.find((entry) => entry.id === id)
+  async function recallHeldCart(hold: SaleHold) {
+    if (!hold.lines?.length) {
+      throw new Error('This held sale has no lines to recall.')
+    }
 
-    if (!held) return
+    const customer = hold.customer
+      ? await fetchParty(hold.customer.ulid, 'customer')
+      : null
 
     cart.restore(
-      held.lines,
-      held.notes,
-      held.customerUlid,
-      held.priceType,
+      hold.lines,
+      hold.notes ?? '',
+      hold.customer?.ulid ?? null,
+      hold.price_type,
     )
 
-    setSelectedCustomer(held.customer)
-    setSelectedSalesmanUlid(held.salesmanUlid ?? null)
-    setHeldCarts((current) =>
-      current.filter((entry) => entry.id !== id),
-    )
+    setSelectedCustomer(customer)
+    setSelectedSalesmanUlid(hold.salesman?.ulid ?? null)
+    setSaleDate(hold.sale_date ?? new Date().toISOString().slice(0, 10))
+    setSavedSale(null)
+    setReceived('')
+    setPaymentReference('')
+    setProductQuery('')
+    setActiveProductQuery('')
+    setActiveProductPickerOpen(false)
+    setBarcodeQuery('')
+    setActiveLineKey(null)
+    setSaveError(null)
     setView('pos')
-  }
-
-  function dropHeldCart(id: string) {
-    setHeldCarts((current) =>
-      current.filter((entry) => entry.id !== id),
-    )
   }
 
   function refreshScreen() {
@@ -839,7 +873,7 @@ export function SalesInvoicePage() {
               <StickyNote />
             </span>
             <span>
-              ({heldCarts.length}) Pending / Due Invoices
+              ({holdsQuery.data?.count ?? 0}) Pending / Due Invoices
             </span>
           </button>
         </nav>
@@ -847,11 +881,7 @@ export function SalesInvoicePage() {
         {view === 'history' ? (
           <SalesInvoiceHistory />
         ) : view === 'pending' ? (
-          <SalesPendingInvoices
-            heldCarts={heldCarts}
-            onRecallHeld={recallHeldCart}
-            onDiscardHeld={dropHeldCart}
-          />
+          <SalesPendingInvoices onRecallHeld={recallHeldCart} />
         ) : (
           <>
             <section className="sales-reference-meta">
@@ -1743,7 +1773,7 @@ export function SalesInvoicePage() {
               <label>
                 <input
                   type="checkbox"
-                  disabled={!cart.hasPaidLines}
+                  disabled={!cart.hasPaidLines || holdMutation.isPending}
                   checked={false}
                   onChange={() => parkCurrentCart()}
                 />
