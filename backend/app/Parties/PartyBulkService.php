@@ -107,6 +107,8 @@ class PartyBulkService
                     ]);
                 }
 
+                $this->assertLegacyBulkSafe($party);
+
                 $attrs = [];
                 if (array_key_exists('is_active', $data)) {
                     $attrs['is_active'] = (bool) $data['is_active'];
@@ -230,6 +232,7 @@ class PartyBulkService
                 $existing = $this->findByTypeCode($partyType, $payload['code'], $tenantId);
 
                 if ($existing) {
+                    $this->assertLegacyBulkSafe($existing);
                     $existing->fill($payload['attrs']);
                     $existing->updated_by = $userId;
                     $existing->save();
@@ -474,6 +477,25 @@ class PartyBulkService
             ],
             'data' => $row,
         ];
+    }
+
+    private function assertLegacyBulkSafe(Account|Supplier|Customer $party): void
+    {
+        if ($party instanceof Account || ! $party->party_profile_id) {
+            return;
+        }
+
+        $typeCount = \App\Models\PartyProfileType::query()
+            ->where('party_profile_id', $party->party_profile_id)
+            ->count();
+
+        if ($typeCount > 1) {
+            throw new ApiException(
+                'MULTI_TYPE_PARTY_REQUIRES_DETAIL_EDIT',
+                'Multi-type parties must be edited from Data Entry Details so all roles stay synchronized.',
+                422,
+            );
+        }
     }
 
     private function findParty(string $partyType, string $ulid, int $tenantId): Supplier|Customer|Account|null
