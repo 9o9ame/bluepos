@@ -3,7 +3,7 @@ import { apiBusy } from '../feedback/apiBusy'
 import { readCookie } from '../utils/cookies'
 
 export type PartyTypeApi = 'vendor' | 'customer' | 'account' | 'salesman'
-export type PartyBusinessType = 'vendor' | 'customer' | 'salesman'
+export type PartyBusinessType = 'vendor' | 'customer' | 'account' | 'salesman'
 
 export type PartyAccountType = {
   ulid: string
@@ -27,8 +27,10 @@ export type Party = {
   party_types?: PartyBusinessType[]
   vendor_ulid?: string | null
   customer_ulid?: string | null
+  account_ulid?: string | null
   vendor_account_type_ulid?: string | null
   customer_account_type_ulid?: string | null
+  account_account_type_ulid?: string | null
   code: string
   name: string
   deals_in: string | null
@@ -108,6 +110,7 @@ export type PartyProfilePayload = {
   name: string
   vendor_account_type_ulid?: string | null
   customer_account_type_ulid?: string | null
+  account_account_type_ulid?: string | null
   deals_in?: string | null
   contact_person?: string | null
   mobile?: string | null
