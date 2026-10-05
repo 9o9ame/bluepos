@@ -532,6 +532,17 @@ export function SalesInvoicePage() {
     }, 0)
   }
 
+  function reopenCompletedLine(line: SaleDraftLine) {
+    if (line.line_kind !== 'sale') return
+
+    setSaveError(null)
+    setProductQuery('')
+    setActiveLineKey(line.line_key)
+    setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
+    setActiveProductPickerOpen(false)
+    focusLineQuantity(line.line_key)
+  }
+
   function handleActiveFieldEnter(
     event: ReactKeyboardEvent<HTMLInputElement | HTMLSelectElement>,
     lineKey: string,
@@ -556,6 +567,19 @@ export function SalesInvoicePage() {
       return
     }
 
+    const line = cart.lines.find((row) => row.line_key === lineKey)
+    const quantity = Number.parseFloat(line?.quantity ?? '')
+
+    if (!line || !Number.isFinite(quantity) || quantity <= 0) {
+      setSaveError('Sale quantity must be greater than zero.')
+      feedback.error('Sale quantity must be greater than zero.', 'Sales Invoice')
+      const quantityInput = row.querySelector<HTMLInputElement>('[data-sale-field="sales_qty"]')
+      quantityInput?.focus()
+      quantityInput?.select()
+      return
+    }
+
+    setSaveError(null)
     finishActiveLine(lineKey)
   }
 
@@ -1532,7 +1556,13 @@ export function SalesInvoicePage() {
                     .map((line) => (
                     <tr
                       key={line.line_key}
-                      className={line.line_kind === 'sale' ? 'sales-pos-line' : 'sales-pos-line is-free'}
+                      className={
+                        line.line_kind === 'sale'
+                          ? 'sales-pos-line is-completed-entry'
+                          : 'sales-pos-line is-free'
+                      }
+                      title={line.line_kind === 'sale' ? 'Double-click to edit this line' : undefined}
+                      onDoubleClick={() => reopenCompletedLine(line)}
                     >
                       {columnLayout.visibleColumns.map((col) => {
                         if (col.key === 'selector') {
@@ -1550,9 +1580,10 @@ export function SalesInvoicePage() {
 
                         if (col.key === 'sales_qty') {
                           return (
-                            <td key={col.key}>
-                              <input className="sales-pos-line-qty" value={line.quantity} disabled={line.line_kind !== 'sale'}
-                                onChange={(e) => { if (line.line_kind === 'sale') cart.setQuantity(line.line_key, e.target.value) }} />
+                            <td key={col.key} className="sales-pos-line-value">
+                              {Number.parseFloat(line.quantity || '0').toFixed(
+                                line.unit_allows_decimal === false ? 0 : 3,
+                              )}
                             </td>
                           )
                         }
@@ -1572,11 +1603,19 @@ export function SalesInvoicePage() {
                         if (col.key === 'amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.grossAmount}</td>
 
                         if (col.key === 'disc_pct') {
-                          return <td key={col.key}><input className="sales-pos-line-qty" value={line.discount_percent ?? '0'} disabled={line.line_kind !== 'sale'} inputMode="decimal" onChange={(e) => cart.setDiscountPercent(line.line_key, e.target.value)} /></td>
+                          return (
+                            <td key={col.key} className="sales-pos-line-value">
+                              {Number.parseFloat(line.discount_percent ?? '0').toFixed(2)}
+                            </td>
+                          )
                         }
 
                         if (col.key === 'disc_rs') {
-                          return <td key={col.key}><input className="sales-pos-line-qty" value={line.discount_amount ?? '0'} disabled={line.line_kind !== 'sale'} inputMode="decimal" onChange={(e) => cart.setDiscountAmount(line.line_key, e.target.value)} /></td>
+                          return (
+                            <td key={col.key} className="sales-pos-line-value">
+                              {Number.parseFloat(line.discount_amount ?? '0').toFixed(2)}
+                            </td>
+                          )
                         }
 
                         if (col.key === 'net_amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.netAmount}</td>
@@ -1584,12 +1623,8 @@ export function SalesInvoicePage() {
 
                         if (col.key === 'uom') {
                           return (
-                            <td key={col.key}>
-                              {line.line_kind === 'sale' && (line.available_units?.length ?? 0) > 0 ? (
-                                <select value={line.unit_ulid ?? ''} onChange={(e) => cart.setLineUnit(line.line_key, e.target.value)} aria-label={`Unit for ${line.product_name}`}>
-                                  {(line.available_units ?? []).map((unit) => <option key={unit.unit_ulid} value={unit.unit_ulid}>{unit.code}</option>)}
-                                </select>
-                              ) : line.unit_code ?? ''}
+                            <td key={col.key} className="sales-pos-line-value">
+                              {line.unit_code ?? line.unit_symbol ?? ''}
                             </td>
                           )
                         }
