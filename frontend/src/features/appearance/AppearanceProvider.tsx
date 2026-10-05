@@ -163,6 +163,16 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   const setUserScope = useCallback(
     (userUlid: string | null, serverPreferences?: AppearancePreferences | null) => {
       setUserScopeState((current) => {
+        /*
+         * Leaving an authenticated tenant scope should keep the currently
+         * selected appearance active on login/platform surfaces. The normal
+         * persistence effect then mirrors it into the guest scope. A newly
+         * authenticated user still replaces it with that user's server prefs.
+         */
+        if (userUlid === null && current !== null && !serverPreferences) {
+          return null
+        }
+
         const nextPreferences = serverPreferences ?? readStoredPreferences(userUlid)
 
         if (current !== userUlid || serverPreferences) {
