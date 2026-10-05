@@ -1436,3 +1436,24 @@ html[data-animations='off'] .bp-workspace * {
   transition: none !important;
   animation: none !important;
 }
+
+
+/* ---------- BARCODE FINAL TOKEN CLEANUP ---------- */
+.bp-workspace-scroll {
+  background: var(--ui-bg) !important;
+}
+
+.bp-group,
+.bp-left-actions {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.bp-error {
+  border-color: color-mix(in srgb, var(--ui-danger) 65%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-danger) 10%, var(--ui-surface)) !important;
+  color: var(--ui-danger) !important;
+  border-radius: var(--control-radius) !important;
+}
