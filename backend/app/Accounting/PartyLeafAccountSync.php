@@ -12,7 +12,26 @@ class PartyLeafAccountSync
     {
         if (! $supplier->account_type_id) {
             throw new \InvalidArgumentException('Supplier requires account_type_id for leaf account sync.');
+        
+
+    private function leafCode(string $code, ?int $profileId, string $type): string
+    {
+        if (! $profileId) {
+            return $code;
         }
+
+        $types = \App\Models\PartyProfileType::query()
+            ->where('party_profile_id', $profileId)
+            ->whereIn('type', ['vendor', 'customer'])
+            ->pluck('type');
+
+        if ($types->contains('vendor') && $types->contains('customer')) {
+            return $code.($type === 'vendor' ? '-V' : '-C');
+        }
+
+        return $code;
+    }
+}
 
         $account = Account::query()
             ->forTenant((int) $supplier->tenant_id)
@@ -21,7 +40,7 @@ class PartyLeafAccountSync
 
         $payload = [
             'tenant_id' => $supplier->tenant_id,
-            'code' => $supplier->code,
+            'code' => $this->leafCode($supplier->code, $supplier->party_profile_id, 'vendor'),
             'name' => $supplier->name,
             'address' => $supplier->address,
             'account_type_id' => $supplier->account_type_id,
@@ -56,7 +75,7 @@ class PartyLeafAccountSync
 
         $payload = [
             'tenant_id' => $customer->tenant_id,
-            'code' => $customer->code,
+            'code' => $this->leafCode($customer->code, $customer->party_profile_id, 'customer'),
             'name' => $customer->name,
             'address' => $customer->address,
             'account_type_id' => $customer->account_type_id,
