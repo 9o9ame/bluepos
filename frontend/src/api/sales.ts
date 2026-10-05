@@ -25,6 +25,7 @@ export function fetchSales(
     q?: string
     salesman_ulid?: string
     status?: 'posted' | 'void'
+    due_only?: boolean
   } = {},
 ) {
   const search = new URLSearchParams()
@@ -35,6 +36,7 @@ export function fetchSales(
   if (params.q) search.set('q', params.q)
   if (params.salesman_ulid) search.set('salesman_ulid', params.salesman_ulid)
   if (params.status) search.set('status', params.status)
+  if (params.due_only) search.set('due_only', '1')
   const query = search.toString()
 
   return apiFetch<{
