@@ -794,7 +794,9 @@ export function SalesInvoicePage() {
     saveMutation.isPending || collectPaymentMutation.isPending
 
   return (
-    <div className="sales-reference-screen">
+    <div
+      className={`sales-reference-screen${view !== 'pos' ? ' is-full-workspace-view' : ''}`}
+    >
       <main className="sales-reference-main">
         <nav
           className="sales-reference-subtabs"
