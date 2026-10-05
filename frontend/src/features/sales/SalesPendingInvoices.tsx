@@ -1,36 +1,30 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Eye, Printer, RotateCcw, Search } from 'lucide-react'
-import type { Party } from '../../api/parties'
-import { fetchSale, fetchSales, fetchSalesmen } from '../../api/sales'
+import { deleteSaleHold, fetchSale, fetchSaleHold, fetchSaleHolds, fetchSales, fetchSalesmen } from '../../api/sales'
 import { useCan } from '../auth/useCan'
-import type { Sale, SaleDraftLine } from '../../types/sales'
+import { useAuth } from '../auth/AuthProvider'
+import { useFeedback } from '../../feedback/FeedbackProvider'
+import type { Sale, SaleHold } from '../../types/sales'
 import { SalePaymentPanel } from './SalePaymentPanel'
 import { previewSaleReceipt, printSaleReceipt } from './saleReceipt'
 
-type HeldCart = {
-  id: string
-  lines: SaleDraftLine[]
-  heldAt: string
-  customer: Party | null
+type Props = {
+  onRecallHeld: (hold: SaleHold) => Promise<void> | void
 }
 
-type Props = {
-  heldCarts: HeldCart[]
-  onRecallHeld: (id: string) => void
-  onDiscardHeld: (id: string) => void
-}
 
 function money(value: string | null | undefined): string {
   return (Number.parseFloat(value ?? '0') || 0).toFixed(2)
 }
 
 export function SalesPendingInvoices({
-  heldCarts,
   onRecallHeld,
-  onDiscardHeld,
 }: Props) {
   const canCollectPayment = useCan('payments.create')
+  const { session } = useAuth()
+  const feedback = useFeedback()
+  const [holdBusyUlid, setHoldBusyUlid] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [searchText, setSearchText] = useState('')
   const search = useDeferredValue(searchText.trim())
@@ -38,6 +32,13 @@ export function SalesPendingInvoices({
   const [dateTo, setDateTo] = useState('')
   const [salesmanUlid, setSalesmanUlid] = useState('')
   const [openUlid, setOpenUlid] = useState<string | null>(null)
+
+  const holdsQuery = useQuery({
+    queryKey: ['sales', 'holds', session?.branch.ulid, session?.warehouse.ulid],
+    queryFn: fetchSaleHolds,
+    enabled: Boolean(session),
+    retry: false,
+  })
 
   const salesmenQuery = useQuery({
     queryKey: ['sales', 'pending', 'salesmen'],
@@ -100,20 +101,67 @@ export function SalesPendingInvoices({
     setPage(1)
   }
 
+  async function recallHold(holdUlid: string) {
+    if (holdBusyUlid) return
+
+    setHoldBusyUlid(holdUlid)
+    try {
+      const hold = await fetchSaleHold(holdUlid)
+      await onRecallHeld(hold)
+
+      try {
+        await deleteSaleHold(holdUlid)
+        await holdsQuery.refetch()
+      } catch {
+        feedback.error(
+          'The sale was recalled, but its server hold could not be removed. It is still safe in On Hold.',
+          'On Hold',
+        )
+      }
+    } catch (err) {
+      feedback.error(
+        err instanceof Error ? err.message : 'Unable to recall this held sale.',
+        'On Hold',
+      )
+    } finally {
+      setHoldBusyUlid(null)
+    }
+  }
+
+  async function discardHold(holdUlid: string) {
+    if (holdBusyUlid) return
+
+    setHoldBusyUlid(holdUlid)
+    try {
+      await deleteSaleHold(holdUlid)
+      await holdsQuery.refetch()
+      feedback.success('Held sale discarded.', 'On Hold')
+    } catch (err) {
+      feedback.error(
+        err instanceof Error ? err.message : 'Unable to discard this held sale.',
+        'On Hold',
+      )
+    } finally {
+      setHoldBusyUlid(null)
+    }
+  }
+
   return (
     <section className="sales-pending-view" aria-label="Pending and due invoices">
       <section className="sales-hold-section">
         <header className="sales-pending-section-head">
           <div>
-            <span className="sales-pending-kicker">LOCAL HOLD</span>
+            <span className="sales-pending-kicker">PERSISTENT HOLD</span>
             <h3>On Hold</h3>
           </div>
-          <strong>{heldCarts.length}</strong>
+          <strong>{holdsQuery.data?.count ?? 0}</strong>
         </header>
 
-        {heldCarts.length === 0 ? (
+        {(holdsQuery.data?.data.length ?? 0) === 0 ? (
           <div className="sales-pending-empty">
-            No locally held carts in this session.
+            {holdsQuery.isFetching
+              ? 'Loading held sales…'
+              : 'No held sales for this branch and warehouse.'}
           </div>
         ) : (
           <div className="sales-pending-grid-wrap">
@@ -127,21 +175,24 @@ export function SalesPendingInvoices({
                 </tr>
               </thead>
               <tbody>
-                {heldCarts.map((entry) => (
-                  <tr key={entry.id}>
-                    <td>{entry.heldAt}</td>
+                {(holdsQuery.data?.data ?? []).map((entry) => (
+                  <tr key={entry.ulid}>
+                    <td>{entry.held_at ? new Date(entry.held_at).toLocaleString() : '—'}</td>
                     <td>{entry.customer?.name ?? 'CASH IN HAND'}</td>
-                    <td className="num">
-                      {entry.lines.filter((line) => line.line_kind === 'sale').length}
-                    </td>
+                    <td className="num">{entry.sale_line_count}</td>
                     <td className="sales-pending-actions">
-                      <button type="button" onClick={() => onRecallHeld(entry.id)}>
-                        Recall
+                      <button
+                        type="button"
+                        disabled={holdBusyUlid === entry.ulid}
+                        onClick={() => void recallHold(entry.ulid)}
+                      >
+                        {holdBusyUlid === entry.ulid ? 'Working…' : 'Recall'}
                       </button>
                       <button
                         type="button"
                         className="is-danger"
-                        onClick={() => onDiscardHeld(entry.id)}
+                        disabled={holdBusyUlid === entry.ulid}
+                        onClick={() => void discardHold(entry.ulid)}
                       >
                         Discard
                       </button>
