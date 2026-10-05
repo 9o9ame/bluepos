@@ -21,7 +21,6 @@ use App\Models\SaleReturnLine;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class SaleReturnController extends Controller
 {
@@ -367,8 +366,8 @@ class SaleReturnController extends Controller
                     'ulid' => $line->product->category->ulid,
                     'name' => $line->product->category->name,
                 ] : null,
-                'quantity_in' => '0.000000',
-                'quantity_out' => $line->quantity,
+                'quantity_in' => $line->quantity,
+                'quantity_out' => '0.000000',
                 'amount' => $line->line_total,
             ];
         })->values();
