@@ -136,6 +136,10 @@ class PartyProfileController extends Controller
             $this->authorize('viewAny', Customer::class);
             return;
         }
+        if ($type === 'account') {
+            $this->authorize('viewAny', Account::class);
+            return;
+        }
         if ($type === 'salesman') {
             abort_unless(
                 $permissions->can('customers.view') || $permissions->can('suppliers.view') || $permissions->can('sales.create'),
