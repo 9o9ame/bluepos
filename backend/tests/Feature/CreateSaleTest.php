@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\StockBalance;
+use App\Models\Warehouse;
+use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -332,6 +335,88 @@ class CreateSaleTest extends TestCase
         $this->getJson('/api/sales?date_from=2026-09-01&date_to=2026-10-31')
             ->assertOk()
             ->assertJsonCount(2, 'data');
+    }
+
+    public function test_posted_sales_search_returns_payment_summary(): void
+    {
+        $this->signInOwner('sale-history-summary')->assertOk();
+        $product = $this->createProduct('History Search Item', ['retail' => '100.0000']);
+        $this->giveStock($product, '10');
+
+        $sale = $this->postJson('/api/sales', [
+            'items' => [['product_ulid' => $product, 'quantity' => '1']],
+        ], $this->idem('sale-history-summary-create'))->assertCreated();
+
+        $saleUlid = (string) $sale->json('ulid');
+        $documentNumber = (string) $sale->json('document_number');
+
+        $this->postJson('/api/sales/'.$saleUlid.'/payments', [
+            'amount' => '40.0000',
+            'method' => 'cash',
+        ], $this->idem('sale-history-summary-payment'))->assertCreated();
+
+        $this->getJson('/api/sales?q='.urlencode($documentNumber))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.ulid', $saleUlid)
+            ->assertJsonPath('data.0.paid_amount', '40.0000')
+            ->assertJsonPath('data.0.balance_due', '60.0000');
+
+        $this->getJson('/api/sales/'.$saleUlid)
+            ->assertOk()
+            ->assertJsonPath('paid_amount', '40.0000')
+            ->assertJsonPath('balance_due', '60.0000');
+    }
+
+    public function test_posted_sales_list_and_detail_are_scoped_to_active_branch(): void
+    {
+        $this->signInOwner('sale-history-branch')->assertOk();
+
+        $context = app(TenantContext::class);
+
+        $otherBranch = Branch::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => 'OTHER',
+            'name' => 'Other Branch',
+            'status' => 'active',
+            'is_default' => false,
+        ]);
+
+        $otherWarehouse = Warehouse::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $otherBranch->id,
+            'code' => 'OTHER-WH',
+            'name' => 'Other Warehouse',
+            'status' => 'active',
+            'is_default' => true,
+        ]);
+
+        $foreignBranchSale = Sale::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $otherBranch->id,
+            'warehouse_id' => $otherWarehouse->id,
+            'customer_id' => null,
+            'document_number' => 'S-OTHER-BRANCH-001',
+            'status' => 'posted',
+            'sale_date' => '2026-10-05',
+            'price_type' => 'retail',
+            'subtotal' => '10.0000',
+            'discount_amount' => '0.0000',
+            'tax_amount' => '0.0000',
+            'grand_total' => '10.0000',
+            'notes' => null,
+            'idempotency_key' => 'sale-history-other-branch',
+            'created_by' => $context->userId(),
+            'updated_by' => $context->userId(),
+            'posted_at' => now(),
+        ]);
+
+        $this->getJson('/api/sales?q=S-OTHER-BRANCH-001')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->getJson('/api/sales/'.$foreignBranchSale->ulid)
+            ->assertNotFound();
     }
 
     public function test_sale_from_another_tenant_product_is_not_found(): void
