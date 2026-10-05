@@ -14,9 +14,9 @@
   padding-right: 28px !important;
   background-image: none !important;
   background: linear-gradient(180deg, #ffffff 0%, #eaf3fb 100%) !important;
-  border: 1px solid #8fb0c8 !important;
+  border: 1px solid var(--appearance-border) !important;
   border-radius: 7px !important;
-  color: #1a4568 !important;
+  color: var(--appearance-text) !important;
   font-weight: 700;
   cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
@@ -27,14 +27,14 @@
 }
 
 .vca-select-shell > .vca-select:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 60%, #8fb0c8) !important;
+  border-color: color-mix(in srgb, var(--appearance-accent) 60%, var(--appearance-border)) !important;
   background: linear-gradient(180deg, #f7fbff 0%, #d7eafb 100%) !important;
 }
 
 .vca-select-shell > .vca-select:focus {
   outline: none;
-  border-color: var(--focus-ring, var(--brand-blue-hot, #0f7dcc)) !important;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-blue-hot, #0f7dcc) 28%, transparent);
+  border-color: var(--focus-ring, var(--appearance-accent)) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--appearance-accent) 28%, transparent);
 }
 
 .vca-select-shell > .vca-select:disabled {
@@ -55,8 +55,8 @@
   height: 16px;
   margin: 0;
   border-radius: 5px;
-  border: 1px solid #5fa3d4;
-  background: linear-gradient(180deg, #7ec8ff, #1769aa);
+  border: 1px solid color-mix(in srgb, var(--appearance-accent) 72%, var(--appearance-border));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--appearance-accent) 58%, white), var(--appearance-accent));
   color: #fff;
   pointer-events: none;
   box-shadow:
@@ -81,18 +81,18 @@
 
 :root[data-theme='dark'] .vca-select-shell > .vca-select {
   background: linear-gradient(180deg, #2a3640, #1a2229) !important;
-  border-color: #4f6578 !important;
-  color: #edf2f6 !important;
+  border-color: var(--appearance-border) !important;
+  color: var(--appearance-text) !important;
 }
 
 :root[data-theme='dark'] .vca-select-shell > .vca-select:hover:not(:disabled) {
   background: linear-gradient(180deg, #31404c, #24303a) !important;
-  border-color: #5f7a90 !important;
+  border-color: color-mix(in srgb, var(--appearance-accent) 55%, var(--appearance-border)) !important;
 }
 
 :root[data-theme='dark'] .vca-select-caret {
-  border-color: #5fa3d4;
-  background: linear-gradient(180deg, #4aa3e0, #1769aa);
+  border-color: color-mix(in srgb, var(--appearance-accent) 72%, var(--appearance-border));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--appearance-accent) 72%, white), var(--appearance-accent));
   color: #fff;
 }
 
@@ -100,4 +100,19 @@
   .vca-select-caret {
     transition: none;
   }
+}
+
+
+:root[data-radius] .vca-select-shell > .vca-select,
+:root[data-radius] .vca-select-caret {
+  border-radius: var(--control-radius) !important;
+}
+
+:root[data-shadow] .vca-select-shell > .vca-select {
+  box-shadow: var(--button-shadow) !important;
+}
+
+:root[data-animations='off'] .vca-select-caret,
+:root[data-animations='off'] .vca-select-shell > .vca-select {
+  transition: none !important;
 }
