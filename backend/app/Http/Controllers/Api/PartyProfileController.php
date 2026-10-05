@@ -166,6 +166,18 @@ class PartyProfileController extends Controller
             }
 
             if ($type === 'salesman') {
+                if ($ability === 'view') {
+                    abort_unless(
+                        $permissions->can('sales.create')
+                            || $permissions->can('customers.view')
+                            || $permissions->can('suppliers.view')
+                            || $permissions->can('customers.manage')
+                            || $permissions->can('suppliers.manage'),
+                        403
+                    );
+                    continue;
+                }
+
                 abort_unless(
                     $permissions->can('customers.manage')
                         || $permissions->can('suppliers.manage')
