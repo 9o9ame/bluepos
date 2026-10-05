@@ -13,6 +13,7 @@ use App\Models\BusinessSetting;
 use App\Models\Customer;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
+use App\Models\Sale;
 use App\Models\SalePayment;
 use App\Models\SaleReturn;
 use App\Models\SaleReturnRefund;
@@ -102,38 +103,36 @@ class RefundSaleReturnAction
                 ]);
             }
 
-            if ($method !== SalePaymentMethod::Credit) {
-                $collectedByMethod = bcadd(
-                    (string) SalePayment::query()
-                        ->where('tenant_id', $tenantId)
-                        ->where('sale_id', $document->sale_id)
-                        ->where('method', $method->value)
-                        ->sum('amount'),
-                    '0',
-                    4,
-                );
+            $collectedByMethod = bcadd(
+                (string) SalePayment::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('sale_id', $document->sale_id)
+                    ->where('method', $method->value)
+                    ->sum('amount'),
+                '0',
+                4,
+            );
 
-                $alreadyRefundedByMethod = bcadd(
-                    (string) SaleReturnRefund::query()
-                        ->where('tenant_id', $tenantId)
-                        ->where('method', $method->value)
-                        ->whereHas('saleReturn', fn ($query) => $query->where('sale_id', $document->sale_id))
-                        ->sum('amount'),
-                    '0',
-                    4,
-                );
+            $alreadyRefundedByMethod = bcadd(
+                (string) SaleReturnRefund::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('method', $method->value)
+                    ->whereHas('saleReturn', fn ($query) => $query->where('sale_id', $document->sale_id))
+                    ->sum('amount'),
+                '0',
+                4,
+            );
 
-                $availableByMethod = bcsub($collectedByMethod, $alreadyRefundedByMethod, 4);
-                if (bccomp($availableByMethod, '0', 4) < 0) {
-                    $availableByMethod = '0.0000';
-                }
+            $availableByMethod = bcsub($collectedByMethod, $alreadyRefundedByMethod, 4);
+            if (bccomp($availableByMethod, '0', 4) < 0) {
+                $availableByMethod = '0.0000';
+            }
 
-                if (bccomp($amount, $availableByMethod, 4) > 0) {
-                    throw ValidationException::withMessages([
-                        'amount' => ucfirst($method->value).' refund cannot exceed the unrefunded '
-                            .$method->value.' payment amount of '.$availableByMethod.'.',
-                    ]);
-                }
+            if (bccomp($amount, $availableByMethod, 4) > 0) {
+                throw ValidationException::withMessages([
+                    'amount' => ucfirst($method->value).' refund cannot exceed the unrefunded '
+                        .$method->value.' payment amount of '.$availableByMethod.'.',
+                ]);
             }
 
             [$debitAccount, $creditAccount] = $this->resolveAccounts($document, $method);
@@ -200,14 +199,72 @@ class RefundSaleReturnAction
 
     public function refundableAmount(SaleReturn $document): string
     {
-        $refunded = (string) SaleReturnRefund::query()
-            ->where('tenant_id', (int) $document->tenant_id)
-            ->where('sale_return_id', $document->id)
-            ->sum('amount');
+        $tenantId = (int) $document->tenant_id;
 
-        $remaining = bcsub((string) $document->grand_total, $refunded, 4);
+        $sale = Sale::query()
+            ->forTenant($tenantId)
+            ->whereKey($document->sale_id)
+            ->first();
 
-        return bccomp($remaining, '0', 4) < 0 ? '0.0000' : $remaining;
+        if (! $sale) {
+            return '0.0000';
+        }
+
+        $paid = bcadd(
+            (string) SalePayment::query()
+                ->where('tenant_id', $tenantId)
+                ->where('sale_id', $sale->id)
+                ->sum('amount'),
+            '0',
+            4,
+        );
+
+        $postedReturns = bcadd(
+            (string) SaleReturn::query()
+                ->where('tenant_id', $tenantId)
+                ->where('sale_id', $sale->id)
+                ->where('status', SaleReturnStatus::Posted->value)
+                ->sum('grand_total'),
+            '0',
+            4,
+        );
+
+        $netSale = bcsub((string) $sale->grand_total, $postedReturns, 4);
+        if (bccomp($netSale, '0', 4) < 0) {
+            $netSale = '0.0000';
+        }
+
+        $allRefunded = bcadd(
+            (string) SaleReturnRefund::query()
+                ->where('tenant_id', $tenantId)
+                ->whereHas('saleReturn', fn ($query) => $query->where('sale_id', $sale->id))
+                ->sum('amount'),
+            '0',
+            4,
+        );
+
+        $overpaymentRemaining = bcsub(bcsub($paid, $netSale, 4), $allRefunded, 4);
+        if (bccomp($overpaymentRemaining, '0', 4) < 0) {
+            $overpaymentRemaining = '0.0000';
+        }
+
+        $thisReturnRefunded = bcadd(
+            (string) SaleReturnRefund::query()
+                ->where('tenant_id', $tenantId)
+                ->where('sale_return_id', $document->id)
+                ->sum('amount'),
+            '0',
+            4,
+        );
+
+        $thisReturnRemaining = bcsub((string) $document->grand_total, $thisReturnRefunded, 4);
+        if (bccomp($thisReturnRemaining, '0', 4) < 0) {
+            $thisReturnRemaining = '0.0000';
+        }
+
+        return bccomp($thisReturnRemaining, $overpaymentRemaining, 4) <= 0
+            ? $thisReturnRemaining
+            : $overpaymentRemaining;
     }
 
     /**
