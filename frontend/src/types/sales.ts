@@ -67,6 +67,8 @@ export type Sale = {
   discount_amount: string
   tax_amount: string
   grand_total: string
+  returned_amount: string
+  net_sale_total: string
   paid_amount: string
   balance_due: string
   notes: string | null
