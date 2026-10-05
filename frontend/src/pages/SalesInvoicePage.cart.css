@@ -1672,3 +1672,230 @@
     max-height: 135px;
   }
 }
+
+
+/* ==========================================================================
+   Posted invoice compact toolbar + overlay detail.
+   Totals live inside the filter card and the selected invoice opens over the
+   list instead of consuming additional page height.
+   ========================================================================== */
+.sales-posted-history .sales-history-toolbar {
+  align-items: center;
+}
+
+.sales-posted-history .sales-history-toolbar-summary {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.sales-posted-history .sales-history-toolbar-summary > div {
+  display: grid;
+  min-width: 78px;
+  padding: 2px 6px;
+  border: 1px solid #a1b6c4;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #fff 0%, #e7edf1 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.92);
+  text-align: right;
+}
+
+.sales-posted-history .sales-history-toolbar-summary span {
+  color: #6a7e8c;
+  font-size: 7px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: .25px;
+}
+
+.sales-posted-history .sales-history-toolbar-summary strong {
+  margin-top: 1px;
+  color: #173f5c;
+  font-size: 11px;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-posted-history .sales-history-toolbar-summary .is-paid {
+  border-color: #79ad87;
+  background: linear-gradient(180deg, #f8fff9 0%, #d9efdf 100%);
+}
+
+.sales-posted-history .sales-history-toolbar-summary .is-paid strong {
+  color: #187237;
+}
+
+.sales-posted-history .sales-history-toolbar-summary .is-due {
+  border-color: #d7a26e;
+  background: linear-gradient(180deg, #fffdf8 0%, #f5e2cb 100%);
+}
+
+.sales-posted-history .sales-history-toolbar-summary .is-due strong {
+  color: #a6530c;
+}
+
+.sales-posted-history .sales-history-count {
+  margin-left: 2px;
+}
+
+.sales-posted-history .sales-history-body {
+  position: relative;
+}
+
+.sales-posted-history .sales-history-detail {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: none;
+  margin: 0;
+  padding: 6px;
+  overflow: hidden;
+  border: 1px solid #6f93ac;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #fbfdff 0%, #edf4f8 100%);
+  box-shadow:
+    0 10px 28px rgba(31, 60, 82, .24),
+    inset 0 1px 0 rgba(255,255,255,.92);
+}
+
+.sales-posted-history .sales-history-detail-head {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #b7c8d4;
+}
+
+.sales-posted-history .sales-history-detail-identity {
+  flex: 0 1 220px;
+  min-width: 145px;
+  overflow: hidden;
+}
+
+.sales-posted-history .sales-history-detail-identity h3 {
+  margin: 0;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 1.05;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sales-posted-history .sales-history-detail-identity p {
+  margin: 1px 0 0;
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.15;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sales-posted-history .sales-history-detail-kicker {
+  font-size: 7px;
+  line-height: 1;
+}
+
+.sales-posted-history .sales-history-detail-totals {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(6, minmax(74px, 1fr));
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
+}
+
+.sales-posted-history .sales-history-detail-totals > div {
+  display: grid;
+  min-width: 0;
+  padding: 2px 5px;
+  border: 1px solid #a1b6c4;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #fff 0%, #e7edf1 100%);
+  text-align: right;
+}
+
+.sales-posted-history .sales-history-detail-totals span {
+  font-size: 7px;
+  line-height: 1;
+}
+
+.sales-posted-history .sales-history-detail-totals strong {
+  margin-top: 1px;
+  font-size: 10px;
+  line-height: 1.05;
+}
+
+.sales-posted-history .sales-history-detail-actions {
+  flex: 0 0 auto;
+  gap: 3px;
+  margin-left: 2px;
+}
+
+.sales-posted-history .sales-history-detail-actions button {
+  min-height: 25px;
+  padding: 0 7px;
+}
+
+.sales-posted-history .sales-history-detail-grid-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+}
+
+.sales-posted-history .sales-history-payments,
+.sales-posted-history .sales-history-notes {
+  flex: 0 0 auto;
+}
+
+:root[data-theme='dark'] .sales-posted-history .sales-history-toolbar-summary > div,
+:root[data-theme='dark'] .sales-posted-history .sales-history-detail-totals > div {
+  border-color: #4e6473;
+  background: linear-gradient(180deg, #2c3942 0%, #242f37 100%);
+}
+
+:root[data-theme='dark'] .sales-posted-history .sales-history-toolbar-summary strong,
+:root[data-theme='dark'] .sales-posted-history .sales-history-detail-totals strong {
+  color: #edf4f8;
+}
+
+:root[data-theme='dark'] .sales-posted-history .sales-history-detail {
+  border-color: #496b82;
+  background: linear-gradient(180deg, #27343d 0%, #202a32 100%);
+  box-shadow: 0 12px 30px rgba(0,0,0,.48);
+}
+
+:root[data-theme='dark'] .sales-posted-history .sales-history-detail-head {
+  border-bottom-color: #405766;
+}
+
+@media (max-width: 1250px) {
+  .sales-posted-history .sales-history-toolbar-summary {
+    order: 10;
+    width: auto;
+    margin-left: 0;
+  }
+
+  .sales-posted-history .sales-history-detail-head {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .sales-posted-history .sales-history-detail-identity {
+    flex-basis: 180px;
+  }
+
+  .sales-posted-history .sales-history-detail-totals {
+    grid-template-columns: repeat(3, minmax(72px, 1fr));
+  }
+
+  .sales-posted-history .sales-history-detail-actions {
+    margin-left: auto;
+  }
+}
