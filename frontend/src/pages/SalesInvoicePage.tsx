@@ -19,7 +19,7 @@ import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts }
 import type { Product } from '../types/catalog'
 import { fetchParties, fetchParty, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { createSale, createSaleHold, createSalePayment, fetchSale, fetchSaleHolds, fetchSalesmen } from '../api/sales'
+import { createSale, createSaleHold, createSalePayment, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSalesmen } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
@@ -180,6 +180,7 @@ export function SalesInvoicePage() {
   const [activeLineKey, setActiveLineKey] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [savedSale, setSavedSale] = useState<Sale | null>(null)
+  const [recalledHoldUlid, setRecalledHoldUlid] = useState<string | null>(null)
 
   const [received, setReceived] = useState('')
   const [paymentMethod, setPaymentMethod] =
@@ -357,6 +358,20 @@ export function SalesInvoicePage() {
 
       idempotencyKeyRef.current = newSaleKey()
 
+      if (recalledHoldUlid) {
+        const recalledUlid = recalledHoldUlid
+        setRecalledHoldUlid(null)
+
+        void deleteSaleHold(recalledUlid)
+          .then(() => holdsQuery.refetch())
+          .catch(() => {
+            feedback.error(
+              'Sale posted, but its old recovery hold could not be removed. You may discard that hold manually.',
+              'On Hold',
+            )
+          })
+      }
+
       /*
        * If salesman entered Received before pressing Sale,
        * actually collect that payment after the sale is created.
@@ -416,6 +431,19 @@ export function SalesInvoicePage() {
     onSuccess: async () => {
       holdIdempotencyKeyRef.current = newHoldKey()
       setSaveError(null)
+
+      if (recalledHoldUlid) {
+        const previousHold = recalledHoldUlid
+        setRecalledHoldUlid(null)
+        try {
+          await deleteSaleHold(previousHold)
+        } catch {
+          feedback.error(
+            'A new hold was saved, but the previous recovery hold could not be removed. You may discard the older copy manually.',
+            'On Hold',
+          )
+        }
+      }
       cart.clear()
       setSelectedCustomer(null)
       setSelectedSalesmanUlid(null)
@@ -664,6 +692,7 @@ export function SalesInvoicePage() {
     setSelectedSalesmanUlid(hold.salesman?.ulid ?? null)
     setSaleDate(hold.sale_date ?? new Date().toISOString().slice(0, 10))
     setSavedSale(null)
+    setRecalledHoldUlid(hold.ulid)
     setReceived('')
     setPaymentReference('')
     setProductQuery('')
@@ -1773,7 +1802,7 @@ export function SalesInvoicePage() {
               <label>
                 <input
                   type="checkbox"
-                  disabled={!cart.hasPaidLines || holdMutation.isPending}
+                  disabled={!canCreateSale || !cart.hasPaidLines || holdMutation.isPending}
                   checked={false}
                   onChange={() => parkCurrentCart()}
                 />
