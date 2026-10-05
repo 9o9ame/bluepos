@@ -69,6 +69,8 @@ class SaleController extends Controller
                 'ulid' => $profile->ulid,
                 'code' => $profile->code,
                 'name' => $profile->name,
+                'address' => $profile->address,
+                'mobile' => $profile->mobile ?: $profile->phone,
             ])
             ->all();
     }
