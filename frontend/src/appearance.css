@@ -1693,9 +1693,17 @@ html[data-animations='off'] #root :where(
   color: #fff !important;
 }
 
+.platform-main .border-red-700 {
+  border-color: var(--ui-danger) !important;
+}
+
 .platform-main .bg-emerald-700 {
   background-color: var(--ui-success) !important;
   color: #fff !important;
+}
+
+.platform-main .bg-slate-950\/40 {
+  background-color: color-mix(in srgb, var(--ui-text) 40%, transparent) !important;
 }
 
 .platform-main .bg-amber-500 {
