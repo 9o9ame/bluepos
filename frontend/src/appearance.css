@@ -1745,3 +1745,42 @@ html[data-animations='off'] :where(.platform-auth-page, .platform-main) * {
   transition: none !important;
   animation: none !important;
 }
+
+
+/* ---------- LEGACY VARIABLE TOKEN BRIDGE ---------- */
+/*
+ * index.css still contains legacy desktop variables. Rebind them here so
+ * existing page layouts inherit the current Theme & Appearance settings
+ * without rewriting their structure.
+ */
+:root {
+  --app-chrome: var(--ui-surface-subtle);
+  --titlebar-bg: var(--ui-surface);
+  --titlebar-bg-2: var(--ui-surface-subtle);
+  --titlebar-text: var(--ui-text);
+  --ribbon-bg: var(--ui-surface-subtle);
+  --ribbon-bg-2: var(--ui-surface-muted);
+  --ribbon-selected: var(--ui-surface);
+  --ribbon-tab-idle: var(--ui-surface-subtle);
+  --ribbon-border: var(--ui-border);
+  --workspace-bg: var(--ui-bg);
+  --workspace-tab-bg: var(--ui-surface-muted);
+  --panel-border: var(--ui-border);
+  --panel-header-1: var(--ui-surface);
+  --panel-header-2: var(--ui-surface-subtle);
+  --grid-header: color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface));
+  --grid-header-2: color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface-subtle));
+  --grid-border: var(--ui-border);
+  --statusbar-bg: var(--ui-surface-subtle);
+  --statusbar-bg-2: var(--ui-surface-muted);
+  --text-main: var(--ui-text);
+  --text-muted: var(--ui-text-muted);
+  --danger: var(--ui-danger);
+  --focus-ring: var(--ui-accent);
+  --input-bg: var(--ui-surface);
+  --input-border: var(--ui-border);
+  --disabled-fg: var(--ui-text-muted);
+  --pay-panel: var(--ui-surface-subtle);
+  --selected-row: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface));
+  --hover-row: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface));
+}
