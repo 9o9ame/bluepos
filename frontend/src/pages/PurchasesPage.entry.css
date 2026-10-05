@@ -993,3 +993,119 @@
   background: #151a1f;
   border-color: #4d5862;
 }
+
+
+/* ---------- PURCHASES DESIGN SYSTEM MIGRATION ---------- */
+.purchase-reference-screen,
+.purchase-entry-screen {
+  color: var(--ui-text) !important;
+}
+
+.pie-panel,
+.pie-items,
+.pie-bottom,
+.purchase-reference-grid-wrap {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+  border-radius: var(--panel-radius) !important;
+}
+
+.pie-panel-head,
+.pie-items-toolbar,
+.pie-bottom-mock {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+  color: var(--ui-text) !important;
+}
+
+.pie-btn,
+.pie-discount-apply,
+.pie-supplier-actions button,
+.pie-record-nav button {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  transition:
+    border-color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast) !important;
+}
+
+.pie-btn:hover:not(:disabled),
+.pie-discount-apply:hover:not(:disabled),
+.pie-supplier-actions button:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+
+.pie-btn.is-save,
+.pie-btn.is-post {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+}
+
+.pie-btn.is-new { color: var(--ui-info) !important; }
+.pie-btn.is-close,
+.pie-btn.is-danger-ghost,
+.pie-error { color: var(--ui-danger) !important; }
+.pie-btn.is-print { color: var(--ui-success) !important; }
+
+.purchase-entry-screen :where(input, select, textarea),
+.pie-inline-input,
+.pie-search {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.purchase-entry-screen :where(input, select, textarea):focus-visible,
+.pie-inline-input:focus-visible,
+.pie-search:focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.purchase-entry-screen :where(input, select, textarea):disabled,
+.pie-inline-input.is-disabled,
+.pie-inline-input.is-readonly {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+.purchase-reference-grid th {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface-subtle))
+  ) !important;
+  color: var(--ui-text) !important;
+}
+
+.purchase-reference-grid td {
+  border-color: color-mix(in srgb, var(--ui-border) 58%, transparent) !important;
+  color: var(--ui-text) !important;
+}
+
+.purchase-reference-grid tr.is-selected td {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface)) !important;
+}
+
+.pie-balance-payable,
+.pie-grand {
+  color: var(--ui-accent-strong) !important;
+}
+
+html[data-animations='off'] .purchase-entry-screen * {
+  transition: none !important;
+  animation: none !important;
+}
