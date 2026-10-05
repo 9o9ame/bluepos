@@ -57,7 +57,7 @@ export function AppearanceSettings() {
     {choices('Primary theme', primaryTheme, PRIMARY_OPTIONS, appearance.setPrimaryTheme, 'primaryTheme')}
     {choices('Density', density, [{ value: 'compact', label: 'Compact' }, { value: 'comfortable', label: 'Comfortable' }] as Array<{value: DensityPreference; label: string}>, appearance.setDensity, 'density')}
     {choices('Border radius', radius, [{ value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' }] as Array<{value: RadiusPreference; label: string}>, appearance.setRadius, 'radius')}
-    {choices('Card shadow', shadow, [{ value: 'none', label: 'None' }, { value: 'soft', label: 'Soft' }, { value: 'normal', label: 'Normal' }] as Array<{value: ShadowPreference; label: string}>, appearance.setShadow, 'shadow')}
+    {choices('Card shadow', shadow, [{ value: 'none', label: 'None' }, { value: 'soft', label: 'Soft' }, { value: 'normal', label: 'Normal' }, { value: '3d', label: '3D' }] as Array<{value: ShadowPreference; label: string}>, appearance.setShadow, 'shadow')}
     <div className="appearance-settings-group">
       <div className="appearance-settings-heading">UI Animations</div>
       <div className="appearance-option-row">
