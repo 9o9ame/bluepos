@@ -238,3 +238,38 @@
 .bp-col-customization-foot button:hover {
   filter: brightness(1.04);
 }
+
+
+/* ---------- COLUMN CUSTOMIZATION DESIGN SYSTEM MIGRATION ---------- */
+.bp-col-customization {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+.bp-col-customization-titlebar,
+.bp-col-customization-foot {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+  color: var(--ui-text) !important;
+}
+.bp-col-chip,
+.bp-col-customization-actions button {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+.bp-col-chip:hover,
+.bp-col-customization-actions button:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+.bp-col-customization-row.is-visible {
+  background: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface)) !important;
+}
+.bp-col-customization-row.is-hidden { color: var(--ui-text-muted) !important; }
+.bp-col-customization-actions .is-hide { color: var(--ui-danger) !important; }
+html[data-animations='off'] .bp-col-customization * { transition: none !important; animation: none !important; }
