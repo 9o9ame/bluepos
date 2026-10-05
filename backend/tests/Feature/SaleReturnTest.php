@@ -290,6 +290,11 @@ class SaleReturnTest extends TestCase
             'method' => 'cash',
         ], $this->idem('sr-refund-method-pay'))->assertCreated();
 
+        $this->postJson('/api/sales/'.$saleUlid.'/payments', [
+            'amount' => '100.0000',
+            'method' => 'card',
+        ], $this->idem('sr-refund-method-card'))->assertCreated();
+
         $saleItemUlid = $this->getJson('/api/sales/'.$saleUlid.'/returnable-lines')
             ->assertOk()
             ->json('data.0.sale_item_ulid');
@@ -300,10 +305,13 @@ class SaleReturnTest extends TestCase
 
         $this->postJson('/api/sales-returns/'.$returnUlid.'/lines', [
             'sale_item_ulid' => $saleItemUlid,
-            'quantity' => '1.000000',
+            'quantity' => '1.500000',
         ])->assertCreated();
 
-        $this->postJson('/api/sales-returns/'.$returnUlid.'/post')->assertOk();
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/post')
+            ->assertOk()
+            ->assertJsonPath('grand_total', '150.0000')
+            ->assertJsonPath('balance_due', '100.0000');
 
         $this->postJson('/api/sales-returns/'.$returnUlid.'/refunds', [
             'amount' => '60.0000',
@@ -348,7 +356,9 @@ class SaleReturnTest extends TestCase
             'quantity' => '1.000000',
         ])->assertCreated();
 
-        $this->postJson('/api/sales-returns/'.$returnUlid.'/post')->assertOk();
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/post')
+            ->assertOk()
+            ->assertJsonPath('balance_due', '0.0000');
 
         $this->getJson('/api/sales/'.$saleUlid)
             ->assertOk()
