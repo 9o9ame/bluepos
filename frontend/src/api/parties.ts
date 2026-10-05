@@ -65,8 +65,10 @@ export type Party = {
 
 export type PartyListFilter = 'all' | 'vendor' | 'customer' | 'account' | 'salesman'
 
+export type LegacyPartyType = 'vendor' | 'customer' | 'account'
+
 export type PartyPayload = {
-  party_type: PartyTypeApi
+  party_type: LegacyPartyType
   code: string
   name: string
   account_type_ulid: string
@@ -185,7 +187,7 @@ export function createParty(payload: PartyPayload) {
   })
 }
 
-export function updateParty(ulid: string, payload: Partial<PartyPayload> & { party_type: PartyTypeApi }) {
+export function updateParty(ulid: string, payload: Partial<PartyPayload> & { party_type: LegacyPartyType }) {
   return apiFetch<Party>(`/api/parties/${ulid}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
