@@ -188,19 +188,27 @@ class UpsertPartyProfileAction
             }
         }
 
-        $leafIds = Account::query()
-            ->forTenant($tenantId)
-            ->where(function ($q) use ($supplier, $customer): void {
-                if ($supplier) {
-                    $q->orWhere('supplier_id', $supplier->id);
-                }
-                if ($customer) {
-                    $q->orWhere('customer_id', $customer->id);
-                }
-            })
-            ->pluck('id');
+        $leafIds = collect();
+        if ($supplier || $customer) {
+            $leafIds = Account::query()
+                ->forTenant($tenantId)
+                ->where(function ($q) use ($supplier, $customer): void {
+                    if ($supplier) {
+                        $q->orWhere('supplier_id', $supplier->id);
+                    }
+                    if ($customer) {
+                        $q->orWhere('customer_id', $customer->id);
+                    }
+                })
+                ->pluck('id');
+        }
 
         $both = in_array('vendor', $types, true) && in_array('customer', $types, true);
+        if ($both && mb_strlen($code) > 62) {
+            throw ValidationException::withMessages([
+                'code' => 'Vendor + Customer party codes may be at most 62 characters.',
+            ]);
+        }
         $codes = [];
         if (in_array('vendor', $types, true)) {
             $codes[] = $both ? $code.'-V' : $code;
@@ -327,7 +335,20 @@ class UpsertPartyProfileAction
 
         $account->is_active = false;
         if ($oppositeTypeActive && $account->code === $profile->code) {
-            $account->code = $profile->code.($type === 'vendor' ? '-V' : '-C');
+            $historicalCode = $profile->code.($type === 'vendor' ? '-V' : '-C');
+            $conflict = Account::query()
+                ->forTenant($this->tenantContext->tenantId())
+                ->where('code', $historicalCode)
+                ->where('id', '<>', $account->id)
+                ->exists();
+
+            if ($conflict) {
+                throw ValidationException::withMessages([
+                    'code' => 'A ledger account already uses '.$historicalCode.'. Choose another party code before changing types.',
+                ]);
+            }
+
+            $account->code = $historicalCode;
         }
         $account->updated_by = $this->tenantContext->userId();
         $account->save();
