@@ -420,8 +420,8 @@ export function SalesInvoicePage() {
             scheme_ulid: line.scheme_ulid ?? null,
             barcode: line.barcode ?? null,
             quantity: line.quantity,
-            discount_percent: line.discount_percent ?? '0',
-            discount_amount: line.discount_amount ?? '0',
+            discount_percent: line.discount_percent || '0',
+            discount_amount: line.discount_amount || '0',
             notes: line.notes ?? null,
           })),
         },
@@ -668,7 +668,7 @@ export function SalesInvoicePage() {
 
 
   function parkCurrentCart() {
-    if (!cart.hasPaidLines || holdMutation.isPending) return
+    if (!canCreateSale || !cart.hasPaidLines || holdMutation.isPending) return
     holdMutation.mutate()
   }
 
