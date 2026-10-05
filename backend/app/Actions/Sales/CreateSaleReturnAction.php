@@ -107,6 +107,7 @@ class CreateSaleReturnAction
             'lines.product.category',
             'lines.unit',
             'lines.saleItem',
+            'refunds.account',
         ];
     }
 
