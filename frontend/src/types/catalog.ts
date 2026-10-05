@@ -131,6 +131,10 @@ export type Product = {
 
   barcodes?: ProductBarcode[]
   prices?: ProductPrice[]
+  sales_lookup?: {
+    in_stock: string
+    average_cost: string | null
+  }
 }
 
 export type ProductStockResponse = {
