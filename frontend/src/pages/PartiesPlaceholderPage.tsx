@@ -28,6 +28,7 @@ import {
   downloadPartyExcelTemplate,
   ensurePartyLeafAccount,
   fetchParties,
+  fetchPartyProfile,
   fetchPartyProfiles,
   fetchPartyBankAccounts,
   fetchPartyLedger,
@@ -725,6 +726,32 @@ export function PartiesPlaceholderPage({
     return { ...formState, accountType: match.name, accountTypeUlid: match.ulid }
   }
 
+
+  function applySuggestedProfileAccountTypes(formState: FormState): FormState {
+    let next = { ...formState }
+
+    if (next.types.includes('vendor') && !next.vendorAccountTypeUlid) {
+      const match = accountTypes.find((t) => t.name.toUpperCase() === 'ACCOUNT PAYABLE')
+      if (match) next = { ...next, vendorAccountTypeUlid: match.ulid }
+    }
+
+    if (next.types.includes('customer') && !next.customerAccountTypeUlid) {
+      const match = accountTypes.find((t) => t.name.toUpperCase() === 'ACCOUNT RECEIVABLE')
+      if (match) next = { ...next, customerAccountTypeUlid: match.ulid }
+    }
+
+    return next
+  }
+
+  function partyFinancialContext(party: Party): { ulid: string; type: 'vendor' | 'customer' | 'account' } | null {
+    if (party.party_type === 'account') return { ulid: party.ulid, type: 'account' }
+    if (party.party_type === 'vendor' && party.vendor_ulid) return { ulid: party.vendor_ulid, type: 'vendor' }
+    if (party.party_type === 'customer' && party.customer_ulid) return { ulid: party.customer_ulid, type: 'customer' }
+    if (party.customer_ulid) return { ulid: party.customer_ulid, type: 'customer' }
+    if (party.vendor_ulid) return { ulid: party.vendor_ulid, type: 'vendor' }
+    return null
+  }
+
   function banksFromApi(rows: PartyBankAccount[]): BankDraft[] {
     return rows.map((row) => ({
       key: row.ulid,
@@ -813,7 +840,10 @@ export function PartiesPlaceholderPage({
 
   function startNew(filter: PartyType = listFilter) {
     const nextType = CREATABLE_TYPES.includes(filter) ? filter : 'VENDORS'
-    const blank = applySuggestedAccountType(nextType, emptyForm(nextType))
+    const base = emptyForm(nextType)
+    const blank = nextType === 'ACCOUNTS'
+      ? applySuggestedAccountType(nextType, base)
+      : applySuggestedProfileAccountTypes(base)
     applyBaseline(blank)
     setSelectedKey(null)
     clearAncillaryPartyState()
@@ -835,7 +865,7 @@ export function PartiesPlaceholderPage({
   async function selectRow(row: PartyListRow) {
     if (row.key === selectedKey) return
     if (!(await confirmDiscard())) return
-    const party = parties.find((p) => p.ulid === row.ulid && p.party_type === row.partyType)
+    const party = parties.find((item) => partyKey(item) === row.key)
     if (!party) return
     applyBaseline(partyToForm(party, listFilter))
     setSelectedKey(row.key)
@@ -843,8 +873,14 @@ export function PartiesPlaceholderPage({
     setLedger(null)
     setLedgerPage(1)
     applyPartyImage(party)
-    void loadBanks(party.ulid, party.party_type)
-    void loadOpenings(party.ulid, party.party_type)
+    const financial = partyFinancialContext(party)
+    if (financial) {
+      void loadBanks(financial.ulid, financial.type)
+      void loadOpenings(financial.ulid, financial.type)
+    } else {
+      setBankRows([])
+      setOpeningRows([])
+    }
   }
 
   function moveSelection(index: number) {
@@ -857,7 +893,12 @@ export function PartiesPlaceholderPage({
     if (!(await confirmDiscard())) return
     setListFilter(next)
     const nextType = CREATABLE_TYPES.includes(next) ? next : 'VENDORS'
-    applyBaseline(applySuggestedAccountType(nextType, emptyForm(nextType)))
+    const base = emptyForm(nextType)
+    applyBaseline(
+      nextType === 'ACCOUNTS'
+        ? applySuggestedAccountType(nextType, base)
+        : applySuggestedProfileAccountTypes(base),
+    )
     setSelectedKey(null)
     clearAncillaryPartyState()
     setSubTab('contact')
