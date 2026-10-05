@@ -76,6 +76,7 @@ class PartyController extends Controller
                 ->forTenant($tenantContext->tenantId())
                 ->whereNull('supplier_id')
                 ->whereNull('customer_id')
+                ->whereNull('party_profile_id')
                 ->with('accountType')
                 ->orderBy('name')
                 ->get()
