@@ -74,6 +74,17 @@ class ProductResource extends JsonResource
             'secondary_unit' => new UnitResource($this->whenLoaded('secondaryUnit')),
             'barcodes' => ProductBarcodeResource::collection($this->whenLoaded('barcodes')),
             'prices' => ProductPriceResource::collection($this->whenLoaded('prices')),
+            'sales_lookup' => $this->when(
+                $this->relationLoaded('stockBalances'),
+                function (): array {
+                    $balance = $this->stockBalances->first();
+
+                    return [
+                        'in_stock' => $balance?->quantity ?? '0.000000',
+                        'average_cost' => $balance?->average_cost,
+                    ];
+                },
+            ),
         ];
     }
 }
