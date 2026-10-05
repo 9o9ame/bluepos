@@ -72,6 +72,16 @@ class CreateSaleTest extends TestCase
             ->assertJsonPath('salesman.ulid', $salesmanUlid)
             ->assertJsonPath('salesman.name', 'Salesman A');
 
+        $this->getJson('/api/sales?salesman_ulid='.$salesmanUlid)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.salesman.ulid', $salesmanUlid);
+
+        $this->getJson('/api/sales?q='.urlencode('Salesman A'))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.salesman.name', 'Salesman A');
+
         $this->postJson('/api/auth/logout')->assertOk();
         $this->signInOwner('sale-salesman-b')->assertOk();
 
