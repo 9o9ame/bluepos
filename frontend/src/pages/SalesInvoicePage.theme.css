@@ -1697,3 +1697,305 @@
       76px !important;
   }
 }
+
+
+/* ==========================================================================
+   Polished POS lookup theme
+   Hybrid direction: classic desktop POS geometry + richer modern color cues.
+   Applies only to Sales Invoice customer, salesman, and product lookups.
+   ========================================================================== */
+
+.sales-customer-dropdown-shutter.is-open,
+.sales-salesman-dropdown-shutter.is-open,
+.sales-pos-product-results-grid {
+  filter: drop-shadow(0 9px 14px rgba(27, 56, 79, .18));
+}
+
+.sales-pos-customer-grid,
+.sales-pos-salesman-grid,
+.sales-pos-product-results-grid {
+  overflow: hidden;
+  border: 1px solid #4f7fa5 !important;
+  border-radius: 7px;
+  background: #f8fbfd;
+  box-shadow:
+    0 8px 20px rgba(34, 69, 95, .20),
+    0 2px 5px rgba(34, 69, 95, .16),
+    inset 0 1px 0 rgba(255,255,255,.92) !important;
+}
+
+/* Metallic-blue 3D headers */
+.sales-pos-customer-grid-head,
+.sales-pos-salesman-grid-head,
+.sales-pos-product-grid-head {
+  min-height: 28px !important;
+  border-bottom: 1px solid #426f91 !important;
+  background:
+    linear-gradient(180deg, #fafdff 0%, #ddecf6 18%, #a9d0e8 52%, #78afd1 53%, #5b95bb 100%) !important;
+  color: #123b59 !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    inset 0 -1px 0 rgba(27,74,108,.16);
+  font-size: 11px;
+  font-weight: 900 !important;
+  letter-spacing: .1px;
+}
+
+.sales-pos-customer-grid-head > span,
+.sales-pos-salesman-grid-head > span,
+.sales-pos-product-grid-head > span {
+  min-height: 28px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-right: 1px solid rgba(60,105,137,.30) !important;
+}
+
+/* Light zebra rows with a subtle classic data-grid feel */
+.sales-pos-customer-grid-row,
+.sales-pos-salesman-grid-row,
+.sales-pos-product-grid-row {
+  min-height: 27px !important;
+  border-bottom: 1px solid #d6e3ec !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9fc 100%) !important;
+  color: #21455f !important;
+  transition:
+    background .11s ease,
+    color .11s ease,
+    box-shadow .11s ease,
+    transform .08s ease;
+}
+
+.sales-pos-customer-grid-row:nth-child(even),
+.sales-pos-salesman-grid-row:nth-child(even),
+.sales-pos-product-grid-row:nth-child(even) {
+  background: linear-gradient(180deg, #f4f9fd 0%, #eaf3f9 100%) !important;
+}
+
+.sales-pos-customer-grid-row:hover,
+.sales-pos-customer-grid-row:focus-visible,
+.sales-pos-salesman-grid-row:hover,
+.sales-pos-salesman-grid-row:focus-visible,
+.sales-pos-product-grid-row:hover,
+.sales-pos-product-grid-row:focus-visible {
+  background:
+    linear-gradient(180deg, #4ba6e2 0%, #2585c8 48%, #126daf 52%, #0d5f9b 100%) !important;
+  color: #fff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.34),
+    inset 0 -1px 0 rgba(0,46,82,.18) !important;
+  outline: none !important;
+}
+
+.sales-pos-customer-grid-row:active,
+.sales-pos-salesman-grid-row:active,
+.sales-pos-product-grid-row:active {
+  transform: translateY(1px);
+}
+
+/* Main labels are easier to scan */
+.sales-pos-customer-grid-row > strong,
+.sales-pos-salesman-grid-row > strong,
+.sales-pos-product-grid-row > strong {
+  color: #123f63 !important;
+  font-weight: 850 !important;
+}
+
+.sales-pos-customer-grid-row:hover > strong,
+.sales-pos-customer-grid-row:focus-visible > strong,
+.sales-pos-salesman-grid-row:hover > strong,
+.sales-pos-salesman-grid-row:focus-visible > strong,
+.sales-pos-product-grid-row:hover > strong,
+.sales-pos-product-grid-row:focus-visible > strong {
+  color: #fff !important;
+}
+
+/* Customer / salesman secondary information */
+.sales-pos-customer-grid-row > span:first-child,
+.sales-pos-salesman-grid-row > span:first-child {
+  color: #44708d !important;
+  font-weight: 800;
+  background: rgba(112, 173, 210, .09);
+}
+
+.sales-pos-customer-grid-row > span:last-child,
+.sales-pos-salesman-grid-row > span:last-child {
+  color: #176b86 !important;
+  font-weight: 750;
+}
+
+.sales-pos-customer-grid-row:hover > span,
+.sales-pos-customer-grid-row:focus-visible > span,
+.sales-pos-salesman-grid-row:hover > span,
+.sales-pos-salesman-grid-row:focus-visible > span {
+  color: #fff !important;
+  background: transparent !important;
+}
+
+/* Product lookup: semantic color hints similar to the reference POS */
+.sales-pos-product-grid-row > span:nth-child(1) {
+  color: #395f7a !important;
+  font-weight: 850;
+  background: rgba(91, 149, 187, .08);
+}
+
+.sales-pos-product-grid-row > span:nth-child(3) {
+  color: #08752c !important;
+  background: linear-gradient(90deg, rgba(38, 180, 75, .10), rgba(38, 180, 75, .03));
+}
+
+.sales-pos-product-grid-row > span:nth-child(4) {
+  color: #075f9f !important;
+  background: linear-gradient(90deg, rgba(62, 147, 211, .11), rgba(62, 147, 211, .03));
+  font-weight: 850;
+}
+
+.sales-pos-product-grid-row > span:nth-child(5) {
+  color: #8a5a00 !important;
+  background: linear-gradient(90deg, rgba(255, 190, 47, .14), rgba(255, 190, 47, .04));
+  font-weight: 800;
+}
+
+.sales-pos-product-grid-row > span:nth-child(6) {
+  color: #a64f00 !important;
+  background: linear-gradient(90deg, rgba(240, 143, 42, .12), rgba(240, 143, 42, .03));
+  font-weight: 800;
+}
+
+.sales-pos-product-grid-row > span:nth-child(7),
+.sales-pos-product-grid-row > span:nth-child(8) {
+  color: #5d6d78 !important;
+  font-weight: 750;
+}
+
+.sales-pos-product-grid-row:hover > span,
+.sales-pos-product-grid-row:focus-visible > span {
+  color: #fff !important;
+  background: transparent !important;
+}
+
+/* Stronger bottom summary bar */
+.sales-pos-customer-grid-foot,
+.sales-pos-salesman-grid-foot,
+.sales-pos-product-grid-foot {
+  min-height: 25px !important;
+  border-top: 1px solid #6f95af !important;
+  background:
+    linear-gradient(180deg, #eef5f9 0%, #d3e1e9 48%, #bdced9 52%, #aebfca 100%) !important;
+  color: #2c4f67 !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.75);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.82),
+    inset 0 -1px 0 rgba(54,83,102,.13);
+  font-size: 11px;
+  font-weight: 900 !important;
+}
+
+/* Give the To / Salesman fields the same polished dropdown affordance */
+.sales-reference-to > input,
+.sales-reference-salesman > input,
+.sales-reference-to .sales-reference-input-button > input,
+.sales-reference-salesman .sales-reference-input-button > input {
+  border-color: #75a6c7 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f8fc 100%) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(22,72,105,.07),
+    0 1px 0 rgba(255,255,255,.82);
+}
+
+.sales-reference-to.is-open > input,
+.sales-reference-salesman.is-open > input,
+.sales-reference-to:focus-within input,
+.sales-reference-salesman:focus-within input {
+  border-color: #2586c6 !important;
+  box-shadow:
+    0 0 0 2px rgba(37, 134, 198, .12),
+    inset 0 1px 1px rgba(22,72,105,.07) !important;
+}
+
+/* Scrollbars: compact, visible, and visually integrated with the lookup */
+.sales-pos-customer-grid-body,
+.sales-pos-salesman-grid-body,
+.sales-pos-product-grid-body {
+  scrollbar-width: thin;
+  scrollbar-color: #6da6ca #e9f2f8;
+}
+
+.sales-pos-customer-grid-body::-webkit-scrollbar,
+.sales-pos-salesman-grid-body::-webkit-scrollbar,
+.sales-pos-product-grid-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.sales-pos-customer-grid-body::-webkit-scrollbar-track,
+.sales-pos-salesman-grid-body::-webkit-scrollbar-track,
+.sales-pos-product-grid-body::-webkit-scrollbar-track {
+  background: #e9f2f8;
+  border-left: 1px solid #cfdee8;
+}
+
+.sales-pos-customer-grid-body::-webkit-scrollbar-thumb,
+.sales-pos-salesman-grid-body::-webkit-scrollbar-thumb,
+.sales-pos-product-grid-body::-webkit-scrollbar-thumb {
+  border: 2px solid #e9f2f8;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #8bc5e6, #4e91bb);
+}
+
+/* Dark theme keeps the richer hierarchy without becoming bright/neon. */
+:root[data-theme='dark'] .sales-pos-customer-grid,
+:root[data-theme='dark'] .sales-pos-salesman-grid,
+:root[data-theme='dark'] .sales-pos-product-results-grid {
+  border-color: #446c88 !important;
+  background: #1c252c !important;
+  box-shadow:
+    0 9px 22px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-head,
+:root[data-theme='dark'] .sales-pos-salesman-grid-head,
+:root[data-theme='dark'] .sales-pos-product-grid-head {
+  border-color: #3b6684 !important;
+  background:
+    linear-gradient(180deg, #45667d 0%, #35576e 48%, #29495f 52%, #213d50 100%) !important;
+  color: #eef8ff !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,.45);
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-row,
+:root[data-theme='dark'] .sales-pos-salesman-grid-row,
+:root[data-theme='dark'] .sales-pos-product-grid-row {
+  border-color: #354652 !important;
+  background: linear-gradient(180deg, #253039 0%, #202a32 100%) !important;
+  color: #dce9f1 !important;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-row:nth-child(even),
+:root[data-theme='dark'] .sales-pos-salesman-grid-row:nth-child(even),
+:root[data-theme='dark'] .sales-pos-product-grid-row:nth-child(even) {
+  background: linear-gradient(180deg, #2a3741 0%, #24313a 100%) !important;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-row > strong,
+:root[data-theme='dark'] .sales-pos-salesman-grid-row > strong,
+:root[data-theme='dark'] .sales-pos-product-grid-row > strong,
+:root[data-theme='dark'] .sales-pos-customer-grid-row > span,
+:root[data-theme='dark'] .sales-pos-salesman-grid-row > span,
+:root[data-theme='dark'] .sales-pos-product-grid-row > span {
+  color: #dce9f1 !important;
+  background: transparent;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-row:hover,
+:root[data-theme='dark'] .sales-pos-customer-grid-row:focus-visible,
+:root[data-theme='dark'] .sales-pos-salesman-grid-row:hover,
+:root[data-theme='dark'] .sales-pos-salesman-grid-row:focus-visible,
+:root[data-theme='dark'] .sales-pos-product-grid-row:hover,
+:root[data-theme='dark'] .sales-pos-product-grid-row:focus-visible {
+  background:
+    linear-gradient(180deg, #258fd2 0%, #1577b8 50%, #0f659f 51%, #0b588d 100%) !important;
+  color: #fff !important;
+}
