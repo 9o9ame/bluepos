@@ -28,6 +28,7 @@ import {
   downloadPartyExcelTemplate,
   ensurePartyLeafAccount,
   fetchParties,
+  fetchParty,
   fetchPartyProfile,
   fetchPartyProfiles,
   fetchPartyBankAccounts,
@@ -81,7 +82,6 @@ type PartyListRow = {
   type: string
 }
 
-const PARTY_TYPES: PartyType[] = ['VENDORS', 'CUSTOMERS', 'ACCOUNTS', 'SALES MAN', 'ALL']
 const CREATABLE_TYPES: PartyType[] = ['VENDORS', 'CUSTOMERS', 'ACCOUNTS', 'SALES MAN']
 
 function uiTypeToFilter(type: PartyType): PartyListFilter {
@@ -917,22 +917,6 @@ export function PartiesPlaceholderPage({
     if (rows.length === 0) return
     const bounded = Math.min(Math.max(index, 0), rows.length - 1)
     void selectRow(rows[bounded])
-  }
-
-  async function onTypeChange(next: PartyType) {
-    if (!(await confirmDiscard())) return
-    setListFilter(next)
-    const nextType = CREATABLE_TYPES.includes(next) ? next : 'VENDORS'
-    const base = emptyForm(nextType)
-    applyBaseline(
-      nextType === 'ACCOUNTS'
-        ? applySuggestedAccountType(nextType, base)
-        : applySuggestedProfileAccountTypes(base),
-    )
-    setSelectedKey(null)
-    clearAncillaryPartyState()
-    setSubTab('contact')
-    void loadParties(next, false)
   }
 
   async function save() {
