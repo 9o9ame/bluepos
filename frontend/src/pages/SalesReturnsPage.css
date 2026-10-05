@@ -1103,3 +1103,217 @@
       82px;
   }
 }
+
+
+/* ==========================================================================
+   Functional customer/salesman filters + posted return refund settlement.
+   ========================================================================== */
+.sales-return-party-select {
+  box-sizing: border-box;
+  height: 25px;
+  min-width: 0;
+  width: 100%;
+  padding: 0 26px 0 7px;
+  border: 1px solid #b49f00;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, #fffef2 0%, #fff97c 47%, #efe82f 51%, #ddd400 100%);
+  color: #26313a;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.9),
+    inset 0 -1px 0 rgba(107,96,0,.16),
+    0 1px 2px rgba(75,67,0,.12);
+  font: inherit;
+  font-weight: 900;
+}
+
+.sales-return-party-select:focus {
+  border-color: #2c83bd;
+  outline: 2px solid rgba(44,131,189,.13);
+  outline-offset: 0;
+}
+
+.sales-return-party-select:disabled {
+  opacity: .82;
+  cursor: default;
+  color: #35414a;
+}
+
+.sales-return-settlement {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.sales-return-refund-summary {
+  display: grid;
+  grid-template-columns: auto 110px auto 110px;
+  align-items: center;
+  gap: 4px 6px;
+  flex: 0 0 auto;
+}
+
+.sales-return-refund-summary label {
+  color: #284b62;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.sales-return-refund-summary strong {
+  min-height: 25px;
+  box-sizing: border-box;
+  padding: 4px 7px;
+  border: 1px solid #ad9700;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, #fffbd2 0%, #ffe84b 48%, #f5cf00 52%, #e4bc00 100%);
+  color: #17212b;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-return-refund-panel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 7px;
+  border-left: 1px solid #a7bac7;
+}
+
+.sales-return-refund-methods {
+  display: flex;
+  gap: 3px;
+  flex: 0 0 auto;
+}
+
+.sales-return-refund-methods button,
+.sales-return-refund-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 25px;
+  padding: 0 7px;
+  border: 1px solid #5c87a5;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, #fbfdff 0%, #dcebf4 48%, #a9cde2 52%, #82adca 100%);
+  color: #183f59;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.92),
+    0 1px 2px rgba(36,67,89,.14);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.sales-return-refund-methods button.is-active {
+  border-color: #2479b2;
+  background:
+    linear-gradient(180deg, #eefdff 0%, #a9dcf5 48%, #60b0dc 52%, #358bc0 100%);
+  color: #073f66;
+}
+
+.sales-return-refund-methods button:disabled,
+.sales-return-refund-submit:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+.sales-return-refund-amount,
+.sales-return-refund-reference {
+  box-sizing: border-box;
+  height: 25px;
+  border: 1px solid #829eaf;
+  border-radius: 4px;
+  background: #fff;
+  color: #18394f;
+  font: inherit;
+  font-weight: 800;
+}
+
+.sales-return-refund-amount {
+  width: 105px;
+  padding: 0 6px;
+  background:
+    linear-gradient(180deg, #fffef7 0%, #fff5a8 100%);
+  text-align: right;
+}
+
+.sales-return-refund-reference {
+  flex: 1 1 125px;
+  min-width: 90px;
+  max-width: 180px;
+  padding: 0 6px;
+}
+
+.sales-return-refund-submit {
+  border-color: #4b8d58;
+  background:
+    linear-gradient(180deg, #fbfffb 0%, #ccebd2 48%, #8dcc99 52%, #69ad77 100%);
+  color: #17572a;
+}
+
+.sales-return-refund-complete {
+  padding-left: 7px;
+  color: #24723b;
+  font-weight: 900;
+}
+
+:root[data-theme='dark'] .sales-return-party-select {
+  border-color: #82772e;
+  background: linear-gradient(180deg, #51491d 0%, #423b18 100%);
+  color: #fff4a6;
+}
+
+:root[data-theme='dark'] .sales-return-refund-panel {
+  border-left-color: #475f70;
+}
+
+:root[data-theme='dark'] .sales-return-refund-summary label {
+  color: #dce9f1;
+}
+
+:root[data-theme='dark'] .sales-return-refund-summary strong {
+  border-color: #81722b;
+  background: linear-gradient(180deg, #51491d 0%, #423b18 100%);
+  color: #fff3a4;
+}
+
+:root[data-theme='dark'] .sales-return-refund-methods button,
+:root[data-theme='dark'] .sales-return-refund-submit {
+  border-color: #4c687b;
+  background: linear-gradient(180deg, #354652 0%, #283640 100%);
+  color: #e9f3f8;
+}
+
+:root[data-theme='dark'] .sales-return-refund-methods button.is-active {
+  border-color: #368cc3;
+  background: linear-gradient(180deg, #347da8 0%, #235d84 100%);
+  color: #fff;
+}
+
+:root[data-theme='dark'] .sales-return-refund-amount,
+:root[data-theme='dark'] .sales-return-refund-reference {
+  border-color: #536d7e;
+  background: #1f2a32;
+  color: #eef5f9;
+}
+
+@media (max-width: 1250px) {
+  .sales-return-settlement {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sales-return-refund-panel {
+    padding-left: 0;
+    padding-top: 5px;
+    border-left: 0;
+    border-top: 1px solid #a7bac7;
+  }
+}
