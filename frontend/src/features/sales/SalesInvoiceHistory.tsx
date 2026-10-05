@@ -1,5 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Eye, Printer, RotateCcw, Search, X } from 'lucide-react'
 import { fetchSale, fetchSales, fetchSalesmen } from '../../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from './saleReceipt'
@@ -25,7 +25,6 @@ function paymentLabel(sale: Sale): string {
  * here. Corrections remain separate return/void flows.
  */
 export function SalesInvoiceHistory() {
-  const [page, setPage] = useState(1)
   const [searchText, setSearchText] = useState('')
   const deferredSearch = useDeferredValue(searchText.trim())
   const [dateFrom, setDateFrom] = useState('')
@@ -40,27 +39,31 @@ export function SalesInvoiceHistory() {
     retry: false,
   })
 
-  const listQuery = useQuery({
+  const listQuery = useInfiniteQuery({
     queryKey: [
       'sales',
       'history',
-      page,
       deferredSearch,
       dateFrom,
       dateTo,
       salesmanUlid,
       status,
     ],
-    queryFn: () =>
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
       fetchSales({
-        page,
-        per_page: 25,
+        page: pageParam,
+        per_page: 40,
         q: deferredSearch || undefined,
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined,
         salesman_ulid: salesmanUlid || undefined,
         status: status || undefined,
       }),
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.current_page < lastPage.meta.last_page
+        ? lastPage.meta.current_page + 1
+        : undefined,
     retry: false,
   })
 
@@ -71,8 +74,8 @@ export function SalesInvoiceHistory() {
     retry: false,
   })
 
-  const rows: Sale[] = listQuery.data?.data ?? []
-  const meta = listQuery.data?.meta
+  const rows: Sale[] = listQuery.data?.pages.flatMap((page) => page.data) ?? []
+  const meta = listQuery.data?.pages[0]?.meta
 
   const summary = useMemo(() => {
     return rows.reduce(
@@ -92,15 +95,38 @@ export function SalesInvoiceHistory() {
     setDateTo('')
     setSalesmanUlid('')
     setStatus('posted')
-    setPage(1)
   }
 
   function openSale(saleUlid: string) {
     setOpenUlid((current) => (current === saleUlid ? null : saleUlid))
   }
 
+  function loadMoreOnScroll(element: HTMLDivElement) {
+    if (!listQuery.hasNextPage || listQuery.isFetchingNextPage) return
+
+    const remaining = element.scrollHeight - element.scrollTop - element.clientHeight
+    if (remaining < 140) {
+      void listQuery.fetchNextPage()
+    }
+  }
+
   return (
     <section className="sales-history sales-posted-history" aria-label="Posted invoices">
+      <div className="sales-history-summary">
+        <div>
+          <span>PAGE TOTAL</span>
+          <strong>{summary.total.toFixed(2)}</strong>
+        </div>
+        <div className="is-paid">
+          <span>PAID</span>
+          <strong>{summary.paid.toFixed(2)}</strong>
+        </div>
+        <div className="is-due">
+          <span>DUE</span>
+          <strong>{summary.due.toFixed(2)}</strong>
+        </div>
+      </div>
+
       <header className="sales-history-toolbar">
         <div className="sales-history-search">
           <Search size={15} aria-hidden="true" />
@@ -108,7 +134,6 @@ export function SalesInvoiceHistory() {
             value={searchText}
             onChange={(e) => {
               setSearchText(e.target.value)
-              setPage(1)
             }}
             placeholder="Invoice #, customer, salesman…"
             aria-label="Search posted invoices"
@@ -119,8 +144,7 @@ export function SalesInvoiceHistory() {
               className="sales-history-search-clear"
               onClick={() => {
                 setSearchText('')
-                setPage(1)
-              }}
+                }}
               aria-label="Clear search"
             >
               <X size={13} />
@@ -135,7 +159,6 @@ export function SalesInvoiceHistory() {
             value={dateFrom}
             onChange={(e) => {
               setDateFrom(e.target.value)
-              setPage(1)
             }}
           />
         </label>
@@ -147,7 +170,6 @@ export function SalesInvoiceHistory() {
             value={dateTo}
             onChange={(e) => {
               setDateTo(e.target.value)
-              setPage(1)
             }}
           />
         </label>
@@ -158,7 +180,6 @@ export function SalesInvoiceHistory() {
             value={salesmanUlid}
             onChange={(e) => {
               setSalesmanUlid(e.target.value)
-              setPage(1)
             }}
           >
             <option value="">All</option>
@@ -176,7 +197,6 @@ export function SalesInvoiceHistory() {
             value={status}
             onChange={(e) => {
               setStatus(e.target.value as StatusFilter)
-              setPage(1)
             }}
           >
             <option value="">All</option>
@@ -204,23 +224,11 @@ export function SalesInvoiceHistory() {
         </div>
       </header>
 
-      <div className="sales-history-summary">
-        <div>
-          <span>PAGE TOTAL</span>
-          <strong>{summary.total.toFixed(2)}</strong>
-        </div>
-        <div className="is-paid">
-          <span>PAID</span>
-          <strong>{summary.paid.toFixed(2)}</strong>
-        </div>
-        <div className="is-due">
-          <span>DUE</span>
-          <strong>{summary.due.toFixed(2)}</strong>
-        </div>
-      </div>
-
       <div className="sales-history-body">
-        <div className="sales-history-grid-wrap">
+        <div
+          className="sales-history-grid-wrap"
+          onScroll={(event) => loadMoreOnScroll(event.currentTarget)}
+        >
           <table className="sales-history-grid">
             <thead>
               <tr>
@@ -280,26 +288,14 @@ export function SalesInvoiceHistory() {
           </table>
         </div>
 
-        <div className="sales-history-pager">
-          <button
-            type="button"
-            disabled={page <= 1 || listQuery.isFetching}
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
-          >
-            ◀ Previous
-          </button>
-
-          <span>
-            Page {meta?.current_page ?? page} of {meta?.last_page ?? 1}
-          </span>
-
-          <button
-            type="button"
-            disabled={!meta || page >= meta.last_page || listQuery.isFetching}
-            onClick={() => setPage((current) => current + 1)}
-          >
-            Next ▶
-          </button>
+        <div className="sales-infinite-status" role="status">
+          {listQuery.isFetchingNextPage
+            ? 'Loading more invoices…'
+            : listQuery.hasNextPage
+              ? `Scroll for more · ${rows.length} of ${meta?.total ?? rows.length}`
+              : rows.length > 0
+                ? `All ${rows.length} invoice(s) loaded`
+                : ''}
         </div>
 
         {openUlid ? (
