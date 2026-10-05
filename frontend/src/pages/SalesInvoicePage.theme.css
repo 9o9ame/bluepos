@@ -1545,3 +1545,155 @@
     transition: none;
   }
 }
+
+
+/* Sales product lookup aligned to the reference POS detail picker. */
+.sales-pos-product-results-grid {
+  width: min(1080px, calc(100vw - 360px)) !important;
+  max-width: calc(100vw - 360px);
+}
+
+.sales-pos-product-grid-head,
+.sales-pos-product-grid-row {
+  grid-template-columns:
+    76px
+    minmax(330px, 2.4fr)
+    78px
+    88px
+    86px
+    82px
+    66px
+    92px !important;
+}
+
+.sales-pos-product-grid-row > span:nth-child(3),
+.sales-pos-product-grid-row > span:nth-child(4),
+.sales-pos-product-grid-row > span:nth-child(5),
+.sales-pos-product-grid-row > span:nth-child(6) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-pos-product-grid-row > span:nth-child(3) {
+  font-weight: 800;
+}
+
+.sales-pos-product-entry.is-active-product {
+  width: 100%;
+  height: 100%;
+  min-height: 23px;
+  box-sizing: border-box;
+  border: 1px solid #d4b600;
+  background: #fffbd0;
+  color: #17212b;
+  font-weight: 700;
+}
+
+.sales-pos-product-entry.is-active-product:focus {
+  border-color: #4e8ec4;
+  background: #fff;
+}
+
+/* Keep operational status in the F1/scanner row instead of consuming a line above it. */
+.sales-reference-entry-row {
+  display: flex !important;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.sales-reference-product-entry-wrap {
+  flex: 0 0 min(270px, 24%);
+}
+
+.sales-reference-f1,
+.sales-reference-sale-btn {
+  flex: 0 0 auto;
+}
+
+.sales-reference-entry-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  margin-left: auto;
+  padding: 0 10px;
+  overflow: hidden;
+  color: #53616c;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sales-reference-entry-status.is-ready,
+.sales-reference-entry-status.is-error {
+  align-self: center;
+  min-height: 23px;
+  margin-right: 5px;
+  border: 1px solid #9aa8b3;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #ffffff 0%, #e6ebef 50%, #cbd4db 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    inset 0 -1px 0 rgba(76,96,111,.15),
+    0 1px 2px rgba(35,53,67,.22);
+}
+
+.sales-reference-entry-status.is-ready {
+  border-color: #8caf91;
+  color: #246b33;
+}
+
+.sales-reference-entry-status.is-error {
+  border-color: #c78e8e;
+  color: #b42318;
+  background: linear-gradient(180deg, #fffefe 0%, #f8e7e7 52%, #ecd0d0 100%);
+}
+
+:root[data-theme='dark'] .sales-pos-product-entry.is-active-product {
+  border-color: #9d8a35;
+  background: #47411e;
+  color: #fff5ac;
+}
+
+:root[data-theme='dark'] .sales-pos-product-entry.is-active-product:focus {
+  border-color: #5798cc;
+  background: #202a32;
+  color: #edf2f6;
+}
+
+:root[data-theme='dark'] .sales-reference-entry-status.is-ready,
+:root[data-theme='dark'] .sales-reference-entry-status.is-error {
+  border-color: #566674;
+  background: linear-gradient(180deg, #34404a 0%, #28323a 52%, #20282f 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 1px 2px rgba(0,0,0,.35);
+}
+
+:root[data-theme='dark'] .sales-reference-entry-status.is-ready {
+  color: #78df8c;
+}
+
+:root[data-theme='dark'] .sales-reference-entry-status.is-error {
+  color: #ff9a9a;
+}
+
+@media (max-width: 1100px) {
+  .sales-pos-product-results-grid {
+    width: min(820px, calc(100vw - 300px)) !important;
+  }
+
+  .sales-pos-product-grid-head,
+  .sales-pos-product-grid-row {
+    grid-template-columns:
+      68px
+      minmax(250px, 2fr)
+      68px
+      76px
+      72px
+      72px
+      58px
+      76px !important;
+  }
+}
