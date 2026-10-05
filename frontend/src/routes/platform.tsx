@@ -21,7 +21,7 @@ import { PlatformTenantsPage } from '../pages/platform/PlatformTenantsPage'
 import { PlatformUsersPage } from '../pages/platform/PlatformUsersPage'
 
 function Splash() {
-  return <div className="grid h-screen place-items-center bg-slate-950 text-sm text-amber-300">Loading platform…</div>
+  return <div className="grid h-screen place-items-center bg-[var(--ui-bg)] text-sm text-[var(--ui-accent)]">Loading platform…</div>
 }
 
 function RequirePlatformAuth() {
