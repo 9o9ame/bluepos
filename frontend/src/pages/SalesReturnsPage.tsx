@@ -438,6 +438,7 @@ export function SalesReturnsPage() {
             <fieldset>
               <legend>Return Invoice Options</legend>
               <div className="sales-return-fields">
+                <div className="sales-return-fields-left">
                 <div className="sales-return-option-group is-ret">
                   <label>Ret#:</label>
                   <input value={document?.document_number ?? 'Auto'} readOnly />
@@ -707,41 +708,41 @@ export function SalesReturnsPage() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </fieldset>
 
-            <fieldset className="sales-return-summary">
-              <button
-                type="button"
-                className="sales-return-header-refresh"
-                title="Refresh selected sale and balances"
-                onClick={() => {
-                  setCustomerSelectOpen(false)
-                  setSalesmanSelectOpen(false)
-                  if (saleUlid) {
-                    void returnableQuery.refetch()
-                  } else {
-                    void saleLookup.refetch()
-                  }
-                }}
-              >
-                <RefreshCw size={12} />
-                Refresh
-              </button>
+                <div className="sales-return-fields-right">
+                  <button
+                    type="button"
+                    className="sales-return-header-refresh"
+                    title="Refresh selected sale and balances"
+                    onClick={() => {
+                      setCustomerSelectOpen(false)
+                      setSalesmanSelectOpen(false)
+                      if (saleUlid) {
+                        void returnableQuery.refetch()
+                      } else {
+                        void saleLookup.refetch()
+                      }
+                    }}
+                  >
+                    <RefreshCw size={12} />
+                    Refresh
+                  </button>
 
-              <div className="sales-return-balance-chip is-previous">
-                <span>Previous</span>
-                <strong>{money(previousBalance)}</strong>
-              </div>
+                  <div className="sales-return-balance-chip is-previous">
+                    <span>Previous</span>
+                    <strong>{money(previousBalance)}</strong>
+                  </div>
 
-              <div className="sales-return-balance-chip is-this-bill">
-                <span>This Bill</span>
-                <strong>{money(thisBill)}</strong>
-              </div>
+                  <div className="sales-return-balance-chip is-this-bill">
+                    <span>This Bill</span>
+                    <strong>{money(thisBill)}</strong>
+                  </div>
 
-              <div className="sales-return-balance-chip is-total-balance">
-                <span>Total Balance</span>
-                <strong>{money(totalBalance)}</strong>
+                  <div className="sales-return-balance-chip is-total-balance">
+                    <span>Total Balance</span>
+                    <strong>{money(totalBalance)}</strong>
+                  </div>
+                </div>
               </div>
             </fieldset>
 
