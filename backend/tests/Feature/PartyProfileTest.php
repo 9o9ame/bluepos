@@ -15,20 +15,22 @@ class PartyProfileTest extends TestCase
 {
     use DatabaseTransactions;
 
-    public function test_party_can_be_vendor_customer_and_salesman_without_duplicate_identity(): void
+    public function test_party_can_be_vendor_customer_account_and_salesman_without_duplicate_identity(): void
     {
         $this->signInOwner('party-profile-multi')->assertOk();
 
         $payable = $this->accountTypeUlid('payable');
         $receivable = $this->accountTypeUlid('receivable');
+        $accountType = $this->accountTypeUlid('any');
 
         $response = $this->postJson('/api/party-profiles', [
-            'party_types' => ['vendor', 'customer', 'salesman'],
+            'party_types' => ['vendor', 'customer', 'account', 'salesman'],
             'primary_type' => 'customer',
             'code' => 'MULTI-001',
             'name' => 'Multi Role Party',
             'vendor_account_type_ulid' => $payable,
             'customer_account_type_ulid' => $receivable,
+            'account_account_type_ulid' => $accountType,
             'mobile' => '03001234567',
         ])->assertCreated()
             ->assertJsonPath('party_type', 'customer')
@@ -38,19 +40,23 @@ class PartyProfileTest extends TestCase
         $identityUlid = (string) $response->json('identity_ulid');
         $vendorUlid = (string) $response->json('vendor_ulid');
         $customerUlid = (string) $response->json('customer_ulid');
+        $accountUlid = (string) $response->json('account_ulid');
 
         $this->assertNotSame('', $identityUlid);
         $this->assertNotSame('', $vendorUlid);
         $this->assertNotSame('', $customerUlid);
+        $this->assertNotSame('', $accountUlid);
 
         $profile = PartyProfile::query()->where('ulid', $identityUlid)->firstOrFail();
         $supplier = Supplier::query()->where('ulid', $vendorUlid)->firstOrFail();
         $customer = Customer::query()->where('ulid', $customerUlid)->firstOrFail();
+        $account = Account::query()->where('ulid', $accountUlid)->firstOrFail();
 
         $this->assertSame($profile->id, $supplier->party_profile_id);
         $this->assertSame($profile->id, $customer->party_profile_id);
+        $this->assertSame($profile->id, $account->party_profile_id);
         $this->assertSame(
-            ['customer', 'salesman', 'vendor'],
+            ['account', 'customer', 'salesman', 'vendor'],
             $profile->types()->orderBy('type')->pluck('type')->all(),
         );
 
@@ -66,6 +72,14 @@ class PartyProfileTest extends TestCase
             'code' => 'MULTI-001-C',
             'is_active' => true,
         ]);
+        $this->assertDatabaseHas('accounts', [
+            'tenant_id' => $profile->tenant_id,
+            'party_profile_id' => $profile->id,
+            'supplier_id' => null,
+            'customer_id' => null,
+            'code' => 'MULTI-001-A',
+            'is_active' => true,
+        ]);
 
         $this->getJson('/api/party-profiles?type=salesman')
             ->assertOk()
@@ -78,14 +92,18 @@ class PartyProfileTest extends TestCase
         $this->getJson('/api/party-profiles?type=customer')
             ->assertOk()
             ->assertJsonFragment(['customer_ulid' => $customerUlid]);
+
+        $this->getJson('/api/party-profiles?type=account')
+            ->assertOk()
+            ->assertJsonFragment(['account_ulid' => $accountUlid]);
     }
 
     public function test_removing_vendor_type_preserves_history_and_deactivates_vendor_backing(): void
     {
         $this->signInOwner('party-profile-remove')->assertOk();
 
-        $payable = $this->accountTypeUlid('ACCOUNT PAYABLE');
-        $receivable = $this->accountTypeUlid('ACCOUNT RECEIVABLE');
+        $payable = $this->accountTypeUlid('payable');
+        $receivable = $this->accountTypeUlid('receivable');
 
         $created = $this->postJson('/api/party-profiles', [
             'party_types' => ['vendor', 'customer', 'salesman'],
@@ -170,7 +188,7 @@ class PartyProfileTest extends TestCase
 
         if ($kind === 'payable') {
             $query->where('is_payable', true);
-        } else {
+        } elseif ($kind === 'receivable') {
             $query->where('is_receivable', true);
         }
 
