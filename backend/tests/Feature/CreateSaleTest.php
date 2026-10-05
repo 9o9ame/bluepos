@@ -44,13 +44,20 @@ class CreateSaleTest extends TestCase
     {
         $this->signInOwner('sale-salesman-a')->assertOk();
 
-        $salesmanUlid = app(\App\Tenancy\TenantContext::class)->membership()->ulid;
+        $salesman = $this->postJson('/api/party-profiles', [
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'code' => 'SM-A',
+            'name' => 'Salesman A',
+        ])->assertCreated();
+
+        $salesmanUlid = $salesman->json('identity_ulid');
         $product = $this->createProduct('Salesman Item A', ['retail' => '25.0000']);
         $this->giveStock($product, '10');
 
         $this->getJson('/api/sales/salesmen')
             ->assertOk()
-            ->assertJsonFragment(['ulid' => $salesmanUlid]);
+            ->assertJsonFragment(['ulid' => $salesmanUlid, 'name' => 'Salesman A']);
 
         $this->postJson('/api/sales', [
             'salesman_ulid' => $salesmanUlid,
@@ -59,7 +66,8 @@ class CreateSaleTest extends TestCase
             ],
         ], $this->idem('sale-salesman-a-1'))
             ->assertCreated()
-            ->assertJsonPath('salesman.ulid', $salesmanUlid);
+            ->assertJsonPath('salesman.ulid', $salesmanUlid)
+            ->assertJsonPath('salesman.name', 'Salesman A');
 
         $this->postJson('/api/auth/logout')->assertOk();
         $this->signInOwner('sale-salesman-b')->assertOk();
