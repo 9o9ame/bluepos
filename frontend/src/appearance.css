@@ -909,3 +909,201 @@ html[data-animations='off'] #root *::after {
   transition-delay:0ms !important;
   scroll-behavior:auto !important;
 }
+
+
+/* ---------- UNIFIED BLUEPOS DESIGN TOKENS ---------- */
+/*
+ * Cross-module visual contract. Page CSS may own geometry, but shared
+ * typography, surfaces, borders, focus, state colors, radii and shadows
+ * resolve through these tokens.
+ */
+:root {
+  --ui-bg: var(--appearance-surface-soft);
+  --ui-surface: var(--appearance-surface);
+  --ui-surface-subtle: var(--surface-2);
+  --ui-surface-muted: var(--surface-3);
+  --ui-text: var(--appearance-text);
+  --ui-text-muted: var(--appearance-text-muted);
+  --ui-border: var(--appearance-border);
+  --ui-accent: var(--appearance-accent);
+  --ui-accent-soft: color-mix(in srgb, var(--appearance-accent) 12%, var(--appearance-surface));
+  --ui-accent-strong: color-mix(in srgb, var(--appearance-accent) 82%, black);
+  --ui-success: #16834a;
+  --ui-warning: #b56a00;
+  --ui-danger: #c53b36;
+  --ui-info: #2879ad;
+  --ui-focus-shadow: 0 0 0 2px color-mix(in srgb, var(--appearance-accent) 24%, transparent);
+  --ui-card-shadow: var(--panel-shadow);
+  --ui-control-shadow: var(--button-shadow);
+  --ui-transition-fast: 120ms ease;
+  --ui-transition-normal: 180ms ease;
+}
+
+:root[data-theme='dark'] {
+  --ui-success: #50c878;
+  --ui-warning: #f0ad4e;
+  --ui-danger: #ff7670;
+  --ui-info: #6bb9e8;
+}
+
+/* Shared panels/cards. */
+html #root :where(
+  .desktop-panel,
+  .form-group,
+  .pos-grid-wrap,
+  .calc-card,
+  .appearance-menu-panel,
+  .account-menu-panel,
+  .ribbon-menu
+) {
+  border-color: var(--ui-border);
+  background-color: var(--ui-surface);
+  color: var(--ui-text);
+  box-shadow: var(--ui-card-shadow);
+}
+
+/* Shared controls. Geometry remains page-owned. */
+html #root :where(
+  .desktop-input,
+  .desktop-select,
+  .desktop-textarea,
+  .classic-workspace input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  .classic-workspace select,
+  .classic-workspace textarea,
+  .admin-page input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  .admin-page select,
+  .admin-page textarea
+) {
+  border-color: var(--ui-border);
+  background-color: var(--ui-surface);
+  color: var(--ui-text);
+  border-radius: var(--control-radius);
+  box-shadow: var(--ui-control-shadow);
+  transition:
+    border-color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast),
+    background-color var(--ui-transition-fast);
+}
+
+html #root :where(
+  .desktop-input,
+  .desktop-select,
+  .desktop-textarea,
+  .classic-workspace input,
+  .classic-workspace select,
+  .classic-workspace textarea,
+  .admin-page input,
+  .admin-page select,
+  .admin-page textarea
+):focus-visible {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+html #root :where(
+  .desktop-input,
+  .desktop-select,
+  .desktop-textarea,
+  .classic-workspace input,
+  .classic-workspace select,
+  .classic-workspace textarea,
+  .admin-page input,
+  .admin-page select,
+  .admin-page textarea
+):disabled {
+  background-color: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  cursor: not-allowed;
+  opacity: .76;
+}
+
+/* Shared buttons. Semantic variants keep their meaning; primary follows theme. */
+html #root .desktop-btn {
+  border-color: var(--ui-border);
+  border-radius: var(--control-radius);
+  box-shadow: var(--ui-control-shadow);
+  transition:
+    border-color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast),
+    transform var(--ui-transition-fast);
+}
+
+html #root .desktop-btn:not(.is-primary):not(.is-danger) {
+  background-color: var(--ui-surface);
+  color: var(--ui-text);
+}
+
+html #root .desktop-btn.is-primary {
+  border-color: var(--ui-accent-strong);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 82%, white),
+    var(--ui-accent)
+  );
+  color: white;
+}
+
+html #root .desktop-btn.is-danger {
+  border-color: color-mix(in srgb, var(--ui-danger) 78%, black);
+}
+
+html #root .desktop-btn:hover:not(:disabled) {
+  border-color: var(--ui-accent);
+}
+
+html #root .desktop-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+html #root .desktop-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow), var(--ui-control-shadow);
+}
+
+/* Shared data grids. */
+html #root .pos-grid-wrap {
+  border-radius: var(--panel-radius);
+}
+
+html #root .pos-grid {
+  color: var(--ui-text);
+}
+
+html #root .pos-grid thead th {
+  border-color: var(--ui-border);
+  color: var(--ui-text);
+}
+
+html #root .pos-grid tbody td {
+  border-color: color-mix(in srgb, var(--ui-border) 62%, transparent);
+}
+
+html #root .pos-grid tbody tr:hover {
+  background: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface));
+}
+
+html #root .pos-grid tbody tr.is-selected {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface));
+  color: var(--ui-text);
+}
+
+html #root .pos-grid-empty {
+  color: var(--ui-text-muted);
+}
+
+/* Shared labels/headings and validation tone. */
+html #root :where(.desktop-field > span, .form-group-title, .desktop-panel-header) {
+  color: var(--ui-text);
+}
+
+html #root :where(.field-error, .validation-error, .form-error, .sales-return-error) {
+  color: var(--ui-danger);
+}
+
+/* User animation setting also suppresses shared press/hover movement. */
+html[data-animations='off'] #root .desktop-btn:active:not(:disabled) {
+  transform: none;
+}
