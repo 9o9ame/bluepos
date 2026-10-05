@@ -2,9 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
 use App\Models\Branch;
+use App\Models\BusinessSetting;
 use App\Models\Product;
+use App\Models\JournalEntry;
 use App\Models\Sale;
+use App\Models\SaleReturnRefund;
 use App\Models\StockBalance;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
@@ -167,6 +171,205 @@ class SaleReturnTest extends TestCase
         $this->assertSame('20.000000', $this->stockFor($product));
     }
 
+    public function test_posted_return_can_be_refunded_idempotently_and_balanced(): void
+    {
+        $this->signInOwner('sr-refund')->assertOk();
+        $this->configureAccounts();
+
+        $product = $this->createProduct('Refund Product', '100.0000');
+        $this->giveStock($product, '10.000000');
+
+        $saleUlid = $this->postJson('/api/sales', [
+            'items' => [[
+                'product_ulid' => $product,
+                'quantity' => '2.000000',
+            ]],
+        ], $this->idem('sr-refund-sale'))->assertCreated()->json('ulid');
+
+        $this->postJson('/api/sales/'.$saleUlid.'/payments', [
+            'amount' => '200.0000',
+            'method' => 'cash',
+        ], $this->idem('sr-refund-payment'))->assertCreated();
+
+        $saleItemUlid = $this->getJson('/api/sales/'.$saleUlid.'/returnable-lines')
+            ->assertOk()
+            ->json('data.0.sale_item_ulid');
+
+        $returnUlid = $this->postJson('/api/sales-returns', [
+            'sale_ulid' => $saleUlid,
+        ], $this->idem('sr-refund-return'))->assertCreated()->json('ulid');
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/lines', [
+            'sale_item_ulid' => $saleItemUlid,
+            'quantity' => '1.000000',
+        ])->assertCreated();
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/post')
+            ->assertOk()
+            ->assertJsonPath('grand_total', '100.0000');
+
+        $first = $this->postJson('/api/sales-returns/'.$returnUlid.'/refunds', [
+            'amount' => '60.0000',
+            'method' => 'cash',
+            'reference' => 'CASH-RET-1',
+        ], $this->idem('sr-refund-cash'))
+            ->assertCreated()
+            ->assertJsonPath('amount', '60.0000')
+            ->assertJsonPath('method', 'cash');
+
+        $second = $this->postJson('/api/sales-returns/'.$returnUlid.'/refunds', [
+            'amount' => '60.0000',
+            'method' => 'cash',
+            'reference' => 'CASH-RET-1',
+        ], $this->idem('sr-refund-cash'))->assertCreated();
+
+        $this->assertSame($first->json('ulid'), $second->json('ulid'));
+        $this->assertSame(1, SaleReturnRefund::query()->count());
+
+        $this->getJson('/api/sales-returns/'.$returnUlid)
+            ->assertOk()
+            ->assertJsonPath('refund_amount', '60.0000')
+            ->assertJsonPath('balance_due', '40.0000');
+
+        $refund = SaleReturnRefund::query()->firstOrFail();
+        $journal = JournalEntry::query()
+            ->where('ulid', $refund->journal_entry_ulid)
+            ->with('lines')
+            ->firstOrFail();
+
+        $debit = '0.0000';
+        $credit = '0.0000';
+        foreach ($journal->lines as $line) {
+            $debit = bcadd($debit, (string) $line->debit, 4);
+            $credit = bcadd($credit, (string) $line->credit, 4);
+        }
+
+        $this->assertSame(0, bccomp($debit, '60.0000', 4));
+        $this->assertSame(0, bccomp($credit, '60.0000', 4));
+        $this->assertSame('posted', $journal->status->value);
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/refunds', [
+            'amount' => '41.0000',
+            'method' => 'cash',
+        ], $this->idem('sr-refund-over'))->assertStatus(422);
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/refunds', [
+            'amount' => '40.0000',
+            'method' => 'cash',
+        ], $this->idem('sr-refund-rest'))->assertCreated();
+
+        $this->getJson('/api/sales-returns/'.$returnUlid)
+            ->assertOk()
+            ->assertJsonPath('refund_amount', '100.0000')
+            ->assertJsonPath('balance_due', '0.0000');
+
+        $this->getJson('/api/sales/'.$saleUlid)
+            ->assertOk()
+            ->assertJsonPath('returned_amount', '100.0000')
+            ->assertJsonPath('net_sale_total', '100.0000')
+            ->assertJsonPath('balance_due', '0.0000');
+    }
+
+    public function test_refund_method_cannot_exceed_original_collected_method_amount(): void
+    {
+        $this->signInOwner('sr-refund-method')->assertOk();
+        $this->configureAccounts();
+
+        $product = $this->createProduct('Refund Method Product', '100.0000');
+        $this->giveStock($product, '10.000000');
+
+        $saleUlid = $this->postJson('/api/sales', [
+            'items' => [[
+                'product_ulid' => $product,
+                'quantity' => '2.000000',
+            ]],
+        ], $this->idem('sr-refund-method-sale'))->assertCreated()->json('ulid');
+
+        $this->postJson('/api/sales/'.$saleUlid.'/payments', [
+            'amount' => '50.0000',
+            'method' => 'cash',
+        ], $this->idem('sr-refund-method-pay'))->assertCreated();
+
+        $saleItemUlid = $this->getJson('/api/sales/'.$saleUlid.'/returnable-lines')
+            ->assertOk()
+            ->json('data.0.sale_item_ulid');
+
+        $returnUlid = $this->postJson('/api/sales-returns', [
+            'sale_ulid' => $saleUlid,
+        ], $this->idem('sr-refund-method-return'))->assertCreated()->json('ulid');
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/lines', [
+            'sale_item_ulid' => $saleItemUlid,
+            'quantity' => '1.000000',
+        ])->assertCreated();
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/post')->assertOk();
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/refunds', [
+            'amount' => '60.0000',
+            'method' => 'cash',
+        ], $this->idem('sr-refund-method-over'))
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/refunds', [
+            'amount' => '50.0000',
+            'method' => 'cash',
+        ], $this->idem('sr-refund-method-ok'))->assertCreated();
+
+        $this->assertSame(1, SaleReturnRefund::query()->count());
+    }
+
+    public function test_posted_return_reduces_future_sale_collection_limit(): void
+    {
+        $this->signInOwner('sr-net-due')->assertOk();
+        $this->configureAccounts();
+
+        $product = $this->createProduct('Net Due Product', '100.0000');
+        $this->giveStock($product, '10.000000');
+
+        $saleUlid = $this->postJson('/api/sales', [
+            'items' => [[
+                'product_ulid' => $product,
+                'quantity' => '2.000000',
+            ]],
+        ], $this->idem('sr-net-due-sale'))->assertCreated()->json('ulid');
+
+        $saleItemUlid = $this->getJson('/api/sales/'.$saleUlid.'/returnable-lines')
+            ->assertOk()
+            ->json('data.0.sale_item_ulid');
+
+        $returnUlid = $this->postJson('/api/sales-returns', [
+            'sale_ulid' => $saleUlid,
+        ], $this->idem('sr-net-due-return'))->assertCreated()->json('ulid');
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/lines', [
+            'sale_item_ulid' => $saleItemUlid,
+            'quantity' => '1.000000',
+        ])->assertCreated();
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/post')->assertOk();
+
+        $this->getJson('/api/sales/'.$saleUlid)
+            ->assertOk()
+            ->assertJsonPath('returned_amount', '100.0000')
+            ->assertJsonPath('net_sale_total', '100.0000')
+            ->assertJsonPath('balance_due', '100.0000');
+
+        $this->postJson('/api/sales/'.$saleUlid.'/payments', [
+            'amount' => '101.0000',
+            'method' => 'cash',
+        ], $this->idem('sr-net-due-over'))->assertStatus(422);
+
+        $this->postJson('/api/sales/'.$saleUlid.'/payments', [
+            'amount' => '100.0000',
+            'method' => 'cash',
+        ], $this->idem('sr-net-due-ok'))->assertCreated();
+
+        $this->getJson('/api/sales?due_only=1&status=posted&q='.urlencode((string) $saleUlid))
+            ->assertOk();
+    }
+
     public function test_sales_returns_are_scoped_to_active_branch_and_warehouse(): void
     {
         $this->signInOwner('sr-branch')->assertOk();
@@ -252,6 +455,40 @@ class SaleReturnTest extends TestCase
             ->assertNotFound();
 
         $this->getJson('/api/sales-returns/'.$first->json('ulid'))->assertNotFound();
+    }
+
+    /** @return array{cash:Account,clearing:Account} */
+    private function configureAccounts(): array
+    {
+        $cash = $this->leafAccount('SR TEST CASH', '9401');
+        $clearing = $this->leafAccount('SR TEST CLEARING', '9402');
+
+        BusinessSetting::query()
+            ->forTenant(app(TenantContext::class)->tenantId())
+            ->update([
+                'default_cash_account_id' => $cash->id,
+                'sales_clearing_account_id' => $clearing->id,
+            ]);
+
+        return ['cash' => $cash, 'clearing' => $clearing];
+    }
+
+    private function leafAccount(string $name, string $code): Account
+    {
+        $context = app(TenantContext::class);
+        $type = \App\Models\AccountType::query()
+            ->forTenant($context->tenantId())
+            ->orderBy('id')
+            ->firstOrFail();
+
+        return Account::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => $code,
+            'name' => $name,
+            'account_type_id' => $type->id,
+            'is_active' => true,
+            'created_by' => $context->userId(),
+        ]);
     }
 
     private function createProduct(string $name, string $retail): string
