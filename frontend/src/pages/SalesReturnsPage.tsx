@@ -21,7 +21,7 @@ import { askConfirm, useFeedback } from '../feedback/FeedbackProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Sale } from '../types/sales'
-import type { SaleReturn, ReturnableSaleLine } from '../types/salesReturns'
+import type { SaleReturn } from '../types/salesReturns'
 import './SalesReturnsPage.css'
 
 type ViewMode = 'entry' | 'search' | 'product'
