@@ -2053,3 +2053,117 @@
 :root[data-theme='dark'] .sales-reference-grid tbody tr.is-completed-entry .sales-pos-line-product {
   color: #dce9f1;
 }
+
+
+/* ---------- SALES INVOICE DESIGN SYSTEM MIGRATION ---------- */
+/* Visual-only overrides: frozen Sales Invoice geometry and Amounts layout are untouched. */
+.sales-reference-screen {
+  color: var(--ui-text) !important;
+}
+
+.sales-reference-options,
+.sales-reference-amounts,
+.sales-reference-pay-options,
+.sales-reference-grid-wrap,
+.sales-customer-dropdown-shutter,
+.sales-salesman-dropdown-shutter,
+.sales-reference-product-drop {
+  border-color: var(--ui-border) !important;
+  background-color: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+  border-radius: var(--panel-radius) !important;
+}
+
+.sales-reference-subtab,
+.sales-reference-sale-btn,
+.sales-reference-actions button,
+.sales-reference-input-button,
+.sales-reference-party-add,
+.sales-reference-record-controls button {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  transition:
+    border-color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast) !important;
+}
+
+.sales-reference-subtab:hover,
+.sales-reference-sale-btn:hover:not(:disabled),
+.sales-reference-actions button:hover:not(:disabled),
+.sales-reference-input-button:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+
+.sales-reference-subtab.is-active {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+}
+
+.sales-reference-screen :where(input, select, textarea) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.sales-reference-screen :where(input, select, textarea):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.sales-reference-screen :where(input, select, textarea):disabled {
+  background-color: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+.sales-pos-customer-grid-head,
+.sales-pos-salesman-grid-head,
+.sales-pos-product-grid-head {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface-subtle))
+  ) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-pos-customer-grid-row,
+.sales-pos-salesman-grid-row,
+.sales-pos-product-grid-row {
+  border-color: color-mix(in srgb, var(--ui-border) 58%, transparent) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-pos-customer-grid-row:hover,
+.sales-pos-salesman-grid-row:hover,
+.sales-pos-product-grid-row:hover,
+.sales-pos-product-grid-row.is-active-product,
+.sales-pos-customer-grid-row.is-active-entry {
+  background: var(--ui-accent-soft) !important;
+}
+
+.sales-reference-inline-caret,
+.sales-reference-field-caret {
+  color: var(--ui-accent) !important;
+}
+
+.sales-reference-action-icon.is-save,
+.sales-reference-sale-btn.is-green { color: var(--ui-success) !important; }
+.sales-reference-action-icon.is-close,
+.sales-reference-entry-status.is-error { color: var(--ui-danger) !important; }
+.sales-reference-entry-status.is-ready { color: var(--ui-info) !important; }
+
+html[data-animations='off'] .sales-reference-screen * {
+  transition: none !important;
+  animation: none !important;
+}
