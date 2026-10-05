@@ -61,7 +61,7 @@ function isFontPreference(value: unknown): value is FontPreference {
 function isPrimaryTheme(value: unknown): value is PrimaryTheme { return ['indigo', 'blue', 'emerald', 'teal', 'purple', 'slate'].includes(String(value)) }
 function isDensity(value: unknown): value is DensityPreference { return value === 'compact' || value === 'comfortable' }
 function isRadius(value: unknown): value is RadiusPreference { return value === 'small' || value === 'medium' || value === 'large' }
-function isShadow(value: unknown): value is ShadowPreference { return value === 'none' || value === 'soft' || value === 'normal' }
+function isShadow(value: unknown): value is ShadowPreference { return value === 'none' || value === 'soft' || value === 'normal' || value === '3d' }
 
 function readStoredPreferences(userScope: string | null): AppearancePreferences {
   if (typeof window === 'undefined') {
