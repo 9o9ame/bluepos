@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { Sale, SalePayment, SalePaymentMethod, SalePayload, SalesmanOption } from '../types/sales'
+import type { Sale, SaleHold, SaleHoldPayload, SalePayment, SalePaymentMethod, SalePayload, SalesmanOption } from '../types/sales'
 
 /**
  * Post a sale. The server recalculates every money figure and revalidates
@@ -72,4 +72,34 @@ export function createSalePayment(
 
 export function fetchSale(saleUlid: string) {
   return apiFetch<Sale>(`/api/sales/${saleUlid}`)
+}
+
+
+export function fetchSaleHolds() {
+  return apiFetch<{ data: SaleHold[]; count: number }>('/api/sales/holds', {
+    busy: 'none',
+  })
+}
+
+export function createSaleHold(
+  payload: SaleHoldPayload,
+  idempotencyKey: string,
+) {
+  return apiFetch<SaleHold>('/api/sales/holds', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 'Idempotency-Key': idempotencyKey },
+  })
+}
+
+export function fetchSaleHold(holdUlid: string) {
+  return apiFetch<SaleHold>(`/api/sales/holds/${holdUlid}`, {
+    busy: 'none',
+  })
+}
+
+export function deleteSaleHold(holdUlid: string) {
+  return apiFetch<{ ok: boolean }>(`/api/sales/holds/${holdUlid}`, {
+    method: 'DELETE',
+  })
 }
