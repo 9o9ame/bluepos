@@ -91,3 +91,53 @@
 :root[data-skin='advanced'] .coa-modal {
   border-radius: 16px;
 }
+
+
+/* ---------- COA MODAL DESIGN SYSTEM MIGRATION ---------- */
+.coa-modal {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+.coa-modal-bar,
+.coa-sheet-foot,
+.coa-sheet-records {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+  color: var(--ui-text) !important;
+}
+.coa-modal :where(input, select, textarea) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+.coa-modal :where(input, select, textarea):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+.coa-action,
+.coa-plus,
+.coa-sheet-nav button {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+.coa-action:hover:not(:disabled),
+.coa-plus:hover:not(:disabled),
+.coa-sheet-nav button:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+.coa-modal-list tr.is-selected td,
+.coa-sheet-grid tr.is-selected td {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface)) !important;
+}
+.coa-modal-error { color: var(--ui-danger) !important; }
+html[data-animations='off'] .coa-modal * { transition: none !important; animation: none !important; }
