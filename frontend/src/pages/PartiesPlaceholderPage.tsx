@@ -1277,7 +1277,7 @@ export function PartiesPlaceholderPage({
                 ? form.ulid
                   ? 'Update party'
                   : 'Create party'
-                : 'Only VENDORS and CUSTOMERS can be saved in this phase'
+                : 'Select a creatable party type'
             }
             onClick={() => void save()}
           >
@@ -1342,7 +1342,7 @@ export function PartiesPlaceholderPage({
 
               <div className="parties-vca-field-row parties-vca-id-row">
                 <label htmlFor="vca-id">ID</label>
-                <input id="vca-id" value={form.ulid || '—'} readOnly title="Public ULID" />
+                <input id="vca-id" value={form.identityUlid || form.ulid || '—'} readOnly title="Public ULID" />
                 <label htmlFor="vca-code">CODE</label>
                 <input
                   id="vca-code"
@@ -1579,7 +1579,7 @@ export function PartiesPlaceholderPage({
                           : `Record ${Math.max(bankRows.findIndex((r) => r.key === selectedBankKey), 0) + 1} of ${bankRows.length}`}
                       </span>
                       <span className="parties-vca-bank-actions">
-                        <button type="button" onClick={addBankRow}>Add</button>
+                        <button type="button" disabled={!formFinancialContext()} onClick={addBankRow}>Add</button>
                         <button type="button" disabled={!selectedBankKey} onClick={() => void removeSelectedBank()}>
                           Remove
                         </button>
