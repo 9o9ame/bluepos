@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Authz\PermissionCatalogue;
 use App\Models\AuditLog;
 use App\Models\Product;
+use App\Models\StockBalance;
 use App\Models\Tenant;
+use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -276,6 +278,42 @@ class CatalogTest extends TestCase
             $this->patchJson('/api/'.$endpoint.'/'.$ulid, ['name' => 'Leaked'])->assertNotFound();
             $this->deleteJson('/api/'.$endpoint.'/'.$ulid)->assertNotFound();
         }
+    }
+
+    public function test_sales_product_lookup_uses_active_tenant_warehouse_stock_and_cost(): void
+    {
+        $this->signInOwner('sales-lookup')->assertOk();
+        $masters = $this->seedMasters();
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Lookup Cola',
+            'category_ulid' => $masters['category'],
+            'brand_ulid' => $masters['brand'],
+            'base_unit_ulid' => $masters['pcs'],
+            'rack_location' => 'R-A1',
+        ])->assertCreated()->json('ulid');
+
+        $product = Product::query()->where('ulid', $productUlid)->firstOrFail();
+        $context = app(TenantContext::class);
+
+        StockBalance::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'warehouse_id' => $context->warehouseId(),
+            'product_id' => $product->id,
+            'quantity' => '7.500000',
+            'average_cost' => '41.2500',
+            'stock_value' => '309.3750',
+        ]);
+
+        $response = $this->getJson('/api/products?q=Lookup%20Cola&sales_lookup=1')
+            ->assertOk()
+            ->assertJsonPath('data.0.ulid', $productUlid)
+            ->assertJsonPath('data.0.sales_lookup.in_stock', '7.500000')
+            ->assertJsonPath('data.0.sales_lookup.average_cost', '41.2500')
+            ->assertJsonPath('data.0.rack_location', 'R-A1');
+
+        $this->assertNoInternalIds($response->json());
     }
 
     public function test_product_barcode_group_round_trip_and_inactive_relations_remain_readable(): void
