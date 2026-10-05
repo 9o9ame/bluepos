@@ -208,6 +208,58 @@ export function useSaleCart() {
     )
   }
 
+  function productLine(
+    lineKey: string,
+    product: Product,
+    quantity = '1.000000',
+    scannedBarcode: ProductBarcode | null = null,
+    availableBaseStock: string | null = null,
+  ): SaleDraftLine {
+    const availableUnits = unitOptions(product)
+    const barcodeUnit = scannedBarcode?.unit ?? null
+    const selectedUnit = barcodeUnit ?? product.base_unit ?? null
+    const conversionFactor = scannedBarcode
+      ? factor8(scannedBarcode.conversion_factor)
+      : '1.00000000'
+    const barcode = scannedBarcode?.barcode ?? null
+    const retailPrice =
+      product.prices?.find(
+        (row) => row.is_active && row.price_type === 'retail',
+      )?.amount ?? null
+    const wholesalePrice =
+      product.prices?.find(
+        (row) => row.is_active && row.price_type === 'wholesale',
+      )?.amount ?? null
+
+    const line: SaleDraftLine = {
+      line_key: lineKey,
+      product_ulid: product.ulid,
+      product_name: product.name,
+      product_number: product.product_number,
+      quantity,
+      line_kind: 'sale',
+      unit_ulid: selectedUnit?.ulid,
+      unit_code: selectedUnit?.code,
+      unit_name: selectedUnit?.name,
+      unit_symbol: selectedUnit?.symbol,
+      unit_allows_decimal: selectedUnit?.allows_decimal,
+      barcode,
+      conversion_factor: conversionFactor,
+      available_units: availableUnits,
+      available_base_stock: availableBaseStock,
+      retail_price: retailPrice,
+      wholesale_price: wholesalePrice,
+      unit_price: '0.0000',
+      discount_percent: '0',
+      discount_amount: '0',
+      tax_percent: product.is_taxable ? product.tax_percent : '0',
+      notes: null,
+    }
+
+    line.unit_price = priceForLine(line, priceType)
+    return line
+  }
+
   function addProduct(
     product: Product,
     quantity = '1.000000',
@@ -219,9 +271,6 @@ export function useSaleCart() {
     const availableUnits = unitOptions(product)
     const barcodeUnit = scannedBarcode?.unit ?? null
     const selectedUnit = barcodeUnit ?? product.base_unit ?? null
-    const conversionFactor = scannedBarcode
-      ? factor8(scannedBarcode.conversion_factor)
-      : '1.00000000'
     const barcode = scannedBarcode?.barcode ?? null
     const existing = lines.find(
       (line) =>
@@ -248,44 +297,39 @@ export function useSaleCart() {
       return existing.line_key
     }
 
-    const retailPrice =
-      product.prices?.find(
-        (row) => row.is_active && row.price_type === 'retail',
-      )?.amount ?? null
-    const wholesalePrice =
-      product.prices?.find(
-        (row) => row.is_active && row.price_type === 'wholesale',
-      )?.amount ?? null
-
-    const line: SaleDraftLine = {
-      line_key: newLineKey(`sale:${product.ulid}`),
-      product_ulid: product.ulid,
-      product_name: product.name,
-      product_number: product.product_number,
+    const line = productLine(
+      newLineKey(`sale:${product.ulid}`),
+      product,
       quantity,
-      line_kind: 'sale',
-      unit_ulid: selectedUnit?.ulid,
-      unit_code: selectedUnit?.code,
-      unit_name: selectedUnit?.name,
-      unit_symbol: selectedUnit?.symbol,
-      unit_allows_decimal: selectedUnit?.allows_decimal,
-      barcode,
-      conversion_factor: conversionFactor,
-      available_units: availableUnits,
-      available_base_stock: availableBaseStock,
-      retail_price: retailPrice,
-      wholesale_price: wholesalePrice,
-      unit_price: '0.0000',
-      discount_percent: '0',
-      discount_amount: '0',
-      tax_percent: product.is_taxable ? product.tax_percent : '0',
-      notes: null,
-    }
-
-    line.unit_price = priceForLine(line, priceType)
+      scannedBarcode,
+      availableBaseStock,
+    )
 
     setLines((current) => [...current, line])
     return line.line_key
+  }
+
+  function replaceProduct(
+    lineKey: string,
+    product: Product,
+    scannedBarcode: ProductBarcode | null = null,
+    availableBaseStock: string | null = null,
+  ) {
+    const next = productLine(
+      lineKey,
+      product,
+      '1.000000',
+      scannedBarcode,
+      availableBaseStock,
+    )
+
+    setLines((current) =>
+      current.map((line) =>
+        line.line_key === lineKey && line.line_kind === 'sale'
+          ? next
+          : line,
+      ),
+    )
   }
 
   function setQuantity(lineKey: string, quantity: string) {
@@ -690,6 +734,7 @@ export function useSaleCart() {
     setCustomerUlid,
 
     addProduct,
+    replaceProduct,
     setQuantity,
     setLineUnit,
     setDiscountPercent,
