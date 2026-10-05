@@ -531,22 +531,6 @@ export function SalesReturnsPage() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  className="sales-return-header-refresh"
-                  title="Refresh selected sale and balances"
-                  onClick={() => {
-                    if (saleUlid) {
-                      void returnableQuery.refetch()
-                    } else {
-                      void saleLookup.refetch()
-                    }
-                  }}
-                >
-                  <RefreshCw size={12} />
-                  Refresh
-                </button>
-
                 <div className="sales-return-balance-chip is-previous">
                   <span>Previous</span>
                   <strong>{money(previousBalance)}</strong>
