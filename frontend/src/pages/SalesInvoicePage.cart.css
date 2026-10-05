@@ -1392,3 +1392,283 @@
   width: 100%;
   max-width: none;
 }
+
+
+/* ==========================================================================
+   Dense list-first layout for Posted + Pending/Due.
+   Keep filters and totals compact; dedicate the remaining height to data.
+   ========================================================================== */
+.sales-posted-history.sales-history {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  min-height: 0;
+  padding: 5px;
+  overflow: hidden;
+}
+
+.sales-posted-history .sales-history-summary {
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 0;
+}
+
+.sales-posted-history .sales-history-summary > div {
+  min-width: 92px;
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+
+.sales-posted-history .sales-history-summary span {
+  font-size: 8px;
+  line-height: 1;
+}
+
+.sales-posted-history .sales-history-summary strong {
+  margin-top: 1px;
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.sales-posted-history .sales-history-toolbar {
+  flex: 0 0 auto;
+  gap: 5px;
+  padding: 4px 5px;
+  border-radius: 4px;
+}
+
+.sales-posted-history .sales-history-filter {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.sales-posted-history .sales-history-filter > span {
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.sales-posted-history .sales-history-search input,
+.sales-posted-history .sales-history-filter input,
+.sales-posted-history .sales-history-filter select {
+  height: 25px;
+}
+
+.sales-posted-history .sales-history-search {
+  flex-basis: 260px;
+  max-width: 380px;
+}
+
+.sales-posted-history .sales-history-filter input {
+  width: 118px;
+}
+
+.sales-posted-history .sales-history-filter select {
+  min-width: 105px;
+  max-width: 165px;
+}
+
+.sales-posted-history .sales-history-reset {
+  min-height: 25px;
+  padding: 0 7px;
+}
+
+.sales-posted-history .sales-history-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sales-posted-history .sales-history-grid-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+  border-radius: 4px;
+}
+
+.sales-posted-history .sales-history-grid th,
+.sales-posted-history .sales-history-grid td {
+  padding: 4px 6px !important;
+}
+
+.sales-posted-history .sales-history-detail {
+  flex: 0 0 auto;
+  max-height: 36vh;
+  margin-top: 5px;
+  padding: 7px;
+  overflow: auto;
+}
+
+.sales-infinite-status {
+  flex: 0 0 auto;
+  min-height: 16px;
+  padding: 2px 6px;
+  color: #607989;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 12px;
+  text-align: right;
+}
+
+/* Pending/Due gets the same list-first treatment. */
+.sales-pending-view {
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 5px;
+  height: 100%;
+  min-height: 0;
+  padding: 5px;
+  overflow: hidden;
+}
+
+.sales-hold-section {
+  max-height: 150px;
+}
+
+.sales-pending-section-head {
+  gap: 6px;
+  padding: 4px 7px;
+}
+
+.sales-pending-section-head h3 {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.sales-pending-kicker {
+  font-size: 8px;
+  line-height: 1;
+}
+
+.sales-pending-section-head > strong {
+  min-width: 28px;
+  min-height: 20px;
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+.sales-hold-section .sales-pending-grid-wrap {
+  max-height: 105px;
+}
+
+.sales-pending-grid th,
+.sales-pending-grid td {
+  padding: 4px 6px;
+}
+
+.sales-pending-actions button {
+  min-height: 23px;
+  padding: 0 7px;
+  font-size: 10px;
+}
+
+.sales-due-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sales-due-summary {
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 4px 6px;
+}
+
+.sales-due-summary > div {
+  min-width: 92px;
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+
+.sales-due-summary span {
+  font-size: 8px;
+  line-height: 1;
+}
+
+.sales-due-summary strong {
+  margin-top: 1px;
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.sales-due-toolbar {
+  flex: 0 0 auto;
+  gap: 5px;
+  padding: 4px 6px;
+}
+
+.sales-due-toolbar > label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.sales-due-toolbar > label > span {
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.sales-due-toolbar input,
+.sales-due-toolbar select {
+  height: 25px;
+}
+
+.sales-due-search {
+  flex-basis: 260px;
+  max-width: 400px;
+}
+
+.sales-due-toolbar label input {
+  width: 118px;
+}
+
+.sales-due-toolbar label select {
+  min-width: 125px;
+  max-width: 165px;
+}
+
+.sales-due-reset {
+  min-height: 25px;
+  padding: 0 7px;
+}
+
+.sales-due-grid-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+}
+
+.sales-due-detail {
+  flex: 0 0 auto;
+  max-height: 34vh;
+  margin: 5px 6px 6px;
+  padding: 7px;
+  overflow: auto;
+}
+
+:root[data-theme='dark'] .sales-infinite-status {
+  color: #9fb4c2;
+}
+
+@media (max-width: 1100px) {
+  .sales-posted-history .sales-history-toolbar,
+  .sales-due-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .sales-posted-history .sales-history-search,
+  .sales-due-search {
+    max-width: none;
+  }
+
+  .sales-hold-section {
+    max-height: 135px;
+  }
+}
