@@ -16,6 +16,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboa
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
+import type { Product } from '../types/catalog'
 import { fetchParties, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
 import { createSale, createSalePayment, fetchSale, fetchSalesmen } from '../api/sales'
@@ -38,6 +39,7 @@ import {
 } from '../features/gridLayout/columnCatalog'
 import { useColumnLayout } from '../features/gridLayout/useColumnLayout'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import { useFeedback } from '../feedback/FeedbackProvider'
 import type { SaleDraftLine } from '../types/sales'
 import './SalesInvoicePage.theme.css'
 import './SalesInvoicePage.cart.css'
@@ -77,8 +79,80 @@ function newPaymentKey(): string {
   return `pos-payment-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
+function productLookupPrice(product: Product, priceType: SalePriceType): string {
+  const type = priceType === 'wholesale' ? 'wholesale' : 'retail'
+  return product.prices?.find((price) => price.is_active && price.price_type === type)?.amount ?? '—'
+}
+
+function productBaseRate(product: Product): string {
+  return product.prices?.find((price) => price.is_active && price.price_type === 'minimum_sale')?.amount ?? '—'
+}
+
+function productLookupDescription(product: Product): string {
+  const barcode =
+    product.primary_barcode ??
+    product.barcodes?.find((row) => row.is_primary && row.is_active)?.barcode ??
+    product.barcodes?.find((row) => row.is_active)?.barcode ??
+    ''
+
+  const parts = [barcode, product.name, product.category?.name].filter(Boolean)
+  return parts.join(' * ')
+}
+
+function ProductLookupGrid({
+  rows,
+  total,
+  priceType,
+  onSelect,
+}: {
+  rows: Product[]
+  total: number
+  priceType: SalePriceType
+  onSelect: (product: Product) => void
+}) {
+  return (
+    <div className="sales-pos-product-results-grid" role="listbox" aria-label="Choose product">
+      <div className="sales-pos-product-grid-head" aria-hidden="true">
+        <span>ID</span>
+        <span>Description</span>
+        <span>In Stock</span>
+        <span>Unit Price</span>
+        <span>Base Rate</span>
+        <span>Cost</span>
+        <span>Unit</span>
+        <span>Location</span>
+      </div>
+
+      <div className="sales-pos-product-grid-body">
+        {rows.slice(0, 12).map((row) => (
+          <button
+            type="button"
+            className="sales-pos-product-grid-row"
+            key={row.ulid}
+            onClick={() => onSelect(row)}
+          >
+            <span>{row.product_number}</span>
+            <strong>{productLookupDescription(row)}</strong>
+            <span>{row.sales_lookup ? Number.parseFloat(row.sales_lookup.in_stock).toFixed(3) : '—'}</span>
+            <span>{productLookupPrice(row, priceType)}</span>
+            <span>{productBaseRate(row)}</span>
+            <span>{row.sales_lookup?.average_cost ?? '—'}</span>
+            <span>{row.base_unit?.symbol ?? row.base_unit?.code ?? '—'}</span>
+            <span>{row.rack_location || '—'}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="sales-pos-product-grid-foot">
+        Showing {Math.min(rows.length, 12)} of {total} Products
+      </div>
+    </div>
+  )
+}
+
 export function SalesInvoicePage() {
   const { closeActiveTab } = useWorkspace()
+  const feedback = useFeedback()
 
   const [view, setView] = useState<'pos' | 'history' | 'pending'>('pos')
   const [customizationOpen, setCustomizationOpen] = useState(false)
@@ -108,6 +182,8 @@ export function SalesInvoicePage() {
   const cart = useSaleCart()
 
   const [productQuery, setProductQuery] = useState('')
+  const [activeProductQuery, setActiveProductQuery] = useState('')
+  const [activeProductPickerOpen, setActiveProductPickerOpen] = useState(false)
   const [barcodeQuery, setBarcodeQuery] = useState('')
   const [activeLineKey, setActiveLineKey] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -159,10 +235,29 @@ export function SalesInvoicePage() {
           q: productQuery || undefined,
           per_page: 20,
           page: 1,
+          sales_lookup: true,
         },
         { busy: 'none' },
       ),
     enabled: productQuery.trim().length > 0,
+  })
+
+  const activeProductsQuery = useQuery({
+    queryKey: ['products', 'pos-active-entry', activeProductQuery],
+    queryFn: () =>
+      fetchProducts(
+        {
+          q: activeProductQuery || undefined,
+          per_page: 20,
+          page: 1,
+          sales_lookup: true,
+        },
+        { busy: 'none' },
+      ),
+    enabled:
+      Boolean(activeLineKey) &&
+      activeProductPickerOpen &&
+      activeProductQuery.trim().length > 0,
   })
 
   const businessSettingsQuery = useQuery({
