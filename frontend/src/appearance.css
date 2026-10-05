@@ -1338,3 +1338,248 @@ html[data-density='compact'] #root :where(.form-group-body, .desktop-panel-body)
 html[data-density='comfortable'] #root :where(.form-group-body, .desktop-panel-body) {
   padding: var(--ui-pad-md);
 }
+
+
+/* ---------- MIGRATED MODULE DENSITY + LEGACY SHELL BRIDGE ---------- */
+/*
+ * Keep page-specific geometry intact while ensuring every migrated module
+ * visibly responds to the global appearance preferences.
+ */
+:root[data-density='compact'] {
+  --module-font-control: var(--ui-font-sm);
+  --module-font-label: var(--ui-font-xs);
+  --module-font-body: var(--ui-font-sm);
+  --module-gap: var(--ui-gap-sm);
+  --module-pad: var(--ui-pad-sm);
+}
+
+:root[data-density='comfortable'] {
+  --module-font-control: var(--ui-font-md);
+  --module-font-label: var(--ui-font-sm);
+  --module-font-body: var(--ui-font-md);
+  --module-gap: var(--ui-gap-md);
+  --module-pad: var(--ui-pad-md);
+}
+
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .bp-workspace,
+  .catalog-popup,
+  .coa-modal,
+  .bp-style-modal,
+  .product-barcode-print-modal,
+  .bp-col-customization,
+  .sales-party-modal-window
+) {
+  font-size: var(--module-font-body);
+}
+
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .bp-workspace,
+  .catalog-popup,
+  .coa-modal,
+  .bp-style-modal,
+  .product-barcode-print-modal,
+  .bp-col-customization,
+  .sales-party-modal-window
+) :where(button, input, select, textarea) {
+  font-size: var(--module-font-control) !important;
+}
+
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .bp-workspace,
+  .catalog-popup,
+  .coa-modal,
+  .bp-style-modal,
+  .product-barcode-print-modal,
+  .bp-col-customization,
+  .sales-party-modal-window
+) :where(label, legend, .field-label, .desktop-field > span) {
+  font-size: var(--module-font-label) !important;
+}
+
+/* Shared shell/workspace surfaces that still originate in legacy index.css. */
+html #root :where(
+  .app-shell,
+  .workspace-host,
+  .workspace-host-inner,
+  .desktop-page,
+  .admin-page,
+  .report-workspace,
+  .split-workspace,
+  .invoice-workspace
+) {
+  color: var(--ui-text);
+}
+
+html #root :where(
+  .workspace-host,
+  .workspace-host-inner,
+  .desktop-page,
+  .admin-page,
+  .report-workspace
+) {
+  background-color: var(--ui-bg);
+}
+
+html #root :where(
+  .titlebar,
+  .ribbon-tabs,
+  .ribbon-body,
+  .workspace-tabs,
+  .statusbar,
+  .grid-pane,
+  .grid-pane-toolbar,
+  .grid-pane-footer,
+  .desktop-card,
+  .report-filters,
+  .calc-card
+) {
+  border-color: var(--ui-border);
+  color: var(--ui-text);
+}
+
+html #root :where(
+  .grid-pane,
+  .desktop-card,
+  .report-filters,
+  .calc-card
+) {
+  background-color: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
+  border-radius: var(--panel-radius);
+}
+
+html #root :where(
+  .grid-pane-toolbar,
+  .grid-pane-footer,
+  .workspace-tabs
+) {
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle));
+}
+
+html #root :where(
+  .ribbon-tab,
+  .ribbon-command,
+  .workspace-tab,
+  .quick-command,
+  .account-menu-btn,
+  .titlebar-select,
+  .appearance-menu-trigger
+) {
+  border-color: var(--ui-border);
+  border-radius: var(--control-radius);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  transition:
+    border-color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast);
+}
+
+html #root :where(
+  .ribbon-tab,
+  .ribbon-command,
+  .workspace-tab,
+  .quick-command
+):hover:not(:disabled) {
+  border-color: var(--ui-accent);
+  background: var(--ui-accent-soft);
+}
+
+html #root :where(
+  .ribbon-tab.is-active,
+  .workspace-tab.is-active,
+  .quick-command.is-active
+) {
+  border-color: var(--ui-accent);
+  color: var(--ui-accent-strong);
+}
+
+/* Generic tables not already covered by PosDataGrid. */
+html #root :where(
+  .desktop-panel,
+  .grid-pane,
+  .admin-page,
+  .desktop-card,
+  .platform-main
+) table thead th {
+  border-color: var(--ui-border);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface-subtle))
+  );
+  color: var(--ui-text);
+}
+
+html #root :where(
+  .desktop-panel,
+  .grid-pane,
+  .admin-page,
+  .desktop-card,
+  .platform-main
+) table tbody td {
+  border-color: color-mix(in srgb, var(--ui-border) 58%, transparent);
+  color: var(--ui-text);
+}
+
+html #root :where(
+  .desktop-panel,
+  .grid-pane,
+  .admin-page,
+  .desktop-card,
+  .platform-main
+) table tbody tr:hover td {
+  background: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface));
+}
+
+html #root :where(
+  .desktop-panel,
+  .grid-pane,
+  .admin-page,
+  .desktop-card,
+  .platform-main
+) table tbody tr.is-selected td {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface));
+}
+
+/* Generic modal/dialog compatibility layer. */
+html #root :where(
+  [role='dialog'],
+  .modal,
+  .dialog,
+  .desktop-dialog
+) {
+  color: var(--ui-text);
+}
+
+html[data-animations='off'] #root :where(
+  .ribbon-tab,
+  .ribbon-command,
+  .workspace-tab,
+  .quick-command,
+  .account-menu-btn,
+  .titlebar-select,
+  .appearance-menu-trigger
+) {
+  transition: none !important;
+}
