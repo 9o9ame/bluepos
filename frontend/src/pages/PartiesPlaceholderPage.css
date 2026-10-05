@@ -1135,3 +1135,107 @@
 :root[data-skin='advanced'] .parties-vca-panel {
   border-radius: 10px;
 }
+
+
+/* Multi-type party selector */
+.party-type-multi {
+  position: relative;
+  min-width: 0;
+}
+
+.party-type-multi > summary {
+  list-style: none;
+}
+
+.party-type-multi > summary::-webkit-details-marker {
+  display: none;
+}
+
+.party-type-multi-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 24px;
+  padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 24%, #9aa8b5);
+  border-radius: 5px;
+  background: var(--vca-input, #fff);
+  cursor: pointer;
+}
+
+.party-type-multi-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-width: 0;
+}
+
+.party-type-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 42%, #9aa8b5);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand-blue, #1769aa) 10%, #fff);
+  color: var(--brand-blue, #1769aa);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.party-type-multi-arrow {
+  flex: 0 0 auto;
+  color: var(--brand-blue, #1769aa);
+}
+
+.party-type-multi-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 2px);
+  left: 0;
+  width: 100%;
+  min-width: 170px;
+  padding: 4px;
+  border: 1px solid var(--vca-border, #9fb0be);
+  border-radius: 5px;
+  background: var(--vca-input, #fff);
+  box-shadow: 0 4px 12px rgba(20, 40, 60, .18);
+}
+
+.party-type-multi-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 26px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.party-type-multi-option:hover {
+  background: color-mix(in srgb, var(--brand-blue, #1769aa) 10%, transparent);
+}
+
+.party-type-multi-option input {
+  width: 14px !important;
+  min-width: 14px !important;
+  height: 14px !important;
+}
+
+.parties-vca-profile-account-types {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.parties-vca-salesman-account-note {
+  padding: 5px 8px;
+  border: 1px dashed var(--vca-border, #9fb0be);
+  border-radius: 5px;
+  color: var(--vca-muted, #5f7282);
+  font-weight: 700;
+}
