@@ -189,6 +189,7 @@ class PartyController extends Controller
         };
 
         $this->authorize('update', $party);
+        $this->assertLegacyMutationSafe($party);
 
         DB::transaction(function () use ($party, $request, $partyType): void {
             $wasActive = (bool) $party->is_active;
@@ -248,6 +249,7 @@ class PartyController extends Controller
     {
         [$party, $partyType] = $this->resolveParty($request, $partyUlid);
         $this->authorize('delete', $party);
+        $this->assertLegacyMutationSafe($party);
 
         DB::transaction(function () use ($party, $partyType): void {
             $party->is_active = false;
@@ -266,6 +268,12 @@ class PartyController extends Controller
                 ],
             );
         });
+
+        if ($partyType === 'vendor') {
+            $this->profileBridge->ensureSupplier($party);
+        } elseif ($partyType === 'customer') {
+            $this->profileBridge->ensureCustomer($party);
+        }
 
         return response()->json(['ok' => true, 'archived' => true]);
     }
@@ -409,6 +417,25 @@ class PartyController extends Controller
         return $this->userCan('customers.view')
             || $this->userCan('suppliers.view')
             || $this->userCan('sales.create');
+    }
+
+    private function assertLegacyMutationSafe(Supplier|Customer|Account $party): void
+    {
+        if ($party instanceof Account || ! $party->party_profile_id) {
+            return;
+        }
+
+        $typeCount = \App\Models\PartyProfileType::query()
+            ->where('party_profile_id', $party->party_profile_id)
+            ->count();
+
+        if ($typeCount > 1) {
+            throw new ApiException(
+                'MULTI_TYPE_PARTY_REQUIRES_PROFILE_EDIT',
+                'Multi-type parties must be edited from Data Entry Details so all business types stay synchronized.',
+                422,
+            );
+        }
     }
 
     private function syncProfileImage(Supplier|Customer|Account $party, ?string $path): void
