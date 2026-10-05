@@ -160,3 +160,22 @@
 .product-reference-screen .pdf-plus-button:disabled {
   opacity: .45;
 }
+
+
+/* ---------- PRODUCTS REFERENCE TOKEN BRIDGE ---------- */
+.product-reference-screen {
+  color: var(--ui-text) !important;
+}
+.product-reference-screen :where(button, input, select, textarea) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+}
+.product-reference-screen :where(input, select, textarea):focus-visible,
+.product-reference-screen button:focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+.product-reference-screen :where(input, select, textarea, button):disabled {
+  color: var(--ui-text-muted) !important;
+}
