@@ -172,6 +172,12 @@ class PartyProfileController extends Controller
                 continue;
             }
 
+            if ($type === 'account') {
+                $key = $ability === 'create' ? 'accounts.create' : ($ability === 'view' ? 'accounts.view' : 'accounts.edit');
+                abort_unless($permissions->can($key) || $permissions->can('accounts.manage'), 403);
+                continue;
+            }
+
             if ($type === 'salesman') {
                 if ($ability === 'view') {
                     abort_unless(
