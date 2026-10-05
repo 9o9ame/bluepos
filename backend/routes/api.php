@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\PartyBulkController;
 use App\Http\Controllers\Api\PartyController;
 use App\Http\Controllers\Api\PartyLedgerController;
 use App\Http\Controllers\Api\PartyOpeningBalanceController;
+use App\Http\Controllers\Api\PartyProfileController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\Purchases\PurchaseInvoiceController;
@@ -105,6 +106,11 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::get('/column-preferences/{screenKey}', [ColumnPreferenceController::class, 'show']);
     Route::put('/column-preferences/{screenKey}', [ColumnPreferenceController::class, 'upsert']);
+
+    Route::get('/party-profiles', [PartyProfileController::class, 'index']);
+    Route::post('/party-profiles', [PartyProfileController::class, 'store']);
+    Route::get('/party-profiles/{profileUlid}', [PartyProfileController::class, 'show']);
+    Route::patch('/party-profiles/{profileUlid}', [PartyProfileController::class, 'update']);
 
     Route::get('/parties', [PartyController::class, 'index']);
     Route::post('/parties', [PartyController::class, 'store']);
