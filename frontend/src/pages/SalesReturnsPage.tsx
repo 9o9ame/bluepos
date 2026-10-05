@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { CheckCircle2, FileText, RefreshCw, RotateCcw, Save, Search, X } from 'lucide-react'
+import { CheckCircle2, ChevronDown, FileText, RefreshCw, RotateCcw, Save, Search, UserRound, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchSales } from '../api/sales'
@@ -55,6 +55,7 @@ export function SalesReturnsPage() {
   const [saleUlid, setSaleUlid] = useState('')
   const [saleLabel, setSaleLabel] = useState('')
   const [saleSearch, setSaleSearch] = useState('')
+  const [salePickerOpen, setSalePickerOpen] = useState(false)
   const [returnDate, setReturnDate] = useState(today())
   const [reason, setReason] = useState('')
   const [notes, setNotes] = useState('')
@@ -80,7 +81,7 @@ export function SalesReturnsPage() {
         status: 'posted',
         per_page: 20,
       }),
-    enabled: view === 'entry' && !document?.ulid && saleSearch.trim().length > 0,
+    enabled: view === 'entry' && !document?.ulid && salePickerOpen,
     retry: false,
   })
 
@@ -150,6 +151,7 @@ export function SalesReturnsPage() {
     setSaleUlid('')
     setSaleLabel('')
     setSaleSearch('')
+    setSalePickerOpen(false)
     setReturnDate(today())
     setReason('')
     setNotes('')
@@ -179,6 +181,7 @@ export function SalesReturnsPage() {
     setSaleUlid(sale.ulid)
     setSaleLabel(sale.document_number)
     setSaleSearch('')
+    setSalePickerOpen(false)
     setDocument(null)
     setLineQty({})
     setError(null)
@@ -356,42 +359,92 @@ export function SalesReturnsPage() {
                 />
 
                 <label>Sales#:</label>
-                <div className="sales-return-sale-search">
-                  <input
-                    value={saleLabel || saleSearch}
-                    disabled={Boolean(document?.ulid) || readOnly}
-                    placeholder="Search posted invoice"
-                    onChange={(e) => {
-                      setSaleSearch(e.target.value)
-                      setSaleLabel('')
-                      setSaleUlid('')
-                      setLineQty({})
-                    }}
-                  />
-                  {!document?.ulid && saleSearch.trim() && saleLookup.data?.data?.length ? (
+                <div className={`sales-return-sale-search${salePickerOpen ? ' is-open' : ''}`}>
+                  <div className="sales-return-sale-input">
+                    <Search size={13} aria-hidden="true" />
+                    <input
+                      value={saleLabel || saleSearch}
+                      disabled={Boolean(document?.ulid) || readOnly}
+                      placeholder="Invoice #, customer or salesman"
+                      onFocus={() => {
+                        if (!document?.ulid && !readOnly) setSalePickerOpen(true)
+                      }}
+                      onChange={(e) => {
+                        setSaleSearch(e.target.value)
+                        setSaleLabel('')
+                        setSaleUlid('')
+                        setLineQty({})
+                        setSalePickerOpen(true)
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setSalePickerOpen(false)
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="sales-return-sale-trigger"
+                      disabled={Boolean(document?.ulid) || readOnly}
+                      onClick={() => setSalePickerOpen((open) => !open)}
+                      aria-label="Open posted sales"
+                    >
+                      <ChevronDown size={14} />
+                    </button>
+                  </div>
+
+                  {!document?.ulid && salePickerOpen ? (
                     <div className="sales-return-sale-results">
-                      {saleLookup.data.data.map((sale) => (
-                        <button
-                          key={sale.ulid}
-                          type="button"
-                          onClick={() => void selectSale(sale)}
-                        >
-                          <strong>{sale.document_number}</strong>
-                          <span>{sale.sale_date}</span>
-                          <span>{sale.customer?.name ?? 'CASH IN HAND'}</span>
-                          <span>{money(sale.grand_total)}</span>
-                        </button>
-                      ))}
+                      <div className="sales-return-sale-results-head">
+                        <span>Invoice #</span>
+                        <span>Date</span>
+                        <span>Customer</span>
+                        <span>Salesman</span>
+                        <span>Total</span>
+                        <span>Due</span>
+                      </div>
+                      <div className="sales-return-sale-results-body">
+                        {(saleLookup.data?.data ?? []).map((sale) => (
+                          <button
+                            key={sale.ulid}
+                            type="button"
+                            onClick={() => void selectSale(sale)}
+                          >
+                            <strong>{sale.document_number}</strong>
+                            <span>{sale.sale_date}</span>
+                            <span>{sale.customer?.name ?? 'CASH IN HAND'}</span>
+                            <span>{sale.salesman?.name ?? '—'}</span>
+                            <span>{money(sale.grand_total)}</span>
+                            <span className={Number(sale.balance_due) > 0 ? 'is-due' : 'is-paid'}>
+                              {money(sale.balance_due)}
+                            </span>
+                          </button>
+                        ))}
+                        {!saleLookup.isFetching && (saleLookup.data?.data.length ?? 0) === 0 ? (
+                          <div className="sales-return-sale-results-empty">
+                            No posted sales match this search.
+                          </div>
+                        ) : null}
+                        {saleLookup.isFetching ? (
+                          <div className="sales-return-sale-results-empty">Searching posted sales…</div>
+                        ) : null}
+                      </div>
+                      <div className="sales-return-sale-results-foot">
+                        {(saleLookup.data?.meta.total ?? 0)} posted invoice(s)
+                      </div>
                     </div>
                   ) : null}
                 </div>
 
                 <label>From:</label>
-                <input
-                  className="is-highlight"
-                  value={returnableQuery.data?.sale.customer?.name ?? document?.customer?.name ?? 'CASH IN HAND'}
-                  readOnly
-                />
+                <div className="sales-return-linked-field is-customer">
+                  <UserRound size={13} />
+                  <span>
+                    {returnableQuery.data?.sale.customer
+                      ? `${returnableQuery.data.sale.customer.code} — ${returnableQuery.data.sale.customer.name}`
+                      : document?.customer
+                        ? `${document.customer.code} — ${document.customer.name}`
+                        : 'CASH IN HAND'}
+                  </span>
+                </div>
 
                 <label>Remarks:</label>
                 <input
@@ -401,11 +454,16 @@ export function SalesReturnsPage() {
                 />
 
                 <label>S.Man:</label>
-                <input
-                  className="is-highlight"
-                  value={returnableQuery.data?.sale.salesman?.name ?? document?.salesman?.name ?? ''}
-                  readOnly
-                />
+                <div className="sales-return-linked-field is-salesman">
+                  <UserRound size={13} />
+                  <span>
+                    {returnableQuery.data?.sale.salesman
+                      ? `${returnableQuery.data.sale.salesman.code} — ${returnableQuery.data.sale.salesman.name}`
+                      : document?.salesman
+                        ? `${document.salesman.code} — ${document.salesman.name}`
+                        : 'No salesman'}
+                  </span>
+                </div>
 
                 <label>Reason:</label>
                 <input
