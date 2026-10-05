@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Sales;
 
 use App\Actions\Sales\CollectSalePaymentAction;
 use App\Actions\Sales\CreateSaleAction;
+use App\Authz\PermissionService;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StoreSalePaymentRequest;
@@ -96,9 +97,9 @@ class SaleController extends Controller
         ];
     }
 
-    public function salesmen(TenantContext $tenantContext): array
+    public function salesmen(TenantContext $tenantContext, PermissionService $permissions): array
     {
-        $this->authorize('create', Sale::class);
+        abort_unless($permissions->can('sales.create') || $permissions->can('sales.view'), 403);
 
         return PartyProfile::query()
             ->forTenant($tenantContext->tenantId())
