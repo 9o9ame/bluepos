@@ -19,6 +19,7 @@ import { fetchBusinessSettings } from '../api/catalog'
 import {
   bulkUpdateParties,
   createParty,
+  createPartyProfile,
   createPartyBankAccount,
   createPartyOpeningBalance,
   deletePartyBankAccount,
@@ -27,6 +28,7 @@ import {
   downloadPartyExcelTemplate,
   ensurePartyLeafAccount,
   fetchParties,
+  fetchPartyProfiles,
   fetchPartyBankAccounts,
   fetchPartyLedger,
   fetchPartyOpeningBalances,
@@ -34,10 +36,13 @@ import {
   postPartyOpeningBalance,
   previewPartyExcel,
   updateParty,
+  updatePartyProfile,
   updatePartyBankAccount,
   updatePartyOpeningBalance,
   uploadPartyImage,
   type Party,
+  type PartyBusinessType,
+  type PartyProfilePayload,
   type PartyBankAccount,
   type PartyExcelPreview,
   type PartyLedger,
@@ -53,6 +58,7 @@ import {
   type CoaGroupedNode,
 } from '../api/coa'
 import { CoaHierarchyModals } from '../components/parties/CoaHierarchyModals'
+import { PartyTypeMultiSelect } from '../components/parties/PartyTypeMultiSelect'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { AnimatedSelect } from '../components/ui/AnimatedSelect'
 import { ToggleSwitch } from '../components/ui/ToggleSwitch'
@@ -75,7 +81,7 @@ type PartyListRow = {
 }
 
 const PARTY_TYPES: PartyType[] = ['VENDORS', 'CUSTOMERS', 'ACCOUNTS', 'SALES MAN', 'ALL']
-const CREATABLE_TYPES: PartyType[] = ['VENDORS', 'CUSTOMERS', 'ACCOUNTS']
+const CREATABLE_TYPES: PartyType[] = ['VENDORS', 'CUSTOMERS', 'ACCOUNTS', 'SALES MAN']
 
 function uiTypeToFilter(type: PartyType): PartyListFilter {
   switch (type) {
@@ -95,6 +101,7 @@ function uiTypeToFilter(type: PartyType): PartyListFilter {
 function apiTypeToUi(type: PartyTypeApi): PartyType {
   if (type === 'vendor') return 'VENDORS'
   if (type === 'customer') return 'CUSTOMERS'
+  if (type === 'salesman') return 'SALES MAN'
   return 'ACCOUNTS'
 }
 
@@ -102,12 +109,14 @@ function uiTypeToApi(type: PartyType): PartyTypeApi | null {
   if (type === 'VENDORS') return 'vendor'
   if (type === 'CUSTOMERS') return 'customer'
   if (type === 'ACCOUNTS') return 'account'
+  if (type === 'SALES MAN') return 'salesman'
   return null
 }
 
 function typeLabel(type: PartyTypeApi): string {
   if (type === 'vendor') return 'VENDOR'
   if (type === 'customer') return 'CUSTOMER'
+  if (type === 'salesman') return 'SALESMAN'
   return 'ACCOUNT'
 }
 
