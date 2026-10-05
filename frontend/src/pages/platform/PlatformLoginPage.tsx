@@ -80,8 +80,8 @@ export function PlatformLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
-      <div className="w-full max-w-md rounded border border-slate-700 bg-slate-900 text-slate-100 shadow-xl">
+    <div className="platform-auth-page flex min-h-screen items-center justify-center bg-slate-950 p-4">
+      <div className="platform-auth-card w-full max-w-md rounded border border-slate-700 bg-slate-900 text-slate-100 shadow-xl">
         <div className="border-b border-slate-700 px-5 py-3">
           <div className="text-[11px] font-black tracking-[0.18em] text-amber-400">BLUEPOS PLATFORM</div>
           <h1 className="text-lg font-semibold">Platform Administration</h1>
