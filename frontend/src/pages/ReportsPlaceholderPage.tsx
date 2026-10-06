@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Eye, X } from 'lucide-react'
 import { Field } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { UiSelect } from '../components/ui/UiSelect'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 
 const DOCUMENTS = [
@@ -57,16 +58,16 @@ export function ReportsPlaceholderPage() {
 
         <div className="grid gap-2 content-start">
           <Field label="Ledger type">
-            <select className="desktop-select" disabled>
-              <option>Summary Ledger</option>
-              <option>Detail Ledger</option>
-            </select>
+            <UiSelect className="desktop-select" value="summary" disabled options={[
+              { value: 'summary', label: 'Summary Ledger' },
+              { value: 'detail', label: 'Detail Ledger' },
+            ]} onChange={() => undefined} />
           </Field>
           <Field label="Group by">
-            <select className="desktop-select" disabled>
-              <option>None</option>
-              <option>Account Type</option>
-            </select>
+            <UiSelect className="desktop-select" value="none" disabled options={[
+              { value: 'none', label: 'None' },
+              { value: 'account_type', label: 'Account Type' },
+            ]} onChange={() => undefined} />
           </Field>
           <label className="flex items-center gap-2 text-[11px]">
             <input type="checkbox" disabled /> Ledger for All Dates
@@ -84,11 +85,11 @@ export function ReportsPlaceholderPage() {
             <input className="desktop-input" type="date" disabled />
           </Field>
           <Field label="Only for">
-            <select className="desktop-select" disabled>
-              <option>All</option>
-              <option>Customers</option>
-              <option>Vendors</option>
-            </select>
+            <UiSelect className="desktop-select" value="all" disabled options={[
+              { value: 'all', label: 'All' },
+              { value: 'customers', label: 'Customers' },
+              { value: 'vendors', label: 'Vendors' },
+            ]} onChange={() => undefined} />
           </Field>
         </div>
 
