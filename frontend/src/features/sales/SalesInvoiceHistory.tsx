@@ -4,6 +4,7 @@ import { Eye, Printer, RotateCcw, Search, X } from 'lucide-react'
 import { fetchSale, fetchSales, fetchSalesmen } from '../../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from './saleReceipt'
 import type { Sale } from '../../types/sales'
+import { UiSelect } from '../../components/ui/UiSelect'
 
 type StatusFilter = '' | 'posted' | 'void'
 
@@ -161,33 +162,32 @@ export function SalesInvoiceHistory() {
 
         <label className="sales-history-filter">
           <span>Salesman</span>
-          <select
+          <UiSelect
+            aria-label="Salesman"
             value={salesmanUlid}
-            onChange={(e) => {
-              setSalesmanUlid(e.target.value)
-            }}
-          >
-            <option value="">All</option>
-            {(salesmenQuery.data ?? []).map((salesman) => (
-              <option key={salesman.ulid} value={salesman.ulid}>
-                {salesman.code} — {salesman.name}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: '', label: 'All' },
+              ...(salesmenQuery.data ?? []).map((salesman) => ({
+                value: salesman.ulid,
+                label: `${salesman.code} — ${salesman.name}`,
+              })),
+            ]}
+            onChange={setSalesmanUlid}
+          />
         </label>
 
         <label className="sales-history-filter">
           <span>Status</span>
-          <select
+          <UiSelect
+            aria-label="Status"
             value={status}
-            onChange={(e) => {
-              setStatus(e.target.value as StatusFilter)
-            }}
-          >
-            <option value="">All</option>
-            <option value="posted">Posted</option>
-            <option value="void">Void</option>
-          </select>
+            options={[
+              { value: '', label: 'All' },
+              { value: 'posted', label: 'Posted' },
+              { value: 'void', label: 'Void' },
+            ]}
+            onChange={(value) => setStatus(value as StatusFilter)}
+          />
         </label>
 
         <button
