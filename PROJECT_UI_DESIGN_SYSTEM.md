@@ -358,3 +358,22 @@ The default decision should always be:
 reuse shared component -> extend shared component -> add token -> local exception only as last resort.
 
 Do not rely on conversation memory for UI rules. This repository file is authoritative.
+
+
+## 19. Repository enforcement
+
+Run the design-system guard before frontend typecheck/build:
+
+```bash
+cd frontend
+npm run ui:check
+npm run typecheck
+npm run build
+```
+
+`ui:check` currently enforces:
+- no raw single/multi `<select>` elements in React TSX; use `UiSelect` / `UiMultiSelect`,
+- no known hard-coded Primary Theme colors inside canonical `components/ui` CSS,
+- no large numeric overlay z-index values inside canonical `components/ui` CSS.
+
+If a real browser-semantic exception is required, update this document and the checker deliberately in the same reviewed change rather than bypassing the rule locally.
