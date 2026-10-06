@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Barcode, Printer, X } from 'lucide-react'
 import { UiSelect } from '../ui/UiSelect'
+import { UI_LAYER } from '../ui/uiLayers'
 import {
   getBarcodeLabelSizeOptions,
   loadBarcodePrintSettings,
@@ -163,7 +164,7 @@ export function ProductBarcodePrintModal({
               <UiSelect
                 aria-label="Barcode"
                 value={barcodeId}
-                menuZIndex={5200}
+                menuZIndex={UI_LAYER.nestedDropdown}
                 options={barcodes.map((row) => ({
                   value: row.id,
                   label: `${row.barcode}${row.unitCode ? ` — ${row.unitCode}` : ''}${row.isPrimary ? ' — Primary' : ''}`,
@@ -190,7 +191,7 @@ export function ProductBarcodePrintModal({
                 <UiSelect
                   aria-label="Label Size"
                   value={labelSize}
-                  menuZIndex={5200}
+                  menuZIndex={UI_LAYER.nestedDropdown}
                   options={getBarcodeLabelSizeOptions()}
                   onChange={(value) => setLabelSize(value as BarcodeLabelSize)}
                 />
