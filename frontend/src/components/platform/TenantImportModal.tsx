@@ -7,6 +7,7 @@ import type { PlatformTenant } from '../../types/platform'
 import { UiSelect } from '../ui/UiSelect'
 import { UiModal } from '../ui/UiModal'
 import { UiButton } from '../ui/UiButton'
+import { UI_LAYER } from '../ui/uiLayers'
 
 export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant; onClose: () => void }) {
   const { withRecentMfa } = usePlatformAuth()
@@ -22,7 +23,7 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
     <UiModal
       title={`Import Data — ${tenant.name} (${tenant.code})`}
       size="lg"
-      zIndex={5000}
+      zIndex={UI_LAYER.nestedModal}
       onClose={onClose}
       footer={
         <>
@@ -84,7 +85,7 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
               value={warehouse}
               disabled={pending || warehouses.isLoading}
               aria-label="Warehouse for product opening stock"
-              menuZIndex={5200}
+              menuZIndex={UI_LAYER.nestedDropdown}
               options={[
                 { value: '', label: 'Catalog only — skip opening stock' },
                 ...(warehouses.data ?? []).map((w) => ({
