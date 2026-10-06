@@ -1999,3 +1999,111 @@ html[data-animations='off'] #root .workspace-tab,
 html[data-animations='off'] #root .workspace-tab-close {
   transition: none !important;
 }
+
+
+/* ---------- CANONICAL UI PRIMITIVE ENFORCEMENT ---------- */
+/*
+ * Safety net for legacy controls that still require native browser semantics
+ * (multi-select, HTML form serialization, frozen layouts). New controlled
+ * dropdowns should use UiSelect.
+ */
+html #root select {
+  font-family: var(--app-font-family);
+  border-color: var(--ui-border);
+  color: var(--ui-text);
+  background-color: var(--ui-surface);
+}
+
+html #root select:not([multiple]) {
+  min-height: var(--ui-control-h-md, 26px);
+  border-radius: var(--control-radius);
+  box-shadow: var(--ui-control-shadow);
+}
+
+html #root select:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ui-accent) 58%, var(--ui-border));
+}
+
+html #root select:focus,
+html #root select:focus-visible {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+html #root select:disabled {
+  background-color: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  cursor: not-allowed;
+  opacity: .76;
+}
+
+html #root :where(input[type='checkbox'], input[type='radio']) {
+  accent-color: var(--ui-accent);
+}
+
+html #root :where(button, input, select, textarea) {
+  font-family: var(--app-font-family);
+}
+
+html #root :where(button, a, input, select, textarea):focus-visible {
+  outline-color: var(--ui-accent);
+}
+
+/* Canonical visual contract for legacy modal implementations.
+ * Geometry and workflow remain owned by each module.
+ */
+html #root :where(
+  .catalog-popup,
+  .coa-modal,
+  .product-barcode-print-modal,
+  .bp-style-modal,
+  .sales-party-modal-window,
+  .bp-col-customization,
+  .calc-card,
+  [role='dialog'].platform-dialog
+) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background-color: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+html #root :where(
+  .catalog-popup-windowbar,
+  .coa-modal-bar,
+  .product-barcode-print-titlebar,
+  .bp-style-modal-title,
+  .sales-party-modal-titlebar,
+  .bp-col-customization-titlebar
+) {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 15%, var(--ui-surface-subtle))
+  ) !important;
+  color: var(--ui-accent-strong) !important;
+}
+
+html #root :where(
+  .catalog-popup-backdrop,
+  .coa-modal-backdrop,
+  .sales-party-modal-layer
+) {
+  background-color: color-mix(in srgb, #000 42%, transparent);
+}
+
+html[data-animations='off'] #root :where(
+  .catalog-popup,
+  .coa-modal,
+  .product-barcode-print-modal,
+  .bp-style-modal,
+  .sales-party-modal-window,
+  .bp-col-customization,
+  .calc-card
+) {
+  animation: none !important;
+  transition: none !important;
+}
