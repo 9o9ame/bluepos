@@ -18,7 +18,6 @@ import {
 } from '../api/catalog'
 import { BarcodeStyleOptionsModal } from '../components/products/BarcodeStyleOptionsModal'
 import { UiSelect } from '../components/ui/UiSelect'
-import { UiSelect } from '../components/ui/UiSelect'
 import {
   BARCODE_TYPE_OPTIONS,
   DISPLAY_FIELD_OPTIONS,
