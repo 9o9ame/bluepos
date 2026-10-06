@@ -537,3 +537,10 @@ html[data-animations='off'] .catalog-popup * { transition: none !important; anim
   padding: 4px 8px;
   font-size: 11px;
 }
+
+
+/* ---------- CENTRAL MODAL LAYER CLEANUP ---------- */
+.catalog-popup-backdrop {
+  z-index: auto;
+  background: color-mix(in srgb, #000 38%, transparent);
+}
