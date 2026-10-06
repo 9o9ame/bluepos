@@ -19,9 +19,11 @@ function initialPosition(): Point {
 export function SalesPartyModal({
   onClose,
   onSaved,
+  partyType = 'customer',
 }: {
   onClose: () => void
   onSaved: (party: Party) => void
+  partyType?: 'customer' | 'vendor'
 }) {
   const [position, setPosition] = useState<Point>(() => initialPosition())
   const dragRef = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(null)
@@ -115,7 +117,12 @@ export function SalesPartyModal({
         </div>
 
         <div className="sales-party-modal-body">
-          <PartiesPlaceholderPage embedded onClose={onClose} onSaved={onSaved} />
+          <PartiesPlaceholderPage
+            embedded
+            embeddedPartyType={partyType}
+            onClose={onClose}
+            onSaved={onSaved}
+          />
         </div>
       </div>
     </div>
