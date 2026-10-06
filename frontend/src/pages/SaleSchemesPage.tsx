@@ -194,7 +194,7 @@ export function SaleSchemesPage() {
         <form id="sale-scheme-form" onSubmit={onSubmit}>
           <FormGroup title={creating ? 'New scheme' : 'Edit scheme'}>
             <Field label="Scheme name">
-              <input triggerClassName="desktop-input" value={name} onChange={(e) => setName(e.target.value)} required />
+              <input className="desktop-input" value={name} onChange={(e) => setName(e.target.value)} required />
             </Field>
             <Field label="Apply mode">
               <UiSelect
@@ -210,7 +210,7 @@ export function SaleSchemesPage() {
             </Field>
             <Field label="Min sale amount">
               <input
-                triggerClassName="desktop-input"
+                className="desktop-input"
                 value={minSaleAmount}
                 onChange={(e) => setMinSaleAmount(e.target.value)}
                 required
@@ -235,7 +235,7 @@ export function SaleSchemesPage() {
             </Field>
             <Field label="Max free qty">
               <input
-                triggerClassName="desktop-input"
+                className="desktop-input"
                 value={maxRewardQty}
                 onChange={(e) => setMaxRewardQty(e.target.value)}
                 required
@@ -243,7 +243,7 @@ export function SaleSchemesPage() {
             </Field>
             <Field label="Starts on">
               <input
-                triggerClassName="desktop-input"
+                className="desktop-input"
                 type="date"
                 value={startsOn}
                 onChange={(e) => setStartsOn(e.target.value)}
@@ -251,7 +251,7 @@ export function SaleSchemesPage() {
             </Field>
             <Field label="Ends on">
               <input
-                triggerClassName="desktop-input"
+                className="desktop-input"
                 type="date"
                 value={endsOn}
                 onChange={(e) => setEndsOn(e.target.value)}
