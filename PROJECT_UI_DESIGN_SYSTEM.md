@@ -105,7 +105,15 @@ Rules:
 
 Compatibility wrappers such as `BpFancySelect` and `AnimatedSelect` may remain temporarily, but they must delegate to `UiSelect`; they must not maintain independent visual behavior.
 
-Native `select` is permitted only where there is a concrete browser-semantic reason, such as a true multi-select or a legacy form that intentionally depends on native form serialization and has not yet been converted to controlled state. It must still use global tokens. Single-value controlled dropdowns should use `UiSelect`.
+Canonical multi-select component: `UiMultiSelect` in `frontend/src/components/ui/UiMultiSelect.tsx`.
+
+Rules:
+- use `UiMultiSelect` for user-facing multi-selection instead of native `select multiple`,
+- keep the same Theme & Appearance, portal, layering, focus, disabled, density, radius, shadow and animation contract as `UiSelect`.
+
+`UiSelect` supports controlled values and legacy form serialization through `name` + `defaultValue`; do not keep a native single-select only because a form currently uses `FormData`.
+
+Native `select` is permitted only where there is a concrete browser-semantic reason that the canonical component cannot safely provide. It must still use global tokens. Single-value controlled dropdowns should use `UiSelect`.
 
 ### Buttons
 
