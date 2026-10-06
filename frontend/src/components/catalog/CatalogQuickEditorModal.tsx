@@ -121,6 +121,7 @@ export function CatalogQuickEditorModal({
   return createPortal(
     <div
       className="catalog-popup-backdrop"
+      style={{ zIndex: UI_LAYER.modal }}
       role="presentation"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target) onClose()
