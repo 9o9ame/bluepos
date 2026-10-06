@@ -16,6 +16,7 @@ import { fetchRoles } from '../api/roles'
 import { ApiClientError } from '../api/client'
 import { DesktopButton, DesktopPanel, Field, FormGroup } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { UiSelect } from '../components/ui/UiSelect'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Membership } from '../types/auth'
@@ -120,11 +121,13 @@ export function UsersPage() {
               <input className="desktop-input" type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required />
             </Field>
             <Field label="Role">
-              <select className="desktop-select" value={roleUlid || defaultRole?.ulid || ''} onChange={(e) => setRoleUlid(e.target.value)}>
-                {roles.map((role) => (
-                  <option key={role.ulid} value={role.ulid}>{role.name}</option>
-                ))}
-              </select>
+              <UiSelect
+                className="desktop-select"
+                aria-label="Role"
+                value={roleUlid || defaultRole?.ulid || ''}
+                options={roles.map((role) => ({ value: role.ulid, label: role.name }))}
+                onChange={setRoleUlid}
+              />
             </Field>
             <Field label="Branches" span2>
               <div className="flex flex-wrap gap-2 text-[12px] text-[var(--text-main)]">
@@ -207,19 +210,17 @@ function RoleCell({
     return <>{(membership.roles ?? []).map((role) => role.name).join(', ')}</>
   }
   return (
-    <select
+    <UiSelect
       className="desktop-select"
+      aria-label="Membership role"
       value={assignedRoles[0] ?? ''}
-      onChange={(event) => {
-        void saveMembershipRoles(membership.ulid, [event.target.value]).then(() =>
+      options={roles.map((role) => ({ value: role.ulid, label: role.name }))}
+      onChange={(roleUlid) => {
+        void saveMembershipRoles(membership.ulid, [roleUlid]).then(() =>
           queryClient.invalidateQueries({ queryKey: ['memberships'] }),
         )
       }}
-    >
-      {roles.map((role) => (
-        <option key={role.ulid} value={role.ulid}>{role.name}</option>
-      ))}
-    </select>
+    />
   )
 }
 
