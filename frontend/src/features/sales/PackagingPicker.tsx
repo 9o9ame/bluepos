@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Package, Plus } from 'lucide-react'
 import type { SaleOfferEvaluation } from '../../types/saleSchemes'
+import { UiSelect } from '../../components/ui/UiSelect'
 
 type Packaging = SaleOfferEvaluation['packaging'][number]
 
@@ -86,30 +87,22 @@ export function PackagingPicker({
 
   return (
     <div className="sales-packaging-picker">
-      <select
+      <UiSelect
         className="desktop-input"
+        aria-label="Packaging product"
         value={selected}
-        onChange={(event) => {
-          setSelected(event.target.value)
+        options={[
+          { value: '', label: '— Select bag / box —' },
+          ...packaging.map((row) => ({
+            value: row.ulid,
+            label: `${row.product_number} — ${row.name}`,
+          })),
+        ]}
+        onChange={(value) => {
+          setSelected(value)
           setQty('1')
         }}
-      >
-        <option value="">
-          — Select bag / box —
-        </option>
-
-        {packaging.map((row) => (
-          <option
-            key={row.ulid}
-            value={row.ulid}
-          >
-            {row.product_number} — {row.name}
-            {currentQty[row.ulid]
-              ? ` (in cart: ${currentQty[row.ulid]})`
-              : ''}
-          </option>
-        ))}
-      </select>
+      />
 
       <input
         type="number"
