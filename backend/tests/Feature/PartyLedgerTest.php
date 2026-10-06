@@ -19,38 +19,11 @@ class PartyLedgerTest extends TestCase
      */
     private function seedCoa(): array
     {
-        $assets = $this->postJson('/api/coa/main-heads', ['name' => 'ASSETS', 'sort_order' => 1])->assertCreated()->json('ulid');
-        $liab = $this->postJson('/api/coa/main-heads', ['name' => 'LIABILITIES', 'sort_order' => 2])->assertCreated()->json('ulid');
-        $eqMain = $this->postJson('/api/coa/main-heads', ['name' => 'EQUITY', 'sort_order' => 3])->assertCreated()->json('ulid');
-
-        $current = $this->postJson('/api/coa/sub-heads', ['main_head_ulid' => $assets, 'name' => 'CURRENT'])->assertCreated()->json('ulid');
-        $short = $this->postJson('/api/coa/sub-heads', ['main_head_ulid' => $liab, 'name' => 'SHORT'])->assertCreated()->json('ulid');
-        $cap = $this->postJson('/api/coa/sub-heads', ['main_head_ulid' => $eqMain, 'name' => 'CAP'])->assertCreated()->json('ulid');
-
         return [
-            'ar' => $this->postJson('/api/coa/account-types', [
-                'sub_head_ulid' => $current,
-                'code' => '0011',
-                'name' => 'AR',
-                'is_receivable' => true,
-            ])->assertCreated()->json('ulid'),
-            'cash' => $this->postJson('/api/coa/account-types', [
-                'sub_head_ulid' => $current,
-                'code' => '0010',
-                'name' => 'CASH',
-                'is_cash' => true,
-            ])->assertCreated()->json('ulid'),
-            'ap' => $this->postJson('/api/coa/account-types', [
-                'sub_head_ulid' => $short,
-                'code' => '0020',
-                'name' => 'AP',
-                'is_payable' => true,
-            ])->assertCreated()->json('ulid'),
-            'equity' => $this->postJson('/api/coa/account-types', [
-                'sub_head_ulid' => $cap,
-                'code' => '0030',
-                'name' => 'OPENING EQUITY',
-            ])->assertCreated()->json('ulid'),
+            'ar' => $this->referenceAccountTypeUlid('0011'),
+            'cash' => $this->referenceAccountTypeUlid('0010'),
+            'ap' => $this->referenceAccountTypeUlid('0020'),
+            'equity' => $this->referenceAccountTypeUlid('0050'),
         ];
     }
 
