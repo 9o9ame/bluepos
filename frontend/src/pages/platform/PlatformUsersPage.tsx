@@ -14,6 +14,7 @@ import {
 } from '../../api/platform'
 import { usePlatformCan } from '../../features/platform/usePlatformCan'
 import type { PlatformUser } from '../../types/platform'
+import { UiSelect } from '../../components/ui/UiSelect'
 
 export function PlatformUsersPage() {
   const queryClient = useQueryClient()
@@ -86,10 +87,17 @@ export function PlatformUsersPage() {
           </label>
           <label className="font-semibold">
             Status
-            <select className="mt-1 h-8 w-full rounded border px-2" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+            <div className="mt-1">
+              <UiSelect
+                value={form.status}
+                aria-label="Status"
+                options={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                ]}
+                onChange={(status) => setForm({ ...form, status })}
+              />
+            </div>
           </label>
           <label className="font-semibold">
             Role(s)
