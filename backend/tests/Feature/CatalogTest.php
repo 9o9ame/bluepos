@@ -666,4 +666,77 @@ class CatalogTest extends TestCase
             'branches' => [$branchUlid],
         ])->assertCreated();
     }
+
+    public function test_product_tabular_filters_use_active_warehouse_stock_and_prices(): void
+    {
+        $this->signInOwner('tabular-filters')->assertOk();
+        $masters = $this->seedMasters();
+
+        $createProduct = function (string $name, string $reorder): string use ($masters) {
+            return $this->postJson('/api/products', [
+                'name' => $name,
+                'category_ulid' => $masters['category'],
+                'brand_ulid' => $masters['brand'],
+                'base_unit_ulid' => $masters['pcs'],
+                'reorder_level' => $reorder,
+            ])->assertCreated()->json('ulid');
+        };
+
+        $highCostUlid = $createProduct('Tabular High Cost', '3.000000');
+        $healthyUlid = $createProduct('Tabular Healthy', '2.000000');
+        $noBalanceUlid = $createProduct('Tabular No Balance', '1.000000');
+
+        $context = app(TenantContext::class);
+        $highCost = Product::query()->where('ulid', $highCostUlid)->firstOrFail();
+        $healthy = Product::query()->where('ulid', $healthyUlid)->firstOrFail();
+
+        foreach ([
+            [$highCost, '2.000000', '120.0000'],
+            [$healthy, '5.000000', '50.0000'],
+        ] as [$product, $quantity, $averageCost]) {
+            StockBalance::query()->create([
+                'tenant_id' => $context->tenantId(),
+                'branch_id' => $context->branchId(),
+                'warehouse_id' => $context->warehouseId(),
+                'product_id' => $product->id,
+                'quantity' => $quantity,
+                'average_cost' => $averageCost,
+                'stock_value' => '0.0000',
+            ]);
+        }
+
+        foreach ([$highCostUlid, $healthyUlid, $noBalanceUlid] as $ulid) {
+            $this->putJson('/api/products/'.$ulid.'/prices', [
+                'prices' => [[
+                    'price_type' => 'retail',
+                    'amount' => '100.0000',
+                    'currency_code' => 'PKR',
+                    'is_active' => true,
+                ]],
+            ])->assertOk();
+        }
+
+        $withBalance = $this->getJson('/api/products?with_balance=1&sales_lookup=1&per_page=100')
+            ->assertOk();
+        $withBalanceUlids = collect($withBalance->json('data'))->pluck('ulid');
+        $this->assertTrue($withBalanceUlids->contains($highCostUlid));
+        $this->assertTrue($withBalanceUlids->contains($healthyUlid));
+        $this->assertFalse($withBalanceUlids->contains($noBalanceUlid));
+
+        $lowStock = $this->getJson('/api/products?stock_le_reorder=1&sales_lookup=1&per_page=100')
+            ->assertOk();
+        $lowStockUlids = collect($lowStock->json('data'))->pluck('ulid');
+        $this->assertTrue($lowStockUlids->contains($highCostUlid));
+        $this->assertTrue($lowStockUlids->contains($noBalanceUlid));
+        $this->assertFalse($lowStockUlids->contains($healthyUlid));
+
+        $rateWarning = $this->getJson('/api/products?purchase_rate_ge_sale_rate=1&sales_lookup=1&per_page=100')
+            ->assertOk();
+        $rateWarningUlids = collect($rateWarning->json('data'))->pluck('ulid');
+        $this->assertTrue($rateWarningUlids->contains($highCostUlid));
+        $this->assertFalse($rateWarningUlids->contains($healthyUlid));
+        $this->assertFalse($rateWarningUlids->contains($noBalanceUlid));
+        $this->assertNoInternalIds($rateWarning->json());
+    }
+
 }
