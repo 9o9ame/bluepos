@@ -18,6 +18,7 @@ import {
 } from '../api/catalog'
 import { BarcodeStyleOptionsModal } from '../components/products/BarcodeStyleOptionsModal'
 import { BpFancySelect } from '../components/products/BpFancySelect'
+import { UiSelect } from '../components/ui/UiSelect'
 import {
   BARCODE_TYPE_OPTIONS,
   DISPLAY_FIELD_OPTIONS,
@@ -962,33 +963,35 @@ export function BarcodePrintingPage() {
                   placeholder="Product # / name / SKU…"
                 />
 
-                <select
+                <UiSelect
                   className="bp-w-filter"
                   value={categoryUlid}
-                  onChange={(event) => setCategoryUlid(event.target.value)}
                   title="Category filter"
-                >
-                  <option value="">All Categories</option>
-                  {(categories.data ?? []).map((category) => (
-                    <option key={category.ulid} value={category.ulid}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                  aria-label="Category filter"
+                  options={[
+                    { value: '', label: 'All Categories' },
+                    ...(categories.data ?? []).map((category) => ({
+                      value: category.ulid,
+                      label: category.name,
+                    })),
+                  ]}
+                  onChange={setCategoryUlid}
+                />
 
-                <select
+                <UiSelect
                   className="bp-w-filter"
                   value={brandUlid}
-                  onChange={(event) => setBrandUlid(event.target.value)}
                   title="Company / Brand filter"
-                >
-                  <option value="">All Companies</option>
-                  {(brands.data ?? []).map((brand) => (
-                    <option key={brand.ulid} value={brand.ulid}>
-                      {brand.name}
-                    </option>
-                  ))}
-                </select>
+                  aria-label="Company or Brand filter"
+                  options={[
+                    { value: '', label: 'All Companies' },
+                    ...(brands.data ?? []).map((brand) => ({
+                      value: brand.ulid,
+                      label: brand.name,
+                    })),
+                  ]}
+                  onChange={setBrandUlid}
+                />
               </div>
             </div>
           </section>
@@ -1047,19 +1050,18 @@ export function BarcodePrintingPage() {
                           <td className="is-row-no">{index + 1}</td>
 
                           <td className="is-barcode">
-                            <select
-                              value={line.barcodeUlid}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                changeBarcode(line, event.target.value)
-                              }
-                            >
-                              {barcodes.map((option) => (
-                                <option key={option.ulid} value={option.ulid}>
-                                  {option.barcode}
-                                </option>
-                              ))}
-                            </select>
+                            <div onClick={(event) => event.stopPropagation()}>
+                              <UiSelect
+                                className="bp-grid-barcode-select"
+                                aria-label="Barcode"
+                                value={line.barcodeUlid}
+                                options={barcodes.map((option) => ({
+                                  value: option.ulid,
+                                  label: option.barcode,
+                                }))}
+                                onChange={(barcodeUlid) => changeBarcode(line, barcodeUlid)}
+                              />
+                            </div>
                           </td>
 
                           <td className="is-product">
