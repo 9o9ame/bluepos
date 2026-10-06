@@ -239,13 +239,25 @@ class PartyBulkTest extends TestCase
         $this->assertTrue(Account::query()->where('customer_id', $customer->id)->exists());
         @unlink($okPath);
 
+        $referenceAr = AccountType::query()
+            ->where('ulid', $coa['ar'])
+            ->with('subHead')
+            ->firstOrFail();
+
+        $this->postJson('/api/coa/account-types', [
+            'sub_head_ulid' => $referenceAr->subHead->ulid,
+            'code' => '9911',
+            'name' => 'TENANT A ONLY',
+            'is_receivable' => true,
+        ])->assertCreated();
+
         $this->postJson('/api/auth/logout')->assertOk();
         $this->signInOwner('bulk-code-b')->assertOk();
-        // Tenant B has no 0011 — foreign tenant code must not resolve.
+        // Tenant B does not have tenant A's custom 9911 type — foreign tenant code must not resolve.
         $crossPath = tempnam(sys_get_temp_dir(), 'partyxlsx').'.xlsx';
         file_put_contents($crossPath, $xlsx->write($headers, [[
             'VENDOR', 'V-X', 'Cross Tenant', '', '', '', '', '', '', '', '', '', '',
-            '', '', '', '', '', '0', '0', '0', '0', '0011', 'ACCOUNT RECEIVABLE', '0', '0.0000',
+            '', '', '', '', '', '0', '0', '0', '0', '9911', 'TENANT A ONLY', '0', '0.0000',
         ]]));
         $previewB = $this->post('/api/parties/excel/preview', [
             'file' => new UploadedFile($crossPath, 'parties.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),
