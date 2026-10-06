@@ -97,6 +97,7 @@ Canonical component: `UiSelect` in `frontend/src/components/ui/UiSelect.tsx`.
 
 Rules:
 - use `UiSelect` for user-facing application dropdowns,
+- standard `UiSelect` dropdowns are searchable by default; the search field must filter visible options without changing the selected value until the user explicitly chooses an option,
 - popup is rendered in a portal so it is not clipped by tables, panels, or dialogs,
 - selected, hover, disabled, focus, Light/Dark, radius, shadow, density and animation states come from global tokens,
 - nested dialogs must pass a suitable `menuZIndex`,
