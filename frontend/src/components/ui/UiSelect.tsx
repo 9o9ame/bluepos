@@ -39,7 +39,9 @@ export type UiSelectProps = {
   triggerProps?: Omit<
     ButtonHTMLAttributes<HTMLButtonElement>,
     'type' | 'disabled' | 'className' | 'onClick' | 'onFocus' | 'onBlur' | 'onKeyDown' | 'onMouseDown'
-  >
+  > & {
+    [key: `data-${string}`]: string | number | boolean | undefined
+  }
   menuZIndex?: number
   maxMenuHeight?: number
   'aria-label'?: string
