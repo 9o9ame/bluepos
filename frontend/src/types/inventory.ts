@@ -73,3 +73,34 @@ export type OpeningBalance = {
   } | null
   lines?: OpeningBalanceLine[]
 }
+
+
+export type StockTakeLine = {
+  ulid: string
+  system_quantity: string
+  counted_quantity: string
+  variance_quantity: string
+  notes: string | null
+  product?: {
+    ulid: string
+    product_number: string
+    sku: string | null
+    name: string
+  } | null
+}
+
+export type StockTake = {
+  ulid: string
+  document_number: string
+  count_date: string
+  status: 'draft' | 'posted'
+  notes: string | null
+  posted_at: string | null
+  warehouse?: {
+    ulid: string
+    code: string
+    name: string
+    status: string
+  } | null
+  lines?: StockTakeLine[]
+}
