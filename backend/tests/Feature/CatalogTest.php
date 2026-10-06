@@ -739,4 +739,154 @@ class CatalogTest extends TestCase
         $this->assertNoInternalIds($rateWarning->json());
     }
 
+
+    public function test_product_tabular_bulk_update_is_atomic_and_computes_formula_server_side(): void
+    {
+        $this->signInOwner('tabular-bulk')->assertOk();
+        $masters = $this->seedMasters();
+
+        $firstUlid = $this->postJson('/api/products', [
+            'name' => 'Bulk Formula Product',
+            'base_unit_ulid' => $masters['pcs'],
+            'reorder_level' => '1.000000',
+        ])->assertCreated()->json('ulid');
+
+        $secondUlid = $this->postJson('/api/products', [
+            'name' => 'Bulk Manual Product',
+            'base_unit_ulid' => $masters['pcs'],
+            'reorder_level' => '2.000000',
+        ])->assertCreated()->json('ulid');
+
+        $this->putJson('/api/products/'.$firstUlid.'/prices', [
+            'prices' => [[
+                'price_type' => 'wholesale',
+                'amount' => '100.1234',
+                'is_active' => true,
+            ]],
+        ])->assertOk();
+
+        $response = $this->patchJson('/api/products/bulk', [
+            'rows' => [
+                [
+                    'product_ulid' => $firstUlid,
+                    'product' => [
+                        'reorder_level' => '7.500000',
+                    ],
+                    'prices' => [[
+                        'price_type' => 'retail',
+                        'formula' => 'trade_price_plus_percent',
+                        'percent' => '10.00000000',
+                    ]],
+                ],
+                [
+                    'product_ulid' => $secondUlid,
+                    'prices' => [[
+                        'price_type' => 'minimum_sale',
+                        'amount' => '55.4321',
+                    ]],
+                ],
+            ],
+        ])->assertOk()->assertJsonPath('updated', 2);
+
+        $this->assertNoInternalIds($response->json());
+
+        $first = $this->getJson('/api/products/'.$firstUlid)->assertOk();
+        $first->assertJsonPath('reorder_level', '7.500000');
+        $this->assertSame(
+            '110.1357',
+            collect($first->json('prices'))->firstWhere('price_type', 'retail')['amount'],
+        );
+
+        $second = $this->getJson('/api/products/'.$secondUlid)->assertOk();
+        $this->assertSame(
+            '55.4321',
+            collect($second->json('prices'))->firstWhere('price_type', 'minimum_sale')['amount'],
+        );
+    }
+
+    public function test_product_tabular_bulk_update_rolls_back_all_rows_when_formula_dependency_is_missing(): void
+    {
+        $this->signInOwner('tabular-rollback')->assertOk();
+        $masters = $this->seedMasters();
+
+        $firstUlid = $this->postJson('/api/products', [
+            'name' => 'Rollback First Product',
+            'base_unit_ulid' => $masters['pcs'],
+            'reorder_level' => '1.000000',
+        ])->assertCreated()->json('ulid');
+
+        $secondUlid = $this->postJson('/api/products', [
+            'name' => 'Rollback Missing Trade Product',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated()->json('ulid');
+
+        $this->patchJson('/api/products/bulk', [
+            'rows' => [
+                [
+                    'product_ulid' => $firstUlid,
+                    'product' => [
+                        'reorder_level' => '9.000000',
+                    ],
+                ],
+                [
+                    'product_ulid' => $secondUlid,
+                    'prices' => [[
+                        'price_type' => 'retail',
+                        'formula' => 'trade_price_plus_percent',
+                        'percent' => '10.00000000',
+                    ]],
+                ],
+            ],
+        ])->assertUnprocessable();
+
+        $this->getJson('/api/products/'.$firstUlid)
+            ->assertOk()
+            ->assertJsonPath('reorder_level', '1.000000');
+    }
+
+    public function test_product_tabular_bulk_update_rejects_cross_tenant_ulids(): void
+    {
+        $this->signInOwner('tabular-tenant-a')->assertOk();
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Tenant A Bulk Product',
+            'base_unit_ulid' => $this->unitUlid('PCS'),
+            'reorder_level' => '2.000000',
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('tabular-tenant-b')->assertOk();
+
+        $this->patchJson('/api/products/bulk', [
+            'rows' => [[
+                'product_ulid' => $productUlid,
+                'product' => [
+                    'reorder_level' => '8.000000',
+                ],
+            ]],
+        ])->assertNotFound();
+    }
+
+    public function test_product_tabular_bulk_price_update_requires_price_permission(): void
+    {
+        $owner = $this->signInOwner('tabular-auth')->assertOk();
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Bulk Protected Price Product',
+            'base_unit_ulid' => $this->unitUlid('PCS'),
+        ])->assertCreated()->json('ulid');
+
+        $this->createCashier('tabular-auth', $owner->json('branch.ulid'));
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->loginAs('tabular-auth', 'cashier-tabular-auth')->assertOk();
+
+        $this->patchJson('/api/products/bulk', [
+            'rows' => [[
+                'product_ulid' => $productUlid,
+                'prices' => [[
+                    'price_type' => 'retail',
+                    'amount' => '123.4500',
+                ]],
+            ]],
+        ])->assertForbidden()->assertJsonPath('error.key', 'FORBIDDEN');
+    }
+
 }
