@@ -241,7 +241,7 @@ export function ProductTabularViewPage() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const entries = Object.entries(drafts)
-      await Promise.all(entries.map(([ulid, payload]) => updateProduct(ulid, payload)))
+      await Promise.all(entries.map(([ulid, payload]) => updateProduct(ulid, payload as Record<string, unknown>)))
       return entries.length
     },
     onSuccess: async (count) => {
