@@ -2107,3 +2107,59 @@ html[data-animations='off'] #root :where(
   animation: none !important;
   transition: none !important;
 }
+
+
+/* ---------- GLOBAL SEMANTIC ACTION BUTTON CONTRACT ---------- */
+/* Shared action meaning: color communicates the operation, not the page/module. */
+html #root button[data-tone='save'],
+html #root button[data-tone='success'],
+html #root button[data-action='save'],
+html #root button[data-action='activate'],
+html #root button[data-action='post'],
+html #root button[data-action='approve'] {
+  border-color: color-mix(in srgb, var(--ui-success) 58%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-success) 14%, var(--ui-surface)) !important;
+  color: color-mix(in srgb, var(--ui-success) 82%, var(--ui-text)) !important;
+}
+
+html #root button[data-tone='delete'],
+html #root button[data-tone='danger'],
+html #root button[data-action='delete'],
+html #root button[data-action='remove'],
+html #root button[data-action='void'],
+html #root button[data-action='deactivate'],
+html #root button[data-action='reject'] {
+  border-color: color-mix(in srgb, var(--ui-danger) 58%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-danger) 12%, var(--ui-surface)) !important;
+  color: var(--ui-danger) !important;
+}
+
+html #root button[data-tone='refresh'],
+html #root button[data-tone='close'],
+html #root button[data-tone='info'],
+html #root button[data-action='refresh'],
+html #root button[data-action='close'],
+html #root button[data-action='preview'],
+html #root button[data-action='print'],
+html #root button[data-action='search'] {
+  border-color: color-mix(in srgb, var(--ui-info) 52%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-info) 11%, var(--ui-surface)) !important;
+  color: color-mix(in srgb, var(--ui-info) 78%, var(--ui-text)) !important;
+}
+
+html #root button[data-tone='warning'],
+html #root button[data-action='hold'],
+html #root button[data-action='retry'] {
+  border-color: color-mix(in srgb, var(--ui-warning) 56%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-warning) 13%, var(--ui-surface)) !important;
+  color: color-mix(in srgb, var(--ui-warning) 82%, var(--ui-text)) !important;
+}
+
+html #root button[data-tone='primary'],
+html #root button[data-action='new'],
+html #root button[data-action='add'],
+html #root button[data-action='create'] {
+  border-color: color-mix(in srgb, var(--ui-accent) 58%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface)) !important;
+  color: var(--ui-accent-strong) !important;
+}
