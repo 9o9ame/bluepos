@@ -12,5 +12,7 @@ export const UI_LAYER = {
   nestedDropdown: 5250,
   deepModal: 5400,
   deepDropdown: 5550,
+  thirdModal: 5700,
+  thirdDropdown: 5850,
   feedback: 6000,
 } as const
