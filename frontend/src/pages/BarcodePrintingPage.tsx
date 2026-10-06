@@ -17,7 +17,7 @@ import {
   fetchProducts,
 } from '../api/catalog'
 import { BarcodeStyleOptionsModal } from '../components/products/BarcodeStyleOptionsModal'
-import { BpFancySelect } from '../components/products/BpFancySelect'
+import { UiSelect } from '../components/ui/UiSelect'
 import { UiSelect } from '../components/ui/UiSelect'
 import {
   BARCODE_TYPE_OPTIONS,
@@ -569,7 +569,7 @@ export function BarcodePrintingPage() {
 
                 <label className="bp-field">
                   <span>Select Barcode Types</span>
-                  <BpFancySelect
+                  <UiSelect
                     aria-label="Select Barcode Types"
                     value={barcodeType}
                     onChange={(next) => setBarcodeType(next as BarcodeType)}
@@ -588,7 +588,7 @@ export function BarcodePrintingPage() {
 
                 <label className="bp-field">
                   <span>Field to Display</span>
-                  <BpFancySelect
+                  <UiSelect
                     aria-label="Field to Display"
                     value={displayField}
                     onChange={(next) =>
@@ -605,7 +605,7 @@ export function BarcodePrintingPage() {
 
                 <label className="bp-field">
                   <span>Price Field</span>
-                  <BpFancySelect
+                  <UiSelect
                     aria-label="Price Field"
                     value={priceField}
                     onChange={(next) =>
@@ -684,7 +684,7 @@ export function BarcodePrintingPage() {
               <div className="bp-printer-block">
                 <div className="bp-printer-label">On Following Printer</div>
                 <div className="bp-printer-row">
-                  <BpFancySelect
+                  <UiSelect
                     aria-label="On Following Printer"
                     value={browserPrintDialogPrinter.id}
                     title="Browsers cannot enumerate installed Windows printers. Use the system print dialog. A BluePOS Print Bridge will enable native printer lists later."
@@ -767,7 +767,7 @@ export function BarcodePrintingPage() {
               <label className="bp-field bp-style-field">
                 <span>Barcode Printing Style</span>
                 <div className="bp-style-row">
-                  <BpFancySelect
+                  <UiSelect
                     aria-label="Barcode Printing Style"
                     value={printStyle}
                     onChange={(next) => setPrintStyle(next as BarcodeStyleId)}
@@ -870,7 +870,7 @@ export function BarcodePrintingPage() {
               </div>
 
               <div className="bp-row bp-row-range">
-                <BpFancySelect
+                <UiSelect
                   className="bp-w-code"
                   aria-label="Auto Fill range field"
                   value={rangeMode}
