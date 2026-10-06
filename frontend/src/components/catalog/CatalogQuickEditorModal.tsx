@@ -148,7 +148,7 @@ export function CatalogQuickEditorModal({
                 <label htmlFor="catalog-popup-category">Category:</label>
                 <UiSelect
                   value={editor.categoryUlid}
-                  className="catalog-popup-select"
+                  triggerClassName="catalog-popup-select"
                   aria-label="Category"
                   menuZIndex={UI_LAYER.nestedDropdown}
                   options={[
