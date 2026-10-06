@@ -2474,6 +2474,7 @@ export function PartiesPlaceholderPage({
 
       <CoaHierarchyModals
         open={coaModalOpen}
+        compact={embedded}
         selectedAccountTypeUlid={form.accountTypeUlid || null}
         onClose={() => setCoaModalOpen(false)}
         onAccountTypeSaved={(type) => {
