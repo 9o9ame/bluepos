@@ -375,7 +375,7 @@ export function SubcategoriesPage() {
           >
             <Field label="Category">
               <UiSelect
-                className="desktop-select"
+                triggerClassName="desktop-select"
                 aria-label="Category"
                 value={categoryUlid || defaultCategoryUlid}
                 options={(categories.data ?? []).map((category) => ({
