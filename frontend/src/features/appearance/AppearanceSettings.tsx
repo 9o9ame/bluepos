@@ -1,4 +1,5 @@
 import { updateAppearance } from '../../api/auth'
+import { UiSelect } from '../../components/ui/UiSelect'
 import {
   useAppearance,
   type DensityPreference,
@@ -77,10 +78,17 @@ export function AppearanceSettings() {
     </div>
     <div className="appearance-settings-group">
       <label className="appearance-settings-heading" htmlFor="appearance-font">Font Family</label>
-      <select id="appearance-font" className="desktop-select" value={font}
-        onChange={(event) => { const next = event.target.value as FontPreference; appearance.setFont(next); void persist({ font: next }) }}>
-        {FONT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
+      <UiSelect
+        className="desktop-select"
+        aria-label="Font Family"
+        value={font}
+        options={FONT_OPTIONS}
+        onChange={(nextValue) => {
+          const next = nextValue as FontPreference
+          appearance.setFont(next)
+          void persist({ font: next })
+        }}
+      />
     </div>
     <div className="appearance-settings-actions"><button type="button" className="desktop-btn" onClick={() => {
         appearance.resetAppearance()
