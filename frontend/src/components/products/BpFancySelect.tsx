@@ -4,6 +4,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type FocusEventHandler,
 } from 'react'
 import { createPortal } from 'react-dom'
 import './BpFancySelect.css'
@@ -22,6 +23,7 @@ type BpFancySelectProps = {
   disabled?: boolean
   className?: string
   title?: string
+  onFocus?: FocusEventHandler<HTMLButtonElement>
   'aria-label'?: string
 }
 
@@ -40,6 +42,7 @@ export function BpFancySelect({
   disabled = false,
   className,
   title,
+  onFocus,
   'aria-label': ariaLabel,
 }: BpFancySelectProps) {
   const listId = useId()
@@ -136,6 +139,7 @@ export function BpFancySelect({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
+        onFocus={onFocus}
         onClick={() => {
           if (disabled) return
           setOpen((current) => !current)
