@@ -209,3 +209,47 @@ html[data-animations='off'] .ui-select-option {
   transition: none !important;
   animation: none !important;
 }
+
+
+/* ---------- SEARCHABLE SELECT ---------- */
+.ui-select-search-wrap {
+  padding: 5px;
+  border-bottom: 1px solid var(--ui-border);
+  background: color-mix(in srgb, var(--ui-accent) 5%, var(--ui-surface));
+}
+
+.ui-select-search {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--ui-control-h-md, 24px);
+  min-height: var(--ui-control-h-md, 24px);
+  padding: 0 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-font-sm, 11px);
+  box-shadow: var(--ui-control-shadow);
+}
+
+.ui-select-search::placeholder {
+  color: var(--ui-text-muted);
+}
+
+.ui-select-search:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.ui-select-empty {
+  padding: 9px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-sm, 11px);
+  text-align: center;
+}
+
+html[data-animations='off'] .ui-select-search {
+  transition: none !important;
+}
