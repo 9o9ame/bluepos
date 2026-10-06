@@ -109,7 +109,11 @@ Native `select` is permitted only where there is a concrete browser-semantic rea
 
 ### Buttons
 
-Use existing shared button classes/components where present. Variants:
+Canonical component: `UiButton` in `frontend/src/components/ui/UiButton.tsx`.
+
+Legacy wrappers such as `DesktopButton` must delegate to `UiButton` rather than maintaining a second visual system.
+
+Variants:
 - default,
 - primary,
 - success,
@@ -170,6 +174,10 @@ Toggle visual tones must use semantic/global tokens. Disabled and animations-off
 
 ## 5. Modal contract
 
+Canonical standard modal: `UiModal` in `frontend/src/components/ui/UiModal.tsx`.
+
+Specialized draggable or complex nested dialogs may keep their workflow-specific structure, but their visual properties must use the same tokens and overlay-layer contract.
+
 All application dialogs must follow the same modal contract even when their internal layouts differ.
 
 Required behaviors:
@@ -183,11 +191,9 @@ Required behaviors:
 - scroll only inside the content region where practical,
 - animations disabled by global Animations Off.
 
-Recommended z-index layers:
-- standard modal backdrop/shell: 4000+
-- nested modal: 5000+
-- third-level nested modal: 5400+
-- dropdown menu above its owning modal.
+Overlay layers are defined in `frontend/src/components/ui/uiLayers.ts`. Do not invent local numeric z-index values for modals/dropdowns.
+
+Use the closest appropriate `UI_LAYER` constant so dropdown menus always sit above the modal that owns them.
 
 Do not solve modal layering with unrelated page-specific z-index values when a shared modal/dropdown prop can express the layer.
 
