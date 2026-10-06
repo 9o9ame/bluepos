@@ -14,6 +14,7 @@ import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
 import { HelpAboutPage } from '../pages/HelpAboutPage'
 import { LoginPage } from '../pages/LoginPage'
 import { OpeningStockPage } from '../pages/OpeningStockPage'
+import { PriceListsPage } from '../pages/PriceListsPage'
 import { PartiesPlaceholderPage } from '../pages/PartiesPlaceholderPage'
 import { ProductsPage } from '../pages/ProductsPage'
 import { ProductTabularViewPage } from '../pages/ProductTabularViewPage'
@@ -127,6 +128,10 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="inventory.opening_balance.view" />}>
             <Route path="/definition/opening-stock" element={<OpeningStockPage />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="products.view" />}>
+            <Route path="/definition/price-lists" element={<PriceListsPage />} />
           </Route>
         </Route>
       </Route>
