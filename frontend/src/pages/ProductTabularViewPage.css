@@ -21,11 +21,11 @@
 .product-tabular-primary-row {
   display: grid;
   grid-template-columns:
-    minmax(210px, 1.15fr)
-    minmax(165px, 190px)
-    minmax(300px, 1.35fr)
+    minmax(220px, 340px)
+    minmax(160px, 180px)
+    minmax(300px, 440px)
     auto
-    auto;
+    1fr;
   gap: 5px;
   align-items: end;
   min-width: 0;
@@ -75,34 +75,49 @@
 }
 
 .product-tabular-set-combo {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 38px;
+  position: relative;
   min-width: 0;
 }
 
 .product-tabular-set-combo > input {
   position: relative;
   z-index: 1;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
+  padding-right: 38px;
 }
 
 .product-tabular-formula-select {
-  min-width: 0;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  pointer-events: none;
 }
 
 .product-tabular-formula-trigger {
-  min-width: 38px;
-  width: 38px;
-  padding-inline: 6px;
-  border-left: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 34px;
+  min-width: 34px;
+  height: 100%;
+  padding: 0;
+  border-left: 1px solid var(--ui-border);
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
-  white-space: nowrap;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: auto;
 }
 
-.product-tabular-set-combo:focus-within > input,
-.product-tabular-set-combo:focus-within .product-tabular-formula-trigger {
+.product-tabular-formula-trigger .ui-select-value {
+  display: none;
+}
+
+.product-tabular-formula-trigger .ui-select-arrow {
+  margin: auto;
+}
+
+.product-tabular-set-combo:focus-within > input {
   box-shadow: var(--ui-focus-shadow);
 }
 
@@ -116,15 +131,18 @@
 
 .product-tabular-actions {
   justify-content: flex-end;
+  justify-self: end;
   padding-left: 4px;
   border-left: 1px solid var(--ui-border);
 }
 
 .product-tabular-secondary-row {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 7px;
   align-items: center;
+  width: fit-content;
+  max-width: 100%;
   min-height: 22px;
   padding: 2px 5px;
   border: 1px solid var(--ui-border);
@@ -239,11 +257,12 @@
 
 @media (max-width: 1280px) {
   .product-tabular-primary-row {
-    grid-template-columns: minmax(190px, 1fr) minmax(160px, 185px) minmax(260px, 1.2fr) auto;
+    grid-template-columns: minmax(200px, 1fr) minmax(160px, 180px) minmax(260px, 1.15fr) auto;
   }
 
   .product-tabular-actions {
     grid-column: 1 / -1;
+    justify-self: stretch;
     justify-content: flex-end;
     border-left: 0;
     border-top: 1px solid var(--ui-border);
