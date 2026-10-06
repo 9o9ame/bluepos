@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { ApiClientError } from '../../api/client'
 import { askConfirm } from '../../feedback/FeedbackProvider'
+import { BpFancySelect } from '../products/BpFancySelect'
 import {
   useCatalogMasterEditor,
   type CatalogMasterKind,
@@ -143,19 +144,19 @@ export function CatalogQuickEditorModal({
             {activeKind === 'subcategory' ? (
               <div className="catalog-popup-form-row catalog-popup-form-row--full">
                 <label htmlFor="catalog-popup-category">Category:</label>
-                <select
-                  id="catalog-popup-category"
-                  className="catalog-popup-select"
+                <BpFancySelect
                   value={editor.categoryUlid}
-                  onChange={(event) => editor.setCategoryUlid(event.target.value)}
-                >
-                  <option value="">Select category…</option>
-                  {editor.categories.map((category) => (
-                    <option key={category.ulid} value={category.ulid}>
-                      {category.code} — {category.name}
-                    </option>
-                  ))}
-                </select>
+                  className="catalog-popup-select"
+                  aria-label="Category"
+                  options={[
+                    { value: '', label: 'Select category…' },
+                    ...editor.categories.map((category) => ({
+                      value: category.ulid,
+                      label: `${category.code} — ${category.name}`,
+                    })),
+                  ]}
+                  onChange={editor.setCategoryUlid}
+                />
               </div>
             ) : null}
 
