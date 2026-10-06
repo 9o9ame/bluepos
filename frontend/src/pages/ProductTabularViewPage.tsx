@@ -1,7 +1,7 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download, RefreshCw, Save, X } from 'lucide-react'
-import { bulkUpdateProducts, fetchProducts } from '../api/catalog'
+import { bulkUpdateProducts, downloadProductTabularExport, fetchProducts } from '../api/catalog'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect, type UiSelectOption } from '../components/ui/UiSelect'
@@ -89,10 +89,6 @@ function marginPercent(product: Product): string {
   return (((sale - cost) / cost) * 100).toFixed(2)
 }
 
-function csvCell(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`
-}
-
 export function ProductTabularViewPage() {
   const queryClient = useQueryClient()
   const feedback = useFeedback()
@@ -145,10 +141,66 @@ export function ProductTabularViewPage() {
   const rows = productsQuery.data?.data ?? []
   const meta = productsQuery.data?.meta
 
+  const stagedCount = Object.keys(drafts).length
+  const visibleUlids = useMemo(() => new Set(rows.map((product) => product.ulid)), [rows])
+  const visibleSelectedCount = rows.reduce(
+    (count, product) => count + (selected.has(product.ulid) ? 1 : 0),
+    0,
+  )
+  const allVisibleSelected = rows.length > 0 && visibleSelectedCount === rows.length
+  const someVisibleSelected = visibleSelectedCount > 0 && !allVisibleSelected
+
+  useEffect(() => {
+    setSelected((current) => {
+      const next = new Set([...current].filter((ulid) => visibleUlids.has(ulid)))
+      return next.size === current.size ? current : next
+    })
+
+    setActiveKey((current) => current && visibleUlids.has(current) ? current : null)
+  }, [visibleUlids])
+
+  async function confirmDiscardIfNeeded(): Promise<boolean> {
+    if (stagedCount === 0) return true
+
+    const confirmed = await feedback.confirm(
+      `Discard ${stagedCount} staged product change(s)?`,
+    )
+    if (!confirmed) return false
+
+    setDrafts({})
+    return true
+  }
+
+  async function changeView(action: () => void) {
+    if (!await confirmDiscardIfNeeded()) return
+    setSelected(new Set())
+    setActiveKey(null)
+    action()
+  }
+
   const columns = useMemo<PosGridColumn<Product>[]>(() => [
     {
       key: 'selected',
-      header: '',
+      header: (
+        <input
+          type="checkbox"
+          checked={allVisibleSelected}
+          aria-label="Select all products on this page"
+          ref={(element) => {
+            if (element) element.indeterminate = someVisibleSelected
+          }}
+          onChange={(event) => {
+            setSelected((current) => {
+              const next = new Set(current)
+              for (const product of rows) {
+                if (event.target.checked) next.add(product.ulid)
+                else next.delete(product.ulid)
+              }
+              return next
+            })
+          }}
+        />
+      ),
       width: 34,
       align: 'center',
       render: (product) => (
@@ -244,7 +296,7 @@ export function ProductTabularViewPage() {
         )
       },
     },
-  ], [canViewStock, drafts, selected])
+  ], [allVisibleSelected, canViewStock, drafts, rows, selected, someVisibleSelected])
 
   function resetToFirstPage() {
     setPage(1)
@@ -343,6 +395,8 @@ export function ProductTabularViewPage() {
     onSuccess: async (result) => {
       const count = result.updated
       setDrafts({})
+      setSelected(new Set())
+      setActiveKey(null)
       await queryClient.invalidateQueries({ queryKey: ['products'] })
       await productsQuery.refetch()
       feedback.success(`Saved changes for ${count} product(s).`, 'Tabular View')
@@ -352,37 +406,19 @@ export function ProductTabularViewPage() {
     },
   })
 
-  function exportCurrentPage() {
-    if (rows.length === 0) {
-      feedback.info('There are no rows to export.', 'Tabular View')
-      return
+  async function exportFilteredProducts() {
+    try {
+      await downloadProductTabularExport({
+        q: deferredSearch.trim() || undefined,
+        sales_lookup: true,
+        active_only: activeOnly,
+        with_balance: withBalance,
+        stock_le_reorder: stockLeReorder,
+        purchase_rate_ge_sale_rate: canViewStock && purchaseRateGeSaleRate,
+      })
+    } catch (error) {
+      feedback.fromApiError(error, 'Unable to export the filtered product list.')
     }
-
-    const lines = [
-      ['Product #', 'Code / Barcode', 'Description', 'Manufacturer', 'Category', 'U.O.M', 'Cost Price', 'Margin %', 'Selling', 'In Stock']
-        .map(csvCell)
-        .join(','),
-      ...rows.map((product) => [
-        product.product_number,
-        product.primary_barcode ?? product.sku ?? '',
-        product.name,
-        product.brand?.name ?? '',
-        product.category?.name ?? '',
-        product.base_unit?.symbol ?? product.base_unit?.code ?? '',
-        canViewStock ? product.sales_lookup?.average_cost ?? '' : '',
-        canViewStock ? marginPercent(product) : '',
-        retailPrice(product) ?? '',
-        product.sales_lookup?.in_stock ?? '0',
-      ].map((value) => csvCell(String(value))).join(',')),
-    ]
-
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `bluepos-product-view-page-${page}.csv`
-    link.click()
-    URL.revokeObjectURL(url)
   }
 
   const pageStock = rows.reduce(
@@ -466,7 +502,14 @@ export function ProductTabularViewPage() {
               variant="info"
               icon={<RefreshCw size={15} />}
               label="Refresh"
-              onClick={() => void productsQuery.refetch()}
+              onClick={() => {
+                void (async () => {
+                  if (!await confirmDiscardIfNeeded()) return
+                  setSelected(new Set())
+                  setActiveKey(null)
+                  await productsQuery.refetch()
+                })()
+              }}
               disabled={productsQuery.isFetching}
             />
             <UiButton
@@ -483,8 +526,11 @@ export function ProductTabularViewPage() {
                 type="checkbox"
                 checked={withBalance}
                 onChange={(event) => {
-                  setWithBalance(event.target.checked)
-                  resetToFirstPage()
+                  const checked = event.target.checked
+                  void changeView(() => {
+                    setWithBalance(checked)
+                    resetToFirstPage()
+                  })
                 }}
               />
               <span>With Balance</span>
@@ -494,8 +540,11 @@ export function ProductTabularViewPage() {
                 type="checkbox"
                 checked={activeOnly}
                 onChange={(event) => {
-                  setActiveOnly(event.target.checked)
-                  resetToFirstPage()
+                  const checked = event.target.checked
+                  void changeView(() => {
+                    setActiveOnly(checked)
+                    resetToFirstPage()
+                  })
                 }}
               />
               <span>Active Only</span>
@@ -505,8 +554,11 @@ export function ProductTabularViewPage() {
                 type="checkbox"
                 checked={stockLeReorder}
                 onChange={(event) => {
-                  setStockLeReorder(event.target.checked)
-                  resetToFirstPage()
+                  const checked = event.target.checked
+                  void changeView(() => {
+                    setStockLeReorder(checked)
+                    resetToFirstPage()
+                  })
                 }}
               />
               <span>Stock &lt;= Reorder</span>
@@ -517,8 +569,11 @@ export function ProductTabularViewPage() {
                 checked={purchaseRateGeSaleRate}
                 disabled={!canViewStock}
                 onChange={(event) => {
-                  setPurchaseRateGeSaleRate(event.target.checked)
-                  resetToFirstPage()
+                  const checked = event.target.checked
+                  void changeView(() => {
+                    setPurchaseRateGeSaleRate(checked)
+                    resetToFirstPage()
+                  })
                 }}
               />
               <span>P.Rate &gt;= S.Rate</span>
@@ -537,13 +592,18 @@ export function ProductTabularViewPage() {
               variant="info"
               icon={<Download size={16} />}
               label="Export"
-              onClick={exportCurrentPage}
+              onClick={() => void exportFilteredProducts()}
             />
             <UiButton
               variant="info"
               icon={<X size={16} />}
               label="Close"
-              onClick={closeActiveTab}
+              onClick={() => {
+                void (async () => {
+                  if (!await confirmDiscardIfNeeded()) return
+                  closeActiveTab()
+                })()
+              }}
             />
           </div>
         </div>
@@ -564,12 +624,12 @@ export function ProductTabularViewPage() {
         <div className="product-tabular-pager">
           <UiButton
             label="First"
-            onClick={() => setPage(1)}
+            onClick={() => void changeView(() => setPage(1))}
             disabled={!meta || page <= 1}
           />
           <UiButton
             label="Previous"
-            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            onClick={() => void changeView(() => setPage((current) => Math.max(1, current - 1)))}
             disabled={!meta || page <= 1}
           />
           <span>
@@ -577,12 +637,12 @@ export function ProductTabularViewPage() {
           </span>
           <UiButton
             label="Next"
-            onClick={() => setPage((current) => current + 1)}
+            onClick={() => void changeView(() => setPage((current) => current + 1))}
             disabled={!meta || page >= meta.last_page}
           />
           <UiButton
             label="Last"
-            onClick={() => meta && setPage(meta.last_page)}
+            onClick={() => meta && void changeView(() => setPage(meta.last_page))}
             disabled={!meta || page >= meta.last_page}
           />
         </div>
@@ -590,8 +650,8 @@ export function ProductTabularViewPage() {
         <strong>{meta?.total ?? 0} Items</strong>
 
         <span className="product-tabular-summary">
-          {Object.keys(drafts).length > 0 ? `${Object.keys(drafts).length} staged · ` : ''}
-          Page stock: {formatDecimal(String(pageStock), 6)}
+          {selected.size} selected · {stagedCount} staged ·
+          Stock: {formatDecimal(meta?.stock_total ?? String(pageStock), 6)}
         </span>
       </footer>
     </section>
