@@ -102,3 +102,8 @@ npm run dev
 - SPA: `http://localhost:5173` (proxies `/api` and `/sanctum`)
 - Tests: `cd backend && php artisan test` (uses `bluepos_test` only)
 - Frontend check: `cd frontend && npm run typecheck && npm run build`
+
+
+## UI design system
+
+Frontend visual work must follow [PROJECT_UI_DESIGN_SYSTEM.md](PROJECT_UI_DESIGN_SYSTEM.md). It defines the canonical Theme & Appearance tokens, shared dropdown/button/modal components, overlay layering, state behavior, and the rule against page-local visual duplicates.
