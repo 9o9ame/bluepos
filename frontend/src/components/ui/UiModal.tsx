@@ -36,6 +36,7 @@ export function UiModal({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault()
+        event.stopImmediatePropagation()
         onClose()
       }
     }
