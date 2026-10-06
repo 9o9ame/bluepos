@@ -1,7 +1,7 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download, RefreshCw, Save, X } from 'lucide-react'
-import { fetchProducts, updateProduct } from '../api/catalog'
+import { fetchProducts, saveProductPrices, updateProduct } from '../api/catalog'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect, type UiSelectOption } from '../components/ui/UiSelect'
@@ -49,6 +49,7 @@ export function ProductTabularViewPage() {
   const feedback = useFeedback()
   const { closeActiveTab } = useWorkspace()
   const canEdit = useCan('products.edit')
+  const canPrices = useCan('products.manage_prices')
   const canViewStock = useCan('inventory.view')
 
   const [search, setSearch] = useState('')
@@ -60,6 +61,7 @@ export function ProductTabularViewPage() {
   const [purchaseRateGeSaleRate, setPurchaseRateGeSaleRate] = useState(false)
   const [fieldToUpdate, setFieldToUpdate] = useState<BulkField>('reorder_level')
   const [setText, setSetText] = useState('')
+  const [setTextPreset, setSetTextPreset] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, ProductDraft>>({})
@@ -211,37 +213,111 @@ export function ProductTabularViewPage() {
       return
     }
 
+    if (fieldToUpdate !== 'reorder_level' && !canPrices) {
+      feedback.error('You do not have permission to manage product prices.', 'Tabular View')
+      return
+    }
+
     const rawValue = setText.trim()
-    let value: string | null = rawValue || null
+    const isTradeFormula = rawValue === '=TradePrice + (TradePrice * 10.0 / 100)'
 
-    if (fieldToUpdate !== 'rack_location' && value !== null && !DECIMAL_6.test(value)) {
-      feedback.error('Enter a non-negative number with up to 6 decimal places.', 'Tabular View')
+    if (isTradeFormula && fieldToUpdate !== 'retail_price') {
+      feedback.error('The TradePrice formula can only be used when Field To Update is Sale Price.', 'Tabular View')
       return
     }
 
-    if (fieldToUpdate === 'rack_location' && value !== null && value.length > 64) {
-      feedback.error('Rack Location cannot exceed 64 characters.', 'Tabular View')
-      return
+    if (!isTradeFormula) {
+      const pattern = fieldToUpdate === 'reorder_level' ? DECIMAL_6 : MONEY_4
+      const precision = fieldToUpdate === 'reorder_level' ? 6 : 4
+      if (!pattern.test(rawValue)) {
+        feedback.error(`Enter a non-negative number with up to ${precision} decimal places.`, 'Tabular View')
+        return
+      }
     }
+
+    const rowByUlid = new Map(rows.map((product) => [product.ulid, product]))
+    let skipped = 0
 
     setDrafts((current) => {
       const next = { ...current }
+
       for (const ulid of targets) {
+        const product = rowByUlid.get(ulid)
+        if (!product) {
+          skipped += 1
+          continue
+        }
+
+        if (fieldToUpdate === 'reorder_level') {
+          next[ulid] = {
+            ...(next[ulid] ?? {}),
+            product: {
+              ...(next[ulid]?.product ?? {}),
+              reorder_level: rawValue,
+            },
+          }
+          continue
+        }
+
+        const priceType = priceTypeForBulkField(fieldToUpdate)
+        let amount = rawValue
+
+        if (isTradeFormula) {
+          const tradePrice = Number.parseFloat(
+            product.prices?.find((price) => price.is_active && price.price_type === 'wholesale')?.amount ?? '',
+          )
+          if (!Number.isFinite(tradePrice)) {
+            skipped += 1
+            continue
+          }
+          amount = (tradePrice * 1.1).toFixed(4)
+        }
+
         next[ulid] = {
           ...(next[ulid] ?? {}),
-          [fieldToUpdate]: value,
+          prices: {
+            ...(next[ulid]?.prices ?? {}),
+            [priceType]: amount,
+          },
         }
       }
+
       return next
     })
 
-    feedback.info(`Staged ${targets.length} product(s). Press Save to commit.`, 'Tabular View')
+    const staged = targets.length - skipped
+    if (staged > 0) {
+      feedback.info(
+        skipped > 0
+          ? `Staged ${staged} product(s); skipped ${skipped} without a Trade Price. Press Save to commit.`
+          : `Staged ${staged} product(s). Press Save to commit.`,
+        'Tabular View',
+      )
+    } else {
+      feedback.error('No selected product has the data required for this formula.', 'Tabular View')
+    }
   }
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       const entries = Object.entries(drafts)
-      await Promise.all(entries.map(([ulid, payload]) => updateProduct(ulid, payload as Record<string, unknown>)))
+      await Promise.all(entries.map(async ([ulid, draft]) => {
+        if (draft.product && Object.keys(draft.product).length > 0) {
+          await updateProduct(ulid, draft.product as Record<string, unknown>)
+        }
+
+        if (draft.prices && Object.keys(draft.prices).length > 0) {
+          await Promise.all(
+            Object.entries(draft.prices).map(([priceType, amount]) =>
+              saveProductPrices(ulid, [{
+                price_type: priceType,
+                amount,
+                is_active: true,
+              }]),
+            ),
+          )
+        }
+      }))
       return entries.length
     },
     onSuccess: async (count) => {
@@ -296,123 +372,162 @@ export function ProductTabularViewPage() {
   return (
     <section className="product-tabular-page" aria-label="Product Tabular View">
       <div className="product-tabular-toolbar">
-        <label className="product-tabular-search">
-          <span>Search</span>
-          <input
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value)
-              resetToFirstPage()
-            }}
-            placeholder="Product, barcode, SKU…"
-            autoComplete="off"
-          />
-        </label>
-
-        <label className="product-tabular-field">
-          <span>Field To Update</span>
-          <UiSelect
-            value={fieldToUpdate}
-            options={BULK_FIELD_OPTIONS}
-            onChange={(value) => setFieldToUpdate(value as BulkField)}
-            aria-label="Field to update"
-            searchable={false}
-            disabled={!canEdit}
-          />
-        </label>
-
-        <label className="product-tabular-set-text">
-          <span>Set Text</span>
-          <input
-            value={setText}
-            onChange={(event) => setSetText(event.target.value)}
-            disabled={!canEdit}
-          />
-        </label>
-
-        <UiButton
-          variant="info"
-          icon={<RefreshCw size={15} />}
-          label="Refresh"
-          onClick={() => void productsQuery.refetch()}
-          disabled={productsQuery.isFetching}
-        />
-
-        <UiButton
-          variant="default"
-          label="Set"
-          onClick={applySetText}
-          disabled={!canEdit}
-        />
-
-        <div className="product-tabular-filters" aria-label="Product filters">
-          <label>
+        <div className="product-tabular-primary-row">
+          <label className="product-tabular-search">
+            <span>Search</span>
             <input
-              type="checkbox"
-              checked={withBalance}
+              value={search}
               onChange={(event) => {
-                setWithBalance(event.target.checked)
+                setSearch(event.target.value)
                 resetToFirstPage()
               }}
+              placeholder="Product, barcode, SKU…"
+              autoComplete="off"
             />
-            <span>With Balance</span>
           </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={activeOnly}
-              onChange={(event) => {
-                setActiveOnly(event.target.checked)
-                resetToFirstPage()
+
+          <label className="product-tabular-field">
+            <span>Field To Update</span>
+            <UiSelect
+              value={fieldToUpdate}
+              options={BULK_FIELD_OPTIONS}
+              onChange={(value) => {
+                setFieldToUpdate(value as BulkField)
+                setSetText('')
+                setSetTextPreset('')
               }}
+              aria-label="Field to update"
+              searchable={false}
+              disabled={!canEdit}
             />
-            <span>Active Only</span>
           </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={stockLeReorder}
-              onChange={(event) => {
-                setStockLeReorder(event.target.checked)
-                resetToFirstPage()
-              }}
+
+          <div className="product-tabular-set-text">
+            <span>Set Text</span>
+            <div className="product-tabular-set-combo">
+              <input
+                value={setText}
+                onChange={(event) => {
+                  setSetText(event.target.value)
+                  setSetTextPreset('')
+                }}
+                disabled={!canEdit}
+                placeholder={fieldToUpdate === 'reorder_level' ? 'Enter value…' : 'Enter price or choose formula…'}
+              />
+              <UiSelect
+                value={setTextPreset}
+                options={SET_TEXT_PRESETS.map((option) => ({
+                  ...option,
+                  disabled:
+                    option.disabled ||
+                    (option.value === 'trade_price_plus_10' && fieldToUpdate !== 'retail_price'),
+                }))}
+                onChange={(value) => {
+                  setSetTextPreset(value)
+                  if (value === 'trade_price_plus_10') {
+                    setSetText('=TradePrice + (TradePrice * 10.0 / 100)')
+                  }
+                }}
+                placeholder="Formula"
+                aria-label="Set Text formula"
+                searchable={false}
+                disabled={!canEdit}
+                triggerClassName="product-tabular-formula-trigger"
+              />
+            </div>
+          </div>
+
+          <div className="product-tabular-update-actions">
+            <UiButton
+              variant="info"
+              icon={<RefreshCw size={15} />}
+              label="Refresh"
+              onClick={() => void productsQuery.refetch()}
+              disabled={productsQuery.isFetching}
             />
-            <span>Stock &lt;= Reorder</span>
-          </label>
-          <label title={canViewStock ? undefined : 'Requires inventory.view permission'}>
-            <input
-              type="checkbox"
-              checked={purchaseRateGeSaleRate}
-              disabled={!canViewStock}
-              onChange={(event) => {
-                setPurchaseRateGeSaleRate(event.target.checked)
-                resetToFirstPage()
-              }}
+            <UiButton
+              variant="default"
+              label="Set"
+              onClick={applySetText}
+              disabled={!canEdit || (fieldToUpdate !== 'reorder_level' && !canPrices)}
             />
-            <span>P.Rate &gt;= S.Rate</span>
-          </label>
+          </div>
+
+          <div className="product-tabular-actions">
+            <UiButton
+              variant="success"
+              icon={<Save size={16} />}
+              label={saveMutation.isPending ? 'Saving…' : 'Save'}
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending || Object.keys(drafts).length === 0}
+            />
+            <UiButton
+              variant="info"
+              icon={<Download size={16} />}
+              label="Export"
+              onClick={exportCurrentPage}
+            />
+            <UiButton
+              variant="info"
+              icon={<X size={16} />}
+              label="Close"
+              onClick={closeActiveTab}
+            />
+          </div>
         </div>
 
-        <div className="product-tabular-actions">
-          <UiButton
-            variant="success"
-            icon={<Save size={16} />}
-            label={saveMutation.isPending ? 'Saving…' : 'Save'}
-            onClick={() => saveMutation.mutate()}
-            disabled={!canEdit || saveMutation.isPending || Object.keys(drafts).length === 0}
-          />
-          <UiButton
-            variant="info"
-            icon={<Download size={16} />}
-            label="Export"
-            onClick={exportCurrentPage}
-          />
-          <UiButton
-            variant="info"
-            icon={<X size={16} />}
-            label="Close"
-            onClick={closeActiveTab}
-          />
+        <div className="product-tabular-secondary-row">
+          <span className="product-tabular-filter-label">Filters</span>
+          <div className="product-tabular-filters" aria-label="Product filters">
+            <label>
+              <input
+                type="checkbox"
+                checked={withBalance}
+                onChange={(event) => {
+                  setWithBalance(event.target.checked)
+                  resetToFirstPage()
+                }}
+              />
+              <span>With Balance</span>
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={activeOnly}
+                onChange={(event) => {
+                  setActiveOnly(event.target.checked)
+                  resetToFirstPage()
+                }}
+              />
+              <span>Active Only</span>
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={stockLeReorder}
+                onChange={(event) => {
+                  setStockLeReorder(event.target.checked)
+                  resetToFirstPage()
+                }}
+              />
+              <span>Stock &lt;= Reorder</span>
+            </label>
+            <label title={canViewStock ? undefined : 'Requires inventory.view permission'}>
+              <input
+                type="checkbox"
+                checked={purchaseRateGeSaleRate}
+                disabled={!canViewStock}
+                onChange={(event) => {
+                  setPurchaseRateGeSaleRate(event.target.checked)
+                  resetToFirstPage()
+                }}
+              />
+              <span>P.Rate &gt;= S.Rate</span>
+            </label>
+          </div>
+          <span className="product-tabular-selection-summary">
+            {selected.size > 0 ? `${selected.size} selected` : activeKey ? '1 active row' : 'No rows selected'}
+          </span>
         </div>
       </div>
 
