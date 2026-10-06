@@ -12,11 +12,11 @@ class AccountTypeCodeTest extends TestCase
 
     private function seedSubHead(): string
     {
-        $main = $this->postJson('/api/coa/main-heads', ['name' => 'ASSETS'])->assertCreated()->json('ulid');
+        $main = $this->postJson('/api/coa/main-heads', ['name' => 'TEST ASSETS'])->assertCreated()->json('ulid');
 
         return $this->postJson('/api/coa/sub-heads', [
             'main_head_ulid' => $main,
-            'name' => 'CURRENT',
+            'name' => 'TEST CURRENT',
         ])->assertCreated()->json('ulid');
     }
 
@@ -27,18 +27,18 @@ class AccountTypeCodeTest extends TestCase
 
         $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $subA,
-            'code' => '0010-cash',
+            'code' => '9010-cash',
             'name' => 'CASH',
             'is_cash' => true,
-        ])->assertCreated()->assertJsonPath('code', '0010-CASH');
+        ])->assertCreated()->assertJsonPath('code', '9010-CASH');
 
         $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $subA,
-            'code' => '0010-CASH',
+            'code' => '9010-CASH',
             'name' => 'CASH DUP',
         ])->assertStatus(422);
 
-        $countA = AccountType::query()->where('code', '0010-CASH')->count();
+        $countA = AccountType::query()->where('code', '9010-CASH')->count();
         $this->assertSame(1, $countA);
 
         $this->postJson('/api/auth/logout')->assertOk();
@@ -47,12 +47,12 @@ class AccountTypeCodeTest extends TestCase
 
         $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $subB,
-            'code' => '0010-CASH',
+            'code' => '9010-CASH',
             'name' => 'CASH',
             'is_cash' => true,
-        ])->assertCreated()->assertJsonPath('code', '0010-CASH');
+        ])->assertCreated()->assertJsonPath('code', '9010-CASH');
 
-        $this->assertSame(2, AccountType::query()->where('code', '0010-CASH')->count());
+        $this->assertSame(2, AccountType::query()->where('code', '9010-CASH')->count());
     }
 
     public function test_create_requires_code_legacy_null_allowed_on_update_omit(): void
@@ -71,11 +71,11 @@ class AccountTypeCodeTest extends TestCase
             'name' => 'AP',
             'is_payable' => true,
         ])->assertCreated();
-        $created->assertJsonPath('code', '0020');
+        $created->assertJsonPath('code', '9020');
         $ulid = $created->json('ulid');
 
         $this->patchJson('/api/coa/account-types/'.$ulid, [
             'name' => 'ACCOUNT PAYABLE',
-        ])->assertOk()->assertJsonPath('code', '0020');
+        ])->assertOk()->assertJsonPath('code', '9020');
     }
 }
