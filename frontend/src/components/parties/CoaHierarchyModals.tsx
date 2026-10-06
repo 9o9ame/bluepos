@@ -36,6 +36,7 @@ type Props = {
   onClose: () => void
   onAccountTypeSaved: (type: CoaAccountType) => void
   onHierarchyChanged: () => void
+  compact?: boolean
 }
 
 type TypeDraft = {
@@ -105,6 +106,7 @@ export function CoaHierarchyModals({
   onClose,
   onAccountTypeSaved,
   onHierarchyChanged,
+  compact = false,
 }: Props) {
   const [layer, setLayer] = useState<'type' | 'sub' | 'main'>('type')
   const [error, setError] = useState<string | null>(null)
@@ -334,7 +336,11 @@ export function CoaHierarchyModals({
   return (
     <>
       <div className="coa-modal-backdrop" style={{ zIndex: 5200 }}>
-        <div className="coa-modal coa-modal-sheet" role="dialog" aria-label="Account Type Definition">
+        <div
+          className={`coa-modal coa-modal-sheet${compact ? ' is-compact-nested' : ''}`}
+          role="dialog"
+          aria-label="Account Type Definition"
+        >
           <div className="coa-modal-bar">
             <span>Account Type Definition</span>
             <div className="coa-modal-bar-right">
