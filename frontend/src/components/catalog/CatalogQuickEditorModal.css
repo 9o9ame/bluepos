@@ -508,3 +508,32 @@
 }
 .catalog-popup-error { color: var(--ui-danger) !important; }
 html[data-animations='off'] .catalog-popup * { transition: none !important; animation: none !important; }
+
+
+/* ---------- SUBCATEGORY DROPDOWN THEME SYNC ---------- */
+.catalog-popup .catalog-popup-select.bp-fancy-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.catalog-popup .catalog-popup-select .bp-fancy-select-trigger {
+  height: 28px;
+  min-height: 28px;
+  font: inherit;
+  font-weight: 700;
+}
+
+.catalog-popup .catalog-popup-select .bp-fancy-select-arrow {
+  width: 20px;
+  height: 18px;
+}
+
+.catalog-popup .bp-fancy-select-menu {
+  font-family: inherit;
+}
+
+.catalog-popup .bp-fancy-select-option {
+  min-height: 26px;
+  padding: 4px 8px;
+  font-size: 11px;
+}
