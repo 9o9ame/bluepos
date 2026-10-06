@@ -20,24 +20,9 @@ class PartyBulkTest extends TestCase
      */
     private function seedTypes(): array
     {
-        $assets = $this->postJson('/api/coa/main-heads', ['name' => 'ASSETS'])->assertCreated()->json('ulid');
-        $liab = $this->postJson('/api/coa/main-heads', ['name' => 'LIABILITIES'])->assertCreated()->json('ulid');
-        $current = $this->postJson('/api/coa/sub-heads', ['main_head_ulid' => $assets, 'name' => 'CURRENT'])->assertCreated()->json('ulid');
-        $short = $this->postJson('/api/coa/sub-heads', ['main_head_ulid' => $liab, 'name' => 'SHORT'])->assertCreated()->json('ulid');
-
         return [
-            'ar' => $this->postJson('/api/coa/account-types', [
-                'sub_head_ulid' => $current,
-                'code' => '0011',
-                'name' => 'ACCOUNT RECEIVABLE',
-                'is_receivable' => true,
-            ])->assertCreated()->json('ulid'),
-            'ap' => $this->postJson('/api/coa/account-types', [
-                'sub_head_ulid' => $short,
-                'code' => '0020',
-                'name' => 'ACCOUNT PAYABLE',
-                'is_payable' => true,
-            ])->assertCreated()->json('ulid'),
+            'ar' => $this->referenceAccountTypeUlid('0011'),
+            'ap' => $this->referenceAccountTypeUlid('0020'),
         ];
     }
 
