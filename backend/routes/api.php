@@ -196,6 +196,8 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
         Route::get('/products', [ProductController::class, 'index']);
         Route::post('/products', [ProductController::class, 'store']);
+        Route::patch('/products/bulk', [ProductController::class, 'bulkUpdate']);
+        Route::get('/products/tabular-export', [ProductController::class, 'tabularExport']);
         Route::get('/products/{productUlid}', [ProductController::class, 'show']);
         Route::patch('/products/{productUlid}', [ProductController::class, 'update']);
         Route::delete('/products/{productUlid}', [ProductController::class, 'destroy']);

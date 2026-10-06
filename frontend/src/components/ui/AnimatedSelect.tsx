@@ -5,6 +5,7 @@ import {
   type FocusEvent,
   type KeyboardEvent,
   type MouseEvent,
+  type ReactNode,
   type SelectHTMLAttributes,
 } from 'react'
 import { UiSelect, type UiSelectOption } from './UiSelect'
@@ -41,7 +42,9 @@ export function AnimatedSelect({
 
     return [{
       value: String(option.value ?? ''),
-      label: Children.toArray(option.children).join(''),
+      label: Children.toArray(option.children as ReactNode)
+        .map((node) => (typeof node === 'string' || typeof node === 'number' ? String(node) : ''))
+        .join(''),
       disabled: option.disabled,
       title: option.title,
     }]

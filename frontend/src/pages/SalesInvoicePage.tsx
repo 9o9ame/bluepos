@@ -623,7 +623,7 @@ export function SalesInvoicePage() {
   }
 
   function handleActiveFieldEnter(
-    event: ReactKeyboardEvent<HTMLInputElement | HTMLSelectElement>,
+    event: ReactKeyboardEvent<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>,
     lineKey: string,
   ) {
     if (event.key !== 'Enter') return
@@ -633,7 +633,7 @@ export function SalesInvoicePage() {
     if (!row) return
 
     const fields = Array.from(
-      row.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+      row.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>(
         '[data-sale-editable="true"]:not(:disabled)',
       ),
     )

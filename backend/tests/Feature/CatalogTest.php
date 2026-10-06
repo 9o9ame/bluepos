@@ -666,4 +666,381 @@ class CatalogTest extends TestCase
             'branches' => [$branchUlid],
         ])->assertCreated();
     }
+
+    public function test_product_tabular_filters_use_active_warehouse_stock_and_prices(): void
+    {
+        $this->signInOwner('tabular-filters')->assertOk();
+        $masters = $this->seedMasters();
+
+        $createProduct = function (string $name, string $reorder) use ($masters): string {
+            return $this->postJson('/api/products', [
+                'name' => $name,
+                'category_ulid' => $masters['category'],
+                'brand_ulid' => $masters['brand'],
+                'base_unit_ulid' => $masters['pcs'],
+                'reorder_level' => $reorder,
+            ])->assertCreated()->json('ulid');
+        };
+
+        $highCostUlid = $createProduct('Tabular High Cost', '3.000000');
+        $healthyUlid = $createProduct('Tabular Healthy', '2.000000');
+        $noBalanceUlid = $createProduct('Tabular No Balance', '1.000000');
+
+        $context = app(TenantContext::class);
+        $highCost = Product::query()->where('ulid', $highCostUlid)->firstOrFail();
+        $healthy = Product::query()->where('ulid', $healthyUlid)->firstOrFail();
+
+        foreach ([
+            [$highCost, '2.000000', '120.0000'],
+            [$healthy, '5.000000', '50.0000'],
+        ] as [$product, $quantity, $averageCost]) {
+            StockBalance::query()->create([
+                'tenant_id' => $context->tenantId(),
+                'branch_id' => $context->branchId(),
+                'warehouse_id' => $context->warehouseId(),
+                'product_id' => $product->id,
+                'quantity' => $quantity,
+                'average_cost' => $averageCost,
+                'stock_value' => '0.0000',
+            ]);
+        }
+
+        foreach ([$highCostUlid, $healthyUlid, $noBalanceUlid] as $ulid) {
+            $this->putJson('/api/products/'.$ulid.'/prices', [
+                'prices' => [[
+                    'price_type' => 'retail',
+                    'amount' => '100.0000',
+                    'currency_code' => 'PKR',
+                    'is_active' => true,
+                ]],
+            ])->assertOk();
+        }
+
+        $withBalance = $this->getJson('/api/products?with_balance=1&sales_lookup=1&per_page=100')
+            ->assertOk();
+        $withBalanceUlids = collect($withBalance->json('data'))->pluck('ulid');
+        $this->assertTrue($withBalanceUlids->contains($highCostUlid));
+        $this->assertTrue($withBalanceUlids->contains($healthyUlid));
+        $this->assertFalse($withBalanceUlids->contains($noBalanceUlid));
+
+        $lowStock = $this->getJson('/api/products?stock_le_reorder=1&sales_lookup=1&per_page=100')
+            ->assertOk();
+        $lowStockUlids = collect($lowStock->json('data'))->pluck('ulid');
+        $this->assertTrue($lowStockUlids->contains($highCostUlid));
+        $this->assertTrue($lowStockUlids->contains($noBalanceUlid));
+        $this->assertFalse($lowStockUlids->contains($healthyUlid));
+
+        $rateWarning = $this->getJson('/api/products?purchase_rate_ge_sale_rate=1&sales_lookup=1&per_page=100')
+            ->assertOk();
+        $rateWarningUlids = collect($rateWarning->json('data'))->pluck('ulid');
+        $this->assertTrue($rateWarningUlids->contains($highCostUlid));
+        $this->assertFalse($rateWarningUlids->contains($healthyUlid));
+        $this->assertFalse($rateWarningUlids->contains($noBalanceUlid));
+        $this->assertNoInternalIds($rateWarning->json());
+    }
+
+
+    public function test_product_tabular_bulk_update_is_atomic_and_computes_formula_server_side(): void
+    {
+        $this->signInOwner('tabular-bulk')->assertOk();
+        $masters = $this->seedMasters();
+
+        $firstUlid = $this->postJson('/api/products', [
+            'name' => 'Bulk Formula Product',
+            'base_unit_ulid' => $masters['pcs'],
+            'reorder_level' => '1.000000',
+        ])->assertCreated()->json('ulid');
+
+        $secondUlid = $this->postJson('/api/products', [
+            'name' => 'Bulk Manual Product',
+            'base_unit_ulid' => $masters['pcs'],
+            'reorder_level' => '2.000000',
+        ])->assertCreated()->json('ulid');
+
+        $this->putJson('/api/products/'.$firstUlid.'/prices', [
+            'prices' => [[
+                'price_type' => 'wholesale',
+                'amount' => '100.1234',
+                'is_active' => true,
+            ]],
+        ])->assertOk();
+
+        $response = $this->patchJson('/api/products/bulk', [
+            'rows' => [
+                [
+                    'product_ulid' => $firstUlid,
+                    'product' => [
+                        'reorder_level' => '7.500000',
+                    ],
+                    'prices' => [[
+                        'price_type' => 'retail',
+                        'formula' => 'trade_price_plus_percent',
+                        'percent' => '10.00000000',
+                    ]],
+                ],
+                [
+                    'product_ulid' => $secondUlid,
+                    'prices' => [[
+                        'price_type' => 'minimum_sale',
+                        'amount' => '55.4321',
+                    ]],
+                ],
+            ],
+        ])->assertOk()->assertJsonPath('updated', 2);
+
+        $this->assertNoInternalIds($response->json());
+
+        $first = $this->getJson('/api/products/'.$firstUlid)->assertOk();
+        $first->assertJsonPath('reorder_level', '7.500000');
+        $this->assertSame(
+            '110.1357',
+            collect($first->json('prices'))->firstWhere('price_type', 'retail')['amount'],
+        );
+
+        $second = $this->getJson('/api/products/'.$secondUlid)->assertOk();
+        $this->assertSame(
+            '55.4321',
+            collect($second->json('prices'))->firstWhere('price_type', 'minimum_sale')['amount'],
+        );
+    }
+
+    public function test_product_tabular_bulk_update_rolls_back_all_rows_when_formula_dependency_is_missing(): void
+    {
+        $this->signInOwner('tabular-rollback')->assertOk();
+        $masters = $this->seedMasters();
+
+        $firstUlid = $this->postJson('/api/products', [
+            'name' => 'Rollback First Product',
+            'base_unit_ulid' => $masters['pcs'],
+            'reorder_level' => '1.000000',
+        ])->assertCreated()->json('ulid');
+
+        $secondUlid = $this->postJson('/api/products', [
+            'name' => 'Rollback Missing Trade Product',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated()->json('ulid');
+
+        $this->patchJson('/api/products/bulk', [
+            'rows' => [
+                [
+                    'product_ulid' => $firstUlid,
+                    'product' => [
+                        'reorder_level' => '9.000000',
+                    ],
+                ],
+                [
+                    'product_ulid' => $secondUlid,
+                    'prices' => [[
+                        'price_type' => 'retail',
+                        'formula' => 'trade_price_plus_percent',
+                        'percent' => '10.00000000',
+                    ]],
+                ],
+            ],
+        ])->assertUnprocessable();
+
+        $this->getJson('/api/products/'.$firstUlid)
+            ->assertOk()
+            ->assertJsonPath('reorder_level', '1.000000');
+    }
+
+    public function test_product_tabular_bulk_update_rejects_cross_tenant_ulids(): void
+    {
+        $this->signInOwner('tabular-tenant-a')->assertOk();
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Tenant A Bulk Product',
+            'base_unit_ulid' => $this->unitUlid('PCS'),
+            'reorder_level' => '2.000000',
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('tabular-tenant-b')->assertOk();
+
+        $this->patchJson('/api/products/bulk', [
+            'rows' => [[
+                'product_ulid' => $productUlid,
+                'product' => [
+                    'reorder_level' => '8.000000',
+                ],
+            ]],
+        ])->assertNotFound();
+    }
+
+    public function test_product_tabular_bulk_price_update_requires_price_permission(): void
+    {
+        $owner = $this->signInOwner('tabular-auth')->assertOk();
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Bulk Protected Price Product',
+            'base_unit_ulid' => $this->unitUlid('PCS'),
+        ])->assertCreated()->json('ulid');
+
+        $this->createCashier('tabular-auth', $owner->json('branch.ulid'));
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->loginAs('tabular-auth', 'cashier-tabular-auth')->assertOk();
+
+        $this->patchJson('/api/products/bulk', [
+            'rows' => [[
+                'product_ulid' => $productUlid,
+                'prices' => [[
+                    'price_type' => 'retail',
+                    'amount' => '123.4500',
+                ]],
+            ]],
+        ])->assertForbidden()->assertJsonPath('error.key', 'FORBIDDEN');
+    }
+
+
+    public function test_product_tabular_index_returns_filtered_stock_total(): void
+    {
+        $this->signInOwner('tabular-total')->assertOk();
+        $masters = $this->seedMasters();
+        $context = app(TenantContext::class);
+
+        $matchUlid = $this->postJson('/api/products', [
+            'name' => 'Total Match Product',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated()->json('ulid');
+
+        $otherUlid = $this->postJson('/api/products', [
+            'name' => 'Total Other Product',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated()->json('ulid');
+
+        foreach ([
+            [$matchUlid, '4.250000'],
+            [$otherUlid, '9.000000'],
+        ] as [$ulid, $quantity]) {
+            $product = Product::query()->where('ulid', $ulid)->firstOrFail();
+
+            StockBalance::query()->create([
+                'tenant_id' => $context->tenantId(),
+                'branch_id' => $context->branchId(),
+                'warehouse_id' => $context->warehouseId(),
+                'product_id' => $product->id,
+                'quantity' => $quantity,
+                'average_cost' => '10.0000',
+                'stock_value' => '0.0000',
+            ]);
+        }
+
+        $response = $this->getJson('/api/products?q=Total%20Match&sales_lookup=1&per_page=50')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1);
+
+        $this->assertSame('4.250000', bcadd((string) $response->json('meta.stock_total'), '0', 6));
+        $this->assertNoInternalIds($response->json());
+    }
+
+    public function test_product_tabular_export_respects_filters_and_tenant_isolation(): void
+    {
+        $this->signInOwner('tabular-export-a')->assertOk();
+        $masters = $this->seedMasters();
+        $context = app(TenantContext::class);
+
+        $includedUlid = $this->postJson('/api/products', [
+            'name' => 'Export Included Product',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated()->json('ulid');
+
+        $excludedUlid = $this->postJson('/api/products', [
+            'name' => 'Export Excluded Product',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated()->json('ulid');
+
+        $included = Product::query()->where('ulid', $includedUlid)->firstOrFail();
+        $excluded = Product::query()->where('ulid', $excludedUlid)->firstOrFail();
+
+        StockBalance::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'warehouse_id' => $context->warehouseId(),
+            'product_id' => $included->id,
+            'quantity' => '2.000000',
+            'average_cost' => '41.2500',
+            'stock_value' => '82.5000',
+        ]);
+
+        StockBalance::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'warehouse_id' => $context->warehouseId(),
+            'product_id' => $excluded->id,
+            'quantity' => '0.000000',
+            'average_cost' => '90.0000',
+            'stock_value' => '0.0000',
+        ]);
+
+        $this->putJson('/api/products/'.$includedUlid.'/prices', [
+            'prices' => [[
+                'price_type' => 'retail',
+                'amount' => '60.0000',
+                'is_active' => true,
+            ]],
+        ])->assertOk();
+
+        $csv = $this->get('/api/products/tabular-export?with_balance=1&q=Export')
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringContainsString('Export Included Product', $csv);
+        $this->assertStringNotContainsString('Export Excluded Product', $csv);
+        $this->assertStringContainsString('41.2500', $csv);
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('tabular-export-b')->assertOk();
+
+        $foreignTenantCsv = $this->get('/api/products/tabular-export?q=Export')
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringNotContainsString('Export Included Product', $foreignTenantCsv);
+        $this->assertStringNotContainsString('Export Excluded Product', $foreignTenantCsv);
+    }
+
+    public function test_product_tabular_export_hides_cost_without_inventory_permission(): void
+    {
+        $owner = $this->signInOwner('tabular-export-perm')->assertOk();
+        $masters = $this->seedMasters();
+        $context = app(TenantContext::class);
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Export Cost Protected Product',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated()->json('ulid');
+
+        $product = Product::query()->where('ulid', $productUlid)->firstOrFail();
+        StockBalance::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'warehouse_id' => $context->warehouseId(),
+            'product_id' => $product->id,
+            'quantity' => '3.000000',
+            'average_cost' => '9876.5432',
+            'stock_value' => '0.0000',
+        ]);
+
+        $roles = $this->getJson('/api/roles')->assertOk()->json();
+        $purchaseRole = collect($roles)->firstWhere('code', PermissionCatalogue::PURCHASE);
+
+        $this->postJson('/api/memberships', [
+            'name' => 'Purchase Export User',
+            'username' => 'purchase-export',
+            'recovery_email' => 'purchase-export@example.com',
+            'password' => 'password123',
+            'must_change_password' => false,
+            'roles' => [$purchaseRole['ulid']],
+            'branches' => [$owner->json('branch.ulid')],
+        ])->assertCreated();
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->loginAs('tabular-export-perm', 'purchase-export')->assertOk();
+
+        $csv = $this->get('/api/products/tabular-export?q=Export%20Cost%20Protected')
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringContainsString('Export Cost Protected Product', $csv);
+        $this->assertStringNotContainsString('9876.5432', $csv);
+    }
+
 }

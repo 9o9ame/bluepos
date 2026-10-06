@@ -2,7 +2,7 @@ import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 
 export type PosGridColumn<T> = {
   key: string
-  header: string
+  header: ReactNode
   width?: number | string
   align?: 'left' | 'right' | 'center'
   render?: (row: T) => ReactNode

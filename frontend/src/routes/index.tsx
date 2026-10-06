@@ -15,6 +15,7 @@ import { HelpAboutPage } from '../pages/HelpAboutPage'
 import { LoginPage } from '../pages/LoginPage'
 import { PartiesPlaceholderPage } from '../pages/PartiesPlaceholderPage'
 import { ProductsPage } from '../pages/ProductsPage'
+import { ProductTabularViewPage } from '../pages/ProductTabularViewPage'
 import { PurchasesPage } from '../pages/PurchasesPage'
 import { PurchaseReturnsPage } from '../pages/PurchaseReturnsPage'
 import { ReportsPlaceholderPage } from '../pages/ReportsPlaceholderPage'
@@ -113,6 +114,7 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="products.view" />}>
             <Route path="/definition/products" element={<ProductsPage />} />
+            <Route path="/definition/product-view" element={<ProductTabularViewPage />} />
             <Route path="/definition/products/:productUlid" element={<Navigate to="/definition/products" replace />} />
             <Route path="/definition/barcode-printing" element={<BarcodePrintingPage />} />
             <Route path="/definition/barcode-printing/:productUlid" element={<BarcodePrintingPage />} />
