@@ -15,6 +15,7 @@ import { TenantImportModal } from '../../components/platform/TenantImportModal'
 import { usePlatformAuth } from '../../features/platform/PlatformAuthProvider'
 import { usePlatformCan } from '../../features/platform/usePlatformCan'
 import type { PlatformTenant } from '../../types/platform'
+import { UiSelect } from '../../components/ui/UiSelect'
 
 export function PlatformTenantsPage() {
   const queryClient = useQueryClient()
@@ -120,29 +121,31 @@ export function PlatformTenantsPage() {
         ))}
         <label className="block font-semibold">
           Plan
-          <select
-            className="mt-1 h-8 w-full rounded border border-slate-300 px-2"
-            value={form.plan_ulid}
-            onChange={(event) => setForm((current) => ({ ...current, plan_ulid: event.target.value }))}
-          >
-            <option value="">Select plan</option>
-            {plans.map((plan) => (
-              <option key={plan.ulid} value={plan.ulid}>
-                {plan.name}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1">
+            <UiSelect
+              value={form.plan_ulid}
+              aria-label="Plan"
+              options={[
+                { value: '', label: 'Select plan' },
+                ...plans.map((plan) => ({ value: plan.ulid, label: plan.name })),
+              ]}
+              onChange={(planUlid) => setForm((current) => ({ ...current, plan_ulid: planUlid }))}
+            />
+          </div>
         </label>
         <label className="block font-semibold">
           Tenant status
-          <select
-            className="mt-1 h-8 w-full rounded border border-slate-300 px-2"
-            value={form.status}
-            onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
-          >
-            <option value="trial">Trial</option>
-            <option value="active">Active</option>
-          </select>
+          <div className="mt-1">
+            <UiSelect
+              value={form.status}
+              aria-label="Tenant status"
+              options={[
+                { value: 'trial', label: 'Trial' },
+                { value: 'active', label: 'Active' },
+              ]}
+              onChange={(status) => setForm((current) => ({ ...current, status }))}
+            />
+          </div>
         </label>
         <label className="flex items-center gap-2 font-semibold">
           <input
