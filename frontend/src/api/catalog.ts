@@ -361,6 +361,10 @@ export function fetchProducts(
     brand_ulid?: string
     status?: string
     sales_lookup?: boolean
+    active_only?: boolean
+    with_balance?: boolean
+    stock_le_reorder?: boolean
+    purchase_rate_ge_sale_rate?: boolean
   },
   options?: {
     busy?: 'block' | 'fetch' | 'none'
@@ -390,6 +394,22 @@ export function fetchProducts(
 
   if (params.sales_lookup) {
     search.set('sales_lookup', '1')
+  }
+
+  if (params.active_only) {
+    search.set('active_only', '1')
+  }
+
+  if (params.with_balance) {
+    search.set('with_balance', '1')
+  }
+
+  if (params.stock_le_reorder) {
+    search.set('stock_le_reorder', '1')
+  }
+
+  if (params.purchase_rate_ge_sale_rate) {
+    search.set('purchase_rate_ge_sale_rate', '1')
   }
 
   search.set(
