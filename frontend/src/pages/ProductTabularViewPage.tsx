@@ -139,7 +139,9 @@ export function ProductTabularViewPage() {
   })
 
   const rows = productsQuery.data?.data ?? []
-  const meta = productsQuery.data?.meta
+  const meta = productsQuery.data?.meta as
+    | (NonNullable<typeof productsQuery.data>['meta'] & { stock_total?: string | null })
+    | undefined
 
   const stagedCount = Object.keys(drafts).length
   const visibleUlids = useMemo(() => new Set(rows.map((product) => product.ulid)), [rows])
@@ -435,8 +437,11 @@ export function ProductTabularViewPage() {
             <input
               value={search}
               onChange={(event) => {
-                setSearch(event.target.value)
-                resetToFirstPage()
+                const next = event.target.value
+                void changeView(() => {
+                  setSearch(next)
+                  resetToFirstPage()
+                })
               }}
               placeholder="Product, barcode, SKU…"
               autoComplete="off"
