@@ -139,6 +139,15 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     entitlement: 'inventory',
   },
   {
+    key: 'stock-taking',
+    title: 'Stock Taking',
+    path: '/definition/stock-taking',
+    ribbon: 'definition',
+    status: 'ready',
+    permission: 'inventory.view',
+    entitlement: 'inventory',
+  },
+  {
     key: 'price-lists',
     title: 'Price Lists',
     path: '/definition/price-lists',
@@ -391,7 +400,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       commands: [
         { id: 'products', label: 'Define Products', icon: Package, moduleKey: 'products', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'green' },
         { id: 'tabular', label: 'Tabular View', icon: LayoutGrid, moduleKey: 'product-tabular-view', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'teal' },
-        { id: 'stock-taking', label: 'Stock Taking', icon: Boxes, status: 'later', tone: 'orange' },
+        { id: 'stock-taking', label: 'Stock Taking', icon: Boxes, moduleKey: 'stock-taking', permission: 'inventory.view', entitlement: 'inventory', status: 'ready', tone: 'orange' },
         { id: 'categories', label: 'Categories', icon: FolderTree, moduleKey: 'categories', permission: 'categories.view', entitlement: 'catalog', status: 'ready', tone: 'blue' },
         { id: 'subcategories', label: 'Subcategories', icon: Layers, moduleKey: 'subcategories', permission: 'categories.view', entitlement: 'catalog', status: 'ready', tone: 'blue' },
         { id: 'brands', label: 'Brands', icon: Tag, moduleKey: 'brands', permission: 'brands.view', entitlement: 'catalog', status: 'ready', tone: 'purple' },
