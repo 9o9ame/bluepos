@@ -19,12 +19,12 @@ use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use App\Models\StockBalance;
 use App\Tenancy\TenantContext;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductController extends Controller
 {
@@ -98,39 +98,41 @@ class ProductController extends Controller
                 return preg_match('/^[=+\-@\t\r]/u', $text) === 1 ? "'".$text : $text;
             };
 
-            foreach ($query->cursor() as $product) {
-                $balance = $product->stockBalances->first();
-                $retail = $product->prices->first(
-                    fn ($price) => $price->is_active && $price->price_type->value === 'retail',
-                )?->amount;
-                $cost = $canViewInventory ? $balance?->average_cost : null;
-                $margin = '';
+            $query->chunk(500, function ($products) use ($handle, $safeText, $canViewInventory): void {
+                foreach ($products as $product) {
+                    $balance = $product->stockBalances->first();
+                    $retail = $product->prices->first(
+                        fn ($price) => $price->is_active && $price->price_type->value === 'retail',
+                    )?->amount;
+                    $cost = $canViewInventory ? $balance?->average_cost : null;
+                    $margin = '';
 
-                if ($canViewInventory && $cost !== null && $retail !== null && bccomp((string) $cost, '0', 4) !== 0) {
-                    $margin = bcmul(
-                        bcdiv(
-                            bcsub((string) $retail, (string) $cost, 8),
-                            (string) $cost,
-                            8,
-                        ),
-                        '100',
-                        2,
-                    );
+                    if ($canViewInventory && $cost !== null && $retail !== null && bccomp((string) $cost, '0', 4) !== 0) {
+                        $margin = bcmul(
+                            bcdiv(
+                                bcsub((string) $retail, (string) $cost, 8),
+                                (string) $cost,
+                                8,
+                            ),
+                            '100',
+                            2,
+                        );
+                    }
+
+                    fputcsv($handle, [
+                        $safeText($product->product_number),
+                        $safeText($product->barcodes->firstWhere('is_primary', true)?->barcode ?? $product->sku),
+                        $safeText($product->name),
+                        $safeText($product->brand?->name),
+                        $safeText($product->category?->name),
+                        $safeText($product->baseUnit?->symbol ?? $product->baseUnit?->code),
+                        $cost ?? '',
+                        $margin,
+                        $retail ?? '',
+                        $balance?->quantity ?? '0.000000',
+                    ]);
                 }
-
-                fputcsv($handle, [
-                    $safeText($product->product_number),
-                    $safeText($product->barcodes->firstWhere('is_primary', true)?->barcode ?? $product->sku),
-                    $safeText($product->name),
-                    $safeText($product->brand?->name),
-                    $safeText($product->category?->name),
-                    $safeText($product->baseUnit?->symbol ?? $product->baseUnit?->code),
-                    $cost ?? '',
-                    $margin,
-                    $retail ?? '',
-                    $balance?->quantity ?? '0.000000',
-                ]);
-            }
+            });
 
             fclose($handle);
         }, 'bluepos-product-tabular-view.csv', [
