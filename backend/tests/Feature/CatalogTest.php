@@ -672,7 +672,7 @@ class CatalogTest extends TestCase
         $this->signInOwner('tabular-filters')->assertOk();
         $masters = $this->seedMasters();
 
-        $createProduct = function (string $name, string $reorder): string use ($masters) {
+        $createProduct = function (string $name, string $reorder) use ($masters): string {
             return $this->postJson('/api/products', [
                 'name' => $name,
                 'category_ulid' => $masters['category'],
