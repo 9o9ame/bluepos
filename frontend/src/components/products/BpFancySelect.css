@@ -282,3 +282,107 @@
   color: var(--ui-text-muted) !important;
 }
 html[data-animations='off'] .bp-fancy-select * { transition: none !important; animation: none !important; }
+
+
+/* ---------- FANCY SELECT FINAL THEME SYNC ---------- */
+.bp-fancy-select-trigger {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: linear-gradient(
+    180deg,
+    var(--ui-surface),
+    var(--ui-surface-subtle)
+  ) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  transition:
+    border-color var(--ui-transition-normal),
+    background-color var(--ui-transition-normal),
+    color var(--ui-transition-normal),
+    box-shadow var(--ui-transition-normal) !important;
+}
+
+.bp-fancy-select-trigger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ui-accent) 60%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-accent) 6%, var(--ui-surface)) !important;
+}
+
+.bp-fancy-select.is-open .bp-fancy-select-trigger,
+.bp-fancy-select-trigger:focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.bp-fancy-select-arrow {
+  border-color: color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border)) !important;
+  border-radius: var(--control-radius) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 55%, white),
+    var(--ui-accent)
+  ) !important;
+  color: #fff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    var(--ui-control-shadow) !important;
+  transition:
+    transform var(--ui-transition-normal),
+    border-color var(--ui-transition-normal),
+    background-color var(--ui-transition-normal),
+    box-shadow var(--ui-transition-normal) !important;
+}
+
+.bp-fancy-select-menu {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.bp-fancy-select-option {
+  border-radius: var(--control-radius) !important;
+  color: var(--ui-text) !important;
+}
+
+.bp-fancy-select-option:hover:not(:disabled),
+.bp-fancy-select-option:focus-visible {
+  background: var(--ui-accent-soft) !important;
+  color: var(--ui-accent-strong) !important;
+}
+
+.bp-fancy-select-option.is-selected {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ui-accent) 82%, black),
+    var(--ui-accent)
+  ) !important;
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18) !important;
+}
+
+.bp-fancy-select-option.is-selected:hover:not(:disabled) {
+  color: #fff !important;
+}
+
+.bp-fancy-select.is-disabled .bp-fancy-select-trigger {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+  box-shadow: none !important;
+}
+
+.bp-fancy-select.is-disabled .bp-fancy-select-arrow {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+  box-shadow: none !important;
+}
+
+html[data-animations='off'] .bp-fancy-select-menu,
+html[data-animations='off'] .bp-fancy-select-arrow,
+html[data-animations='off'] .bp-fancy-select-trigger,
+html[data-animations='off'] .bp-fancy-select-option {
+  transition: none !important;
+  animation: none !important;
+}
