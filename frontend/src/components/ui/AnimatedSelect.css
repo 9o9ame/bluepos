@@ -116,3 +116,73 @@
 :root[data-animations='off'] .vca-select-shell > .vca-select {
   transition: none !important;
 }
+
+
+/* ---------- ANIMATED SELECT FINAL THEME SYNC ---------- */
+.vca-select-shell > .vca-select {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: linear-gradient(
+    180deg,
+    var(--ui-surface),
+    var(--ui-surface-subtle)
+  ) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  transition:
+    border-color var(--ui-transition-normal),
+    background-color var(--ui-transition-normal),
+    color var(--ui-transition-normal),
+    box-shadow var(--ui-transition-normal) !important;
+}
+
+.vca-select-shell > .vca-select:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ui-accent) 58%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-accent) 6%, var(--ui-surface)) !important;
+}
+
+.vca-select-shell > .vca-select:focus,
+.vca-select-shell > .vca-select:focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.vca-select-caret {
+  border-color: color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border)) !important;
+  border-radius: var(--control-radius) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 55%, white),
+    var(--ui-accent)
+  ) !important;
+  color: #fff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    var(--ui-control-shadow) !important;
+  transition:
+    transform var(--ui-transition-normal),
+    filter var(--ui-transition-fast),
+    border-color var(--ui-transition-normal),
+    background-color var(--ui-transition-normal) !important;
+}
+
+.vca-select-shell > .vca-select:disabled {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+  border-color: var(--ui-border) !important;
+  box-shadow: none !important;
+}
+
+.vca-select-shell.is-disabled .vca-select-caret {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+  border-color: var(--ui-border) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html[data-animations='off'] .vca-select-shell > .vca-select,
+html[data-animations='off'] .vca-select-caret {
+  transition: none !important;
+}
