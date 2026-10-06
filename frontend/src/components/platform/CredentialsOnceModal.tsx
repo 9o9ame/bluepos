@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { UiButton } from '../ui/UiButton'
 import { UiModal } from '../ui/UiModal'
+import { UI_LAYER } from '../ui/uiLayers'
 
 export function CredentialsOnceModal({
   title,
@@ -35,7 +36,7 @@ export function CredentialsOnceModal({
     <UiModal
       title={title}
       size="sm"
-      zIndex={5200}
+      zIndex={UI_LAYER.nestedModal}
       onClose={onClose}
       footer={
         <>
