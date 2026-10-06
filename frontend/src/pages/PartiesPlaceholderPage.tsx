@@ -63,7 +63,8 @@ import { CoaHierarchyModals } from '../components/parties/CoaHierarchyModals'
 import { PartyTypeMultiSelect } from '../components/parties/PartyTypeMultiSelect'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { AnimatedSelect } from '../components/ui/AnimatedSelect'
-import { BpFancySelect } from '../components/products/BpFancySelect'
+import { UiSelect } from '../components/ui/UiSelect'
+import { UI_LAYER } from '../components/ui/uiLayers'
 import { ToggleSwitch } from '../components/ui/ToggleSwitch'
 import { askConfirm, formatApiError, useFeedback } from '../feedback/FeedbackProvider'
 import './PartiesPlaceholderPage.css'
@@ -1852,10 +1853,10 @@ export function PartiesPlaceholderPage({
               {isManualAccount ? (
                 <div className="parties-vca-account-type-row">
                   <label htmlFor="vca-account-type">Account Type</label>
-                  <BpFancySelect
+                  <UiSelect
                     value={form.accountTypeUlid}
                     aria-label="Account Type"
-                    menuZIndex={5250}
+                    menuZIndex={UI_LAYER.nestedDropdown}
                     options={[
                       { value: '', label: 'Select Account Type…' },
                       ...accountTypes.map((type) => ({ value: type.ulid, label: type.name })),
@@ -1881,10 +1882,10 @@ export function PartiesPlaceholderPage({
                   {form.types.includes('vendor') ? (
                     <div className="parties-vca-account-type-row">
                       <label htmlFor="vca-vendor-account-type">Vendor A/C Type</label>
-                      <BpFancySelect
+                      <UiSelect
                         value={form.vendorAccountTypeUlid}
                         aria-label="Vendor A/C Type"
-                        menuZIndex={5250}
+                        menuZIndex={UI_LAYER.nestedDropdown}
                         options={[
                           { value: '', label: 'Select vendor account type…' },
                           ...accountTypes.map((type) => ({ value: type.ulid, label: type.name })),
@@ -1900,10 +1901,10 @@ export function PartiesPlaceholderPage({
                   {form.types.includes('customer') ? (
                     <div className="parties-vca-account-type-row">
                       <label htmlFor="vca-customer-account-type">Customer A/C Type</label>
-                      <BpFancySelect
+                      <UiSelect
                         value={form.customerAccountTypeUlid}
                         aria-label="Customer A/C Type"
-                        menuZIndex={5250}
+                        menuZIndex={UI_LAYER.nestedDropdown}
                         options={[
                           { value: '', label: 'Select customer account type…' },
                           ...accountTypes.map((type) => ({ value: type.ulid, label: type.name })),
@@ -1919,10 +1920,10 @@ export function PartiesPlaceholderPage({
                   {form.types.includes('account') ? (
                     <div className="parties-vca-account-type-row">
                       <label htmlFor="vca-profile-account-type">Account A/C Type</label>
-                      <BpFancySelect
+                      <UiSelect
                         value={form.accountAccountTypeUlid}
                         aria-label="Account A/C Type"
-                        menuZIndex={5250}
+                        menuZIndex={UI_LAYER.nestedDropdown}
                         options={[
                           { value: '', label: 'Select account type…' },
                           ...accountTypes.map((type) => ({ value: type.ulid, label: type.name })),
