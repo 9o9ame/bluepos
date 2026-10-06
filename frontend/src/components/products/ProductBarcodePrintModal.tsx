@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Barcode, Printer, X } from 'lucide-react'
+import { UiSelect } from '../ui/UiSelect'
 import {
   getBarcodeLabelSizeOptions,
   loadBarcodePrintSettings,
@@ -159,18 +160,16 @@ export function ProductBarcodePrintModal({
 
             <label>
               <span>Barcode</span>
-              <select
+              <UiSelect
+                aria-label="Barcode"
                 value={barcodeId}
-                onChange={(event) => setBarcodeId(event.target.value)}
-              >
-                {barcodes.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {row.barcode}
-                    {row.unitCode ? ` — ${row.unitCode}` : ''}
-                    {row.isPrimary ? ' — Primary' : ''}
-                  </option>
-                ))}
-              </select>
+                menuZIndex={5200}
+                options={barcodes.map((row) => ({
+                  value: row.id,
+                  label: `${row.barcode}${row.unitCode ? ` — ${row.unitCode}` : ''}${row.isPrimary ? ' — Primary' : ''}`,
+                }))}
+                onChange={setBarcodeId}
+              />
             </label>
 
             <div className="product-barcode-print-two">
@@ -188,18 +187,13 @@ export function ProductBarcodePrintModal({
 
               <label>
                 <span>Label Size</span>
-                <select
+                <UiSelect
+                  aria-label="Label Size"
                   value={labelSize}
-                  onChange={(event) =>
-                    setLabelSize(event.target.value as BarcodeLabelSize)
-                  }
-                >
-                  {getBarcodeLabelSizeOptions().map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  menuZIndex={5200}
+                  options={getBarcodeLabelSizeOptions()}
+                  onChange={(value) => setLabelSize(value as BarcodeLabelSize)}
+                />
               </label>
             </div>
 
