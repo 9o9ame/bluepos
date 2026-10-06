@@ -25,7 +25,7 @@ import {
   type CoaSubHead,
 } from '../../api/coa'
 import { ApiClientError } from '../../api/client'
-import { BpFancySelect } from '../products/BpFancySelect'
+import { UiSelect } from '../ui/UiSelect'
 import { ToggleSwitch } from '../ui/ToggleSwitch'
 import './CoaHierarchyModals.css'
 import './CoaHierarchyModals.modern.css'
@@ -442,7 +442,7 @@ export function CoaHierarchyModals({
                           </td>
                           <td>
                             <div className="coa-sheet-sub">
-                              <BpFancySelect
+                              <UiSelect
                                 value={row.sub_head_ulid}
                                 aria-label="Sub Head Account"
                                 menuZIndex={5250}
@@ -588,7 +588,7 @@ export function CoaHierarchyModals({
                   <label className="coa-with-plus">
                     Main Head
                     <span>
-                      <BpFancySelect
+                      <UiSelect
                         value={subMainUlid}
                         aria-label="Main Head"
                         menuZIndex={5350}
