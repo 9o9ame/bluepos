@@ -2,6 +2,7 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type ButtonHTMLAttributes,
@@ -32,6 +33,8 @@ export type UiSelectProps = {
   name?: string
   title?: string
   placeholder?: string
+  searchable?: boolean
+  searchPlaceholder?: string
   onFocus?: FocusEventHandler<HTMLButtonElement>
   onBlur?: FocusEventHandler<HTMLButtonElement>
   onKeyDown?: KeyboardEventHandler<HTMLButtonElement>
@@ -67,6 +70,8 @@ export function UiSelect({
   name,
   title,
   placeholder = '—',
+  searchable = true,
+  searchPlaceholder = 'Search…',
   onFocus,
   onBlur,
   onKeyDown,
@@ -79,27 +84,52 @@ export function UiSelect({
   const listId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
+
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
   const [pos, setPos] = useState<MenuPos | null>(null)
   const [uncontrolledValue, setUncontrolledValue] = useState(
     defaultValue ?? options[0]?.value ?? '',
   )
   const currentValue = value ?? uncontrolledValue
-  const selectedIndex = Math.max(
+
+  const filteredOptions = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase()
+    if (!searchable || !query) return options
+
+    return options.filter((option) => {
+      const label = option.label.toLocaleLowerCase()
+      const valueText = option.value.toLocaleLowerCase()
+      return label.includes(query) || valueText.includes(query)
+    })
+  }, [options, search, searchable])
+
+  const selected =
+    options.find((option) => option.value === currentValue) ?? null
+
+  const selectedFilteredIndex = Math.max(
     0,
-    options.findIndex((option) => option.value === currentValue),
+    filteredOptions.findIndex((option) => option.value === currentValue),
   )
-  const [activeIndex, setActiveIndex] = useState(selectedIndex)
 
-  const selected = options.find((option) => option.value === currentValue) ?? null
+  const [activeIndex, setActiveIndex] = useState(selectedFilteredIndex)
 
-  function firstEnabledIndex(from: number, direction: 1 | -1) {
-    if (options.length === 0) return -1
-    for (let step = 0; step < options.length; step += 1) {
-      const index = (from + step * direction + options.length) % options.length
-      if (!options[index]?.disabled) return index
+  function firstEnabledIndex(
+    source: UiSelectOption[],
+    from: number,
+    direction: 1 | -1,
+  ) {
+    if (source.length === 0) return -1
+
+    for (let step = 0; step < source.length; step += 1) {
+      const index =
+        (from + step * direction + source.length) % source.length
+
+      if (!source[index]?.disabled) return index
     }
+
     return -1
   }
 
@@ -115,30 +145,63 @@ export function UiSelect({
       spaceBelow < maxMenuHeight ||
       (spaceAbove > 140 && spaceBelow < spaceAbove + 40)
     const available = openUp ? spaceAbove - gap : spaceBelow - gap
-    const maxHeight = Math.max(120, Math.min(maxMenuHeight, available))
+    const resolvedMaxHeight = Math.max(
+      120,
+      Math.min(maxMenuHeight, available),
+    )
 
     setPos({
       top: openUp ? rect.top - gap : rect.bottom + gap,
-      left: Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8)),
+      left: Math.max(
+        8,
+        Math.min(rect.left, window.innerWidth - rect.width - 8),
+      ),
       width: rect.width,
-      maxHeight,
+      maxHeight: resolvedMaxHeight,
       openUp,
     })
   }
 
-  function openMenu(preferredIndex = selectedIndex) {
+  function openMenu() {
     if (disabled || options.length === 0) return
-    const enabled = firstEnabledIndex(Math.max(preferredIndex, 0), 1)
+
+    setSearch('')
+    const selectedIndex = Math.max(
+      0,
+      options.findIndex((option) => option.value === currentValue),
+    )
+    const enabled = firstEnabledIndex(options, selectedIndex, 1)
     setActiveIndex(enabled >= 0 ? enabled : 0)
     setOpen(true)
+  }
+
+  function closeMenu() {
+    setOpen(false)
+    setSearch('')
   }
 
   function pick(next: string) {
     if (value === undefined) {
       setUncontrolledValue(next)
     }
+
     onChange?.(next)
-    setOpen(false)
+    closeMenu()
+  }
+
+  function moveActive(direction: 1 | -1) {
+    if (filteredOptions.length === 0) return
+
+    const start =
+      activeIndex >= 0
+        ? (activeIndex + direction + filteredOptions.length) %
+          filteredOptions.length
+        : direction === 1
+          ? 0
+          : filteredOptions.length - 1
+
+    const next = firstEnabledIndex(filteredOptions, start, direction)
+    if (next >= 0) setActiveIndex(next)
   }
 
   useLayoutEffect(() => {
@@ -148,6 +211,28 @@ export function UiSelect({
 
   useEffect(() => {
     if (!open) return
+
+    const selectedIndex = filteredOptions.findIndex(
+      (option) => option.value === currentValue,
+    )
+    const next = firstEnabledIndex(
+      filteredOptions,
+      selectedIndex >= 0 ? selectedIndex : 0,
+      1,
+    )
+    setActiveIndex(next)
+  }, [search, open, currentValue, filteredOptions])
+
+  useEffect(() => {
+    if (!open) return
+
+    if (searchable) {
+      requestAnimationFrame(() => searchRef.current?.focus())
+    }
+  }, [open, searchable])
+
+  useEffect(() => {
+    if (!open || activeIndex < 0) return
     optionRefs.current[activeIndex]?.scrollIntoView({ block: 'nearest' })
   }, [activeIndex, open])
 
@@ -156,15 +241,18 @@ export function UiSelect({
 
     function onPointerDown(event: MouseEvent) {
       const target = event.target as Node
+
       if (rootRef.current?.contains(target)) return
       if (menuRef.current?.contains(target)) return
-      setOpen(false)
+
+      closeMenu()
     }
 
     function onEscape(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
+
       event.preventDefault()
-      setOpen(false)
+      closeMenu()
     }
 
     function onReposition() {
@@ -193,26 +281,42 @@ export function UiSelect({
         open ? 'is-open' : '',
         disabled ? 'is-disabled' : '',
         className ?? '',
-      ].filter(Boolean).join(' ')}
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
-      {name ? <input type="hidden" name={name} value={currentValue} /> : null}
+      {name ? (
+        <input type="hidden" name={name} value={currentValue} />
+      ) : null}
+
       <button
         {...triggerProps}
         id={id}
         type="button"
-        className={['ui-select-trigger', 'bp-fancy-select-trigger', 'vca-select', triggerClassName ?? ''].filter(Boolean).join(' ')}
+        className={[
+          'ui-select-trigger',
+          'bp-fancy-select-trigger',
+          'vca-select',
+          triggerClassName ?? '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         disabled={disabled}
         title={title}
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
-        aria-activedescendant={open && activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined}
+        aria-activedescendant={
+          open && activeIndex >= 0
+            ? `${listId}-option-${activeIndex}`
+            : undefined
+        }
         onFocus={onFocus}
         onBlur={onBlur}
         onMouseDown={onMouseDown}
         onClick={() => {
-          if (open) setOpen(false)
+          if (open) closeMenu()
           else openMenu()
         }}
         onKeyDown={(event) => {
@@ -221,42 +325,13 @@ export function UiSelect({
 
           if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
             event.preventDefault()
+
             if (!open) {
               openMenu()
               return
             }
 
-            const direction: 1 | -1 = event.key === 'ArrowDown' ? 1 : -1
-            const next = firstEnabledIndex(
-              (activeIndex + direction + options.length) % options.length,
-              direction,
-            )
-            if (next >= 0) setActiveIndex(next)
-            return
-          }
-
-          if (event.key === 'Home' && open) {
-            event.preventDefault()
-            const next = firstEnabledIndex(0, 1)
-            if (next >= 0) setActiveIndex(next)
-            return
-          }
-
-          if (event.key === 'End' && open) {
-            event.preventDefault()
-            for (let index = options.length - 1; index >= 0; index -= 1) {
-              if (!options[index]?.disabled) {
-                setActiveIndex(index)
-                break
-              }
-            }
-            return
-          }
-
-          if ((event.key === 'Enter' || event.key === ' ') && open) {
-            event.preventDefault()
-            const option = options[activeIndex]
-            if (option && !option.disabled) pick(option.value)
+            moveActive(event.key === 'ArrowDown' ? 1 : -1)
             return
           }
 
@@ -269,9 +344,16 @@ export function UiSelect({
         <span className="ui-select-value bp-fancy-select-value">
           {selected?.label ?? placeholder}
         </span>
-        <span className="ui-select-arrow bp-fancy-select-arrow vca-select-caret" aria-hidden>
+
+        <span
+          className="ui-select-arrow bp-fancy-select-arrow vca-select-caret"
+          aria-hidden
+        >
           <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
-            <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+            <path
+              d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z"
+              fill="currentColor"
+            />
           </svg>
         </span>
       </button>
@@ -291,49 +373,104 @@ export function UiSelect({
               style={{
                 position: 'fixed',
                 top: pos.openUp ? undefined : pos.top,
-                bottom: pos.openUp ? window.innerHeight - pos.top : undefined,
+                bottom: pos.openUp
+                  ? window.innerHeight - pos.top
+                  : undefined,
                 left: pos.left,
                 width: pos.width,
                 maxHeight: pos.maxHeight,
                 zIndex: menuZIndex,
               }}
             >
-              <div className="ui-select-menu-inner bp-fancy-select-menu-inner">
-                {options.map((option, index) => {
-                  const isSelected = option.value === currentValue
-                  const isActive = index === activeIndex
-                  return (
-                    <button
-                      ref={(node) => {
-                        optionRefs.current[index] = node
-                      }}
-                      id={`${listId}-option-${index}`}
-                      key={option.value || `empty-${index}`}
-                      type="button"
-                      role="option"
-                      aria-selected={isSelected}
-                      disabled={option.disabled}
-                      title={option.title}
-                      className={[
-                        'ui-select-option',
-                        'bp-fancy-select-option',
-                        isSelected ? 'is-selected' : '',
-                        isActive ? 'is-active' : '',
-                        option.disabled ? 'is-disabled' : '',
-                      ].filter(Boolean).join(' ')}
-                      onMouseEnter={() => setActiveIndex(index)}
-                      onClick={() => {
-                        if (option.disabled) return
-                        pick(option.value)
-                      }}
-                    >
-                      <span>{option.label}</span>
-                      {isSelected ? (
-                        <span className="ui-select-check bp-fancy-select-check" aria-hidden>✓</span>
-                      ) : null}
-                    </button>
-                  )
-                })}
+              {searchable ? (
+                <div className="ui-select-search-wrap">
+                  <input
+                    ref={searchRef}
+                    type="search"
+                    className="ui-select-search"
+                    value={search}
+                    placeholder={searchPlaceholder}
+                    aria-label={`Search ${ariaLabel ?? 'options'}`}
+                    onChange={(event) => setSearch(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'ArrowDown') {
+                        event.preventDefault()
+                        moveActive(1)
+                        return
+                      }
+
+                      if (event.key === 'ArrowUp') {
+                        event.preventDefault()
+                        moveActive(-1)
+                        return
+                      }
+
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        const option = filteredOptions[activeIndex]
+                        if (option && !option.disabled) pick(option.value)
+                      }
+                    }}
+                  />
+                </div>
+              ) : null}
+
+              <div
+                className="ui-select-menu-inner bp-fancy-select-menu-inner"
+                style={{
+                  maxHeight: Math.max(
+                    80,
+                    pos.maxHeight - (searchable ? 40 : 8),
+                  ),
+                }}
+              >
+                {filteredOptions.length > 0 ? (
+                  filteredOptions.map((option, index) => {
+                    const isSelected = option.value === currentValue
+                    const isActive = index === activeIndex
+
+                    return (
+                      <button
+                        ref={(node) => {
+                          optionRefs.current[index] = node
+                        }}
+                        id={`${listId}-option-${index}`}
+                        key={option.value || `empty-${index}`}
+                        type="button"
+                        role="option"
+                        aria-selected={isSelected}
+                        disabled={option.disabled}
+                        title={option.title}
+                        className={[
+                          'ui-select-option',
+                          'bp-fancy-select-option',
+                          isSelected ? 'is-selected' : '',
+                          isActive ? 'is-active' : '',
+                          option.disabled ? 'is-disabled' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        onMouseEnter={() => setActiveIndex(index)}
+                        onClick={() => {
+                          if (option.disabled) return
+                          pick(option.value)
+                        }}
+                      >
+                        <span>{option.label}</span>
+                        {isSelected ? (
+                          <span
+                            className="ui-select-check bp-fancy-select-check"
+                            aria-hidden
+                          >
+                            ✓
+                          </span>
+                        ) : null}
+                      </button>
+                    )
+                  })
+                ) : (
+                  <div className="ui-select-empty">No matching options</div>
+                )}
               </div>
             </div>,
             document.body,
