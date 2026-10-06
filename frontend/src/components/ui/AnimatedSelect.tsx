@@ -59,8 +59,8 @@ export function AnimatedSelect({
       onFocus={onFocus ? (event) => onFocus(event as unknown as FocusEvent<HTMLSelectElement>) : undefined}
       onBlur={onBlur ? (event) => onBlur(event as unknown as FocusEvent<HTMLSelectElement>) : undefined}
       onKeyDown={onKeyDown ? (event) => onKeyDown(event as unknown as KeyboardEvent<HTMLSelectElement>) : undefined}
+      onMouseDown={onMouseDown ? (event) => onMouseDown(event as unknown as MouseEvent<HTMLSelectElement>) : undefined}
       onChange={(nextValue) => {
-        onMouseDown?.({} as MouseEvent<HTMLSelectElement>)
         onChange?.({
           target: { value: nextValue },
           currentTarget: { value: nextValue },
