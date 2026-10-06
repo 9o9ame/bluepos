@@ -24,6 +24,7 @@ type BpFancySelectProps = {
   className?: string
   title?: string
   onFocus?: FocusEventHandler<HTMLButtonElement>
+  menuZIndex?: number
   'aria-label'?: string
 }
 
@@ -43,6 +44,7 @@ export function BpFancySelect({
   className,
   title,
   onFocus,
+  menuZIndex = 1600,
   'aria-label': ariaLabel,
 }: BpFancySelectProps) {
   const listId = useId()
@@ -174,7 +176,7 @@ export function BpFancySelect({
                 left: pos.left,
                 width: pos.width,
                 maxHeight: pos.maxHeight,
-                zIndex: 1600,
+                zIndex: menuZIndex,
               }}
             >
               <div className="bp-fancy-select-menu-inner">
