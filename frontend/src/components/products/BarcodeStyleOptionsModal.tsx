@@ -5,6 +5,7 @@ import {
   type BarcodeStyleId,
   type BarcodeStylePreset,
 } from './barcodeStyles'
+import { UI_LAYER } from '../ui/uiLayers'
 import './BarcodeStyleOptionsModal.css'
 
 type BarcodeStyleOptionsModalProps = {
@@ -67,7 +68,7 @@ export function BarcodeStyleOptionsModal({
   }
 
   return (
-    <div className="bp-style-modal-backdrop" role="presentation">
+    <div className="bp-style-modal-backdrop" style={{ zIndex: UI_LAYER.modal }} role="presentation">
       <div
         className="bp-style-modal"
         role="dialog"
