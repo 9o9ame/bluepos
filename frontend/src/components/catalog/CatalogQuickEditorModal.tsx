@@ -148,6 +148,7 @@ export function CatalogQuickEditorModal({
                   value={editor.categoryUlid}
                   className="catalog-popup-select"
                   aria-label="Category"
+                  menuZIndex={5200}
                   options={[
                     { value: '', label: 'Select category…' },
                     ...editor.categories.map((category) => ({
