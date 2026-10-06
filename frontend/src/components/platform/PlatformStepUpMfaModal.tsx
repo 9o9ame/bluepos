@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react'
 import { ApiClientError } from '../../api/client'
 import { UiButton } from '../ui/UiButton'
 import { UiModal } from '../ui/UiModal'
+import { UI_LAYER } from '../ui/uiLayers'
 
 export function PlatformStepUpMfaModal({
   recoveryHint,
@@ -35,7 +36,7 @@ export function PlatformStepUpMfaModal({
   }
 
   return (
-    <UiModal title="Verify to continue" size="sm" zIndex={5200} onClose={onCancel}>
+    <UiModal title="Verify to continue" size="sm" zIndex={UI_LAYER.nestedModal} onClose={onCancel}>
       <form className="space-y-3" onSubmit={onSubmit}>
         <p className="text-[12px] text-[var(--ui-text-muted)]">
           Sensitive platform actions require a fresh Email OTP{recoveryHint ? ` (${recoveryHint})` : ''}.
