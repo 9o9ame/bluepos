@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { apiDownload, apiFetch } from './client'
 import type {
   BarcodeGroup,
   Brand,
@@ -352,8 +352,7 @@ export function deactivateSupplier(ulid: string) {
 |--------------------------------------------------------------------------
 */
 
-export function fetchProducts(
-  params: {
+export type ProductListParams = {
     q?: string
     page?: number
     per_page?: number
@@ -365,57 +364,33 @@ export function fetchProducts(
     with_balance?: boolean
     stock_le_reorder?: boolean
     purchase_rate_ge_sale_rate?: boolean
-  },
+  }
+
+function buildProductSearch(params: ProductListParams): URLSearchParams {
+  const search = new URLSearchParams()
+
+  if (params.q) search.set('q', params.q)
+  if (params.page) search.set('page', String(params.page))
+  if (params.category_ulid) search.set('category_ulid', params.category_ulid)
+  if (params.brand_ulid) search.set('brand_ulid', params.brand_ulid)
+  if (params.status) search.set('status', params.status)
+  if (params.sales_lookup) search.set('sales_lookup', '1')
+  if (params.active_only) search.set('active_only', '1')
+  if (params.with_balance) search.set('with_balance', '1')
+  if (params.stock_le_reorder) search.set('stock_le_reorder', '1')
+  if (params.purchase_rate_ge_sale_rate) search.set('purchase_rate_ge_sale_rate', '1')
+  search.set('per_page', String(params.per_page ?? 25))
+
+  return search
+}
+
+export function fetchProducts(
+  params: ProductListParams,
   options?: {
     busy?: 'block' | 'fetch' | 'none'
   },
 ) {
-  const search = new URLSearchParams()
-
-  if (params.q) {
-    search.set('q', params.q)
-  }
-
-  if (params.page) {
-    search.set('page', String(params.page))
-  }
-
-  if (params.category_ulid) {
-    search.set('category_ulid', params.category_ulid)
-  }
-
-  if (params.brand_ulid) {
-    search.set('brand_ulid', params.brand_ulid)
-  }
-
-  if (params.status) {
-    search.set('status', params.status)
-  }
-
-  if (params.sales_lookup) {
-    search.set('sales_lookup', '1')
-  }
-
-  if (params.active_only) {
-    search.set('active_only', '1')
-  }
-
-  if (params.with_balance) {
-    search.set('with_balance', '1')
-  }
-
-  if (params.stock_le_reorder) {
-    search.set('stock_le_reorder', '1')
-  }
-
-  if (params.purchase_rate_ge_sale_rate) {
-    search.set('purchase_rate_ge_sale_rate', '1')
-  }
-
-  search.set(
-    'per_page',
-    String(params.per_page ?? 25),
-  )
+  const search = buildProductSearch(params)
 
   return apiFetch<Paginated<Product>>(
     `/api/products?${search.toString()}`,
@@ -446,6 +421,19 @@ export function createProduct(
     method: 'POST',
     body: JSON.stringify(payload),
   })
+}
+
+
+
+export function downloadProductTabularExport(params: ProductListParams) {
+  const search = buildProductSearch({ ...params, page: undefined, per_page: 100 })
+  search.delete('page')
+  search.delete('per_page')
+
+  return apiDownload(
+    `/api/products/tabular-export?${search.toString()}`,
+    'bluepos-product-tabular-view.csv',
+  )
 }
 
 export type BulkProductPriceChange = {
