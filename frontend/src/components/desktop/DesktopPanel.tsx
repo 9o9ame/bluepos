@@ -31,7 +31,7 @@ type DesktopButtonProps = {
   label: string
   shortcut?: string
   disabled?: boolean
-  variant?: 'default' | 'primary' | 'danger'
+  variant?: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
   onClick?: () => void
 }
 
@@ -41,15 +41,26 @@ export function DesktopButton({
   label,
   shortcut,
   disabled,
-  variant = 'default',
+  variant,
   onClick,
 }: DesktopButtonProps) {
-  const extra = variant === 'primary' ? ' is-primary' : variant === 'danger' ? ' is-danger' : ''
+  const inferredVariant =
+    /^(save|activate|post|approve|complete)$/i.test(label)
+      ? 'success'
+      : /^(delete|remove|void|deactivate|reject)$/i.test(label)
+        ? 'danger'
+        : /^(new|add|create)$/i.test(label)
+          ? 'primary'
+          : /^(refresh|close|preview|print|search)$/i.test(label)
+            ? 'info'
+            : 'default'
+  const resolvedVariant = variant ?? inferredVariant
+
   return (
     <UiButton
       type={type}
-      className={`desktop-btn${extra}`}
-      variant={variant === 'primary' ? 'primary' : variant === 'danger' ? 'danger' : 'default'}
+      className="desktop-btn"
+      variant={resolvedVariant}
       disabled={disabled}
       title={shortcut ? `${label} (${shortcut})` : label}
       onClick={onClick}
