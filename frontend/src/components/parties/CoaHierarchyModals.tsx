@@ -25,7 +25,7 @@ import {
   type CoaSubHead,
 } from '../../api/coa'
 import { ApiClientError } from '../../api/client'
-import { AnimatedSelect } from '../ui/AnimatedSelect'
+import { BpFancySelect } from '../products/BpFancySelect'
 import { ToggleSwitch } from '../ui/ToggleSwitch'
 import './CoaHierarchyModals.css'
 import './CoaHierarchyModals.modern.css'
@@ -442,20 +442,21 @@ export function CoaHierarchyModals({
                           </td>
                           <td>
                             <div className="coa-sheet-sub">
-                              <AnimatedSelect
+                              <BpFancySelect
                                 value={row.sub_head_ulid}
-                                onChange={(e) => patchTypeRow(row.key, { sub_head_ulid: e.target.value })}
-                              >
-                                <option value="">Select…</option>
-                                {subs
-                                  .filter((s) => s.is_active || s.ulid === row.sub_head_ulid)
-                                  .map((s) => (
-                                    <option key={s.ulid} value={s.ulid}>
-                                      {s.name}
-                                      {s.main_head ? ` (${s.main_head.name})` : ''}
-                                    </option>
-                                  ))}
-                              </AnimatedSelect>
+                                aria-label="Sub Head Account"
+                                menuZIndex={5250}
+                                options={[
+                                  { value: '', label: 'Select…' },
+                                  ...subs
+                                    .filter((s) => s.is_active || s.ulid === row.sub_head_ulid)
+                                    .map((s) => ({
+                                      value: s.ulid,
+                                      label: `${s.name}${s.main_head ? ` (${s.main_head.name})` : ''}`,
+                                    })),
+                                ]}
+                                onChange={(ulid) => patchTypeRow(row.key, { sub_head_ulid: ulid })}
+                              />
                               <button
                                 type="button"
                                 className="coa-plus"
@@ -587,12 +588,18 @@ export function CoaHierarchyModals({
                   <label className="coa-with-plus">
                     Main Head
                     <span>
-                      <AnimatedSelect value={subMainUlid} onChange={(e) => setSubMainUlid(e.target.value)}>
-                        <option value="">Select…</option>
-                        {mains.filter((m) => m.is_active || m.ulid === subMainUlid).map((m) => (
-                          <option key={m.ulid} value={m.ulid}>{m.name}</option>
-                        ))}
-                      </AnimatedSelect>
+                      <BpFancySelect
+                        value={subMainUlid}
+                        aria-label="Main Head"
+                        menuZIndex={5350}
+                        options={[
+                          { value: '', label: 'Select…' },
+                          ...mains
+                            .filter((m) => m.is_active || m.ulid === subMainUlid)
+                            .map((m) => ({ value: m.ulid, label: m.name })),
+                        ]}
+                        onChange={setSubMainUlid}
+                      />
                       <button
                         type="button"
                         className="coa-plus"
