@@ -654,3 +654,28 @@ html[data-animations='off'] .parties-vca * {
   transition: none !important;
   animation: none !important;
 }
+
+
+/* ---------- PARTY ACCOUNT TYPE FANCY SELECT ---------- */
+.parties-vca-account-type-row .bp-fancy-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.parties-vca-account-type-row .bp-fancy-select-trigger {
+  height: 26px;
+  min-height: 26px;
+  font-size: var(--ui-font-sm);
+  font-weight: 700;
+}
+
+.parties-vca-account-type-row .bp-fancy-select-arrow {
+  width: 18px;
+  height: 16px;
+}
+
+.parties-vca-account-type-row .bp-fancy-select-option {
+  min-height: 25px;
+  padding: 4px 8px;
+  font-size: var(--ui-font-sm);
+}
