@@ -443,6 +443,7 @@ export function ProductTabularViewPage() {
               aria-label="Field to update"
               searchable={false}
               disabled={!canEdit}
+              triggerClassName="product-tabular-field-trigger"
             />
           </label>
 
@@ -499,31 +500,6 @@ export function ProductTabularViewPage() {
             />
           </div>
 
-          <div className="product-tabular-actions">
-            <UiButton
-              variant="success"
-              icon={<Save size={16} />}
-              label={saveMutation.isPending ? 'Saving…' : 'Save'}
-              onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending || Object.keys(drafts).length === 0}
-            />
-            <UiButton
-              variant="info"
-              icon={<Download size={16} />}
-              label="Export"
-              onClick={exportCurrentPage}
-            />
-            <UiButton
-              variant="info"
-              icon={<X size={16} />}
-              label="Close"
-              onClick={closeActiveTab}
-            />
-          </div>
-        </div>
-
-        <div className="product-tabular-secondary-row">
-          <span className="product-tabular-filter-label">Filters</span>
           <div className="product-tabular-filters" aria-label="Product filters">
             <label>
               <input
@@ -571,9 +547,28 @@ export function ProductTabularViewPage() {
               <span>P.Rate &gt;= S.Rate</span>
             </label>
           </div>
-          <span className="product-tabular-selection-summary">
-            {selected.size > 0 ? `${selected.size} selected` : activeKey ? '1 active row' : 'No rows selected'}
-          </span>
+
+          <div className="product-tabular-actions">
+            <UiButton
+              variant="success"
+              icon={<Save size={16} />}
+              label={saveMutation.isPending ? 'Saving…' : 'Save'}
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending || Object.keys(drafts).length === 0}
+            />
+            <UiButton
+              variant="info"
+              icon={<Download size={16} />}
+              label="Export"
+              onClick={exportCurrentPage}
+            />
+            <UiButton
+              variant="info"
+              icon={<X size={16} />}
+              label="Close"
+              onClick={closeActiveTab}
+            />
+          </div>
         </div>
       </div>
 
