@@ -4,6 +4,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type ButtonHTMLAttributes,
   type FocusEventHandler,
   type KeyboardEventHandler,
   type MouseEventHandler,
@@ -20,17 +21,25 @@ export type UiSelectOption = {
 }
 
 export type UiSelectProps = {
-  value: string
+  value?: string
+  defaultValue?: string
   options: UiSelectOption[]
-  onChange: (value: string) => void
+  onChange?: (value: string) => void
   disabled?: boolean
   className?: string
+  triggerClassName?: string
+  id?: string
+  name?: string
   title?: string
   placeholder?: string
   onFocus?: FocusEventHandler<HTMLButtonElement>
   onBlur?: FocusEventHandler<HTMLButtonElement>
   onKeyDown?: KeyboardEventHandler<HTMLButtonElement>
   onMouseDown?: MouseEventHandler<HTMLButtonElement>
+  triggerProps?: Omit<
+    ButtonHTMLAttributes<HTMLButtonElement>,
+    'type' | 'disabled' | 'className' | 'onClick' | 'onFocus' | 'onBlur' | 'onKeyDown' | 'onMouseDown'
+  >
   menuZIndex?: number
   maxMenuHeight?: number
   'aria-label'?: string
@@ -46,16 +55,21 @@ type MenuPos = {
 
 export function UiSelect({
   value,
+  defaultValue,
   options,
   onChange,
   disabled = false,
   className,
+  triggerClassName,
+  id,
+  name,
   title,
   placeholder = '—',
   onFocus,
   onBlur,
   onKeyDown,
   onMouseDown,
+  triggerProps,
   menuZIndex = UI_LAYER.dropdown,
   maxMenuHeight = 240,
   'aria-label': ariaLabel,
@@ -66,13 +80,17 @@ export function UiSelect({
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState<MenuPos | null>(null)
+  const [uncontrolledValue, setUncontrolledValue] = useState(
+    defaultValue ?? options[0]?.value ?? '',
+  )
+  const currentValue = value ?? uncontrolledValue
   const selectedIndex = Math.max(
     0,
-    options.findIndex((option) => option.value === value),
+    options.findIndex((option) => option.value === currentValue),
   )
   const [activeIndex, setActiveIndex] = useState(selectedIndex)
 
-  const selected = options.find((option) => option.value === value) ?? null
+  const selected = options.find((option) => option.value === currentValue) ?? null
 
   function firstEnabledIndex(from: number, direction: 1 | -1) {
     if (options.length === 0) return -1
@@ -114,7 +132,10 @@ export function UiSelect({
   }
 
   function pick(next: string) {
-    onChange(next)
+    if (value === undefined) {
+      setUncontrolledValue(next)
+    }
+    onChange?.(next)
     setOpen(false)
   }
 
@@ -172,9 +193,12 @@ export function UiSelect({
         className ?? '',
       ].filter(Boolean).join(' ')}
     >
+      {name ? <input type="hidden" name={name} value={currentValue} /> : null}
       <button
+        {...triggerProps}
+        id={id}
         type="button"
-        className="ui-select-trigger bp-fancy-select-trigger vca-select"
+        className={['ui-select-trigger', 'bp-fancy-select-trigger', 'vca-select', triggerClassName ?? ''].filter(Boolean).join(' ')}
         disabled={disabled}
         title={title}
         aria-label={ariaLabel}
@@ -274,7 +298,7 @@ export function UiSelect({
             >
               <div className="ui-select-menu-inner bp-fancy-select-menu-inner">
                 {options.map((option, index) => {
-                  const isSelected = option.value === value
+                  const isSelected = option.value === currentValue
                   const isActive = index === activeIndex
                   return (
                     <button
