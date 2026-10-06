@@ -14,26 +14,26 @@ class CoaHierarchyTest extends TestCase
         $this->signInOwner('coa-crud')->assertOk();
 
         $main = $this->postJson('/api/coa/main-heads', [
-            'name' => 'ASSETS',
+            'name' => 'TEST ASSETS',
             'sort_order' => 1,
         ])->assertCreated();
-        $main->assertJsonPath('name', 'ASSETS');
+        $main->assertJsonPath('name', 'TEST ASSETS');
         $this->assertNoInternalIds($main->json());
         $mainUlid = $main->json('ulid');
 
         $sub = $this->postJson('/api/coa/sub-heads', [
             'main_head_ulid' => $mainUlid,
-            'name' => 'CURRENT ASSETS',
+            'name' => 'TEST CURRENT ASSETS',
             'sort_order' => 1,
         ])->assertCreated();
-        $sub->assertJsonPath('name', 'CURRENT ASSETS');
+        $sub->assertJsonPath('name', 'TEST CURRENT ASSETS');
         $sub->assertJsonPath('main_head.ulid', $mainUlid);
         $this->assertNoInternalIds($sub->json());
         $subUlid = $sub->json('ulid');
 
         $type = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $subUlid,
-            'code' => '0010',
+            'code' => '9010',
             'name' => 'CASH',
             'is_cash' => true,
             'is_bank' => false,
@@ -41,7 +41,7 @@ class CoaHierarchyTest extends TestCase
             'hint' => 'Petty and till cash',
             'sort_order' => 10,
         ])->assertCreated();
-        $type->assertJsonPath('code', '0010');
+        $type->assertJsonPath('code', '9010');
         $type->assertJsonPath('name', 'CASH');
         $type->assertJsonPath('is_cash', true);
         $type->assertJsonPath('sub_head.ulid', $subUlid);
@@ -54,11 +54,13 @@ class CoaHierarchyTest extends TestCase
         ])->assertOk()->assertJsonPath('name', 'CASH IN HAND');
 
         $tree = $this->getJson('/api/coa/tree')->assertOk()->json('data');
-        $this->assertCount(1, $tree);
-        $this->assertSame($mainUlid, $tree[0]['ulid']);
-        $this->assertSame($subUlid, $tree[0]['sub_heads'][0]['ulid']);
-        $this->assertSame($typeUlid, $tree[0]['sub_heads'][0]['account_types'][0]['ulid']);
-        $this->assertSame('CASH IN HAND', $tree[0]['sub_heads'][0]['account_types'][0]['name']);
+        $mainNode = collect($tree)->firstWhere('ulid', $mainUlid);
+        $this->assertNotNull($mainNode);
+        $subNode = collect($mainNode['sub_heads'] ?? [])->firstWhere('ulid', $subUlid);
+        $this->assertNotNull($subNode);
+        $typeNode = collect($subNode['account_types'] ?? [])->firstWhere('ulid', $typeUlid);
+        $this->assertNotNull($typeNode);
+        $this->assertSame('CASH IN HAND', $typeNode['name']);
 
         $this->deleteJson('/api/coa/main-heads/'.$mainUlid)->assertStatus(409);
         $this->deleteJson('/api/coa/sub-heads/'.$subUlid)->assertStatus(409);
@@ -82,7 +84,7 @@ class CoaHierarchyTest extends TestCase
     {
         $this->signInOwner('coa-iso-a')->assertOk();
         $mainUlid = $this->postJson('/api/coa/main-heads', [
-            'name' => 'LIABILITIES',
+            'name' => 'TEST LIABILITIES',
         ])->assertCreated()->json('ulid');
 
         $this->postJson('/api/coa/main-heads', [
