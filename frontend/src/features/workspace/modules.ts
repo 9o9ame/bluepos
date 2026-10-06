@@ -432,7 +432,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Receiving Voucher (Cr)', ...LATER },
           ],
         },
-        { id: 'product-view', label: 'Product View', icon: Package, moduleKey: 'product-tabular-view', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'green' },
+        { id: 'product-view', label: 'Product View', icon: Package, moduleKey: 'products', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'green' },
         { id: 'ledger', label: 'Vendor / Customer Ledger', icon: BookOpen, status: 'later', tone: 'gold' },
         { id: 'cash', label: 'Daily Cash Position', icon: Banknote, status: 'later', tone: 'teal' },
       ],
