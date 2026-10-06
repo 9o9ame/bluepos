@@ -34,7 +34,7 @@ function csvSafe(value: string | null | undefined): string {
 }
 
 function csvCell(value: string | null | undefined): string {
-  const escaped = csvSafe(value).replaceAll('"', '""')
+  const escaped = csvSafe(value).replace(/"/g, '""')
   return `"${escaped}"`
 }
 
