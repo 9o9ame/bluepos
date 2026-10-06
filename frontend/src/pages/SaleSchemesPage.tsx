@@ -194,11 +194,11 @@ export function SaleSchemesPage() {
         <form id="sale-scheme-form" onSubmit={onSubmit}>
           <FormGroup title={creating ? 'New scheme' : 'Edit scheme'}>
             <Field label="Scheme name">
-              <input className="desktop-input" value={name} onChange={(e) => setName(e.target.value)} required />
+              <input triggerClassName="desktop-input" value={name} onChange={(e) => setName(e.target.value)} required />
             </Field>
             <Field label="Apply mode">
               <UiSelect
-                className="desktop-input"
+                triggerClassName="desktop-input"
                 aria-label="Apply mode"
                 value={applyMode}
                 options={[
@@ -210,7 +210,7 @@ export function SaleSchemesPage() {
             </Field>
             <Field label="Min sale amount">
               <input
-                className="desktop-input"
+                triggerClassName="desktop-input"
                 value={minSaleAmount}
                 onChange={(e) => setMinSaleAmount(e.target.value)}
                 required
@@ -218,7 +218,7 @@ export function SaleSchemesPage() {
             </Field>
             <Field label="Free product">
               <UiSelect
-                className="desktop-input"
+                triggerClassName="desktop-input"
                 aria-label="Free product"
                 value={rewardProductUlid}
                 options={[
@@ -235,7 +235,7 @@ export function SaleSchemesPage() {
             </Field>
             <Field label="Max free qty">
               <input
-                className="desktop-input"
+                triggerClassName="desktop-input"
                 value={maxRewardQty}
                 onChange={(e) => setMaxRewardQty(e.target.value)}
                 required
@@ -243,7 +243,7 @@ export function SaleSchemesPage() {
             </Field>
             <Field label="Starts on">
               <input
-                className="desktop-input"
+                triggerClassName="desktop-input"
                 type="date"
                 value={startsOn}
                 onChange={(e) => setStartsOn(e.target.value)}
@@ -251,7 +251,7 @@ export function SaleSchemesPage() {
             </Field>
             <Field label="Ends on">
               <input
-                className="desktop-input"
+                triggerClassName="desktop-input"
                 type="date"
                 value={endsOn}
                 onChange={(e) => setEndsOn(e.target.value)}
