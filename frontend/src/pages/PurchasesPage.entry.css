@@ -1129,3 +1129,28 @@ html[data-animations='off'] .purchase-entry-screen * {
   color: color-mix(in srgb, var(--ui-success) 84%, var(--ui-text)) !important;
   text-shadow: none !important;
 }
+
+
+/* ---------- CANONICAL UI SELECT GEOMETRY ---------- */
+.purchase-entry-screen .ui-select {
+  min-width: 0;
+}
+
+.purchase-entry-screen .pie-field .ui-select-trigger,
+.purchase-entry-screen .pie-field-row .ui-select-trigger {
+  min-height: 26px;
+  height: 26px;
+}
+
+.purchase-entry-screen .pie-line-select .ui-select-trigger {
+  min-height: 22px;
+  height: 22px;
+  padding-left: 4px;
+  grid-template-columns: minmax(0, 1fr) 17px;
+  box-shadow: none;
+}
+
+.purchase-entry-screen .pie-line-select .ui-select-arrow {
+  width: 15px;
+  height: 14px;
+}
