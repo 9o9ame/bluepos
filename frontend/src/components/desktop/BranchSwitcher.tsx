@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchBranches, switchBranch } from '../../api/branches'
 import { ApiClientError } from '../../api/client'
 import type { AuthSession } from '../../types/auth'
+import { UiSelect } from '../ui/UiSelect'
 
 type BranchSwitcherProps = {
   session: AuthSession
@@ -28,23 +29,21 @@ export function BranchSwitcher({ session }: BranchSwitcherProps) {
   return (
     <label className="titlebar-meta">
       <span>Branch</span>
-      <select
+      <UiSelect
         className="titlebar-select"
         aria-label="Active branch"
         value={session.branch.ulid}
-        onChange={(event) => {
-          const next = event.target.value
+        options={branches.map((branch) => ({
+          value: branch.ulid,
+          label: `${branch.code} — ${branch.name}`,
+        }))}
+        disabled={branchesQuery.isLoading || switchMutation.isPending}
+        onChange={(next) => {
           if (next !== session.branch.ulid) {
             void switchMutation.mutateAsync(next)
           }
         }}
-      >
-        {branches.map((branch) => (
-          <option key={branch.ulid} value={branch.ulid}>
-            {branch.code} — {branch.name}
-          </option>
-        ))}
-      </select>
+      />
       {error ? <span className="text-red-700">{error}</span> : null}
     </label>
   )
