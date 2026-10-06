@@ -889,4 +889,158 @@ class CatalogTest extends TestCase
         ])->assertForbidden()->assertJsonPath('error.key', 'FORBIDDEN');
     }
 
+
+    public function test_product_tabular_index_returns_filtered_stock_total(): void
+    {
+        $this->signInOwner('tabular-total')->assertOk();
+        $masters = $this->seedMasters();
+        $context = app(TenantContext::class);
+
+        $matchUlid = $this->postJson('/api/products', [
+            'name' => 'Total Match Product',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated()->json('ulid');
+
+        $otherUlid = $this->postJson('/api/products', [
+            'name' => 'Total Other Product',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated()->json('ulid');
+
+        foreach ([
+            [$matchUlid, '4.250000'],
+            [$otherUlid, '9.000000'],
+        ] as [$ulid, $quantity]) {
+            $product = Product::query()->where('ulid', $ulid)->firstOrFail();
+
+            StockBalance::query()->create([
+                'tenant_id' => $context->tenantId(),
+                'branch_id' => $context->branchId(),
+                'warehouse_id' => $context->warehouseId(),
+                'product_id' => $product->id,
+                'quantity' => $quantity,
+                'average_cost' => '10.0000',
+                'stock_value' => '0.0000',
+            ]);
+        }
+
+        $response = $this->getJson('/api/products?q=Total%20Match&sales_lookup=1&per_page=50')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1);
+
+        $this->assertSame('4.250000', bcadd((string) $response->json('meta.stock_total'), '0', 6));
+        $this->assertNoInternalIds($response->json());
+    }
+
+    public function test_product_tabular_export_respects_filters_and_tenant_isolation(): void
+    {
+        $this->signInOwner('tabular-export-a')->assertOk();
+        $masters = $this->seedMasters();
+        $context = app(TenantContext::class);
+
+        $includedUlid = $this->postJson('/api/products', [
+            'name' => 'Export Included Product',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated()->json('ulid');
+
+        $excludedUlid = $this->postJson('/api/products', [
+            'name' => 'Export Excluded Product',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated()->json('ulid');
+
+        $included = Product::query()->where('ulid', $includedUlid)->firstOrFail();
+        $excluded = Product::query()->where('ulid', $excludedUlid)->firstOrFail();
+
+        StockBalance::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'warehouse_id' => $context->warehouseId(),
+            'product_id' => $included->id,
+            'quantity' => '2.000000',
+            'average_cost' => '41.2500',
+            'stock_value' => '82.5000',
+        ]);
+
+        StockBalance::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'warehouse_id' => $context->warehouseId(),
+            'product_id' => $excluded->id,
+            'quantity' => '0.000000',
+            'average_cost' => '90.0000',
+            'stock_value' => '0.0000',
+        ]);
+
+        $this->putJson('/api/products/'.$includedUlid.'/prices', [
+            'prices' => [[
+                'price_type' => 'retail',
+                'amount' => '60.0000',
+                'is_active' => true,
+            ]],
+        ])->assertOk();
+
+        $csv = $this->get('/api/products/tabular-export?with_balance=1&q=Export')
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringContainsString('Export Included Product', $csv);
+        $this->assertStringNotContainsString('Export Excluded Product', $csv);
+        $this->assertStringContainsString('41.2500', $csv);
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('tabular-export-b')->assertOk();
+
+        $foreignTenantCsv = $this->get('/api/products/tabular-export?q=Export')
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringNotContainsString('Export Included Product', $foreignTenantCsv);
+        $this->assertStringNotContainsString('Export Excluded Product', $foreignTenantCsv);
+    }
+
+    public function test_product_tabular_export_hides_cost_without_inventory_permission(): void
+    {
+        $owner = $this->signInOwner('tabular-export-perm')->assertOk();
+        $masters = $this->seedMasters();
+        $context = app(TenantContext::class);
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Export Cost Protected Product',
+            'base_unit_ulid' => $masters['pcs'],
+        ])->assertCreated()->json('ulid');
+
+        $product = Product::query()->where('ulid', $productUlid)->firstOrFail();
+        StockBalance::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'warehouse_id' => $context->warehouseId(),
+            'product_id' => $product->id,
+            'quantity' => '3.000000',
+            'average_cost' => '9876.5432',
+            'stock_value' => '0.0000',
+        ]);
+
+        $roles = $this->getJson('/api/roles')->assertOk()->json();
+        $purchaseRole = collect($roles)->firstWhere('code', PermissionCatalogue::PURCHASE);
+
+        $this->postJson('/api/memberships', [
+            'name' => 'Purchase Export User',
+            'username' => $this->staffUsername('tabular-export-perm'),
+            'recovery_email' => 'purchase-export@example.com',
+            'password' => 'password123',
+            'must_change_password' => false,
+            'roles' => [$purchaseRole['ulid']],
+            'branches' => [$owner->json('branch.ulid')],
+        ])->assertCreated();
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->loginAs('tabular-export-perm', 'purchase-export')->assertOk();
+
+        $csv = $this->get('/api/products/tabular-export?q=Export%20Cost%20Protected')
+            ->assertOk()
+            ->streamedContent();
+
+        $this->assertStringContainsString('Export Cost Protected Product', $csv);
+        $this->assertStringNotContainsString('9876.5432', $csv);
+    }
+
 }
