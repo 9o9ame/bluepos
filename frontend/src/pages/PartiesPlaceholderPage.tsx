@@ -343,16 +343,19 @@ function partyTypeSummary(party: Party): string {
 
 export function PartiesPlaceholderPage({
   embedded = false,
+  embeddedPartyType = 'customer',
   onClose,
   onSaved,
 }: {
   embedded?: boolean
+  embeddedPartyType?: 'customer' | 'vendor'
   onClose?: () => void
   onSaved?: (party: Party) => void
 } = {}) {
   const { closeActiveTab } = useWorkspace()
   const feedback = useFeedback()
-  const initialPartyFilter: PartyType = embedded ? 'CUSTOMERS' : 'ALL'
+  const initialPartyFilter: PartyType =
+    embedded ? (embeddedPartyType === 'vendor' ? 'VENDORS' : 'CUSTOMERS') : 'ALL'
   const [viewTab, setViewTab] = useState<ViewTab>('entry')
   const [subTab, setSubTab] = useState<DetailTab>('contact')
   const [listFilter] = useState<PartyType>(initialPartyFilter)
