@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { ApiClientError } from '../../api/client'
 import { askConfirm } from '../../feedback/FeedbackProvider'
-import { BpFancySelect } from '../products/BpFancySelect'
+import { UiSelect } from '../ui/UiSelect'
 import {
   useCatalogMasterEditor,
   type CatalogMasterKind,
@@ -144,7 +144,7 @@ export function CatalogQuickEditorModal({
             {activeKind === 'subcategory' ? (
               <div className="catalog-popup-form-row catalog-popup-form-row--full">
                 <label htmlFor="catalog-popup-category">Category:</label>
-                <BpFancySelect
+                <UiSelect
                   value={editor.categoryUlid}
                   className="catalog-popup-select"
                   aria-label="Category"
