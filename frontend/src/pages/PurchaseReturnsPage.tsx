@@ -21,6 +21,7 @@ import { ApiClientError } from '../api/client'
 import { askConfirm } from '../feedback/FeedbackProvider'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { UiSelect } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
@@ -344,19 +345,30 @@ export function PurchaseReturnsPage() {
             value={q}
             onChange={(event) => setQ(event.target.value)}
           />
-          <select className="desktop-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-            <option value="">All statuses</option>
-            <option value="draft">Draft</option>
-            <option value="posted">Posted</option>
-          </select>
-          <select className="desktop-select" value={supplierFilter} onChange={(event) => setSupplierFilter(event.target.value)}>
-            <option value="">All suppliers</option>
-            {suppliers.map((supplier) => (
-              <option key={supplier.ulid} value={supplier.ulid}>
-                {supplier.code} · {supplier.name}
-              </option>
-            ))}
-          </select>
+          <UiSelect
+            className="desktop-select"
+            aria-label="Return status"
+            value={statusFilter}
+            options={[
+              { value: '', label: 'All statuses' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'posted', label: 'Posted' },
+            ]}
+            onChange={setStatusFilter}
+          />
+          <UiSelect
+            className="desktop-select"
+            aria-label="Supplier filter"
+            value={supplierFilter}
+            options={[
+              { value: '', label: 'All suppliers' },
+              ...suppliers.map((supplier) => ({
+                value: supplier.ulid,
+                label: `${supplier.code} · ${supplier.name}`,
+              })),
+            ]}
+            onChange={setSupplierFilter}
+          />
           <input className="desktop-input" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
           <input className="desktop-input" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
         </div>
@@ -443,19 +455,20 @@ export function PurchaseReturnsPage() {
             </div>
             <div className="dense-row is-2">
               <label>Warehouse</label>
-              <select
+              <UiSelect
                 className="desktop-select"
+                aria-label="Warehouse"
                 disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
                 value={warehouseUlid}
-                onChange={(event) => setWarehouseUlid(event.target.value)}
-              >
-                <option value="">Select warehouse</option>
-                {warehouses.map((warehouse) => (
-                  <option key={warehouse.ulid} value={warehouse.ulid}>
-                    {warehouse.code} · {warehouse.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: '', label: 'Select warehouse' },
+                  ...warehouses.map((warehouse) => ({
+                    value: warehouse.ulid,
+                    label: `${warehouse.code} · ${warehouse.name}`,
+                  })),
+                ]}
+                onChange={setWarehouseUlid}
+              />
               <label>Supp. Ref</label>
               <input
                 className="desktop-input"
