@@ -456,7 +456,8 @@ export function ProductTabularViewPage() {
                   setSetTextPreset('')
                 }}
                 disabled={!canEdit}
-                placeholder={fieldToUpdate === 'reorder_level' ? 'Enter value…' : 'Enter price or choose formula…'}
+                placeholder={fieldToUpdate === 'reorder_level' ? 'Enter value…' : 'Enter price or formula…'}
+                aria-label="Set Text"
               />
               <UiSelect
                 value={setTextPreset}
@@ -472,10 +473,11 @@ export function ProductTabularViewPage() {
                     setSetText('=TradePrice + (TradePrice * 10.0 / 100)')
                   }
                 }}
-                placeholder="Formula"
-                aria-label="Set Text formula"
+                placeholder="▾"
+                aria-label="Choose Set Text formula"
                 searchable={false}
                 disabled={!canEdit}
+                className="product-tabular-formula-select"
                 triggerClassName="product-tabular-formula-trigger"
               />
             </div>
