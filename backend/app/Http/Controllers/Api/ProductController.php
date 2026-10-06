@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Products\BulkUpdateProductsAction;
 use App\Actions\Products\CreateProductAction;
 use App\Actions\Products\DeactivateProductAction;
 use App\Actions\Products\SyncProductBarcodesAction;
@@ -9,6 +10,7 @@ use App\Actions\Products\SyncProductPricesAction;
 use App\Actions\Products\UpdateProductAction;
 use App\Catalog\TenantCatalog;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Products\BulkUpdateProductsRequest;
 use App\Http\Requests\Products\StoreProductRequest;
 use App\Http\Requests\Products\SyncProductBarcodesRequest;
 use App\Http\Requests\Products\SyncProductPricesRequest;
@@ -130,6 +132,28 @@ class ProductController extends Controller
                 'last_page' => $page->lastPage(),
             ],
         ];
+    }
+
+    public function bulkUpdate(
+        BulkUpdateProductsRequest $request,
+        BulkUpdateProductsAction $bulkUpdateProducts,
+    ): JsonResponse {
+        /** @var list<array<string, mixed>> $rows */
+        $rows = $request->validated('rows');
+
+        foreach ($rows as $row) {
+            $product = $this->catalog->product((string) $row['product_ulid']);
+
+            if (! empty($row['product'])) {
+                $this->authorize('update', $product);
+            }
+
+            if (! empty($row['prices'])) {
+                $this->authorize('managePrices', $product);
+            }
+        }
+
+        return response()->json($bulkUpdateProducts->execute($rows));
     }
 
     public function store(StoreProductRequest $request, CreateProductAction $createProduct): JsonResponse
