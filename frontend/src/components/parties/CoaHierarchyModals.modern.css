@@ -206,3 +206,54 @@ html[data-animations='off'] .coa-modal * { transition: none !important; animatio
     max-height: min(70vh, 520px) !important;
   }
 }
+
+
+/* ---------- COA FANCY SELECT GEOMETRY ---------- */
+.coa-modal .bp-fancy-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.coa-modal .bp-fancy-select-trigger {
+  height: 28px;
+  min-height: 28px;
+  font-size: var(--ui-font-sm);
+  font-weight: 700;
+}
+
+.coa-modal .bp-fancy-select-arrow {
+  width: 18px;
+  height: 16px;
+}
+
+.coa-modal .bp-fancy-select-option {
+  min-height: 24px;
+  padding: 4px 7px;
+  font-size: var(--ui-font-sm);
+}
+
+.coa-sheet-sub .bp-fancy-select {
+  min-width: 0;
+}
+
+.coa-sheet-sub .bp-fancy-select-trigger {
+  height: 24px;
+  min-height: 24px;
+  padding-left: 5px;
+}
+
+.coa-sheet-sub .bp-fancy-select-arrow {
+  width: 16px;
+  height: 14px;
+}
+
+.coa-modal-sheet.is-compact-nested .bp-fancy-select-trigger {
+  height: 24px;
+  min-height: 24px;
+}
+
+html[data-animations='off'] .coa-modal .bp-fancy-select-menu,
+html[data-animations='off'] .coa-modal .bp-fancy-select-arrow {
+  animation: none !important;
+  transition: none !important;
+}
