@@ -47,6 +47,8 @@ import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { CatalogQuickEditorModal, type QuickEditorKind } from '../components/catalog/CatalogQuickEditorModal'
 import { loadBarcodePrintSettings, printBarcodeLabels } from '../components/products/barcodePrint'
 import { BpFancySelect } from '../components/products/BpFancySelect'
+import { SalesPartyModal } from '../features/sales/SalesPartyModal'
+import type { Party } from '../api/parties'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
@@ -154,6 +156,7 @@ export function ProductsPage() {
   const [section, setSection] = useState<'definition' | 'opening' | 'related'>('definition')
   const [error, setError] = useState<string | null>(null)
   const [quickEditor, setQuickEditor] = useState<QuickEditorKind | null>(null)
+  const [supplierModalOpen, setSupplierModalOpen] = useState(false)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
   const [pendingImage, setPendingImage] = useState<File | null>(null)
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
@@ -1271,10 +1274,10 @@ export function ProductsPage() {
                 <button
                   type="button"
                   className="pdf-plus-button"
-                  title="Open Vendor / Customer / Accounts"
-                  aria-label="Open Vendor Customer Accounts"
+                  title="Edit / Define Supplier"
+                  aria-label="Edit or define supplier"
                   disabled={!canSave}
-                  onClick={() => openModule('/definition/parties')}
+                  onClick={() => setSupplierModalOpen(true)}
                 >
                   <Plus size={15} strokeWidth={3} />
                 </button>
@@ -1700,6 +1703,23 @@ export function ProductsPage() {
           </div>
         </section>
       </form>
+
+      {supplierModalOpen ? (
+        <SalesPartyModal
+          partyType="vendor"
+          onClose={() => setSupplierModalOpen(false)}
+          onSaved={(party: Party) => {
+            const supplierUlid =
+              party.vendor_ulid ?? (party.party_type === 'vendor' ? party.ulid : null)
+
+            if (!supplierUlid) return
+
+            setPrimarySupplierUlid(supplierUlid)
+            setSupplierModalOpen(false)
+            void suppliers.refetch()
+          }}
+        />
+      ) : null}
 
       <CatalogQuickEditorModal
         kind={quickEditor}
