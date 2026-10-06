@@ -142,6 +142,25 @@ All buttons must implement consistent:
 - density,
 - animations.
 
+### Semantic action button colors
+
+Button background color must communicate the action consistently across pages and modals while remaining soft/subtle rather than saturated.
+
+Canonical action mapping:
+- Save / Activate / Post / Approve / Complete -> success tone (soft green).
+- Delete / Remove / Void / Deactivate / Reject -> danger tone (soft red).
+- Refresh / Close / Preview / Print / Search -> info tone (soft blue/info).
+- Hold / Retry / cautionary actions -> warning tone (soft amber).
+- New / Add / Create -> Primary Theme tone (soft accent).
+- Neutral navigation or non-semantic actions -> default neutral surface.
+
+Rules:
+- use `UiButton` semantic variants or shared `data-tone` / `data-action` semantics; do not hard-code action colors locally,
+- the same action must have the same semantic tone whether it appears in a page toolbar, modal footer, nested modal, or admin/platform screen,
+- semantic action colors must derive from `--ui-success`, `--ui-danger`, `--ui-info`, `--ui-warning`, or the Primary Theme tokens,
+- disabled buttons remain visibly disabled and must not look like an enabled semantic action,
+- Light/Dark, selected theme, radius, shadow and animations continue to apply.
+
 ### Inputs and textareas
 
 Inputs inherit global surface/text/border/radius/shadow/focus/disabled tokens.
