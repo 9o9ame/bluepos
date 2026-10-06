@@ -1,4 +1,4 @@
-import { FormEvent, SelectHTMLAttributes, useEffect, useMemo, useRef, useState } from 'react'
+import { Children, FormEvent, SelectHTMLAttributes, isValidElement, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import {
   Barcode,
   Check,
@@ -46,6 +46,7 @@ import {
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { CatalogQuickEditorModal, type QuickEditorKind } from '../components/catalog/CatalogQuickEditorModal'
 import { loadBarcodePrintSettings, printBarcodeLabels } from '../components/products/barcodePrint'
+import { BpFancySelect } from '../components/products/BpFancySelect'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
@@ -84,88 +85,48 @@ function createBarcodeDraft(
 
 function PdfSelect({
   className,
-  onBlur,
   onChange,
-  onMouseDown,
-  onKeyDown,
-  ...props
+  onFocus,
+  children,
+  value,
+  disabled,
+  title,
+  'aria-label': ariaLabel,
 }: SelectHTMLAttributes<HTMLSelectElement>) {
-  const [open, setOpen] = useState(false)
-  const shellRef = useRef<HTMLDivElement>(null)
+  const options = Children.toArray(children).flatMap((child) => {
+    if (!isValidElement(child) || child.type !== 'option') return []
 
-  useEffect(() => {
-    if (!open) return
-
-    // Native <select> often skips blur when the list closes on Windows.
-    // Close on outside interaction, but ignore events inside this shell so
-    // the same-click mousedown can toggle the caret back down.
-    const closeOutside = (event: Event) => {
-      const target = event.target
-      if (target instanceof Node && shellRef.current?.contains(target)) return
-      setOpen(false)
+    const option = child.props as {
+      value?: string | number
+      children?: unknown
+      disabled?: boolean
+      title?: string
     }
-    const close = () => setOpen(false)
-    const timer = window.setTimeout(() => {
-      window.addEventListener('pointerdown', closeOutside, true)
-      window.addEventListener('keydown', closeOutside, true)
-      window.addEventListener('scroll', close, true)
-      window.addEventListener('blur', close)
-    }, 0)
 
-    return () => {
-      window.clearTimeout(timer)
-      window.removeEventListener('pointerdown', closeOutside, true)
-      window.removeEventListener('keydown', closeOutside, true)
-      window.removeEventListener('scroll', close, true)
-      window.removeEventListener('blur', close)
-    }
-  }, [open])
+    return [{
+      value: String(option.value ?? ''),
+      label: Children.toArray(option.children).join(''),
+      disabled: option.disabled,
+      title: option.title,
+    }]
+  })
 
   return (
-    <div
-      ref={shellRef}
-      className={`pdf-select-shell${open ? ' is-open' : ''}${props.disabled ? ' is-disabled' : ''}`}
-    >
-      <select
-        {...props}
-        className={['pdf-select', className].filter(Boolean).join(' ')}
-        onMouseDown={(event) => {
-          if (!props.disabled) {
-            // Toggle: second click on the closed native list restores caret.
-            setOpen((current) => !current)
-          }
-          onMouseDown?.(event)
-        }}
-        onKeyDown={(event) => {
-          if (props.disabled) {
-            onKeyDown?.(event)
-            return
-          }
-          if (event.key === 'Escape') {
-            setOpen(false)
-          } else if (
-            event.key === 'Enter' ||
-            event.key === ' ' ||
-            event.key === 'ArrowDown' ||
-            event.key === 'ArrowUp'
-          ) {
-            setOpen(true)
-          }
-          onKeyDown?.(event)
-        }}
-        onBlur={(event) => {
-          setOpen(false)
-          onBlur?.(event)
-        }}
-        onChange={(event) => {
-          setOpen(false)
-          onChange?.(event)
-        }}
-      />
-      <span className="pdf-select-caret" aria-hidden="true">
-        <ChevronDown size={11} strokeWidth={3} />
-      </span>
-    </div>
+    <BpFancySelect
+      value={String(value ?? '')}
+      options={options}
+      disabled={disabled}
+      className={['pdf-select-shell', className].filter(Boolean).join(' ')}
+      title={title}
+      aria-label={ariaLabel}
+      onFocus={onFocus ? (event) => onFocus(event as unknown as React.FocusEvent<HTMLSelectElement>) : undefined}
+      onChange={(nextValue) => {
+        onChange?.({
+          target: { value: nextValue },
+          currentTarget: { value: nextValue },
+        } as ChangeEvent<HTMLSelectElement>)
+      }}
+    />
   )
 }
 
