@@ -121,6 +121,15 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     match: (pathname) => pathname === '/definition/products',
   },
   {
+    key: 'product-tabular-view',
+    title: 'Product View',
+    path: '/definition/product-view',
+    ribbon: 'definition',
+    status: 'ready',
+    permission: 'products.view',
+    entitlement: 'catalog',
+  },
+  {
     key: 'barcode-printing',
     title: 'Barcode Printing',
     path: '/definition/barcode-printing',
@@ -363,7 +372,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       caption: 'Definitions',
       commands: [
         { id: 'products', label: 'Define Products', icon: Package, moduleKey: 'products', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'green' },
-        { id: 'tabular', label: 'Tabular View', icon: LayoutGrid, moduleKey: 'products', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'teal' },
+        { id: 'tabular', label: 'Tabular View', icon: LayoutGrid, moduleKey: 'product-tabular-view', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'teal' },
         { id: 'stock-taking', label: 'Stock Taking', icon: Boxes, status: 'later', tone: 'orange' },
         { id: 'categories', label: 'Categories', icon: FolderTree, moduleKey: 'categories', permission: 'categories.view', entitlement: 'catalog', status: 'ready', tone: 'blue' },
         { id: 'subcategories', label: 'Subcategories', icon: Layers, moduleKey: 'subcategories', permission: 'categories.view', entitlement: 'catalog', status: 'ready', tone: 'blue' },
@@ -423,7 +432,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Receiving Voucher (Cr)', ...LATER },
           ],
         },
-        { id: 'product-view', label: 'Product View', icon: Package, moduleKey: 'products', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'green' },
+        { id: 'product-view', label: 'Product View', icon: Package, moduleKey: 'product-tabular-view', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'green' },
         { id: 'ledger', label: 'Vendor / Customer Ledger', icon: BookOpen, status: 'later', tone: 'gold' },
         { id: 'cash', label: 'Daily Cash Position', icon: Banknote, status: 'later', tone: 'teal' },
       ],
