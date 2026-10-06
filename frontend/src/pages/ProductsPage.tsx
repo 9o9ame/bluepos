@@ -1,4 +1,4 @@
-import { Children, FormEvent, SelectHTMLAttributes, isValidElement, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { Children, FormEvent, SelectHTMLAttributes, isValidElement, useEffect, useMemo, useRef, useState, type ChangeEvent, type FocusEvent } from 'react'
 import {
   Barcode,
   Check,
@@ -119,7 +119,7 @@ function PdfSelect({
       className={['pdf-select-shell', className].filter(Boolean).join(' ')}
       title={title}
       aria-label={ariaLabel}
-      onFocus={onFocus ? (event) => onFocus(event as unknown as React.FocusEvent<HTMLSelectElement>) : undefined}
+      onFocus={onFocus ? (event) => onFocus(event as unknown as FocusEvent<HTMLSelectElement>) : undefined}
       onChange={(nextValue) => {
         onChange?.({
           target: { value: nextValue },
