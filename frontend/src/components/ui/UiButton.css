@@ -45,13 +45,9 @@
 }
 
 .ui-button.is-primary {
-  border-color: var(--ui-accent-strong);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--ui-accent) 78%, white),
-    var(--ui-accent)
-  );
-  color: #fff;
+  border-color: color-mix(in srgb, var(--ui-accent) 62%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface));
+  color: var(--ui-accent-strong);
 }
 
 .ui-button.is-success {
