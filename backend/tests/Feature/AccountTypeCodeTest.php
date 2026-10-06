@@ -67,7 +67,7 @@ class AccountTypeCodeTest extends TestCase
 
         $created = $this->postJson('/api/coa/account-types', [
             'sub_head_ulid' => $sub,
-            'code' => '  0020  ',
+            'code' => '  9020  ',
             'name' => 'AP',
             'is_payable' => true,
         ])->assertCreated();
