@@ -5,6 +5,7 @@ import { fetchBusinessSettings, saveBusinessSettings } from '../api/catalog'
 import { fetchLeafAccounts } from '../api/coa'
 import { ApiClientError } from '../api/client'
 import { DesktopButton, DesktopPanel, Field, FormGroup } from '../components/desktop/DesktopPanel'
+import { UiSelect } from '../components/ui/UiSelect'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 
@@ -92,7 +93,7 @@ export function BusinessSettingsPage() {
         </>
       }
     >
-      {error ? <p className="mb-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
+      {error ? <p className="mb-2 text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
       <form id="settings-form" onSubmit={onSubmit}>
         <FormGroup title="Business identity">
           <Field label="Business name">
@@ -145,11 +146,18 @@ export function BusinessSettingsPage() {
             <input className="desktop-input" name="default_tax_percent" defaultValue={settings.default_tax_percent} />
           </Field>
           <Field label="Default price level">
-            <select className="desktop-select" name="default_price_level" defaultValue={settings.default_price_level}>
-              <option value="retail">Retail</option>
-              <option value="wholesale">Wholesale</option>
-              <option value="minimum_sale">Minimum sale</option>
-            </select>
+            <UiSelect
+              key={`price-level-${settings.default_price_level}`}
+              defaultValue={settings.default_price_level}
+              name="default_price_level"
+              triggerClassName="desktop-select"
+              aria-label="Default price level"
+              options={[
+                { value: 'retail', label: 'Retail' },
+                { value: 'wholesale', label: 'Wholesale' },
+                { value: 'minimum_sale', label: 'Minimum sale' },
+              ]}
+            />
           </Field>
         </FormGroup>
         <FormGroup title="Inventory configuration">
@@ -159,54 +167,57 @@ export function BusinessSettingsPage() {
         </FormGroup>
         <FormGroup title="Accounting">
           <Field label="Opening Balance Equity Account" span2>
-            <select
+            <UiSelect
               key={`equity-${settings.opening_balance_equity_account_ulid ?? 'none'}-${leafAccounts.length}`}
-              className="desktop-select"
-              name="opening_balance_equity_account_ulid"
               defaultValue={settings.opening_balance_equity_account_ulid ?? ''}
+              name="opening_balance_equity_account_ulid"
               disabled={!canManage}
-            >
-              <option value="">— Not configured —</option>
-              {leafAccounts.map((account) => (
-                <option key={account.ulid} value={account.ulid}>
-                  {account.code} — {account.name}
-                </option>
-              ))}
-            </select>
+              triggerClassName="desktop-select"
+              aria-label="Opening Balance Equity Account"
+              options={[
+                { value: '', label: '— Not configured —' },
+                ...leafAccounts.map((account) => ({
+                  value: account.ulid,
+                  label: `${account.code} — ${account.name}`,
+                })),
+              ]}
+            />
           </Field>
 
           <Field label="Default Cash / Payment Account">
-            <select
+            <UiSelect
               key={`cash-${settings.default_cash_account_ulid ?? 'none'}-${leafAccounts.length}`}
-              className="desktop-select"
-              name="default_cash_account_ulid"
               defaultValue={settings.default_cash_account_ulid ?? ''}
+              name="default_cash_account_ulid"
               disabled={!canManage}
-            >
-              <option value="">— Not configured —</option>
-              {leafAccounts.map((account) => (
-                <option key={account.ulid} value={account.ulid}>
-                  {account.code} — {account.name}
-                </option>
-              ))}
-            </select>
+              triggerClassName="desktop-select"
+              aria-label="Default Cash / Payment Account"
+              options={[
+                { value: '', label: '— Not configured —' },
+                ...leafAccounts.map((account) => ({
+                  value: account.ulid,
+                  label: `${account.code} — ${account.name}`,
+                })),
+              ]}
+            />
           </Field>
 
           <Field label="Sales Clearing / Settlement Account">
-            <select
+            <UiSelect
               key={`clearing-${settings.sales_clearing_account_ulid ?? 'none'}-${leafAccounts.length}`}
-              className="desktop-select"
-              name="sales_clearing_account_ulid"
               defaultValue={settings.sales_clearing_account_ulid ?? ''}
+              name="sales_clearing_account_ulid"
               disabled={!canManage}
-            >
-              <option value="">— Not configured —</option>
-              {leafAccounts.map((account) => (
-                <option key={account.ulid} value={account.ulid}>
-                  {account.code} — {account.name}
-                </option>
-              ))}
-            </select>
+              triggerClassName="desktop-select"
+              aria-label="Sales Clearing / Settlement Account"
+              options={[
+                { value: '', label: '— Not configured —' },
+                ...leafAccounts.map((account) => ({
+                  value: account.ulid,
+                  label: `${account.code} — ${account.name}`,
+                })),
+              ]}
+            />
           </Field>
         </FormGroup>
       </form>
