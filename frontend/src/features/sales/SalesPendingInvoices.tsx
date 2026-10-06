@@ -8,6 +8,7 @@ import { useFeedback } from '../../feedback/FeedbackProvider'
 import type { Sale, SaleHold } from '../../types/sales'
 import { SalePaymentPanel } from './SalePaymentPanel'
 import { previewSaleReceipt, printSaleReceipt } from './saleReceipt'
+import { UiSelect } from '../../components/ui/UiSelect'
 
 type Props = {
   onRecallHeld: (hold: SaleHold) => Promise<void> | void
@@ -257,19 +258,18 @@ export function SalesPendingInvoices({
 
           <label>
             <span>Salesman</span>
-            <select
+            <UiSelect
+              aria-label="Salesman"
               value={salesmanUlid}
-              onChange={(e) => {
-                setSalesmanUlid(e.target.value)
-              }}
-            >
-              <option value="">All</option>
-              {(salesmenQuery.data ?? []).map((salesman) => (
-                <option key={salesman.ulid} value={salesman.ulid}>
-                  {salesman.code} — {salesman.name}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: '', label: 'All' },
+                ...(salesmenQuery.data ?? []).map((salesman) => ({
+                  value: salesman.ulid,
+                  label: `${salesman.code} — ${salesman.name}`,
+                })),
+              ]}
+              onChange={setSalesmanUlid}
+            />
           </label>
 
           <button type="button" className="sales-due-reset" onClick={resetFilters}>
