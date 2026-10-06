@@ -26,6 +26,7 @@ import {
 } from '../../api/coa'
 import { ApiClientError } from '../../api/client'
 import { UiSelect } from '../ui/UiSelect'
+import { UI_LAYER } from '../ui/uiLayers'
 import { ToggleSwitch } from '../ui/ToggleSwitch'
 import './CoaHierarchyModals.css'
 import './CoaHierarchyModals.modern.css'
@@ -335,7 +336,7 @@ export function CoaHierarchyModals({
 
   return (
     <>
-      <div className="coa-modal-backdrop" style={{ zIndex: 5200 }}>
+      <div className="coa-modal-backdrop" style={{ zIndex: UI_LAYER.nestedModal }}>
         <div
           className={`coa-modal coa-modal-sheet${compact ? ' is-compact-nested' : ''}`}
           role="dialog"
@@ -445,7 +446,7 @@ export function CoaHierarchyModals({
                               <UiSelect
                                 value={row.sub_head_ulid}
                                 aria-label="Sub Head Account"
-                                menuZIndex={5250}
+                                menuZIndex={UI_LAYER.nestedDropdown}
                                 options={[
                                   { value: '', label: 'Select…' },
                                   ...subs
@@ -569,7 +570,7 @@ export function CoaHierarchyModals({
         </div>
 
       {layer === 'sub' || layer === 'main' ? (
-        <div className="coa-modal-backdrop" style={{ zIndex: 5300 }}>
+        <div className="coa-modal-backdrop" style={{ zIndex: UI_LAYER.deepModal }}>
           <div className="coa-modal" role="dialog" aria-label="Sub Account Edit/New">
             <div className="coa-modal-bar">
               <span>Sub Account Edit/New</span>
@@ -591,7 +592,7 @@ export function CoaHierarchyModals({
                       <UiSelect
                         value={subMainUlid}
                         aria-label="Main Head"
-                        menuZIndex={5350}
+                        menuZIndex={UI_LAYER.deepDropdown}
                         options={[
                           { value: '', label: 'Select…' },
                           ...mains
@@ -679,7 +680,7 @@ export function CoaHierarchyModals({
       ) : null}
 
       {layer === 'main' ? (
-        <div className="coa-modal-backdrop" style={{ zIndex: 5400 }}>
+        <div className="coa-modal-backdrop" style={{ zIndex: UI_LAYER.thirdModal }}>
           <div className="coa-modal coa-modal-narrow" role="dialog" aria-label="Add/Edit Main Record">
             <div className="coa-modal-bar">
               <span>Add/Edit Main Record</span>
