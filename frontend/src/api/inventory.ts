@@ -1,6 +1,13 @@
 import { apiFetch } from './client'
 import type { Paginated } from '../types/catalog'
-import type { OpeningBalance, OpeningBalanceLine, ProductStock, StockBalance } from '../types/inventory'
+import type {
+  OpeningBalance,
+  OpeningBalanceLine,
+  ProductStock,
+  StockBalance,
+  StockTake,
+  StockTakeLine,
+} from '../types/inventory'
 import type { Warehouse } from '../types/auth'
 
 export function fetchWarehouses() {
@@ -118,6 +125,97 @@ export function deleteOpeningBalanceLine(documentUlid: string, lineUlid: string)
 
 export function postOpeningBalance(documentUlid: string) {
   return apiFetch<OpeningBalance>(`/api/inventory/opening-balances/${documentUlid}/post`, {
+    method: 'POST',
+  })
+}
+
+
+export function fetchStockTakes(params?: {
+  product_ulid?: string
+  warehouse_ulid?: string
+  status?: string
+}) {
+  const search = new URLSearchParams()
+  if (params?.product_ulid) search.set('product_ulid', params.product_ulid)
+  if (params?.warehouse_ulid) search.set('warehouse_ulid', params.warehouse_ulid)
+  if (params?.status) search.set('status', params.status)
+
+  const suffix = search.toString() ? `?${search.toString()}` : ''
+  return apiFetch<StockTake[]>(`/api/inventory/stock-takes${suffix}`)
+}
+
+export function fetchStockTake(ulid: string) {
+  return apiFetch<StockTake>(`/api/inventory/stock-takes/${ulid}`)
+}
+
+export function createStockTake(payload: {
+  warehouse_ulid: string
+  count_date?: string
+  notes?: string | null
+}) {
+  return apiFetch<StockTake>('/api/inventory/stock-takes', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateStockTake(
+  ulid: string,
+  payload: { count_date?: string; notes?: string | null },
+) {
+  return apiFetch<StockTake>(`/api/inventory/stock-takes/${ulid}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteStockTake(ulid: string) {
+  return apiFetch<{ ok: boolean }>(`/api/inventory/stock-takes/${ulid}`, {
+    method: 'DELETE',
+  })
+}
+
+export function createStockTakeLine(
+  documentUlid: string,
+  payload: {
+    product_ulid: string
+    counted_quantity: string
+    notes?: string | null
+  },
+) {
+  return apiFetch<StockTakeLine>(`/api/inventory/stock-takes/${documentUlid}/lines`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateStockTakeLine(
+  documentUlid: string,
+  lineUlid: string,
+  payload: {
+    product_ulid?: string
+    counted_quantity?: string
+    notes?: string | null
+  },
+) {
+  return apiFetch<StockTakeLine>(
+    `/api/inventory/stock-takes/${documentUlid}/lines/${lineUlid}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    },
+  )
+}
+
+export function deleteStockTakeLine(documentUlid: string, lineUlid: string) {
+  return apiFetch<{ ok: boolean }>(
+    `/api/inventory/stock-takes/${documentUlid}/lines/${lineUlid}`,
+    { method: 'DELETE' },
+  )
+}
+
+export function postStockTake(documentUlid: string) {
+  return apiFetch<StockTake>(`/api/inventory/stock-takes/${documentUlid}/post`, {
     method: 'POST',
   })
 }
