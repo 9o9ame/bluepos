@@ -69,6 +69,12 @@ export function updateOpeningBalance(
   })
 }
 
+export function deleteOpeningBalance(ulid: string) {
+  return apiFetch<{ ok: boolean }>(`/api/inventory/opening-balances/${ulid}`, {
+    method: 'DELETE',
+  })
+}
+
 export function createOpeningBalanceLine(
   documentUlid: string,
   payload: {

@@ -130,6 +130,15 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     entitlement: 'catalog',
   },
   {
+    key: 'opening-stock',
+    title: 'Opening Stock',
+    path: '/definition/opening-stock',
+    ribbon: 'definition',
+    status: 'ready',
+    permission: 'inventory.opening_balance.view',
+    entitlement: 'inventory',
+  },
+  {
     key: 'barcode-printing',
     title: 'Barcode Printing',
     path: '/definition/barcode-printing',
@@ -392,7 +401,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       id: 'later-catalog',
       caption: 'Printing / Lists',
       commands: [
-        { id: 'opening-stock', label: 'Opening Stock', icon: Boxes, status: 'later', tone: 'orange' },
+        { id: 'opening-stock', label: 'Opening Stock', icon: Boxes, moduleKey: 'opening-stock', permission: 'inventory.opening_balance.view', entitlement: 'inventory', status: 'ready', tone: 'orange' },
         { id: 'barcodes', label: 'Barcode Printing', icon: Barcode, moduleKey: 'barcode-printing', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'navy' },
         { id: 'price-lists', label: 'Price Lists', icon: List, status: 'later', tone: 'teal' },
       ],
