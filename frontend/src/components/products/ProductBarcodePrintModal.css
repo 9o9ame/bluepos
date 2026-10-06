@@ -438,3 +438,10 @@
 }
 .product-barcode-print-error { color: var(--ui-danger) !important; }
 html[data-animations='off'] .product-barcode-print-modal * { transition: none !important; animation: none !important; }
+
+
+/* ---------- CENTRAL MODAL LAYER CLEANUP ---------- */
+.product-barcode-print-backdrop {
+  z-index: auto;
+  background: color-mix(in srgb, #000 42%, transparent);
+}
