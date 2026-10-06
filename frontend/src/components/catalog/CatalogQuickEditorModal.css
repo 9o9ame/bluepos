@@ -544,3 +544,24 @@ html[data-animations='off'] .catalog-popup * { transition: none !important; anim
   z-index: auto;
   background: color-mix(in srgb, #000 38%, transparent);
 }
+
+
+/* ---------- CATALOG ACTION TONE FINAL ---------- */
+.catalog-popup-action[data-tone='save'] {
+  border-color: color-mix(in srgb, var(--ui-success) 58%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-success) 14%, var(--ui-surface)) !important;
+  color: color-mix(in srgb, var(--ui-success) 82%, var(--ui-text)) !important;
+}
+
+.catalog-popup-action[data-tone='delete'] {
+  border-color: color-mix(in srgb, var(--ui-danger) 58%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-danger) 12%, var(--ui-surface)) !important;
+  color: var(--ui-danger) !important;
+}
+
+.catalog-popup-action[data-tone='refresh'],
+.catalog-popup-action[data-tone='close'] {
+  border-color: color-mix(in srgb, var(--ui-info) 52%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-info) 11%, var(--ui-surface)) !important;
+  color: color-mix(in srgb, var(--ui-info) 78%, var(--ui-text)) !important;
+}
