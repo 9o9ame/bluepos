@@ -12,8 +12,8 @@
 
 .product-tabular-toolbar {
   display: grid;
-  gap: 6px;
-  padding: 7px 8px 6px;
+  gap: 4px;
+  padding: 4px 6px;
   border-bottom: 1px solid var(--ui-border);
   background: var(--ui-surface-subtle);
 }
@@ -21,12 +21,12 @@
 .product-tabular-primary-row {
   display: grid;
   grid-template-columns:
-    minmax(240px, 1.35fr)
-    minmax(190px, 230px)
-    minmax(310px, 1.15fr)
+    minmax(210px, 1.15fr)
+    minmax(165px, 190px)
+    minmax(300px, 1.35fr)
     auto
     auto;
-  gap: 7px;
+  gap: 5px;
   align-items: end;
   min-width: 0;
 }
@@ -35,7 +35,7 @@
 .product-tabular-field,
 .product-tabular-set-text {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -76,40 +76,60 @@
 
 .product-tabular-set-combo {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(112px, 138px);
-  gap: 4px;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  min-width: 0;
+}
+
+.product-tabular-set-combo > input {
+  position: relative;
+  z-index: 1;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.product-tabular-formula-select {
   min-width: 0;
 }
 
 .product-tabular-formula-trigger {
+  min-width: 38px;
+  width: 38px;
+  padding-inline: 6px;
+  border-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   white-space: nowrap;
+}
+
+.product-tabular-set-combo:focus-within > input,
+.product-tabular-set-combo:focus-within .product-tabular-formula-trigger {
+  box-shadow: var(--ui-focus-shadow);
 }
 
 .product-tabular-update-actions,
 .product-tabular-actions {
   display: flex;
-  gap: 5px;
+  gap: 4px;
   align-items: center;
   min-height: var(--control-height, 30px);
 }
 
 .product-tabular-actions {
   justify-content: flex-end;
-  padding-left: 5px;
+  padding-left: 4px;
   border-left: 1px solid var(--ui-border);
 }
 
 .product-tabular-secondary-row {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 8px;
+  gap: 7px;
   align-items: center;
-  min-height: 25px;
-  padding: 4px 6px;
+  min-height: 22px;
+  padding: 2px 5px;
   border: 1px solid var(--ui-border);
-  border-radius: var(--panel-radius);
+  border-radius: var(--control-radius);
   background: var(--ui-surface);
-  box-shadow: var(--ui-control-shadow);
 }
 
 .product-tabular-filter-label {
@@ -121,7 +141,7 @@
 .product-tabular-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
+  gap: 4px 14px;
   align-items: center;
   min-width: 0;
 }
@@ -219,7 +239,7 @@
 
 @media (max-width: 1280px) {
   .product-tabular-primary-row {
-    grid-template-columns: minmax(220px, 1fr) minmax(180px, 210px) minmax(280px, 1fr) auto;
+    grid-template-columns: minmax(190px, 1fr) minmax(160px, 185px) minmax(260px, 1.2fr) auto;
   }
 
   .product-tabular-actions {
@@ -227,7 +247,7 @@
     justify-content: flex-end;
     border-left: 0;
     border-top: 1px solid var(--ui-border);
-    padding-top: 6px;
+    padding-top: 4px;
     padding-left: 0;
   }
 }
