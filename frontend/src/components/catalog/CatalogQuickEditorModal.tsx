@@ -4,6 +4,7 @@ import { RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { ApiClientError } from '../../api/client'
 import { askConfirm } from '../../feedback/FeedbackProvider'
 import { UiSelect } from '../ui/UiSelect'
+import { UI_LAYER } from '../ui/uiLayers'
 import {
   useCatalogMasterEditor,
   type CatalogMasterKind,
@@ -148,7 +149,7 @@ export function CatalogQuickEditorModal({
                   value={editor.categoryUlid}
                   className="catalog-popup-select"
                   aria-label="Category"
-                  menuZIndex={5200}
+                  menuZIndex={UI_LAYER.nestedDropdown}
                   options={[
                     { value: '', label: 'Select category…' },
                     ...editor.categories.map((category) => ({
