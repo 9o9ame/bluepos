@@ -105,7 +105,7 @@ Rules:
 
 Compatibility wrappers such as `BpFancySelect` and `AnimatedSelect` may remain temporarily, but they must delegate to `UiSelect`; they must not maintain independent visual behavior.
 
-Native `select` is permitted only where there is a concrete accessibility/browser integration reason. It must still use global tokens.
+Native `select` is permitted only where there is a concrete browser-semantic reason, such as a true multi-select or a legacy form that intentionally depends on native form serialization and has not yet been converted to controlled state. It must still use global tokens. Single-value controlled dropdowns should use `UiSelect`.
 
 ### Buttons
 
