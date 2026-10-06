@@ -386,3 +386,57 @@ html[data-animations='off'] .bp-fancy-select-option {
   transition: none !important;
   animation: none !important;
 }
+
+
+/* ---------- FANCY SELECT THEME PANEL SYNC ---------- */
+/* Make the popup panel visibly inherit the selected Primary Theme, not just the trigger arrow. */
+.bp-fancy-select-menu {
+  border-color: color-mix(in srgb, var(--ui-accent) 58%, var(--ui-border)) !important;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)) 0,
+      var(--ui-surface) 34px
+    ) !important;
+  box-shadow:
+    inset 0 2px 0 color-mix(in srgb, var(--ui-accent) 72%, transparent),
+    var(--ui-card-shadow) !important;
+}
+
+.bp-fancy-select-menu-inner {
+  scrollbar-color:
+    color-mix(in srgb, var(--ui-accent) 60%, var(--ui-border))
+    var(--ui-surface-muted);
+}
+
+.bp-fancy-select-option {
+  border: 1px solid transparent !important;
+  color: var(--ui-text) !important;
+}
+
+.bp-fancy-select-option:hover:not(:disabled),
+.bp-fancy-select-option:focus-visible {
+  border-color: color-mix(in srgb, var(--ui-accent) 38%, transparent) !important;
+  background: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface)) !important;
+  color: var(--ui-accent-strong) !important;
+}
+
+.bp-fancy-select-option.is-selected {
+  border-color: var(--ui-accent-strong) !important;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ui-accent) 84%, black),
+    var(--ui-accent)
+  ) !important;
+  color: #fff !important;
+}
+
+.bp-fancy-select-option.is-selected .bp-fancy-select-check {
+  color: #fff !important;
+}
+
+.bp-fancy-select-option.is-disabled,
+.bp-fancy-select-option:disabled {
+  background: transparent !important;
+  color: var(--ui-text-muted) !important;
+}
