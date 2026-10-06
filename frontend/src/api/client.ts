@@ -119,3 +119,44 @@ export async function apiFetch<T>(path: string, init: ApiFetchOptions = {}): Pro
     }
   }
 }
+
+
+export async function apiDownload(path: string, filename: string): Promise<void> {
+  apiBusy.begin('fetch')
+
+  try {
+    const headers = new Headers()
+    headers.set('Accept', 'text/csv,application/octet-stream;q=0.9,*/*;q=0.8')
+    headers.set('X-Requested-With', 'XMLHttpRequest')
+
+    const response = await fetch(`${API_BASE}${path}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers,
+    })
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: { key?: string; message?: string; fields?: Record<string, string[]>; [key: string]: unknown }
+      }
+      const { key, message, fields, ...extra } = payload.error ?? {}
+      throw new ApiClientError(
+        (key as string | undefined) ?? 'SERVER_ERROR',
+        (message as string | undefined) ?? 'Download failed.',
+        response.status,
+        fields,
+        extra,
+      )
+    }
+
+    const blob = await response.blob()
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(url)
+  } finally {
+    apiBusy.end('fetch')
+  }
+}
