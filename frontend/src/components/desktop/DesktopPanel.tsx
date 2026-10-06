@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { UiButton } from '../ui/UiButton'
 
 type DesktopPanelProps = {
   title?: string
@@ -45,9 +46,10 @@ export function DesktopButton({
 }: DesktopButtonProps) {
   const extra = variant === 'primary' ? ' is-primary' : variant === 'danger' ? ' is-danger' : ''
   return (
-    <button
+    <UiButton
       type={type}
       className={`desktop-btn${extra}`}
+      variant={variant === 'primary' ? 'primary' : variant === 'danger' ? 'danger' : 'default'}
       disabled={disabled}
       title={shortcut ? `${label} (${shortcut})` : label}
       onClick={onClick}
@@ -55,7 +57,7 @@ export function DesktopButton({
       {icon}
       <span>{label}</span>
       {shortcut ? <span className="shortcut">{shortcut}</span> : null}
-    </button>
+    </UiButton>
   )
 }
 
