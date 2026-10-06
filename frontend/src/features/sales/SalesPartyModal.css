@@ -113,3 +113,14 @@
   background: color-mix(in srgb, var(--ui-danger) 10%, var(--ui-surface)) !important;
 }
 html[data-animations='off'] .sales-party-modal-window * { transition: none !important; animation: none !important; }
+
+
+/* ---------- CENTRAL MODAL LAYER CLEANUP ---------- */
+.sales-party-modal-layer {
+  z-index: auto;
+  background: color-mix(in srgb, #000 28%, transparent);
+}
+
+:root[data-theme='dark'] .sales-party-modal-layer {
+  background: color-mix(in srgb, #000 48%, transparent);
+}
