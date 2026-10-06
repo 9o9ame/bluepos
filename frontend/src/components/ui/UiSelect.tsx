@@ -9,6 +9,7 @@ import {
   type MouseEventHandler,
 } from 'react'
 import { createPortal } from 'react-dom'
+import { UI_LAYER } from './uiLayers'
 import './UiSelect.css'
 
 export type UiSelectOption = {
@@ -55,7 +56,7 @@ export function UiSelect({
   onBlur,
   onKeyDown,
   onMouseDown,
-  menuZIndex = 1600,
+  menuZIndex = UI_LAYER.dropdown,
   maxMenuHeight = 240,
   'aria-label': ariaLabel,
 }: UiSelectProps) {
