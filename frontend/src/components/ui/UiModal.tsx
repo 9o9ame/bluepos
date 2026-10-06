@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
+import { UI_LAYER } from './uiLayers'
 import './UiModal.css'
 
 export type UiModalSize = 'sm' | 'md' | 'lg' | 'xl'
@@ -13,7 +14,7 @@ export function UiModal({
   children,
   footer,
   size = 'md',
-  zIndex = 4000,
+  zIndex = UI_LAYER.modal,
   className,
   bodyClassName,
   closeOnEscape = true,
