@@ -15,53 +15,11 @@ class CoaChartTest extends TestCase
      */
     private function seedCoa(): array
     {
-        $assets = $this->postJson('/api/coa/main-heads', [
-            'name' => 'ASSETS',
-            'sort_order' => 1,
-        ])->assertCreated()->json('ulid');
-
-        $liab = $this->postJson('/api/coa/main-heads', [
-            'name' => 'LIABILITIES',
-            'sort_order' => 2,
-        ])->assertCreated()->json('ulid');
-
-        $current = $this->postJson('/api/coa/sub-heads', [
-            'main_head_ulid' => $assets,
-            'name' => 'CURRENT ASSETS',
-            'sort_order' => 10,
-        ])->assertCreated()->json('ulid');
-
-        $short = $this->postJson('/api/coa/sub-heads', [
-            'main_head_ulid' => $liab,
-            'name' => 'SHORT TERM LIABILITIES',
-            'sort_order' => 20,
-        ])->assertCreated()->json('ulid');
-
-        $ar = $this->postJson('/api/coa/account-types', [
-            'sub_head_ulid' => $current,
-            'code' => '0011',
-            'name' => 'ACCOUNT RECEIVABLE',
-            'is_receivable' => true,
-            'sort_order' => 11,
-        ])->assertCreated()->json('ulid');
-
-        $cash = $this->postJson('/api/coa/account-types', [
-            'sub_head_ulid' => $current,
-            'code' => '0010',
-            'name' => 'CASH',
-            'is_cash' => true,
-            'sort_order' => 10,
-        ])->assertCreated()->json('ulid');
-
-        $ap = $this->postJson('/api/coa/account-types', [
-            'sub_head_ulid' => $short,
-            'code' => '0020',
-            'name' => 'ACCOUNT PAYABLE',
-            'is_payable' => true,
-            'sort_order' => 20,
-        ])->assertCreated()->json('ulid');
-
-        return ['ap' => $ap, 'ar' => $ar, 'cash' => $cash];
+        return [
+            'ap' => $this->referenceAccountTypeUlid('0020'),
+            'ar' => $this->referenceAccountTypeUlid('0011'),
+            'cash' => $this->referenceAccountTypeUlid('0010'),
+        ];
     }
 
     public function test_leaf_hierarchy_supplier_customer_manual_and_no_duplicate_on_resave(): void
