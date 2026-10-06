@@ -26,6 +26,7 @@ import { RolesPage } from '../pages/RolesPage'
 import { SaleSchemesPage } from '../pages/SaleSchemesPage'
 import { SalesInvoicePage } from '../pages/SalesInvoicePage'
 import { SalesReturnsPage } from '../pages/SalesReturnsPage'
+import { StockTakingPage } from '../pages/StockTakingPage'
 import { SubcategoriesPage } from '../pages/SubcategoriesPage'
 import { UnitsPage } from '../pages/UnitsPage'
 import { UsersPage } from '../pages/UsersPage'
@@ -128,6 +129,10 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="inventory.opening_balance.view" />}>
             <Route path="/definition/opening-stock" element={<OpeningStockPage />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="inventory.view" />}>
+            <Route path="/definition/stock-taking" element={<StockTakingPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="products.view" />}>
