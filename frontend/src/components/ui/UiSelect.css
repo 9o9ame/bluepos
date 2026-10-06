@@ -1,0 +1,255 @@
+.ui-select {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.ui-select-trigger {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  height: var(--ui-control-h-md, 24px);
+  margin: 0;
+  padding: 0 2px 0 7px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle));
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-font-md, 11px);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--ui-control-shadow);
+  transition:
+    border-color var(--ui-transition-normal),
+    background-color var(--ui-transition-normal),
+    color var(--ui-transition-normal),
+    box-shadow var(--ui-transition-normal);
+}
+
+.ui-select-trigger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ui-accent) 60%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-accent) 6%, var(--ui-surface));
+}
+
+.ui-select.is-open .ui-select-trigger,
+.ui-select-trigger:focus-visible {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.ui-select-trigger:disabled {
+  cursor: not-allowed;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  box-shadow: none;
+}
+
+.ui-select-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-select-arrow {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 18px;
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border));
+  border-radius: var(--control-radius);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 55%, white),
+    var(--ui-accent)
+  );
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .28),
+    var(--ui-control-shadow);
+  transition:
+    transform var(--ui-transition-normal),
+    filter var(--ui-transition-fast),
+    border-color var(--ui-transition-normal),
+    background-color var(--ui-transition-normal);
+}
+
+.ui-select.is-open .ui-select-arrow {
+  transform: rotate(180deg);
+}
+
+.ui-select.is-disabled .ui-select-arrow {
+  border-color: var(--ui-border);
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  box-shadow: none;
+}
+
+.ui-select-menu {
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 58%, var(--ui-border));
+  border-radius: var(--panel-radius);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)) 0,
+      var(--ui-surface) 34px
+    );
+  color: var(--ui-text);
+  box-shadow:
+    inset 0 2px 0 color-mix(in srgb, var(--ui-accent) 72%, transparent),
+    var(--ui-card-shadow);
+  animation: ui-select-menu-in var(--ui-transition-normal);
+}
+
+.ui-select-menu.is-up {
+  transform-origin: bottom center;
+  animation-name: ui-select-menu-in-up;
+}
+
+.ui-select-menu.is-down {
+  transform-origin: top center;
+}
+
+@keyframes ui-select-menu-in {
+  from { opacity: 0; transform: translateY(4px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes ui-select-menu-in-up {
+  from { opacity: 0; transform: translateY(-4px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.ui-select-menu-inner {
+  max-height: inherit;
+  overflow: auto;
+  padding: 4px;
+  overscroll-behavior: contain;
+  scrollbar-color:
+    color-mix(in srgb, var(--ui-accent) 60%, var(--ui-border))
+    var(--ui-surface-muted);
+}
+
+.ui-select-option {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 28px;
+  margin: 0 0 2px;
+  padding: 5px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-font-sm, 11px);
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--ui-transition-fast),
+    border-color var(--ui-transition-fast),
+    color var(--ui-transition-fast);
+}
+
+.ui-select-option:last-child {
+  margin-bottom: 0;
+}
+
+.ui-select-option:hover:not(:disabled),
+.ui-select-option:focus-visible,
+.ui-select-option.is-active:not(.is-selected) {
+  outline: none;
+  border-color: color-mix(in srgb, var(--ui-accent) 38%, transparent);
+  background: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
+  color: var(--ui-accent-strong);
+}
+
+.ui-select-option.is-selected {
+  border-color: var(--ui-accent-strong);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ui-accent) 84%, black),
+    var(--ui-accent)
+  );
+  color: #fff;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+.ui-select-option:disabled {
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--ui-text-muted);
+  opacity: .55;
+}
+
+.ui-select-check {
+  color: currentColor;
+  font-weight: 900;
+}
+
+html[data-animations='off'] .ui-select-trigger,
+html[data-animations='off'] .ui-select-arrow,
+html[data-animations='off'] .ui-select-menu,
+html[data-animations='off'] .ui-select-option {
+  transition: none !important;
+  animation: none !important;
+}
+
+
+/* ---------- SEARCHABLE SELECT ---------- */
+.ui-select-search-wrap {
+  padding: 5px;
+  border-bottom: 1px solid var(--ui-border);
+  background: color-mix(in srgb, var(--ui-accent) 5%, var(--ui-surface));
+}
+
+.ui-select-search {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--ui-control-h-md, 24px);
+  min-height: var(--ui-control-h-md, 24px);
+  padding: 0 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-font-sm, 11px);
+  box-shadow: var(--ui-control-shadow);
+}
+
+.ui-select-search::placeholder {
+  color: var(--ui-text-muted);
+}
+
+.ui-select-search:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.ui-select-empty {
+  padding: 9px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-sm, 11px);
+  text-align: center;
+}
+
+html[data-animations='off'] .ui-select-search {
+  transition: none !important;
+}

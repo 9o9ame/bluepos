@@ -20,6 +20,7 @@ import {
 import { ApiClientError } from '../../api/client'
 import { askConfirm } from '../../feedback/FeedbackProvider'
 import { CredentialsOnceModal } from '../../components/platform/CredentialsOnceModal'
+import { UiSelect } from '../../components/ui/UiSelect'
 import { usePlatformAuth } from '../../features/platform/PlatformAuthProvider'
 
 const TABS = ['Overview', 'Admin Users', 'Subscription', 'Features', 'Limits'] as const
@@ -71,8 +72,8 @@ export function PlatformTenantDetailPage() {
           Tenant Status {tenant.status} · Subscription Status {tenant.subscription?.status ?? '—'} · Plan {tenant.plan?.name ?? '—'}
         </p>
       </div>
-      {error ? <p className="text-[12px] text-red-700">{error}</p> : null}
-      {notice ? <p className="text-[12px] text-emerald-800">{notice}</p> : null}
+      {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
+      {notice ? <p className="text-[12px] text-[var(--ui-success)]">{notice}</p> : null}
       <div className="flex gap-2">
         {TABS.map((item) => (
           <button
@@ -179,7 +180,7 @@ export function PlatformTenantDetailPage() {
             {tenant.status !== 'cancelled' ? (
               <button
                 type="button"
-                className="rounded border border-red-700 px-3 text-red-700"
+                className="rounded border border-red-700 px-3 text-[var(--ui-danger)]"
                 onClick={() => {
                   void (async () => {
                     if (!(await askConfirm(`Cancel tenant ${tenant.code}? Mart users will be signed out. Posted history is kept.`))) {
@@ -252,30 +253,38 @@ export function PlatformTenantDetailPage() {
           onSubmit={(event: FormEvent) => {
             event.preventDefault()
             const form = event.target as HTMLFormElement
-            const planUlid = (form.elements.namedItem('plan_ulid') as HTMLSelectElement).value
-            const status = (form.elements.namedItem('status') as HTMLSelectElement).value
+            const planUlid = (form.elements.namedItem('plan_ulid') as HTMLInputElement).value
+            const status = (form.elements.namedItem('status') as HTMLInputElement).value
             void run(() => assignPlatformSubscription(tenant.ulid, { plan_ulid: planUlid, status }))
           }}
         >
           <label className="block font-semibold">
             Plan
-            <select name="plan_ulid" defaultValue={tenant.plan?.ulid} className="mt-1 h-8 w-full rounded border px-2">
-              {(plansQuery.data ?? []).map((plan) => (
-                <option key={plan.ulid} value={plan.ulid}>
-                  {plan.name}
-                </option>
-              ))}
-            </select>
+            <UiSelect
+              key={`tenant-plan-${tenant.plan?.ulid ?? 'none'}`}
+              name="plan_ulid"
+              defaultValue={tenant.plan?.ulid ?? ''}
+              className="mt-1"
+              aria-label="Plan"
+              options={(plansQuery.data ?? []).map((plan) => ({
+                value: plan.ulid,
+                label: plan.name,
+              }))}
+            />
           </label>
           <label className="block font-semibold">
             Subscription status
-            <select name="status" defaultValue={tenant.subscription?.status ?? 'active'} className="mt-1 h-8 w-full rounded border px-2">
-              {['trial', 'active', 'past_due', 'suspended', 'cancelled', 'expired'].map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
+            <UiSelect
+              key={`tenant-sub-status-${tenant.subscription?.status ?? 'active'}`}
+              name="status"
+              defaultValue={tenant.subscription?.status ?? 'active'}
+              className="mt-1"
+              aria-label="Subscription status"
+              options={['trial', 'active', 'past_due', 'suspended', 'cancelled', 'expired'].map((status) => ({
+                value: status,
+                label: status,
+              }))}
+            />
           </label>
           <button type="submit" className="rounded bg-slate-950 px-3 py-1 text-white">
             Save subscription

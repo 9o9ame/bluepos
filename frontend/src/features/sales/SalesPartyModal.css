@@ -86,3 +86,41 @@
     min-height: 0;
   }
 }
+
+
+/* ---------- SALES PARTY MODAL DESIGN SYSTEM MIGRATION ---------- */
+.sales-party-modal-window {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+.sales-party-modal-titlebar {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+  color: var(--ui-text) !important;
+}
+.sales-party-modal-close {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-danger) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+.sales-party-modal-close:hover {
+  border-color: var(--ui-danger) !important;
+  background: color-mix(in srgb, var(--ui-danger) 10%, var(--ui-surface)) !important;
+}
+html[data-animations='off'] .sales-party-modal-window * { transition: none !important; animation: none !important; }
+
+
+/* ---------- CENTRAL MODAL LAYER CLEANUP ---------- */
+.sales-party-modal-layer {
+  z-index: auto;
+  background: color-mix(in srgb, #000 28%, transparent);
+}
+
+:root[data-theme='dark'] .sales-party-modal-layer {
+  background: color-mix(in srgb, #000 48%, transparent);
+}

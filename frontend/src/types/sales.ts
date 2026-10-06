@@ -67,6 +67,10 @@ export type Sale = {
   discount_amount: string
   tax_amount: string
   grand_total: string
+  returned_amount: string
+  net_sale_total: string
+  paid_amount: string
+  balance_due: string
   notes: string | null
   posted_at: string | null
   salesman?: SalesmanOption | null
@@ -141,6 +145,52 @@ export type SaleDraftLine = {
   tax_percent?: string
 
   notes?: string | null
+}
+
+
+export type SaleHold = {
+  ulid: string
+  held_at: string | null
+  sale_date: string | null
+  price_type: SalePriceType
+  notes: string | null
+  sale_line_count: number
+  customer: {
+    ulid: string
+    code: string
+    name: string
+  } | null
+  salesman: SalesmanOption | null
+  branch: {
+    ulid: string
+    code: string
+    name: string
+  }
+  warehouse: {
+    ulid: string
+    code: string
+    name: string
+  }
+  lines?: SaleDraftLine[]
+}
+
+export type SaleHoldPayload = {
+  sale_date?: string | null
+  customer_ulid?: string | null
+  salesman_ulid?: string | null
+  notes?: string | null
+  price_type: SalePriceType
+  lines: Array<{
+    product_ulid: string
+    line_kind: SaleLineKind
+    unit_ulid?: string | null
+    scheme_ulid?: string | null
+    barcode?: string | null
+    quantity: string
+    discount_percent?: string | null
+    discount_amount?: string | null
+    notes?: string | null
+  }>
 }
 
 export type AppliedSaleScheme = {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { DesktopButton } from './DesktopPanel'
+import { UiModal } from '../ui/UiModal'
 
 type CalculatorDialogProps = {
   open: boolean
@@ -29,35 +30,33 @@ export function CalculatorDialog({ open, onClose }: CalculatorDialogProps) {
   }
 
   return (
-    <div className="calc-dialog" role="dialog" aria-modal="true" aria-label="Calculator">
-      <div className="calc-card">
-        <div className="desktop-panel-header">Calculator</div>
-        <div className="desktop-panel-body">
-          <label className="desktop-field">
-            <span>Expression</span>
-            <input
-              className="desktop-input"
-              value={expression}
-              onChange={(event) => setExpression(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault()
-                  evaluate()
-                }
-                if (event.key === 'Escape') {
-                  onClose()
-                }
-              }}
-              autoFocus
-            />
-          </label>
-          <p className="mt-2 text-[12px]">Result: {result}</p>
-        </div>
-        <div className="desktop-panel-footer">
+    <UiModal
+      title="Calculator"
+      size="sm"
+      onClose={onClose}
+      footer={
+        <>
           <DesktopButton label="Calculate" onClick={evaluate} />
           <DesktopButton label="Close" shortcut="Esc" onClick={onClose} />
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <label className="desktop-field">
+        <span>Expression</span>
+        <input
+          className="desktop-input"
+          value={expression}
+          onChange={(event) => setExpression(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              evaluate()
+            }
+          }}
+          autoFocus
+        />
+      </label>
+      <p className="mt-2 text-[12px]">Result: {result}</p>
+    </UiModal>
   )
 }

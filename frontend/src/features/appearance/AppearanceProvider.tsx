@@ -61,7 +61,7 @@ function isFontPreference(value: unknown): value is FontPreference {
 function isPrimaryTheme(value: unknown): value is PrimaryTheme { return ['indigo', 'blue', 'emerald', 'teal', 'purple', 'slate'].includes(String(value)) }
 function isDensity(value: unknown): value is DensityPreference { return value === 'compact' || value === 'comfortable' }
 function isRadius(value: unknown): value is RadiusPreference { return value === 'small' || value === 'medium' || value === 'large' }
-function isShadow(value: unknown): value is ShadowPreference { return value === 'none' || value === 'soft' || value === 'normal' }
+function isShadow(value: unknown): value is ShadowPreference { return value === 'none' || value === 'soft' || value === 'normal' || value === '3d' }
 
 function readStoredPreferences(userScope: string | null): AppearancePreferences {
   if (typeof window === 'undefined') {
@@ -163,6 +163,16 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   const setUserScope = useCallback(
     (userUlid: string | null, serverPreferences?: AppearancePreferences | null) => {
       setUserScopeState((current) => {
+        /*
+         * Leaving an authenticated tenant scope should keep the currently
+         * selected appearance active on login/platform surfaces. The normal
+         * persistence effect then mirrors it into the guest scope. A newly
+         * authenticated user still replaces it with that user's server prefs.
+         */
+        if (userUlid === null && current !== null && !serverPreferences) {
+          return null
+        }
+
         const nextPreferences = serverPreferences ?? readStoredPreferences(userUlid)
 
         if (current !== userUlid || serverPreferences) {

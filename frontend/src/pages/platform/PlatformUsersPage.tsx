@@ -14,6 +14,8 @@ import {
 } from '../../api/platform'
 import { usePlatformCan } from '../../features/platform/usePlatformCan'
 import type { PlatformUser } from '../../types/platform'
+import { UiSelect } from '../../components/ui/UiSelect'
+import { UiMultiSelect } from '../../components/ui/UiMultiSelect'
 
 export function PlatformUsersPage() {
   const queryClient = useQueryClient()
@@ -73,7 +75,7 @@ export function PlatformUsersPage() {
   return (
     <section className="space-y-4">
       <h1 className="text-lg font-semibold">Platform Users</h1>
-      {error ? <p className="text-[12px] text-red-700">{error}</p> : null}
+      {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
       {canCreate ? (
         <form className="grid grid-cols-4 gap-2 rounded border border-slate-300 bg-white p-3 text-[12px]" onSubmit={onCreate}>
           <label className="font-semibold">
@@ -86,25 +88,33 @@ export function PlatformUsersPage() {
           </label>
           <label className="font-semibold">
             Status
-            <select className="mt-1 h-8 w-full rounded border px-2" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+            <div className="mt-1">
+              <UiSelect
+                value={form.status}
+                aria-label="Status"
+                options={[
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                ]}
+                onChange={(status) => setForm({ ...form, status })}
+              />
+            </div>
           </label>
           <label className="font-semibold">
             Role(s)
-            <select
-              multiple
-              className="mt-1 h-20 w-full rounded border px-2"
+            <UiMultiSelect
               value={form.role_ulids}
-              onChange={(e) => setForm({ ...form, role_ulids: Array.from(e.target.selectedOptions).map((option) => option.value) })}
-            >
-              {(rolesQuery.data ?? []).filter((role) => role.is_active).map((role) => (
-                <option key={role.ulid} value={role.ulid}>
-                  {role.name} ({role.code})
-                </option>
-              ))}
-            </select>
+              className="mt-1"
+              aria-label="Roles"
+              placeholder="Select roles…"
+              options={(rolesQuery.data ?? [])
+                .filter((role) => role.is_active)
+                .map((role) => ({
+                  value: role.ulid,
+                  label: `${role.name} (${role.code})`,
+                }))}
+              onChange={(role_ulids) => setForm({ ...form, role_ulids })}
+            />
           </label>
           <label className="flex items-center gap-2 font-semibold">
             <input type="checkbox" checked={form.generate} onChange={(e) => setForm({ ...form, generate: e.target.checked })} />

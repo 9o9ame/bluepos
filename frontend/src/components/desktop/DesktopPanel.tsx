@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { UiButton } from '../ui/UiButton'
 
 type DesktopPanelProps = {
   title?: string
@@ -30,7 +31,7 @@ type DesktopButtonProps = {
   label: string
   shortcut?: string
   disabled?: boolean
-  variant?: 'default' | 'primary' | 'danger'
+  variant?: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info'
   onClick?: () => void
 }
 
@@ -40,14 +41,26 @@ export function DesktopButton({
   label,
   shortcut,
   disabled,
-  variant = 'default',
+  variant,
   onClick,
 }: DesktopButtonProps) {
-  const extra = variant === 'primary' ? ' is-primary' : variant === 'danger' ? ' is-danger' : ''
+  const inferredVariant =
+    /^(save|activate|post|approve|complete)$/i.test(label)
+      ? 'success'
+      : /^(delete|remove|void|deactivate|reject)$/i.test(label)
+        ? 'danger'
+        : /^(new|add|create)$/i.test(label)
+          ? 'primary'
+          : /^(refresh|close|preview|print|search)$/i.test(label)
+            ? 'info'
+            : 'default'
+  const resolvedVariant = variant ?? inferredVariant
+
   return (
-    <button
+    <UiButton
       type={type}
-      className={`desktop-btn${extra}`}
+      className="desktop-btn"
+      variant={resolvedVariant}
       disabled={disabled}
       title={shortcut ? `${label} (${shortcut})` : label}
       onClick={onClick}
@@ -55,7 +68,7 @@ export function DesktopButton({
       {icon}
       <span>{label}</span>
       {shortcut ? <span className="shortcut">{shortcut}</span> : null}
-    </button>
+    </UiButton>
   )
 }
 

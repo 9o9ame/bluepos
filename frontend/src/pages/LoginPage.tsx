@@ -68,7 +68,7 @@ export function LoginPage() {
             autoFocus
             required
             autoComplete="organization"
-            className="mt-1 h-9 w-full rounded border border-slate-300 px-2"
+            className="mt-1 h-9 w-full rounded border border-[var(--ui-border)] px-2"
             value={tenantCode}
             onChange={(event) => setTenantCode(event.target.value)}
           />
@@ -78,7 +78,7 @@ export function LoginPage() {
           <input
             required
             autoComplete="username"
-            className="mt-1 h-9 w-full rounded border border-slate-300 px-2"
+            className="mt-1 h-9 w-full rounded border border-[var(--ui-border)] px-2"
             value={username}
             onChange={(event) => setUsername(event.target.value)}
           />
@@ -89,14 +89,14 @@ export function LoginPage() {
             type="password"
             required={!challengeUlid}
             autoComplete="current-password"
-            className="mt-1 h-9 w-full rounded border border-slate-300 px-2"
+            className="mt-1 h-9 w-full rounded border border-[var(--ui-border)] px-2"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
         </label>
         {challengeUlid ? (
           <>
-            <p className="text-[12px] text-slate-600">
+            <p className="text-[12px] text-[var(--ui-text-muted)]">
               Additional verification is required{recoveryHint ? ` (${recoveryHint})` : ''}.
             </p>
             <label className="block text-[12px] font-semibold">
@@ -104,7 +104,7 @@ export function LoginPage() {
               <input
                 required
                 inputMode="numeric"
-                className="mt-1 h-9 w-full rounded border border-slate-300 px-2"
+                className="mt-1 h-9 w-full rounded border border-[var(--ui-border)] px-2"
                 value={mfaCode}
                 onChange={(event) => setMfaCode(event.target.value)}
               />
@@ -115,7 +115,7 @@ export function LoginPage() {
             </label>
             <button
               type="button"
-              className="text-[12px] font-semibold text-[#1f4e79] underline disabled:opacity-60"
+              className="text-[12px] font-semibold text-[var(--ui-accent)] underline disabled:opacity-60"
               disabled={resending}
               onClick={() => {
                 if (!challengeUlid) {
@@ -140,17 +140,17 @@ export function LoginPage() {
             </button>
           </>
         ) : null}
-        {deviceMessage ? <p className="text-[12px] text-amber-800">{deviceMessage}</p> : null}
-        {error ? <p className="text-[12px] text-red-700">{error}</p> : null}
+        {deviceMessage ? <p className="text-[12px] text-[var(--ui-warning)]">{deviceMessage}</p> : null}
+        {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
         <button
           type="submit"
-          className="h-9 w-full rounded bg-[#1f4e79] text-sm font-semibold text-white disabled:opacity-60"
+          className="h-9 w-full rounded bg-[var(--ui-accent)] text-sm font-semibold text-white disabled:opacity-60"
           disabled={submitting}
         >
           {submitting ? 'Signing in…' : challengeUlid ? 'Verify' : 'Login'}
         </button>
-        <p className="text-center text-[12px] text-slate-600">
-          <Link className="font-semibold text-[#1f4e79]" to="/forgot-password">
+        <p className="text-center text-[12px] text-[var(--ui-text-muted)]">
+          <Link className="font-semibold text-[var(--ui-accent)]" to="/forgot-password">
             Forgot password
           </Link>
         </p>

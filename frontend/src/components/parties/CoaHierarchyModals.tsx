@@ -25,7 +25,8 @@ import {
   type CoaSubHead,
 } from '../../api/coa'
 import { ApiClientError } from '../../api/client'
-import { AnimatedSelect } from '../ui/AnimatedSelect'
+import { UiSelect } from '../ui/UiSelect'
+import { UI_LAYER } from '../ui/uiLayers'
 import { ToggleSwitch } from '../ui/ToggleSwitch'
 import './CoaHierarchyModals.css'
 import './CoaHierarchyModals.modern.css'
@@ -36,6 +37,7 @@ type Props = {
   onClose: () => void
   onAccountTypeSaved: (type: CoaAccountType) => void
   onHierarchyChanged: () => void
+  compact?: boolean
 }
 
 type TypeDraft = {
@@ -105,6 +107,7 @@ export function CoaHierarchyModals({
   onClose,
   onAccountTypeSaved,
   onHierarchyChanged,
+  compact = false,
 }: Props) {
   const [layer, setLayer] = useState<'type' | 'sub' | 'main'>('type')
   const [error, setError] = useState<string | null>(null)
@@ -333,8 +336,12 @@ export function CoaHierarchyModals({
 
   return (
     <>
-      <div className="coa-modal-backdrop" style={{ zIndex: 5200 }}>
-        <div className="coa-modal coa-modal-sheet" role="dialog" aria-label="Account Type Definition">
+      <div className="coa-modal-backdrop" style={{ zIndex: UI_LAYER.nestedModal }}>
+        <div
+          className={`coa-modal coa-modal-sheet${compact ? ' is-compact-nested' : ''}`}
+          role="dialog"
+          aria-label="Account Type Definition"
+        >
           <div className="coa-modal-bar">
             <span>Account Type Definition</span>
             <div className="coa-modal-bar-right">
@@ -436,20 +443,21 @@ export function CoaHierarchyModals({
                           </td>
                           <td>
                             <div className="coa-sheet-sub">
-                              <AnimatedSelect
+                              <UiSelect
                                 value={row.sub_head_ulid}
-                                onChange={(e) => patchTypeRow(row.key, { sub_head_ulid: e.target.value })}
-                              >
-                                <option value="">Select…</option>
-                                {subs
-                                  .filter((s) => s.is_active || s.ulid === row.sub_head_ulid)
-                                  .map((s) => (
-                                    <option key={s.ulid} value={s.ulid}>
-                                      {s.name}
-                                      {s.main_head ? ` (${s.main_head.name})` : ''}
-                                    </option>
-                                  ))}
-                              </AnimatedSelect>
+                                aria-label="Sub Head Account"
+                                menuZIndex={UI_LAYER.nestedDropdown}
+                                options={[
+                                  { value: '', label: 'Select…' },
+                                  ...subs
+                                    .filter((s) => s.is_active || s.ulid === row.sub_head_ulid)
+                                    .map((s) => ({
+                                      value: s.ulid,
+                                      label: `${s.name}${s.main_head ? ` (${s.main_head.name})` : ''}`,
+                                    })),
+                                ]}
+                                onChange={(ulid) => patchTypeRow(row.key, { sub_head_ulid: ulid })}
+                              />
                               <button
                                 type="button"
                                 className="coa-plus"
@@ -562,7 +570,7 @@ export function CoaHierarchyModals({
         </div>
 
       {layer === 'sub' || layer === 'main' ? (
-        <div className="coa-modal-backdrop" style={{ zIndex: 5300 }}>
+        <div className="coa-modal-backdrop" style={{ zIndex: UI_LAYER.deepModal }}>
           <div className="coa-modal" role="dialog" aria-label="Sub Account Edit/New">
             <div className="coa-modal-bar">
               <span>Sub Account Edit/New</span>
@@ -581,12 +589,18 @@ export function CoaHierarchyModals({
                   <label className="coa-with-plus">
                     Main Head
                     <span>
-                      <AnimatedSelect value={subMainUlid} onChange={(e) => setSubMainUlid(e.target.value)}>
-                        <option value="">Select…</option>
-                        {mains.filter((m) => m.is_active || m.ulid === subMainUlid).map((m) => (
-                          <option key={m.ulid} value={m.ulid}>{m.name}</option>
-                        ))}
-                      </AnimatedSelect>
+                      <UiSelect
+                        value={subMainUlid}
+                        aria-label="Main Head"
+                        menuZIndex={UI_LAYER.deepDropdown}
+                        options={[
+                          { value: '', label: 'Select…' },
+                          ...mains
+                            .filter((m) => m.is_active || m.ulid === subMainUlid)
+                            .map((m) => ({ value: m.ulid, label: m.name })),
+                        ]}
+                        onChange={setSubMainUlid}
+                      />
                       <button
                         type="button"
                         className="coa-plus"
@@ -666,7 +680,7 @@ export function CoaHierarchyModals({
       ) : null}
 
       {layer === 'main' ? (
-        <div className="coa-modal-backdrop" style={{ zIndex: 5400 }}>
+        <div className="coa-modal-backdrop" style={{ zIndex: UI_LAYER.thirdModal }}>
           <div className="coa-modal coa-modal-narrow" role="dialog" aria-label="Add/Edit Main Record">
             <div className="coa-modal-bar">
               <span>Add/Edit Main Record</span>

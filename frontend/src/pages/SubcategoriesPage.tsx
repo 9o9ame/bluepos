@@ -27,6 +27,7 @@ import {
   FormGroup,
 } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { UiSelect } from '../components/ui/UiSelect'
 import { useCan } from '../features/auth/useCan'
 import {
   useWorkspace,
@@ -373,33 +374,16 @@ export function SubcategoriesPage() {
             }
           >
             <Field label="Category">
-              <select
-                className="desktop-select"
-                value={
-                  categoryUlid ||
-                  defaultCategoryUlid
-                }
-                onChange={(e) =>
-                  setCategoryUlid(
-                    e.target.value,
-                  )
-                }
-                required
-              >
-                {(categories.data ?? []).map(
-                  (category) => (
-                    <option
-                      key={category.ulid}
-                      value={category.ulid}
-                    >
-                      {category.name}
-                      {category.is_active
-                        ? ''
-                        : ' (Archived)'}
-                    </option>
-                  ),
-                )}
-              </select>
+              <UiSelect
+                triggerClassName="desktop-select"
+                aria-label="Category"
+                value={categoryUlid || defaultCategoryUlid}
+                options={(categories.data ?? []).map((category) => ({
+                  value: category.ulid,
+                  label: `${category.code} — ${category.name}`,
+                }))}
+                onChange={setCategoryUlid}
+              />
             </Field>
 
             <Field label="Code">

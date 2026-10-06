@@ -793,3 +793,114 @@
 :root[data-theme='light'][data-skin='advanced'] .product-reference-screen .pos-grid th {
   background-image: none;
 }
+
+
+/* ---------- PRODUCTS DESIGN SYSTEM MIGRATION ---------- */
+.product-reference-screen,
+.product-def-form,
+.product-def-grid,
+.product-def-grid-wrap {
+  color: var(--ui-text);
+}
+
+.product-def-form,
+.product-def-grid,
+.product-def-barcode-box,
+.product-def-photo {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+  border-radius: var(--panel-radius) !important;
+}
+
+.product-def-title,
+.product-def-grid-top,
+.product-def-groupbar,
+.product-def-grid-foot {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+  color: var(--ui-text) !important;
+}
+
+.product-def-tabs button,
+.product-def-rail-btn,
+.product-def-cmd,
+.product-def-new-btn,
+.product-def-pager button,
+.pdf-plus-button {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  transition:
+    border-color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast) !important;
+}
+
+.product-def-tabs button:hover,
+.product-def-rail-btn:hover,
+.product-def-cmd:hover,
+.product-def-new-btn:hover,
+.product-def-pager button:hover,
+.pdf-plus-button:hover {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+
+.product-def-tabs .is-active,
+.product-def-rail-btn.is-active,
+.product-def-cmd.is-active,
+.product-def-new-btn {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+}
+
+.pdf-input,
+.pdf-select,
+.pdf-barcode-input,
+.product-def-grid-search {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.pdf-input:focus-visible,
+.pdf-select:focus-visible,
+.pdf-barcode-input:focus-visible,
+.product-def-grid-search:focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.pdf-input:disabled,
+.pdf-select:disabled,
+.pdf-readonly {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+  border-color: var(--ui-border) !important;
+}
+
+.product-inline-error,
+.product-def-cmd.is-red,
+.product-def-cmd.is-red-circle {
+  color: var(--ui-danger) !important;
+}
+
+.product-def-cmd.is-green { color: var(--ui-success) !important; }
+.product-def-cmd.is-blue { color: var(--ui-info) !important; }
+
+.product-def-grid .pos-grid tbody tr.is-selected td {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface)) !important;
+}
+
+html[data-animations='off'] .product-reference-screen * {
+  transition: none !important;
+  animation: none !important;
+}

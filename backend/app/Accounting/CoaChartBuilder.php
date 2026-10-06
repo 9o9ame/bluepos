@@ -66,7 +66,7 @@ class CoaChartBuilder
 
                     $headNode['sub_heads'][] = [
                         'ulid' => $type->ulid,
-                        'label' => $this->headLabel($type->sort_order, $type->name, 4),
+                        'label' => $this->accountTypeLabel($type->code, $type->name),
                         'accounts' => $leaves,
                     ];
                 }
@@ -106,7 +106,7 @@ class CoaChartBuilder
             'main_head_label' => $main ? $this->headLabel($main->sort_order, $main->name, 2) : '—',
             'account_label' => $this->accountLabel($account),
             'head_label' => $sub ? $this->headLabel($sub->sort_order, $sub->name, 3) : '—',
-            'sub_head_label' => $type ? $this->headLabel($type->sort_order, $type->name, 4) : '—',
+            'sub_head_label' => $type ? $this->accountTypeLabel($type->code, $type->name) : '—',
             'leaf_source' => $this->leafSource($account),
         ];
     }
@@ -114,6 +114,13 @@ class CoaChartBuilder
     private function headLabel(int $sortOrder, string $name, int $pad): string
     {
         return str_pad((string) max(0, $sortOrder), $pad, '0', STR_PAD_LEFT).'-'.$name;
+    }
+
+    private function accountTypeLabel(?string $code, string $name): string
+    {
+        $code = trim((string) $code);
+
+        return ($code !== '' ? $code : '0000').'-'.$name;
     }
 
     private function accountLabel(Account $account): string

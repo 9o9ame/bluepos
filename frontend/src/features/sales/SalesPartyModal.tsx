@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPoi
 import { X } from 'lucide-react'
 import type { Party } from '../../api/parties'
 import { PartiesPlaceholderPage } from '../../pages/PartiesPlaceholderPage'
+import { UI_LAYER } from '../../components/ui/uiLayers'
 import './SalesPartyModal.css'
 
 type Point = { x: number; y: number }
@@ -19,9 +20,11 @@ function initialPosition(): Point {
 export function SalesPartyModal({
   onClose,
   onSaved,
+  partyType = 'customer',
 }: {
   onClose: () => void
   onSaved: (party: Party) => void
+  partyType?: 'customer' | 'vendor'
 }) {
   const [position, setPosition] = useState<Point>(() => initialPosition())
   const dragRef = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(null)
@@ -85,7 +88,7 @@ export function SalesPartyModal({
   }
 
   return (
-    <div className="sales-party-modal-layer" aria-hidden={false}>
+    <div className="sales-party-modal-layer" style={{ zIndex: UI_LAYER.modal }} aria-hidden={false}>
       <div
         ref={windowRef}
         className="sales-party-modal-window"
@@ -115,7 +118,12 @@ export function SalesPartyModal({
         </div>
 
         <div className="sales-party-modal-body">
-          <PartiesPlaceholderPage embedded onClose={onClose} onSaved={onSaved} />
+          <PartiesPlaceholderPage
+            embedded
+            embeddedPartyType={partyType}
+            onClose={onClose}
+            onSaved={onSaved}
+          />
         </div>
       </div>
     </div>

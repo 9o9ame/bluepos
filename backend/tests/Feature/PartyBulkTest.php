@@ -20,24 +20,9 @@ class PartyBulkTest extends TestCase
      */
     private function seedTypes(): array
     {
-        $assets = $this->postJson('/api/coa/main-heads', ['name' => 'ASSETS'])->assertCreated()->json('ulid');
-        $liab = $this->postJson('/api/coa/main-heads', ['name' => 'LIABILITIES'])->assertCreated()->json('ulid');
-        $current = $this->postJson('/api/coa/sub-heads', ['main_head_ulid' => $assets, 'name' => 'CURRENT'])->assertCreated()->json('ulid');
-        $short = $this->postJson('/api/coa/sub-heads', ['main_head_ulid' => $liab, 'name' => 'SHORT'])->assertCreated()->json('ulid');
-
         return [
-            'ar' => $this->postJson('/api/coa/account-types', [
-                'sub_head_ulid' => $current,
-                'code' => '0011',
-                'name' => 'ACCOUNT RECEIVABLE',
-                'is_receivable' => true,
-            ])->assertCreated()->json('ulid'),
-            'ap' => $this->postJson('/api/coa/account-types', [
-                'sub_head_ulid' => $short,
-                'code' => '0020',
-                'name' => 'ACCOUNT PAYABLE',
-                'is_payable' => true,
-            ])->assertCreated()->json('ulid'),
+            'ar' => $this->referenceAccountTypeUlid('0011'),
+            'ap' => $this->referenceAccountTypeUlid('0020'),
         ];
     }
 
@@ -254,13 +239,25 @@ class PartyBulkTest extends TestCase
         $this->assertTrue(Account::query()->where('customer_id', $customer->id)->exists());
         @unlink($okPath);
 
+        $referenceAr = AccountType::query()
+            ->where('ulid', $coa['ar'])
+            ->with('subHead')
+            ->firstOrFail();
+
+        $this->postJson('/api/coa/account-types', [
+            'sub_head_ulid' => $referenceAr->subHead->ulid,
+            'code' => '9911',
+            'name' => 'TENANT A ONLY',
+            'is_receivable' => true,
+        ])->assertCreated();
+
         $this->postJson('/api/auth/logout')->assertOk();
         $this->signInOwner('bulk-code-b')->assertOk();
-        // Tenant B has no 0011 — foreign tenant code must not resolve.
+        // Tenant B does not have tenant A's custom 9911 type — foreign tenant code must not resolve.
         $crossPath = tempnam(sys_get_temp_dir(), 'partyxlsx').'.xlsx';
         file_put_contents($crossPath, $xlsx->write($headers, [[
             'VENDOR', 'V-X', 'Cross Tenant', '', '', '', '', '', '', '', '', '', '',
-            '', '', '', '', '', '0', '0', '0', '0', '0011', 'ACCOUNT RECEIVABLE', '0', '0.0000',
+            '', '', '', '', '', '0', '0', '0', '0', '9911', 'TENANT A ONLY', '0', '0.0000',
         ]]));
         $previewB = $this->post('/api/parties/excel/preview', [
             'file' => new UploadedFile($crossPath, 'parties.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', null, true),

@@ -1697,3 +1697,522 @@
       76px !important;
   }
 }
+
+
+/* ==========================================================================
+   Polished POS lookup theme
+   Hybrid direction: classic desktop POS geometry + richer modern color cues.
+   Applies only to Sales Invoice customer, salesman, and product lookups.
+   ========================================================================== */
+
+.sales-customer-dropdown-shutter.is-open,
+.sales-salesman-dropdown-shutter.is-open,
+.sales-pos-product-results-grid {
+  filter: drop-shadow(0 9px 14px rgba(27, 56, 79, .18));
+}
+
+.sales-pos-customer-grid,
+.sales-pos-salesman-grid,
+.sales-pos-product-results-grid {
+  overflow: hidden;
+  border: 1px solid #4f7fa5 !important;
+  border-radius: 7px;
+  background: #f8fbfd;
+  box-shadow:
+    0 8px 20px rgba(34, 69, 95, .20),
+    0 2px 5px rgba(34, 69, 95, .16),
+    inset 0 1px 0 rgba(255,255,255,.92) !important;
+}
+
+/* Metallic-blue 3D headers */
+.sales-pos-customer-grid-head,
+.sales-pos-salesman-grid-head,
+.sales-pos-product-grid-head {
+  min-height: 28px !important;
+  border-bottom: 1px solid #426f91 !important;
+  background:
+    linear-gradient(180deg, #fafdff 0%, #ddecf6 18%, #a9d0e8 52%, #78afd1 53%, #5b95bb 100%) !important;
+  color: #123b59 !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.95),
+    inset 0 -1px 0 rgba(27,74,108,.16);
+  font-size: 11px;
+  font-weight: 900 !important;
+  letter-spacing: .1px;
+}
+
+.sales-pos-customer-grid-head > span,
+.sales-pos-salesman-grid-head > span,
+.sales-pos-product-grid-head > span {
+  min-height: 28px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-right: 1px solid rgba(60,105,137,.30) !important;
+}
+
+/* Light zebra rows with a subtle classic data-grid feel */
+.sales-pos-customer-grid-row,
+.sales-pos-salesman-grid-row,
+.sales-pos-product-grid-row {
+  min-height: 27px !important;
+  border-bottom: 1px solid #d6e3ec !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9fc 100%) !important;
+  color: #21455f !important;
+  transition:
+    background .11s ease,
+    color .11s ease,
+    box-shadow .11s ease,
+    transform .08s ease;
+}
+
+.sales-pos-customer-grid-row:nth-child(even),
+.sales-pos-salesman-grid-row:nth-child(even),
+.sales-pos-product-grid-row:nth-child(even) {
+  background: linear-gradient(180deg, #f4f9fd 0%, #eaf3f9 100%) !important;
+}
+
+.sales-pos-customer-grid-row:hover,
+.sales-pos-customer-grid-row:focus-visible,
+.sales-pos-salesman-grid-row:hover,
+.sales-pos-salesman-grid-row:focus-visible,
+.sales-pos-product-grid-row:hover,
+.sales-pos-product-grid-row:focus-visible {
+  background:
+    linear-gradient(180deg, #4ba6e2 0%, #2585c8 48%, #126daf 52%, #0d5f9b 100%) !important;
+  color: #fff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.34),
+    inset 0 -1px 0 rgba(0,46,82,.18) !important;
+  outline: none !important;
+}
+
+.sales-pos-customer-grid-row:active,
+.sales-pos-salesman-grid-row:active,
+.sales-pos-product-grid-row:active {
+  transform: translateY(1px);
+}
+
+/* Main labels are easier to scan */
+.sales-pos-customer-grid-row > strong,
+.sales-pos-salesman-grid-row > strong,
+.sales-pos-product-grid-row > strong {
+  color: #123f63 !important;
+  font-weight: 850 !important;
+}
+
+.sales-pos-customer-grid-row:hover > strong,
+.sales-pos-customer-grid-row:focus-visible > strong,
+.sales-pos-salesman-grid-row:hover > strong,
+.sales-pos-salesman-grid-row:focus-visible > strong,
+.sales-pos-product-grid-row:hover > strong,
+.sales-pos-product-grid-row:focus-visible > strong {
+  color: #fff !important;
+}
+
+/* Customer / salesman secondary information */
+.sales-pos-customer-grid-row > span:first-child,
+.sales-pos-salesman-grid-row > span:first-child {
+  color: #44708d !important;
+  font-weight: 800;
+  background: rgba(112, 173, 210, .09);
+}
+
+.sales-pos-customer-grid-row > span:last-child,
+.sales-pos-salesman-grid-row > span:last-child {
+  color: #176b86 !important;
+  font-weight: 750;
+}
+
+.sales-pos-customer-grid-row:hover > span,
+.sales-pos-customer-grid-row:focus-visible > span,
+.sales-pos-salesman-grid-row:hover > span,
+.sales-pos-salesman-grid-row:focus-visible > span {
+  color: #fff !important;
+  background: transparent !important;
+}
+
+/* Product lookup: semantic color hints similar to the reference POS */
+.sales-pos-product-grid-row > span:nth-child(1) {
+  color: #395f7a !important;
+  font-weight: 850;
+  background: rgba(91, 149, 187, .08);
+}
+
+.sales-pos-product-grid-row > span:nth-child(3) {
+  color: #08752c !important;
+  background: linear-gradient(90deg, rgba(38, 180, 75, .10), rgba(38, 180, 75, .03));
+}
+
+.sales-pos-product-grid-row > span:nth-child(4) {
+  color: #075f9f !important;
+  background: linear-gradient(90deg, rgba(62, 147, 211, .11), rgba(62, 147, 211, .03));
+  font-weight: 850;
+}
+
+.sales-pos-product-grid-row > span:nth-child(5) {
+  color: #8a5a00 !important;
+  background: linear-gradient(90deg, rgba(255, 190, 47, .14), rgba(255, 190, 47, .04));
+  font-weight: 800;
+}
+
+.sales-pos-product-grid-row > span:nth-child(6) {
+  color: #a64f00 !important;
+  background: linear-gradient(90deg, rgba(240, 143, 42, .12), rgba(240, 143, 42, .03));
+  font-weight: 800;
+}
+
+.sales-pos-product-grid-row > span:nth-child(7),
+.sales-pos-product-grid-row > span:nth-child(8) {
+  color: #5d6d78 !important;
+  font-weight: 750;
+}
+
+.sales-pos-product-grid-row:hover > span,
+.sales-pos-product-grid-row:focus-visible > span {
+  color: #fff !important;
+  background: transparent !important;
+}
+
+/* Stronger bottom summary bar */
+.sales-pos-customer-grid-foot,
+.sales-pos-salesman-grid-foot,
+.sales-pos-product-grid-foot {
+  min-height: 25px !important;
+  border-top: 1px solid #6f95af !important;
+  background:
+    linear-gradient(180deg, #eef5f9 0%, #d3e1e9 48%, #bdced9 52%, #aebfca 100%) !important;
+  color: #2c4f67 !important;
+  text-shadow: 0 1px 0 rgba(255,255,255,.75);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.82),
+    inset 0 -1px 0 rgba(54,83,102,.13);
+  font-size: 11px;
+  font-weight: 900 !important;
+}
+
+/* Give the To / Salesman fields the same polished dropdown affordance */
+.sales-reference-to > input,
+.sales-reference-salesman > input,
+.sales-reference-to .sales-reference-input-button > input,
+.sales-reference-salesman .sales-reference-input-button > input {
+  border-color: #75a6c7 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f8fc 100%) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(22,72,105,.07),
+    0 1px 0 rgba(255,255,255,.82);
+}
+
+.sales-reference-to.is-open > input,
+.sales-reference-salesman.is-open > input,
+.sales-reference-to:focus-within input,
+.sales-reference-salesman:focus-within input {
+  border-color: #2586c6 !important;
+  box-shadow:
+    0 0 0 2px rgba(37, 134, 198, .12),
+    inset 0 1px 1px rgba(22,72,105,.07) !important;
+}
+
+/* Scrollbars: compact, visible, and visually integrated with the lookup */
+.sales-pos-customer-grid-body,
+.sales-pos-salesman-grid-body,
+.sales-pos-product-grid-body {
+  scrollbar-width: thin;
+  scrollbar-color: #6da6ca #e9f2f8;
+}
+
+.sales-pos-customer-grid-body::-webkit-scrollbar,
+.sales-pos-salesman-grid-body::-webkit-scrollbar,
+.sales-pos-product-grid-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.sales-pos-customer-grid-body::-webkit-scrollbar-track,
+.sales-pos-salesman-grid-body::-webkit-scrollbar-track,
+.sales-pos-product-grid-body::-webkit-scrollbar-track {
+  background: #e9f2f8;
+  border-left: 1px solid #cfdee8;
+}
+
+.sales-pos-customer-grid-body::-webkit-scrollbar-thumb,
+.sales-pos-salesman-grid-body::-webkit-scrollbar-thumb,
+.sales-pos-product-grid-body::-webkit-scrollbar-thumb {
+  border: 2px solid #e9f2f8;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #8bc5e6, #4e91bb);
+}
+
+/* Dark theme keeps the richer hierarchy without becoming bright/neon. */
+:root[data-theme='dark'] .sales-pos-customer-grid,
+:root[data-theme='dark'] .sales-pos-salesman-grid,
+:root[data-theme='dark'] .sales-pos-product-results-grid {
+  border-color: #446c88 !important;
+  background: #1c252c !important;
+  box-shadow:
+    0 9px 22px rgba(0,0,0,.42),
+    inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-head,
+:root[data-theme='dark'] .sales-pos-salesman-grid-head,
+:root[data-theme='dark'] .sales-pos-product-grid-head {
+  border-color: #3b6684 !important;
+  background:
+    linear-gradient(180deg, #45667d 0%, #35576e 48%, #29495f 52%, #213d50 100%) !important;
+  color: #eef8ff !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,.45);
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-row,
+:root[data-theme='dark'] .sales-pos-salesman-grid-row,
+:root[data-theme='dark'] .sales-pos-product-grid-row {
+  border-color: #354652 !important;
+  background: linear-gradient(180deg, #253039 0%, #202a32 100%) !important;
+  color: #dce9f1 !important;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-row:nth-child(even),
+:root[data-theme='dark'] .sales-pos-salesman-grid-row:nth-child(even),
+:root[data-theme='dark'] .sales-pos-product-grid-row:nth-child(even) {
+  background: linear-gradient(180deg, #2a3741 0%, #24313a 100%) !important;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-row > strong,
+:root[data-theme='dark'] .sales-pos-salesman-grid-row > strong,
+:root[data-theme='dark'] .sales-pos-product-grid-row > strong,
+:root[data-theme='dark'] .sales-pos-customer-grid-row > span,
+:root[data-theme='dark'] .sales-pos-salesman-grid-row > span,
+:root[data-theme='dark'] .sales-pos-product-grid-row > span {
+  color: #dce9f1 !important;
+  background: transparent;
+}
+
+:root[data-theme='dark'] .sales-pos-customer-grid-row:hover,
+:root[data-theme='dark'] .sales-pos-customer-grid-row:focus-visible,
+:root[data-theme='dark'] .sales-pos-salesman-grid-row:hover,
+:root[data-theme='dark'] .sales-pos-salesman-grid-row:focus-visible,
+:root[data-theme='dark'] .sales-pos-product-grid-row:hover,
+:root[data-theme='dark'] .sales-pos-product-grid-row:focus-visible {
+  background:
+    linear-gradient(180deg, #258fd2 0%, #1577b8 50%, #0f659f 51%, #0b588d 100%) !important;
+  color: #fff !important;
+}
+
+
+/* Completed Sales rows are visually final but can be reopened with a double-click. */
+.sales-reference-grid tbody tr.is-completed-entry {
+  cursor: default;
+  background: linear-gradient(180deg, #fbfdff 0%, #f2f7fb 100%);
+}
+
+.sales-reference-grid tbody tr.is-completed-entry:hover {
+  background: linear-gradient(180deg, #eef7fd 0%, #e2f0fa 100%);
+}
+
+.sales-reference-grid tbody tr.is-completed-entry td {
+  color: #26475e;
+}
+
+.sales-reference-grid tbody tr.is-completed-entry .sales-pos-line-product {
+  color: #123f63;
+  font-weight: 750;
+}
+
+.sales-pos-line-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  color: #284b62;
+}
+
+.sales-reference-grid tbody tr.is-completed-entry td.col-uom,
+.sales-reference-grid tbody tr.is-completed-entry .col-uom {
+  text-align: center;
+}
+
+.sales-reference-grid tbody tr.is-completed-entry .sales-reference-delete-cell button {
+  opacity: .78;
+}
+
+.sales-reference-grid tbody tr.is-completed-entry:hover .sales-reference-delete-cell button {
+  opacity: 1;
+}
+
+:root[data-theme='dark'] .sales-reference-grid tbody tr.is-completed-entry {
+  background: linear-gradient(180deg, #25313a 0%, #202a32 100%);
+}
+
+:root[data-theme='dark'] .sales-reference-grid tbody tr.is-completed-entry:hover {
+  background: linear-gradient(180deg, #2c3a45 0%, #25323b 100%);
+}
+
+:root[data-theme='dark'] .sales-reference-grid tbody tr.is-completed-entry td,
+:root[data-theme='dark'] .sales-pos-line-value,
+:root[data-theme='dark'] .sales-reference-grid tbody tr.is-completed-entry .sales-pos-line-product {
+  color: #dce9f1;
+}
+
+
+/* ---------- SALES INVOICE DESIGN SYSTEM MIGRATION ---------- */
+/* Visual-only overrides: frozen Sales Invoice geometry and Amounts layout are untouched. */
+.sales-reference-screen {
+  color: var(--ui-text) !important;
+}
+
+.sales-reference-options,
+.sales-reference-amounts,
+.sales-reference-pay-options,
+.sales-reference-grid-wrap,
+.sales-customer-dropdown-shutter,
+.sales-salesman-dropdown-shutter,
+.sales-reference-product-drop {
+  border-color: var(--ui-border) !important;
+  background-color: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+  border-radius: var(--panel-radius) !important;
+}
+
+.sales-reference-subtab,
+.sales-reference-sale-btn,
+.sales-reference-actions button,
+.sales-reference-input-button,
+.sales-reference-party-add,
+.sales-reference-record-controls button {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  transition:
+    border-color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast) !important;
+}
+
+.sales-reference-subtab:hover,
+.sales-reference-sale-btn:hover:not(:disabled),
+.sales-reference-actions button:hover:not(:disabled),
+.sales-reference-input-button:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+
+.sales-reference-subtab.is-active {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+}
+
+.sales-reference-screen :where(input, select, textarea) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.sales-reference-screen :where(input, select, textarea):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.sales-reference-screen :where(input, select, textarea):disabled {
+  background-color: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+.sales-pos-customer-grid-head,
+.sales-pos-salesman-grid-head,
+.sales-pos-product-grid-head {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface-subtle))
+  ) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-pos-customer-grid-row,
+.sales-pos-salesman-grid-row,
+.sales-pos-product-grid-row {
+  border-color: color-mix(in srgb, var(--ui-border) 58%, transparent) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-pos-customer-grid-row:hover,
+.sales-pos-salesman-grid-row:hover,
+.sales-pos-product-grid-row:hover,
+.sales-pos-product-grid-row.is-active-product,
+.sales-pos-customer-grid-row.is-active-entry {
+  background: var(--ui-accent-soft) !important;
+}
+
+.sales-reference-inline-caret,
+.sales-reference-field-caret {
+  color: var(--ui-accent) !important;
+}
+
+.sales-reference-action-icon.is-save,
+.sales-reference-sale-btn.is-green { color: var(--ui-success) !important; }
+.sales-reference-action-icon.is-close,
+.sales-reference-entry-status.is-error { color: var(--ui-danger) !important; }
+.sales-reference-entry-status.is-ready { color: var(--ui-info) !important; }
+
+html[data-animations='off'] .sales-reference-screen * {
+  transition: none !important;
+  animation: none !important;
+}
+
+
+/* ---------- SALES INVOICE FINAL SHADOW CLEANUP ---------- */
+/* Visual-only: preserve frozen Amounts geometry while honoring Radius/Card Shadow. */
+.sales-reference-total-block > div,
+.sales-reference-received,
+.sales-reference-card,
+.sales-reference-balance {
+  border-radius: var(--control-radius) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+
+/* ---------- CANONICAL SELECT GEOMETRY BRIDGE ---------- */
+/* Shared dropdown adoption only. Frozen Sales Invoice geometry is preserved. */
+.sales-reference-grid td > .sales-pos-line-uom-select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sales-pos-line-uom-select .sales-pos-line-uom-trigger {
+  width: 100%;
+  min-width: 0;
+  height: 22px;
+  min-height: 22px;
+  padding-left: 4px;
+  font-size: inherit;
+  box-shadow: none;
+}
+
+.sales-pos-line-uom-select .ui-select-arrow {
+  width: 15px;
+  height: 14px;
+}
+
+.sales-reference-payment-method .sales-reference-payment-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.sales-reference-payment-method .sales-reference-payment-select-trigger {
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  min-height: 24px;
+  font-size: inherit;
+}

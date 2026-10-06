@@ -45,11 +45,15 @@
 }
 
 .vca-toggle.is-on .vca-toggle-track {
-  background: linear-gradient(180deg, #8ec8f0, #3f8fd0);
-  border-color: #2f79ad;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--appearance-accent) 45%, white),
+    var(--appearance-accent)
+  );
+  border-color: color-mix(in srgb, var(--appearance-accent) 78%, black);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 0 0 3px rgba(15, 125, 204, 0.12);
+    0 0 0 3px color-mix(in srgb, var(--appearance-accent) 16%, transparent);
 }
 
 .vca-toggle.is-on .vca-toggle-thumb {
@@ -100,7 +104,7 @@
 }
 
 :root[data-theme='dark'] .vca-toggle {
-  color: #9fb0be;
+  color: var(--appearance-text-muted);
 }
 
 :root[data-theme='dark'] .vca-toggle-track {
@@ -117,4 +121,18 @@
   .vca-toggle-thumb {
     transition: none;
   }
+}
+
+
+:root[data-radius] .vca-toggle-track {
+  border-radius: max(var(--control-radius), 999px);
+}
+
+:root[data-shadow] .vca-toggle-track {
+  box-shadow: var(--button-shadow);
+}
+
+:root[data-animations='off'] .vca-toggle-track,
+:root[data-animations='off'] .vca-toggle-thumb {
+  transition: none !important;
 }

@@ -63,6 +63,8 @@ import { CoaHierarchyModals } from '../components/parties/CoaHierarchyModals'
 import { PartyTypeMultiSelect } from '../components/parties/PartyTypeMultiSelect'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { AnimatedSelect } from '../components/ui/AnimatedSelect'
+import { UiSelect } from '../components/ui/UiSelect'
+import { UI_LAYER } from '../components/ui/uiLayers'
 import { ToggleSwitch } from '../components/ui/ToggleSwitch'
 import { askConfirm, formatApiError, useFeedback } from '../feedback/FeedbackProvider'
 import './PartiesPlaceholderPage.css'
@@ -343,16 +345,19 @@ function partyTypeSummary(party: Party): string {
 
 export function PartiesPlaceholderPage({
   embedded = false,
+  embeddedPartyType = 'customer',
   onClose,
   onSaved,
 }: {
   embedded?: boolean
+  embeddedPartyType?: 'customer' | 'vendor'
   onClose?: () => void
   onSaved?: (party: Party) => void
 } = {}) {
   const { closeActiveTab } = useWorkspace()
   const feedback = useFeedback()
-  const initialPartyFilter: PartyType = embedded ? 'CUSTOMERS' : 'ALL'
+  const initialPartyFilter: PartyType =
+    embedded ? (embeddedPartyType === 'vendor' ? 'VENDORS' : 'CUSTOMERS') : 'ALL'
   const [viewTab, setViewTab] = useState<ViewTab>('entry')
   const [subTab, setSubTab] = useState<DetailTab>('contact')
   const [listFilter] = useState<PartyType>(initialPartyFilter)
@@ -1848,21 +1853,20 @@ export function PartiesPlaceholderPage({
               {isManualAccount ? (
                 <div className="parties-vca-account-type-row">
                   <label htmlFor="vca-account-type">Account Type</label>
-                  <AnimatedSelect
-                    id="vca-account-type"
+                  <UiSelect
                     value={form.accountTypeUlid}
-                    onChange={(e) => {
-                      const ulid = e.target.value
+                    aria-label="Account Type"
+                    menuZIndex={UI_LAYER.nestedDropdown}
+                    options={[
+                      { value: '', label: 'Select Account Type…' },
+                      ...accountTypes.map((type) => ({ value: type.ulid, label: type.name })),
+                    ]}
+                    onChange={(ulid) => {
                       const match = accountTypes.find((t) => t.ulid === ulid)
                       patchForm('accountTypeUlid', ulid)
                       patchForm('accountType', match?.name ?? '')
                     }}
-                  >
-                    <option value="">Select Account Type…</option>
-                    {accountTypes.map((type) => (
-                      <option key={type.ulid} value={type.ulid}>{type.name}</option>
-                    ))}
-                  </AnimatedSelect>
+                  />
                   <button
                     type="button"
                     className="parties-vca-account-type-btn"
@@ -1878,16 +1882,16 @@ export function PartiesPlaceholderPage({
                   {form.types.includes('vendor') ? (
                     <div className="parties-vca-account-type-row">
                       <label htmlFor="vca-vendor-account-type">Vendor A/C Type</label>
-                      <AnimatedSelect
-                        id="vca-vendor-account-type"
+                      <UiSelect
                         value={form.vendorAccountTypeUlid}
-                        onChange={(e) => patchForm('vendorAccountTypeUlid', e.target.value)}
-                      >
-                        <option value="">Select vendor account type…</option>
-                        {accountTypes.map((type) => (
-                          <option key={type.ulid} value={type.ulid}>{type.name}</option>
-                        ))}
-                      </AnimatedSelect>
+                        aria-label="Vendor A/C Type"
+                        menuZIndex={UI_LAYER.nestedDropdown}
+                        options={[
+                          { value: '', label: 'Select vendor account type…' },
+                          ...accountTypes.map((type) => ({ value: type.ulid, label: type.name })),
+                        ]}
+                        onChange={(ulid) => patchForm('vendorAccountTypeUlid', ulid)}
+                      />
                       <button type="button" className="parties-vca-account-type-btn" title="Define Account Types" onClick={() => setCoaModalOpen(true)}>
                         <Plus size={15} strokeWidth={3} />
                       </button>
@@ -1897,16 +1901,16 @@ export function PartiesPlaceholderPage({
                   {form.types.includes('customer') ? (
                     <div className="parties-vca-account-type-row">
                       <label htmlFor="vca-customer-account-type">Customer A/C Type</label>
-                      <AnimatedSelect
-                        id="vca-customer-account-type"
+                      <UiSelect
                         value={form.customerAccountTypeUlid}
-                        onChange={(e) => patchForm('customerAccountTypeUlid', e.target.value)}
-                      >
-                        <option value="">Select customer account type…</option>
-                        {accountTypes.map((type) => (
-                          <option key={type.ulid} value={type.ulid}>{type.name}</option>
-                        ))}
-                      </AnimatedSelect>
+                        aria-label="Customer A/C Type"
+                        menuZIndex={UI_LAYER.nestedDropdown}
+                        options={[
+                          { value: '', label: 'Select customer account type…' },
+                          ...accountTypes.map((type) => ({ value: type.ulid, label: type.name })),
+                        ]}
+                        onChange={(ulid) => patchForm('customerAccountTypeUlid', ulid)}
+                      />
                       <button type="button" className="parties-vca-account-type-btn" title="Define Account Types" onClick={() => setCoaModalOpen(true)}>
                         <Plus size={15} strokeWidth={3} />
                       </button>
@@ -1916,16 +1920,16 @@ export function PartiesPlaceholderPage({
                   {form.types.includes('account') ? (
                     <div className="parties-vca-account-type-row">
                       <label htmlFor="vca-profile-account-type">Account A/C Type</label>
-                      <AnimatedSelect
-                        id="vca-profile-account-type"
+                      <UiSelect
                         value={form.accountAccountTypeUlid}
-                        onChange={(e) => patchForm('accountAccountTypeUlid', e.target.value)}
-                      >
-                        <option value="">Select account type…</option>
-                        {accountTypes.map((type) => (
-                          <option key={type.ulid} value={type.ulid}>{type.name}</option>
-                        ))}
-                      </AnimatedSelect>
+                        aria-label="Account A/C Type"
+                        menuZIndex={UI_LAYER.nestedDropdown}
+                        options={[
+                          { value: '', label: 'Select account type…' },
+                          ...accountTypes.map((type) => ({ value: type.ulid, label: type.name })),
+                        ]}
+                        onChange={(ulid) => patchForm('accountAccountTypeUlid', ulid)}
+                      />
                       <button type="button" className="parties-vca-account-type-btn" title="Define Account Types" onClick={() => setCoaModalOpen(true)}>
                         <Plus size={15} strokeWidth={3} />
                       </button>
@@ -2471,6 +2475,7 @@ export function PartiesPlaceholderPage({
 
       <CoaHierarchyModals
         open={coaModalOpen}
+        compact={embedded}
         selectedAccountTypeUlid={form.accountTypeUlid || null}
         onClose={() => setCoaModalOpen(false)}
         onAccountTypeSaved={(type) => {

@@ -1,4 +1,5 @@
 import { updateAppearance } from '../../api/auth'
+import { UiSelect } from '../../components/ui/UiSelect'
 import {
   useAppearance,
   type DensityPreference,
@@ -57,7 +58,7 @@ export function AppearanceSettings() {
     {choices('Primary theme', primaryTheme, PRIMARY_OPTIONS, appearance.setPrimaryTheme, 'primaryTheme')}
     {choices('Density', density, [{ value: 'compact', label: 'Compact' }, { value: 'comfortable', label: 'Comfortable' }] as Array<{value: DensityPreference; label: string}>, appearance.setDensity, 'density')}
     {choices('Border radius', radius, [{ value: 'small', label: 'Small' }, { value: 'medium', label: 'Medium' }, { value: 'large', label: 'Large' }] as Array<{value: RadiusPreference; label: string}>, appearance.setRadius, 'radius')}
-    {choices('Card shadow', shadow, [{ value: 'none', label: 'None' }, { value: 'soft', label: 'Soft' }, { value: 'normal', label: 'Normal' }] as Array<{value: ShadowPreference; label: string}>, appearance.setShadow, 'shadow')}
+    {choices('Card shadow', shadow, [{ value: 'none', label: 'None' }, { value: 'soft', label: 'Soft' }, { value: 'normal', label: 'Normal' }, { value: '3d', label: '3D' }] as Array<{value: ShadowPreference; label: string}>, appearance.setShadow, 'shadow')}
     <div className="appearance-settings-group">
       <div className="appearance-settings-heading">UI Animations</div>
       <div className="appearance-option-row">
@@ -77,10 +78,17 @@ export function AppearanceSettings() {
     </div>
     <div className="appearance-settings-group">
       <label className="appearance-settings-heading" htmlFor="appearance-font">Font Family</label>
-      <select id="appearance-font" className="desktop-select" value={font}
-        onChange={(event) => { const next = event.target.value as FontPreference; appearance.setFont(next); void persist({ font: next }) }}>
-        {FONT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select>
+      <UiSelect
+        className="desktop-select"
+        aria-label="Font Family"
+        value={font}
+        options={FONT_OPTIONS}
+        onChange={(nextValue) => {
+          const next = nextValue as FontPreference
+          appearance.setFont(next)
+          void persist({ font: next })
+        }}
+      />
     </div>
     <div className="appearance-settings-actions"><button type="button" className="desktop-btn" onClick={() => {
         appearance.resetAppearance()

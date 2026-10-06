@@ -8,6 +8,7 @@ use App\Actions\Platform\CreatePlatformAdminAction;
 use App\Auth\AuthenticatedSession;
 use App\Enums\DeviceStatus;
 use App\Enums\PlatformUserStatus;
+use App\Models\AccountType;
 use App\Models\Device;
 use App\Models\Platform\PlatformPermission;
 use App\Models\Platform\PlatformRole;
@@ -17,6 +18,7 @@ use App\Notifications\SecurityCodeNotification;
 use App\Platform\PlatformCatalogSync;
 use App\Security\DeviceCredentialService;
 use App\Support\IdentityNormalizer;
+use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Notification;
@@ -130,6 +132,20 @@ abstract class TestCase extends BaseTestCase
     protected function staffUsername(string $suffix): string
     {
         return IdentityNormalizer::username('cashier-'.$suffix);
+    }
+
+    protected function referenceAccountTypeUlid(string $code): string
+    {
+        $ulid = AccountType::query()
+            ->forTenant(app(TenantContext::class)->tenantId())
+            ->where('code', strtoupper(trim($code)))
+            ->value('ulid');
+
+        if (! is_string($ulid) || $ulid === '') {
+            $this->fail('Missing provisioned reference account type '.$code);
+        }
+
+        return $ulid;
     }
 
     protected function provisionOwner(string $suffix = 'aa', bool $assignPlan = true): AuthenticatedSession

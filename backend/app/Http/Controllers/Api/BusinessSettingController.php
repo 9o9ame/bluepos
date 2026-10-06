@@ -16,7 +16,7 @@ class BusinessSettingController extends Controller
         $settings = $provisioner->provision($tenantContext->tenant());
         $this->authorize('view', $settings);
 
-        return new BusinessSettingResource($settings->load('openingBalanceEquityAccount'));
+        return new BusinessSettingResource($settings->load(['openingBalanceEquityAccount', 'defaultCashAccount', 'salesClearingAccount']));
     }
 
     public function update(
@@ -28,10 +28,19 @@ class BusinessSettingController extends Controller
         $this->authorize('update', $settings);
 
         $data = $request->validated();
-        if (array_key_exists('opening_balance_equity_account_ulid', $data)) {
-            $ulid = $data['opening_balance_equity_account_ulid'];
-            unset($data['opening_balance_equity_account_ulid']);
-            $settings->opening_balance_equity_account_id = $ulid
+        foreach ([
+            'opening_balance_equity_account_ulid' => 'opening_balance_equity_account_id',
+            'default_cash_account_ulid' => 'default_cash_account_id',
+            'sales_clearing_account_ulid' => 'sales_clearing_account_id',
+        ] as $ulidField => $idField) {
+            if (! array_key_exists($ulidField, $data)) {
+                continue;
+            }
+
+            $ulid = $data[$ulidField];
+            unset($data[$ulidField]);
+
+            $settings->{$idField} = $ulid
                 ? Account::query()
                     ->forTenant($tenantContext->tenantId())
                     ->where('ulid', $ulid)
@@ -43,6 +52,6 @@ class BusinessSettingController extends Controller
         $settings->fill($data);
         $settings->save();
 
-        return new BusinessSettingResource($settings->fresh()->load('openingBalanceEquityAccount'));
+        return new BusinessSettingResource($settings->fresh()->load(['openingBalanceEquityAccount', 'defaultCashAccount', 'salesClearingAccount']));
     }
 }

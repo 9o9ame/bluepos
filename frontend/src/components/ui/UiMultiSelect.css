@@ -1,0 +1,51 @@
+.ui-multi-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.ui-multi-select-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-height: var(--ui-control-h-md);
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  color: var(--ui-text);
+  font-family: var(--app-font-family);
+  font-size: var(--ui-font-sm);
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    border-color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast);
+}
+
+.ui-multi-select-option:hover {
+  border-color: color-mix(in srgb, var(--ui-accent) 38%, transparent);
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-strong);
+}
+
+.ui-multi-select-option.is-selected {
+  border-color: color-mix(in srgb, var(--ui-accent) 55%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-surface));
+  color: var(--ui-accent-strong);
+}
+
+.ui-multi-select-option input {
+  accent-color: var(--ui-accent);
+}
+
+.ui-multi-select-option.is-disabled {
+  color: var(--ui-text-muted);
+  cursor: not-allowed;
+  opacity: .62;
+}
+
+html[data-animations='off'] .ui-multi-select-option {
+  transition: none !important;
+}

@@ -83,7 +83,7 @@ export type FontPreference = 'skin-default' | 'inter' | 'roboto-condensed' | 'se
 export type PrimaryTheme = 'indigo' | 'blue' | 'emerald' | 'teal' | 'purple' | 'slate'
 export type DensityPreference = 'compact' | 'comfortable'
 export type RadiusPreference = 'small' | 'medium' | 'large'
-export type ShadowPreference = 'none' | 'soft' | 'normal'
+export type ShadowPreference = 'none' | 'soft' | 'normal' | '3d'
 
 export type AppearancePreferences = {
   theme: ThemePreference

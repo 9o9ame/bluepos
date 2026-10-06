@@ -298,3 +298,40 @@
     animation: none !important;
   }
 }
+
+
+/* ---------- FEEDBACK DESIGN SYSTEM MIGRATION ---------- */
+.bp-busy-card,
+.bp-toast,
+.bp-confirm-card {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+.bp-toast-success { border-inline-start-color: var(--ui-success) !important; }
+.bp-toast-error { border-inline-start-color: var(--ui-danger) !important; }
+.bp-toast-info { border-inline-start-color: var(--ui-info) !important; }
+.bp-toast-success .bp-toast-icon { color: var(--ui-success) !important; }
+.bp-toast-error .bp-toast-icon { color: var(--ui-danger) !important; }
+.bp-toast-info .bp-toast-icon { color: var(--ui-info) !important; }
+.bp-toast-close,
+.bp-confirm-actions button {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+.bp-toast-close:hover,
+.bp-confirm-actions button:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+.bp-busy-orb,
+.bp-busy-spin { color: var(--ui-accent) !important; border-color: var(--ui-accent) !important; }
+html[data-animations='off'] :where(.bp-busy-card, .bp-toast, .bp-confirm-card) * {
+  transition: none !important;
+  animation: none !important;
+}

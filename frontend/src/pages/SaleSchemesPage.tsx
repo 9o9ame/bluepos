@@ -11,6 +11,7 @@ import {
 } from '../api/saleSchemes'
 import { DesktopButton, DesktopPanel, Field, FormGroup } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { UiSelect } from '../components/ui/UiSelect'
 import { useCan } from '../features/auth/useCan'
 import { askConfirm } from '../feedback/FeedbackProvider'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
@@ -184,7 +185,7 @@ export function SaleSchemesPage() {
       }
     >
       {error ? <p className="mb-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
-      <p className="mb-3 text-[12px] text-[var(--muted)]">
+      <p className="mb-3 text-[12px] text-[var(--ui-text-muted)]">
         Admin chooses <strong>Salesman decides</strong> (Add/Skip) or <strong>Auto</strong> (apply when eligible).
         Packaging bags/boxes are separate — mark products as Packaging in Define Products.
       </p>
@@ -196,14 +197,16 @@ export function SaleSchemesPage() {
               <input className="desktop-input" value={name} onChange={(e) => setName(e.target.value)} required />
             </Field>
             <Field label="Apply mode">
-              <select
-                className="desktop-input"
+              <UiSelect
+                triggerClassName="desktop-input"
+                aria-label="Apply mode"
                 value={applyMode}
-                onChange={(e) => setApplyMode(e.target.value as SaleSchemeApplyMode)}
-              >
-                <option value="salesman">Salesman decides (Add / Skip)</option>
-                <option value="auto">Auto apply when eligible</option>
-              </select>
+                options={[
+                  { value: 'salesman', label: 'Salesman decides (Add / Skip)' },
+                  { value: 'auto', label: 'Auto apply when eligible' },
+                ]}
+                onChange={(value) => setApplyMode(value as SaleSchemeApplyMode)}
+              />
             </Field>
             <Field label="Min sale amount">
               <input
@@ -214,21 +217,21 @@ export function SaleSchemesPage() {
               />
             </Field>
             <Field label="Free product">
-              <select
-                className="desktop-input"
+              <UiSelect
+                triggerClassName="desktop-input"
+                aria-label="Free product"
                 value={rewardProductUlid}
-                onChange={(e) => setRewardProductUlid(e.target.value)}
-                required
-              >
-                <option value="">— Select product —</option>
-                {products
-                  .filter((row) => row.is_active || row.ulid === rewardProductUlid)
-                  .map((row) => (
-                    <option key={row.ulid} value={row.ulid}>
-                      {row.product_number} — {row.name}
-                    </option>
-                  ))}
-              </select>
+                options={[
+                  { value: '', label: '— Select product —' },
+                  ...products
+                    .filter((row) => row.is_active || row.ulid === rewardProductUlid)
+                    .map((row) => ({
+                      value: row.ulid,
+                      label: `${row.product_number} — ${row.name}`,
+                    })),
+                ]}
+                onChange={setRewardProductUlid}
+              />
             </Field>
             <Field label="Max free qty">
               <input

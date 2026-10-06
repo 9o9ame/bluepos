@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom'
 import { RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { ApiClientError } from '../../api/client'
 import { askConfirm } from '../../feedback/FeedbackProvider'
+import { UiSelect } from '../ui/UiSelect'
+import { UI_LAYER } from '../ui/uiLayers'
 import {
   useCatalogMasterEditor,
   type CatalogMasterKind,
@@ -119,6 +121,7 @@ export function CatalogQuickEditorModal({
   return createPortal(
     <div
       className="catalog-popup-backdrop"
+      style={{ zIndex: UI_LAYER.modal }}
       role="presentation"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target) onClose()
@@ -143,19 +146,20 @@ export function CatalogQuickEditorModal({
             {activeKind === 'subcategory' ? (
               <div className="catalog-popup-form-row catalog-popup-form-row--full">
                 <label htmlFor="catalog-popup-category">Category:</label>
-                <select
-                  id="catalog-popup-category"
-                  className="catalog-popup-select"
+                <UiSelect
                   value={editor.categoryUlid}
-                  onChange={(event) => editor.setCategoryUlid(event.target.value)}
-                >
-                  <option value="">Select category…</option>
-                  {editor.categories.map((category) => (
-                    <option key={category.ulid} value={category.ulid}>
-                      {category.code} — {category.name}
-                    </option>
-                  ))}
-                </select>
+                  triggerClassName="catalog-popup-select"
+                  aria-label="Category"
+                  menuZIndex={UI_LAYER.nestedDropdown}
+                  options={[
+                    { value: '', label: 'Select category…' },
+                    ...editor.categories.map((category) => ({
+                      value: category.ulid,
+                      label: `${category.code} — ${category.name}`,
+                    })),
+                  ]}
+                  onChange={editor.setCategoryUlid}
+                />
               </div>
             ) : null}
 

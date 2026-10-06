@@ -754,3 +754,50 @@
   outline: 2px solid var(--skin-focus-ring);
   outline-offset: 1px;
 }
+
+
+/* ---------- PURCHASES THEME TOKEN BRIDGE ---------- */
+.purchase-reference-screen :where(
+  .purchase-reference-panel,
+  .purchase-reference-grid-wrap,
+  .purchase-reference-summary,
+  .purchase-reference-filters
+) {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+  border-radius: var(--panel-radius) !important;
+}
+
+.purchase-reference-screen :where(button, .purchase-reference-btn) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.purchase-reference-screen :where(input, select, textarea) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  color: var(--ui-text) !important;
+}
+
+.purchase-reference-screen :where(input, select, textarea):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.purchase-reference-screen :where(input, select, textarea):disabled {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+.purchase-reference-screen :where(.is-selected, .is-active) {
+  border-color: var(--ui-accent) !important;
+}
+
+html[data-animations='off'] .purchase-reference-screen * {
+  transition: none !important;
+  animation: none !important;
+}

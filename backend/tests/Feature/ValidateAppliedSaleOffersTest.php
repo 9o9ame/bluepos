@@ -44,7 +44,7 @@ class ValidateAppliedSaleOffersTest extends TestCase
 
         $this->assertValidationFails(
             fn () => $this->validate('4999.9999', [], [$scheme]),
-            'applied_scheme_ulids'
+            'applied_schemes.0.scheme_ulid'
         );
     }
 
@@ -58,7 +58,7 @@ class ValidateAppliedSaleOffersTest extends TestCase
 
         $this->assertValidationFails(
             fn () => $this->validate('9000.0000', [], [$scheme]),
-            'applied_scheme_ulids'
+            'applied_schemes.0.scheme_ulid'
         );
     }
 
@@ -77,12 +77,12 @@ class ValidateAppliedSaleOffersTest extends TestCase
 
         $this->assertValidationFails(
             fn () => $this->validate('5000.0000', [], [$expired]),
-            'applied_scheme_ulids'
+            'applied_schemes.0.scheme_ulid'
         );
 
         $this->assertValidationFails(
             fn () => $this->validate('5000.0000', [], [$future]),
-            'applied_scheme_ulids'
+            'applied_schemes.0.scheme_ulid'
         );
     }
 
@@ -96,7 +96,7 @@ class ValidateAppliedSaleOffersTest extends TestCase
 
         $this->assertValidationFails(
             fn () => $this->validate('5000.0000', [], [$first, $second]),
-            'applied_scheme_ulids'
+            'applied_schemes'
         );
 
         // One on its own is still allowed.
@@ -114,11 +114,11 @@ class ValidateAppliedSaleOffersTest extends TestCase
 
         $this->assertValidationFails(
             fn () => $this->validate('9000.0000', [], [$foreignScheme]),
-            'applied_scheme_ulids'
+            'applied_schemes.0.scheme_ulid'
         );
     }
 
-    public function test_auto_scheme_is_included_even_when_not_selected(): void
+    public function test_auto_mode_scheme_is_not_persisted_without_explicit_selection(): void
     {
         $this->signInOwner('valid-7')->assertOk();
         $reward = $this->createProduct('Reward G');
@@ -126,9 +126,8 @@ class ValidateAppliedSaleOffersTest extends TestCase
 
         $result = $this->validate('6000.0000', [], []);
 
-        $this->assertCount(1, $result['scheme_lines']);
-        $this->assertTrue($result['scheme_lines'][0]['auto_applied']);
-        $this->assertSame($scheme, $result['scheme_lines'][0]['scheme']->ulid);
+        $this->assertCount(0, $result['scheme_lines']);
+        $this->assertNotEmpty($scheme);
     }
 
     public function test_explicitly_selected_auto_scheme_is_not_added_twice(): void
@@ -248,8 +247,16 @@ class ValidateAppliedSaleOffersTest extends TestCase
      */
     private function validate(string $subtotal, array $freeLines, array $appliedSchemeUlids): array
     {
+        $appliedSchemes = array_map(
+            static fn (string $ulid): array => [
+                'scheme_ulid' => $ulid,
+                'qty' => '1.000000',
+            ],
+            $appliedSchemeUlids,
+        );
+
         return app(ValidateAppliedSaleOffersAction::class)
-            ->execute($subtotal, $freeLines, $appliedSchemeUlids);
+            ->execute($subtotal, $freeLines, $appliedSchemes);
     }
 
     private function assertValidationFails(callable $callback, string $expectedKey): void

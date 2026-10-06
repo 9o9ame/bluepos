@@ -91,3 +91,169 @@
 :root[data-skin='advanced'] .coa-modal {
   border-radius: 16px;
 }
+
+
+/* ---------- COA MODAL DESIGN SYSTEM MIGRATION ---------- */
+.coa-modal {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+.coa-modal-bar,
+.coa-sheet-foot,
+.coa-sheet-records {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+  color: var(--ui-text) !important;
+}
+.coa-modal :where(input, select, textarea) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+.coa-modal :where(input, select, textarea):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+.coa-action,
+.coa-plus,
+.coa-sheet-nav button {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+.coa-action:hover:not(:disabled),
+.coa-plus:hover:not(:disabled),
+.coa-sheet-nav button:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+.coa-modal-list tr.is-selected td,
+.coa-sheet-grid tr.is-selected td {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface)) !important;
+}
+.coa-modal-error { color: var(--ui-danger) !important; }
+html[data-animations='off'] .coa-modal * { transition: none !important; animation: none !important; }
+
+
+/* ---------- COMPACT NESTED COA MODAL ---------- */
+/* Only when Account Type Definition is opened inside Vendor/Customer/Accounts. */
+.coa-modal-sheet.is-compact-nested {
+  width: min(940px, calc(100vw - 90px)) !important;
+  max-height: min(66vh, 540px) !important;
+}
+
+.coa-modal-sheet.is-compact-nested .coa-modal-bar {
+  min-height: 28px;
+  padding-block: 2px;
+}
+
+.coa-modal-sheet.is-compact-nested .coa-sheet-body {
+  padding: 7px 9px 0;
+  gap: 6px;
+}
+
+.coa-modal-sheet.is-compact-nested .coa-sheet-wrap {
+  border-radius: var(--panel-radius) var(--panel-radius) 0 0 !important;
+}
+
+.coa-modal-sheet.is-compact-nested .coa-sheet-grid {
+  min-width: 900px;
+  font-size: var(--ui-font-sm);
+}
+
+.coa-modal-sheet.is-compact-nested .coa-sheet-grid th {
+  height: 27px;
+  padding: 3px 4px;
+}
+
+.coa-modal-sheet.is-compact-nested .coa-sheet-grid td {
+  padding: 3px 4px;
+}
+
+.coa-modal-sheet.is-compact-nested .coa-sheet-grid input,
+.coa-modal-sheet.is-compact-nested .vca-select-shell > .vca-select {
+  height: 24px;
+  min-height: 24px;
+  font-size: var(--ui-font-sm);
+}
+
+.coa-modal-sheet.is-compact-nested .coa-sheet-records {
+  min-height: 22px;
+  height: 22px;
+  padding-top: 3px;
+}
+
+.coa-modal-sheet.is-compact-nested .coa-sheet-foot {
+  padding: 7px 9px 9px;
+}
+
+.coa-modal-sheet.is-compact-nested .coa-modal-actions button,
+.coa-modal-sheet.is-compact-nested .coa-sheet-nav button {
+  min-height: 28px;
+}
+
+@media (max-width: 1050px), (max-height: 700px) {
+  .coa-modal-sheet.is-compact-nested {
+    width: min(900px, calc(100vw - 40px)) !important;
+    max-height: min(70vh, 520px) !important;
+  }
+}
+
+
+/* ---------- COA FANCY SELECT GEOMETRY ---------- */
+.coa-modal .bp-fancy-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.coa-modal .bp-fancy-select-trigger {
+  height: 28px;
+  min-height: 28px;
+  font-size: var(--ui-font-sm);
+  font-weight: 700;
+}
+
+.coa-modal .bp-fancy-select-arrow {
+  width: 18px;
+  height: 16px;
+}
+
+.coa-modal .bp-fancy-select-option {
+  min-height: 24px;
+  padding: 4px 7px;
+  font-size: var(--ui-font-sm);
+}
+
+.coa-sheet-sub .bp-fancy-select {
+  min-width: 0;
+}
+
+.coa-sheet-sub .bp-fancy-select-trigger {
+  height: 24px;
+  min-height: 24px;
+  padding-left: 5px;
+}
+
+.coa-sheet-sub .bp-fancy-select-arrow {
+  width: 16px;
+  height: 14px;
+}
+
+.coa-modal-sheet.is-compact-nested .bp-fancy-select-trigger {
+  height: 24px;
+  min-height: 24px;
+}
+
+html[data-animations='off'] .coa-modal .bp-fancy-select-menu,
+html[data-animations='off'] .coa-modal .bp-fancy-select-arrow {
+  animation: none !important;
+  transition: none !important;
+}

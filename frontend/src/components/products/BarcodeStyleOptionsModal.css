@@ -472,3 +472,75 @@
 :root[data-skin='advanced'] .bp-style-modal-title {
   min-height: 56px;
 }
+
+
+/* ---------- BARCODE STYLE MODAL DESIGN SYSTEM MIGRATION ---------- */
+.bp-style-modal {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+.bp-style-modal-title,
+.bp-style-modal-footer {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+  color: var(--ui-text) !important;
+}
+.bp-style-modal-btn,
+.bp-style-order-btns button {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+.bp-style-modal-btn:hover:not(:disabled),
+.bp-style-order-btns button:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+}
+.bp-style-modal-btn.is-primary {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+}
+.bp-style-toggle.is-active .bp-style-toggle-track,
+.bp-style-toggle input:checked + .bp-style-toggle-track {
+  background: var(--ui-accent) !important;
+  border-color: var(--ui-accent-strong) !important;
+}
+html[data-animations='off'] .bp-style-modal * { transition: none !important; animation: none !important; }
+
+
+/* ---------- CENTRAL MODAL LAYER CLEANUP ---------- */
+.bp-style-modal-backdrop {
+  z-index: auto;
+  background: color-mix(in srgb, #000 42%, transparent);
+}
+
+.bp-style-modal-hint,
+.bp-style-modal-grid,
+.bp-style-modal-grid tbody tr,
+.bp-style-index,
+.bp-style-used-for,
+.bp-style-modal-count {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface-subtle) !important;
+  color: var(--ui-text) !important;
+}
+
+.bp-style-modal-grid tbody tr:hover {
+  background: var(--ui-accent-soft) !important;
+}
+
+.bp-style-modal-grid th {
+  border-color: var(--ui-border) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface-subtle))
+  ) !important;
+  color: var(--ui-text) !important;
+}

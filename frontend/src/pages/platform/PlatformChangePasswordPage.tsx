@@ -13,7 +13,7 @@ export function PlatformChangePasswordPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (isLoading) {
-    return <div className="grid h-screen place-items-center bg-slate-950 text-sm text-amber-300">Loading platform…</div>
+    return <div className="platform-auth-page grid h-screen place-items-center bg-[var(--ui-bg)] text-sm text-[var(--ui-accent)]">Loading platform…</div>
   }
   if (!user) {
     return <Navigate to="/platform/login" replace />
@@ -41,16 +41,16 @@ export function PlatformChangePasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 p-4">
-      <div className="w-full max-w-md rounded border border-slate-700 bg-slate-900 text-slate-100 shadow-xl">
-        <div className="border-b border-slate-700 px-5 py-3">
-          <div className="text-[11px] font-black tracking-[0.18em] text-amber-400">BLUEPOS PLATFORM</div>
+    <div className="platform-auth-page flex min-h-screen items-center justify-center bg-[var(--ui-bg)] p-4">
+      <div className="platform-auth-card w-full max-w-md rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] text-[var(--ui-text)] shadow-xl">
+        <div className="border-b border-[var(--ui-border)] px-5 py-3">
+          <div className="text-[11px] font-black tracking-[0.18em] text-[var(--ui-accent)]">BLUEPOS PLATFORM</div>
           <h1 className="text-lg font-semibold">Set a new password</h1>
         </div>
         <form className="space-y-3 px-5 py-4" onSubmit={onSubmit}>
-          <p className="text-[12px] text-slate-300">You must replace the temporary password before using Super Admin.</p>
+          <p className="text-[12px] text-[var(--ui-text-muted)]">You must replace the temporary password before using Super Admin.</p>
           <input
-            className="h-9 w-full rounded border border-slate-600 bg-slate-800 px-2 text-[12px]"
+            className="h-9 w-full rounded border border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] px-2 text-[12px]"
             type="password"
             autoComplete="current-password"
             placeholder="Current password"
@@ -59,7 +59,7 @@ export function PlatformChangePasswordPage() {
             required
           />
           <input
-            className="h-9 w-full rounded border border-slate-600 bg-slate-800 px-2 text-[12px]"
+            className="h-9 w-full rounded border border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] px-2 text-[12px]"
             type="password"
             autoComplete="new-password"
             placeholder="New password"
@@ -69,7 +69,7 @@ export function PlatformChangePasswordPage() {
             minLength={8}
           />
           <input
-            className="h-9 w-full rounded border border-slate-600 bg-slate-800 px-2 text-[12px]"
+            className="h-9 w-full rounded border border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] px-2 text-[12px]"
             type="password"
             autoComplete="new-password"
             placeholder="Confirm password"
@@ -78,17 +78,17 @@ export function PlatformChangePasswordPage() {
             required
             minLength={8}
           />
-          {error ? <p className="text-[12px] text-red-300">{error}</p> : null}
+          {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
           <button
             type="submit"
-            className="h-9 w-full rounded bg-amber-500 text-sm font-semibold text-slate-950 disabled:opacity-60"
+            className="h-9 w-full rounded bg-[var(--ui-accent)] text-sm font-semibold text-white disabled:opacity-60"
             disabled={submitting}
           >
             {submitting ? 'Updating…' : 'Update password'}
           </button>
           <button
             type="button"
-            className="h-9 w-full rounded border border-slate-600 text-sm"
+            className="h-9 w-full rounded border border-[var(--ui-border)] text-sm"
             onClick={() => {
               void logout().then(() => navigate('/platform/login', { replace: true }))
             }}

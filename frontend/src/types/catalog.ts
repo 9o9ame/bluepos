@@ -77,6 +77,18 @@ export type BusinessSettings = {
     code: string
     name: string
   } | null
+  default_cash_account_ulid: string | null
+  default_cash_account: {
+    ulid: string
+    code: string
+    name: string
+  } | null
+  sales_clearing_account_ulid: string | null
+  sales_clearing_account: {
+    ulid: string
+    code: string
+    name: string
+  } | null
 }
 
 export type ProductBarcode = {

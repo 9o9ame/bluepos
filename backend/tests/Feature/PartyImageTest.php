@@ -17,17 +17,7 @@ class PartyImageTest extends TestCase
         Storage::fake('public');
 
         $this->signInOwner('img-a')->assertOk();
-        $main = $this->postJson('/api/coa/main-heads', ['name' => 'LIABILITIES'])->assertCreated()->json('ulid');
-        $sub = $this->postJson('/api/coa/sub-heads', [
-            'main_head_ulid' => $main,
-            'name' => 'SHORT TERM LIABILITIES',
-        ])->assertCreated()->json('ulid');
-        $ap = $this->postJson('/api/coa/account-types', [
-            'sub_head_ulid' => $sub,
-            'code' => '0020',
-            'name' => 'ACCOUNT PAYABLE',
-            'is_payable' => true,
-        ])->assertCreated()->json('ulid');
+        $ap = $this->referenceAccountTypeUlid('0020');
 
         $party = $this->postJson('/api/parties', [
             'party_type' => 'vendor',

@@ -1,8 +1,7 @@
-import { FormEvent, SelectHTMLAttributes, useEffect, useMemo, useRef, useState } from 'react'
+import { Children, FormEvent, SelectHTMLAttributes, isValidElement, useEffect, useMemo, useRef, useState, type ChangeEvent, type FocusEvent, type ReactNode } from 'react'
 import {
   Barcode,
   Check,
-  ChevronDown,
   ChevronFirst,
   ChevronLast,
   ChevronLeft,
@@ -46,6 +45,9 @@ import {
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { CatalogQuickEditorModal, type QuickEditorKind } from '../components/catalog/CatalogQuickEditorModal'
 import { loadBarcodePrintSettings, printBarcodeLabels } from '../components/products/barcodePrint'
+import { UiSelect } from '../components/ui/UiSelect'
+import { SalesPartyModal } from '../features/sales/SalesPartyModal'
+import type { Party } from '../api/parties'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
@@ -84,88 +86,50 @@ function createBarcodeDraft(
 
 function PdfSelect({
   className,
-  onBlur,
   onChange,
-  onMouseDown,
-  onKeyDown,
-  ...props
+  onFocus,
+  children,
+  value,
+  disabled,
+  title,
+  'aria-label': ariaLabel,
 }: SelectHTMLAttributes<HTMLSelectElement>) {
-  const [open, setOpen] = useState(false)
-  const shellRef = useRef<HTMLDivElement>(null)
+  const options = Children.toArray(children).flatMap((child) => {
+    if (!isValidElement(child) || child.type !== 'option') return []
 
-  useEffect(() => {
-    if (!open) return
-
-    // Native <select> often skips blur when the list closes on Windows.
-    // Close on outside interaction, but ignore events inside this shell so
-    // the same-click mousedown can toggle the caret back down.
-    const closeOutside = (event: Event) => {
-      const target = event.target
-      if (target instanceof Node && shellRef.current?.contains(target)) return
-      setOpen(false)
+    const option = child.props as {
+      value?: string | number
+      children?: unknown
+      disabled?: boolean
+      title?: string
     }
-    const close = () => setOpen(false)
-    const timer = window.setTimeout(() => {
-      window.addEventListener('pointerdown', closeOutside, true)
-      window.addEventListener('keydown', closeOutside, true)
-      window.addEventListener('scroll', close, true)
-      window.addEventListener('blur', close)
-    }, 0)
 
-    return () => {
-      window.clearTimeout(timer)
-      window.removeEventListener('pointerdown', closeOutside, true)
-      window.removeEventListener('keydown', closeOutside, true)
-      window.removeEventListener('scroll', close, true)
-      window.removeEventListener('blur', close)
-    }
-  }, [open])
+    return [{
+      value: String(option.value ?? ''),
+      label: Children.toArray(option.children as ReactNode)
+        .map((node) => (typeof node === 'string' || typeof node === 'number' ? String(node) : ''))
+        .join(''),
+      disabled: option.disabled,
+      title: option.title,
+    }]
+  })
 
   return (
-    <div
-      ref={shellRef}
-      className={`pdf-select-shell${open ? ' is-open' : ''}${props.disabled ? ' is-disabled' : ''}`}
-    >
-      <select
-        {...props}
-        className={['pdf-select', className].filter(Boolean).join(' ')}
-        onMouseDown={(event) => {
-          if (!props.disabled) {
-            // Toggle: second click on the closed native list restores caret.
-            setOpen((current) => !current)
-          }
-          onMouseDown?.(event)
-        }}
-        onKeyDown={(event) => {
-          if (props.disabled) {
-            onKeyDown?.(event)
-            return
-          }
-          if (event.key === 'Escape') {
-            setOpen(false)
-          } else if (
-            event.key === 'Enter' ||
-            event.key === ' ' ||
-            event.key === 'ArrowDown' ||
-            event.key === 'ArrowUp'
-          ) {
-            setOpen(true)
-          }
-          onKeyDown?.(event)
-        }}
-        onBlur={(event) => {
-          setOpen(false)
-          onBlur?.(event)
-        }}
-        onChange={(event) => {
-          setOpen(false)
-          onChange?.(event)
-        }}
-      />
-      <span className="pdf-select-caret" aria-hidden="true">
-        <ChevronDown size={11} strokeWidth={3} />
-      </span>
-    </div>
+    <UiSelect
+      value={String(value ?? '')}
+      options={options}
+      disabled={disabled}
+      className={['pdf-select-shell', className].filter(Boolean).join(' ')}
+      title={title}
+      aria-label={ariaLabel}
+      onFocus={onFocus ? (event) => onFocus(event as unknown as FocusEvent<HTMLSelectElement>) : undefined}
+      onChange={(nextValue) => {
+        onChange?.({
+          target: { value: nextValue },
+          currentTarget: { value: nextValue },
+        } as ChangeEvent<HTMLSelectElement>)
+      }}
+    />
   )
 }
 
@@ -193,6 +157,7 @@ export function ProductsPage() {
   const [section, setSection] = useState<'definition' | 'opening' | 'related'>('definition')
   const [error, setError] = useState<string | null>(null)
   const [quickEditor, setQuickEditor] = useState<QuickEditorKind | null>(null)
+  const [supplierModalOpen, setSupplierModalOpen] = useState(false)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
   const [pendingImage, setPendingImage] = useState<File | null>(null)
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
@@ -1135,7 +1100,7 @@ export function ProductsPage() {
           {section === 'opening' ? (
             <div className="product-def-fields">
               {creating || !selectedKey ? (
-                <p className="text-[12px] text-[var(--muted)]">Save the product first, then enter opening stock.</p>
+                <p className="text-[12px] text-[var(--ui-text-muted)]">Save the product first, then enter opening stock.</p>
               ) : (
                 <>
                   <div className="pdf-row">
@@ -1310,10 +1275,10 @@ export function ProductsPage() {
                 <button
                   type="button"
                   className="pdf-plus-button"
-                  title="Open Vendor / Customer / Accounts"
-                  aria-label="Open Vendor Customer Accounts"
+                  title="Edit / Define Supplier"
+                  aria-label="Edit or define supplier"
                   disabled={!canSave}
-                  onClick={() => openModule('/definition/parties')}
+                  onClick={() => setSupplierModalOpen(true)}
                 >
                   <Plus size={15} strokeWidth={3} />
                 </button>
@@ -1739,6 +1704,23 @@ export function ProductsPage() {
           </div>
         </section>
       </form>
+
+      {supplierModalOpen ? (
+        <SalesPartyModal
+          partyType="vendor"
+          onClose={() => setSupplierModalOpen(false)}
+          onSaved={(party: Party) => {
+            const supplierUlid =
+              party.vendor_ulid ?? (party.party_type === 'vendor' ? party.ulid : null)
+
+            if (!supplierUlid) return
+
+            setPrimarySupplierUlid(supplierUlid)
+            setSupplierModalOpen(false)
+            void suppliers.refetch()
+          }}
+        />
+      ) : null}
 
       <CatalogQuickEditorModal
         kind={quickEditor}

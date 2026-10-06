@@ -66,6 +66,40 @@ class CollectSalePaymentTest extends TestCase
         $this->assertSame(2, SalePayment::query()->where('sale_id', $this->saleId($sale))->count());
     }
 
+    public function test_due_only_sales_list_excludes_fully_paid_sales_and_keeps_partial_balances(): void
+    {
+        $this->signInOwner('pay-due-list')->assertOk();
+        $this->configureAccounts();
+
+        $unpaid = $this->createSale('pay-due-unpaid', '100.0000');
+        $partial = $this->createSale('pay-due-partial', '100.0000');
+        $paid = $this->createSale('pay-due-paid', '100.0000');
+
+        $this->postJson('/api/sales/'.$partial.'/payments', [
+            'amount' => '40.0000',
+            'method' => 'cash',
+        ], $this->idem('pay-due-partial-payment'))->assertCreated();
+
+        $this->postJson('/api/sales/'.$paid.'/payments', [
+            'amount' => '100.0000',
+            'method' => 'cash',
+        ], $this->idem('pay-due-full-payment'))->assertCreated();
+
+        $response = $this->getJson('/api/sales?due_only=1&status=posted')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+
+        $ulids = collect($response->json('data'))->pluck('ulid')->all();
+
+        $this->assertContains($unpaid, $ulids);
+        $this->assertContains($partial, $ulids);
+        $this->assertNotContains($paid, $ulids);
+
+        $partialRow = collect($response->json('data'))->firstWhere('ulid', $partial);
+        $this->assertSame('40.0000', $partialRow['paid_amount']);
+        $this->assertSame('60.0000', $partialRow['balance_due']);
+    }
+
     public function test_payment_cannot_exceed_the_outstanding_balance(): void
     {
         $this->signInOwner('pay-3')->assertOk();
@@ -125,6 +159,59 @@ class CollectSalePaymentTest extends TestCase
         ], $this->idem('pay-6-neg'))->assertStatus(422);
 
         $this->assertSame(0, SalePayment::query()->count());
+    }
+
+    public function test_business_settings_can_configure_payment_accounts_by_ulid(): void
+    {
+        $this->signInOwner('pay-settings')->assertOk();
+
+        $cash = $this->leafAccount('SETTINGS CASH', '9201');
+        $clearing = $this->leafAccount('SETTINGS CLEARING', '9202');
+
+        $response = $this->patchJson('/api/settings/business', [
+            'default_cash_account_ulid' => $cash->ulid,
+            'sales_clearing_account_ulid' => $clearing->ulid,
+        ])->assertOk();
+
+        $response
+            ->assertJsonPath('default_cash_account_ulid', $cash->ulid)
+            ->assertJsonPath('default_cash_account.ulid', $cash->ulid)
+            ->assertJsonPath('sales_clearing_account_ulid', $clearing->ulid)
+            ->assertJsonPath('sales_clearing_account.ulid', $clearing->ulid);
+
+        $settings = BusinessSetting::query()
+            ->forTenant(app(\App\Tenancy\TenantContext::class)->tenantId())
+            ->firstOrFail();
+
+        $this->assertSame($cash->id, (int) $settings->default_cash_account_id);
+        $this->assertSame($clearing->id, (int) $settings->sales_clearing_account_id);
+
+        $sale = $this->createSale('pay-settings', '100.0000');
+
+        $this->postJson('/api/sales/'.$sale.'/payments', [
+            'amount' => '100.0000',
+            'method' => 'cash',
+        ], $this->idem('pay-settings-collect'))
+            ->assertCreated()
+            ->assertJsonPath('amount', '100.0000');
+
+        $this->assertSame('0.0000', $this->outstanding($sale));
+    }
+
+    public function test_business_settings_reject_payment_accounts_from_another_tenant(): void
+    {
+        $this->signInOwner('pay-settings-a')->assertOk();
+        $foreignCash = $this->leafAccount('FOREIGN CASH', '9301');
+        $foreignClearing = $this->leafAccount('FOREIGN CLEARING', '9302');
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('pay-settings-b')->assertOk();
+
+        $this->patchJson('/api/settings/business', [
+            'default_cash_account_ulid' => $foreignCash->ulid,
+            'sales_clearing_account_ulid' => $foreignClearing->ulid,
+        ])->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
     }
 
     public function test_payment_fails_clearly_when_accounts_are_not_configured(): void

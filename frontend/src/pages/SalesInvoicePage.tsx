@@ -17,21 +17,23 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
 import type { Product } from '../types/catalog'
-import { fetchParties, type Party } from '../api/parties'
+import { fetchParties, fetchParty, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { createSale, createSalePayment, fetchSale, fetchSalesmen } from '../api/sales'
+import { createSale, createSaleHold, createSalePayment, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSalesmen } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
 import { SalesPartyModal } from '../features/sales/SalesPartyModal'
 import { SchemeOfferPrompt } from '../features/sales/SchemeOfferPrompt'
 import { SalesInvoiceHistory } from '../features/sales/SalesInvoiceHistory'
+import { SalesPendingInvoices } from '../features/sales/SalesPendingInvoices'
 import { useSaleCart } from '../features/sales/useSaleCart'
 import { useCan } from '../features/auth/useCan'
 import { useAuth } from '../features/auth/AuthProvider'
 import type { SaleOfferEvaluation } from '../types/saleSchemes'
-import type { Sale, SalePaymentMethod, SalePriceType } from '../types/sales'
+import type { Sale, SaleHold, SalePaymentMethod, SalePriceType } from '../types/sales'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
+import { UiSelect } from '../components/ui/UiSelect'
 import {
   SALES_INVOICE_COLUMNS,
   SALES_INVOICE_SCREEN,
@@ -77,6 +79,10 @@ function newSaleKey(): string {
 
 function newPaymentKey(): string {
   return `pos-payment-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function newHoldKey(): string {
+  return `pos-hold-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 function productLookupPrice(product: Product, priceType: SalePriceType): string {
@@ -157,19 +163,6 @@ export function SalesInvoicePage() {
   const [view, setView] = useState<'pos' | 'history' | 'pending'>('pos')
   const [customizationOpen, setCustomizationOpen] = useState(false)
 
-  const [heldCarts, setHeldCarts] = useState<
-    Array<{
-      id: string
-      lines: SaleDraftLine[]
-      heldAt: string
-      customerUlid: string | null
-      customer: Party | null
-      notes: string
-      priceType: SalePriceType
-      salesmanUlid: string | null
-    }>
-  >([])
-
   const canSaveRoleDefault = useCan('roles.edit')
   const canCreateSale = useCan('sales.create')
   const canCollectPayment = useCan('payments.create')
@@ -188,6 +181,7 @@ export function SalesInvoicePage() {
   const [activeLineKey, setActiveLineKey] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [savedSale, setSavedSale] = useState<Sale | null>(null)
+  const [recalledHoldUlid, setRecalledHoldUlid] = useState<string | null>(null)
 
   const [received, setReceived] = useState('')
   const [paymentMethod, setPaymentMethod] =
@@ -212,6 +206,13 @@ export function SalesInvoicePage() {
     queryKey: ['sales', 'salesmen', session?.branch.ulid],
     queryFn: fetchSalesmen,
     enabled: canCreateSale,
+    retry: false,
+  })
+
+  const holdsQuery = useQuery({
+    queryKey: ['sales', 'holds', session?.branch.ulid, session?.warehouse.ulid],
+    queryFn: fetchSaleHolds,
+    enabled: Boolean(session),
     retry: false,
   })
 
@@ -324,6 +325,7 @@ export function SalesInvoicePage() {
   )
 
   const idempotencyKeyRef = useRef(newSaleKey())
+  const holdIdempotencyKeyRef = useRef(newHoldKey())
   const receivedRef = useRef<HTMLInputElement | null>(null)
   const productSearchRef = useRef<HTMLInputElement | null>(null)
 
@@ -357,6 +359,20 @@ export function SalesInvoicePage() {
 
       idempotencyKeyRef.current = newSaleKey()
 
+      if (recalledHoldUlid) {
+        const recalledUlid = recalledHoldUlid
+        setRecalledHoldUlid(null)
+
+        void deleteSaleHold(recalledUlid)
+          .then(() => holdsQuery.refetch())
+          .catch(() => {
+            feedback.error(
+              'Sale posted, but its old recovery hold could not be removed. You may discard that hold manually.',
+              'On Hold',
+            )
+          })
+      }
+
       /*
        * If salesman entered Received before pressing Sale,
        * actually collect that payment after the sale is created.
@@ -385,6 +401,69 @@ export function SalesInvoicePage() {
         err instanceof ApiClientError
           ? err.message
           : 'Unable to save the sale.',
+      )
+    },
+  })
+
+  const holdMutation = useMutation({
+    mutationFn: () =>
+      createSaleHold(
+        {
+          sale_date: saleDate,
+          customer_ulid: cart.customerUlid,
+          salesman_ulid: selectedSalesmanUlid,
+          notes: cart.notes || null,
+          price_type: cart.priceType,
+          lines: cart.lines.map((line) => ({
+            product_ulid: line.product_ulid,
+            line_kind: line.line_kind,
+            unit_ulid: line.unit_ulid ?? null,
+            scheme_ulid: line.scheme_ulid ?? null,
+            barcode: line.barcode ?? null,
+            quantity: line.quantity,
+            discount_percent: line.discount_percent || '0',
+            discount_amount: line.discount_amount || '0',
+            notes: line.notes ?? null,
+          })),
+        },
+        holdIdempotencyKeyRef.current,
+      ),
+
+    onSuccess: async () => {
+      holdIdempotencyKeyRef.current = newHoldKey()
+      setSaveError(null)
+
+      if (recalledHoldUlid) {
+        const previousHold = recalledHoldUlid
+        setRecalledHoldUlid(null)
+        try {
+          await deleteSaleHold(previousHold)
+        } catch {
+          feedback.error(
+            'A new hold was saved, but the previous recovery hold could not be removed. You may discard the older copy manually.',
+            'On Hold',
+          )
+        }
+      }
+      cart.clear()
+      setSelectedCustomer(null)
+      setSelectedSalesmanUlid(null)
+      setReceived('')
+      setPaymentReference('')
+      setProductQuery('')
+      setActiveProductQuery('')
+      setActiveProductPickerOpen(false)
+      setBarcodeQuery('')
+      setActiveLineKey(null)
+      await holdsQuery.refetch()
+      feedback.success('Sale moved to On Hold.', 'Sales Invoice')
+    },
+
+    onError: (err) => {
+      setSaveError(
+        err instanceof ApiClientError
+          ? err.message
+          : 'Unable to place this sale on hold.',
       )
     },
   })
@@ -532,8 +611,19 @@ export function SalesInvoicePage() {
     }, 0)
   }
 
+  function reopenCompletedLine(line: SaleDraftLine) {
+    if (line.line_kind !== 'sale') return
+
+    setSaveError(null)
+    setProductQuery('')
+    setActiveLineKey(line.line_key)
+    setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
+    setActiveProductPickerOpen(false)
+    focusLineQuantity(line.line_key)
+  }
+
   function handleActiveFieldEnter(
-    event: ReactKeyboardEvent<HTMLInputElement | HTMLSelectElement>,
+    event: ReactKeyboardEvent<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>,
     lineKey: string,
   ) {
     if (event.key !== 'Enter') return
@@ -543,7 +633,7 @@ export function SalesInvoicePage() {
     if (!row) return
 
     const fields = Array.from(
-      row.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+      row.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>(
         '[data-sale-editable="true"]:not(:disabled)',
       ),
     )
@@ -556,6 +646,19 @@ export function SalesInvoicePage() {
       return
     }
 
+    const line = cart.lines.find((row) => row.line_key === lineKey)
+    const quantity = Number.parseFloat(line?.quantity ?? '')
+
+    if (!line || !Number.isFinite(quantity) || quantity <= 0) {
+      setSaveError('Sale quantity must be greater than zero.')
+      feedback.error('Sale quantity must be greater than zero.', 'Sales Invoice')
+      const quantityInput = row.querySelector<HTMLInputElement>('[data-sale-field="sales_qty"]')
+      quantityInput?.focus()
+      quantityInput?.select()
+      return
+    }
+
+    setSaveError(null)
     finishActiveLine(lineKey)
   }
 
@@ -566,54 +669,40 @@ export function SalesInvoicePage() {
 
 
   function parkCurrentCart() {
-    if (!cart.hasPaidLines) return
-
-    setHeldCarts((held) => [
-      ...held,
-      {
-        id: `hold-${Date.now()}`,
-        lines: cart.lines,
-        heldAt: new Date().toLocaleTimeString(),
-        customerUlid: cart.customerUlid,
-        customer: selectedCustomer,
-        notes: cart.notes,
-        priceType: cart.priceType,
-        salesmanUlid: selectedSalesmanUlid,
-      },
-    ])
-
-    cart.clear()
-    setSelectedCustomer(null)
-    setReceived('')
-    setPaymentReference('')
-    setActiveProductQuery('')
-    setActiveProductPickerOpen(false)
+    if (!canCreateSale || !cart.hasPaidLines || holdMutation.isPending) return
+    holdMutation.mutate()
   }
 
-  function recallHeldCart(id: string) {
-    const held = heldCarts.find((entry) => entry.id === id)
+  async function recallHeldCart(hold: SaleHold) {
+    if (!hold.lines?.length) {
+      throw new Error('This held sale has no lines to recall.')
+    }
 
-    if (!held) return
+    const customer = hold.customer
+      ? await fetchParty(hold.customer.ulid, 'customer')
+      : null
 
     cart.restore(
-      held.lines,
-      held.notes,
-      held.customerUlid,
-      held.priceType,
+      hold.lines,
+      hold.notes ?? '',
+      hold.customer?.ulid ?? null,
+      hold.price_type,
     )
 
-    setSelectedCustomer(held.customer)
-    setSelectedSalesmanUlid(held.salesmanUlid ?? null)
-    setHeldCarts((current) =>
-      current.filter((entry) => entry.id !== id),
-    )
+    setSelectedCustomer(customer)
+    setSelectedSalesmanUlid(hold.salesman?.ulid ?? null)
+    setSaleDate(hold.sale_date ?? new Date().toISOString().slice(0, 10))
+    setSavedSale(null)
+    setRecalledHoldUlid(hold.ulid)
+    setReceived('')
+    setPaymentReference('')
+    setProductQuery('')
+    setActiveProductQuery('')
+    setActiveProductPickerOpen(false)
+    setBarcodeQuery('')
+    setActiveLineKey(null)
+    setSaveError(null)
     setView('pos')
-  }
-
-  function dropHeldCart(id: string) {
-    setHeldCarts((current) =>
-      current.filter((entry) => entry.id !== id),
-    )
   }
 
   function refreshScreen() {
@@ -625,6 +714,7 @@ export function SalesInvoicePage() {
     }
 
     cart.clear()
+    setRecalledHoldUlid(null)
     setSelectedCustomer(null)
     setReceived('')
     setPaymentReference('')
@@ -769,7 +859,9 @@ export function SalesInvoicePage() {
     saveMutation.isPending || collectPaymentMutation.isPending
 
   return (
-    <div className="sales-reference-screen">
+    <div
+      className={`sales-reference-screen${view !== 'pos' ? ' is-full-workspace-view' : ''}`}
+    >
       <main className="sales-reference-main">
         <nav
           className="sales-reference-subtabs"
@@ -812,7 +904,7 @@ export function SalesInvoicePage() {
               <StickyNote />
             </span>
             <span>
-              ({heldCarts.length},Due:0) Pending Invoices
+              ({holdsQuery.data?.count ?? 0}) Pending / Due Invoices
             </span>
           </button>
         </nav>
@@ -820,63 +912,7 @@ export function SalesInvoicePage() {
         {view === 'history' ? (
           <SalesInvoiceHistory />
         ) : view === 'pending' ? (
-          <div className="sales-history">
-            <h3>Pending (on hold) invoices</h3>
-
-            {heldCarts.length === 0 ? (
-              <p>
-                Nothing on hold. Tick "On Hold" with lines in the
-                cart to park one.
-              </p>
-            ) : (
-              <table className="sales-history-grid">
-                <thead>
-                  <tr>
-                    <th>Held at</th>
-                    <th className="num">Lines</th>
-                    <th>Customer</th>
-                    <th></th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {heldCarts.map((entry) => (
-                    <tr key={entry.id}>
-                      <td>{entry.heldAt}</td>
-
-                      <td className="num">
-                        {
-                          entry.lines.filter(
-                            (line) => line.line_kind === 'sale',
-                          ).length
-                        }
-                      </td>
-
-                      <td>
-                        {entry.customer?.name ?? 'CASH IN HAND'}
-                      </td>
-
-                      <td>
-                        <button
-                          type="button"
-                          onClick={() => recallHeldCart(entry.id)}
-                        >
-                          Recall
-                        </button>{' '}
-
-                        <button
-                          type="button"
-                          onClick={() => dropHeldCart(entry.id)}
-                        >
-                          Discard
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          <SalesPendingInvoices onRecallHeld={recallHeldCart} />
         ) : (
           <>
             <section className="sales-reference-meta">
@@ -1456,17 +1492,19 @@ export function SalesInvoicePage() {
                                 return (
                                   <td key={col.key}>
                                     {(line.available_units?.length ?? 0) > 0 ? (
-                                      <select
-                                        data-sale-editable="true"
+                                      <UiSelect
                                         value={line.unit_ulid ?? ''}
-                                        onChange={(e) => cart.setLineUnit(line.line_key, e.target.value)}
-                                        onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)}
+                                        className="sales-pos-line-uom-select"
+                                        triggerClassName="sales-pos-line-uom-trigger"
                                         aria-label={`Unit for ${line.product_name}`}
-                                      >
-                                        {(line.available_units ?? []).map((unit) => (
-                                          <option key={unit.unit_ulid} value={unit.unit_ulid}>{unit.code}</option>
-                                        ))}
-                                      </select>
+                                        triggerProps={{ 'data-sale-editable': 'true' }}
+                                        options={(line.available_units ?? []).map((unit) => ({
+                                          value: unit.unit_ulid,
+                                          label: unit.code,
+                                        }))}
+                                        onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)}
+                                        onChange={(value) => cart.setLineUnit(line.line_key, value)}
+                                      />
                                     ) : line.unit_code ?? ''}
                                   </td>
                                 )
@@ -1532,7 +1570,13 @@ export function SalesInvoicePage() {
                     .map((line) => (
                     <tr
                       key={line.line_key}
-                      className={line.line_kind === 'sale' ? 'sales-pos-line' : 'sales-pos-line is-free'}
+                      className={
+                        line.line_kind === 'sale'
+                          ? 'sales-pos-line is-completed-entry'
+                          : 'sales-pos-line is-free'
+                      }
+                      title={line.line_kind === 'sale' ? 'Double-click to edit this line' : undefined}
+                      onDoubleClick={() => reopenCompletedLine(line)}
                     >
                       {columnLayout.visibleColumns.map((col) => {
                         if (col.key === 'selector') {
@@ -1550,9 +1594,10 @@ export function SalesInvoicePage() {
 
                         if (col.key === 'sales_qty') {
                           return (
-                            <td key={col.key}>
-                              <input className="sales-pos-line-qty" value={line.quantity} disabled={line.line_kind !== 'sale'}
-                                onChange={(e) => { if (line.line_kind === 'sale') cart.setQuantity(line.line_key, e.target.value) }} />
+                            <td key={col.key} className="sales-pos-line-value">
+                              {Number.parseFloat(line.quantity || '0').toFixed(
+                                line.unit_allows_decimal === false ? 0 : 3,
+                              )}
                             </td>
                           )
                         }
@@ -1572,11 +1617,19 @@ export function SalesInvoicePage() {
                         if (col.key === 'amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.grossAmount}</td>
 
                         if (col.key === 'disc_pct') {
-                          return <td key={col.key}><input className="sales-pos-line-qty" value={line.discount_percent ?? '0'} disabled={line.line_kind !== 'sale'} inputMode="decimal" onChange={(e) => cart.setDiscountPercent(line.line_key, e.target.value)} /></td>
+                          return (
+                            <td key={col.key} className="sales-pos-line-value">
+                              {Number.parseFloat(line.discount_percent ?? '0').toFixed(2)}
+                            </td>
+                          )
                         }
 
                         if (col.key === 'disc_rs') {
-                          return <td key={col.key}><input className="sales-pos-line-qty" value={line.discount_amount ?? '0'} disabled={line.line_kind !== 'sale'} inputMode="decimal" onChange={(e) => cart.setDiscountAmount(line.line_key, e.target.value)} /></td>
+                          return (
+                            <td key={col.key} className="sales-pos-line-value">
+                              {Number.parseFloat(line.discount_amount ?? '0').toFixed(2)}
+                            </td>
+                          )
                         }
 
                         if (col.key === 'net_amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.netAmount}</td>
@@ -1584,12 +1637,8 @@ export function SalesInvoicePage() {
 
                         if (col.key === 'uom') {
                           return (
-                            <td key={col.key}>
-                              {line.line_kind === 'sale' && (line.available_units?.length ?? 0) > 0 ? (
-                                <select value={line.unit_ulid ?? ''} onChange={(e) => cart.setLineUnit(line.line_key, e.target.value)} aria-label={`Unit for ${line.product_name}`}>
-                                  {(line.available_units ?? []).map((unit) => <option key={unit.unit_ulid} value={unit.unit_ulid}>{unit.code}</option>)}
-                                </select>
-                              ) : line.unit_code ?? ''}
+                            <td key={col.key} className="sales-pos-line-value">
+                              {line.unit_code ?? line.unit_symbol ?? ''}
                             </td>
                           )
                         }
@@ -1757,7 +1806,7 @@ export function SalesInvoicePage() {
               <label>
                 <input
                   type="checkbox"
-                  disabled={!cart.hasPaidLines}
+                  disabled={!canCreateSale || !cart.hasPaidLines || holdMutation.isPending}
                   checked={false}
                   onChange={() => parkCurrentCart()}
                 />
@@ -1889,20 +1938,19 @@ export function SalesInvoicePage() {
             </label>
 
             <div className="sales-reference-payment-method">
-              <select
+              <UiSelect
                 value={paymentMethod}
-                onChange={(e) =>
-                  setPaymentMethod(
-                    e.target.value as SalePaymentMethod,
-                  )
-                }
+                className="sales-reference-payment-select"
+                triggerClassName="sales-reference-payment-select-trigger"
                 aria-label="Payment method"
-              >
-                <option value="cash">CASH IN HAND</option>
-                <option value="card">CARD</option>
-                <option value="bank">BANK</option>
-                <option value="credit">CREDIT</option>
-              </select>
+                options={[
+                  { value: 'cash', label: 'CASH IN HAND' },
+                  { value: 'card', label: 'CARD' },
+                  { value: 'bank', label: 'BANK' },
+                  { value: 'credit', label: 'CREDIT' },
+                ]}
+                onChange={(value) => setPaymentMethod(value as SalePaymentMethod)}
+              />
             </div>
 
             <label className="sales-reference-remarks-label">

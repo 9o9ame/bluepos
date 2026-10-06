@@ -6,6 +6,7 @@ use App\Accounting\OpeningBalancePoster;
 use App\Accounting\PartyLeafAccountSync;
 use App\Enums\JournalStatus;
 use App\Enums\SalePaymentMethod;
+use App\Enums\SaleReturnStatus;
 use App\Exceptions\ApiException;
 use App\Models\Account;
 use App\Models\BusinessSetting;
@@ -14,6 +15,7 @@ use App\Models\JournalEntry;
 use App\Models\JournalLine;
 use App\Models\Sale;
 use App\Models\SalePayment;
+use App\Models\SaleReturn;
 use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
@@ -171,7 +173,20 @@ class CollectSalePaymentAction
             ->where('sale_id', $sale->id)
             ->sum('amount');
 
-        return bcsub((string) $sale->grand_total, $paid, 4);
+        $returned = (string) SaleReturn::query()
+            ->where('tenant_id', (int) $sale->tenant_id)
+            ->where('sale_id', $sale->id)
+            ->where('status', SaleReturnStatus::Posted->value)
+            ->sum('grand_total');
+
+        $netSaleTotal = bcsub((string) $sale->grand_total, $returned, 4);
+        if (bccomp($netSaleTotal, '0', 4) < 0) {
+            $netSaleTotal = '0.0000';
+        }
+
+        $outstanding = bcsub($netSaleTotal, $paid, 4);
+
+        return bccomp($outstanding, '0', 4) < 0 ? '0.0000' : $outstanding;
     }
 
     /**

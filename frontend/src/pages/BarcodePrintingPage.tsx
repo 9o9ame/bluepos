@@ -17,7 +17,7 @@ import {
   fetchProducts,
 } from '../api/catalog'
 import { BarcodeStyleOptionsModal } from '../components/products/BarcodeStyleOptionsModal'
-import { BpFancySelect } from '../components/products/BpFancySelect'
+import { UiSelect } from '../components/ui/UiSelect'
 import {
   BARCODE_TYPE_OPTIONS,
   DISPLAY_FIELD_OPTIONS,
@@ -568,7 +568,7 @@ export function BarcodePrintingPage() {
 
                 <label className="bp-field">
                   <span>Select Barcode Types</span>
-                  <BpFancySelect
+                  <UiSelect
                     aria-label="Select Barcode Types"
                     value={barcodeType}
                     onChange={(next) => setBarcodeType(next as BarcodeType)}
@@ -587,7 +587,7 @@ export function BarcodePrintingPage() {
 
                 <label className="bp-field">
                   <span>Field to Display</span>
-                  <BpFancySelect
+                  <UiSelect
                     aria-label="Field to Display"
                     value={displayField}
                     onChange={(next) =>
@@ -604,7 +604,7 @@ export function BarcodePrintingPage() {
 
                 <label className="bp-field">
                   <span>Price Field</span>
-                  <BpFancySelect
+                  <UiSelect
                     aria-label="Price Field"
                     value={priceField}
                     onChange={(next) =>
@@ -683,7 +683,7 @@ export function BarcodePrintingPage() {
               <div className="bp-printer-block">
                 <div className="bp-printer-label">On Following Printer</div>
                 <div className="bp-printer-row">
-                  <BpFancySelect
+                  <UiSelect
                     aria-label="On Following Printer"
                     value={browserPrintDialogPrinter.id}
                     title="Browsers cannot enumerate installed Windows printers. Use the system print dialog. A BluePOS Print Bridge will enable native printer lists later."
@@ -766,7 +766,7 @@ export function BarcodePrintingPage() {
               <label className="bp-field bp-style-field">
                 <span>Barcode Printing Style</span>
                 <div className="bp-style-row">
-                  <BpFancySelect
+                  <UiSelect
                     aria-label="Barcode Printing Style"
                     value={printStyle}
                     onChange={(next) => setPrintStyle(next as BarcodeStyleId)}
@@ -869,7 +869,7 @@ export function BarcodePrintingPage() {
               </div>
 
               <div className="bp-row bp-row-range">
-                <BpFancySelect
+                <UiSelect
                   className="bp-w-code"
                   aria-label="Auto Fill range field"
                   value={rangeMode}
@@ -962,33 +962,35 @@ export function BarcodePrintingPage() {
                   placeholder="Product # / name / SKU…"
                 />
 
-                <select
+                <UiSelect
                   className="bp-w-filter"
                   value={categoryUlid}
-                  onChange={(event) => setCategoryUlid(event.target.value)}
                   title="Category filter"
-                >
-                  <option value="">All Categories</option>
-                  {(categories.data ?? []).map((category) => (
-                    <option key={category.ulid} value={category.ulid}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                  aria-label="Category filter"
+                  options={[
+                    { value: '', label: 'All Categories' },
+                    ...(categories.data ?? []).map((category) => ({
+                      value: category.ulid,
+                      label: category.name,
+                    })),
+                  ]}
+                  onChange={setCategoryUlid}
+                />
 
-                <select
+                <UiSelect
                   className="bp-w-filter"
                   value={brandUlid}
-                  onChange={(event) => setBrandUlid(event.target.value)}
                   title="Company / Brand filter"
-                >
-                  <option value="">All Companies</option>
-                  {(brands.data ?? []).map((brand) => (
-                    <option key={brand.ulid} value={brand.ulid}>
-                      {brand.name}
-                    </option>
-                  ))}
-                </select>
+                  aria-label="Company or Brand filter"
+                  options={[
+                    { value: '', label: 'All Companies' },
+                    ...(brands.data ?? []).map((brand) => ({
+                      value: brand.ulid,
+                      label: brand.name,
+                    })),
+                  ]}
+                  onChange={setBrandUlid}
+                />
               </div>
             </div>
           </section>
@@ -1047,19 +1049,18 @@ export function BarcodePrintingPage() {
                           <td className="is-row-no">{index + 1}</td>
 
                           <td className="is-barcode">
-                            <select
-                              value={line.barcodeUlid}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                changeBarcode(line, event.target.value)
-                              }
-                            >
-                              {barcodes.map((option) => (
-                                <option key={option.ulid} value={option.ulid}>
-                                  {option.barcode}
-                                </option>
-                              ))}
-                            </select>
+                            <div onClick={(event) => event.stopPropagation()}>
+                              <UiSelect
+                                className="bp-grid-barcode-select"
+                                aria-label="Barcode"
+                                value={line.barcodeUlid}
+                                options={barcodes.map((option) => ({
+                                  value: option.ulid,
+                                  label: option.barcode,
+                                }))}
+                                onChange={(barcodeUlid) => changeBarcode(line, barcodeUlid)}
+                              />
+                            </div>
                           </td>
 
                           <td className="is-product">

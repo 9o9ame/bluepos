@@ -4,6 +4,8 @@ These rules bind Cursor and any AI agent working in this repository.
 
 BluePOS is a **commercial multi-tenant POS** with money, stock, PII, and offline terminals. Careless database or authorization shortcuts are unacceptable.
 
+For any frontend/UI work, read and follow `PROJECT_UI_DESIGN_SYSTEM.md` before editing UI code.
+
 Read `docs/ROADMAP.md` and the relevant domain doc before changing a phase. **Do not implement a later phase without approval.** Phase 1 foundation exists; do not start Phase 2 until a human explicitly asks.
 
 ---

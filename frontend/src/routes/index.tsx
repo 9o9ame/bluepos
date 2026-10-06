@@ -15,6 +15,7 @@ import { HelpAboutPage } from '../pages/HelpAboutPage'
 import { LoginPage } from '../pages/LoginPage'
 import { PartiesPlaceholderPage } from '../pages/PartiesPlaceholderPage'
 import { ProductsPage } from '../pages/ProductsPage'
+import { ProductTabularViewPage } from '../pages/ProductTabularViewPage'
 import { PurchasesPage } from '../pages/PurchasesPage'
 import { PurchaseReturnsPage } from '../pages/PurchaseReturnsPage'
 import { ReportsPlaceholderPage } from '../pages/ReportsPlaceholderPage'
@@ -22,6 +23,7 @@ import { RoleEditorPage } from '../pages/RoleEditorPage'
 import { RolesPage } from '../pages/RolesPage'
 import { SaleSchemesPage } from '../pages/SaleSchemesPage'
 import { SalesInvoicePage } from '../pages/SalesInvoicePage'
+import { SalesReturnsPage } from '../pages/SalesReturnsPage'
 import { SubcategoriesPage } from '../pages/SubcategoriesPage'
 import { UnitsPage } from '../pages/UnitsPage'
 import { UsersPage } from '../pages/UsersPage'
@@ -29,7 +31,7 @@ import { WorkspacePage } from '../pages/WorkspacePage'
 
 function Splash() {
   return (
-    <div className="grid h-screen place-items-center bg-[var(--titlebar-bg)] text-sm text-white">
+    <div className="grid h-screen place-items-center bg-[var(--ui-bg)] text-sm text-[var(--ui-text)]">
       Loading BluePOS…
     </div>
   )
@@ -61,6 +63,9 @@ export function AppRoutes() {
           <Route path="/" element={<WorkspacePage />} />
           <Route path="/definition/parties" element={<PartiesPlaceholderPage />} />
           <Route path="/daily/sales" element={<SalesInvoicePage />} />
+          <Route element={<RequirePermission permission="sales.return" />}>
+            <Route path="/daily/sales-return" element={<SalesReturnsPage />} />
+          </Route>
           <Route element={<RequirePermission permission="purchases.view" />}>
             <Route path="/daily/purchases" element={<PurchasesPage />} />
           </Route>
@@ -109,6 +114,7 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="products.view" />}>
             <Route path="/definition/products" element={<ProductsPage />} />
+            <Route path="/definition/product-view" element={<ProductTabularViewPage />} />
             <Route path="/definition/products/:productUlid" element={<Navigate to="/definition/products" replace />} />
             <Route path="/definition/barcode-printing" element={<BarcodePrintingPage />} />
             <Route path="/definition/barcode-printing/:productUlid" element={<BarcodePrintingPage />} />

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchPlatformPermissions } from '../../api/platform'
+import { UiSelect } from '../../components/ui/UiSelect'
 
 export function PlatformPermissionsPage() {
   const [q, setQ] = useState('')
@@ -20,14 +21,16 @@ export function PlatformPermissionsPage() {
       <p className="text-[12px] text-slate-600">System catalogue only. Permissions cannot be created from this screen.</p>
       <div className="flex gap-2 text-[12px]">
         <input className="h-8 rounded border px-2" placeholder="Search key or name" value={q} onChange={(event) => setQ(event.target.value)} />
-        <select className="h-8 rounded border px-2" value={module} onChange={(event) => setModule(event.target.value)}>
-          <option value="">All modules</option>
-          {modules.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
+        <UiSelect
+          className="h-8"
+          aria-label="Permission module"
+          value={module}
+          options={[
+            { value: '', label: 'All modules' },
+            ...modules.map((item) => ({ value: item, label: item })),
+          ]}
+          onChange={setModule}
+        />
       </div>
       <table className="w-full border border-slate-300 bg-white text-left text-[12px]">
         <thead className="bg-slate-50 text-slate-500">

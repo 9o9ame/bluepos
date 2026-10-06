@@ -1239,3 +1239,47 @@
   color: var(--vca-muted, #5f7282);
   font-weight: 700;
 }
+
+
+/* ---------- PARTIES BASE TOKEN BRIDGE ---------- */
+.classic-workspace.is-parties :where(
+  .desktop-panel,
+  .grid-pane,
+  .account-tree,
+  .parties-pane,
+  .party-detail,
+  .party-form
+) {
+  border-color: var(--ui-border) !important;
+  background-color: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+  border-radius: var(--panel-radius) !important;
+}
+
+.classic-workspace.is-parties :where(button, input, select, textarea) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  color: var(--ui-text) !important;
+}
+
+.classic-workspace.is-parties :where(input, select, textarea):focus-visible,
+.classic-workspace.is-parties button:focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.classic-workspace.is-parties :where(input, select, textarea, button):disabled {
+  background-color: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+.classic-workspace.is-parties :where(.is-selected, .is-active) {
+  border-color: var(--ui-accent) !important;
+}
+
+html[data-animations='off'] .classic-workspace.is-parties * {
+  transition: none !important;
+  animation: none !important;
+}

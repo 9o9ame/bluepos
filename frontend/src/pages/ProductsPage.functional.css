@@ -219,3 +219,20 @@
 :root[data-skin='classic'] .product-reference-screen .product-def-image-preview {
   border-radius: 10px;
 }
+
+
+/* ---------- PRODUCTS FUNCTIONAL TOKEN BRIDGE ---------- */
+.product-reference-screen .product-inline-error {
+  color: var(--ui-danger) !important;
+}
+.product-reference-screen :where(.is-selected, .is-active) {
+  border-color: var(--ui-accent) !important;
+}
+.product-reference-screen :where(.pdf-input, .pdf-select, .pdf-barcode-input):disabled {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+}
+html[data-animations='off'] .product-reference-screen * {
+  transition: none !important;
+  animation: none !important;
+}
