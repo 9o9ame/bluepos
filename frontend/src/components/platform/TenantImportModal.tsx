@@ -4,6 +4,7 @@ import { ApiClientError } from '../../api/client'
 import { fetchTenantImportWarehouses, importTenantWorkbook, type TenantImportResult } from '../../api/platform'
 import { usePlatformAuth } from '../../features/platform/PlatformAuthProvider'
 import type { PlatformTenant } from '../../types/platform'
+import { UiSelect } from '../ui/UiSelect'
 
 export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant; onClose: () => void }) {
   const { withRecentMfa } = usePlatformAuth()
@@ -40,11 +41,22 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
             onChange={(event) => { setFile(event.target.files?.[0] ?? null); setResult(null) }} />
         </label>
         <label className="block font-semibold">Warehouse for product opening stock (optional)
-          <select className="mt-1 h-8 w-full rounded border px-2" value={warehouse} disabled={pending || warehouses.isLoading}
-            onChange={(event) => setWarehouse(event.target.value)}>
-            <option value="">Catalog only — skip opening stock</option>
-            {(warehouses.data ?? []).map((w) => <option key={w.ulid} value={w.ulid}>{w.branch_name} / {w.name}</option>)}
-          </select>
+          <div className="mt-1">
+            <UiSelect
+              value={warehouse}
+              disabled={pending || warehouses.isLoading}
+              aria-label="Warehouse for product opening stock"
+              menuZIndex={5200}
+              options={[
+                { value: '', label: 'Catalog only — skip opening stock' },
+                ...(warehouses.data ?? []).map((w) => ({
+                  value: w.ulid,
+                  label: `${w.branch_name} / ${w.name}`,
+                })),
+              ]}
+              onChange={setWarehouse}
+            />
+          </div>
         </label>
         {warehouses.isError ? <p className="text-red-700">Unable to load warehouses. Catalog-only import is available.</p> : null}
         <p>Accounts do not require a warehouse. Negative stock is skipped. Existing movement history prevents another opening for that product/warehouse.</p>
