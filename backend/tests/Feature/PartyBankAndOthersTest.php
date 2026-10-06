@@ -14,17 +14,7 @@ class PartyBankAndOthersTest extends TestCase
      */
     private function seedVendor(): array
     {
-        $main = $this->postJson('/api/coa/main-heads', ['name' => 'LIABILITIES'])->assertCreated()->json('ulid');
-        $sub = $this->postJson('/api/coa/sub-heads', [
-            'main_head_ulid' => $main,
-            'name' => 'SHORT TERM',
-        ])->assertCreated()->json('ulid');
-        $ap = $this->postJson('/api/coa/account-types', [
-            'sub_head_ulid' => $sub,
-            'code' => '0020',
-            'name' => 'ACCOUNT PAYABLE',
-            'is_payable' => true,
-        ])->assertCreated()->json('ulid');
+        $ap = $this->referenceAccountTypeUlid('0020');
 
         $vendor = $this->postJson('/api/parties', [
             'party_type' => 'vendor',
@@ -117,23 +107,8 @@ class PartyBankAndOthersTest extends TestCase
     public function test_customer_others_and_manual_account_bank_accounts(): void
     {
         $this->signInOwner('party-bank-cust')->assertOk();
-        $main = $this->postJson('/api/coa/main-heads', ['name' => 'ASSETS'])->assertCreated()->json('ulid');
-        $sub = $this->postJson('/api/coa/sub-heads', [
-            'main_head_ulid' => $main,
-            'name' => 'CURRENT',
-        ])->assertCreated()->json('ulid');
-        $ar = $this->postJson('/api/coa/account-types', [
-            'sub_head_ulid' => $sub,
-            'code' => '0011',
-            'name' => 'RECEIVABLE',
-            'is_receivable' => true,
-        ])->assertCreated()->json('ulid');
-        $cash = $this->postJson('/api/coa/account-types', [
-            'sub_head_ulid' => $sub,
-            'code' => '0010',
-            'name' => 'CASH',
-            'is_cash' => true,
-        ])->assertCreated()->json('ulid');
+        $ar = $this->referenceAccountTypeUlid('0011');
+        $cash = $this->referenceAccountTypeUlid('0010');
 
         $customer = $this->postJson('/api/parties', [
             'party_type' => 'customer',
