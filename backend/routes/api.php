@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\Inventory\OpeningBalanceController;
 use App\Http\Controllers\Api\Inventory\StockController;
+use App\Http\Controllers\Api\Inventory\StockTakeController;
 use App\Http\Controllers\Api\MembershipController;
 use App\Http\Controllers\Api\PartyBankAccountController;
 use App\Http\Controllers\Api\PartyBulkController;
@@ -253,6 +254,16 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::patch('/inventory/opening-balances/{openingBalanceUlid}/lines/{lineUlid}', [OpeningBalanceController::class, 'updateLine']);
         Route::delete('/inventory/opening-balances/{openingBalanceUlid}/lines/{lineUlid}', [OpeningBalanceController::class, 'destroyLine']);
         Route::post('/inventory/opening-balances/{openingBalanceUlid}/post', [OpeningBalanceController::class, 'post']);
+
+        Route::get('/inventory/stock-takes', [StockTakeController::class, 'index']);
+        Route::post('/inventory/stock-takes', [StockTakeController::class, 'store']);
+        Route::get('/inventory/stock-takes/{stockTakeUlid}', [StockTakeController::class, 'show']);
+        Route::patch('/inventory/stock-takes/{stockTakeUlid}', [StockTakeController::class, 'update']);
+        Route::delete('/inventory/stock-takes/{stockTakeUlid}', [StockTakeController::class, 'destroy']);
+        Route::post('/inventory/stock-takes/{stockTakeUlid}/lines', [StockTakeController::class, 'storeLine']);
+        Route::patch('/inventory/stock-takes/{stockTakeUlid}/lines/{lineUlid}', [StockTakeController::class, 'updateLine']);
+        Route::delete('/inventory/stock-takes/{stockTakeUlid}/lines/{lineUlid}', [StockTakeController::class, 'destroyLine']);
+        Route::post('/inventory/stock-takes/{stockTakeUlid}/post', [StockTakeController::class, 'post']);
     });
 
     Route::middleware('entitled:purchases')->group(function () {
