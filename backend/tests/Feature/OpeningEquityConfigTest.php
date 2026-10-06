@@ -15,30 +15,10 @@ class OpeningEquityConfigTest extends TestCase
      */
     private function seedTypes(): array
     {
-        $assets = $this->postJson('/api/coa/main-heads', ['name' => 'ASSETS'])->assertCreated()->json('ulid');
-        $equityMain = $this->postJson('/api/coa/main-heads', ['name' => 'EQUITY'])->assertCreated()->json('ulid');
-        $current = $this->postJson('/api/coa/sub-heads', [
-            'main_head_ulid' => $assets,
-            'name' => 'CURRENT',
-        ])->assertCreated()->json('ulid');
-        $cap = $this->postJson('/api/coa/sub-heads', [
-            'main_head_ulid' => $equityMain,
-            'name' => 'CAPITAL',
-        ])->assertCreated()->json('ulid');
-
-        $cash = $this->postJson('/api/coa/account-types', [
-            'sub_head_ulid' => $current,
-            'code' => '0010',
-            'name' => 'CASH',
-            'is_cash' => true,
-        ])->assertCreated()->json('ulid');
-        $equity = $this->postJson('/api/coa/account-types', [
-            'sub_head_ulid' => $cap,
-            'code' => '0030',
-            'name' => 'OPENING BALANCE EQUITY',
-        ])->assertCreated()->json('ulid');
-
-        return compact('cash', 'equity');
+        return [
+            'cash' => $this->referenceAccountTypeUlid('0010'),
+            'equity' => $this->referenceAccountTypeUlid('0050'),
+        ];
     }
 
     public function test_configure_opening_equity_account_validation_and_posting(): void
