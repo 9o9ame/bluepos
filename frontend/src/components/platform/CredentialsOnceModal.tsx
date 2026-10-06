@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { UiButton } from '../ui/UiButton'
+import { UiModal } from '../ui/UiModal'
 
 export function CredentialsOnceModal({
   title,
@@ -20,51 +22,64 @@ export function CredentialsOnceModal({
   const [visible, setVisible] = useState(false)
 
   async function copy() {
-    const text = [business ? `Business: ${business}` : null, code ? `Code: ${code}` : null, `Username: ${username}`, `Temporary password: ${password}`]
-      .filter(Boolean)
-      .join('\n')
+    const text = [
+      business ? `Business: ${business}` : null,
+      code ? `Code: ${code}` : null,
+      `Username: ${username}`,
+      `Temporary password: ${password}`,
+    ].filter(Boolean).join('\n')
     await navigator.clipboard.writeText(text)
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4">
-      <div className="w-full max-w-md rounded border border-slate-300 bg-white p-4 shadow-xl">
-        <h2 className="text-base font-semibold">{title}</h2>
-        <dl className="mt-3 space-y-1 text-[12px]">
-          {business ? (
-            <div>
-              <dt className="text-slate-500">Business</dt>
-              <dd className="font-semibold">{business}</dd>
-            </div>
-          ) : null}
-          {code ? (
-            <div>
-              <dt className="text-slate-500">Mart code</dt>
-              <dd className="font-semibold">{code}</dd>
-            </div>
-          ) : null}
-          <div>
-            <dt className="text-slate-500">Admin username</dt>
-            <dd className="font-semibold">{username}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-500">Temporary password</dt>
-            <dd className="font-mono font-semibold">{visible ? password : '********'}</dd>
-          </div>
-        </dl>
-        <p className="mt-3 rounded border border-amber-300 bg-amber-50 p-2 text-[12px] text-amber-900">{warning}</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" className="rounded border px-3 py-1 text-[12px]" onClick={() => setVisible((value) => !value)}>
+    <UiModal
+      title={title}
+      size="sm"
+      zIndex={5200}
+      onClose={onClose}
+      footer={
+        <>
+          <UiButton onClick={() => setVisible((value) => !value)}>
             {visible ? 'Hide' : 'Show'}
-          </button>
-          <button type="button" className="rounded border px-3 py-1 text-[12px]" onClick={() => void copy()}>
-            Copy credentials
-          </button>
-          <button type="button" className="rounded bg-slate-950 px-3 py-1 text-[12px] text-white" onClick={onClose}>
-            Done
-          </button>
+          </UiButton>
+          <UiButton onClick={() => void copy()}>Copy credentials</UiButton>
+          <UiButton variant="primary" onClick={onClose}>Done</UiButton>
+        </>
+      }
+    >
+      <dl className="space-y-1 text-[12px]">
+        {business ? (
+          <div>
+            <dt className="text-[var(--ui-text-muted)]">Business</dt>
+            <dd className="font-semibold">{business}</dd>
+          </div>
+        ) : null}
+        {code ? (
+          <div>
+            <dt className="text-[var(--ui-text-muted)]">Mart code</dt>
+            <dd className="font-semibold">{code}</dd>
+          </div>
+        ) : null}
+        <div>
+          <dt className="text-[var(--ui-text-muted)]">Admin username</dt>
+          <dd className="font-semibold">{username}</dd>
         </div>
-      </div>
-    </div>
+        <div>
+          <dt className="text-[var(--ui-text-muted)]">Temporary password</dt>
+          <dd className="font-mono font-semibold">{visible ? password : '********'}</dd>
+        </div>
+      </dl>
+      <p
+        className="mt-3 p-2 text-[12px]"
+        style={{
+          border: '1px solid color-mix(in srgb, var(--ui-warning) 55%, var(--ui-border))',
+          borderRadius: 'var(--control-radius)',
+          background: 'color-mix(in srgb, var(--ui-warning) 10%, var(--ui-surface))',
+          color: 'var(--ui-warning)',
+        }}
+      >
+        {warning}
+      </p>
+    </UiModal>
   )
 }
