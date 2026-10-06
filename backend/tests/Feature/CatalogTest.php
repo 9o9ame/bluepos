@@ -1024,7 +1024,7 @@ class CatalogTest extends TestCase
 
         $this->postJson('/api/memberships', [
             'name' => 'Purchase Export User',
-            'username' => $this->staffUsername('tabular-export-perm'),
+            'username' => 'purchase-export',
             'recovery_email' => 'purchase-export@example.com',
             'password' => 'password123',
             'must_change_password' => false,
