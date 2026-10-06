@@ -173,7 +173,7 @@ export function UiSelect({
     >
       <button
         type="button"
-        className="ui-select-trigger bp-fancy-select-trigger"
+        className="ui-select-trigger bp-fancy-select-trigger vca-select"
         disabled={disabled}
         title={title}
         aria-label={ariaLabel}
@@ -242,7 +242,7 @@ export function UiSelect({
         <span className="ui-select-value bp-fancy-select-value">
           {selected?.label ?? placeholder}
         </span>
-        <span className="ui-select-arrow bp-fancy-select-arrow" aria-hidden>
+        <span className="ui-select-arrow bp-fancy-select-arrow vca-select-caret" aria-hidden>
           <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
             <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
           </svg>
