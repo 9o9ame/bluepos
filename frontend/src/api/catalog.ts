@@ -448,6 +448,33 @@ export function createProduct(
   })
 }
 
+export type BulkProductPriceChange = {
+  price_type: 'retail' | 'wholesale' | 'minimum_sale'
+  amount?: string
+  formula?: 'trade_price_plus_percent'
+  percent?: string
+}
+
+export type BulkProductUpdateRow = {
+  product_ulid: string
+  product?: {
+    reorder_level?: string | null
+  }
+  prices?: BulkProductPriceChange[]
+}
+
+export function bulkUpdateProducts(
+  rows: BulkProductUpdateRow[],
+) {
+  return apiFetch<{ updated: number }>(
+    '/api/products/bulk',
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ rows }),
+    },
+  )
+}
+
 export function updateProduct(
   ulid: string,
   payload: Record<string, unknown>,
