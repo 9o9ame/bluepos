@@ -11,17 +11,61 @@ import { useFeedback } from '../feedback/FeedbackProvider'
 import type { Product } from '../types/catalog'
 import './ProductTabularViewPage.css'
 
-type BulkField = 'reorder_level' | 'minimum_stock' | 'maximum_stock' | 'rack_location'
-type ProductDraft = Partial<Record<BulkField, string | null>>
+type BulkField = 'reorder_level' | 'wholesale_price' | 'minimum_sale_price' | 'retail_price'
+type PriceBulkField = Exclude<BulkField, 'reorder_level'>
+type PriceType = 'retail' | 'wholesale' | 'minimum_sale'
+type ProductDraft = {
+  product?: { reorder_level?: string | null }
+  prices?: Partial<Record<PriceType, string>>
+}
 
 const BULK_FIELD_OPTIONS: UiSelectOption[] = [
-  { value: 'reorder_level', label: 'Reorder Level' },
-  { value: 'minimum_stock', label: 'Minimum Stock' },
-  { value: 'maximum_stock', label: 'Maximum Stock' },
-  { value: 'rack_location', label: 'Rack Location' },
+  {
+    value: 'discount_percent',
+    label: 'Discount (%)',
+    disabled: true,
+    title: 'BluePOS does not currently have a product-level percentage discount field.',
+  },
+  {
+    value: 'discount_amount',
+    label: 'Discount (Rs)',
+    disabled: true,
+    title: 'BluePOS does not currently have a product-level amount discount field.',
+  },
+  { value: 'reorder_level', label: 'Re Order Level' },
+  { value: 'wholesale_price', label: 'Trade Price' },
+  { value: 'minimum_sale_price', label: 'Sale Man Price' },
+  { value: 'retail_price', label: 'Sale Price' },
+  {
+    value: 'purchase_price',
+    label: 'Purchase Price',
+    disabled: true,
+    title: 'Purchase cost comes from inventory valuation and is not directly editable here.',
+  },
+]
+
+const SET_TEXT_PRESETS: UiSelectOption[] = [
+  {
+    value: 'last_price_plus_10',
+    label: '=LastPrice + (LastPrice * 10.0 / 100)',
+    disabled: true,
+    title: 'BluePOS does not currently store a LastPrice product field.',
+  },
+  {
+    value: 'trade_price_plus_10',
+    label: '=TradePrice + (TradePrice * 10.0 / 100)',
+    title: 'For Sale Price: set retail price to Trade Price plus 10%.',
+  },
 ]
 
 const DECIMAL_6 = /^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/
+const MONEY_4 = /^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/
+
+function priceTypeForBulkField(field: PriceBulkField): PriceType {
+  if (field === 'wholesale_price') return 'wholesale'
+  if (field === 'minimum_sale_price') return 'minimum_sale'
+  return 'retail'
+}
 
 function retailPrice(product: Product): string | null {
   return product.prices?.find((price) => price.is_active && price.price_type === 'retail')?.amount ?? null
