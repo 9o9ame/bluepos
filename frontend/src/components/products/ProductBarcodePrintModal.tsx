@@ -125,6 +125,7 @@ export function ProductBarcodePrintModal({
   return (
     <div
       className="product-barcode-print-backdrop"
+      style={{ zIndex: UI_LAYER.modal }}
       role="presentation"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target) onClose()
