@@ -15,6 +15,7 @@ use App\Http\Requests\Products\SyncProductPricesRequest;
 use App\Http\Requests\Products\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Models\StockBalance;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -56,6 +57,52 @@ class ProductController extends Controller
 
         if ($request->filled('status')) {
             $query->where('status', (string) $request->string('status'));
+        }
+
+        if ($request->boolean('active_only')) {
+            $query->where('is_active', true);
+        }
+
+        if ($request->boolean('with_balance')) {
+            $query->whereHas('stockBalances', fn ($balances) => $balances
+                ->where('tenant_id', $tenantContext->tenantId())
+                ->where('branch_id', $tenantContext->branchId())
+                ->where('warehouse_id', $tenantContext->warehouseId())
+                ->where('quantity', '!=', 0));
+        }
+
+        if ($request->boolean('stock_le_reorder')) {
+            $query
+                ->whereNotNull('reorder_level')
+                ->where(function ($stockQuery) use ($tenantContext): void {
+                    $stockQuery
+                        ->whereDoesntHave('stockBalances', fn ($balances) => $balances
+                            ->where('tenant_id', $tenantContext->tenantId())
+                            ->where('branch_id', $tenantContext->branchId())
+                            ->where('warehouse_id', $tenantContext->warehouseId()))
+                        ->orWhereHas('stockBalances', fn ($balances) => $balances
+                            ->where('tenant_id', $tenantContext->tenantId())
+                            ->where('branch_id', $tenantContext->branchId())
+                            ->where('warehouse_id', $tenantContext->warehouseId())
+                            ->whereColumn('stock_balances.quantity', '<=', 'products.reorder_level'));
+                });
+        }
+
+        if ($request->boolean('purchase_rate_ge_sale_rate')) {
+            $this->authorize('viewAny', StockBalance::class);
+
+            $query->whereHas('stockBalances', fn ($balances) => $balances
+                ->where('tenant_id', $tenantContext->tenantId())
+                ->where('branch_id', $tenantContext->branchId())
+                ->where('warehouse_id', $tenantContext->warehouseId())
+                ->whereNotNull('average_cost')
+                ->whereExists(fn ($prices) => $prices
+                    ->selectRaw('1')
+                    ->from('product_prices')
+                    ->whereColumn('product_prices.product_id', 'stock_balances.product_id')
+                    ->where('product_prices.price_type', 'retail')
+                    ->where('product_prices.is_active', true)
+                    ->whereColumn('stock_balances.average_cost', '>=', 'product_prices.amount')));
         }
 
         if ($request->filled('category_ulid')) {
