@@ -473,7 +473,7 @@ export function ProductTabularViewPage() {
                     setSetText('=TradePrice + (TradePrice * 10.0 / 100)')
                   }
                 }}
-                placeholder="▾"
+                placeholder=""
                 aria-label="Choose Set Text formula"
                 searchable={false}
                 disabled={!canEdit}
