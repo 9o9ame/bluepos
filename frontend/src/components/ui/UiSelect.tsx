@@ -6,6 +6,7 @@ import {
   useState,
   type FocusEventHandler,
   type KeyboardEventHandler,
+  type MouseEventHandler,
 } from 'react'
 import { createPortal } from 'react-dom'
 import './UiSelect.css'
@@ -28,6 +29,7 @@ export type UiSelectProps = {
   onFocus?: FocusEventHandler<HTMLButtonElement>
   onBlur?: FocusEventHandler<HTMLButtonElement>
   onKeyDown?: KeyboardEventHandler<HTMLButtonElement>
+  onMouseDown?: MouseEventHandler<HTMLButtonElement>
   menuZIndex?: number
   maxMenuHeight?: number
   'aria-label'?: string
@@ -52,6 +54,7 @@ export function UiSelect({
   onFocus,
   onBlur,
   onKeyDown,
+  onMouseDown,
   menuZIndex = 1600,
   maxMenuHeight = 240,
   'aria-label': ariaLabel,
@@ -180,6 +183,7 @@ export function UiSelect({
         aria-activedescendant={open && activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined}
         onFocus={onFocus}
         onBlur={onBlur}
+        onMouseDown={onMouseDown}
         onClick={() => {
           if (open) setOpen(false)
           else openMenu()
