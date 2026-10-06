@@ -1,7 +1,7 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download, RefreshCw, Save, X } from 'lucide-react'
-import { fetchProducts, saveProductPrices, updateProduct } from '../api/catalog'
+import { bulkUpdateProducts, fetchProducts } from '../api/catalog'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect, type UiSelectOption } from '../components/ui/UiSelect'
@@ -14,9 +14,14 @@ import './ProductTabularViewPage.css'
 type BulkField = 'reorder_level' | 'wholesale_price' | 'minimum_sale_price' | 'retail_price'
 type PriceBulkField = Exclude<BulkField, 'reorder_level'>
 type PriceType = 'retail' | 'wholesale' | 'minimum_sale'
+type PriceDraft = {
+  amount?: string
+  formula?: 'trade_price_plus_percent'
+  percent?: string
+}
 type ProductDraft = {
   product?: { reorder_level?: string | null }
-  prices?: Partial<Record<PriceType, string>>
+  prices?: Partial<Record<PriceType, PriceDraft>>
 }
 
 const BULK_FIELD_OPTIONS: UiSelectOption[] = [
@@ -279,19 +284,10 @@ export function ProductTabularViewPage() {
       }
     }
 
-    const rowByUlid = new Map(rows.map((product) => [product.ulid, product]))
-    let skipped = 0
-
     setDrafts((current) => {
       const next = { ...current }
 
       for (const ulid of targets) {
-        const product = rowByUlid.get(ulid)
-        if (!product) {
-          skipped += 1
-          continue
-        }
-
         if (fieldToUpdate === 'reorder_level') {
           next[ulid] = {
             ...(next[ulid] ?? {}),
@@ -304,24 +300,18 @@ export function ProductTabularViewPage() {
         }
 
         const priceType = priceTypeForBulkField(fieldToUpdate)
-        let amount = rawValue
-
-        if (isTradeFormula) {
-          const tradePrice = Number.parseFloat(
-            product.prices?.find((price) => price.is_active && price.price_type === 'wholesale')?.amount ?? '',
-          )
-          if (!Number.isFinite(tradePrice)) {
-            skipped += 1
-            continue
-          }
-          amount = (tradePrice * 1.1).toFixed(4)
-        }
+        const change: PriceDraft = isTradeFormula
+          ? {
+              formula: 'trade_price_plus_percent',
+              percent: '10.00000000',
+            }
+          : { amount: rawValue }
 
         next[ulid] = {
           ...(next[ulid] ?? {}),
           prices: {
             ...(next[ulid]?.prices ?? {}),
-            [priceType]: amount,
+            [priceType]: change,
           },
         }
       }
@@ -329,42 +319,29 @@ export function ProductTabularViewPage() {
       return next
     })
 
-    const staged = targets.length - skipped
-    if (staged > 0) {
-      feedback.info(
-        skipped > 0
-          ? `Staged ${staged} product(s); skipped ${skipped} without a Trade Price. Press Save to commit.`
-          : `Staged ${staged} product(s). Press Save to commit.`,
-        'Tabular View',
-      )
-    } else {
-      feedback.error('No selected product has the data required for this formula.', 'Tabular View')
-    }
+    feedback.info(
+      `Staged ${targets.length} product(s). Press Save to commit.`,
+      'Tabular View',
+    )
   }
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const entries = Object.entries(drafts)
-      await Promise.all(entries.map(async ([ulid, draft]) => {
-        if (draft.product && Object.keys(draft.product).length > 0) {
-          await updateProduct(ulid, draft.product as Record<string, unknown>)
-        }
-
-        if (draft.prices && Object.keys(draft.prices).length > 0) {
-          await Promise.all(
-            Object.entries(draft.prices).map(([priceType, amount]) =>
-              saveProductPrices(ulid, [{
-                price_type: priceType,
-                amount,
-                is_active: true,
-              }]),
-            ),
-          )
-        }
+      const rows = Object.entries(drafts).map(([productUlid, draft]) => ({
+        product_ulid: productUlid,
+        product: draft.product,
+        prices: draft.prices
+          ? Object.entries(draft.prices).map(([priceType, change]) => ({
+              price_type: priceType as PriceType,
+              ...change,
+            }))
+          : undefined,
       }))
-      return entries.length
+
+      return bulkUpdateProducts(rows)
     },
-    onSuccess: async (count) => {
+    onSuccess: async (result) => {
+      const count = result.updated
       setDrafts({})
       await queryClient.invalidateQueries({ queryKey: ['products'] })
       await productsQuery.refetch()
