@@ -33,6 +33,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 import type { SaleOfferEvaluation } from '../types/saleSchemes'
 import type { Sale, SaleHold, SalePaymentMethod, SalePriceType } from '../types/sales'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
+import { UiSelect } from '../components/ui/UiSelect'
 import {
   SALES_INVOICE_COLUMNS,
   SALES_INVOICE_SCREEN,
@@ -1491,17 +1492,19 @@ export function SalesInvoicePage() {
                                 return (
                                   <td key={col.key}>
                                     {(line.available_units?.length ?? 0) > 0 ? (
-                                      <select
-                                        data-sale-editable="true"
+                                      <UiSelect
                                         value={line.unit_ulid ?? ''}
-                                        onChange={(e) => cart.setLineUnit(line.line_key, e.target.value)}
-                                        onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)}
+                                        className="sales-pos-line-uom-select"
+                                        triggerClassName="sales-pos-line-uom-trigger"
                                         aria-label={`Unit for ${line.product_name}`}
-                                      >
-                                        {(line.available_units ?? []).map((unit) => (
-                                          <option key={unit.unit_ulid} value={unit.unit_ulid}>{unit.code}</option>
-                                        ))}
-                                      </select>
+                                        triggerProps={{ 'data-sale-editable': 'true' }}
+                                        options={(line.available_units ?? []).map((unit) => ({
+                                          value: unit.unit_ulid,
+                                          label: unit.code,
+                                        }))}
+                                        onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)}
+                                        onChange={(value) => cart.setLineUnit(line.line_key, value)}
+                                      />
                                     ) : line.unit_code ?? ''}
                                   </td>
                                 )
@@ -1935,20 +1938,19 @@ export function SalesInvoicePage() {
             </label>
 
             <div className="sales-reference-payment-method">
-              <select
+              <UiSelect
                 value={paymentMethod}
-                onChange={(e) =>
-                  setPaymentMethod(
-                    e.target.value as SalePaymentMethod,
-                  )
-                }
+                className="sales-reference-payment-select"
+                triggerClassName="sales-reference-payment-select-trigger"
                 aria-label="Payment method"
-              >
-                <option value="cash">CASH IN HAND</option>
-                <option value="card">CARD</option>
-                <option value="bank">BANK</option>
-                <option value="credit">CREDIT</option>
-              </select>
+                options={[
+                  { value: 'cash', label: 'CASH IN HAND' },
+                  { value: 'card', label: 'CARD' },
+                  { value: 'bank', label: 'BANK' },
+                  { value: 'credit', label: 'CREDIT' },
+                ]}
+                onChange={(value) => setPaymentMethod(value as SalePaymentMethod)}
+              />
             </div>
 
             <label className="sales-reference-remarks-label">
