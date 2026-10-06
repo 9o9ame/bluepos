@@ -46,7 +46,7 @@ import {
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { CatalogQuickEditorModal, type QuickEditorKind } from '../components/catalog/CatalogQuickEditorModal'
 import { loadBarcodePrintSettings, printBarcodeLabels } from '../components/products/barcodePrint'
-import { BpFancySelect } from '../components/products/BpFancySelect'
+import { UiSelect } from '../components/ui/UiSelect'
 import { SalesPartyModal } from '../features/sales/SalesPartyModal'
 import type { Party } from '../api/parties'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -114,7 +114,7 @@ function PdfSelect({
   })
 
   return (
-    <BpFancySelect
+    <UiSelect
       value={String(value ?? '')}
       options={options}
       disabled={disabled}
