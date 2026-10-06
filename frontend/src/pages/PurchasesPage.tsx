@@ -29,6 +29,7 @@ import {
 } from '../api/purchases'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { UiSelect } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
@@ -604,31 +605,29 @@ export function PurchasesPage() {
             {ctx.readOnly ? (
               row.unit_label
             ) : (
-              <select
-                value={row.unit_ulid}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => {
-                  const option =
-                    row.unit_options.find((unit) => unit.ulid === e.target.value) ?? null
-                  if (!option) return
-                  patchLine(row.key, {
-                    unit_ulid: option.ulid,
-                    unit_label: option.code,
-                    conversion_factor: option.conversion_factor,
-                  })
-                }}
-              >
-                {(row.unit_options.length > 0
-                  ? row.unit_options
-                  : row.unit_ulid
-                    ? [{ ulid: row.unit_ulid, code: row.unit_label || 'UNIT', conversion_factor: row.conversion_factor }]
-                    : []
-                ).map((unit) => (
-                  <option key={unit.ulid} value={unit.ulid}>
-                    {unit.code}
-                  </option>
-                ))}
-              </select>
+              <div onClick={(event) => event.stopPropagation()}>
+                <UiSelect
+                  className="pie-line-select"
+                  aria-label="Unit"
+                  value={row.unit_ulid}
+                  options={(row.unit_options.length > 0
+                    ? row.unit_options
+                    : row.unit_ulid
+                      ? [{ ulid: row.unit_ulid, code: row.unit_label || 'UNIT', conversion_factor: row.conversion_factor }]
+                      : []
+                  ).map((unit) => ({ value: unit.ulid, label: unit.code }))}
+                  onChange={(unitUlid) => {
+                    const option =
+                      row.unit_options.find((unit) => unit.ulid === unitUlid) ?? null
+                    if (!option) return
+                    patchLine(row.key, {
+                      unit_ulid: option.ulid,
+                      unit_label: option.code,
+                      conversion_factor: option.conversion_factor,
+                    })
+                  }}
+                />
+              </div>
             )}
           </td>
         )
@@ -1252,25 +1251,27 @@ export function PurchasesPage() {
             onChange={(e) => setDateTo(e.target.value)}
             title="To"
           />
-          <select
+          <UiSelect
             className="desktop-select"
+            aria-label="Supplier filter"
             value={supplierFilter}
-            onChange={(e) => setSupplierFilter(e.target.value)}
-          >
-            <option value="">All suppliers</option>
-            {suppliers.map((s) => (
-              <option key={s.ulid} value={s.ulid}>{s.code} — {s.name}</option>
-            ))}
-          </select>
-          <select
+            options={[
+              { value: '', label: 'All suppliers' },
+              ...suppliers.map((s) => ({ value: s.ulid, label: `${s.code} — ${s.name}` })),
+            ]}
+            onChange={setSupplierFilter}
+          />
+          <UiSelect
             className="desktop-select"
+            aria-label="Purchase status"
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="">All statuses</option>
-            <option value="draft">Draft</option>
-            <option value="posted">Posted</option>
-          </select>
+            options={[
+              { value: '', label: 'All statuses' },
+              { value: 'draft', label: 'Draft' },
+              { value: 'posted', label: 'Posted' },
+            ]}
+            onChange={setStatusFilter}
+          />
         </div>
         {error ? <div className="text-[12px] text-[var(--ui-danger)] mb-2">{error}</div> : null}
         <PosDataGrid
@@ -1345,18 +1346,19 @@ export function PurchasesPage() {
             <label className="pie-field pie-field-span-2">
               <span>Supplier</span>
               <div className="pie-field-row">
-                <select
+                <UiSelect
+                  aria-label="Supplier"
                   value={supplierUlid}
                   disabled={!editable}
-                  onChange={(e) => setSupplierUlid(e.target.value)}
-                >
-                  <option value="">Select supplier...</option>
-                  {suppliers.map((supplier) => (
-                    <option key={supplier.ulid} value={supplier.ulid}>
-                      {supplier.code} — {supplier.name}
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: '', label: 'Select supplier...' },
+                    ...suppliers.map((supplier) => ({
+                      value: supplier.ulid,
+                      label: `${supplier.code} — ${supplier.name}`,
+                    })),
+                  ]}
+                  onChange={setSupplierUlid}
+                />
                 <div className="pie-supplier-actions">
                   <button type="button" className="pie-btn is-ghost" disabled title="Open supplier master">
                     + New
@@ -1387,42 +1389,47 @@ export function PurchasesPage() {
             </label>
             <label className="pie-field">
               <span>Warehouse</span>
-              <select
+              <UiSelect
+                aria-label="Warehouse"
                 value={warehouseUlid}
                 disabled={!editable}
-                onChange={(e) => setWarehouseUlid(e.target.value)}
-              >
-                <option value="">Select warehouse...</option>
-                {warehouses.map((warehouse) => (
-                  <option key={warehouse.ulid} value={warehouse.ulid}>
-                    {warehouse.code} — {warehouse.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: '', label: 'Select warehouse...' },
+                  ...warehouses.map((warehouse) => ({
+                    value: warehouse.ulid,
+                    label: `${warehouse.code} — ${warehouse.name}`,
+                  })),
+                ]}
+                onChange={setWarehouseUlid}
+              />
             </label>
             <label className="pie-field">
               <span>Invoice Type</span>
-              <select
+              <UiSelect
+                aria-label="Invoice Type"
                 value={shellInvoiceType}
                 disabled={!editable}
-                onChange={(e) => setShellInvoiceType(e.target.value)}
-              >
-                <option value="tax_gst">Tax Invoice (GST)</option>
-                <option value="commercial">Commercial Invoice</option>
-                <option value="proforma">Proforma</option>
-              </select>
+                options={[
+                  { value: 'tax_gst', label: 'Tax Invoice (GST)' },
+                  { value: 'commercial', label: 'Commercial Invoice' },
+                  { value: 'proforma', label: 'Proforma' },
+                ]}
+                onChange={setShellInvoiceType}
+              />
             </label>
             <label className="pie-field">
               <span>Currency</span>
-              <select
+              <UiSelect
+                aria-label="Currency"
                 value={shellCurrency}
                 disabled={!editable}
-                onChange={(e) => setShellCurrency(e.target.value)}
-              >
-                <option value="PKR">PKR</option>
-                <option value="USD">USD</option>
-                <option value="AED">AED</option>
-              </select>
+                options={[
+                  { value: 'PKR', label: 'PKR' },
+                  { value: 'USD', label: 'USD' },
+                  { value: 'AED', label: 'AED' },
+                ]}
+                onChange={setShellCurrency}
+              />
             </label>
           </div>
         </div>
@@ -1822,15 +1829,17 @@ export function PurchasesPage() {
           <div className="pie-payment-grid">
             <label className="pie-field">
               <span>Terms</span>
-              <select
+              <UiSelect
+                aria-label="Payment Terms"
                 value={shellPaymentTerms}
                 disabled={!editable}
-                onChange={(e) => setShellPaymentTerms(e.target.value)}
-              >
-                <option value="credit">Credit</option>
-                <option value="cash">Cash</option>
-                <option value="advance">Advance</option>
-              </select>
+                options={[
+                  { value: 'credit', label: 'Credit' },
+                  { value: 'cash', label: 'Cash' },
+                  { value: 'advance', label: 'Advance' },
+                ]}
+                onChange={setShellPaymentTerms}
+              />
             </label>
             <label className="pie-field">
               <span>Advance</span>
