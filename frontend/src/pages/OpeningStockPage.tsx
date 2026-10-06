@@ -264,6 +264,7 @@ export function OpeningStockPage() {
         <div className="opening-stock-toolbar">
           <div className="opening-stock-toolbar-left">
             <UiSelect
+              className="opening-stock-new-warehouse"
               value={newWarehouseUlid}
               options={(warehousesQuery.data ?? []).map((warehouse) => ({
                 value: warehouse.ulid,
@@ -282,6 +283,7 @@ export function OpeningStockPage() {
               <Plus size={15} /> New
             </UiButton>
             <UiSelect
+              className="opening-stock-status-filter"
               value={statusFilter}
               options={[
                 { value: '', label: 'All statuses' },
@@ -293,6 +295,7 @@ export function OpeningStockPage() {
               aria-label="Opening Stock status filter"
             />
             <UiSelect
+              className="opening-stock-warehouse-filter"
               value={warehouseFilter}
               options={[
                 { value: '', label: 'All warehouses' },
