@@ -1,5 +1,7 @@
 import { FormEvent, useState } from 'react'
 import { ApiClientError } from '../../api/client'
+import { UiButton } from '../ui/UiButton'
+import { UiModal } from '../ui/UiModal'
 
 export function PlatformStepUpMfaModal({
   recoveryHint,
@@ -33,30 +35,27 @@ export function PlatformStepUpMfaModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4">
-      <form className="w-full max-w-md space-y-3 rounded border border-slate-300 bg-white p-4 shadow-xl" onSubmit={onSubmit}>
-        <h2 className="text-base font-semibold">Verify to continue</h2>
-        <p className="text-[12px] text-slate-600">
+    <UiModal title="Verify to continue" size="sm" zIndex={5200} onClose={onCancel}>
+      <form className="space-y-3" onSubmit={onSubmit}>
+        <p className="text-[12px] text-[var(--ui-text-muted)]">
           Sensitive platform actions require a fresh Email OTP{recoveryHint ? ` (${recoveryHint})` : ''}.
         </p>
-        {deliveryHint ? <p className="text-[12px] text-amber-800">{deliveryHint}</p> : null}
+        {deliveryHint ? <p className="text-[12px] text-[var(--ui-warning)]">{deliveryHint}</p> : null}
         <input
           autoFocus
           required
           inputMode="numeric"
-          className="h-9 w-full rounded border px-2 text-[12px]"
+          className="desktop-input h-9 w-full px-2 text-[12px]"
           placeholder="Verification code"
           value={code}
           onChange={(event) => setCode(event.target.value)}
         />
-        {error ? <p className="text-[12px] text-red-700">{error}</p> : null}
+        {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
         <div className="flex items-center gap-2">
-          <button type="submit" className="rounded bg-slate-950 px-3 py-1 text-[12px] text-white" disabled={submitting}>
+          <UiButton type="submit" variant="primary" disabled={submitting}>
             {submitting ? 'Verifying…' : 'Verify'}
-          </button>
-          <button
-            type="button"
-            className="text-[12px] underline disabled:opacity-60"
+          </UiButton>
+          <UiButton
             disabled={resending}
             onClick={() => {
               setError(null)
@@ -67,12 +66,10 @@ export function PlatformStepUpMfaModal({
             }}
           >
             {resending ? 'Sending…' : 'Resend code'}
-          </button>
-          <button type="button" className="ml-auto rounded border px-3 py-1 text-[12px]" onClick={onCancel}>
-            Cancel
-          </button>
+          </UiButton>
+          <UiButton className="ml-auto" onClick={onCancel}>Cancel</UiButton>
         </div>
       </form>
-    </div>
+    </UiModal>
   )
 }
