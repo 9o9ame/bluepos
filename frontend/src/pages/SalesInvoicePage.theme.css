@@ -2216,3 +2216,155 @@ html[data-animations='off'] .sales-reference-screen * {
   min-height: 24px;
   font-size: inherit;
 }
+
+
+/* ==========================================================================
+   Sales Invoice — user appearance compliance
+   Visual-only overrides. Frozen Sales geometry and Amounts layout are untouched.
+   ========================================================================== */
+
+/* Primary-theme accent: inline lookup/dropdown carets. */
+.sales-reference-screen .sales-reference-inline-caret > .sales-reference-field-caret {
+  border-color: color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border)) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 48%, white) 0%,
+    var(--ui-accent) 54%,
+    color-mix(in srgb, var(--ui-accent) 84%, black) 100%
+  ) !important;
+  color: #fff !important;
+  border-radius: var(--control-radius) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.34),
+    var(--ui-control-shadow) !important;
+}
+
+.sales-reference-screen .sales-reference-inline-caret > .sales-reference-field-caret:hover {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 40%, white) 0%,
+    color-mix(in srgb, var(--ui-accent) 92%, white) 54%,
+    var(--ui-accent) 100%
+  ) !important;
+}
+
+:root[data-theme='dark'] .sales-reference-screen .sales-reference-inline-caret > .sales-reference-field-caret {
+  border-color: color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border)) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 72%, var(--ui-surface)) 0%,
+    color-mix(in srgb, var(--ui-accent) 82%, black) 100%
+  ) !important;
+}
+
+/* Focus treatment follows the selected primary theme. */
+.sales-reference-screen input:not([type='radio']):not([type='checkbox']):focus,
+.sales-reference-screen select:focus,
+.sales-reference-screen textarea:focus,
+.sales-reference-screen button:focus-visible {
+  border-color: var(--ui-accent) !important;
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
+
+/* Lookup/picker chrome follows the selected primary theme. */
+.sales-reference-screen .sales-pos-customer-grid,
+.sales-reference-screen .sales-pos-salesman-grid,
+.sales-reference-screen .sales-pos-product-results-grid {
+  border-color: color-mix(in srgb, var(--ui-accent) 42%, var(--ui-border));
+  border-radius: var(--panel-radius);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.sales-reference-screen .sales-pos-customer-grid-head,
+.sales-reference-screen .sales-pos-customer-grid-foot,
+.sales-reference-screen .sales-pos-salesman-grid-head,
+.sales-reference-screen .sales-pos-salesman-grid-foot,
+.sales-reference-screen .sales-pos-product-grid-head,
+.sales-reference-screen .sales-pos-product-grid-foot {
+  border-color: color-mix(in srgb, var(--ui-accent) 28%, var(--ui-border));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 13%, var(--ui-surface-subtle))
+  );
+  color: var(--ui-text);
+}
+
+.sales-reference-screen .sales-pos-customer-grid-row:hover,
+.sales-reference-screen .sales-pos-customer-grid-row:focus-visible,
+.sales-reference-screen .sales-pos-salesman-grid-row:hover,
+.sales-reference-screen .sales-pos-salesman-grid-row:focus-visible,
+.sales-reference-screen .sales-pos-product-grid-row:hover,
+.sales-reference-screen .sales-pos-product-grid-row:focus-visible {
+  background: var(--ui-accent) !important;
+  color: #fff !important;
+}
+
+:root[data-theme='dark'] .sales-reference-screen .sales-pos-customer-grid-row:hover,
+:root[data-theme='dark'] .sales-reference-screen .sales-pos-customer-grid-row:focus-visible,
+:root[data-theme='dark'] .sales-reference-screen .sales-pos-salesman-grid-row:hover,
+:root[data-theme='dark'] .sales-reference-screen .sales-pos-salesman-grid-row:focus-visible,
+:root[data-theme='dark'] .sales-reference-screen .sales-pos-product-grid-row:hover,
+:root[data-theme='dark'] .sales-reference-screen .sales-pos-product-grid-row:focus-visible {
+  background: color-mix(in srgb, var(--ui-accent) 82%, black) !important;
+  color: #fff !important;
+}
+
+/* Active Sales sub-tab uses the user's primary theme rather than fixed blue. */
+.sales-reference-screen .sales-reference-subtab.is-active {
+  border-color: color-mix(in srgb, var(--ui-accent) 55%, var(--ui-border));
+  color: var(--ui-accent-strong);
+  box-shadow: inset 0 -2px 0 var(--ui-accent);
+}
+
+/* Appearance radius/shadow preferences apply visually without changing layout. */
+.sales-reference-screen :where(
+  .sales-reference-subtab,
+  .sales-reference-sale-btn,
+  .sales-reference-record-controls button,
+  .sales-reference-actions-center button,
+  .sales-reference-input-button button,
+  .sales-reference-amounts-grid button,
+  .sales-reference-pay-tools button,
+  .sales-reference-payment-method button,
+  input,
+  select,
+  textarea
+) {
+  border-radius: var(--control-radius);
+}
+
+.sales-reference-screen :where(
+  .sales-reference-options,
+  .sales-reference-amounts,
+  .sales-reference-pay-options,
+  .sales-pos-customer-grid,
+  .sales-pos-salesman-grid,
+  .sales-pos-product-results-grid
+) {
+  border-radius: var(--panel-radius);
+}
+
+:root[data-shadow='none'] .sales-reference-screen :where(
+  .sales-reference-options,
+  .sales-reference-amounts,
+  .sales-reference-pay-options,
+  .sales-pos-customer-grid,
+  .sales-pos-salesman-grid,
+  .sales-pos-product-results-grid,
+  button,
+  input,
+  select,
+  textarea
+) {
+  box-shadow: none !important;
+}
+
+/* Respect the explicit animation preference. */
+:root[data-animations='off'] .sales-reference-screen *,
+:root[data-animations='off'] .sales-reference-screen *::before,
+:root[data-animations='off'] .sales-reference-screen *::after {
+  transition: none !important;
+  animation: none !important;
+}
