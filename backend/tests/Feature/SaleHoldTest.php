@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Branch;
+use App\Authz\PermissionService;
+use App\Models\Permission;
 use App\Models\Product;
+use App\Models\Role;
 use App\Models\Sale;
 use App\Models\SaleHold;
 use App\Models\SaleHoldItem;
@@ -11,6 +14,8 @@ use App\Models\StockBalance;
 use App\Models\Warehouse;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class SaleHoldTest extends TestCase
@@ -252,6 +257,130 @@ class SaleHoldTest extends TestCase
         $this->assertSame(0, SaleHold::query()->count());
         $this->assertSame(0, SaleHoldItem::query()->count());
         $this->assertSame(0, Sale::query()->count());
+    }
+
+    public function test_sales_hold_permission_can_create_and_discard_but_not_recall(): void
+    {
+        $this->signInOwner('hold-permission-hold')->assertOk();
+        $productUlid = $this->createProduct('Hold Permission Item', '25.0000');
+
+        $this->replaceCurrentPermissions(['sales.hold']);
+
+        $hold = $this->postJson('/api/sales/holds', [
+            'price_type' => 'retail',
+            'lines' => [[
+                'product_ulid' => $productUlid,
+                'line_kind' => 'sale',
+                'quantity' => '1.000000',
+            ]],
+        ], $this->idem('hold-permission-hold-create'))
+            ->assertCreated();
+
+        $holdUlid = (string) $hold->json('ulid');
+
+        $this->getJson('/api/sales/holds')->assertForbidden();
+        $this->getJson('/api/sales/holds/'.$holdUlid)->assertForbidden();
+
+        $this->deleteJson('/api/sales/holds/'.$holdUlid)
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+    }
+
+    public function test_sales_recall_permission_can_list_and_load_but_not_create_or_discard(): void
+    {
+        $this->signInOwner('hold-permission-recall')->assertOk();
+        $productUlid = $this->createProduct('Recall Permission Item', '30.0000');
+
+        $hold = $this->postJson('/api/sales/holds', [
+            'price_type' => 'retail',
+            'lines' => [[
+                'product_ulid' => $productUlid,
+                'line_kind' => 'sale',
+                'quantity' => '1.000000',
+            ]],
+        ], $this->idem('hold-permission-recall-seed'))
+            ->assertCreated();
+
+        $holdUlid = (string) $hold->json('ulid');
+
+        $this->replaceCurrentPermissions(['sales.recall']);
+
+        $this->getJson('/api/sales/holds')
+            ->assertOk()
+            ->assertJsonPath('count', 1)
+            ->assertJsonPath('data.0.ulid', $holdUlid);
+
+        $this->getJson('/api/sales/holds/'.$holdUlid)
+            ->assertOk()
+            ->assertJsonPath('ulid', $holdUlid);
+
+        $this->postJson('/api/sales/holds', [
+            'price_type' => 'retail',
+            'lines' => [[
+                'product_ulid' => $productUlid,
+                'line_kind' => 'sale',
+                'quantity' => '1.000000',
+            ]],
+        ], $this->idem('hold-permission-recall-create'))
+            ->assertForbidden();
+
+        $this->deleteJson('/api/sales/holds/'.$holdUlid)
+            ->assertForbidden();
+
+        $this->assertSame(1, SaleHold::query()->count());
+    }
+
+    /**
+     * Replace the current membership role with a custom role containing only
+     * the requested permissions. Pivot ULIDs are populated explicitly because
+     * BluePOS public identity rules also apply to RBAC pivot rows.
+     *
+     * @param list<string> $keys
+     */
+    private function replaceCurrentPermissions(array $keys): void
+    {
+        $context = app(TenantContext::class);
+        $membership = $context->membership();
+
+        $role = Role::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'name' => 'Hold Test '.Str::random(8),
+            'code' => 'hold_test_'.Str::lower(Str::random(10)),
+            'description' => 'Focused Sale Hold RBAC test role',
+            'branch_access' => 'all_branches',
+            'is_system' => false,
+            'is_active' => true,
+        ]);
+
+        $permissions = Permission::query()
+            ->whereIn('key', $keys)
+            ->get();
+
+        $this->assertCount(count($keys), $permissions);
+
+        foreach ($permissions as $permission) {
+            DB::table('role_permissions')->insert([
+                'ulid' => (string) Str::ulid(),
+                'role_id' => $role->id,
+                'permission_id' => $permission->id,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        DB::table('membership_roles')
+            ->where('membership_id', $membership->id)
+            ->delete();
+
+        DB::table('membership_roles')->insert([
+            'ulid' => (string) Str::ulid(),
+            'membership_id' => $membership->id,
+            'role_id' => $role->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        app()->forgetInstance(PermissionService::class);
     }
 
     private function createProduct(string $name, string $retail): string
