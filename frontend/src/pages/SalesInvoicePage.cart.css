@@ -2431,3 +2431,44 @@ html[data-animations='off'] .sales-reference-screen * {
   font-size: 13px !important;
   font-weight: 500 !important;
 }
+
+
+/* Sales posted/due filter layout — canonical UiSelect sizing only. */
+/* Page-owned geometry only: visual states remain owned by UiSelect + appearance tokens. */
+.sales-posted-history .sales-history-filter .sales-history-salesman-select {
+  width: 190px;
+  min-width: 190px;
+}
+
+.sales-posted-history .sales-history-filter .sales-history-status-select {
+  width: 132px;
+  min-width: 132px;
+}
+
+.sales-posted-history .sales-history-filter .ui-select-trigger {
+  height: 29px;
+  min-height: 29px;
+}
+
+.sales-due-toolbar > label .sales-due-salesman-select {
+  width: 190px;
+  min-width: 190px;
+}
+
+.sales-due-toolbar > label .sales-due-salesman-select .ui-select-trigger {
+  height: 28px;
+  min-height: 28px;
+}
+
+@media (max-width: 1250px) {
+  .sales-posted-history .sales-history-filter .sales-history-salesman-select,
+  .sales-due-toolbar > label .sales-due-salesman-select {
+    width: 170px;
+    min-width: 170px;
+  }
+
+  .sales-posted-history .sales-history-filter .sales-history-status-select {
+    width: 120px;
+    min-width: 120px;
+  }
+}
