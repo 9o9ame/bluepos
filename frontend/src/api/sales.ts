@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { Sale, SaleHold, SaleHoldPayload, SalePayment, SalePaymentMethod, SalePayload, SalesmanOption } from '../types/sales'
+import type { Expense, ExpenseAccountOption, ExpensePayload, Sale, SaleHold, SaleHoldPayload, SalePayment, SalePaymentMethod, SalePayload, SalesmanOption } from '../types/sales'
 
 /**
  * Post a sale. The server recalculates every money figure and revalidates
@@ -103,5 +103,51 @@ export function fetchSaleHold(holdUlid: string) {
 export function deleteSaleHold(holdUlid: string) {
   return apiFetch<{ ok: boolean }>(`/api/sales/holds/${holdUlid}`, {
     method: 'DELETE',
+  })
+}
+
+
+export function fetchExpenses(
+  params: {
+    page?: number
+    per_page?: number
+    date_from?: string
+    date_to?: string
+    q?: string
+  } = {},
+) {
+  const search = new URLSearchParams()
+  if (params.page) search.set('page', String(params.page))
+  if (params.per_page) search.set('per_page', String(params.per_page))
+  if (params.date_from) search.set('date_from', params.date_from)
+  if (params.date_to) search.set('date_to', params.date_to)
+  if (params.q) search.set('q', params.q)
+  const query = search.toString()
+
+  return apiFetch<{
+    data: Expense[]
+    meta: {
+      current_page: number
+      per_page: number
+      total: number
+      last_page: number
+    }
+  }>(`/api/sales/expenses${query ? `?${query}` : ''}`, { busy: 'none' })
+}
+
+export function fetchExpenseAccounts() {
+  return apiFetch<ExpenseAccountOption[]>('/api/sales/expenses/accounts', {
+    busy: 'none',
+  })
+}
+
+export function createExpense(
+  payload: ExpensePayload,
+  idempotencyKey: string,
+) {
+  return apiFetch<Expense>('/api/sales/expenses', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 'Idempotency-Key': idempotencyKey },
   })
 }
