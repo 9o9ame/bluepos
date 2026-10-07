@@ -240,3 +240,31 @@ export type SalePayload = {
   notes?: string | null
   sale_date?: string | null
 }
+
+
+export type ExpenseAccountOption = {
+  ulid: string
+  code: string
+  name: string
+}
+
+export type Expense = {
+  ulid: string
+  expense_date: string
+  amount: string
+  reference: string | null
+  description: string | null
+  journal_entry_ulid: string
+  expense_account: ExpenseAccountOption
+  payment_account: ExpenseAccountOption
+  created_at: string | null
+}
+
+export type ExpensePayload = {
+  expense_date: string
+  expense_account_ulid: string
+  payment_account_ulid: string
+  amount: string
+  reference?: string | null
+  description?: string | null
+}
