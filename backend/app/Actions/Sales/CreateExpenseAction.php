@@ -70,7 +70,7 @@ class CreateExpenseAction
                 'amount' => $amount,
                 'reference' => $data['reference'] ?? null,
                 'description' => $data['description'] ?? null,
-                'journal_entry_ulid' => '',
+                'journal_entry_ulid' => null,
                 'idempotency_key' => $idempotencyKey,
                 'created_by' => $this->tenantContext->userId(),
             ]);
