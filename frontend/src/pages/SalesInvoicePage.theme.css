@@ -2571,3 +2571,14 @@ html[data-animations='off'] .sales-reference-screen * {
   width: min(920px, calc(100vw - 72px));
   transform-origin: top left;
 }
+
+
+/* Customer picker must anchor from To field and expand right.
+   Overrides older shared picker rule that forces right:0 !important. */
+.sales-reference-to > .sales-customer-dropdown-shutter {
+  left: 0 !important;
+  right: auto !important;
+  width: min(760px, calc(100vw - 48px)) !important;
+  max-width: calc(100vw - 48px) !important;
+  transform-origin: top left !important;
+}
