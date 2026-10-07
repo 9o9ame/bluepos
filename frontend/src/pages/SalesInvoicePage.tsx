@@ -1033,6 +1033,16 @@ export function SalesInvoicePage() {
                       aria-hidden={!salesmanPickerOpen}
                     >
                       <div className="sales-pos-salesman-grid" role="listbox" aria-label="Choose salesman">
+                        <div className="sales-picker-search">
+                          <input
+                            value={salesmanSearch}
+                            placeholder="Search salesman by code, name, address or mobile"
+                            aria-label="Search salesman"
+                            autoComplete="off"
+                            onChange={(event) => setSalesmanSearch(event.target.value)}
+                          />
+                        </div>
+
                         <div className="sales-pos-salesman-grid-head" aria-hidden="true">
                           <span>Code</span>
                           <span>Name</span>
@@ -1129,6 +1139,16 @@ export function SalesInvoicePage() {
 
                     <div className={`sales-customer-dropdown-shutter${customerPickerOpen ? ' is-open' : ''}`} aria-hidden={!customerPickerOpen}>
                       <div className="sales-pos-customer-grid" role="listbox" aria-label="Choose customer">
+                        <div className="sales-picker-search">
+                          <input
+                            value={customerSearch === 'CASH IN HAND' ? '' : customerSearch}
+                            placeholder="Search customer by code, name, address or mobile"
+                            aria-label="Search customer"
+                            autoComplete="off"
+                            onChange={(event) => setCustomerSearch(event.target.value)}
+                          />
+                        </div>
+
                         <div className="sales-pos-customer-grid-head" aria-hidden="true">
                           <span>Code</span>
                           <span>Party Name</span>
