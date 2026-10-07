@@ -165,6 +165,8 @@ export function SalesInvoicePage() {
 
   const canSaveRoleDefault = useCan('roles.edit')
   const canCreateSale = useCan('sales.create')
+  const canHoldSale = useCan('sales.hold')
+  const canRecallSale = useCan('sales.recall')
   const canCollectPayment = useCan('payments.create')
 
   const columnLayout = useColumnLayout({
@@ -219,7 +221,7 @@ export function SalesInvoicePage() {
   const holdsQuery = useQuery({
     queryKey: ['sales', 'holds', session?.branch.ulid, session?.warehouse.ulid],
     queryFn: fetchSaleHolds,
-    enabled: Boolean(session),
+    enabled: Boolean(session) && canRecallSale,
     retry: false,
   })
 
@@ -938,7 +940,7 @@ export function SalesInvoicePage() {
 
 
   function parkCurrentCart() {
-    if (!canCreateSale || !cart.hasPaidLines || holdMutation.isPending) return
+    if (!canHoldSale || !cart.hasPaidLines || holdMutation.isPending) return
     holdMutation.mutate()
   }
 
@@ -2228,7 +2230,7 @@ export function SalesInvoicePage() {
               <label>
                 <input
                   type="checkbox"
-                  disabled={!canCreateSale || !cart.hasPaidLines || holdMutation.isPending}
+                  disabled={!canHoldSale || !cart.hasPaidLines || holdMutation.isPending}
                   checked={false}
                   onChange={() => parkCurrentCart()}
                 />
