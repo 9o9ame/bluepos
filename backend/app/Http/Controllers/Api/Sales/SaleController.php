@@ -13,6 +13,7 @@ use App\Http\Resources\Sales\SalePaymentResource;
 use App\Http\Resources\Sales\SaleResource;
 use App\Models\PartyProfile;
 use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Models\SalePayment;
 use App\Enums\SaleStatus;
 use App\Enums\SaleReturnStatus;
@@ -112,6 +113,117 @@ class SaleController extends Controller
 
         return [
             'data' => SaleResource::collection($page->items()),
+            'meta' => [
+                'current_page' => $page->currentPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
+                'last_page' => $page->lastPage(),
+            ],
+        ];
+    }
+
+    public function productWise(
+        Request $request,
+        TenantContext $tenantContext,
+    ): array {
+        $this->authorize('viewAny', Sale::class);
+
+        $perPage = min(max($request->integer('per_page', 50), 1), 100);
+
+        $query = SaleItem::query()
+            ->forTenant($tenantContext->tenantId())
+            ->whereHas('sale', function ($sale) use ($request, $tenantContext): void {
+                $sale
+                    ->where('branch_id', $tenantContext->branchId())
+                    ->where('warehouse_id', $tenantContext->warehouseId())
+                    ->where('status', SaleStatus::Posted->value);
+
+                if ($request->filled('date_from')) {
+                    $sale->whereDate('sale_date', '>=', (string) $request->string('date_from'));
+                }
+
+                if ($request->filled('date_to')) {
+                    $sale->whereDate('sale_date', '<=', (string) $request->string('date_to'));
+                }
+            })
+            ->with([
+                'product.category',
+                'sale.customer',
+                'sale.salesmanParty',
+                'unit',
+            ])
+            ->orderByDesc('id');
+
+        if ($request->filled('q')) {
+            $raw = trim((string) $request->string('q'));
+
+            if ($raw !== '') {
+                $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $raw).'%';
+
+                $query->where(function ($line) use ($term): void {
+                    $line
+                        ->whereHas('product', function ($product) use ($term): void {
+                            $product
+                                ->where('product_number', 'ilike', $term)
+                                ->orWhere('name', 'ilike', $term)
+                                ->orWhereHas('category', fn ($category) => $category->where('name', 'ilike', $term));
+                        })
+                        ->orWhereHas('sale', function ($sale) use ($term): void {
+                            $sale
+                                ->where('document_number', 'ilike', $term)
+                                ->orWhereHas('customer', function ($customer) use ($term): void {
+                                    $customer
+                                        ->where('code', 'ilike', $term)
+                                        ->orWhere('name', 'ilike', $term);
+                                })
+                                ->orWhereHas('salesmanParty', function ($salesman) use ($term): void {
+                                    $salesman
+                                        ->where('code', 'ilike', $term)
+                                        ->orWhere('name', 'ilike', $term);
+                                });
+                        });
+                });
+            }
+        }
+
+        $page = $query->paginate($perPage);
+
+        $data = collect($page->items())->map(function (SaleItem $line): array {
+            return [
+                'ulid' => $line->ulid,
+                'sale_ulid' => $line->sale->ulid,
+                'sale_number' => $line->sale->document_number,
+                'sale_date' => $line->sale->sale_date?->toDateString(),
+                'customer' => $line->sale->customer ? [
+                    'ulid' => $line->sale->customer->ulid,
+                    'name' => $line->sale->customer->name,
+                ] : null,
+                'salesman' => $line->sale->salesmanParty ? [
+                    'ulid' => $line->sale->salesmanParty->ulid,
+                    'name' => $line->sale->salesmanParty->name,
+                ] : null,
+                'product' => [
+                    'ulid' => $line->product->ulid,
+                    'product_number' => $line->product->product_number,
+                    'name' => $line->product->name,
+                ],
+                'category' => $line->product->category ? [
+                    'ulid' => $line->product->category->ulid,
+                    'name' => $line->product->category->name,
+                ] : null,
+                'unit' => $line->unit ? [
+                    'ulid' => $line->unit->ulid,
+                    'code' => $line->unit->code,
+                    'name' => $line->unit->name,
+                ] : null,
+                'line_kind' => $line->line_kind->value,
+                'quantity_out' => $line->quantity,
+                'amount' => $line->line_total,
+            ];
+        })->values();
+
+        return [
+            'data' => $data,
             'meta' => [
                 'current_page' => $page->currentPage(),
                 'per_page' => $page->perPage(),
