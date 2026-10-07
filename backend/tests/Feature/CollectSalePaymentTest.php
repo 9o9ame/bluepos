@@ -12,6 +12,7 @@ use App\Models\Sale;
 use App\Models\SalePayment;
 use App\Models\StockBalance;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -89,6 +90,42 @@ class CollectSalePaymentTest extends TestCase
         ], $this->idem('sale-initial-rollback'))
             ->assertStatus(422)
             ->assertJsonPath('error.key', 'CASH_ACCOUNT_REQUIRED');
+
+        $this->assertSame(0, Sale::query()->count());
+        $this->assertSame(0, SalePayment::query()->count());
+        $this->assertSame('10.000000', $this->stock($product));
+    }
+
+    public function test_initial_payment_requires_payment_permission(): void
+    {
+        $this->signInOwner('pay-initial-authz')->assertOk();
+
+        $context = app(\App\Tenancy\TenantContext::class);
+        $roleIds = $context->membership()
+            ->roles()
+            ->where('roles.tenant_id', $context->tenantId())
+            ->pluck('roles.id');
+
+        $paymentPermissionId = DB::table('permissions')
+            ->where('key', 'payments.create')
+            ->value('id');
+
+        DB::table('role_permissions')
+            ->whereIn('role_id', $roleIds)
+            ->where('permission_id', $paymentPermissionId)
+            ->delete();
+
+        $product = $this->createProduct('Initial Payment Authz', '100.0000');
+        $this->giveStock($product, '10');
+
+        $this->postJson('/api/sales', [
+            'items' => [['product_ulid' => $product, 'quantity' => '1']],
+            'initial_payment' => [
+                'amount' => '100.0000',
+                'method' => 'cash',
+            ],
+        ], $this->idem('sale-initial-authz'))
+            ->assertForbidden();
 
         $this->assertSame(0, Sale::query()->count());
         $this->assertSame(0, SalePayment::query()->count());
