@@ -45,6 +45,7 @@ class CreateSaleAction
         private readonly TenantCatalog $catalog,
         private readonly ValidateAppliedSaleOffersAction $validateOffers,
         private readonly PostStockMovementAction $postMovement,
+        private readonly CollectSalePaymentAction $collectPayment,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -184,6 +185,15 @@ class CreateSaleAction
                 ->where('idempotency_key', $idempotencyKey)
                 ->firstOrFail();
 
+            $initialPayment = $data['initial_payment'] ?? null;
+            if (is_array($initialPayment)) {
+                $this->collectPayment->execute(
+                    $sale,
+                    $initialPayment,
+                    $this->initialPaymentIdempotencyKey($idempotencyKey),
+                );
+            }
+
             $this->audit->record('SALE_POSTED', [
                 'resource_type' => 'sale',
                 'resource_ulid' => $sale->ulid,
@@ -207,7 +217,13 @@ class CreateSaleAction
             'items.product',
             'items.unit',
             'items.saleScheme',
+            'payments',
         ];
+    }
+
+    private function initialPaymentIdempotencyKey(string $saleIdempotencyKey): string
+    {
+        return 'sale-initial-payment:'.hash('sha256', $saleIdempotencyKey);
     }
 
     /**
