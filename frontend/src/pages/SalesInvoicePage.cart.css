@@ -1096,6 +1096,60 @@
   gap: 2px;
 }
 
+.sales-expenses-view {
+  gap: 0;
+}
+
+.sales-expense-control-card {
+  border-radius: 7px 7px 0 0;
+}
+
+.sales-expense-combined-head {
+  align-items: center;
+}
+
+.sales-expense-history-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  text-align: right;
+}
+
+.sales-expense-history-head > strong {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  min-height: 24px;
+  padding: 0 7px;
+  border: 1px solid #5e8baa;
+  border-radius: 12px;
+  background: #fff;
+  color: #0d639e;
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 1px 2px rgba(39,77,104,.08);
+}
+
+.sales-expense-history-toolbar {
+  justify-content: flex-end;
+  border-bottom: 0;
+  padding-top: 6px;
+}
+
+.sales-expense-history-toolbar .sales-due-search {
+  flex: 0 1 360px;
+  width: min(360px, 100%);
+}
+
+.sales-expense-history-toolbar .sales-due-toolbar-summary {
+  margin-left: auto;
+}
+
+.sales-expense-history-section {
+  border-top: 0;
+  border-radius: 0 0 7px 7px;
+}
+
 .sales-expense-entry-toolbar {
   display: grid;
   grid-template-columns:
