@@ -2076,6 +2076,103 @@
 }
 
 
+
+/* Expenses: single-line entry + filters, with labels above controls. */
+.sales-expenses-view .sales-expense-entry-toolbar {
+  display: grid;
+  grid-template-columns:
+    105px
+    minmax(160px, 1.2fr)
+    minmax(160px, 1.2fr)
+    85px
+    105px
+    minmax(120px, .95fr)
+    minmax(180px, 1.3fr)
+    105px
+    105px
+    64px
+    84px
+    max-content;
+  align-items: end;
+  gap: 5px;
+  width: 100%;
+  padding: 5px 6px;
+  overflow: hidden;
+}
+
+.sales-expenses-view .sales-expense-entry-toolbar > label,
+.sales-expenses-view .sales-expense-button-field,
+.sales-expenses-view .sales-expense-total-field {
+  display: grid;
+  grid-template-rows: auto 25px;
+  align-content: end;
+  gap: 3px;
+  min-width: 0;
+}
+
+.sales-expenses-view .sales-expense-entry-toolbar > label > span,
+.sales-expenses-view .sales-expense-button-field > span,
+.sales-expenses-view .sales-expense-total-field > span {
+  display: block;
+  min-width: 0;
+  color: #587184;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sales-expenses-view .sales-expense-entry-toolbar > label > input,
+.sales-expenses-view .sales-expense-entry-toolbar .sales-expense-account-select,
+.sales-expenses-view .sales-expense-search-field,
+.sales-expenses-view .sales-expense-button-field > button,
+.sales-expenses-view .sales-expense-total-field > strong {
+  width: 100%;
+  min-width: 0;
+  height: 25px;
+  box-sizing: border-box;
+}
+
+.sales-expenses-view .sales-expense-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sales-expenses-view .sales-expense-search-field > svg {
+  position: absolute;
+  left: 7px;
+  z-index: 1;
+  color: #4b7896;
+  pointer-events: none;
+}
+
+.sales-expenses-view .sales-expense-search-field > input {
+  width: 100%;
+  min-width: 0;
+  height: 25px;
+  padding: 0 7px 0 25px;
+}
+
+.sales-expenses-view .sales-expense-button-field > button {
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.sales-expenses-view .sales-expense-total-field > strong {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 6px;
+  border: 1px solid #d7a26e;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #fffdf8 0%, #f5e2cb 100%);
+  color: #a6530c;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- SALES CART FINAL TOKEN BRIDGE ---------- */
 /* Visual-only. Frozen Sales Invoice geometry remains unchanged. */
 .sales-reference-screen :where(
