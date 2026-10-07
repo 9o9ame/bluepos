@@ -9,6 +9,7 @@ import type { Sale, SaleHold } from '../../types/sales'
 import { SalePaymentPanel } from './SalePaymentPanel'
 import { previewSaleReceipt, printSaleReceipt } from './saleReceipt'
 import { UiSelect } from '../../components/ui/UiSelect'
+import { UiButton } from '../../components/ui/UiButton'
 
 type Props = {
   onRecallHeld: (hold: SaleHold) => Promise<void> | void
@@ -275,10 +276,14 @@ export function SalesPendingInvoices({
             />
           </label>
 
-          <button type="button" className="sales-due-reset" onClick={resetFilters}>
-            <RotateCcw size={13} />
+          <UiButton
+            className="sales-due-reset"
+            variant="info"
+            icon={<RotateCcw size={13} />}
+            onClick={resetFilters}
+          >
             Reset
-          </button>
+          </UiButton>
 
           <div className="sales-due-toolbar-summary">
             <div>
