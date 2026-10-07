@@ -1096,6 +1096,38 @@
   gap: 2px;
 }
 
+.sales-expense-entry-toolbar {
+  display: grid;
+  grid-template-columns:
+    minmax(140px, .72fr)
+    minmax(230px, 1.35fr)
+    minmax(230px, 1.35fr)
+    minmax(145px, .78fr)
+    minmax(170px, .92fr)
+    minmax(220px, 1.25fr)
+    max-content;
+  width: 100%;
+  align-items: end;
+}
+
+.sales-expense-entry-toolbar > label {
+  min-width: 0;
+}
+
+.sales-expense-entry-toolbar > label > input,
+.sales-expense-entry-toolbar .sales-expense-account-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.sales-expense-entry-toolbar > label > input {
+  max-width: none;
+}
+
+.sales-expense-entry-toolbar .sales-due-reset {
+  white-space: nowrap;
+}
+
 .sales-due-toolbar > label > span {
   color: #587184;
   font-size: 9px;
