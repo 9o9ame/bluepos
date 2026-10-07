@@ -88,6 +88,14 @@ class CreateSaleAction
                 $data['customer_ulid'] ?? null
             );
 
+            $paymentDue = (bool) ($data['payment_due'] ?? false);
+            if ($paymentDue && $customer === null) {
+                throw ValidationException::withMessages([
+                    'customer_ulid' =>
+                        'Select a customer before marking a sale as Payment Due.',
+                ]);
+            }
+
             $priceType = $this->resolvePriceType(
                 $data['price_type'] ?? null
             );
@@ -919,6 +927,13 @@ class CreateSaleAction
             throw ValidationException::withMessages([
                 'customer_ulid' =>
                     'This customer is not active.',
+            ]);
+        }
+
+        if ($customer->invoice_restricted) {
+            throw ValidationException::withMessages([
+                'customer_ulid' =>
+                    'Sales invoices are restricted for this customer.',
             ]);
         }
 
