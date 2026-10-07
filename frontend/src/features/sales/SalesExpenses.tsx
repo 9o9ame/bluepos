@@ -180,7 +180,7 @@ export function SalesExpenses() {
             </div>
           </header>
 
-          <div className="sales-due-toolbar">
+          <div className="sales-due-toolbar sales-expense-entry-toolbar">
             <label>
               <span>Date</span>
               <input
@@ -194,6 +194,7 @@ export function SalesExpenses() {
               <span>Expense Account</span>
               <UiSelect
                 value={expenseAccountUlid}
+                className="sales-expense-account-select"
                 options={accountOptions}
                 aria-label="Expense account"
                 onChange={setExpenseAccountUlid}
@@ -204,6 +205,7 @@ export function SalesExpenses() {
               <span>Payment Account</span>
               <UiSelect
                 value={paymentAccountUlid}
+                className="sales-expense-account-select"
                 options={accountOptions}
                 aria-label="Payment account"
                 onChange={setPaymentAccountUlid}
