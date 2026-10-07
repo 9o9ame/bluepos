@@ -33,6 +33,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 import type { SaleOfferEvaluation } from '../types/saleSchemes'
 import type { Sale, SaleHold, SalePaymentMethod, SalePriceType } from '../types/sales'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
+import { UiModal } from '../components/ui/UiModal'
 import { UiSelect } from '../components/ui/UiSelect'
 import {
   SALES_INVOICE_COLUMNS,
@@ -181,6 +182,7 @@ export function SalesInvoicePage() {
   const [activeLineKey, setActiveLineKey] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [savedSale, setSavedSale] = useState<Sale | null>(null)
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [recalledHoldUlid, setRecalledHoldUlid] = useState<string | null>(null)
 
   const [received, setReceived] = useState('')
@@ -373,6 +375,7 @@ export function SalesInvoicePage() {
       const paymentReferenceValue = paymentReference.trim() || null
 
       setSavedSale(sale)
+      setPaymentModalOpen(canCollectPayment)
       setSaveError(null)
 
       cart.clear()
@@ -752,6 +755,7 @@ export function SalesInvoicePage() {
     }
 
     cart.clear()
+    setPaymentModalOpen(false)
     setRecalledHoldUlid(null)
     setSelectedCustomer(null)
     setPaymentDue(false)
@@ -1248,13 +1252,6 @@ export function SalesInvoicePage() {
                     </span>
                   ) : null}
 
-                  {canCollectPayment ? (
-                    <SalePaymentPanel
-                      sale={savedSale}
-                      outstanding={outstandingAfterPayments(savedSale)}
-                      onCollected={() => refreshSavedSale(savedSale.ulid)}
-                    />
-                  ) : null}
                 </>
               ) : null}
             </div>
@@ -2133,6 +2130,23 @@ export function SalesInvoicePage() {
             <strong>-</strong>
           </div>
         </aside>
+      ) : null}
+
+      {savedSale && canCollectPayment ? (
+        <UiModal
+          open={paymentModalOpen}
+          title={`Collect Payment — ${savedSale.document_number}`}
+          ariaLabel="Collect sale payment"
+          size="sm"
+          onClose={() => setPaymentModalOpen(false)}
+          bodyClassName="sales-payment-modal-body"
+        >
+          <SalePaymentPanel
+            sale={savedSale}
+            outstanding={outstandingAfterPayments(savedSale)}
+            onCollected={() => refreshSavedSale(savedSale.ulid)}
+          />
+        </UiModal>
       ) : null}
 
       {partyModalOpen ? (
