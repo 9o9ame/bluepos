@@ -93,6 +93,35 @@ export type Sale = {
   payments?: SalePayment[]
 }
 
+export type SaleQuotation = {
+  ulid: string
+  document_number: string
+  quotation_date: string
+  price_type: 'retail' | 'wholesale' | null
+  subtotal: string
+  discount_amount: string
+  tax_amount: string
+  grand_total: string
+  notes: string | null
+  salesman?: SalesmanOption | null
+  customer: {
+    ulid: string
+    code: string
+    name: string
+  } | null
+  branch: {
+    ulid: string
+    code: string
+    name: string
+  }
+  warehouse: {
+    ulid: string
+    code: string
+    name: string
+  }
+  items: SaleItem[]
+}
+
 export type SaleDraftUnitOption = {
   unit_ulid: string
   code: string
