@@ -20,7 +20,7 @@ import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts }
 import type { Product } from '../types/catalog'
 import { fetchParties, fetchParty, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { createSale, createSaleHold, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen } from '../api/sales'
+import { createSale, createSaleHold, createSaleQuotation, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
@@ -355,6 +355,7 @@ export function SalesInvoicePage() {
 
   const idempotencyKeyRef = useRef(newSaleKey())
   const holdIdempotencyKeyRef = useRef(newHoldKey())
+  const quotationIdempotencyKeyRef = useRef(newSaleKey())
   const receivedRef = useRef<HTMLInputElement | null>(null)
   const productSearchRef = useRef<HTMLInputElement | null>(null)
 
@@ -464,6 +465,50 @@ export function SalesInvoicePage() {
         err instanceof ApiClientError || err instanceof Error
           ? err.message
           : 'Unable to copy the posted invoice.',
+      )
+    },
+  })
+
+  const saveQuotationMutation = useMutation({
+    mutationFn: () => {
+      if (!cart.hasPaidLines) {
+        throw new Error('Add at least one paid product before saving a quotation.')
+      }
+
+      const payload = cart.buildPayload()
+
+      return createSaleQuotation(
+        {
+          price_type: cart.priceType,
+          items: payload.items,
+          free_lines: payload.free_lines,
+          applied_schemes: payload.applied_schemes,
+          customer_ulid: cart.customerUlid,
+          salesman_ulid: selectedSalesmanUlid,
+          notes: cart.notes || null,
+          quotation_date: saleDate,
+        },
+        quotationIdempotencyKeyRef.current,
+      )
+    },
+
+    onSuccess: (quotation) => {
+      setQuotationValue(quotation.document_number)
+      setCopyFromValue('')
+      setSaveError(null)
+      quotationIdempotencyKeyRef.current = newSaleKey()
+
+      feedback.success(
+        `Quotation ${quotation.document_number} saved. No stock or payment was posted.`,
+        'Quotation',
+      )
+    },
+
+    onError: (err) => {
+      setSaveError(
+        err instanceof ApiClientError || err instanceof Error
+          ? err.message
+          : 'Unable to save the quotation.',
       )
     },
   })
@@ -627,6 +672,7 @@ export function SalesInvoicePage() {
       setQuotationValue('')
 
       idempotencyKeyRef.current = newSaleKey()
+      quotationIdempotencyKeyRef.current = newSaleKey()
 
       if (recalledHoldUlid) {
         const recalledUlid = recalledHoldUlid
@@ -712,6 +758,7 @@ export function SalesInvoicePage() {
       setActiveLineKey(null)
       setCopyFromValue('')
       setQuotationValue('')
+      quotationIdempotencyKeyRef.current = newSaleKey()
       await holdsQuery.refetch()
       feedback.success('Sale moved to On Hold.', 'Sales Invoice')
     },
@@ -960,6 +1007,7 @@ export function SalesInvoicePage() {
     setSalesmanPickerOpen(false)
     setCopyFromValue('')
     setQuotationValue('')
+    quotationIdempotencyKeyRef.current = newSaleKey()
   }
 
   function setReceivedAmount(value: string) {
@@ -1190,14 +1238,26 @@ export function SalesInvoicePage() {
                       value={quotationValue}
                       aria-label="Quotation number"
                       placeholder="Quotation #"
-                      title="Enter an exact quotation number and press Enter"
-                      disabled={!canCreateSale || quotationLookupMutation.isPending}
+                      title="Enter a quotation number to load it, or leave blank and use the caret to save the current cart as a quotation"
+                      disabled={
+                        !canCreateSale ||
+                        quotationLookupMutation.isPending ||
+                        saveQuotationMutation.isPending
+                      }
                       onChange={(event) => setQuotationValue(event.target.value)}
                       onKeyDown={(event) => {
                         if (event.key !== 'Enter') return
                         event.preventDefault()
-                        if (!quotationLookupMutation.isPending) {
-                          quotationLookupMutation.mutate()
+
+                        if (quotationValue.trim()) {
+                          if (!quotationLookupMutation.isPending) {
+                            quotationLookupMutation.mutate()
+                          }
+                          return
+                        }
+
+                        if (cart.hasPaidLines && !saveQuotationMutation.isPending) {
+                          saveQuotationMutation.mutate()
                         }
                       }}
                     />
@@ -1208,13 +1268,32 @@ export function SalesInvoicePage() {
                       disabled={
                         !canCreateSale ||
                         quotationLookupMutation.isPending ||
-                        quotationValue.trim().length === 0
+                        saveQuotationMutation.isPending ||
+                        (!quotationValue.trim() && !cart.hasPaidLines)
                       }
-                      title="Load quotation"
-                      aria-label="Load quotation"
-                      onClick={() => quotationLookupMutation.mutate()}
+                      title={
+                        quotationValue.trim()
+                          ? 'Load quotation'
+                          : 'Save current cart as quotation'
+                      }
+                      aria-label={
+                        quotationValue.trim()
+                          ? 'Load quotation'
+                          : 'Save current cart as quotation'
+                      }
+                      onClick={() => {
+                        if (quotationValue.trim()) {
+                          quotationLookupMutation.mutate()
+                        } else {
+                          saveQuotationMutation.mutate()
+                        }
+                      }}
                     >
-                      <ChevronDown size={12} strokeWidth={2.75} />
+                      {quotationValue.trim() ? (
+                        <ChevronDown size={12} strokeWidth={2.75} />
+                      ) : (
+                        <Save size={12} strokeWidth={2.75} />
+                      )}
                     </button>
                   </div>
 
