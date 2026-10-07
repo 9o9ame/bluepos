@@ -2484,3 +2484,42 @@ html[data-animations='off'] .sales-reference-screen * {
   outline: none;
   box-shadow: var(--ui-focus-shadow);
 }
+
+
+/* Invoice Options refinement: customer identity fields start a fresh line. */
+.sales-reference-option-grid > :nth-child(9),
+.sales-reference-option-grid > :nth-child(10),
+.sales-reference-option-grid > :nth-child(11),
+.sales-reference-option-grid > :nth-child(12),
+.sales-reference-option-grid > :nth-child(13),
+.sales-reference-option-grid > :nth-child(14) {
+  grid-row: 2;
+}
+
+.sales-reference-option-grid > :nth-child(9) {
+  grid-column: 1;
+}
+
+.sales-reference-option-grid > :nth-child(10) {
+  grid-column: 2 / 6;
+}
+
+.sales-reference-option-grid > :nth-child(11) {
+  grid-column: 6;
+}
+
+.sales-reference-option-grid > :nth-child(12) {
+  grid-column: 7 / 10;
+}
+
+.sales-reference-option-grid > :nth-child(13) {
+  grid-column: 10;
+}
+
+.sales-reference-option-grid > :nth-child(14) {
+  grid-column: 11 / 15;
+}
+
+.sales-reference-option-grid {
+  row-gap: 4px !important;
+}
