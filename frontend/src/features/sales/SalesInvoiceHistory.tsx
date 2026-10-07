@@ -163,6 +163,7 @@ export function SalesInvoiceHistory() {
         <label className="sales-history-filter">
           <span>Salesman</span>
           <UiSelect
+            className="sales-history-salesman-select"
             aria-label="Salesman"
             value={salesmanUlid}
             options={[
@@ -179,6 +180,7 @@ export function SalesInvoiceHistory() {
         <label className="sales-history-filter">
           <span>Status</span>
           <UiSelect
+            className="sales-history-status-select"
             aria-label="Status"
             value={status}
             options={[
