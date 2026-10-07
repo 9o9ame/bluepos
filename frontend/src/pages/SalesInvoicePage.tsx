@@ -29,6 +29,7 @@ import { SchemeOfferPrompt } from '../features/sales/SchemeOfferPrompt'
 import { SalesExpenses } from '../features/sales/SalesExpenses'
 import { SalesInvoiceHistory } from '../features/sales/SalesInvoiceHistory'
 import { SalesPendingInvoices } from '../features/sales/SalesPendingInvoices'
+import { SalesProductWiseSummary } from '../features/sales/SalesProductWiseSummary'
 import { useSaleCart } from '../features/sales/useSaleCart'
 import { useCan } from '../features/auth/useCan'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -159,7 +160,7 @@ export function SalesInvoicePage() {
   const { closeActiveTab } = useWorkspace()
   const feedback = useFeedback()
 
-  const [view, setView] = useState<'pos' | 'history' | 'pending' | 'expenses'>('pos')
+  const [view, setView] = useState<'pos' | 'history' | 'pending' | 'expenses' | 'product'>('pos')
   const [customizationOpen, setCustomizationOpen] = useState(false)
 
   const canSaveRoleDefault = useCan('roles.edit')
@@ -870,6 +871,8 @@ export function SalesInvoicePage() {
           <SalesPendingInvoices onRecallHeld={recallHeldCart} />
         ) : view === 'expenses' ? (
           <SalesExpenses />
+        ) : view === 'product' ? (
+          <SalesProductWiseSummary />
         ) : (
           <>
             <section className="sales-reference-meta">
@@ -1759,6 +1762,19 @@ export function SalesInvoicePage() {
               </span>
               <span>Expenses</span>
             </button>
+  
+            <button
+              type="button"
+              className={`sales-reference-subtab${
+                view === 'product' ? ' is-active' : ''
+              }`}
+              onClick={() => setView('product')}
+            >
+              <span className="sales-reference-tab-icon is-blue">
+                <FileText />
+              </span>
+              <span>Product Wise Summary</span>
+            </button>
           </nav>
           {view === 'pos' ? (
             <>
@@ -1844,7 +1860,9 @@ export function SalesInvoicePage() {
                 ? 'Posted Invoices'
                 : view === 'pending'
                   ? 'Pending / Due Invoices'
-                  : 'Expenses'}
+                  : view === 'expenses'
+                    ? 'Expenses'
+                    : 'Product Wise Summary'}
             </div>
           )}
         </footer>
