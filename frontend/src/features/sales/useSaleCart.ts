@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { Product, ProductBarcode } from '../../types/catalog'
 import type {
   Sale,
+  SaleQuotation,
   SaleDraftLine,
   SaleDraftUnitOption,
   SalePriceType,
@@ -607,8 +608,8 @@ export function useSaleCart() {
     setSkippedSchemes([])
   }
 
-  function restorePostedSale(
-    source: Sale,
+  function restoreSaleDocument(
+    source: Sale | SaleQuotation,
     productsByUlid: Record<string, Product>,
     stockByProduct: Record<string, string>,
   ) {
@@ -646,7 +647,7 @@ export function useSaleCart() {
         )?.amount ?? null
 
       return [{
-        line_key: `copy:${source.ulid}:${item.ulid}`,
+        line_key: `source:${source.ulid}:${item.ulid}`,
         product_ulid: product.ulid,
         product_name: product.name,
         product_number: product.product_number,
@@ -822,7 +823,7 @@ export function useSaleCart() {
 
     clear,
     restore,
-    restorePostedSale,
+    restoreSaleDocument,
     buildPayload,
   }
 }
