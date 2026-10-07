@@ -261,6 +261,7 @@ export function SalesPendingInvoices({
           <label>
             <span>Salesman</span>
             <UiSelect
+              className="sales-due-salesman-select"
               aria-label="Salesman"
               value={salesmanUlid}
               options={[
