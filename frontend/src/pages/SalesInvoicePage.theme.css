@@ -2428,3 +2428,59 @@ html[data-animations='off'] .sales-reference-screen * {
     overflow-x: auto;
   }
 }
+
+
+/* Footer refinement: view tabs and action buttons stay on one line. */
+.sales-reference-actions {
+  display: flex !important;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.sales-reference-subtabs-bottom {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.sales-reference-actions-center {
+  flex: 0 0 auto;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.sales-reference-shortcuts {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 1320px) {
+  .sales-reference-shortcuts {
+    display: none;
+  }
+}
+
+.sales-picker-search {
+  padding: 5px;
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--ui-surface-subtle);
+}
+
+.sales-picker-search input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sales-picker-search input:focus {
+  border-color: var(--ui-accent);
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
