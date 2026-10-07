@@ -268,3 +268,23 @@ export type ExpensePayload = {
   reference?: string | null
   description?: string | null
 }
+
+
+export type SaleProductWiseRow = {
+  ulid: string
+  sale_ulid: string
+  sale_number: string
+  sale_date: string
+  customer: { ulid: string; name: string } | null
+  salesman: { ulid: string; name: string } | null
+  product: {
+    ulid: string
+    product_number: string
+    name: string
+  }
+  category: { ulid: string; name: string } | null
+  unit: { ulid: string; code: string; name: string } | null
+  line_kind: SaleLineKind
+  quantity_out: string
+  amount: string
+}
