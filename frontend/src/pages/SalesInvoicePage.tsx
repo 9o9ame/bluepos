@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Save,
   StickyNote,
+  WalletCards,
   XCircle,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
@@ -25,6 +26,7 @@ import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
 import { SalesPartyModal } from '../features/sales/SalesPartyModal'
 import { SchemeOfferPrompt } from '../features/sales/SchemeOfferPrompt'
+import { SalesExpenses } from '../features/sales/SalesExpenses'
 import { SalesInvoiceHistory } from '../features/sales/SalesInvoiceHistory'
 import { SalesPendingInvoices } from '../features/sales/SalesPendingInvoices'
 import { useSaleCart } from '../features/sales/useSaleCart'
@@ -157,7 +159,7 @@ export function SalesInvoicePage() {
   const { closeActiveTab } = useWorkspace()
   const feedback = useFeedback()
 
-  const [view, setView] = useState<'pos' | 'history' | 'pending'>('pos')
+  const [view, setView] = useState<'pos' | 'history' | 'pending' | 'expenses'>('pos')
   const [customizationOpen, setCustomizationOpen] = useState(false)
 
   const canSaveRoleDefault = useCan('roles.edit')
@@ -866,6 +868,8 @@ export function SalesInvoicePage() {
           <SalesInvoiceHistory />
         ) : view === 'pending' ? (
           <SalesPendingInvoices onRecallHeld={recallHeldCart} />
+        ) : view === 'expenses' ? (
+          <SalesExpenses />
         ) : (
           <>
             <section className="sales-reference-meta">
@@ -1742,6 +1746,19 @@ export function SalesInvoicePage() {
                 ({holdsQuery.data?.count ?? 0}) Pending / Due Invoices
               </span>
             </button>
+  
+            <button
+              type="button"
+              className={`sales-reference-subtab${
+                view === 'expenses' ? ' is-active' : ''
+              }`}
+              onClick={() => setView('expenses')}
+            >
+              <span className="sales-reference-tab-icon is-yellow">
+                <WalletCards />
+              </span>
+              <span>Expenses</span>
+            </button>
           </nav>
           {view === 'pos' ? (
             <>
@@ -1823,7 +1840,11 @@ export function SalesInvoicePage() {
             </>
           ) : (
             <div className="sales-reference-actions-view-label">
-              {view === 'history' ? 'Posted Invoices' : 'Pending / Due Invoices'}
+              {view === 'history'
+                ? 'Posted Invoices'
+                : view === 'pending'
+                  ? 'Pending / Due Invoices'
+                  : 'Expenses'}
             </div>
           )}
         </footer>
