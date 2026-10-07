@@ -221,6 +221,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::middleware('entitled:sales')->group(function () {
         Route::get('/sales', [SaleController::class, 'index']);
         Route::get('/sales/expenses', [ExpenseController::class, 'index']);
+        Route::get('/sales/expenses/accounts', [ExpenseController::class, 'accounts']);
         Route::post('/sales/expenses', [ExpenseController::class, 'store']);
         Route::get('/sales/salesmen', [SaleController::class, 'salesmen']);
         Route::get('/sales/holds', [SaleHoldController::class, 'index']);
