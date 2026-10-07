@@ -226,6 +226,7 @@ export type SalePayload = {
 
   customer_ulid?: string | null
   salesman_ulid?: string | null
+  payment_due?: boolean
   notes?: string | null
   sale_date?: string | null
 }
