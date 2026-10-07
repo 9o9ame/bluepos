@@ -20,7 +20,7 @@ import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts }
 import type { Product } from '../types/catalog'
 import { fetchParties, fetchParty, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { createSale, createSaleHold, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSales, fetchSalesmen } from '../api/sales'
+import { createSale, createSaleHold, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
@@ -195,6 +195,7 @@ export function SalesInvoicePage() {
   )
 
   const [copyFromValue, setCopyFromValue] = useState('')
+  const [quotationValue, setQuotationValue] = useState('')
 
   const [selectedCustomer, setSelectedCustomer] = useState<Party | null>(null)
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
@@ -426,9 +427,10 @@ export function SalesInvoicePage() {
     },
 
     onSuccess: ({ source, customer, productsByUlid, stockByProduct }) => {
-      cart.restorePostedSale(source, productsByUlid, stockByProduct)
+      cart.restoreSaleDocument(source, productsByUlid, stockByProduct)
 
       setCopyFromValue(source.document_number)
+      setQuotationValue('')
       setSelectedCustomer(customer)
       setCustomerSearch(customer?.name ?? 'CASH IN HAND')
       setSelectedSalesmanUlid(source.salesman?.ulid ?? null)
@@ -462,6 +464,118 @@ export function SalesInvoicePage() {
         err instanceof ApiClientError || err instanceof Error
           ? err.message
           : 'Unable to copy the posted invoice.',
+      )
+    },
+  })
+
+  const quotationLookupMutation = useMutation({
+    mutationFn: async () => {
+      const requestedNumber = quotationValue.trim()
+
+      if (!requestedNumber) {
+        throw new Error('Enter a quotation number to load.')
+      }
+
+      if (cart.lines.length > 0) {
+        throw new Error('Clear the current invoice before loading a quotation.')
+      }
+
+      const lookup = await fetchSaleQuotations({
+        q: requestedNumber,
+        per_page: 20,
+      })
+
+      const summary = lookup.data.find(
+        (quotation) =>
+          quotation.document_number.trim().toLocaleLowerCase() ===
+          requestedNumber.toLocaleLowerCase(),
+      )
+
+      if (!summary) {
+        throw new Error(
+          'No quotation with that exact number was found in this branch and warehouse.',
+        )
+      }
+
+      const source = await fetchSaleQuotation(summary.ulid)
+
+      const productUlids = Array.from(
+        new Set(
+          source.items
+            .map((item) => item.product?.ulid)
+            .filter((ulid): ulid is string => Boolean(ulid)),
+        ),
+      )
+
+      const productRows = await Promise.all(
+        productUlids.map(async (productUlid) => {
+          const [product, stock] = await Promise.all([
+            fetchProduct(productUlid),
+            fetchProductStock(productUlid),
+          ])
+
+          return {
+            productUlid,
+            product,
+            stock: stock.active_warehouse.quantity,
+          }
+        }),
+      )
+
+      const customer = source.customer
+        ? await fetchParty(source.customer.ulid, 'customer')
+        : null
+
+      return {
+        source,
+        customer,
+        productsByUlid: Object.fromEntries(
+          productRows.map((row) => [row.productUlid, row.product]),
+        ),
+        stockByProduct: Object.fromEntries(
+          productRows.map((row) => [row.productUlid, row.stock]),
+        ),
+      }
+    },
+
+    onSuccess: ({ source, customer, productsByUlid, stockByProduct }) => {
+      cart.restoreSaleDocument(source, productsByUlid, stockByProduct)
+
+      setQuotationValue(source.document_number)
+      setCopyFromValue('')
+      setSelectedCustomer(customer)
+      setCustomerSearch(customer?.name ?? 'CASH IN HAND')
+      setSelectedSalesmanUlid(source.salesman?.ulid ?? null)
+      setSalesmanSearch(
+        source.salesman
+          ? `${source.salesman.code ?? ''}${source.salesman.code ? ' — ' : ''}${source.salesman.name}`
+          : '',
+      )
+      setSaleDate(new Date().toISOString().slice(0, 10))
+      setPaymentDue(false)
+      setReceived('')
+      setPaymentReference('')
+      setSavedSale(null)
+      setRecalledHoldUlid(null)
+      setSaveError(null)
+      setProductQuery('')
+      setActiveProductQuery('')
+      setActiveProductPickerOpen(false)
+      setBarcodeQuery('')
+      setActiveLineKey(null)
+      idempotencyKeyRef.current = newSaleKey()
+
+      feedback.success(
+        `Loaded ${source.document_number} into a new unsaved Sales Invoice. Pricing and stock will be revalidated on save.`,
+        'Quotation',
+      )
+    },
+
+    onError: (err) => {
+      setSaveError(
+        err instanceof ApiClientError || err instanceof Error
+          ? err.message
+          : 'Unable to load the quotation.',
       )
     },
   })
@@ -510,6 +624,7 @@ export function SalesInvoicePage() {
       setCustomerPickerOpen(false)
       setSalesmanPickerOpen(false)
       setCopyFromValue('')
+      setQuotationValue('')
 
       idempotencyKeyRef.current = newSaleKey()
 
@@ -596,6 +711,7 @@ export function SalesInvoicePage() {
       setBarcodeQuery('')
       setActiveLineKey(null)
       setCopyFromValue('')
+      setQuotationValue('')
       await holdsQuery.refetch()
       feedback.success('Sale moved to On Hold.', 'Sales Invoice')
     },
@@ -806,6 +922,7 @@ export function SalesInvoicePage() {
     )
     setSaleDate(hold.sale_date ?? new Date().toISOString().slice(0, 10))
     setCopyFromValue('')
+    setQuotationValue('')
     setSavedSale(null)
     setRecalledHoldUlid(hold.ulid)
     setReceived('')
@@ -842,6 +959,7 @@ export function SalesInvoicePage() {
     setCustomerPickerOpen(false)
     setSalesmanPickerOpen(false)
     setCopyFromValue('')
+    setQuotationValue('')
   }
 
   function setReceivedAmount(value: string) {
@@ -1069,17 +1187,32 @@ export function SalesInvoicePage() {
 
                   <div className="sales-reference-input-button sales-reference-inline-caret">
                     <input
+                      value={quotationValue}
                       aria-label="Quotation number"
                       placeholder="Quotation #"
-                      readOnly
+                      title="Enter an exact quotation number and press Enter"
+                      disabled={!canCreateSale || quotationLookupMutation.isPending}
+                      onChange={(event) => setQuotationValue(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter') return
+                        event.preventDefault()
+                        if (!quotationLookupMutation.isPending) {
+                          quotationLookupMutation.mutate()
+                        }
+                      }}
                     />
 
                     <button
                       type="button"
                       className="sales-reference-field-caret"
-                      disabled
-                      title="Quotation lookup is not available yet"
-                      aria-label="Quotation lookup is not available yet"
+                      disabled={
+                        !canCreateSale ||
+                        quotationLookupMutation.isPending ||
+                        quotationValue.trim().length === 0
+                      }
+                      title="Load quotation"
+                      aria-label="Load quotation"
+                      onClick={() => quotationLookupMutation.mutate()}
                     >
                       <ChevronDown size={12} strokeWidth={2.75} />
                     </button>
