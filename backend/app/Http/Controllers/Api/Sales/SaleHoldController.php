@@ -42,8 +42,9 @@ class SaleHoldController extends Controller
     public function store(
         StoreSaleHoldRequest $request,
         StoreSaleHoldAction $store,
+        PermissionService $permissions,
     ): JsonResponse {
-        abort_unless(app(PermissionService::class)->can('sales.hold'), 403);
+        abort_unless($permissions->can('sales.hold'), 403);
 
         $hold = $store->execute(
             $request->validated(),
@@ -79,8 +80,9 @@ class SaleHoldController extends Controller
         string $holdUlid,
         TenantContext $tenantContext,
         AuditLogger $audit,
+        PermissionService $permissions,
     ): JsonResponse {
-        abort_unless(app(PermissionService::class)->can('sales.hold'), 403);
+        abort_unless($permissions->can('sales.hold'), 403);
 
         $hold = $this->find($holdUlid, $tenantContext);
         $ulid = $hold->ulid;
