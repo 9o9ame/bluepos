@@ -170,7 +170,7 @@ export function SalesExpenses() {
   }
 
   return (
-    <section className="sales-pending-view" aria-label="Expenses">
+    <section className="sales-pending-view sales-expenses-view" aria-label="Expenses">
       {canCreate || canView ? (
         <section className="sales-hold-section sales-expense-control-card">
           <header className="sales-pending-section-head sales-expense-combined-head">
