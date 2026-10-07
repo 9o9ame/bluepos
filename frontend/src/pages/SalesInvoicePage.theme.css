@@ -2582,3 +2582,140 @@ html[data-animations='off'] .sales-reference-screen * {
   max-width: calc(100vw - 48px) !important;
   transform-origin: top left !important;
 }
+
+
+/* ==========================================================================
+   Sales Invoice responsive stabilization
+   Desktop >=1280 keeps approved geometry.
+   1024-1279 compacts spacing only.
+   <1024 preserves the desktop POS canvas and allows horizontal scrolling
+   instead of collapsing the frozen layout.
+   ========================================================================== */
+
+/* The shortcuts are the first nonessential footer content. Hide them before
+   they can force Save / Refresh / Preview / Print / Close off the row. */
+@media (max-width: 1600px) {
+  .sales-reference-shortcuts {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .sales-reference-option-grid {
+    grid-template-columns:
+      22px minmax(150px, 1.25fr)
+      34px minmax(126px, 1fr)
+      30px minmax(94px, .78fr)
+      30px minmax(58px, .52fr)
+      26px minmax(108px, .88fr)
+      30px minmax(96px, .78fr)
+      38px minmax(104px, .84fr) !important;
+    column-gap: 3px !important;
+  }
+
+  .sales-reference-options {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .sales-reference-entry-row {
+    column-gap: 4px;
+  }
+
+  .sales-reference-entry-status {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .sales-reference-actions {
+    gap: 4px !important;
+  }
+
+  .sales-reference-subtabs-bottom {
+    gap: 2px;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-subtab {
+    min-width: 0;
+    padding-left: 6px;
+    padding-right: 6px;
+    white-space: nowrap;
+  }
+
+  .sales-reference-actions-center {
+    gap: 3px;
+  }
+
+  .sales-reference-actions-center button {
+    min-width: 0;
+    padding-left: 5px;
+    padding-right: 5px;
+    white-space: nowrap;
+  }
+}
+
+/* Below 1024px this remains a desktop POS surface. Do not stack or hide
+   accounting/payment controls; preserve a usable minimum canvas instead. */
+@media (max-width: 1023px) {
+  .sales-reference-screen {
+    min-width: 1180px !important;
+    overflow-x: auto !important;
+  }
+
+  .sales-reference-main {
+    min-width: 950px !important;
+  }
+
+  .sales-reference-pay {
+    flex: 0 0 220px !important;
+    width: 220px !important;
+    min-width: 220px !important;
+  }
+
+  .sales-reference-option-grid {
+    grid-template-columns:
+      22px minmax(160px, 1.3fr)
+      34px minmax(135px, 1.05fr)
+      30px minmax(100px, .8fr)
+      30px minmax(62px, .52fr)
+      26px minmax(112px, .9fr)
+      30px minmax(100px, .8fr)
+      38px minmax(108px, .86fr) !important;
+    column-gap: 4px !important;
+  }
+
+  .sales-reference-grid-wrap {
+    min-width: 0;
+  }
+
+  .sales-reference-actions {
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+  }
+
+  .sales-reference-subtabs-bottom,
+  .sales-reference-actions-center {
+    flex-wrap: nowrap !important;
+    white-space: nowrap;
+  }
+
+  .sales-reference-actions-center {
+    margin-left: auto;
+    gap: 3px;
+  }
+
+  .sales-reference-actions-center button {
+    min-width: 0;
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+
+  .sales-reference-entry-status {
+    max-width: 360px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
