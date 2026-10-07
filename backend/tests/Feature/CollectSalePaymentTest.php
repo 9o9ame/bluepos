@@ -74,6 +74,29 @@ class CollectSalePaymentTest extends TestCase
         $this->assertSame('9.000000', $this->stock($product));
     }
 
+    public function test_initial_overpayment_rolls_back_sale_and_stock(): void
+    {
+        $this->signInOwner('pay-initial-overpayment')->assertOk();
+        $this->configureAccounts();
+
+        $product = $this->createProduct('Atomic Overpayment Item', '100.0000');
+        $this->giveStock($product, '10');
+
+        $this->postJson('/api/sales', [
+            'items' => [['product_ulid' => $product, 'quantity' => '1']],
+            'initial_payment' => [
+                'amount' => '150.0000',
+                'method' => 'cash',
+            ],
+        ], $this->idem('sale-initial-overpayment'))
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+
+        $this->assertSame(0, Sale::query()->count());
+        $this->assertSame(0, SalePayment::query()->count());
+        $this->assertSame('10.000000', $this->stock($product));
+    }
+
     public function test_initial_payment_failure_rolls_back_sale_and_stock(): void
     {
         $this->signInOwner('pay-initial-rollback')->assertOk();
