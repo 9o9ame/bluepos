@@ -1,5 +1,6 @@
 import { useAuth } from '../features/auth/AuthProvider'
 import { DesktopPanel } from '../components/desktop/DesktopPanel'
+import { AppearanceSettings } from '../features/appearance/AppearanceSettings'
 
 export function AccountPage() {
   const { session } = useAuth()
@@ -25,6 +26,11 @@ export function AccountPage() {
         <dt>Must change password</dt>
         <dd>{session.must_change_password ? 'Yes' : 'No'}</dd>
       </dl>
+
+      <div className="form-group" style={{ marginTop: 12 }}>
+        <div className="form-group-title">Appearance</div>
+        <AppearanceSettings />
+      </div>
     </DesktopPanel>
   )
 }

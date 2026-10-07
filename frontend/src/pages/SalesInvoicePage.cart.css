@@ -2109,3 +2109,24 @@ html[data-animations='off'] .sales-reference-screen * {
   transition: none !important;
   animation: none !important;
 }
+
+
+/* Sales cart/payment accent follows the user's Primary Theme. */
+.sales-reference-screen .sales-payment-method.is-active {
+  border-color: var(--ui-accent);
+  background: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
+  color: var(--ui-accent-strong);
+}
+
+.sales-reference-screen .sales-pos-product-results button:hover,
+.sales-reference-screen .sales-pos-product-results button:focus-visible {
+  background: color-mix(in srgb, var(--ui-accent) 11%, var(--ui-surface));
+  color: var(--ui-accent-strong);
+}
+
+:root[data-theme='dark'] .sales-reference-screen .sales-payment-method.is-active,
+:root[data-theme='dark'] .sales-reference-screen .sales-pos-product-results button:hover,
+:root[data-theme='dark'] .sales-reference-screen .sales-pos-product-results button:focus-visible {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface));
+  color: var(--ui-accent-strong);
+}
