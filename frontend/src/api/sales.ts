@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { Expense, ExpenseAccountOption, ExpensePayload, Sale, SaleHold, SaleHoldPayload, SalePayment, SalePaymentMethod, SalePayload, SalesmanOption } from '../types/sales'
+import type { Expense, ExpenseAccountOption, ExpensePayload, Sale, SaleHold, SaleHoldPayload, SalePayment, SalePaymentMethod, SalePayload, SaleProductWiseRow, SalesmanOption } from '../types/sales'
 
 /**
  * Post a sale. The server recalculates every money figure and revalidates
@@ -50,6 +50,38 @@ export function fetchSales(
       last_page: number
     }
   }>(`/api/sales${query ? `?${query}` : ''}`, { busy: 'none' })
+}
+
+
+
+export function fetchSaleProductWise(
+  params: {
+    page?: number
+    per_page?: number
+    date_from?: string
+    date_to?: string
+    q?: string
+  } = {},
+) {
+  const search = new URLSearchParams()
+  if (params.page) search.set('page', String(params.page))
+  if (params.per_page) search.set('per_page', String(params.per_page))
+  if (params.date_from) search.set('date_from', params.date_from)
+  if (params.date_to) search.set('date_to', params.date_to)
+  if (params.q) search.set('q', params.q)
+  const query = search.toString()
+
+  return apiFetch<{
+    data: SaleProductWiseRow[]
+    meta: {
+      current_page: number
+      per_page: number
+      total: number
+      last_page: number
+    }
+  }>(`/api/sales/product-wise${query ? `?${query}` : ''}`, {
+    busy: 'none',
+  })
 }
 
 export function fetchSalesmen() {
