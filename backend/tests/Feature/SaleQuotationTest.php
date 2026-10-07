@@ -147,4 +147,75 @@ class SaleQuotationTest extends TestCase
 
         $this->assertSame(0, SaleQuotation::query()->count());
     }
+
+    /**
+     * @return array<string, string>
+     */
+    private function idem(string $key): array
+    {
+        return ['Idempotency-Key' => $key];
+    }
+
+    /**
+     * @param array<string, mixed> $overrides
+     */
+    private function createProduct(string $name, array $overrides = []): string
+    {
+        $payload = array_merge([
+            'name' => $name,
+            'base_unit_ulid' => $this->unitUlid('PCS'),
+        ], $overrides);
+
+        if (isset($overrides['retail'])) {
+            unset($payload['retail']);
+            $payload['prices'] = [[
+                'price_type' => 'retail',
+                'amount' => $overrides['retail'],
+            ]];
+        }
+
+        return $this->postJson('/api/products', $payload)
+            ->assertCreated()
+            ->json('ulid');
+    }
+
+    private function giveStock(string $productUlid, string $quantity): void
+    {
+        $product = Product::query()
+            ->where('ulid', $productUlid)
+            ->firstOrFail();
+
+        $context = app(\App\Tenancy\TenantContext::class);
+
+        $balance = StockBalance::query()->firstOrCreate(
+            [
+                'tenant_id' => $product->tenant_id,
+                'warehouse_id' => $context->warehouseId(),
+                'product_id' => $product->id,
+            ],
+            [
+                'branch_id' => $context->branchId(),
+                'quantity' => '0.000000',
+            ],
+        );
+
+        $balance->quantity = bcadd((string) $balance->quantity, $quantity, 6);
+        $balance->average_cost = '10.0000';
+        $balance->stock_value = bcmul((string) $balance->quantity, '10.0000', 4);
+        $balance->save();
+    }
+
+    private function unitUlid(string $code): string
+    {
+        $units = $this->getJson('/api/units')->assertOk()->json();
+
+        foreach ($units as $unit) {
+            if ($unit['code'] === $code) {
+                return $unit['ulid'];
+            }
+        }
+
+        $this->fail('Missing unit '.$code);
+    }
+
 }
