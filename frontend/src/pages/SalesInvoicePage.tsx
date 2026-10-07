@@ -187,6 +187,7 @@ export function SalesInvoicePage() {
   const [paymentMethod, setPaymentMethod] =
     useState<SalePaymentMethod>('cash')
   const [paymentReference, setPaymentReference] = useState('')
+  const [paymentDue, setPaymentDue] = useState(false)
 
   const [saleDate, setSaleDate] = useState(
     () => new Date().toISOString().slice(0, 10),
@@ -338,6 +339,7 @@ export function SalesInvoicePage() {
           notes: cart.notes || null,
           customer_ulid: cart.customerUlid,
           salesman_ulid: selectedSalesmanUlid,
+          payment_due: paymentDue,
         },
         idempotencyKeyRef.current,
       ),
@@ -351,6 +353,7 @@ export function SalesInvoicePage() {
 
       cart.clear()
       setSelectedCustomer(null)
+      setPaymentDue(false)
       setProductQuery('')
       setActiveProductQuery('')
       setActiveProductPickerOpen(false)
@@ -447,6 +450,7 @@ export function SalesInvoicePage() {
       }
       cart.clear()
       setSelectedCustomer(null)
+      setPaymentDue(false)
       setSelectedSalesmanUlid(null)
       setReceived('')
       setPaymentReference('')
@@ -1128,6 +1132,7 @@ export function SalesInvoicePage() {
                             className="sales-pos-customer-grid-row"
                             onClick={() => {
                               setSelectedCustomer(null)
+      setPaymentDue(false)
                               cart.setCustomerUlid(null)
                               setCustomerPickerOpen(false)
                             }}
@@ -1799,7 +1804,12 @@ export function SalesInvoicePage() {
 
             <div className="sales-reference-amounts-checks">
               <label>
-                <input type="checkbox" />
+                <input
+                  type="checkbox"
+                  checked={paymentDue}
+                  disabled={!selectedCustomer}
+                  onChange={(event) => setPaymentDue(event.target.checked)}
+                />
                 {' '}Payment Due
               </label>
 
