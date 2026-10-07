@@ -2195,3 +2195,26 @@ html[data-animations='off'] .sales-reference-screen * {
   height: 25px;
   line-height: 17px;
 }
+
+
+/* Entry/edit controls: improve legibility without changing column widths. */
+.sales-reference-grid .sales-pos-product-entry {
+  box-sizing: border-box;
+  min-height: 27px;
+  height: 27px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 17px;
+}
+
+.sales-reference-grid .sales-pos-line-qty {
+  min-height: 27px;
+  height: 27px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 17px;
+}
