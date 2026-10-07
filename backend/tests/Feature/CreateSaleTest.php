@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Branch;
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SalePayment;
@@ -97,6 +98,68 @@ class CreateSaleTest extends TestCase
         ], $this->idem('sale-salesman-b-1'))
             ->assertStatus(422)
             ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+    }
+
+    public function test_payment_due_requires_a_real_customer(): void
+    {
+        $this->signInOwner('sale-due-customer-required')->assertOk();
+        $product = $this->createProduct('Due Customer Required', ['retail' => '100.0000']);
+        $this->giveStock($product, '10');
+
+        $this->postJson('/api/sales', [
+            'payment_due' => true,
+            'items' => [
+                ['product_ulid' => $product, 'quantity' => '1'],
+            ],
+        ], $this->idem('sale-due-customer-required-1'))
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+
+        $this->assertSame(0, Sale::query()->count());
+        $this->assertSame('10.000000', $this->stockFor($product));
+    }
+
+    public function test_restricted_customer_cannot_be_invoiced(): void
+    {
+        $this->signInOwner('sale-restricted-customer')->assertOk();
+        $product = $this->createProduct('Restricted Customer Item', ['retail' => '100.0000']);
+        $this->giveStock($product, '10');
+        $customer = $this->createCustomer('Restricted Customer', true);
+
+        $this->postJson('/api/sales', [
+            'customer_ulid' => $customer,
+            'payment_due' => true,
+            'items' => [
+                ['product_ulid' => $product, 'quantity' => '1'],
+            ],
+        ], $this->idem('sale-restricted-customer-1'))
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+
+        $this->assertSame(0, Sale::query()->count());
+        $this->assertSame('10.000000', $this->stockFor($product));
+    }
+
+    public function test_payment_due_sale_persists_selected_customer_and_balance(): void
+    {
+        $this->signInOwner('sale-due-valid')->assertOk();
+        $product = $this->createProduct('Valid Due Customer Item', ['retail' => '125.0000']);
+        $this->giveStock($product, '10');
+        $customer = $this->createCustomer('Due Customer');
+
+        $response = $this->postJson('/api/sales', [
+            'customer_ulid' => $customer,
+            'payment_due' => true,
+            'items' => [
+                ['product_ulid' => $product, 'quantity' => '2'],
+            ],
+        ], $this->idem('sale-due-valid-1'))
+            ->assertCreated()
+            ->assertJsonPath('customer.ulid', $customer)
+            ->assertJsonPath('grand_total', '250.0000')
+            ->assertJsonPath('balance_due', '250.0000');
+
+        $this->assertNoInternalIds($response->json());
     }
 
     public function test_client_sent_price_and_totals_are_ignored(): void
@@ -483,6 +546,21 @@ class CreateSaleTest extends TestCase
         $response = $this->postJson('/api/products', $payload)->assertCreated();
 
         return $response->json('ulid');
+    }
+
+    private function createCustomer(string $name, bool $invoiceRestricted = false): string
+    {
+        $context = app(TenantContext::class);
+
+        return Customer::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => 'CUS-'.strtoupper(substr(md5($name.microtime(true)), 0, 8)),
+            'name' => $name,
+            'is_active' => true,
+            'invoice_restricted' => $invoiceRestricted,
+            'created_by' => $context->userId(),
+            'updated_by' => $context->userId(),
+        ])->ulid;
     }
 
     private function createScheme(string $name, string $minAmount, string $rewardProductUlid): string
