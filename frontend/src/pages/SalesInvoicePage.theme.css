@@ -2368,3 +2368,63 @@ html[data-animations='off'] .sales-reference-screen * {
   transition: none !important;
   animation: none !important;
 }
+
+
+/* ==========================================================================
+   Sales Invoice UI refinements — footer navigation + searchable pickers.
+   Visual-only changes on sales-ui-fixes. Amounts geometry is untouched.
+   ========================================================================== */
+
+.sales-reference-actions {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.sales-reference-subtabs-bottom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.sales-reference-subtabs-bottom .sales-reference-subtab {
+  min-height: 34px;
+  margin: 0;
+}
+
+.sales-reference-actions-view-label {
+  justify-self: end;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-sm, 11px);
+  font-weight: 700;
+}
+
+.sales-reference-salesman > input,
+.sales-reference-to > input {
+  cursor: text;
+}
+
+.sales-reference-salesman > input::placeholder,
+.sales-reference-to > input::placeholder {
+  color: var(--ui-text-muted);
+}
+
+@media (max-width: 1180px) {
+  .sales-reference-actions {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .sales-reference-shortcuts {
+    display: none;
+  }
+
+  .sales-reference-subtabs-bottom {
+    overflow-x: auto;
+  }
+}
