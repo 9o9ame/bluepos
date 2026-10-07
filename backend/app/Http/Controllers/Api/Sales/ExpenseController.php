@@ -6,6 +6,7 @@ use App\Actions\Sales\CreateExpenseAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StoreExpenseRequest;
 use App\Http\Resources\Sales\ExpenseResource;
+use App\Models\Account;
 use App\Models\Expense;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -62,6 +63,25 @@ class ExpenseController extends Controller
                 'last_page' => $page->lastPage(),
             ],
         ];
+    }
+
+    public function accounts(TenantContext $tenantContext): array
+    {
+        $this->authorize('create', Expense::class);
+
+        return Account::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->orderBy('name')
+            ->get(['ulid', 'code', 'name'])
+            ->map(fn (Account $account) => [
+                'ulid' => $account->ulid,
+                'code' => $account->code,
+                'name' => $account->name,
+            ])
+            ->values()
+            ->all();
     }
 
     public function store(
