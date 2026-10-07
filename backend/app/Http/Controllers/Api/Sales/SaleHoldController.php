@@ -8,7 +8,6 @@ use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StoreSaleHoldRequest;
 use App\Http\Resources\Sales\SaleHoldResource;
-use App\Models\Sale;
 use App\Models\SaleHold;
 use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
@@ -20,10 +19,7 @@ class SaleHoldController extends Controller
         TenantContext $tenantContext,
         PermissionService $permissions,
     ): array {
-        abort_unless(
-            $permissions->can('sales.create') || $permissions->can('sales.view'),
-            403,
-        );
+        abort_unless($permissions->can('sales.recall'), 403);
 
         $holds = SaleHold::query()
             ->forTenant($tenantContext->tenantId())
@@ -47,7 +43,7 @@ class SaleHoldController extends Controller
         StoreSaleHoldRequest $request,
         StoreSaleHoldAction $store,
     ): JsonResponse {
-        $this->authorize('create', Sale::class);
+        abort_unless(app(PermissionService::class)->can('sales.hold'), 403);
 
         $hold = $store->execute(
             $request->validated(),
@@ -62,10 +58,7 @@ class SaleHoldController extends Controller
         TenantContext $tenantContext,
         PermissionService $permissions,
     ): SaleHoldResource {
-        abort_unless(
-            $permissions->can('sales.create') || $permissions->can('sales.view'),
-            403,
-        );
+        abort_unless($permissions->can('sales.recall'), 403);
 
         return new SaleHoldResource($this->find($holdUlid, $tenantContext)->load([
             'customer',
@@ -87,7 +80,7 @@ class SaleHoldController extends Controller
         TenantContext $tenantContext,
         AuditLogger $audit,
     ): JsonResponse {
-        $this->authorize('create', Sale::class);
+        abort_unless(app(PermissionService::class)->can('sales.hold'), 403);
 
         $hold = $this->find($holdUlid, $tenantContext);
         $ulid = $hold->ulid;
