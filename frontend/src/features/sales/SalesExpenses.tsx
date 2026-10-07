@@ -173,11 +173,21 @@ export function SalesExpenses() {
     <section className="sales-pending-view" aria-label="Expenses">
       {canCreate ? (
         <section className="sales-hold-section">
-          <header className="sales-pending-section-head">
+          <header className="sales-pending-section-head sales-expense-combined-head">
             <div>
               <span className="sales-pending-kicker">POSTED ACCOUNTING</span>
               <h3>New Expense</h3>
             </div>
+
+            {canView ? (
+              <div className="sales-expense-history-head">
+                <div>
+                  <span className="sales-pending-kicker">POSTED EXPENSES</span>
+                  <h3>Expense History</h3>
+                </div>
+                <strong>{meta?.total ?? 0}</strong>
+              </div>
+            ) : null}
           </header>
 
           <div className="sales-due-toolbar sales-expense-entry-toolbar">
@@ -252,61 +262,55 @@ export function SalesExpenses() {
               {createMutation.isPending ? 'Posting…' : 'Post Expense'}
             </button>
           </div>
+
+          {canView ? (
+            <div className="sales-due-toolbar sales-expense-history-toolbar">
+              <div className="sales-due-search">
+                <Search size={14} aria-hidden="true" />
+                <input
+                  value={searchText}
+                  onChange={(event) => setSearchText(event.target.value)}
+                  placeholder="Reference, description, account…"
+                  aria-label="Search expenses"
+                />
+              </div>
+
+              <label>
+                <span>From</span>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(event) => setDateFrom(event.target.value)}
+                />
+              </label>
+
+              <label>
+                <span>To</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(event) => setDateTo(event.target.value)}
+                />
+              </label>
+
+              <button type="button" className="sales-due-reset" onClick={resetFilters}>
+                <RotateCcw size={13} />
+                Reset
+              </button>
+
+              <div className="sales-due-toolbar-summary">
+                <div className="is-due">
+                  <span>LOADED EXPENSES</span>
+                  <strong>{loadedTotal.toFixed(2)}</strong>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
       {canView ? (
-        <section className="sales-due-section">
-          <header className="sales-pending-section-head">
-            <div>
-              <span className="sales-pending-kicker">POSTED EXPENSES</span>
-              <h3>Expense History</h3>
-            </div>
-            <strong>{meta?.total ?? 0}</strong>
-          </header>
-
-          <div className="sales-due-toolbar">
-            <div className="sales-due-search">
-              <Search size={14} aria-hidden="true" />
-              <input
-                value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
-                placeholder="Reference, description, account…"
-                aria-label="Search expenses"
-              />
-            </div>
-
-            <label>
-              <span>From</span>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(event) => setDateFrom(event.target.value)}
-              />
-            </label>
-
-            <label>
-              <span>To</span>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(event) => setDateTo(event.target.value)}
-              />
-            </label>
-
-            <button type="button" className="sales-due-reset" onClick={resetFilters}>
-              <RotateCcw size={13} />
-              Reset
-            </button>
-
-            <div className="sales-due-toolbar-summary">
-              <div className="is-due">
-                <span>LOADED EXPENSES</span>
-                <strong>{loadedTotal.toFixed(2)}</strong>
-              </div>
-            </div>
-          </div>
-
+        <section className="sales-due-section sales-expense-history-section">
           <div
             className="sales-pending-grid-wrap sales-due-grid-wrap"
             onScroll={(event) => loadMoreOnScroll(event.currentTarget)}
