@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\Sales\ExpenseController;
 use App\Http\Controllers\Api\Sales\SaleController;
 use App\Http\Controllers\Api\Sales\SaleHoldController;
 use App\Http\Controllers\Api\Sales\SaleReturnController;
+use App\Http\Controllers\Api\Sales\SaleQuotationController;
 use App\Http\Controllers\Api\SecuritySessionController;
 use App\Http\Controllers\Api\SubcategoryController;
 use App\Http\Controllers\Api\SupplierController;
@@ -221,6 +222,9 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::middleware('entitled:sales')->group(function () {
         Route::get('/sales', [SaleController::class, 'index']);
         Route::get('/sales/product-wise', [SaleController::class, 'productWise']);
+        Route::get('/sales/quotations', [SaleQuotationController::class, 'index']);
+        Route::post('/sales/quotations', [SaleQuotationController::class, 'store']);
+        Route::get('/sales/quotations/{quotationUlid}', [SaleQuotationController::class, 'show']);
         Route::get('/sales/expenses', [ExpenseController::class, 'index']);
         Route::get('/sales/expenses/accounts', [ExpenseController::class, 'accounts']);
         Route::post('/sales/expenses', [ExpenseController::class, 'store']);
