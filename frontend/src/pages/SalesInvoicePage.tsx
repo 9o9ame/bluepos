@@ -20,7 +20,7 @@ import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts }
 import type { Product } from '../types/catalog'
 import { fetchParties, fetchParty, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { createSale, createSaleHold, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSalesmen } from '../api/sales'
+import { createSale, createSaleHold, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSales, fetchSalesmen } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
@@ -194,6 +194,8 @@ export function SalesInvoicePage() {
     () => new Date().toISOString().slice(0, 10),
   )
 
+  const [copyFromValue, setCopyFromValue] = useState('')
+
   const [selectedCustomer, setSelectedCustomer] = useState<Party | null>(null)
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
   const [customerSearch, setCustomerSearch] = useState('CASH IN HAND')
@@ -355,6 +357,115 @@ export function SalesInvoicePage() {
   const receivedRef = useRef<HTMLInputElement | null>(null)
   const productSearchRef = useRef<HTMLInputElement | null>(null)
 
+  const copyFromMutation = useMutation({
+    mutationFn: async () => {
+      const requestedNumber = copyFromValue.trim()
+
+      if (!requestedNumber) {
+        throw new Error('Enter a posted invoice number to copy.')
+      }
+
+      if (cart.lines.length > 0) {
+        throw new Error('Clear the current invoice before using Copy From.')
+      }
+
+      const lookup = await fetchSales({
+        q: requestedNumber,
+        status: 'posted',
+        per_page: 20,
+      })
+
+      const sourceSummary = lookup.data.find(
+        (sale) =>
+          sale.document_number.trim().toLocaleLowerCase() ===
+          requestedNumber.toLocaleLowerCase(),
+      )
+
+      if (!sourceSummary) {
+        throw new Error('No posted invoice with that exact number was found in this branch.')
+      }
+
+      const source = await fetchSale(sourceSummary.ulid)
+      const productUlids = Array.from(
+        new Set(
+          source.items
+            .map((item) => item.product?.ulid)
+            .filter((ulid): ulid is string => Boolean(ulid)),
+        ),
+      )
+
+      const productRows = await Promise.all(
+        productUlids.map(async (productUlid) => {
+          const [product, stock] = await Promise.all([
+            fetchProduct(productUlid),
+            fetchProductStock(productUlid),
+          ])
+
+          return {
+            productUlid,
+            product,
+            stock: stock.active_warehouse.quantity,
+          }
+        }),
+      )
+
+      const customer = source.customer
+        ? await fetchParty(source.customer.ulid, 'customer')
+        : null
+
+      return {
+        source,
+        customer,
+        productsByUlid: Object.fromEntries(
+          productRows.map((row) => [row.productUlid, row.product]),
+        ),
+        stockByProduct: Object.fromEntries(
+          productRows.map((row) => [row.productUlid, row.stock]),
+        ),
+      }
+    },
+
+    onSuccess: ({ source, customer, productsByUlid, stockByProduct }) => {
+      cart.restorePostedSale(source, productsByUlid, stockByProduct)
+
+      setCopyFromValue(source.document_number)
+      setSelectedCustomer(customer)
+      setCustomerSearch(customer?.name ?? 'CASH IN HAND')
+      setSelectedSalesmanUlid(source.salesman?.ulid ?? null)
+      setSalesmanSearch(
+        source.salesman
+          ? `${source.salesman.code ?? ''}${source.salesman.code ? ' — ' : ''}${source.salesman.name}`
+          : '',
+      )
+      setSaleDate(new Date().toISOString().slice(0, 10))
+      setPaymentDue(false)
+      setReceived('')
+      setPaymentReference('')
+      setSavedSale(null)
+      setRecalledHoldUlid(null)
+      setSaveError(null)
+      setProductQuery('')
+      setActiveProductQuery('')
+      setActiveProductPickerOpen(false)
+      setBarcodeQuery('')
+      setActiveLineKey(null)
+      idempotencyKeyRef.current = newSaleKey()
+
+      feedback.success(
+        `Copied ${source.document_number} into a new unsaved invoice. Pricing and stock will be revalidated on save.`,
+        'Copy From',
+      )
+    },
+
+    onError: (err) => {
+      setSaveError(
+        err instanceof ApiClientError || err instanceof Error
+          ? err.message
+          : 'Unable to copy the posted invoice.',
+      )
+    },
+  })
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const requestedPayment = Number.parseFloat(received) || 0
@@ -398,6 +509,7 @@ export function SalesInvoicePage() {
       setActiveProductPickerOpen(false)
       setCustomerPickerOpen(false)
       setSalesmanPickerOpen(false)
+      setCopyFromValue('')
 
       idempotencyKeyRef.current = newSaleKey()
 
@@ -483,6 +595,7 @@ export function SalesInvoicePage() {
       setActiveProductPickerOpen(false)
       setBarcodeQuery('')
       setActiveLineKey(null)
+      setCopyFromValue('')
       await holdsQuery.refetch()
       feedback.success('Sale moved to On Hold.', 'Sales Invoice')
     },
@@ -692,6 +805,7 @@ export function SalesInvoicePage() {
         : '',
     )
     setSaleDate(hold.sale_date ?? new Date().toISOString().slice(0, 10))
+    setCopyFromValue('')
     setSavedSale(null)
     setRecalledHoldUlid(hold.ulid)
     setReceived('')
@@ -727,6 +841,7 @@ export function SalesInvoicePage() {
     setActiveLineKey(null)
     setCustomerPickerOpen(false)
     setSalesmanPickerOpen(false)
+    setCopyFromValue('')
   }
 
   function setReceivedAmount(value: string) {
@@ -914,9 +1029,19 @@ export function SalesInvoicePage() {
                     <span>Copy From:</span>
 
                     <input
-                      defaultValue="0"
+                      value={copyFromValue}
+                      placeholder="Invoice #"
                       aria-label="Copy invoice number"
-                      onChange={() => undefined}
+                      title="Enter an exact posted invoice number and press Enter"
+                      disabled={!canCreateSale || copyFromMutation.isPending}
+                      onChange={(event) => setCopyFromValue(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter') return
+                        event.preventDefault()
+                        if (!copyFromMutation.isPending) {
+                          copyFromMutation.mutate()
+                        }
+                      }}
                     />
                   </div>
                 </div>
