@@ -1153,19 +1153,32 @@
 .sales-expense-entry-toolbar {
   display: grid;
   grid-template-columns:
-    minmax(140px, .72fr)
-    minmax(230px, 1.35fr)
-    minmax(230px, 1.35fr)
-    minmax(145px, .78fr)
-    minmax(170px, .92fr)
-    minmax(220px, 1.25fr)
+    minmax(118px, .7fr)
+    minmax(205px, 1.35fr)
+    minmax(205px, 1.35fr)
+    minmax(110px, .72fr)
+    minmax(145px, .9fr)
+    minmax(190px, 1.2fr)
     max-content;
   width: 100%;
   align-items: end;
+  gap: 8px;
+  overflow: hidden;
 }
 
 .sales-expense-entry-toolbar > label {
+  display: grid;
+  grid-template-rows: auto 28px;
+  align-content: end;
+  gap: 3px;
   min-width: 0;
+}
+
+.sales-expense-entry-toolbar > label > span {
+  display: block;
+  min-width: 0;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .sales-expense-entry-toolbar > label > input,
@@ -1179,6 +1192,7 @@
 }
 
 .sales-expense-entry-toolbar .sales-due-reset {
+  align-self: end;
   white-space: nowrap;
 }
 
