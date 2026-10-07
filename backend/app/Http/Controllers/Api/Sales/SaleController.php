@@ -141,9 +141,16 @@ class SaleController extends Controller
             ->all();
     }
 
-    public function store(StoreSaleRequest $request, CreateSaleAction $create): JsonResponse
-    {
+    public function store(
+        StoreSaleRequest $request,
+        CreateSaleAction $create,
+        PermissionService $permissions,
+    ): JsonResponse {
         $this->authorize('create', Sale::class);
+
+        if ($request->has('initial_payment')) {
+            abort_unless($permissions->can('payments.create'), 403);
+        }
 
         $idempotencyKey = (string) $request->header('Idempotency-Key', '');
 
