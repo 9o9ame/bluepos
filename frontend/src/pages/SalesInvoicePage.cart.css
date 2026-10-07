@@ -2130,3 +2130,68 @@ html[data-animations='off'] .sales-reference-screen * {
   background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface));
   color: var(--ui-accent-strong);
 }
+
+
+/* ==========================================================================
+   Sales Invoice lookup readability + editable row comfort.
+   ========================================================================== */
+
+.sales-pos-product-grid-head,
+.sales-pos-product-grid-row,
+.sales-pos-salesman-grid-head,
+.sales-pos-salesman-grid-row,
+.sales-pos-customer-grid-head,
+.sales-pos-customer-grid-row {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.sales-pos-product-grid-row,
+.sales-pos-salesman-grid-row,
+.sales-pos-customer-grid-row {
+  min-height: 29px !important;
+  font-weight: 500 !important;
+}
+
+.sales-pos-product-grid-row strong,
+.sales-pos-salesman-grid-row strong,
+.sales-pos-customer-grid-row strong {
+  font-weight: 700;
+}
+
+.sales-pos-product-grid-head,
+.sales-pos-salesman-grid-head,
+.sales-pos-customer-grid-head {
+  min-height: 29px;
+  font-weight: 800;
+}
+
+.sales-pos-product-grid-row > span,
+.sales-pos-product-grid-row > strong,
+.sales-pos-salesman-grid-row > span,
+.sales-pos-salesman-grid-row > strong,
+.sales-pos-customer-grid-row > span,
+.sales-pos-customer-grid-row > strong {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.sales-reference-grid .sales-pos-line-qty {
+  box-sizing: border-box;
+  min-height: 25px;
+  height: 25px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  line-height: 17px;
+}
+
+.sales-reference-grid tr.is-active-entry td {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.sales-pos-product-entry.is-active-product {
+  min-height: 25px;
+  height: 25px;
+  line-height: 17px;
+}
