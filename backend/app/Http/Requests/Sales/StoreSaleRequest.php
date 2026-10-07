@@ -4,6 +4,7 @@ namespace App\Http\Requests\Sales;
 
 use App\Enums\PriceType;
 use App\Enums\SaleLineKind;
+use App\Enums\SalePaymentMethod;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -58,6 +59,18 @@ class StoreSaleRequest extends FormRequest
             'customer_ulid' => ['nullable', 'string', 'size:26'],
             'salesman_ulid' => ['nullable', 'string', 'size:26'],
             'payment_due' => ['sometimes', 'boolean'],
+            'initial_payment' => ['sometimes', 'array'],
+            'initial_payment.amount' => [
+                'required_with:initial_payment',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/',
+                'numeric',
+                'gt:0',
+            ],
+            'initial_payment.method' => [
+                'required_with:initial_payment',
+                Rule::enum(SalePaymentMethod::class),
+            ],
+            'initial_payment.reference' => ['nullable', 'string', 'max:100'],
             'warehouse_ulid' => ['nullable', 'string', 'size:26'],
             'notes' => ['nullable', 'string', 'max:2000'],
 
