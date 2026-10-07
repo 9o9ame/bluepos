@@ -143,7 +143,7 @@ class SaleQuotationTest extends TestCase
             ],
         ])
             ->assertStatus(422)
-            ->assertJsonPath('error.code', 'IDEMPOTENCY_KEY_REQUIRED');
+            ->assertJsonPath('error.key', 'IDEMPOTENCY_KEY_REQUIRED');
 
         $this->assertSame(0, SaleQuotation::query()->count());
     }
