@@ -234,17 +234,6 @@ export function SalesInvoicePage() {
     )
   }, [salesmenQuery.data, salesmanSearch])
 
-  const filteredCustomers = useMemo(() => {
-    const query = customerSearch.trim().toLocaleLowerCase()
-    if (!query || query === 'cash in hand') return customersQuery.data ?? []
-
-    return (customersQuery.data ?? []).filter((party) =>
-      [party.code, party.name, party.address, party.mobile, party.phone]
-        .filter(Boolean)
-        .some((value) => String(value).toLocaleLowerCase().includes(query)),
-    )
-  }, [customersQuery.data, customerSearch])
-
   const balanceDue = useMemo(() => {
     const total = Number.parseFloat(cart.preview.grandTotal) || 0
     const paid = Number.parseFloat(received) || 0
@@ -296,6 +285,17 @@ export function SalesInvoicePage() {
     queryFn: () => fetchParties('customer'),
     retry: false,
   })
+
+  const filteredCustomers = useMemo(() => {
+    const query = customerSearch.trim().toLocaleLowerCase()
+    if (!query || query === 'cash in hand') return customersQuery.data ?? []
+
+    return (customersQuery.data ?? []).filter((party) =>
+      [party.code, party.name, party.address, party.mobile, party.phone]
+        .filter(Boolean)
+        .some((value) => String(value).toLocaleLowerCase().includes(query)),
+    )
+  }, [customersQuery.data, customerSearch])
 
   /*
    * IMPORTANT:
@@ -717,7 +717,13 @@ export function SalesInvoicePage() {
     )
 
     setSelectedCustomer(customer)
+    setCustomerSearch(customer?.name ?? 'CASH IN HAND')
     setSelectedSalesmanUlid(hold.salesman?.ulid ?? null)
+    setSalesmanSearch(
+      hold.salesman
+        ? `${hold.salesman.code ?? ''}${hold.salesman.code ? ' — ' : ''}${hold.salesman.name}`
+        : '',
+    )
     setSaleDate(hold.sale_date ?? new Date().toISOString().slice(0, 10))
     setSavedSale(null)
     setRecalledHoldUlid(hold.ulid)
@@ -1040,7 +1046,6 @@ export function SalesInvoicePage() {
                             className="sales-pos-salesman-grid-row"
                             onClick={() => {
                               setSelectedSalesmanUlid(null)
-      setSalesmanSearch('')
                               setSalesmanSearch('')
                               setSalesmanPickerOpen(false)
                             }}
