@@ -84,6 +84,20 @@ export function fetchSaleProductWise(
   })
 }
 
+export function createSaleQuotation(
+  payload: Omit<
+    SalePayload,
+    'sale_date' | 'payment_due' | 'initial_payment'
+  > & { quotation_date?: string | null },
+  idempotencyKey: string,
+) {
+  return apiFetch<SaleQuotation>('/api/sales/quotations', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    headers: { 'Idempotency-Key': idempotencyKey },
+  })
+}
+
 export function fetchSaleQuotations(
   params: { q?: string; page?: number; per_page?: number } = {},
 ) {
