@@ -19,7 +19,7 @@ import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts }
 import type { Product } from '../types/catalog'
 import { fetchParties, fetchParty, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { createSale, createSaleHold, createSalePayment, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSalesmen } from '../api/sales'
+import { createSale, createSaleHold, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSalesmen } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
@@ -76,10 +76,6 @@ function outstandingAfterPayments(sale: Sale): string {
 
 function newSaleKey(): string {
   return `pos-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-}
-
-function newPaymentKey(): string {
-  return `pos-payment-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 function newHoldKey(): string {
@@ -357,8 +353,11 @@ export function SalesInvoicePage() {
   const productSearchRef = useRef<HTMLInputElement | null>(null)
 
   const saveMutation = useMutation({
-    mutationFn: async () =>
-      createSale(
+    mutationFn: async () => {
+      const requestedPayment = Number.parseFloat(received) || 0
+      const paymentReferenceValue = paymentReference.trim() || null
+
+      return createSale(
         {
           ...cart.buildPayload(),
           sale_date: saleDate,
@@ -366,16 +365,25 @@ export function SalesInvoicePage() {
           customer_ulid: cart.customerUlid,
           salesman_ulid: selectedSalesmanUlid,
           payment_due: paymentDue,
+          initial_payment:
+            requestedPayment > 0
+              ? {
+                  amount: requestedPayment.toFixed(4),
+                  method: paymentMethod,
+                  reference: paymentReferenceValue,
+                }
+              : undefined,
         },
         idempotencyKeyRef.current,
-      ),
+      )
+    },
 
     onSuccess: (sale) => {
-      const requestedPayment = Number.parseFloat(received) || 0
-      const paymentReferenceValue = paymentReference.trim() || null
-
       setSavedSale(sale)
-      setPaymentModalOpen(canCollectPayment)
+      setPaymentModalOpen(
+        canCollectPayment &&
+        Number.parseFloat(outstandingAfterPayments(sale)) > 0,
+      )
       setSaveError(null)
 
       cart.clear()
@@ -404,25 +412,8 @@ export function SalesInvoicePage() {
           })
       }
 
-      /*
-       * If salesman entered Received before pressing Sale,
-       * actually collect that payment after the sale is created.
-       */
-      if (
-        canCollectPayment &&
-        requestedPayment > 0 &&
-        requestedPayment <= (Number.parseFloat(sale.grand_total) || 0)
-      ) {
-        collectPaymentMutation.mutate({
-          saleUlid: sale.ulid,
-          amount: requestedPayment.toFixed(4),
-          method: paymentMethod,
-          reference: paymentReferenceValue,
-        })
-      } else {
-        setReceived('')
-        setPaymentReference('')
-      }
+      setReceived('')
+      setPaymentReference('')
     },
 
     onError: (err) => {
@@ -498,41 +489,6 @@ export function SalesInvoicePage() {
         err instanceof ApiClientError
           ? err.message
           : 'Unable to place this sale on hold.',
-      )
-    },
-  })
-
-  const collectPaymentMutation = useMutation({
-    mutationFn: async (payload: {
-      saleUlid: string
-      amount: string
-      method: SalePaymentMethod
-      reference: string | null
-    }) =>
-      createSalePayment(
-        payload.saleUlid,
-        {
-          amount: payload.amount,
-          method: payload.method,
-          reference: payload.reference,
-        },
-        newPaymentKey(),
-      ),
-
-    onSuccess: async () => {
-      setReceived('')
-      setPaymentReference('')
-
-      if (savedSale) {
-        await refreshSavedSale(savedSale.ulid)
-      }
-    },
-
-    onError: (err) => {
-      setSaveError(
-        err instanceof ApiClientError
-          ? err.message
-          : 'Sale was saved, but payment could not be collected.',
       )
     },
   })
@@ -862,7 +818,7 @@ export function SalesInvoicePage() {
           cart.hasPaidLines &&
           !stockIssue &&
           !saveMutation.isPending &&
-          !collectPaymentMutation.isPending
+          true
         ) {
           saveMutation.mutate()
         }
@@ -895,12 +851,10 @@ export function SalesInvoicePage() {
     cart.hasPaidLines,
     stockIssue,
     saveMutation.isPending,
-    collectPaymentMutation.isPending,
     savedSale,
   ])
 
-  const isBusy =
-    saveMutation.isPending || collectPaymentMutation.isPending
+  const isBusy = saveMutation.isPending
 
   return (
     <div
@@ -1244,13 +1198,6 @@ export function SalesInvoicePage() {
                     Saved {savedSale.document_number} — total{' '}
                     {savedSale.grand_total}
                   </span>
-
-                  {collectPaymentMutation.isPending ? (
-                    <span>
-                      {' '}Collecting {received} via{' '}
-                      {paymentMethod.toUpperCase()}...
-                    </span>
-                  ) : null}
 
                 </>
               ) : null}
