@@ -205,6 +205,93 @@ class CreateSaleAction
     }
 
     /**
+     * Resolve and price a Sales document without persisting or posting stock.
+     *
+     * Quotations reuse this exact preparation path so product pricing,
+     * discounts, tax, units, packaging and schemes stay server-authoritative.
+     *
+     * @param array<string, mixed> $data
+     * @return array{
+     *     warehouse: Warehouse,
+     *     customer: ?Customer,
+     *     salesman: ?PartyProfile,
+     *     price_type: PriceType,
+     *     lines: list<array<string, mixed>>
+     * }
+     */
+    public function prepareDocument(array $data): array
+    {
+        $warehouse = $this->resolveWarehouse(
+            $data['warehouse_ulid'] ?? null
+        );
+
+        $customer = $this->resolveCustomer(
+            $data['customer_ulid'] ?? null
+        );
+
+        $priceType = $this->resolvePriceType(
+            $data['price_type'] ?? null
+        );
+
+        $salesman = $this->resolveSalesman(
+            $data['salesman_ulid'] ?? null
+        );
+
+        $lines = $this->normalizeLines(
+            $data['items'] ?? [],
+            $priceType,
+        );
+
+        if ($lines === []) {
+            throw ValidationException::withMessages([
+                'items' => 'Add at least one sale line.',
+            ]);
+        }
+
+        $paidLines = array_values(
+            array_filter(
+                $lines,
+                static fn (array $line): bool =>
+                    $line['line_kind'] === SaleLineKind::Sale->value,
+            )
+        );
+
+        if ($paidLines === []) {
+            throw ValidationException::withMessages([
+                'items' => 'A sale document needs at least one paid line.',
+            ]);
+        }
+
+        $paidSubtotal = '0.0000';
+
+        foreach ($paidLines as $line) {
+            $paidSubtotal = bcadd(
+                $paidSubtotal,
+                bcsub($line['gross_amount'], $line['discount_amount'], 4),
+                4
+            );
+        }
+
+        $offers = $this->validateOffers->execute(
+            $paidSubtotal,
+            $data['free_lines'] ?? [],
+            $data['applied_schemes'] ?? [],
+            $data['sale_date'] ?? null,
+        );
+
+        return [
+            'warehouse' => $warehouse,
+            'customer' => $customer,
+            'salesman' => $salesman,
+            'price_type' => $priceType,
+            'lines' => array_merge(
+                $paidLines,
+                $this->offersToLines($offers)
+            ),
+        ];
+    }
+
+    /**
      * @return list<string>
      */
     public static function with(): array
