@@ -694,6 +694,7 @@ export function SalesInvoicePage() {
     )
 
     setSelectedCustomer(customer)
+    setPaymentDue(false)
     setSelectedSalesmanUlid(hold.salesman?.ulid ?? null)
     setSaleDate(hold.sale_date ?? new Date().toISOString().slice(0, 10))
     setSavedSale(null)
@@ -720,6 +721,7 @@ export function SalesInvoicePage() {
     cart.clear()
     setRecalledHoldUlid(null)
     setSelectedCustomer(null)
+    setPaymentDue(false)
     setReceived('')
     setPaymentReference('')
     setProductQuery('')
@@ -1132,7 +1134,7 @@ export function SalesInvoicePage() {
                             className="sales-pos-customer-grid-row"
                             onClick={() => {
                               setSelectedCustomer(null)
-      setPaymentDue(false)
+                              setPaymentDue(false)
                               cart.setCustomerUlid(null)
                               setCustomerPickerOpen(false)
                             }}
