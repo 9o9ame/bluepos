@@ -100,6 +100,47 @@ class CreateSaleTest extends TestCase
             ->assertJsonPath('error.key', 'VALIDATION_ERROR');
     }
 
+    public function test_inactive_salesman_cannot_be_selected_for_sale(): void
+    {
+        $this->signInOwner('sale-salesman-inactive')->assertOk();
+
+        $salesman = $this->postJson('/api/party-profiles', [
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'code' => 'SM-INACTIVE',
+            'name' => 'Inactive Salesman',
+        ])->assertCreated();
+
+        $salesmanUlid = (string) $salesman->json('identity_ulid');
+
+        $this->patchJson('/api/party-profiles/'.$salesmanUlid, [
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'code' => 'SM-INACTIVE',
+            'name' => 'Inactive Salesman',
+            'is_active' => false,
+        ])->assertOk();
+
+        $product = $this->createProduct('Inactive Salesman Item', ['retail' => '25.0000']);
+        $this->giveStock($product, '10');
+
+        $this->getJson('/api/sales/salesmen')
+            ->assertOk()
+            ->assertJsonMissing(['ulid' => $salesmanUlid]);
+
+        $this->postJson('/api/sales', [
+            'salesman_ulid' => $salesmanUlid,
+            'items' => [
+                ['product_ulid' => $product, 'quantity' => '1'],
+            ],
+        ], $this->idem('sale-salesman-inactive-1'))
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+
+        $this->assertSame(0, Sale::query()->count());
+        $this->assertSame('10.000000', $this->stockFor($product));
+    }
+
     public function test_payment_due_requires_a_real_customer(): void
     {
         $this->signInOwner('sale-due-customer-required')->assertOk();
