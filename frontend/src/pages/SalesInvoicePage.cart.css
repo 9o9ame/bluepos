@@ -2218,3 +2218,19 @@ html[data-animations='off'] .sales-reference-screen * {
   font-weight: 600;
   line-height: 17px;
 }
+
+
+/* Typed-value legibility: win over older Sales page font rules. */
+.sales-reference-screen .sales-reference-grid input.sales-pos-product-entry,
+.sales-reference-screen .sales-reference-grid input.sales-pos-line-qty {
+  font-size: 14px !important;
+  font-weight: 650 !important;
+  line-height: 18px !important;
+  -webkit-text-size-adjust: 100%;
+}
+
+.sales-reference-screen .sales-reference-grid input.sales-pos-product-entry::placeholder,
+.sales-reference-screen .sales-reference-grid input.sales-pos-line-qty::placeholder {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
