@@ -190,7 +190,7 @@ export function SalesExpenses() {
             ) : null}
           </header>
 
-          {canCreate ? (
+          {canCreate || canView ? (
             <div className="sales-due-toolbar sales-expense-entry-toolbar">
             <label>
               <span>Date</span>
@@ -253,59 +253,68 @@ export function SalesExpenses() {
               />
             </label>
 
-            <button
-              type="button"
-              className="sales-due-reset"
-              disabled={createMutation.isPending || accountsQuery.isFetching}
-              onClick={submitExpense}
-            >
-              <Plus size={13} />
-              {createMutation.isPending ? 'Posting…' : 'Post Expense'}
-            </button>
-            </div>
-          ) : null}
+            {canView ? (
+              <>
+                <label className="sales-expense-search-label">
+                  <span>Search</span>
+                  <div className="sales-expense-search-field">
+                    <Search size={14} aria-hidden="true" />
+                    <input
+                      value={searchText}
+                      onChange={(event) => setSearchText(event.target.value)}
+                      placeholder="Reference, description, account…"
+                      aria-label="Search expenses"
+                    />
+                  </div>
+                </label>
 
-          {canView ? (
-            <div className="sales-due-toolbar sales-expense-history-toolbar">
-              <div className="sales-due-search">
-                <Search size={14} aria-hidden="true" />
-                <input
-                  value={searchText}
-                  onChange={(event) => setSearchText(event.target.value)}
-                  placeholder="Reference, description, account…"
-                  aria-label="Search expenses"
-                />
-              </div>
+                <label>
+                  <span>From</span>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(event) => setDateFrom(event.target.value)}
+                  />
+                </label>
 
-              <label>
-                <span>From</span>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(event) => setDateFrom(event.target.value)}
-                />
-              </label>
+                <label>
+                  <span>To</span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(event) => setDateTo(event.target.value)}
+                  />
+                </label>
 
-              <label>
-                <span>To</span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(event) => setDateTo(event.target.value)}
-                />
-              </label>
+                <div className="sales-expense-button-field">
+                  <span aria-hidden="true">&nbsp;</span>
+                  <button type="button" className="sales-due-reset" onClick={resetFilters}>
+                    <RotateCcw size={13} />
+                    Reset
+                  </button>
+                </div>
 
-              <button type="button" className="sales-due-reset" onClick={resetFilters}>
-                <RotateCcw size={13} />
-                Reset
-              </button>
-
-              <div className="sales-due-toolbar-summary">
-                <div className="is-due">
-                  <span>LOADED EXPENSES</span>
+                <div className="sales-expense-total-field">
+                  <span>Loaded Expenses</span>
                   <strong>{loadedTotal.toFixed(2)}</strong>
                 </div>
+              </>
+            ) : null}
+
+            {canCreate ? (
+              <div className="sales-expense-button-field">
+                <span aria-hidden="true">&nbsp;</span>
+                <button
+                  type="button"
+                  className="sales-due-reset"
+                  disabled={createMutation.isPending || accountsQuery.isFetching}
+                  onClick={submitExpense}
+                >
+                  <Plus size={13} />
+                  {createMutation.isPending ? 'Posting…' : 'Post Expense'}
+                </button>
               </div>
+            ) : null}
             </div>
           ) : null}
         </section>
