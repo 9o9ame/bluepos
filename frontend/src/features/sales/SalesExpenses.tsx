@@ -161,7 +161,7 @@ export function SalesExpenses() {
 
   if (!canView && !canCreate) {
     return (
-      <section className="sales-pending-view" aria-label="Expenses">
+      <section className="sales-pending-view sales-expenses-view" aria-label="Expenses">
         <div className="sales-pending-empty">
           You do not have permission to view or create expenses.
         </div>
@@ -171,8 +171,8 @@ export function SalesExpenses() {
 
   return (
     <section className="sales-pending-view" aria-label="Expenses">
-      {canCreate ? (
-        <section className="sales-hold-section">
+      {canCreate || canView ? (
+        <section className="sales-hold-section sales-expense-control-card">
           <header className="sales-pending-section-head sales-expense-combined-head">
             <div>
               <span className="sales-pending-kicker">POSTED ACCOUNTING</span>
@@ -190,7 +190,8 @@ export function SalesExpenses() {
             ) : null}
           </header>
 
-          <div className="sales-due-toolbar sales-expense-entry-toolbar">
+          {canCreate ? (
+            <div className="sales-due-toolbar sales-expense-entry-toolbar">
             <label>
               <span>Date</span>
               <input
@@ -261,7 +262,8 @@ export function SalesExpenses() {
               <Plus size={13} />
               {createMutation.isPending ? 'Posting…' : 'Post Expense'}
             </button>
-          </div>
+            </div>
+          ) : null}
 
           {canView ? (
             <div className="sales-due-toolbar sales-expense-history-toolbar">
