@@ -23,6 +23,8 @@ export function SalesPendingInvoices({
   onRecallHeld,
 }: Props) {
   const canCollectPayment = useCan('payments.create')
+  const canHoldSale = useCan('sales.hold')
+  const canRecallSale = useCan('sales.recall')
   const { session } = useAuth()
   const feedback = useFeedback()
   const [holdBusyUlid, setHoldBusyUlid] = useState<string | null>(null)
@@ -36,7 +38,7 @@ export function SalesPendingInvoices({
   const holdsQuery = useQuery({
     queryKey: ['sales', 'holds', session?.branch.ulid, session?.warehouse.ulid],
     queryFn: fetchSaleHolds,
-    enabled: Boolean(session),
+    enabled: Boolean(session) && canRecallSale,
     retry: false,
   })
 
@@ -106,7 +108,7 @@ export function SalesPendingInvoices({
   }
 
   async function recallHold(holdUlid: string) {
-    if (holdBusyUlid) return
+    if (holdBusyUlid || !canRecallSale) return
 
     setHoldBusyUlid(holdUlid)
     try {
@@ -127,7 +129,7 @@ export function SalesPendingInvoices({
   }
 
   async function discardHold(holdUlid: string) {
-    if (holdBusyUlid) return
+    if (holdBusyUlid || !canHoldSale) return
 
     setHoldBusyUlid(holdUlid)
     try {
@@ -190,7 +192,7 @@ export function SalesPendingInvoices({
                     <td className="sales-pending-actions">
                       <button
                         type="button"
-                        disabled={holdBusyUlid === entry.ulid}
+                        disabled={!canRecallSale || holdBusyUlid === entry.ulid}
                         onClick={() => void recallHold(entry.ulid)}
                       >
                         {holdBusyUlid === entry.ulid ? 'Working…' : 'Recall'}
@@ -198,7 +200,7 @@ export function SalesPendingInvoices({
                       <button
                         type="button"
                         className="is-danger"
-                        disabled={holdBusyUlid === entry.ulid}
+                        disabled={!canHoldSale || holdBusyUlid === entry.ulid}
                         onClick={() => void discardHold(entry.ulid)}
                       >
                         Discard
