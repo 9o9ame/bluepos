@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('amount', 20, 4);
             $table->string('reference', 100)->nullable();
             $table->string('description', 500)->nullable();
-            $table->char('journal_entry_ulid', 26);
+            $table->char('journal_entry_ulid', 26)->nullable();
             $table->string('idempotency_key', 120);
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
             $table->timestamps();
