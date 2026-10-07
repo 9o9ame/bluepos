@@ -21,6 +21,19 @@ class ExpenseTest extends TestCase
         $expenseAccount = $this->leafAccount('OFFICE EXPENSE', 'EXP-1001');
         $paymentAccount = $this->leafAccount('PETTY CASH', 'CASH-1001');
 
+        $this->getJson('/api/sales/expenses/accounts')
+            ->assertOk()
+            ->assertJsonFragment([
+                'ulid' => $expenseAccount->ulid,
+                'code' => $expenseAccount->code,
+                'name' => $expenseAccount->name,
+            ])
+            ->assertJsonFragment([
+                'ulid' => $paymentAccount->ulid,
+                'code' => $paymentAccount->code,
+                'name' => $paymentAccount->name,
+            ]);
+
         $payload = [
             'expense_date' => '2026-10-07',
             'expense_account_ulid' => $expenseAccount->ulid,
