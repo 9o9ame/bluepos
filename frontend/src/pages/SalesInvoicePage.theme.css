@@ -2558,3 +2558,16 @@ html[data-animations='off'] .sales-reference-screen * {
 .sales-reference-option-grid > :nth-child(6) { grid-column: 12 !important; }
 .sales-reference-option-grid > :nth-child(7) { grid-column: 13 !important; }
 .sales-reference-option-grid > :nth-child(8) { grid-column: 14 !important; }
+
+
+/* Customer picker alignment after header reorder: expand toward the right. */
+.sales-reference-to {
+  position: relative;
+}
+
+.sales-reference-to .sales-customer-dropdown-shutter {
+  left: 0;
+  right: auto;
+  width: min(920px, calc(100vw - 72px));
+  transform-origin: top left;
+}
