@@ -939,18 +939,15 @@ export function SalesInvoicePage() {
                     <input
                       aria-label="Quotation number"
                       placeholder="Quotation #"
+                      readOnly
                     />
 
                     <button
                       type="button"
                       className="sales-reference-field-caret"
-                      onClick={() => {
-                        setSaveError(
-                          'Quotation lookup is not connected to the current sales API yet.',
-                        )
-                      }}
-                      title="Quotation lookup"
-                      aria-label="Quotation lookup"
+                      disabled
+                      title="Quotation lookup is not available yet"
+                      aria-label="Quotation lookup is not available yet"
                     >
                       <ChevronDown size={12} strokeWidth={2.75} />
                     </button>
