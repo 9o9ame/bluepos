@@ -452,6 +452,78 @@ class CreateSaleTest extends TestCase
             ->assertJsonCount(2, 'data');
     }
 
+    public function test_product_wise_sales_activity_is_scoped_searchable_and_date_filtered(): void
+    {
+        $this->signInOwner('sale-product-wise')->assertOk();
+
+        $cola = $this->createProduct('Product Wise Cola', ['retail' => '25.0000']);
+        $chips = $this->createProduct('Product Wise Chips', ['retail' => '15.0000']);
+        $this->giveStock($cola, '20');
+        $this->giveStock($chips, '20');
+
+        $customer = $this->createCustomer('Product Wise Customer');
+
+        $salesman = $this->postJson('/api/party-profiles', [
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'code' => 'SM-PW-1',
+            'name' => 'Product Wise Salesman',
+            'mobile' => '03000000009',
+        ])->assertCreated()->json('identity_ulid');
+
+        $this->postJson('/api/sales', [
+            'customer_ulid' => $customer,
+            'salesman_ulid' => $salesman,
+            'sale_date' => '2026-09-15',
+            'items' => [
+                ['product_ulid' => $cola, 'quantity' => '2'],
+            ],
+        ], $this->idem('sale-product-wise-old'))->assertCreated();
+
+        $currentSale = $this->postJson('/api/sales', [
+            'customer_ulid' => $customer,
+            'salesman_ulid' => $salesman,
+            'sale_date' => '2026-10-07',
+            'items' => [
+                ['product_ulid' => $cola, 'quantity' => '3'],
+                ['product_ulid' => $chips, 'quantity' => '4'],
+            ],
+        ], $this->idem('sale-product-wise-current'))->assertCreated();
+
+        $saleUlid = (string) $currentSale->json('ulid');
+
+        $this->getJson('/api/sales/product-wise?date_from=2026-10-01&date_to=2026-10-31')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonFragment([
+                'sale_ulid' => $saleUlid,
+                'quantity_out' => '3.000000',
+                'amount' => '75.0000',
+            ])
+            ->assertJsonFragment([
+                'sale_ulid' => $saleUlid,
+                'quantity_out' => '4.000000',
+                'amount' => '60.0000',
+            ]);
+
+        $byProduct = $this->getJson('/api/sales/product-wise?q='.urlencode('Product Wise Chips'))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.product.name', 'Product Wise Chips')
+            ->assertJsonPath('data.0.customer.name', 'Product Wise Customer')
+            ->assertJsonPath('data.0.salesman.name', 'Product Wise Salesman');
+
+        $this->assertNoInternalIds($byProduct->json());
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('sale-product-wise-other')->assertOk();
+
+        $this->getJson('/api/sales/product-wise')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
     public function test_posted_sales_search_filters_customer_salesman_and_paginates(): void
     {
         $this->signInOwner('sale-history-filters')->assertOk();
