@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { Product, ProductBarcode } from '../../types/catalog'
 import type {
+  Sale,
   SaleDraftLine,
   SaleDraftUnitOption,
   SalePriceType,
@@ -606,6 +607,79 @@ export function useSaleCart() {
     setSkippedSchemes([])
   }
 
+  function restorePostedSale(
+    source: Sale,
+    productsByUlid: Record<string, Product>,
+    stockByProduct: Record<string, string>,
+  ) {
+    const restoredLines: SaleDraftLine[] = source.items.flatMap((item) => {
+      if (!item.product) return []
+
+      const product = productsByUlid[item.product.ulid]
+      if (!product) return []
+
+      const availableUnits = unitOptions(product)
+      const sourceUnit = item.unit
+      const hasSourceUnit =
+        sourceUnit?.ulid &&
+        availableUnits.some((option) => option.unit_ulid === sourceUnit.ulid)
+
+      if (sourceUnit?.ulid && !hasSourceUnit) {
+        availableUnits.push({
+          unit_ulid: sourceUnit.ulid,
+          code: sourceUnit.code,
+          name: sourceUnit.name,
+          symbol: sourceUnit.symbol,
+          allows_decimal: sourceUnit.allows_decimal,
+          conversion_factor: factor8(item.conversion_factor),
+          barcode: item.barcode ?? null,
+        })
+      }
+
+      const retailPrice =
+        product.prices?.find(
+          (row) => row.is_active && row.price_type === 'retail',
+        )?.amount ?? null
+      const wholesalePrice =
+        product.prices?.find(
+          (row) => row.is_active && row.price_type === 'wholesale',
+        )?.amount ?? null
+
+      return [{
+        line_key: `copy:${source.ulid}:${item.ulid}`,
+        product_ulid: product.ulid,
+        product_name: product.name,
+        product_number: product.product_number,
+        quantity: item.quantity,
+        line_kind: item.line_kind,
+        scheme_ulid: item.sale_scheme?.ulid,
+        unit_ulid: sourceUnit?.ulid,
+        unit_code: sourceUnit?.code,
+        unit_name: sourceUnit?.name,
+        unit_symbol: sourceUnit?.symbol,
+        unit_allows_decimal: sourceUnit?.allows_decimal,
+        barcode: item.barcode,
+        conversion_factor: item.conversion_factor,
+        available_units: availableUnits,
+        available_base_stock: stockByProduct[product.ulid] ?? null,
+        retail_price: retailPrice,
+        wholesale_price: wholesalePrice,
+        unit_price: item.line_kind === 'sale' ? item.unit_price : '0.0000',
+        discount_percent: item.discount_percent,
+        discount_amount: item.discount_amount,
+        tax_percent: product.is_taxable ? product.tax_percent : '0',
+        notes: item.notes,
+      }]
+    })
+
+    restore(
+      restoredLines,
+      source.notes ?? '',
+      source.customer?.ulid ?? null,
+      source.price_type ?? 'default',
+    )
+  }
+
   const paidLines = useMemo(
     () => lines.filter((line) => line.line_kind === 'sale'),
     [lines],
@@ -748,6 +822,7 @@ export function useSaleCart() {
 
     clear,
     restore,
+    restorePostedSale,
     buildPayload,
   }
 }
