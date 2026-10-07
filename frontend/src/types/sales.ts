@@ -178,6 +178,7 @@ export type SaleHoldPayload = {
   sale_date?: string | null
   customer_ulid?: string | null
   salesman_ulid?: string | null
+  payment_due?: boolean
   notes?: string | null
   price_type: SalePriceType
   lines: Array<{
