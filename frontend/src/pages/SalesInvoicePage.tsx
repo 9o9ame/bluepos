@@ -817,8 +817,7 @@ export function SalesInvoicePage() {
           canCreateSale &&
           cart.hasPaidLines &&
           !stockIssue &&
-          !saveMutation.isPending &&
-          true
+          !saveMutation.isPending
         ) {
           saveMutation.mutate()
         }
