@@ -1142,7 +1142,6 @@ export function SalesInvoicePage() {
                             className="sales-pos-customer-grid-row"
                             onClick={() => {
                               setSelectedCustomer(null)
-      setCustomerSearch('CASH IN HAND')
                               cart.setCustomerUlid(null)
                               setCustomerSearch('CASH IN HAND')
                               setCustomerPickerOpen(false)
