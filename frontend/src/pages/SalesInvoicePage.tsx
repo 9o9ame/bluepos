@@ -2144,7 +2144,10 @@ export function SalesInvoicePage() {
           <SalePaymentPanel
             sale={savedSale}
             outstanding={outstandingAfterPayments(savedSale)}
-            onCollected={() => refreshSavedSale(savedSale.ulid)}
+            onCollected={() => {
+              setPaymentModalOpen(false)
+              void refreshSavedSale(savedSale.ulid)
+            }}
           />
         </UiModal>
       ) : null}
