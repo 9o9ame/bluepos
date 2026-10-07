@@ -5,6 +5,7 @@ import { fetchSale, fetchSales, fetchSalesmen } from '../../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from './saleReceipt'
 import type { Sale } from '../../types/sales'
 import { UiSelect } from '../../components/ui/UiSelect'
+import { UiButton } from '../../components/ui/UiButton'
 
 type StatusFilter = '' | 'posted' | 'void'
 
@@ -192,15 +193,15 @@ export function SalesInvoiceHistory() {
           />
         </label>
 
-        <button
-          type="button"
+        <UiButton
           className="sales-history-reset"
+          variant="info"
+          icon={<RotateCcw size={14} />}
           onClick={resetFilters}
           title="Reset filters"
         >
-          <RotateCcw size={14} />
           Reset
-        </button>
+        </UiButton>
 
         <div className="sales-history-toolbar-summary">
           <div>
