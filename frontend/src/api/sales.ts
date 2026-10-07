@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { Expense, ExpenseAccountOption, ExpensePayload, Sale, SaleHold, SaleHoldPayload, SalePayment, SalePaymentMethod, SalePayload, SaleProductWiseRow, SalesmanOption } from '../types/sales'
+import type { Expense, ExpenseAccountOption, ExpensePayload, Sale, SaleHold, SaleHoldPayload, SalePayment, SalePaymentMethod, SalePayload, SaleProductWiseRow, SaleQuotation, SalesmanOption } from '../types/sales'
 
 /**
  * Post a sale. The server recalculates every money figure and revalidates
@@ -80,6 +80,32 @@ export function fetchSaleProductWise(
       last_page: number
     }
   }>(`/api/sales/product-wise${query ? `?${query}` : ''}`, {
+    busy: 'none',
+  })
+}
+
+export function fetchSaleQuotations(
+  params: { q?: string; page?: number; per_page?: number } = {},
+) {
+  const search = new URLSearchParams()
+  if (params.q) search.set('q', params.q)
+  if (params.page) search.set('page', String(params.page))
+  if (params.per_page) search.set('per_page', String(params.per_page))
+  const query = search.toString()
+
+  return apiFetch<{
+    data: SaleQuotation[]
+    meta: {
+      current_page: number
+      per_page: number
+      total: number
+      last_page: number
+    }
+  }>(`/api/sales/quotations${query ? `?${query}` : ''}`, { busy: 'none' })
+}
+
+export function fetchSaleQuotation(quotationUlid: string) {
+  return apiFetch<SaleQuotation>(`/api/sales/quotations/${quotationUlid}`, {
     busy: 'none',
   })
 }
