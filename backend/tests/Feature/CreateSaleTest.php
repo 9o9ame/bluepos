@@ -452,6 +452,88 @@ class CreateSaleTest extends TestCase
             ->assertJsonCount(2, 'data');
     }
 
+    public function test_posted_sales_search_filters_customer_salesman_and_paginates(): void
+    {
+        $this->signInOwner('sale-history-filters')->assertOk();
+
+        $product = $this->createProduct('History Filter Item', ['retail' => '25.0000']);
+        $this->giveStock($product, '20');
+
+        $customerA = $this->createCustomer('History Customer Alpha');
+        $customerB = $this->createCustomer('History Customer Beta');
+
+        $salesmanA = $this->postJson('/api/party-profiles', [
+            'party_type' => 'salesman',
+            'name' => 'History Salesman Alpha',
+            'mobile' => '03000000001',
+        ])->assertCreated()->json('ulid');
+
+        $salesmanB = $this->postJson('/api/party-profiles', [
+            'party_type' => 'salesman',
+            'name' => 'History Salesman Beta',
+            'mobile' => '03000000002',
+        ])->assertCreated()->json('ulid');
+
+        $saleA = $this->postJson('/api/sales', [
+            'customer_ulid' => $customerA,
+            'salesman_ulid' => $salesmanA,
+            'sale_date' => '2026-10-01',
+            'items' => [['product_ulid' => $product, 'quantity' => '1']],
+        ], $this->idem('sale-history-filter-a'))->assertCreated()->json('ulid');
+
+        $saleB = $this->postJson('/api/sales', [
+            'customer_ulid' => $customerB,
+            'salesman_ulid' => $salesmanB,
+            'sale_date' => '2026-10-02',
+            'items' => [['product_ulid' => $product, 'quantity' => '1']],
+        ], $this->idem('sale-history-filter-b'))->assertCreated()->json('ulid');
+
+        $this->postJson('/api/sales', [
+            'customer_ulid' => $customerA,
+            'salesman_ulid' => $salesmanB,
+            'sale_date' => '2026-10-03',
+            'items' => [['product_ulid' => $product, 'quantity' => '1']],
+        ], $this->idem('sale-history-filter-c'))->assertCreated();
+
+        $this->getJson('/api/sales?q='.urlencode('History Customer Beta'))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.ulid', $saleB);
+
+        $this->getJson('/api/sales?q='.urlencode('History Salesman Alpha'))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.ulid', $saleA);
+
+        $this->getJson('/api/sales?customer_ulid='.$customerA)
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+
+        $this->getJson('/api/sales?salesman_ulid='.$salesmanB)
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+
+        $firstPage = $this->getJson('/api/sales?status=posted&per_page=2&page=1')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('meta.current_page', 1)
+            ->assertJsonPath('meta.per_page', 2)
+            ->assertJsonPath('meta.total', 3)
+            ->assertJsonPath('meta.last_page', 2);
+
+        $secondPage = $this->getJson('/api/sales?status=posted&per_page=2&page=2')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('meta.current_page', 2);
+
+        $pageUlids = array_merge(
+            collect($firstPage->json('data'))->pluck('ulid')->all(),
+            collect($secondPage->json('data'))->pluck('ulid')->all(),
+        );
+
+        $this->assertCount(3, array_unique($pageUlids));
+    }
+
     public function test_posted_sales_search_returns_payment_summary(): void
     {
         $this->signInOwner('sale-history-summary')->assertOk();
