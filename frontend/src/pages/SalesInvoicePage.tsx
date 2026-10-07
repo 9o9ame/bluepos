@@ -194,7 +194,9 @@ export function SalesInvoicePage() {
 
   const [selectedCustomer, setSelectedCustomer] = useState<Party | null>(null)
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
+  const [customerSearch, setCustomerSearch] = useState('CASH IN HAND')
   const [salesmanPickerOpen, setSalesmanPickerOpen] = useState(false)
+  const [salesmanSearch, setSalesmanSearch] = useState('')
   const [partyModalOpen, setPartyModalOpen] = useState(false)
 
   const { session } = useAuth()
@@ -220,6 +222,28 @@ export function SalesInvoicePage() {
     () => (salesmenQuery.data ?? []).find((row) => row.ulid === selectedSalesmanUlid) ?? null,
     [salesmenQuery.data, selectedSalesmanUlid],
   )
+
+  const filteredSalesmen = useMemo(() => {
+    const query = salesmanSearch.trim().toLocaleLowerCase()
+    if (!query) return salesmenQuery.data ?? []
+
+    return (salesmenQuery.data ?? []).filter((salesman) =>
+      [salesman.code, salesman.name, salesman.address, salesman.mobile]
+        .filter(Boolean)
+        .some((value) => String(value).toLocaleLowerCase().includes(query)),
+    )
+  }, [salesmenQuery.data, salesmanSearch])
+
+  const filteredCustomers = useMemo(() => {
+    const query = customerSearch.trim().toLocaleLowerCase()
+    if (!query || query === 'cash in hand') return customersQuery.data ?? []
+
+    return (customersQuery.data ?? []).filter((party) =>
+      [party.code, party.name, party.address, party.mobile, party.phone]
+        .filter(Boolean)
+        .some((value) => String(value).toLocaleLowerCase().includes(query)),
+    )
+  }, [customersQuery.data, customerSearch])
 
   const balanceDue = useMemo(() => {
     const total = Number.parseFloat(cart.preview.grandTotal) || 0
@@ -351,6 +375,7 @@ export function SalesInvoicePage() {
 
       cart.clear()
       setSelectedCustomer(null)
+      setCustomerSearch('CASH IN HAND')
       setProductQuery('')
       setActiveProductQuery('')
       setActiveProductPickerOpen(false)
@@ -447,7 +472,9 @@ export function SalesInvoicePage() {
       }
       cart.clear()
       setSelectedCustomer(null)
+      setCustomerSearch('CASH IN HAND')
       setSelectedSalesmanUlid(null)
+      setSalesmanSearch('')
       setReceived('')
       setPaymentReference('')
       setProductQuery('')
@@ -738,6 +765,7 @@ export function SalesInvoicePage() {
 
     setSelectedCustomer(party)
     cart.setCustomerUlid(party.ulid)
+    setCustomerSearch(party.name)
     setCustomerPickerOpen(false)
     setPartyModalOpen(false)
     await customersQuery.refetch()
@@ -863,51 +891,7 @@ export function SalesInvoicePage() {
       className={`sales-reference-screen${view !== 'pos' ? ' is-full-workspace-view' : ''}`}
     >
       <main className="sales-reference-main">
-        <nav
-          className="sales-reference-subtabs"
-          aria-label="Sales invoice views"
-        >
-          <button
-            type="button"
-            className={`sales-reference-subtab${
-              view === 'pos' ? ' is-active' : ''
-            }`}
-            onClick={() => setView('pos')}
-          >
-            <span className="sales-reference-tab-icon is-blue">
-              <Grid3X3 />
-            </span>
-            <span>Sales Invoice</span>
-          </button>
 
-          <button
-            type="button"
-            className={`sales-reference-subtab${
-              view === 'history' ? ' is-active' : ''
-            }`}
-            onClick={() => setView('history')}
-          >
-            <span className="sales-reference-tab-icon is-yellow">
-              <ReceiptText />
-            </span>
-            <span>Posted Invoices</span>
-          </button>
-
-          <button
-            type="button"
-            className={`sales-reference-subtab${
-              view === 'pending' ? ' is-active' : ''
-            }`}
-            onClick={() => setView('pending')}
-          >
-            <span className="sales-reference-tab-icon is-multi">
-              <StickyNote />
-            </span>
-            <span>
-              ({holdsQuery.data?.count ?? 0}) Pending / Due Invoices
-            </span>
-          </button>
-        </nav>
 
         {view === 'history' ? (
           <SalesInvoiceHistory />
@@ -1007,10 +991,22 @@ export function SalesInvoicePage() {
 
                   <div className={`sales-reference-input-button sales-reference-salesman sales-reference-inline-caret${salesmanPickerOpen ? ' is-open' : ''}`}>
                     <input
-                      value={selectedSalesman ? `${selectedSalesman.code} — ${selectedSalesman.name}` : ''}
-                      readOnly
-                      placeholder="Select salesman"
+                      value={salesmanSearch}
+                      placeholder="Search salesman"
                       aria-label="Salesman"
+                      autoComplete="off"
+                      onFocus={() => {
+                        setCustomerPickerOpen(false)
+                        setSalesmanPickerOpen(true)
+                        if (!salesmanSearch && selectedSalesman) {
+                          setSalesmanSearch(`${selectedSalesman.code} — ${selectedSalesman.name}`)
+                        }
+                      }}
+                      onChange={(event) => {
+                        setSalesmanSearch(event.target.value)
+                        setCustomerPickerOpen(false)
+                        setSalesmanPickerOpen(true)
+                      }}
                     />
 
                     <button
@@ -1044,6 +1040,8 @@ export function SalesInvoicePage() {
                             className="sales-pos-salesman-grid-row"
                             onClick={() => {
                               setSelectedSalesmanUlid(null)
+      setSalesmanSearch('')
+                              setSalesmanSearch('')
                               setSalesmanPickerOpen(false)
                             }}
                           >
@@ -1053,13 +1051,14 @@ export function SalesInvoicePage() {
                             <span>—</span>
                           </button>
 
-                          {(salesmenQuery.data ?? []).map((salesman) => (
+                          {filteredSalesmen.map((salesman) => (
                             <button
                               type="button"
                               className="sales-pos-salesman-grid-row"
                               key={salesman.ulid}
                               onClick={() => {
                                 setSelectedSalesmanUlid(salesman.ulid)
+                                setSalesmanSearch(`${salesman.code} — ${salesman.name}`)
                                 setSalesmanPickerOpen(false)
                               }}
                             >
@@ -1072,7 +1071,7 @@ export function SalesInvoicePage() {
                         </div>
 
                         <div className="sales-pos-salesman-grid-foot">
-                          {salesmenQuery.data?.length ?? 0} Salesmen
+                          {filteredSalesmen.length} of {salesmenQuery.data?.length ?? 0} Salesmen
                         </div>
                       </div>
                     </div>
@@ -1082,18 +1081,28 @@ export function SalesInvoicePage() {
 
                   <div className={`sales-reference-input-button sales-reference-to sales-reference-inline-caret${customerPickerOpen ? ' is-open' : ''}`}>
                     <input
-                      value={
-                        selectedCustomer?.name ?? 'CASH IN HAND'
-                      }
-                      readOnly
+                      value={customerSearch}
+                      placeholder="Search customer"
+                      aria-label="Customer"
+                      autoComplete="off"
+                      onFocus={() => {
+                        setSalesmanPickerOpen(false)
+                        setCustomerPickerOpen(true)
+                      }}
+                      onChange={(event) => {
+                        setCustomerSearch(event.target.value)
+                        setSalesmanPickerOpen(false)
+                        setCustomerPickerOpen(true)
+                      }}
                     />
 
                     <button
                       type="button"
                       className="sales-reference-field-caret"
-                      onClick={() =>
+                      onClick={() => {
+                        setSalesmanPickerOpen(false)
                         setCustomerPickerOpen((open) => !open)
-                      }
+                      }}
                       title="Choose customer"
                       aria-label="Choose customer"
                     >
@@ -1128,7 +1137,9 @@ export function SalesInvoicePage() {
                             className="sales-pos-customer-grid-row"
                             onClick={() => {
                               setSelectedCustomer(null)
+      setCustomerSearch('CASH IN HAND')
                               cart.setCustomerUlid(null)
+                              setCustomerSearch('CASH IN HAND')
                               setCustomerPickerOpen(false)
                             }}
                           >
@@ -1138,7 +1149,7 @@ export function SalesInvoicePage() {
                             <span>—</span>
                           </button>
 
-                          {(customersQuery.data ?? []).map((party) => (
+                          {filteredCustomers.map((party) => (
                             <button
                               type="button"
                               className="sales-pos-customer-grid-row"
@@ -1146,6 +1157,7 @@ export function SalesInvoicePage() {
                               onClick={() => {
                                 setSelectedCustomer(party)
                                 cart.setCustomerUlid(party.ulid)
+                                setCustomerSearch(party.name)
                                 setCustomerPickerOpen(false)
                               }}
                             >
@@ -1158,10 +1170,11 @@ export function SalesInvoicePage() {
                         </div>
 
                         <div className="sales-pos-customer-grid-foot">
-                          {(customersQuery.data?.length ?? 0) + 1} Parties
+                          {filteredCustomers.length + 1} of {(customersQuery.data?.length ?? 0) + 1} Parties
                         </div>
                       </div>
-                    </div>                  </div>
+                    </div>
+                  </div>
 
                   <label>Name:</label>
 
@@ -1380,7 +1393,9 @@ export function SalesInvoicePage() {
                                         if (!activeProductQuery) {
                                           setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
                                         }
+                                        setActiveProductPickerOpen(true)
                                       }}
+                                      onClick={() => setActiveProductPickerOpen(true)}
                                       onChange={(e) => {
                                         setActiveProductQuery(e.target.value)
                                         setActiveProductPickerOpen(true)
@@ -1707,85 +1722,140 @@ export function SalesInvoicePage() {
 
             </div>
 
-            <footer className="sales-reference-actions">
-              <div className="sales-reference-shortcuts">
-                <span>Ctrl+M = POS</span>
-                <span>Ctrl+G = A4</span>
-                <span>Ctrl+H = A5</span>
-              </div>
 
-              <div className="sales-reference-actions-center">
-                <button
-                  type="button"
-                  disabled={
-                    !canCreateSale ||
-                    !cart.hasPaidLines ||
-                    isBusy
-                  }
-                  onClick={() => saveMutation.mutate()}
-                >
-                  <span>Save [F9]</span>
-
-                  <span className="sales-reference-action-icon is-save">
-                    <Save />
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={refreshScreen}
-                >
-                  <span>Refresh [F8]</span>
-
-                  <span className="sales-reference-action-icon is-refresh">
-                    <RefreshCw />
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={!savedSale}
-                  onClick={() =>
-                    savedSale &&
-                    previewSaleReceipt(savedSale)
-                  }
-                >
-                  <span>Preview [F3]</span>
-
-                  <span className="sales-reference-action-icon is-preview">
-                    <FileText />
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={!savedSale}
-                  onClick={() =>
-                    savedSale &&
-                    printSaleReceipt(savedSale)
-                  }
-                >
-                  <span>Print [F11]</span>
-
-                  <span className="sales-reference-action-icon is-print">
-                    <Printer />
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={closeActiveTab}
-                >
-                  <span>Close</span>
-
-                  <span className="sales-reference-action-icon is-close">
-                    <XCircle />
-                  </span>
-                </button>
-              </div>
-            </footer>
           </>
         )}
+
+        <footer className="sales-reference-actions">
+          <nav
+            className="sales-reference-subtabs sales-reference-subtabs-bottom"
+            aria-label="Sales invoice views"
+          >
+            <button
+              type="button"
+              className={`sales-reference-subtab${
+                view === 'pos' ? ' is-active' : ''
+              }`}
+              onClick={() => setView('pos')}
+            >
+              <span className="sales-reference-tab-icon is-blue">
+                <Grid3X3 />
+              </span>
+              <span>Sales Invoice</span>
+            </button>
+  
+            <button
+              type="button"
+              className={`sales-reference-subtab${
+                view === 'history' ? ' is-active' : ''
+              }`}
+              onClick={() => setView('history')}
+            >
+              <span className="sales-reference-tab-icon is-yellow">
+                <ReceiptText />
+              </span>
+              <span>Posted Invoices</span>
+            </button>
+  
+            <button
+              type="button"
+              className={`sales-reference-subtab${
+                view === 'pending' ? ' is-active' : ''
+              }`}
+              onClick={() => setView('pending')}
+            >
+              <span className="sales-reference-tab-icon is-multi">
+                <StickyNote />
+              </span>
+              <span>
+                ({holdsQuery.data?.count ?? 0}) Pending / Due Invoices
+              </span>
+            </button>
+          </nav>
+          {view === 'pos' ? (
+            <>
+                <div className="sales-reference-shortcuts">
+                  <span>Ctrl+M = POS</span>
+                  <span>Ctrl+G = A4</span>
+                  <span>Ctrl+H = A5</span>
+                </div>
+  
+                <div className="sales-reference-actions-center">
+                  <button
+                    type="button"
+                    disabled={
+                      !canCreateSale ||
+                      !cart.hasPaidLines ||
+                      isBusy
+                    }
+                    onClick={() => saveMutation.mutate()}
+                  >
+                    <span>Save [F9]</span>
+  
+                    <span className="sales-reference-action-icon is-save">
+                      <Save />
+                    </span>
+                  </button>
+  
+                  <button
+                    type="button"
+                    onClick={refreshScreen}
+                  >
+                    <span>Refresh [F8]</span>
+  
+                    <span className="sales-reference-action-icon is-refresh">
+                      <RefreshCw />
+                    </span>
+                  </button>
+  
+                  <button
+                    type="button"
+                    disabled={!savedSale}
+                    onClick={() =>
+                      savedSale &&
+                      previewSaleReceipt(savedSale)
+                    }
+                  >
+                    <span>Preview [F3]</span>
+  
+                    <span className="sales-reference-action-icon is-preview">
+                      <FileText />
+                    </span>
+                  </button>
+  
+                  <button
+                    type="button"
+                    disabled={!savedSale}
+                    onClick={() =>
+                      savedSale &&
+                      printSaleReceipt(savedSale)
+                    }
+                  >
+                    <span>Print [F11]</span>
+  
+                    <span className="sales-reference-action-icon is-print">
+                      <Printer />
+                    </span>
+                  </button>
+  
+                  <button
+                    type="button"
+                    onClick={closeActiveTab}
+                  >
+                    <span>Close</span>
+  
+                    <span className="sales-reference-action-icon is-close">
+                      <XCircle />
+                    </span>
+                  </button>
+                </div>
+            </>
+          ) : (
+            <div className="sales-reference-actions-view-label">
+              {view === 'history' ? 'Posted Invoices' : 'Pending / Due Invoices'}
+            </div>
+          )}
+        </footer>
       </main>
 
       {view === 'pos' ? (
