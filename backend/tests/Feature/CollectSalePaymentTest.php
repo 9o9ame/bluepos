@@ -138,6 +138,12 @@ class CollectSalePaymentTest extends TestCase
             ->where('permission_id', $paymentPermissionId)
             ->delete();
 
+        // PermissionService is scoped and memoizes keys for the active
+        // membership. Re-resolve it after mutating role_permissions directly
+        // so this request reflects the same fresh permission state production
+        // would see on a new request.
+        app()->forgetInstance(\App\Authz\PermissionService::class);
+
         $product = $this->createProduct('Initial Payment Authz', '100.0000');
         $this->giveStock($product, '10');
 
