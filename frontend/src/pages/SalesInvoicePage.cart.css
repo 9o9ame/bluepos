@@ -2472,3 +2472,135 @@ html[data-animations='off'] .sales-reference-screen * {
     min-width: 120px;
   }
 }
+
+
+/* Sales posted/due toolbar theme polish — design-system tokens only. */
+/* Scope is limited to filter/toolbars; Sales Invoice entry/Amounts geometry is unchanged. */
+:root .sales-posted-history.sales-history .sales-history-toolbar,
+:root .sales-pending-view .sales-due-section .sales-due-toolbar {
+  border-color: var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 4%, var(--ui-surface)),
+    var(--ui-surface-subtle)
+  );
+  box-shadow: var(--ui-card-shadow);
+  color: var(--ui-text);
+}
+
+:root .sales-posted-history.sales-history .sales-history-search input,
+:root .sales-posted-history.sales-history .sales-history-filter input,
+:root .sales-pending-view .sales-due-toolbar input {
+  border-color: var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font-family: var(--app-font-family);
+  transition:
+    border-color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast);
+}
+
+:root .sales-posted-history.sales-history .sales-history-search input::placeholder,
+:root .sales-pending-view .sales-due-search input::placeholder {
+  color: var(--ui-text-muted);
+}
+
+:root .sales-posted-history.sales-history .sales-history-search input:focus,
+:root .sales-posted-history.sales-history .sales-history-filter input:focus,
+:root .sales-pending-view .sales-due-toolbar input:focus {
+  border-color: var(--ui-accent);
+  outline: none;
+  box-shadow: var(--ui-focus-shadow), var(--ui-control-shadow);
+}
+
+:root .sales-posted-history.sales-history .sales-history-filter > span,
+:root .sales-pending-view .sales-due-toolbar > label > span {
+  color: var(--ui-text-muted);
+}
+
+:root .sales-posted-history.sales-history .sales-history-search > svg,
+:root .sales-pending-view .sales-due-search > svg {
+  color: var(--ui-accent);
+}
+
+:root .sales-posted-history.sales-history .sales-history-search-clear {
+  color: var(--ui-text-muted);
+  border-radius: var(--control-radius);
+  transition:
+    color var(--ui-transition-fast),
+    background-color var(--ui-transition-fast);
+}
+
+:root .sales-posted-history.sales-history .sales-history-search-clear:hover {
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-strong);
+}
+
+:root .sales-posted-history.sales-history .sales-history-reset,
+:root .sales-pending-view .sales-due-reset {
+  align-self: end;
+  min-height: 28px;
+  white-space: nowrap;
+}
+
+:root .sales-posted-history.sales-history .sales-history-toolbar-summary > div,
+:root .sales-pending-view .sales-due-toolbar-summary > div {
+  border-color: var(--ui-border);
+  border-radius: var(--control-radius);
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle));
+  box-shadow: var(--ui-control-shadow);
+}
+
+:root .sales-posted-history.sales-history .sales-history-toolbar-summary span,
+:root .sales-pending-view .sales-due-toolbar-summary span {
+  color: var(--ui-text-muted);
+}
+
+:root .sales-posted-history.sales-history .sales-history-toolbar-summary strong,
+:root .sales-pending-view .sales-due-toolbar-summary strong {
+  color: var(--ui-text);
+}
+
+:root .sales-posted-history.sales-history .sales-history-toolbar-summary .is-paid,
+:root .sales-pending-view .sales-due-toolbar-summary .is-paid {
+  border-color: color-mix(in srgb, var(--ui-success) 52%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-success) 10%, var(--ui-surface));
+}
+
+:root .sales-posted-history.sales-history .sales-history-toolbar-summary .is-paid strong,
+:root .sales-pending-view .sales-due-toolbar-summary .is-paid strong {
+  color: color-mix(in srgb, var(--ui-success) 82%, var(--ui-text));
+}
+
+:root .sales-posted-history.sales-history .sales-history-toolbar-summary .is-due,
+:root .sales-pending-view .sales-due-toolbar-summary .is-due {
+  border-color: color-mix(in srgb, var(--ui-warning) 58%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-warning) 10%, var(--ui-surface));
+}
+
+:root .sales-posted-history.sales-history .sales-history-toolbar-summary .is-due strong,
+:root .sales-pending-view .sales-due-toolbar-summary .is-due strong {
+  color: color-mix(in srgb, var(--ui-warning) 84%, var(--ui-text));
+}
+
+:root .sales-posted-history.sales-history .sales-history-count {
+  margin-left: 3px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 34%, var(--ui-border));
+  border-radius: var(--control-radius);
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-strong);
+  box-shadow: var(--ui-control-shadow);
+  font-weight: 800;
+}
+
+html[data-animations='off'] .sales-posted-history .sales-history-search input,
+html[data-animations='off'] .sales-posted-history .sales-history-search-clear,
+html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
+  transition: none !important;
+}
