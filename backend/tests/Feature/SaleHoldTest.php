@@ -62,6 +62,77 @@ class SaleHoldTest extends TestCase
             ->assertJsonPath('lines.0.product_name', 'Held Cola');
     }
 
+    public function test_hold_persists_active_salesman_for_recall(): void
+    {
+        $this->signInOwner('hold-salesman-active')->assertOk();
+
+        $salesman = $this->postJson('/api/party-profiles', [
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'code' => 'SM-HOLD',
+            'name' => 'Hold Salesman',
+        ])->assertCreated();
+
+        $salesmanUlid = (string) $salesman->json('identity_ulid');
+        $productUlid = $this->createProduct('Hold Salesman Item', '75.0000');
+
+        $hold = $this->postJson('/api/sales/holds', [
+            'salesman_ulid' => $salesmanUlid,
+            'price_type' => 'retail',
+            'lines' => [[
+                'product_ulid' => $productUlid,
+                'line_kind' => 'sale',
+                'quantity' => '1.000000',
+            ]],
+        ], $this->idem('hold-salesman-active-1'))
+            ->assertCreated()
+            ->assertJsonPath('salesman.ulid', $salesmanUlid)
+            ->assertJsonPath('salesman.name', 'Hold Salesman');
+
+        $this->getJson('/api/sales/holds/'.$hold->json('ulid'))
+            ->assertOk()
+            ->assertJsonPath('salesman.ulid', $salesmanUlid)
+            ->assertJsonPath('salesman.name', 'Hold Salesman');
+    }
+
+    public function test_hold_rejects_inactive_salesman(): void
+    {
+        $this->signInOwner('hold-salesman-inactive')->assertOk();
+
+        $salesman = $this->postJson('/api/party-profiles', [
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'code' => 'SM-HOLD-INACTIVE',
+            'name' => 'Inactive Hold Salesman',
+        ])->assertCreated();
+
+        $salesmanUlid = (string) $salesman->json('identity_ulid');
+
+        $this->patchJson('/api/party-profiles/'.$salesmanUlid, [
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'code' => 'SM-HOLD-INACTIVE',
+            'name' => 'Inactive Hold Salesman',
+            'is_active' => false,
+        ])->assertOk();
+
+        $productUlid = $this->createProduct('Inactive Hold Salesman Item', '75.0000');
+
+        $this->postJson('/api/sales/holds', [
+            'salesman_ulid' => $salesmanUlid,
+            'price_type' => 'retail',
+            'lines' => [[
+                'product_ulid' => $productUlid,
+                'line_kind' => 'sale',
+                'quantity' => '1.000000',
+            ]],
+        ], $this->idem('hold-salesman-inactive-1'))
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+
+        $this->assertSame(0, SaleHold::query()->count());
+    }
+
     public function test_replayed_hold_key_does_not_create_a_duplicate(): void
     {
         $this->signInOwner('hold-2')->assertOk();
