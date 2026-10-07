@@ -463,16 +463,20 @@ class CreateSaleTest extends TestCase
         $customerB = $this->createCustomer('History Customer Beta');
 
         $salesmanA = $this->postJson('/api/party-profiles', [
-            'party_type' => 'salesman',
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'code' => 'SM-HIST-A',
             'name' => 'History Salesman Alpha',
             'mobile' => '03000000001',
-        ])->assertCreated()->json('ulid');
+        ])->assertCreated()->json('identity_ulid');
 
         $salesmanB = $this->postJson('/api/party-profiles', [
-            'party_type' => 'salesman',
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'code' => 'SM-HIST-B',
             'name' => 'History Salesman Beta',
             'mobile' => '03000000002',
-        ])->assertCreated()->json('ulid');
+        ])->assertCreated()->json('identity_ulid');
 
         $saleA = $this->postJson('/api/sales', [
             'customer_ulid' => $customerA,
