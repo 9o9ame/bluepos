@@ -4159,3 +4159,186 @@ html[data-theme='dark'] .sales-return-select-caret {
   ) !important;
   color: #fff !important;
 }
+
+
+/* ==========================================================================
+   Sales Return picker layering + selected-state parity + clipping fixes.
+   Matches the approved Definition picker behavior and keeps content contained.
+   ========================================================================== */
+
+/* Sales picker must sit above From/S.Man controls while it is open. */
+.sales-return-sale-search {
+  position: relative !important;
+  z-index: 80 !important;
+}
+
+.sales-return-sale-search:has(.sales-return-sale-results) {
+  z-index: 320 !important;
+}
+
+.sales-return-sale-results {
+  z-index: 321 !important;
+}
+
+.sales-return-detail-picker {
+  z-index: 70 !important;
+}
+
+.sales-return-detail-picker.is-open {
+  z-index: 200 !important;
+}
+
+/* Match Define Products selected-option treatment. */
+.sales-return-detail-row.is-selected,
+.sales-return-sale-results-body > button.is-selected {
+  border-color: var(--ui-accent-strong) !important;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ui-accent) 84%, black),
+    var(--ui-accent)
+  ) !important;
+  color: #fff !important;
+  font-weight: 800 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18) !important;
+}
+
+.sales-return-detail-row.is-selected > *,
+.sales-return-detail-row.is-selected > strong,
+.sales-return-sale-results-body > button.is-selected > *,
+.sales-return-sale-results-body > button.is-selected > strong,
+.sales-return-sale-results-body > button.is-selected .is-paid,
+.sales-return-sale-results-body > button.is-selected .is-due {
+  color: #fff !important;
+}
+
+.sales-return-detail-row.is-selected:hover,
+.sales-return-detail-row.is-selected:focus-visible,
+.sales-return-sale-results-body > button.is-selected:hover,
+.sales-return-sale-results-body > button.is-selected:focus-visible {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ui-accent) 84%, black),
+    var(--ui-accent)
+  ) !important;
+  color: #fff !important;
+}
+
+/* Give the right-side balances and Amount Options enough room. */
+.sales-return-head {
+  grid-template-columns: minmax(0, 1fr) 255px !important;
+}
+
+.sales-return-fields-right {
+  grid-template-columns: 82px minmax(92px, 1fr) minmax(92px, 1fr) !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > span,
+.sales-return-fields-right .sales-return-balance-chip > strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.sales-return-amounts {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.sales-return-amounts > div {
+  box-sizing: border-box !important;
+  grid-template-columns: minmax(72px, 1fr) minmax(78px, .78fr) !important;
+  min-width: 0 !important;
+}
+
+.sales-return-amounts span,
+.sales-return-amounts strong {
+  min-width: 0 !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+}
+
+/* Stabilize Sales Return grid geometry so Return Qty cannot collapse into Unit. */
+.sales-return-grid {
+  table-layout: fixed !important;
+}
+
+.sales-return-grid th:nth-child(1),
+.sales-return-grid td:nth-child(1) { width: 34% !important; }
+.sales-return-grid th:nth-child(2),
+.sales-return-grid td:nth-child(2) { width: 9% !important; }
+.sales-return-grid th:nth-child(3),
+.sales-return-grid td:nth-child(3) { width: 7% !important; }
+.sales-return-grid th:nth-child(4),
+.sales-return-grid td:nth-child(4) { width: 7% !important; }
+.sales-return-grid th:nth-child(5),
+.sales-return-grid td:nth-child(5) { width: 7% !important; }
+.sales-return-grid th:nth-child(6),
+.sales-return-grid td:nth-child(6) { width: 9% !important; }
+.sales-return-grid th:nth-child(7),
+.sales-return-grid td:nth-child(7) { width: 5% !important; }
+.sales-return-grid th:nth-child(8),
+.sales-return-grid td:nth-child(8) { width: 6% !important; }
+.sales-return-grid th:nth-child(9),
+.sales-return-grid td:nth-child(9) { width: 5% !important; }
+.sales-return-grid th:nth-child(10),
+.sales-return-grid td:nth-child(10) { width: 5% !important; }
+.sales-return-grid th:nth-child(11),
+.sales-return-grid td:nth-child(11) { width: 6% !important; }
+
+.sales-return-grid td.is-edit {
+  box-sizing: border-box !important;
+  padding: 2px 4px !important;
+  overflow: hidden !important;
+}
+
+.sales-return-grid td.is-edit input {
+  box-sizing: border-box !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: var(--ui-control-h-md, 24px) !important;
+  padding: 0 6px !important;
+}
+
+/* Footer summary should read like a compact Definition status group, not clip. */
+.sales-return-refund-summary {
+  grid-template-columns: 52px 82px 48px 82px !important;
+  min-width: 282px !important;
+  min-height: 28px !important;
+  padding: 3px 6px !important;
+}
+
+.sales-return-refund-summary label {
+  min-width: 0 !important;
+  white-space: nowrap !important;
+}
+
+.sales-return-refund-summary strong {
+  box-sizing: border-box !important;
+  width: 82px !important;
+  min-width: 82px !important;
+  height: 22px !important;
+  line-height: 16px !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+}
+
+@media (max-width: 1450px) {
+  .sales-return-head {
+    grid-template-columns: minmax(0, 1fr) 245px !important;
+  }
+
+  .sales-return-fields-right {
+    grid-template-columns: 78px minmax(86px, 1fr) minmax(86px, 1fr) !important;
+  }
+}
