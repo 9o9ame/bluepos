@@ -4424,3 +4424,121 @@ html[data-theme='dark'] .sales-return-select-caret {
     column-gap: 6px !important;
   }
 }
+
+
+/* ==========================================================================
+   Global Definition baseline consumer.
+   Sales Return owns geometry only; visual states come from appearance.css.
+   ========================================================================== */
+.sales-return-fields .sales-return-option-group > input,
+.sales-return-sale-input,
+.sales-return-sale-input > input,
+.sales-return-detail-control {
+  border-color: var(--ui-control-border) !important;
+  background: var(--ui-control-face) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.sales-return-fields .sales-return-option-group > input:hover:not(:disabled),
+.sales-return-sale-input:hover,
+.sales-return-detail-control:hover:not(:disabled) {
+  border-color: var(--ui-control-hover-border) !important;
+  background: var(--ui-control-hover-bg) !important;
+}
+
+.sales-return-sale-trigger,
+.sales-return-detail-caret,
+.sales-return-select-caret {
+  border-color: var(--ui-select-arrow-border) !important;
+  background: var(--ui-select-arrow-face) !important;
+  color: var(--ui-select-selected-text) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.28),
+    var(--ui-control-shadow) !important;
+}
+
+.sales-return-sale-results,
+.sales-return-detail-dropdown {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-select-menu-bg) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.sales-return-sale-results-head,
+.sales-return-detail-head {
+  border-color: var(--ui-table-border) !important;
+  background: var(--ui-table-header) !important;
+  color: var(--ui-table-header-text) !important;
+}
+
+.sales-return-sale-results-body > button,
+.sales-return-detail-row {
+  border-color: var(--ui-border-soft) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-return-sale-results-body > button:nth-child(even),
+.sales-return-detail-row:nth-child(even) {
+  background: var(--ui-row-alt) !important;
+}
+
+.sales-return-sale-results-body > button:hover:not(.is-selected),
+.sales-return-sale-results-body > button:focus-visible:not(.is-selected),
+.sales-return-detail-row:hover:not(.is-selected),
+.sales-return-detail-row:focus-visible:not(.is-selected) {
+  border-color: color-mix(in srgb, var(--ui-accent) 38%, transparent) !important;
+  background: var(--ui-select-hover-bg) !important;
+  color: var(--ui-select-hover-text) !important;
+}
+
+.sales-return-sale-results-body > button:hover:not(.is-selected) > strong,
+.sales-return-sale-results-body > button:focus-visible:not(.is-selected) > strong,
+.sales-return-detail-row:hover:not(.is-selected) > strong,
+.sales-return-detail-row:focus-visible:not(.is-selected) > strong {
+  color: var(--ui-select-hover-text) !important;
+}
+
+.sales-return-sale-results-body > button.is-selected,
+.sales-return-detail-row.is-selected {
+  border-color: var(--ui-accent-strong) !important;
+  background: var(--ui-select-selected-face) !important;
+  color: var(--ui-select-selected-text) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18) !important;
+}
+
+.sales-return-sale-results-body > button.is-selected > *,
+.sales-return-detail-row.is-selected > *,
+.sales-return-sale-results-body > button.is-selected > strong,
+.sales-return-detail-row.is-selected > strong {
+  color: var(--ui-select-selected-text) !important;
+}
+
+.sales-return-sale-results-foot,
+.sales-return-detail-foot {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface-subtle) !important;
+  color: var(--ui-text-muted) !important;
+}
+
+.sales-return-grid th {
+  border-color: var(--ui-table-border) !important;
+  background: var(--ui-table-header) !important;
+  color: var(--ui-table-header-text) !important;
+}
+
+.sales-return-grid td {
+  border-color: var(--ui-border-soft) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-return-grid tbody tr:nth-child(even) td {
+  background: var(--ui-row-alt) !important;
+}
+
+.sales-return-grid tbody tr:hover td {
+  background: var(--ui-row-hover) !important;
+}
