@@ -26,6 +26,8 @@ class PurchaseInvoiceController extends Controller
         $perPage = min(max($request->integer('per_page', 25), 1), 100);
         $query = PurchaseInvoice::query()
             ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
+            ->where('warehouse_id', $tenantContext->warehouseId())
             ->with(['supplier', 'branch', 'warehouse'])
             ->orderByDesc('invoice_date')
             ->orderByDesc('id');
@@ -200,6 +202,8 @@ class PurchaseInvoiceController extends Controller
     {
         $invoice = PurchaseInvoice::query()
             ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
+            ->where('warehouse_id', $tenantContext->warehouseId())
             ->where('ulid', $ulid)
             ->first();
 
