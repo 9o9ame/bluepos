@@ -963,6 +963,32 @@ html[data-animations='off'] #root *::after {
   );
   --ui-select-selected-text: #fff;
 
+  --ui-button-primary-face: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 6%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 15%, var(--ui-surface-subtle))
+  );
+  --ui-button-success-face: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-success) 5%, var(--ui-surface)),
+    var(--ui-success-soft)
+  );
+  --ui-button-warning-face: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-warning) 5%, var(--ui-surface)),
+    var(--ui-warning-soft)
+  );
+  --ui-button-danger-face: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-danger) 4%, var(--ui-surface)),
+    var(--ui-danger-soft)
+  );
+  --ui-button-info-face: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-info) 4%, var(--ui-surface)),
+    var(--ui-info-soft)
+  );
+
   --ui-panel-face: linear-gradient(180deg, #f7fafc 0%, #eef3f8 100%);
   --ui-table-header: linear-gradient(
     180deg,
