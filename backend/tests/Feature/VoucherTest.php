@@ -87,6 +87,85 @@ class VoucherTest extends TestCase
             ->assertJsonPath('error.key', 'DOCUMENT_POSTED');
     }
 
+    public function test_receiving_and_journal_vouchers_follow_server_side_debit_credit_rules(): void
+    {
+        $this->signInOwner('voucher-directions')->assertOk();
+
+        $cash = $this->leafAccount('Voucher Cash 2', 'V-CASH-02', '0010');
+        $revenue = $this->leafAccount('Voucher Revenue', 'V-REV-01', '0040');
+        $expense = $this->leafAccount('Voucher Expense', 'V-EXP-01', '0030');
+        $date = now()->toDateString();
+
+        $receiving = $this->postJson('/api/vouchers', [
+            'type' => 'receiving',
+            'entry_date' => $date,
+            'description' => 'Other income received',
+            'header_account_ulid' => $cash->ulid,
+            'lines' => [[
+                'account_ulid' => $revenue->ulid,
+                'amount' => '25.0000',
+            ]],
+        ], $this->idem('voucher-receiving-1'))->assertCreated();
+
+        $receiving->assertJsonPath('lines.0.debit', '25.0000')
+            ->assertJsonPath('lines.0.credit', '0.0000')
+            ->assertJsonPath('lines.1.debit', '0.0000')
+            ->assertJsonPath('lines.1.credit', '25.0000');
+
+        $this->postJson('/api/vouchers/'.$receiving->json('ulid').'/post')->assertOk();
+
+        $journal = $this->postJson('/api/vouchers', [
+            'type' => 'journal',
+            'entry_date' => $date,
+            'description' => 'Manual accrual',
+            'lines' => [
+                [
+                    'account_ulid' => $expense->ulid,
+                    'debit' => '10.0000',
+                    'credit' => '0.0000',
+                ],
+                [
+                    'account_ulid' => $revenue->ulid,
+                    'debit' => '0.0000',
+                    'credit' => '9.0000',
+                ],
+            ],
+        ], $this->idem('voucher-journal-1'))->assertCreated();
+
+        $journal->assertJsonPath('status', 'draft')
+            ->assertJsonPath('total_debit', '10.0000')
+            ->assertJsonPath('total_credit', '9.0000');
+
+        $journalUlid = $journal->json('ulid');
+
+        $this->postJson('/api/vouchers/'.$journalUlid.'/post')
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'UNBALANCED_JOURNAL');
+
+        $this->putJson('/api/vouchers/'.$journalUlid, [
+            'entry_date' => $date,
+            'description' => 'Manual accrual corrected',
+            'lines' => [
+                [
+                    'account_ulid' => $expense->ulid,
+                    'debit' => '10.0000',
+                    'credit' => '0.0000',
+                ],
+                [
+                    'account_ulid' => $revenue->ulid,
+                    'debit' => '0.0000',
+                    'credit' => '10.0000',
+                ],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('total_debit', '10.0000')
+            ->assertJsonPath('total_credit', '10.0000');
+
+        $this->postJson('/api/vouchers/'.$journalUlid.'/post')
+            ->assertOk()
+            ->assertJsonPath('status', 'posted');
+    }
+
     /**
      * @return array<string, string>
      */
