@@ -29,6 +29,7 @@ import {
 } from '../api/purchases'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { UiModal } from '../components/ui/UiModal'
 import { UiSelect } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
@@ -42,6 +43,7 @@ import { useColumnLayout } from '../features/gridLayout/useColumnLayout'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
 import type { PurchaseInvoice, PurchaseInvoiceLine } from '../types/purchases'
+import { PartiesPlaceholderPage } from './PartiesPlaceholderPage'
 import {
   applyCalcToLine,
   computeLine,
@@ -329,6 +331,7 @@ export function PurchasesPage() {
   const [productQuery, setProductQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [customizationOpen, setCustomizationOpen] = useState(false)
+  const [supplierModalOpen, setSupplierModalOpen] = useState(false)
   const [selectedLineKey, setSelectedLineKey] = useState<string | null>(null)
   const [calcMethod, setCalcMethod] = useState('trade_after_disc')
   const [shellPriceType, setShellPriceType] = useState('trade')
@@ -1361,7 +1364,13 @@ export function PurchasesPage() {
                   onChange={setSupplierUlid}
                 />
                 <div className="pie-supplier-actions">
-                  <button type="button" className="pie-btn is-ghost" disabled title="Open supplier master">
+                  <button
+                    type="button"
+                    className="pie-btn is-ghost"
+                    disabled={!editable}
+                    title="Create supplier"
+                    onClick={() => setSupplierModalOpen(true)}
+                  >
                     + New
                   </button>
                 </div>
@@ -1870,16 +1879,43 @@ export function PurchasesPage() {
           </div>
           <label className="pie-field pie-notes-inline">
             <span>Notes</span>
-            <input
+            <textarea
               className="pie-inline-input pie-notes-fit"
               value={notes}
               disabled={!editable}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Notes / narration"
+              rows={2}
             />
           </label>
         </div>
       </section>
+
+      <UiModal
+        open={supplierModalOpen}
+        onClose={() => setSupplierModalOpen(false)}
+        size="xl"
+        ariaLabel="New supplier"
+        className="purchase-supplier-modal"
+        bodyClassName="purchase-supplier-modal-body"
+      >
+        <PartiesPlaceholderPage
+          embedded
+          embeddedPartyType="vendor"
+          onClose={() => setSupplierModalOpen(false)}
+          onSaved={(party) => {
+            const vendorUlid =
+              party.vendor_ulid ?? (party.party_type === 'vendor' ? party.ulid : '')
+            void suppliersQuery.refetch().then(({ data }) => {
+              const savedSupplier =
+                data?.find((supplier) => supplier.ulid === vendorUlid) ??
+                data?.find((supplier) => supplier.code === party.code)
+              if (savedSupplier) setSupplierUlid(savedSupplier.ulid)
+              setSupplierModalOpen(false)
+            })
+          }}
+        />
+      </UiModal>
 
       <ColumnCustomizationPanel
         open={customizationOpen}
