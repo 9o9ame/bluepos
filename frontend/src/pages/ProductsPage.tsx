@@ -46,7 +46,7 @@ import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { CatalogQuickEditorModal, type QuickEditorKind } from '../components/catalog/CatalogQuickEditorModal'
 import { loadBarcodePrintSettings, printBarcodeLabels } from '../components/products/barcodePrint'
 import { UiSelect } from '../components/ui/UiSelect'
-import { SalesPartyModal } from '../features/sales/SalesPartyModal'
+import { PartyModal } from '../components/parties/PartyModal'
 import type { Party } from '../api/parties'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
@@ -1706,7 +1706,7 @@ export function ProductsPage() {
       </form>
 
       {supplierModalOpen ? (
-        <SalesPartyModal
+        <PartyModal
           partyType="vendor"
           onClose={() => setSupplierModalOpen(false)}
           onSaved={(party: Party) => {
