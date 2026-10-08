@@ -20,6 +20,7 @@ class PostPurchaseInvoiceAction
         private readonly TenantContext $tenantContext,
         private readonly PostStockMovementAction $postMovement,
         private readonly RecalculatePurchaseTotalsAction $recalculate,
+        private readonly PostPurchaseAccountingAction $postAccounting,
         private readonly EnsureProductSupplierLinkAction $ensureSupplierLink,
         private readonly SyncPurchaseLineToProductAction $syncProduct,
         private readonly AuditLogger $audit,
@@ -58,6 +59,11 @@ class PostPurchaseInvoiceAction
             }
 
             $this->recalculate->execute($invoice);
+
+            // Accounting and stock posting remain in the same transaction. A missing
+            // control account or supplier payable mapping therefore rolls back all
+            // stock/product changes as well as the invoice status transition.
+            $this->postAccounting->execute($invoice);
 
             foreach ($invoice->lines as $line) {
                 /** @var PurchaseInvoiceLine $line */
