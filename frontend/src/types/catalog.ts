@@ -89,6 +89,12 @@ export type BusinessSettings = {
     code: string
     name: string
   } | null
+  purchase_clearing_account_ulid: string | null
+  purchase_clearing_account: {
+    ulid: string
+    code: string
+    name: string
+  } | null
 }
 
 export type ProductBarcode = {
