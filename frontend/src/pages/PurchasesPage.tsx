@@ -353,7 +353,6 @@ export function PurchasesPage() {
   const [discInputType, setDiscInputType] = useState<'pct' | 'rs'>('rs')
   const [autoCalcMrp, setAutoCalcMrp] = useState(true)
   const [withholdingIsPct, setWithholdingIsPct] = useState(false)
-  const [advancePaid, setAdvancePaid] = useState('0.0000')
   const [dualModes, setDualModes] = useState<Record<string, DualMode>>({ ...DEFAULT_DUAL_MODES })
 
   const calcSettings: PurchaseCalcSettings = useMemo(
@@ -927,7 +926,6 @@ export function PurchasesPage() {
     setDiscInputType('pct')
     setAutoCalcMrp(true)
     setWithholdingIsPct(false)
-    setAdvancePaid('0.0000')
     setDualModes({ ...DEFAULT_DUAL_MODES })
   }
 
@@ -1329,7 +1327,9 @@ export function PurchasesPage() {
   const displayTax = liveTotals.tax_amount
   const displayFurther = liveTotals.further_tax_amount
   const displayGrand = liveTotals.grand_total
-  const balancePayable = money(Math.max(0, (Number(displayGrand) || 0) - (Number(advancePaid) || 0)))
+  // No purchase-payment persistence exists yet, so do not manufacture a paid
+  // balance client-side. The full server-calculated purchase total is payable.
+  const balancePayable = displayGrand
 
   async function removeSelectedLine() {
     if (!selectedLine) return
@@ -1858,9 +1858,10 @@ export function PurchasesPage() {
             <label className="pie-field">
               <span>Advance</span>
               <input
-                value={advancePaid}
-                disabled={!editable}
-                onChange={(e) => setAdvancePaid(e.target.value)}
+                value="0.0000"
+                disabled
+                title="Purchase advance payments will be available when supplier payment posting is enabled."
+                aria-label="Advance payment unavailable"
               />
             </label>
             <label className="pie-field">
