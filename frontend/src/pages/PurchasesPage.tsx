@@ -1251,7 +1251,6 @@ export function PurchasesPage() {
             title="To"
           />
           <UiSelect
-            className="desktop-select"
             aria-label="Supplier filter"
             value={supplierFilter}
             options={[
@@ -1261,7 +1260,6 @@ export function PurchasesPage() {
             onChange={setSupplierFilter}
           />
           <UiSelect
-            className="desktop-select"
             aria-label="Purchase status"
             value={statusFilter}
             options={[
