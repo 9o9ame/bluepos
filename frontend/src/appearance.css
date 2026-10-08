@@ -821,9 +821,9 @@ html[data-font] #root .app-shell * {
 /* Explicit density selection overrides viewport-derived density tokens globally. */
 :root[data-density='compact'] {
   --ui-density: compact;
-  --ui-font-xs:10px; --ui-font-sm:10.5px; --ui-font-md:11.5px; --ui-font-lg:12.5px; --ui-font-xl:13.5px; --ui-font-title:14px;
-  --ui-line-tight:1.2; --ui-line-normal:1.35; --ui-line-relaxed:1.45;
-  --ui-weight-normal:500; --ui-weight-medium:600; --ui-weight-strong:700;
+  --ui-font-xs:10.5px; --ui-font-sm:11.5px; --ui-font-md:12.5px; --ui-font-lg:13.5px; --ui-font-xl:14.5px; --ui-font-title:15.5px;
+  --ui-line-tight:1.28; --ui-line-normal:1.42; --ui-line-relaxed:1.52;
+  --ui-weight-normal:400; --ui-weight-medium:500; --ui-weight-strong:700;
   --ui-control-h-sm:20px; --ui-control-h-md:22px; --ui-control-h-lg:26px;
   --ui-icon-sm:11px; --ui-icon-md:13px; --ui-icon-lg:16px;
   --ui-gap-xs:2px; --ui-gap-sm:4px; --ui-gap-md:6px; --ui-gap-lg:8px;
@@ -835,9 +835,9 @@ html[data-font] #root .app-shell * {
 }
 :root[data-density='comfortable'] {
   --ui-density: comfortable;
-  --ui-font-xs:11px; --ui-font-sm:12px; --ui-font-md:13px; --ui-font-lg:14px; --ui-font-xl:15px; --ui-font-title:16px;
-  --ui-line-tight:1.2; --ui-line-normal:1.4; --ui-line-relaxed:1.5;
-  --ui-weight-normal:500; --ui-weight-medium:600; --ui-weight-strong:700;
+  --ui-font-xs:11.5px; --ui-font-sm:12.5px; --ui-font-md:13.5px; --ui-font-lg:14.5px; --ui-font-xl:15.5px; --ui-font-title:17px;
+  --ui-line-tight:1.3; --ui-line-normal:1.45; --ui-line-relaxed:1.55;
+  --ui-weight-normal:400; --ui-weight-medium:500; --ui-weight-strong:700;
   --ui-control-h-sm:23px; --ui-control-h-md:26px; --ui-control-h-lg:30px;
   --ui-icon-sm:13px; --ui-icon-md:15px; --ui-icon-lg:19px;
   --ui-gap-xs:4px; --ui-gap-sm:7px; --ui-gap-md:9px; --ui-gap-lg:13px;
@@ -1470,8 +1470,8 @@ html[data-density='comfortable'] #root :where(.form-group-body, .desktop-panel-b
  * visibly responds to the global appearance preferences.
  */
 :root[data-density='compact'] {
-  --module-font-control: var(--ui-font-sm);
-  --module-font-label: var(--ui-font-xs);
+  --module-font-control: var(--ui-font-md);
+  --module-font-label: var(--ui-font-sm);
   --module-font-body: var(--ui-font-sm);
   --module-gap: var(--ui-gap-sm);
   --module-pad: var(--ui-pad-sm);
@@ -2550,9 +2550,9 @@ html[data-density] #root :where(
    * Global fallback only. Do not force these metrics with !important:
    * page-owned hierarchy may legitimately use a larger lookup/editor font.
    */
-  font-size: var(--module-font-control);
-  font-weight: var(--ui-weight-medium);
-  line-height: var(--ui-line-tight);
+  font-size: var(--module-font-control) !important;
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: var(--ui-line-tight) !important;
   letter-spacing: .005em;
 }
 
@@ -2572,8 +2572,8 @@ html[data-density] #root :where(
   .desktop-field > span,
   .pie-field > span
 ) {
-  font-weight: var(--ui-weight-medium);
-  line-height: var(--ui-line-tight);
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: var(--ui-line-tight) !important;
   letter-spacing: .005em;
 }
 
@@ -2587,7 +2587,7 @@ html[data-density] #root :where(
   .sales-return-screen,
   .bp-workspace
 ) :where(td, .pos-grid td) {
-  font-size: var(--module-font-body);
-  font-weight: var(--ui-weight-normal);
-  line-height: var(--ui-line-normal);
+  font-size: var(--module-font-body) !important;
+  font-weight: var(--ui-weight-normal) !important;
+  line-height: var(--ui-line-normal) !important;
 }
