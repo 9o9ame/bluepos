@@ -2095,7 +2095,7 @@ export function SalesInvoicePage() {
                 <StickyNote />
               </span>
               <span>
-                ({holdsQuery.data?.count ?? 0}) Pending / Due Invoices
+                ({holdsQuery.data?.count ?? 0}) Pending / Due
               </span>
             </button>
   
