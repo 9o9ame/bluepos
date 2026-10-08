@@ -16,6 +16,27 @@ class PurchaseInvoiceResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $paidAmount = '0.0000';
+
+        if ($this->relationLoaded('payments')) {
+            foreach ($this->payments as $payment) {
+                $paidAmount = bcadd($paidAmount, (string) $payment->amount, 4);
+            }
+        } elseif ($this->getAttribute('paid_amount') !== null) {
+            $paidAmount = bcadd((string) $this->getAttribute('paid_amount'), '0', 4);
+        } else {
+            $paidAmount = bcadd(
+                (string) $this->payments()->sum('amount'),
+                '0',
+                4,
+            );
+        }
+
+        $balancePayable = bcsub((string) $this->grand_total, $paidAmount, 4);
+        if (bccomp($balancePayable, '0.0000', 4) < 0) {
+            $balancePayable = '0.0000';
+        }
+
         return [
             'ulid' => $this->ulid,
             'document_number' => $this->document_number,
@@ -44,9 +65,8 @@ class PurchaseInvoiceResource extends JsonResource
             'advance_tax_amount' => $this->advance_tax_amount,
             'round_off' => $this->round_off,
             'grand_total' => $this->grand_total,
-            // Purchase payments are not persisted yet. Until that domain flow exists,
-            // the full server-calculated invoice total remains payable.
-            'balance_payable' => $this->grand_total,
+            'paid_amount' => $paidAmount,
+            'balance_payable' => $balancePayable,
             'notes' => $this->notes,
             'tax_type' => $this->tax_type,
             'payment_terms' => $this->payment_terms,
@@ -73,6 +93,7 @@ class PurchaseInvoiceResource extends JsonResource
                 ];
             }),
             'lines' => PurchaseInvoiceLineResource::collection($this->whenLoaded('lines')),
+            'payments' => PurchasePaymentResource::collection($this->whenLoaded('payments')),
         ];
     }
 }
