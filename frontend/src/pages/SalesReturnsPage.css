@@ -4342,3 +4342,85 @@ html[data-theme='dark'] .sales-return-select-caret {
     grid-template-columns: 78px minmax(86px, 1fr) minmax(86px, 1fr) !important;
   }
 }
+
+
+/* ==========================================================================
+   Sales Return final header stacking + balance spacing correction.
+   Sales# parent must outrank sibling detail pickers while its popup is open.
+   Balance chips need comfortable inner spacing so values never touch borders.
+   ========================================================================== */
+
+.sales-return-option-group.is-sales {
+  position: relative !important;
+  z-index: 90 !important;
+}
+
+.sales-return-option-group.is-sales:has(.sales-return-sale-results) {
+  z-index: 420 !important;
+}
+
+.sales-return-option-group.is-sales:has(.sales-return-sale-results) .sales-return-sale-search,
+.sales-return-option-group.is-sales:has(.sales-return-sale-results) .sales-return-sale-results {
+  z-index: 421 !important;
+}
+
+.sales-return-option-group.is-from,
+.sales-return-option-group.is-salesman,
+.sales-return-option-group.is-remarks {
+  position: relative !important;
+  z-index: 60 !important;
+}
+
+.sales-return-fields-right {
+  grid-template-rows: repeat(2, 28px) !important;
+  gap: 6px !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip {
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  column-gap: 8px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 4px 10px !important;
+  overflow: hidden !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > span {
+  min-width: 0 !important;
+  padding-right: 2px !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > strong {
+  min-width: 0 !important;
+  padding: 0 2px !important;
+  line-height: 1.15 !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.sales-return-fields-right .is-total-balance {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+@media (max-width: 1450px) {
+  .sales-return-fields-right {
+    grid-template-rows: repeat(2, 27px) !important;
+  }
+
+  .sales-return-fields-right .sales-return-balance-chip {
+    height: 27px !important;
+    min-height: 27px !important;
+    padding: 3px 8px !important;
+    column-gap: 6px !important;
+  }
+}
