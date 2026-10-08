@@ -414,7 +414,7 @@ export function PurchaseReturnsPage() {
   }
 
   return (
-    <div className="pos-invoice" style={{ gridTemplateColumns: '1fr' }}>
+    <div className="pos-invoice purchase-return-screen" style={{ gridTemplateColumns: '1fr' }}>
       <div className="pos-invoice-main">
         <div className="inner-tabs">
           <button type="button" className="inner-tab is-active">Purchase Return</button>
