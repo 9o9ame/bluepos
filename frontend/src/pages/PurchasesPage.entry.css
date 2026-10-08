@@ -1315,3 +1315,46 @@ html[data-animations='off'] .purchase-entry-screen * {
   background: var(--ui-danger-soft) !important;
   color: var(--ui-danger) !important;
 }
+
+
+/* ==========================================================================
+   Purchase Invoice list filter geometry.
+   Visual styling stays global; this section owns layout only.
+   ========================================================================== */
+.purchase-list-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1.45fr)
+    minmax(125px, .72fr)
+    minmax(125px, .72fr)
+    minmax(220px, 1.15fr)
+    minmax(150px, .8fr);
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  min-width: 0;
+  font-size: var(--ui-font-sm, 10px);
+}
+
+.purchase-list-filters > * {
+  min-width: 0;
+  width: 100%;
+}
+
+.purchase-list-filters .ui-select,
+.purchase-list-filters .ui-select-trigger {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .purchase-list-filters {
+    grid-template-columns:
+      minmax(160px, 1.2fr)
+      120px
+      120px
+      minmax(190px, 1fr)
+      140px;
+    gap: 4px;
+  }
+}
