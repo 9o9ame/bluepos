@@ -3051,3 +3051,34 @@ html[data-animations='off'] .sales-reference-screen * {
 ) {
   color: var(--ui-text-muted) !important;
 }
+
+
+/* ---------- SALES PICKER STATE PARITY WITH GLOBAL DEFINITION BASELINE ---------- */
+.sales-pos-customer-grid-row:hover:not(.is-selected),
+.sales-pos-salesman-grid-row:hover:not(.is-selected),
+.sales-pos-product-grid-row:hover:not(.is-selected) {
+  border-color: color-mix(in srgb, var(--ui-accent) 38%, transparent) !important;
+  background: var(--ui-select-hover-bg) !important;
+  color: var(--ui-select-hover-text) !important;
+}
+
+.sales-pos-customer-grid-row:hover:not(.is-selected) > *,
+.sales-pos-salesman-grid-row:hover:not(.is-selected) > *,
+.sales-pos-product-grid-row:hover:not(.is-selected) > * {
+  color: var(--ui-select-hover-text) !important;
+}
+
+.sales-pos-customer-grid-row.is-selected,
+.sales-pos-salesman-grid-row.is-selected,
+.sales-pos-product-grid-row.is-selected {
+  border-color: var(--ui-accent-strong) !important;
+  background: var(--ui-select-selected-face) !important;
+  color: var(--ui-select-selected-text) !important;
+  font-weight: 800 !important;
+}
+
+.sales-pos-customer-grid-row.is-selected > *,
+.sales-pos-salesman-grid-row.is-selected > *,
+.sales-pos-product-grid-row.is-selected > * {
+  color: var(--ui-select-selected-text) !important;
+}
