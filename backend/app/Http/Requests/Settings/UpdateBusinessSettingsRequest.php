@@ -20,6 +20,7 @@ class UpdateBusinessSettingsRequest extends FormRequest
             'opening_balance_equity_account_ulid',
             'default_cash_account_ulid',
             'sales_clearing_account_ulid',
+            'purchase_clearing_account_ulid',
         ] as $field) {
             if (! $this->exists($field)) {
                 continue;
@@ -85,6 +86,15 @@ class UpdateBusinessSettingsRequest extends FormRequest
                 'string',
                 'size:26',
                 'different:default_cash_account_ulid',
+                Rule::exists('accounts', 'ulid')
+                    ->where('tenant_id', $tenantId)
+                    ->where('is_active', true),
+            ],
+            'purchase_clearing_account_ulid' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'size:26',
                 Rule::exists('accounts', 'ulid')
                     ->where('tenant_id', $tenantId)
                     ->where('is_active', true),
