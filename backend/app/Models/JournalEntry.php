@@ -28,6 +28,7 @@ class JournalEntry extends Model
     use Concerns\BelongsToTenant, HasPublicUlid;
 
     public const DOCUMENT_OPENING_BALANCE = 'opening_balance';
+    public const DOCUMENT_PURCHASE_INVOICE = 'purchase_invoice';
 
     protected function casts(): array
     {
