@@ -2719,3 +2719,100 @@ html[data-animations='off'] .sales-reference-screen * {
     text-overflow: ellipsis;
   }
 }
+
+
+/* Sales Invoice containment + footer fit polish. */
+/* User-requested visual correction only; financial values/Amounts field order are unchanged. */
+.sales-reference-pay > .sales-reference-amounts {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: calc(100% - 12px);
+  overflow: hidden;
+}
+
+.sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-checks,
+.sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > * {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid input,
+.sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid button {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Keep footer navigation and POS actions inside the main invoice column. */
+.sales-reference-actions {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  gap: 5px !important;
+}
+
+.sales-reference-subtabs-bottom {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  gap: 3px;
+}
+
+.sales-reference-subtabs-bottom .sales-reference-subtab {
+  flex: 0 1 auto;
+  min-width: 0;
+  min-height: 32px;
+  padding-left: 7px;
+  padding-right: 7px;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.sales-reference-subtabs-bottom .sales-reference-subtab > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sales-reference-subtabs-bottom .sales-reference-tab-icon {
+  flex: 0 0 auto;
+}
+
+.sales-reference-actions-center {
+  flex: 0 0 auto;
+  min-width: 0;
+  margin-left: 0;
+  gap: 3px;
+}
+
+.sales-reference-actions-center button {
+  min-width: 0;
+  padding-left: 5px;
+  padding-right: 5px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1450px) {
+  .sales-reference-subtabs-bottom .sales-reference-subtab {
+    padding-left: 5px;
+    padding-right: 5px;
+    font-size: 10px;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-tab-icon {
+    width: 22px;
+    min-width: 22px;
+  }
+
+  .sales-reference-actions-center button {
+    font-size: 10px;
+  }
+}
