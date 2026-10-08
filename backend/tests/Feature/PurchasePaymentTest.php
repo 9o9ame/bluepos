@@ -196,7 +196,7 @@ class PurchasePaymentTest extends TestCase
         )->assertNotFound();
     }
 
-    public function test_posted_purchase_return_blocks_payment_until_return_accounting_exists(): void
+    public function test_posted_purchase_return_blocks_payment_when_return_accounting_is_missing(): void
     {
         $this->signInOwner('pur-pay-return')->assertOk();
         $this->configureAccounts();
@@ -230,6 +230,81 @@ class PurchasePaymentTest extends TestCase
             ->assertJsonPath('error.key', 'PURCHASE_RETURN_ACCOUNTING_REQUIRED');
 
         $this->assertSame(0, PurchasePayment::query()->count());
+    }
+
+    public function test_posted_purchase_return_reduces_balance_and_remaining_amount_can_be_paid(): void
+    {
+        $this->signInOwner('pur-pay-return-aware')->assertOk();
+        $this->configureAccounts();
+
+        $warehouse = $this->sessionWarehouseUlid();
+        $supplier = $this->createSupplier('SUP-RET-AWARE', 'Return Aware Supplier');
+        $product = $this->createProduct('Return Aware Product');
+
+        $purchaseUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplier,
+            'warehouse_ulid' => $warehouse,
+        ])->assertCreated()->json('ulid');
+
+        $purchaseLineUlid = $this->postJson('/api/purchases/'.$purchaseUlid.'/lines', [
+            'product_ulid' => $product,
+            'unit_ulid' => $this->unitUlid('PCS'),
+            'quantity' => '4.000000',
+            'unit_cost' => '25.0000',
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchases/'.$purchaseUlid.'/post')->assertOk();
+
+        $returnUlid = $this->postJson('/api/purchase-returns', [
+            'purchase_ulid' => $purchaseUlid,
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchase-returns/'.$returnUlid.'/lines', [
+            'purchase_line_ulid' => $purchaseLineUlid,
+            'quantity' => '1.000000',
+        ])->assertCreated();
+
+        $this->postJson('/api/purchase-returns/'.$returnUlid.'/post')->assertOk();
+
+        $this->getJson('/api/purchases/'.$purchaseUlid)
+            ->assertOk()
+            ->assertJsonPath('grand_total', '100.0000')
+            ->assertJsonPath('returned_amount', '25.0000')
+            ->assertJsonPath('paid_amount', '0.0000')
+            ->assertJsonPath('balance_payable', '75.0000');
+
+        $this->postJson(
+            '/api/purchases/'.$purchaseUlid.'/payments',
+            ['amount' => '70.0000', 'method' => 'cash'],
+            $this->idem('pur-pay-return-aware-1'),
+        )->assertCreated();
+
+        $this->getJson('/api/purchases/'.$purchaseUlid)
+            ->assertOk()
+            ->assertJsonPath('returned_amount', '25.0000')
+            ->assertJsonPath('paid_amount', '70.0000')
+            ->assertJsonPath('balance_payable', '5.0000');
+
+        $this->postJson(
+            '/api/purchases/'.$purchaseUlid.'/payments',
+            ['amount' => '6.0000', 'method' => 'cash'],
+            $this->idem('pur-pay-return-aware-over'),
+        )->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+
+        $this->postJson(
+            '/api/purchases/'.$purchaseUlid.'/payments',
+            ['amount' => '5.0000', 'method' => 'bank'],
+            $this->idem('pur-pay-return-aware-2'),
+        )->assertCreated();
+
+        $this->getJson('/api/purchases/'.$purchaseUlid)
+            ->assertOk()
+            ->assertJsonPath('returned_amount', '25.0000')
+            ->assertJsonPath('paid_amount', '75.0000')
+            ->assertJsonPath('balance_payable', '0.0000');
+
+        $this->assertSame(2, PurchasePayment::query()->count());
     }
 
     /**
