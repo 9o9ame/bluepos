@@ -79,6 +79,8 @@ export function SalesReturnsPage() {
   const [salesmanFilterUlid, setSalesmanFilterUlid] = useState('')
   const [customerSelectOpen, setCustomerSelectOpen] = useState(false)
   const [salesmanSelectOpen, setSalesmanSelectOpen] = useState(false)
+  const [customerDropdownSearch, setCustomerDropdownSearch] = useState('')
+  const [salesmanDropdownSearch, setSalesmanDropdownSearch] = useState('')
   const [returnDate, setReturnDate] = useState(today())
   const [reason, setReason] = useState('')
   const [notes, setNotes] = useState('')
@@ -605,7 +607,9 @@ export function SalesReturnsPage() {
                       disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
                       onClick={() => {
                         setSalesmanSelectOpen(false)
+                        setSalesmanDropdownSearch('')
                         setSalePickerOpen(false)
+                        setCustomerDropdownSearch('')
                         setCustomerSelectOpen((open) => !open)
                       }}
                       aria-expanded={customerSelectOpen}
@@ -628,6 +632,15 @@ export function SalesReturnsPage() {
                       className={`sales-return-detail-dropdown${customerSelectOpen ? ' is-open' : ''}`}
                       aria-hidden={!customerSelectOpen}
                     >
+                      <div className="ui-select-search-wrap sales-return-detail-search-wrap">
+                        <input
+                          className="ui-select-search"
+                          value={customerDropdownSearch}
+                          onChange={(event) => setCustomerDropdownSearch(event.target.value)}
+                          placeholder="Search customer..."
+                          aria-label="Search customers"
+                        />
+                      </div>
                       <div className="sales-return-detail-head">
                         <span>Code</span>
                         <span>Name</span>
@@ -635,6 +648,7 @@ export function SalesReturnsPage() {
                         <span>Mobile</span>
                       </div>
                       <div className="sales-return-detail-body">
+                        {!customerDropdownSearch.trim() ? (
                         <button
                           type="button"
                           className={`sales-return-detail-row${customerFilterUlid ? '' : ' is-selected'}`}
@@ -652,7 +666,16 @@ export function SalesReturnsPage() {
                           <span>Walk-in / all customers</span>
                           <span>—</span>
                         </button>
-                        {(customersQuery.data ?? []).map((customer) => (
+                        ) : null}
+                        {(customersQuery.data ?? [])
+                          .filter((customer) => {
+                            const query = customerDropdownSearch.trim().toLocaleLowerCase()
+                            if (!query) return true
+                            return [customer.code, customer.name, customer.address, customer.mobile, customer.phone]
+                              .filter(Boolean)
+                              .some((value) => String(value).toLocaleLowerCase().includes(query))
+                          })
+                          .map((customer) => (
                           <button
                             type="button"
                             className={`sales-return-detail-row${customerFilterUlid === customer.ulid ? ' is-selected' : ''}`}
@@ -674,7 +697,13 @@ export function SalesReturnsPage() {
                         ))}
                       </div>
                       <div className="sales-return-detail-foot">
-                        {(customersQuery.data?.length ?? 0) + 1} account(s)
+                        {(customersQuery.data ?? []).filter((customer) => {
+                          const query = customerDropdownSearch.trim().toLocaleLowerCase()
+                          if (!query) return true
+                          return [customer.code, customer.name, customer.address, customer.mobile, customer.phone]
+                            .filter(Boolean)
+                            .some((value) => String(value).toLocaleLowerCase().includes(query))
+                        }).length + (customerDropdownSearch.trim() ? 0 : 1)} account(s)
                       </div>
                     </div>
                   </div>
@@ -698,7 +727,9 @@ export function SalesReturnsPage() {
                       disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
                       onClick={() => {
                         setCustomerSelectOpen(false)
+                        setCustomerDropdownSearch('')
                         setSalePickerOpen(false)
+                        setSalesmanDropdownSearch('')
                         setSalesmanSelectOpen((open) => !open)
                       }}
                       aria-expanded={salesmanSelectOpen}
@@ -721,6 +752,15 @@ export function SalesReturnsPage() {
                       className={`sales-return-detail-dropdown${salesmanSelectOpen ? ' is-open' : ''}`}
                       aria-hidden={!salesmanSelectOpen}
                     >
+                      <div className="ui-select-search-wrap sales-return-detail-search-wrap">
+                        <input
+                          className="ui-select-search"
+                          value={salesmanDropdownSearch}
+                          onChange={(event) => setSalesmanDropdownSearch(event.target.value)}
+                          placeholder="Search salesman..."
+                          aria-label="Search salesmen"
+                        />
+                      </div>
                       <div className="sales-return-detail-head">
                         <span>Code</span>
                         <span>Name</span>
@@ -728,6 +768,7 @@ export function SalesReturnsPage() {
                         <span>Mobile</span>
                       </div>
                       <div className="sales-return-detail-body">
+                        {!salesmanDropdownSearch.trim() ? (
                         <button
                           type="button"
                           className={`sales-return-detail-row${salesmanFilterUlid ? '' : ' is-selected'}`}
@@ -745,7 +786,16 @@ export function SalesReturnsPage() {
                           <span>—</span>
                           <span>—</span>
                         </button>
-                        {(salesmenQuery.data ?? []).map((salesman) => (
+                        ) : null}
+                        {(salesmenQuery.data ?? [])
+                          .filter((salesman) => {
+                            const query = salesmanDropdownSearch.trim().toLocaleLowerCase()
+                            if (!query) return true
+                            return [salesman.code, salesman.name, salesman.address, salesman.mobile]
+                              .filter(Boolean)
+                              .some((value) => String(value).toLocaleLowerCase().includes(query))
+                          })
+                          .map((salesman) => (
                           <button
                             type="button"
                             className={`sales-return-detail-row${salesmanFilterUlid === salesman.ulid ? ' is-selected' : ''}`}
@@ -767,7 +817,13 @@ export function SalesReturnsPage() {
                         ))}
                       </div>
                       <div className="sales-return-detail-foot">
-                        {(salesmenQuery.data?.length ?? 0) + 1} salesman option(s)
+                        {(salesmenQuery.data ?? []).filter((salesman) => {
+                          const query = salesmanDropdownSearch.trim().toLocaleLowerCase()
+                          if (!query) return true
+                          return [salesman.code, salesman.name, salesman.address, salesman.mobile]
+                            .filter(Boolean)
+                            .some((value) => String(value).toLocaleLowerCase().includes(query))
+                        }).length + (salesmanDropdownSearch.trim() ? 0 : 1)} salesman option(s)
                       </div>
                     </div>
                   </div>
