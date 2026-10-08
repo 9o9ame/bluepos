@@ -116,16 +116,28 @@ class PayPurchaseInvoiceAction
                 );
             }
 
-            if (PurchaseReturn::query()
+            $postedReturnIds = PurchaseReturn::query()
                 ->forTenant($tenantId)
                 ->where('purchase_invoice_id', $invoice->id)
                 ->where('status', PurchaseReturnStatus::Posted->value)
-                ->exists()) {
-                throw new ApiException(
-                    'PURCHASE_RETURN_ACCOUNTING_REQUIRED',
-                    'Purchase payments are blocked while posted purchase returns do not yet have accounting journals.',
-                    422,
-                );
+                ->pluck('id');
+
+            if ($postedReturnIds->isNotEmpty()) {
+                $accountedReturnCount = JournalEntry::query()
+                    ->forTenant($tenantId)
+                    ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_RETURN)
+                    ->whereIn('document_id', $postedReturnIds)
+                    ->where('status', JournalStatus::Posted->value)
+                    ->distinct()
+                    ->count('document_id');
+
+                if ($accountedReturnCount !== $postedReturnIds->count()) {
+                    throw new ApiException(
+                        'PURCHASE_RETURN_ACCOUNTING_REQUIRED',
+                        'A posted purchase return is missing its accounting journal and must be resolved before recording payment.',
+                        422,
+                    );
+                }
             }
 
             $outstanding = $this->outstandingAmount($invoice);
@@ -208,12 +220,27 @@ class PayPurchaseInvoiceAction
 
     public function outstandingAmount(PurchaseInvoice $invoice): string
     {
-        $paid = (string) PurchasePayment::query()
-            ->where('tenant_id', (int) $invoice->tenant_id)
-            ->where('purchase_invoice_id', $invoice->id)
-            ->sum('amount');
+        $paid = bcadd(
+            (string) PurchasePayment::query()
+                ->where('tenant_id', (int) $invoice->tenant_id)
+                ->where('purchase_invoice_id', $invoice->id)
+                ->sum('amount'),
+            '0',
+            4,
+        );
 
-        $outstanding = bcsub((string) $invoice->grand_total, $paid, 4);
+        $returned = bcadd(
+            (string) PurchaseReturn::query()
+                ->forTenant((int) $invoice->tenant_id)
+                ->where('purchase_invoice_id', $invoice->id)
+                ->where('status', PurchaseReturnStatus::Posted->value)
+                ->sum('grand_total'),
+            '0',
+            4,
+        );
+
+        $netPayable = bcsub((string) $invoice->grand_total, $returned, 4);
+        $outstanding = bcsub($netPayable, $paid, 4);
 
         return bccomp($outstanding, '0', 4) < 0 ? '0.0000' : $outstanding;
     }
