@@ -28,6 +28,10 @@ class BusinessSettingResource extends JsonResource
             ? $this->salesClearingAccount
             : $this->salesClearingAccount()->first();
 
+        $purchaseClearing = $this->relationLoaded('purchaseClearingAccount')
+            ? $this->purchaseClearingAccount
+            : $this->purchaseClearingAccount()->first();
+
         return [
             'ulid' => $this->ulid,
             'business_name' => $this->business_name,
@@ -66,6 +70,12 @@ class BusinessSettingResource extends JsonResource
                 'ulid' => $clearing->ulid,
                 'code' => $clearing->code,
                 'name' => $clearing->name,
+            ] : null,
+            'purchase_clearing_account_ulid' => $purchaseClearing?->ulid,
+            'purchase_clearing_account' => $purchaseClearing ? [
+                'ulid' => $purchaseClearing->ulid,
+                'code' => $purchaseClearing->code,
+                'name' => $purchaseClearing->name,
             ] : null,
         ];
     }
