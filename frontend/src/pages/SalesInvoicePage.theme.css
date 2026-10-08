@@ -2953,3 +2953,101 @@ html[data-animations='off'] .sales-reference-screen * {
     font-size: 9.5px;
   }
 }
+
+
+/* ==========================================================================
+   Daily Entries global Definition baseline consumer.
+   Sales Invoice geometry is frozen; this section is visual-only.
+   ========================================================================== */
+.sales-reference-screen {
+  background: var(--ui-bg) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-reference-screen :where(
+  .sales-reference-meta,
+  .sales-reference-entry-row,
+  .sales-reference-grid-wrap,
+  .sales-reference-grid-totals,
+  .sales-reference-record-nav,
+  .sales-reference-actions,
+  .sales-reference-pay,
+  .sales-reference-amounts,
+  .sales-reference-amount-options,
+  .sales-reference-payment-box
+) {
+  border-color: var(--ui-border) !important;
+  background-color: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.sales-reference-screen :where(
+  .sales-reference-product-entry,
+  .sales-reference-option-grid input,
+  .sales-reference-copy-from input,
+  .sales-reference-remarks textarea,
+  .sales-reference-payment-reference input,
+  .sales-reference-received input,
+  .sales-reference-amounts-grid input
+) {
+  border-color: var(--ui-control-border) !important;
+  background: var(--ui-control-face) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.sales-reference-screen :where(
+  .sales-reference-product-entry,
+  .sales-reference-option-grid input,
+  .sales-reference-copy-from input,
+  .sales-reference-remarks textarea,
+  .sales-reference-payment-reference input,
+  .sales-reference-received input,
+  .sales-reference-amounts-grid input
+):focus-visible {
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.sales-reference-screen .sales-reference-grid th {
+  border-color: var(--ui-table-border) !important;
+  background: var(--ui-table-header) !important;
+  color: var(--ui-table-header-text) !important;
+}
+
+.sales-reference-screen .sales-reference-grid td {
+  border-color: var(--ui-border-soft) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-reference-screen .sales-reference-grid tbody tr:hover td {
+  background: var(--ui-row-hover) !important;
+}
+
+.sales-reference-screen .sales-reference-product-drop,
+.sales-reference-screen .sales-reference-customer-picker,
+.sales-reference-screen .sales-reference-copy-results {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-select-menu-bg) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.sales-reference-screen :where(
+  .sales-reference-actions,
+  .sales-reference-grid-totals,
+  .sales-reference-record-nav
+) {
+  background: var(--ui-panel-face) !important;
+}
+
+.sales-reference-screen :where(
+  .sales-reference-payment-label,
+  .sales-reference-remarks-label,
+  .sales-reference-side-label,
+  .sales-reference-shortcuts
+) {
+  color: var(--ui-text-muted) !important;
+}
