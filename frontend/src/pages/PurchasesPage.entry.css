@@ -1506,3 +1506,85 @@ html[data-animations='off'] .purchase-entry-screen * {
   color: var(--ui-text) !important;
   box-shadow: var(--ui-card-shadow) !important;
 }
+
+
+/* ==========================================================================
+   Purchase product lookup interaction polish.
+   Uses shared Definition state tokens; geometry remains page-owned.
+   ========================================================================== */
+.purchase-entry-screen .pie-lookup {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-select-menu-bg) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.purchase-entry-screen .pie-lookup-option {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ui-gap-sm);
+  min-height: var(--ui-control-h-md);
+  padding: var(--ui-pad-sm) var(--ui-pad-md) !important;
+  border-bottom: 1px solid var(--ui-border-soft) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  text-align: left;
+  font-size: var(--ui-font-sm) !important;
+  font-weight: var(--ui-weight-normal) !important;
+  line-height: var(--ui-line-normal) !important;
+}
+
+.purchase-entry-screen .pie-lookup-option:hover,
+.purchase-entry-screen .pie-lookup-option:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--ui-accent) 38%, transparent) !important;
+  background: var(--ui-select-hover-bg) !important;
+  color: var(--ui-select-hover-text) !important;
+}
+
+.purchase-entry-screen .pie-lookup-option-main {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--ui-weight-medium);
+}
+
+.purchase-entry-screen .pie-lookup-option-meta {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-xs);
+  font-weight: var(--ui-weight-normal);
+  white-space: nowrap;
+}
+
+.purchase-entry-screen .pie-lookup-option:hover .pie-lookup-option-meta,
+.purchase-entry-screen .pie-lookup-option:focus-visible .pie-lookup-option-meta {
+  color: var(--ui-select-hover-text);
+}
+
+/* Keep row selection visible without overpowering editable semantic cells. */
+.purchase-entry-screen .purchase-reference-grid tr.is-selected td:not(.cell-yellow):not(.cell-cyan) {
+  background: color-mix(in srgb, var(--ui-accent) 10%, var(--ui-surface)) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid tr.is-selected td.cell-yellow {
+  background:
+    linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--ui-accent) 6%, transparent),
+      color-mix(in srgb, var(--ui-accent) 6%, transparent)
+    ),
+    #fff7c2 !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid tr.is-selected td.cell-cyan {
+  background:
+    linear-gradient(
+      0deg,
+      color-mix(in srgb, var(--ui-accent) 6%, transparent),
+      color-mix(in srgb, var(--ui-accent) 6%, transparent)
+    ),
+    #c8f7f5 !important;
+}
