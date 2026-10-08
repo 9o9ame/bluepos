@@ -20,6 +20,7 @@ import { fetchProductStock, fetchWarehouses } from '../api/inventory'
 import {
   createPurchase,
   createPurchaseLine,
+  createPurchasePayment,
   deletePurchaseLine,
   fetchPurchase,
   fetchPurchases,
@@ -29,6 +30,7 @@ import {
 } from '../api/purchases'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { UiButton } from '../components/ui/UiButton'
 import { UiModal } from '../components/ui/UiModal'
 import { UiSelect } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -42,7 +44,11 @@ import {
 import { useColumnLayout } from '../features/gridLayout/useColumnLayout'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
-import type { PurchaseInvoice, PurchaseInvoiceLine } from '../types/purchases'
+import type {
+  PurchaseInvoice,
+  PurchaseInvoiceLine,
+  PurchasePaymentMethod,
+} from '../types/purchases'
 import { PartiesPlaceholderPage } from './PartiesPlaceholderPage'
 import {
   applyCalcToLine,
@@ -306,6 +312,7 @@ export function PurchasesPage() {
   const canCreate = useCan('purchases.create')
   const canEdit = useCan('purchases.edit')
   const canPost = useCan('purchases.post')
+  const canCreatePayment = useCan('payments.create')
   const canCreateReturn = useCan('purchase_returns.create')
 
   const [mode, setMode] = useState<'list' | 'editor'>('list')
@@ -332,6 +339,13 @@ export function PurchasesPage() {
   const [error, setError] = useState<string | null>(null)
   const [customizationOpen, setCustomizationOpen] = useState(false)
   const [supplierModalOpen, setSupplierModalOpen] = useState(false)
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+  const [paidAmount, setPaidAmount] = useState('0.0000')
+  const [serverBalancePayable, setServerBalancePayable] = useState('0.0000')
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<PurchasePaymentMethod>('cash')
+  const [paymentReference, setPaymentReference] = useState('')
+  const [paymentIdempotencyKey, setPaymentIdempotencyKey] = useState(() => crypto.randomUUID())
   const [selectedLineKey, setSelectedLineKey] = useState<string | null>(null)
   const [calcMethod, setCalcMethod] = useState('trade_after_disc')
   const [shellPriceType, setShellPriceType] = useState('trade')
@@ -848,6 +862,8 @@ export function PurchasesPage() {
     setShellRoundOff(invoice.round_off ?? '0.0000')
     setShellTaxType(invoice.tax_type ?? 'standard')
     setShellPaymentTerms(invoice.payment_terms ?? 'credit')
+    setPaidAmount(invoice.paid_amount ?? '0.0000')
+    setServerBalancePayable(invoice.balance_payable ?? invoice.grand_total)
     const mapped = (invoice.lines ?? []).map(lineFromServer)
     const method = normalizeCalcMethod(invoice.calculation_method)
     setCalcMethod(method)
@@ -905,6 +921,12 @@ export function PurchasesPage() {
     setLines([])
     setProductQuery('')
     setError(null)
+    setPaidAmount('0.0000')
+    setServerBalancePayable('0.0000')
+    setPaymentAmount('')
+    setPaymentMethod('cash')
+    setPaymentReference('')
+    setPaymentIdempotencyKey(crypto.randomUUID())
     setSelectedLineKey(null)
     setCalcMethod('trade_after_disc')
     setShellPriceType('trade')
@@ -1059,6 +1081,51 @@ export function PurchasesPage() {
       void queryClient.invalidateQueries({ queryKey: ['posted-purchases-lookup'] })
     },
   })
+
+  const paymentMutation = useMutation({
+    mutationFn: async () => {
+      if (!invoiceUlid || status !== 'posted') {
+        throw new Error('Post the purchase before recording payment.')
+      }
+
+      return createPurchasePayment(
+        invoiceUlid,
+        {
+          amount: paymentAmount,
+          method: paymentMethod,
+          reference: paymentReference.trim() || null,
+        },
+        paymentIdempotencyKey,
+      )
+    },
+    onSuccess: async () => {
+      if (!invoiceUlid) return
+      const invoice = await fetchPurchase(invoiceUlid)
+      applyInvoice(invoice)
+      setPaymentModalOpen(false)
+      setPaymentAmount('')
+      setPaymentReference('')
+      setPaymentIdempotencyKey(crypto.randomUUID())
+      setError(null)
+      void queryClient.invalidateQueries({ queryKey: ['purchases'] })
+    },
+  })
+
+  async function onRecordPayment() {
+    if (!canCreatePayment || status !== 'posted' || !invoiceUlid) return
+    setError(null)
+    try {
+      await paymentMutation.mutateAsync()
+    } catch (err) {
+      setError(
+        err instanceof ApiClientError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Unable to record payment.',
+      )
+    }
+  }
 
   async function onSave(event?: FormEvent) {
     event?.preventDefault()
@@ -1327,9 +1394,7 @@ export function PurchasesPage() {
   const displayTax = liveTotals.tax_amount
   const displayFurther = liveTotals.further_tax_amount
   const displayGrand = liveTotals.grand_total
-  // No purchase-payment persistence exists yet, so do not manufacture a paid
-  // balance client-side. The full server-calculated purchase total is payable.
-  const balancePayable = displayGrand
+  const balancePayable = status === 'posted' ? serverBalancePayable : displayGrand
 
   async function removeSelectedLine() {
     if (!selectedLine) return
@@ -1856,13 +1921,31 @@ export function PurchasesPage() {
               />
             </label>
             <label className="pie-field">
-              <span>Advance</span>
-              <input
-                value="0.0000"
-                disabled
-                title="Purchase advance payments will be available when supplier payment posting is enabled."
-                aria-label="Advance payment unavailable"
-              />
+              <span>Paid</span>
+              <div className="pie-field-row">
+                <input
+                  value={status === 'posted' ? paidAmount : '0.0000'}
+                  disabled
+                  aria-label="Purchase paid amount"
+                />
+                <UiButton
+                  variant="success"
+                  label="Record"
+                  disabled={
+                    status !== 'posted' ||
+                    !invoiceUlid ||
+                    !canCreatePayment ||
+                    Number(balancePayable) <= 0
+                  }
+                  onClick={() => {
+                    setPaymentAmount(balancePayable)
+                    setPaymentReference('')
+                    setPaymentMethod('cash')
+                    setPaymentIdempotencyKey(crypto.randomUUID())
+                    setPaymentModalOpen(true)
+                  }}
+                />
+              </div>
             </label>
             <label className="pie-field">
               <span>Due Date</span>
@@ -1891,6 +1974,76 @@ export function PurchasesPage() {
           </label>
         </div>
       </section>
+
+      <UiModal
+        open={paymentModalOpen}
+        onClose={() => {
+          if (!paymentMutation.isPending) setPaymentModalOpen(false)
+        }}
+        size="sm"
+        ariaLabel="Record purchase payment"
+      >
+        <div className="pie-panel-payment">
+          <div className="pie-payment-grid">
+            <label className="pie-field">
+              <span>Amount</span>
+              <input
+                value={paymentAmount}
+                inputMode="decimal"
+                disabled={paymentMutation.isPending}
+                onChange={(event) => setPaymentAmount(event.target.value)}
+              />
+            </label>
+            <label className="pie-field">
+              <span>Method</span>
+              <UiSelect
+                aria-label="Purchase payment method"
+                value={paymentMethod}
+                disabled={paymentMutation.isPending}
+                options={[
+                  { value: 'cash', label: 'Cash' },
+                  { value: 'card', label: 'Card' },
+                  { value: 'bank', label: 'Bank' },
+                ]}
+                onChange={(value) => setPaymentMethod(value as PurchasePaymentMethod)}
+              />
+            </label>
+            <label className="pie-field">
+              <span>Reference</span>
+              <input
+                value={paymentReference}
+                maxLength={100}
+                disabled={paymentMutation.isPending}
+                onChange={(event) => setPaymentReference(event.target.value)}
+                placeholder="Cheque / transaction / reference"
+              />
+            </label>
+            <div className="pie-balance-payable">
+              <span>Balance Payable</span>
+              <strong>{balancePayable}</strong>
+            </div>
+          </div>
+          <div className="pie-field-row">
+            <UiButton
+              variant="success"
+              label={paymentMutation.isPending ? 'Recording…' : 'Record Payment'}
+              disabled={
+                paymentMutation.isPending ||
+                !paymentAmount ||
+                Number(paymentAmount) <= 0 ||
+                Number(paymentAmount) > Number(balancePayable)
+              }
+              onClick={() => void onRecordPayment()}
+            />
+            <UiButton
+              variant="info"
+              label="Close"
+              disabled={paymentMutation.isPending}
+              onClick={() => setPaymentModalOpen(false)}
+            />
+          </div>
+        </div>
+      </UiModal>
 
       <UiModal
         open={supplierModalOpen}
