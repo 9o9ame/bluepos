@@ -19,6 +19,7 @@ import {
 } from '../api/salesReturns'
 import { DesktopButton } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { UiButton } from '../components/ui/UiButton'
 import { askConfirm, useFeedback } from '../feedback/FeedbackProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
@@ -476,7 +477,7 @@ export function SalesReturnsPage() {
           <FileText size={17} />
           Product Wise
         </button>
-        <strong>Sales Return</strong>
+        <strong className="sales-return-title">Sales Return</strong>
       </header>
 
       {view === 'entry' ? (
@@ -773,8 +774,8 @@ export function SalesReturnsPage() {
                 </div>
 
                 <div className="sales-return-fields-right">
-                  <button
-                    type="button"
+                  <UiButton
+                    variant="info"
                     className="sales-return-header-refresh"
                     title="Refresh selected sale and balances"
                     disabled={returnableQuery.isFetching || saleLookup.isFetching}
@@ -789,8 +790,8 @@ export function SalesReturnsPage() {
                     }}
                   >
                     <RefreshCw size={12} />
-                    Refresh
-                  </button>
+                    <span>Refresh</span>
+                  </UiButton>
 
                   <div className="sales-return-balance-chip is-previous">
                     <span>Previous</span>
@@ -972,8 +973,8 @@ export function SalesReturnsPage() {
                     placeholder="Reference"
                     onChange={(e) => setRefundReference(e.target.value)}
                   />
-                  <button
-                    type="button"
+                  <UiButton
+                    variant="warning"
                     className="sales-return-refund-submit"
                     disabled={
                       !canRefund ||
@@ -984,12 +985,12 @@ export function SalesReturnsPage() {
                     onClick={() => refundMutation.mutate()}
                   >
                     {refundMutation.isPending ? 'Refunding…' : 'Refund'}
-                  </button>
+                  </UiButton>
                 </div>
               ) : document?.status === 'posted' ? (
                 <small className="sales-return-refund-complete">Refund fully settled.</small>
               ) : (
-                <small>Post the Sales Return before refund settlement.</small>
+                <small className="sales-return-settlement-hint">Post the Sales Return before refund settlement.</small>
               )}
             </div>
 
