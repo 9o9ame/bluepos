@@ -2591,3 +2591,43 @@ html[data-density] #root :where(
   font-weight: var(--ui-weight-normal) !important;
   line-height: var(--ui-line-normal) !important;
 }
+
+
+/* ---------- ROBOTO CONDENSED READABILITY CALIBRATION ---------- */
+/*
+ * Roboto Condensed is bundled through @fontsource and can run slightly
+ * optically smaller than Segoe/Tahoma at the same CSS size. Keep the user's
+ * selected density, but calibrate its shared type scale so dense POS screens
+ * remain clear without resorting to heavy 800/900 weights.
+ */
+:root[data-font='roboto-condensed'][data-density='compact'] {
+  --ui-font-xs: 11px;
+  --ui-font-sm: 12px;
+  --ui-font-md: 13px;
+  --ui-font-lg: 14px;
+  --ui-font-xl: 15.5px;
+  --ui-font-title: 17px;
+  --ui-line-tight: 1.3;
+  --ui-line-normal: 1.45;
+  --ui-line-relaxed: 1.55;
+  --ui-weight-normal: 400;
+  --ui-weight-medium: 500;
+  --ui-weight-strong: 700;
+  --app-letter-spacing: 0.008em;
+}
+
+:root[data-font='roboto-condensed'][data-density='comfortable'] {
+  --ui-font-xs: 12px;
+  --ui-font-sm: 13px;
+  --ui-font-md: 14px;
+  --ui-font-lg: 15px;
+  --ui-font-xl: 16.5px;
+  --ui-font-title: 18px;
+  --ui-line-tight: 1.32;
+  --ui-line-normal: 1.48;
+  --ui-line-relaxed: 1.58;
+  --ui-weight-normal: 400;
+  --ui-weight-medium: 500;
+  --ui-weight-strong: 700;
+  --app-letter-spacing: 0.008em;
+}
