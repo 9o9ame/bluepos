@@ -913,20 +913,36 @@ html[data-animations='off'] #root *::after {
  * resolve through these tokens.
  */
 :root {
-  --ui-bg: var(--appearance-surface-soft);
-  --ui-surface: var(--appearance-surface);
-  --ui-surface-subtle: var(--surface-2);
-  --ui-surface-muted: var(--surface-3);
-  --ui-text: var(--appearance-text);
-  --ui-text-muted: var(--appearance-text-muted);
-  --ui-border: var(--appearance-border);
+  /*
+   * Client-approved Definition baseline.
+   * Keep the neutral desktop/POS palette stable while Primary Theme controls
+   * active, focus and selected states.
+   */
+  --ui-bg: #e8eef5;
+  --ui-surface: #ffffff;
+  --ui-surface-subtle: #eef3f8;
+  --ui-surface-muted: #dce7f2;
+  --ui-text: #243040;
+  --ui-text-muted: #5a6874;
+  --ui-border: #a8b4c0;
+  --ui-border-soft: #d7e1ea;
   --ui-accent: var(--appearance-accent);
-  --ui-accent-soft: color-mix(in srgb, var(--appearance-accent) 12%, var(--appearance-surface));
+  --ui-accent-soft: color-mix(in srgb, var(--appearance-accent) 12%, var(--ui-surface));
   --ui-accent-strong: color-mix(in srgb, var(--appearance-accent) 82%, black);
   --ui-success: #16834a;
   --ui-warning: #b56a00;
   --ui-danger: #c53b36;
   --ui-info: #2879ad;
+  --ui-success-soft: color-mix(in srgb, var(--ui-success) 13%, var(--ui-surface));
+  --ui-warning-soft: color-mix(in srgb, var(--ui-warning) 13%, var(--ui-surface));
+  --ui-danger-soft: color-mix(in srgb, var(--ui-danger) 11%, var(--ui-surface));
+  --ui-info-soft: color-mix(in srgb, var(--ui-info) 11%, var(--ui-surface));
+  --ui-control-face: linear-gradient(180deg, #ffffff 0%, #eef3f8 100%);
+  --ui-panel-face: linear-gradient(180deg, #f7fafc 0%, #eef3f8 100%);
+  --ui-table-header: linear-gradient(180deg, #f7fafc 0%, #eef3f8 48%, #dfe8f1 100%);
+  --ui-row-alt: #f7fafc;
+  --ui-row-hover: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface));
+  --ui-selected-row: var(--selected-row, color-mix(in srgb, var(--ui-accent) 24%, var(--ui-surface)));
   --ui-focus-shadow: 0 0 0 2px color-mix(in srgb, var(--appearance-accent) 24%, transparent);
   --ui-card-shadow: var(--panel-shadow);
   --ui-control-shadow: var(--button-shadow);
@@ -935,10 +951,28 @@ html[data-animations='off'] #root *::after {
 }
 
 :root[data-theme='dark'] {
+  --ui-bg: #181d22;
+  --ui-surface: #20262c;
+  --ui-surface-subtle: #282f36;
+  --ui-surface-muted: #343c44;
+  --ui-text: #edf1f5;
+  --ui-text-muted: #aeb8c2;
+  --ui-border: #56616c;
+  --ui-border-soft: #3e4851;
   --ui-success: #50c878;
   --ui-warning: #f0ad4e;
   --ui-danger: #ff7670;
   --ui-info: #6bb9e8;
+  --ui-success-soft: color-mix(in srgb, var(--ui-success) 14%, var(--ui-surface));
+  --ui-warning-soft: color-mix(in srgb, var(--ui-warning) 14%, var(--ui-surface));
+  --ui-danger-soft: color-mix(in srgb, var(--ui-danger) 12%, var(--ui-surface));
+  --ui-info-soft: color-mix(in srgb, var(--ui-info) 12%, var(--ui-surface));
+  --ui-control-face: linear-gradient(180deg, #353c43 0%, #282e34 100%);
+  --ui-panel-face: linear-gradient(180deg, #2f363d 0%, #242a30 100%);
+  --ui-table-header: linear-gradient(180deg, #343c44 0%, #292f35 100%);
+  --ui-row-alt: #242c33;
+  --ui-row-hover: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
+  --ui-selected-row: color-mix(in srgb, var(--ui-accent) 28%, var(--ui-surface));
   --ui-accent-strong: color-mix(in srgb, var(--appearance-accent) 78%, white);
 }
 
