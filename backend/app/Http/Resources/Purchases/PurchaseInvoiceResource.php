@@ -44,6 +44,9 @@ class PurchaseInvoiceResource extends JsonResource
             'advance_tax_amount' => $this->advance_tax_amount,
             'round_off' => $this->round_off,
             'grand_total' => $this->grand_total,
+            // Purchase payments are not persisted yet. Until that domain flow exists,
+            // the full server-calculated invoice total remains payable.
+            'balance_payable' => $this->grand_total,
             'notes' => $this->notes,
             'tax_type' => $this->tax_type,
             'payment_terms' => $this->payment_terms,
