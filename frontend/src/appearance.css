@@ -2546,9 +2546,13 @@ html[data-density] #root :where(
   button,
   .ui-select-trigger
 ) {
-  font-size: var(--module-font-control) !important;
-  font-weight: var(--ui-weight-medium) !important;
-  line-height: var(--ui-line-tight) !important;
+  /*
+   * Global fallback only. Do not force these metrics with !important:
+   * page-owned hierarchy may legitimately use a larger lookup/editor font.
+   */
+  font-size: var(--module-font-control);
+  font-weight: var(--ui-weight-medium);
+  line-height: var(--ui-line-tight);
   letter-spacing: .005em;
 }
 
@@ -2568,8 +2572,8 @@ html[data-density] #root :where(
   .desktop-field > span,
   .pie-field > span
 ) {
-  font-weight: var(--ui-weight-medium) !important;
-  line-height: var(--ui-line-tight) !important;
+  font-weight: var(--ui-weight-medium);
+  line-height: var(--ui-line-tight);
   letter-spacing: .005em;
 }
 
@@ -2583,7 +2587,7 @@ html[data-density] #root :where(
   .sales-return-screen,
   .bp-workspace
 ) :where(td, .pos-grid td) {
-  font-size: var(--module-font-body) !important;
-  font-weight: var(--ui-weight-normal) !important;
-  line-height: var(--ui-line-normal) !important;
+  font-size: var(--module-font-body);
+  font-weight: var(--ui-weight-normal);
+  line-height: var(--ui-line-normal);
 }
