@@ -1229,10 +1229,9 @@ export function PurchasesPage() {
           </>
         }
       >
-        <div className="flex flex-wrap gap-2 mb-2 text-[11px]">
+        <div className="purchase-list-filters">
           <input
-            className="desktop-input"
-            style={{ width: 180 }}
+            className="desktop-input purchase-list-search"
             placeholder="Search…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
