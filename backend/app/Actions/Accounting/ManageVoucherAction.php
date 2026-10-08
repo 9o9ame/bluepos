@@ -56,10 +56,14 @@ class ManageVoucherAction
                 ->first();
 
             if ($existing) {
-                if ($existing->document_type !== $documentType || (int) $existing->branch_id !== $branchId) {
+                if (
+                    $existing->document_type !== $documentType
+                    || (int) $existing->branch_id !== $branchId
+                    || ! $this->replayMatches($existing, $data)
+                ) {
                     throw new ApiException(
                         'IDEMPOTENCY_KEY_CONFLICT',
-                        'This Idempotency-Key was already used for another voucher.',
+                        'This Idempotency-Key was already used for a different voucher request.',
                         409,
                     );
                 }
@@ -380,6 +384,79 @@ class ManageVoucherAction
         }
 
         return $locked;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function replayMatches(JournalEntry $entry, array $data): bool
+    {
+        if (
+            $entry->entry_date?->toDateString() !== (string) ($data['entry_date'] ?? '')
+            || $entry->description !== $this->nullableText($data['description'] ?? null)
+        ) {
+            return false;
+        }
+
+        $lines = $entry->lines->sortBy('sort_order')->values();
+        $rows = $data['lines'] ?? [];
+        if (! is_array($rows)) {
+            return false;
+        }
+
+        if ($entry->document_type === JournalEntry::DOCUMENT_JOURNAL_VOUCHER) {
+            if ($lines->count() !== count($rows)) {
+                return false;
+            }
+
+            foreach ($rows as $index => $row) {
+                if (! is_array($row)) {
+                    return false;
+                }
+
+                $line = $lines->get($index);
+                if (
+                    ! $line
+                    || $line->account?->ulid !== (string) ($row['account_ulid'] ?? '')
+                    || bccomp((string) $line->debit, $this->money((string) ($row['debit'] ?? '0'), "lines.$index.debit"), 4) !== 0
+                    || bccomp((string) $line->credit, $this->money((string) ($row['credit'] ?? '0'), "lines.$index.credit"), 4) !== 0
+                    || $line->description !== $this->nullableText($row['narration'] ?? null)
+                ) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        if ($lines->count() !== count($rows) + 1) {
+            return false;
+        }
+
+        $header = $lines->first();
+        if ($header?->account?->ulid !== (string) ($data['header_account_ulid'] ?? '')) {
+            return false;
+        }
+
+        $payment = $entry->document_type === JournalEntry::DOCUMENT_PAYMENT_VOUCHER;
+        foreach ($rows as $index => $row) {
+            if (! is_array($row)) {
+                return false;
+            }
+
+            $line = $lines->get($index + 1);
+            $amount = $this->positiveMoney((string) ($row['amount'] ?? '0'), "lines.$index.amount");
+            if (
+                ! $line
+                || $line->account?->ulid !== (string) ($row['account_ulid'] ?? '')
+                || bccomp((string) ($payment ? $line->debit : $line->credit), $amount, 4) !== 0
+                || $line->description !== $this->nullableText($row['narration'] ?? null)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function documentType(string $type): string
