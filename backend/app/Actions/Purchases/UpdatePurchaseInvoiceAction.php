@@ -47,7 +47,12 @@ class UpdatePurchaseInvoiceAction
             }
 
             if (array_key_exists('warehouse_ulid', $data)) {
-                $warehouse = $this->catalog->warehouse((string) $data['warehouse_ulid']);
+                $warehouse = $this->tenantContext->warehouse();
+                if ((string) $data['warehouse_ulid'] !== (string) $warehouse->ulid) {
+                    throw ValidationException::withMessages([
+                        'warehouse_ulid' => 'Purchase warehouse must match the active warehouse context.',
+                    ]);
+                }
                 if ($warehouse->status !== WarehouseStatus::Active) {
                     throw ValidationException::withMessages([
                         'warehouse_ulid' => 'Purchases cannot use an inactive warehouse.',
