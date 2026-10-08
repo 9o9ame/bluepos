@@ -22,6 +22,7 @@ class PostPurchaseReturnAction
         private readonly TenantContext $tenantContext,
         private readonly PostStockMovementAction $postMovement,
         private readonly RecalculatePurchaseReturnTotalsAction $recalculate,
+        private readonly PostPurchaseReturnAccountingAction $accounting,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -65,6 +66,7 @@ class PostPurchaseReturnAction
             }
 
             $this->recalculate->execute($document);
+            $this->accounting->execute($document);
 
             foreach ($document->lines as $line) {
                 /** @var PurchaseReturnLine $line */
