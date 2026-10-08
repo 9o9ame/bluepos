@@ -4,15 +4,19 @@ namespace App\Http\Controllers\Api\Purchases;
 
 use App\Actions\Purchases\CreatePurchaseInvoiceAction;
 use App\Actions\Purchases\DeletePurchaseInvoiceLineAction;
+use App\Actions\Purchases\PayPurchaseInvoiceAction;
 use App\Actions\Purchases\PostPurchaseInvoiceAction;
 use App\Actions\Purchases\UpdatePurchaseInvoiceAction;
 use App\Actions\Purchases\UpsertPurchaseInvoiceLineAction;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Purchases\StorePurchasePaymentRequest;
 use App\Http\Resources\Purchases\PurchaseInvoiceLineResource;
 use App\Http\Resources\Purchases\PurchaseInvoiceResource;
+use App\Http\Resources\Purchases\PurchasePaymentResource;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceLine;
+use App\Models\PurchasePayment;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,6 +33,7 @@ class PurchaseInvoiceController extends Controller
             ->where('branch_id', $tenantContext->branchId())
             ->where('warehouse_id', $tenantContext->warehouseId())
             ->with(['supplier', 'branch', 'warehouse'])
+            ->withSum('payments as paid_amount', 'amount')
             ->orderByDesc('invoice_date')
             ->orderByDesc('id');
 
@@ -93,7 +98,9 @@ class PurchaseInvoiceController extends Controller
         $invoice = $this->findInvoice($purchaseUlid, $tenantContext);
         $this->authorize('view', $invoice);
 
-        return new PurchaseInvoiceResource($invoice->load(CreatePurchaseInvoiceAction::with()));
+        return new PurchaseInvoiceResource(
+            $invoice->load([...CreatePurchaseInvoiceAction::with(), 'payments'])
+        );
     }
 
     public function update(
@@ -196,6 +203,41 @@ class PurchaseInvoiceController extends Controller
         $this->authorize('post', $invoice);
 
         return new PurchaseInvoiceResource($post->execute($invoice));
+    }
+
+    /**
+     * @return mixed
+     */
+    public function payments(string $purchaseUlid, TenantContext $tenantContext): mixed
+    {
+        $invoice = $this->findInvoice($purchaseUlid, $tenantContext);
+        $this->authorize('view', $invoice);
+
+        return PurchasePaymentResource::collection(
+            PurchasePayment::query()
+                ->forTenant($tenantContext->tenantId())
+                ->where('purchase_invoice_id', $invoice->id)
+                ->orderBy('id')
+                ->get()
+        );
+    }
+
+    public function storePayment(
+        StorePurchasePaymentRequest $request,
+        string $purchaseUlid,
+        TenantContext $tenantContext,
+        PayPurchaseInvoiceAction $pay,
+    ): JsonResponse {
+        $invoice = $this->findInvoice($purchaseUlid, $tenantContext);
+        $this->authorize('createPayment', $invoice);
+
+        $payment = $pay->execute(
+            $invoice,
+            $request->validated(),
+            (string) $request->header('Idempotency-Key', ''),
+        );
+
+        return (new PurchasePaymentResource($payment))->response()->setStatusCode(201);
     }
 
     private function findInvoice(string $ulid, TenantContext $tenantContext): PurchaseInvoice
