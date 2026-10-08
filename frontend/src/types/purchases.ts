@@ -79,6 +79,7 @@ export type PurchaseInvoice = {
   advance_tax_amount?: string
   round_off?: string
   grand_total: string
+  balance_payable: string
   notes: string | null
   tax_type?: string
   payment_terms?: string
