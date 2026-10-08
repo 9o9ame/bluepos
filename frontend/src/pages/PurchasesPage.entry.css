@@ -1661,3 +1661,121 @@ html[data-animations='off'] .purchase-entry-screen * {
 .purchase-supplier-modal-body .parties-vca {
   min-height: min(78vh, 720px);
 }
+
+
+/* ==========================================================================
+   Product lookup + dual-mode header polish.
+   Match the canonical UiSelect menu language without changing lookup logic.
+   ========================================================================== */
+.purchase-entry-screen .pie-lookup {
+  box-sizing: border-box;
+  padding: var(--ui-pad-sm) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-select-menu-bg, var(--ui-surface)) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.purchase-entry-screen .pie-lookup-option {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  min-height: 28px !important;
+  margin: 0 0 2px !important;
+  padding: 5px 9px !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--control-radius) !important;
+  background: transparent !important;
+  color: var(--ui-text) !important;
+  font-size: var(--ui-font-md) !important;
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: var(--ui-line-normal) !important;
+  letter-spacing: .005em;
+  transition:
+    background-color var(--ui-transition-fast),
+    border-color var(--ui-transition-fast),
+    color var(--ui-transition-fast) !important;
+}
+
+.purchase-entry-screen .pie-lookup-option:last-child {
+  margin-bottom: 0 !important;
+  border-bottom-color: transparent !important;
+}
+
+.purchase-entry-screen .pie-lookup-option:hover,
+.purchase-entry-screen .pie-lookup-option:focus-visible {
+  outline: none !important;
+  border-color: color-mix(in srgb, var(--ui-accent) 38%, transparent) !important;
+  background: var(--ui-select-hover-bg, var(--ui-accent-soft)) !important;
+  color: var(--ui-select-hover-text, var(--ui-accent-strong)) !important;
+}
+
+.purchase-entry-screen .pie-lookup-option-main {
+  font-size: var(--ui-font-md) !important;
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: var(--ui-line-normal) !important;
+}
+
+.purchase-entry-screen .pie-lookup-option-meta {
+  color: var(--ui-text-muted) !important;
+  font-size: var(--ui-font-sm) !important;
+  font-weight: var(--ui-weight-normal) !important;
+  line-height: var(--ui-line-normal) !important;
+}
+
+.purchase-entry-screen .pie-lookup-option:hover .pie-lookup-option-meta,
+.purchase-entry-screen .pie-lookup-option:focus-visible .pie-lookup-option-meta {
+  color: var(--ui-select-hover-text, var(--ui-accent-strong)) !important;
+}
+
+/* Treat % / Rs as a compact segmented control instead of tiny badges. */
+.purchase-entry-screen .pie-dual-head {
+  gap: 3px !important;
+  line-height: var(--ui-line-tight) !important;
+}
+
+.purchase-entry-screen .pie-dual-toggles {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 2px !important;
+  padding: 2px !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface-subtle) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.purchase-entry-screen .pie-dual-toggles button {
+  min-width: 28px !important;
+  height: var(--ui-control-h-sm) !important;
+  padding: 0 var(--ui-pad-sm) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--control-radius) !important;
+  background: transparent !important;
+  color: var(--ui-text-muted) !important;
+  box-shadow: none !important;
+  font-size: var(--ui-font-sm) !important;
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: 1 !important;
+  cursor: pointer;
+  transition:
+    background-color var(--ui-transition-fast),
+    border-color var(--ui-transition-fast),
+    color var(--ui-transition-fast),
+    box-shadow var(--ui-transition-fast) !important;
+}
+
+.purchase-entry-screen .pie-dual-toggles button:hover:not(.is-active),
+.purchase-entry-screen .pie-dual-toggles button:focus-visible:not(.is-active) {
+  outline: none !important;
+  border-color: color-mix(in srgb, var(--ui-accent) 32%, transparent) !important;
+  background: var(--ui-accent-soft) !important;
+  color: var(--ui-accent-strong) !important;
+}
+
+.purchase-entry-screen .pie-dual-toggles button.is-active {
+  border-color: var(--ui-accent-strong) !important;
+  background: var(--ui-select-selected-face, var(--ui-accent)) !important;
+  color: var(--ui-select-selected-text, #fff) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18) !important;
+  font-weight: var(--ui-weight-strong) !important;
+}
