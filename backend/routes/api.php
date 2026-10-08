@@ -109,6 +109,13 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::get('/settings/business', [BusinessSettingController::class, 'show']);
     Route::patch('/settings/business', [BusinessSettingController::class, 'update']);
     Route::get('/settings/entitlements', [TenantEntitlementController::class, 'show']);
+    Route::get('/vouchers/accounts', [VoucherController::class, 'accounts']);
+    Route::get('/vouchers/summary', [VoucherController::class, 'summary']);
+    Route::get('/vouchers', [VoucherController::class, 'index']);
+    Route::post('/vouchers', [VoucherController::class, 'store']);
+    Route::get('/vouchers/{voucherUlid}', [VoucherController::class, 'show']);
+    Route::put('/vouchers/{voucherUlid}', [VoucherController::class, 'update']);
+    Route::post('/vouchers/{voucherUlid}/post', [VoucherController::class, 'post']);
 
     Route::get('/column-preferences/{screenKey}', [ColumnPreferenceController::class, 'show']);
     Route::put('/column-preferences/{screenKey}', [ColumnPreferenceController::class, 'upsert']);
