@@ -115,6 +115,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::post('/vouchers', [VoucherController::class, 'store']);
     Route::get('/vouchers/{voucherUlid}', [VoucherController::class, 'show']);
     Route::put('/vouchers/{voucherUlid}', [VoucherController::class, 'update']);
+    Route::match(['DELETE'], '/vouchers/{voucherUlid}', [VoucherController::class, 'destroy']);
     Route::post('/vouchers/{voucherUlid}/post', [VoucherController::class, 'post']);
 
     Route::get('/column-preferences/{screenKey}', [ColumnPreferenceController::class, 'show']);
