@@ -1,0 +1,115 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Account;
+use App\Models\AccountType;
+use App\Models\JournalEntry;
+use App\Models\Supplier;
+use App\Tenancy\TenantContext;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
+
+class VoucherTest extends TestCase
+{
+    use DatabaseTransactions;
+
+    public function test_payment_voucher_draft_posts_balanced_journal_and_is_immutable_after_posting(): void
+    {
+        $this->signInOwner('voucher-payment')->assertOk();
+
+        $cash = $this->leafAccount('Voucher Cash', 'V-CASH-01', '0010');
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-VOUCH-1',
+            'name' => 'Voucher Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $supplier = Supplier::query()->where('ulid', $supplierUlid)->firstOrFail();
+        $supplierAccount = Account::query()->where('supplier_id', $supplier->id)->firstOrFail();
+        $date = now()->toDateString();
+
+        $draft = $this->postJson('/api/vouchers', [
+            'type' => 'payment',
+            'entry_date' => $date,
+            'description' => 'Supplier settlement',
+            'header_account_ulid' => $cash->ulid,
+            'lines' => [[
+                'account_ulid' => $supplierAccount->ulid,
+                'narration' => 'Pay supplier',
+                'amount' => '30.0000',
+            ]],
+        ], $this->idem('voucher-payment-1'))->assertCreated();
+
+        $draft->assertJsonPath('type', 'payment')
+            ->assertJsonPath('status', 'draft')
+            ->assertJsonPath('total_debit', '30.0000')
+            ->assertJsonPath('total_credit', '30.0000')
+            ->assertJsonPath('header_account.ulid', $cash->ulid)
+            ->assertJsonPath('lines.0.credit', '30.0000')
+            ->assertJsonPath('lines.1.debit', '30.0000')
+            ->assertJsonPath('lines.1.party_type', 'vendor');
+
+        $voucherUlid = $draft->json('ulid');
+        $this->assertStringStartsWith('PV-', (string) $draft->json('voucher_number'));
+        $this->assertNoInternalIds($draft->json());
+
+        $this->postJson('/api/vouchers/'.$voucherUlid.'/post')
+            ->assertOk()
+            ->assertJsonPath('status', 'posted');
+
+        $journal = JournalEntry::query()
+            ->where('ulid', $voucherUlid)
+            ->with('lines')
+            ->firstOrFail();
+
+        $this->assertTrue($journal->isPosted());
+        $this->assertSame('30.0000', $journal->lines->reduce(
+            fn (string $total, $line): string => bcadd($total, (string) $line->debit, 4),
+            '0.0000',
+        ));
+        $this->assertSame('30.0000', $journal->lines->reduce(
+            fn (string $total, $line): string => bcadd($total, (string) $line->credit, 4),
+            '0.0000',
+        ));
+
+        $this->putJson('/api/vouchers/'.$voucherUlid, [
+            'entry_date' => $date,
+            'description' => 'Changed',
+            'header_account_ulid' => $cash->ulid,
+            'lines' => [[
+                'account_ulid' => $supplierAccount->ulid,
+                'amount' => '31.0000',
+            ]],
+        ])->assertStatus(422)->assertJsonPath('error.key', 'DOCUMENT_POSTED');
+
+        $this->deleteJson('/api/vouchers/'.$voucherUlid)
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'DOCUMENT_POSTED');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function idem(string $key): array
+    {
+        return ['Idempotency-Key' => $key];
+    }
+
+    private function leafAccount(string $name, string $code, string $typeCode): Account
+    {
+        $tenant = app(TenantContext::class);
+        $type = AccountType::query()
+            ->forTenant($tenant->tenantId())
+            ->where('code', $typeCode)
+            ->firstOrFail();
+
+        return Account::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'code' => $code,
+            'name' => $name,
+            'account_type_id' => $type->id,
+            'is_active' => true,
+            'created_by' => $tenant->userId(),
+        ]);
+    }
+}
