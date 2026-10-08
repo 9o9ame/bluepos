@@ -65,6 +65,7 @@ export function BusinessSettingsPage() {
         opening_balance_equity_account_ulid: String(form.get('opening_balance_equity_account_ulid') || '') || null,
         default_cash_account_ulid: String(form.get('default_cash_account_ulid') || '') || null,
         sales_clearing_account_ulid: String(form.get('sales_clearing_account_ulid') || '') || null,
+        purchase_clearing_account_ulid: String(form.get('purchase_clearing_account_ulid') || '') || null,
       })
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Unable to save settings.')
@@ -210,6 +211,24 @@ export function BusinessSettingsPage() {
               disabled={!canManage}
               triggerClassName="desktop-select"
               aria-label="Sales Clearing / Settlement Account"
+              options={[
+                { value: '', label: '— Not configured —' },
+                ...leafAccounts.map((account) => ({
+                  value: account.ulid,
+                  label: `${account.code} — ${account.name}`,
+                })),
+              ]}
+            />
+          </Field>
+
+          <Field label="Purchase Clearing Account">
+            <UiSelect
+              key={`purchase-clearing-${settings.purchase_clearing_account_ulid ?? 'none'}-${leafAccounts.length}`}
+              defaultValue={settings.purchase_clearing_account_ulid ?? ''}
+              name="purchase_clearing_account_ulid"
+              disabled={!canManage}
+              triggerClassName="desktop-select"
+              aria-label="Purchase Clearing Account"
               options={[
                 { value: '', label: '— Not configured —' },
                 ...leafAccounts.map((account) => ({
