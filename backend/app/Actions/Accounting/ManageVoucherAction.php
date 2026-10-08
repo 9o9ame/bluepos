@@ -76,7 +76,7 @@ class ManageVoucherAction
                 'branch_id' => $branchId,
                 'document_type' => $documentType,
                 'document_id' => null,
-                'voucher_number' => null,
+                'voucher_number' => $this->nextVoucherNumber($tenantId, $documentType),
                 'idempotency_key' => $idempotencyKey,
                 'entry_date' => $data['entry_date'],
                 'description' => $this->nullableText($data['description'] ?? null),
@@ -84,8 +84,6 @@ class ManageVoucherAction
                 'created_by' => $this->tenantContext->userId(),
             ]);
 
-            $entry->voucher_number = $this->voucherNumber($documentType, (int) $entry->id);
-            $entry->save();
 
             $this->replaceLines($entry, $data);
 
