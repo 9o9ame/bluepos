@@ -347,7 +347,6 @@ export function PurchaseReturnsPage() {
             onChange={(event) => setQ(event.target.value)}
           />
           <UiSelect
-            className="desktop-select"
             aria-label="Return status"
             value={statusFilter}
             options={[
@@ -358,7 +357,6 @@ export function PurchaseReturnsPage() {
             onChange={setStatusFilter}
           />
           <UiSelect
-            className="desktop-select"
             aria-label="Supplier filter"
             value={supplierFilter}
             options={[
@@ -457,7 +455,6 @@ export function PurchaseReturnsPage() {
             <div className="dense-row is-2">
               <label>Warehouse</label>
               <UiSelect
-                className="desktop-select"
                 aria-label="Warehouse"
                 disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
                 value={warehouseUlid}
