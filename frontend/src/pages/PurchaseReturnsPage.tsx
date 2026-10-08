@@ -26,6 +26,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { PurchaseReturn, ReturnablePurchaseLine } from '../types/purchaseReturns'
+import './PurchaseReturnsPage.css'
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
@@ -338,7 +339,7 @@ export function PurchaseReturnsPage() {
           </>
         }
       >
-        <div className="dense-row is-2 mb-2" style={{ gridTemplateColumns: '1fr 140px 180px 120px 120px' }}>
+        <div className="purchase-return-list-filters">
           <input
             className="desktop-input"
             placeholder="Search return / purchase / supplier"
@@ -423,8 +424,8 @@ export function PurchaseReturnsPage() {
           </span>
         </div>
 
-        <div className="purchase-header">
-          <div className="grid gap-1">
+        <div className="purchase-header purchase-return-editor-header">
+          <div className="purchase-return-editor-fields">
             <div className="dense-row is-2">
               <label>Return #</label>
               <input className="desktop-input" disabled value={document?.document_number ?? 'Auto'} readOnly />
@@ -477,7 +478,7 @@ export function PurchaseReturnsPage() {
                 onChange={(event) => setSupplierReference(event.target.value)}
               />
             </div>
-            <div className="dense-row">
+            <div className="dense-row purchase-return-reason-row">
               <label>Reason</label>
               <input
                 className="desktop-input"
@@ -486,7 +487,7 @@ export function PurchaseReturnsPage() {
                 onChange={(event) => setReason(event.target.value)}
               />
             </div>
-            <div className="dense-row">
+            <div className="dense-row purchase-return-notes-row">
               <label>Notes</label>
               <textarea
                 className="desktop-textarea"
