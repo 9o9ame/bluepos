@@ -128,4 +128,20 @@ class PurchaseInvoice extends Model
     {
         return $this->hasMany(PurchaseInvoiceLine::class);
     }
+
+    /**
+     * @return HasMany<PurchasePayment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(PurchasePayment::class);
+    }
+
+    /**
+     * @return HasMany<PurchaseReturn, $this>
+     */
+    public function purchaseReturns(): HasMany
+    {
+        return $this->hasMany(PurchaseReturn::class);
+    }
 }
