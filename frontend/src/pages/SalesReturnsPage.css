@@ -4542,3 +4542,21 @@ html[data-theme='dark'] .sales-return-select-caret {
 .sales-return-grid tbody tr:hover td {
   background: var(--ui-row-hover) !important;
 }
+
+
+/* ---------- SEARCHABLE CUSTOMER / SALESMAN PICKERS ---------- */
+.sales-return-detail-search-wrap {
+  box-sizing: border-box;
+  padding: var(--ui-pad-sm, 4px) !important;
+  border-bottom: 1px solid var(--ui-border) !important;
+  background: var(--ui-surface-subtle) !important;
+}
+
+.sales-return-detail-search-wrap .ui-select-search {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.sales-return-detail-dropdown.is-open .sales-return-detail-body {
+  max-height: 210px;
+}
