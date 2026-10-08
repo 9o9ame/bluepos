@@ -2,7 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
+use App\Models\AccountType;
 use App\Models\AuditLog;
+use App\Models\BusinessSetting;
+use App\Models\JournalEntry;
+use App\Models\JournalLine;
 use App\Models\Product;
 use App\Models\ProductSupplier;
 use App\Models\PurchaseInvoice;
@@ -10,6 +15,7 @@ use App\Models\StockBalance;
 use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Warehouse;
+use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -20,6 +26,7 @@ class PurchaseInvoiceTest extends TestCase
     public function test_purchase_draft_lifecycle_totals_conversion_and_posting(): void
     {
         $this->signInOwner('pur-life')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseUlid = $this->sessionWarehouseUlid();
         $pcs = $this->unitUlid('PCS');
         $ctn = $this->unitUlid('CTN');
@@ -105,6 +112,39 @@ class PurchaseInvoiceTest extends TestCase
         $posted->assertJsonPath('status', 'posted');
         $this->assertTrue(AuditLog::query()->where('event', 'PURCHASE_POSTED')->where('resource_ulid', $invoiceUlid)->exists());
 
+        $invoiceId = PurchaseInvoice::query()->where('ulid', $invoiceUlid)->value('id');
+        $journal = JournalEntry::query()
+            ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_INVOICE)
+            ->where('document_id', $invoiceId)
+            ->with('lines')
+            ->sole();
+        $this->assertSame('posted', $journal->status->value);
+        $this->assertCount(2, $journal->lines);
+        $journalDebit = $journal->lines->reduce(
+            fn (string $total, JournalLine $line): string => bcadd($total, (string) $line->debit, 4),
+            '0.0000',
+        );
+        $journalCredit = $journal->lines->reduce(
+            fn (string $total, JournalLine $line): string => bcadd($total, (string) $line->credit, 4),
+            '0.0000',
+        );
+        $this->assertSame((string) $posted->json('grand_total'), $journalDebit);
+        $this->assertSame($journalDebit, $journalCredit);
+        $this->assertTrue($journal->lines->contains(
+            fn (JournalLine $line): bool => $line->supplier_id !== null
+                && bccomp((string) $line->credit, $journalCredit, 4) === 0
+        ));
+
+        // Posting is idempotent: no duplicate stock movements or accounting journals.
+        $this->postJson('/api/purchases/'.$invoiceUlid.'/post')->assertOk();
+        $this->assertSame(
+            1,
+            JournalEntry::query()
+                ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_INVOICE)
+                ->where('document_id', $invoiceId)
+                ->count(),
+        );
+
         $this->assertSame(2, StockMovement::query()->count());
         $purchaseMovements = StockMovement::query()->where('movement_type', 'purchase')->orderBy('id')->get();
         $this->assertCount(2, $purchaseMovements);
@@ -148,6 +188,7 @@ class PurchaseInvoiceTest extends TestCase
     public function test_weighted_average_and_zero_stock_purchase(): void
     {
         $this->signInOwner('pur-avg')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseUlid = $this->sessionWarehouseUlid();
         $pcs = $this->unitUlid('PCS');
         $supplierUlid = $this->postJson('/api/suppliers', [
@@ -199,6 +240,7 @@ class PurchaseInvoiceTest extends TestCase
     public function test_line_delete_and_validations_and_isolation(): void
     {
         $this->signInOwner('pur-iso-a')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseA = $this->sessionWarehouseUlid();
         $pcs = $this->unitUlid('PCS');
 
@@ -262,6 +304,7 @@ class PurchaseInvoiceTest extends TestCase
 
         $this->postJson('/api/auth/logout')->assertOk();
         $this->signInOwner('pur-iso-b')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseB = $this->sessionWarehouseUlid();
         $supplierB = $this->postJson('/api/suppliers', [
             'code' => 'SUP-B',
@@ -296,6 +339,7 @@ class PurchaseInvoiceTest extends TestCase
     public function test_inactive_product_rejected_and_post_rolls_back(): void
     {
         $this->signInOwner('pur-roll')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseUlid = $this->sessionWarehouseUlid();
         $pcs = $this->unitUlid('PCS');
         $supplierUlid = $this->postJson('/api/suppliers', [
@@ -353,6 +397,7 @@ class PurchaseInvoiceTest extends TestCase
     public function test_list_filters_and_primary_supplier_not_replaced(): void
     {
         $this->signInOwner('pur-list')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseUlid = $this->sessionWarehouseUlid();
         $pcs = $this->unitUlid('PCS');
 
@@ -406,6 +451,7 @@ class PurchaseInvoiceTest extends TestCase
     public function test_purchase_entry_fields_persist_and_server_recalculates_pcts(): void
     {
         $this->signInOwner('pur-entry')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseUlid = $this->sessionWarehouseUlid();
         $pcs = $this->unitUlid('PCS');
 
@@ -489,6 +535,7 @@ class PurchaseInvoiceTest extends TestCase
     public function test_posting_syncs_retail_price_tax_and_free_pcs_stock(): void
     {
         $this->signInOwner('pur-sync')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseUlid = $this->sessionWarehouseUlid();
         $pcs = $this->unitUlid('PCS');
 
@@ -546,6 +593,7 @@ class PurchaseInvoiceTest extends TestCase
     public function test_gst_apply_on_mrp_without_gst_uses_mrp_base(): void
     {
         $this->signInOwner('pur-gst-mrp')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseUlid = $this->sessionWarehouseUlid();
         $pcs = $this->unitUlid('PCS');
 
@@ -582,9 +630,55 @@ class PurchaseInvoiceTest extends TestCase
     }
 
 
+    public function test_purchase_posting_requires_clearing_account_and_rolls_back(): void
+    {
+        $this->signInOwner('pur-accounting-required')->assertOk();
+        $warehouseUlid = $this->sessionWarehouseUlid();
+        $pcs = $this->unitUlid('PCS');
+
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-ACC-REQ',
+            'name' => 'Accounting Required Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Accounting Required Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $invoiceUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchases/'.$invoiceUlid.'/lines', [
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '2.000000',
+            'unit_cost' => '10.0000',
+        ])->assertCreated();
+
+        $this->postJson('/api/purchases/'.$invoiceUlid.'/post')
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'PURCHASE_CLEARING_ACCOUNT_REQUIRED');
+
+        $this->assertSame(
+            'draft',
+            PurchaseInvoice::query()->where('ulid', $invoiceUlid)->firstOrFail()->status->value,
+        );
+        $this->assertSame(0, StockMovement::query()->count());
+        $this->assertSame(
+            0,
+            JournalEntry::query()
+                ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_INVOICE)
+                ->count(),
+        );
+    }
+
     public function test_purchase_invoice_is_bound_to_active_warehouse_context(): void
     {
         $this->signInOwner('pur-warehouse-context')->assertOk();
+        $this->configurePurchaseClearing();
 
         $me = $this->getJson('/api/auth/me')->assertOk();
         $activeWarehouseUlid = (string) $me->json('warehouse.ulid');
@@ -639,6 +733,32 @@ class PurchaseInvoiceTest extends TestCase
         $list = $this->getJson('/api/purchases')->assertOk();
         $list->assertJsonMissing(['ulid' => $otherWarehouseInvoice->ulid]);
         $list->assertJsonFragment(['ulid' => $invoiceUlid]);
+    }
+
+    private function configurePurchaseClearing(): void
+    {
+        $tenantContext = app(TenantContext::class);
+        $inventoryType = AccountType::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('code', '0060')
+            ->firstOrFail();
+
+        $clearing = Account::query()->firstOrCreate(
+            [
+                'tenant_id' => $tenantContext->tenantId(),
+                'code' => 'PUR-CLEAR',
+            ],
+            [
+                'name' => 'Purchase Clearing',
+                'account_type_id' => $inventoryType->id,
+                'is_active' => true,
+                'created_by' => $tenantContext->userId(),
+            ],
+        );
+
+        BusinessSetting::query()
+            ->forTenant($tenantContext->tenantId())
+            ->update(['purchase_clearing_account_id' => $clearing->id]);
     }
 
     private function sessionWarehouseUlid(): string
