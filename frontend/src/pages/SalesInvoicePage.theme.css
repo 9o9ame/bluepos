@@ -2938,9 +2938,13 @@ html[data-animations='off'] .sales-reference-screen * {
     max-width: 132px;
   }
 
-  .sales-reference-subtabs-bottom .sales-reference-subtab:nth-child(2) > span:last-child,
-  .sales-reference-subtabs-bottom .sales-reference-subtab:nth-child(3) > span:last-child {
+  .sales-reference-subtabs-bottom .sales-reference-subtab:nth-child(2) > span:last-child {
     font-size: 9px;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-subtab:nth-child(3) > span:last-child {
+    font-size: 8px;
+    letter-spacing: -0.1px;
   }
 
   .sales-reference-actions-center button {
