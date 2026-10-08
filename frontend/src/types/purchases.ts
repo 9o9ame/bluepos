@@ -1,5 +1,16 @@
 export type PurchaseStatus = 'draft' | 'posted' | 'cancelled'
 
+export type PurchasePaymentMethod = 'cash' | 'card' | 'bank'
+
+export type PurchasePayment = {
+  ulid: string
+  method: PurchasePaymentMethod
+  amount: string
+  reference: string | null
+  journal_entry_ulid: string
+  created_at: string | null
+}
+
 export type PurchaseRef = {
   ulid: string
   code: string
@@ -79,6 +90,7 @@ export type PurchaseInvoice = {
   advance_tax_amount?: string
   round_off?: string
   grand_total: string
+  paid_amount: string
   balance_payable: string
   notes: string | null
   tax_type?: string
@@ -88,6 +100,7 @@ export type PurchaseInvoice = {
   branch?: PurchaseRef | null
   warehouse?: PurchaseRef | null
   lines?: PurchaseInvoiceLine[]
+  payments?: PurchasePayment[]
 }
 
 export type PurchaseHeaderPayload = {
