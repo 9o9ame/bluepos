@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'document_type',
     'document_id',
     'voucher_number',
+    'idempotency_key',
     'entry_date',
     'description',
     'status',
@@ -31,6 +32,9 @@ class JournalEntry extends Model
     public const DOCUMENT_PURCHASE_INVOICE = 'purchase_invoice';
     public const DOCUMENT_PURCHASE_RETURN = 'purchase_return';
     public const DOCUMENT_PURCHASE_PAYMENT = 'purchase_payment';
+    public const DOCUMENT_PAYMENT_VOUCHER = 'payment_voucher';
+    public const DOCUMENT_RECEIVING_VOUCHER = 'receiving_voucher';
+    public const DOCUMENT_JOURNAL_VOUCHER = 'journal_voucher';
 
     protected function casts(): array
     {
