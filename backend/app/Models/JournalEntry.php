@@ -29,6 +29,7 @@ class JournalEntry extends Model
 
     public const DOCUMENT_OPENING_BALANCE = 'opening_balance';
     public const DOCUMENT_PURCHASE_INVOICE = 'purchase_invoice';
+    public const DOCUMENT_PURCHASE_RETURN = 'purchase_return';
     public const DOCUMENT_PURCHASE_PAYMENT = 'purchase_payment';
 
     protected function casts(): array
