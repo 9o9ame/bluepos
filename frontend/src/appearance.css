@@ -821,7 +821,9 @@ html[data-font] #root .app-shell * {
 /* Explicit density selection overrides viewport-derived density tokens globally. */
 :root[data-density='compact'] {
   --ui-density: compact;
-  --ui-font-xs:9px; --ui-font-sm:9.5px; --ui-font-md:10.5px; --ui-font-lg:11px; --ui-font-xl:12px; --ui-font-title:12.5px;
+  --ui-font-xs:10px; --ui-font-sm:10.5px; --ui-font-md:11.5px; --ui-font-lg:12.5px; --ui-font-xl:13.5px; --ui-font-title:14px;
+  --ui-line-tight:1.2; --ui-line-normal:1.35; --ui-line-relaxed:1.45;
+  --ui-weight-normal:500; --ui-weight-medium:600; --ui-weight-strong:700;
   --ui-control-h-sm:20px; --ui-control-h-md:22px; --ui-control-h-lg:26px;
   --ui-icon-sm:11px; --ui-icon-md:13px; --ui-icon-lg:16px;
   --ui-gap-xs:2px; --ui-gap-sm:4px; --ui-gap-md:6px; --ui-gap-lg:8px;
@@ -833,7 +835,9 @@ html[data-font] #root .app-shell * {
 }
 :root[data-density='comfortable'] {
   --ui-density: comfortable;
-  --ui-font-xs:10px; --ui-font-sm:11px; --ui-font-md:12px; --ui-font-lg:13px; --ui-font-xl:14px; --ui-font-title:15px;
+  --ui-font-xs:11px; --ui-font-sm:12px; --ui-font-md:13px; --ui-font-lg:14px; --ui-font-xl:15px; --ui-font-title:16px;
+  --ui-line-tight:1.2; --ui-line-normal:1.4; --ui-line-relaxed:1.5;
+  --ui-weight-normal:500; --ui-weight-medium:600; --ui-weight-strong:700;
   --ui-control-h-sm:23px; --ui-control-h-md:26px; --ui-control-h-lg:30px;
   --ui-icon-sm:13px; --ui-icon-md:15px; --ui-icon-lg:19px;
   --ui-gap-xs:4px; --ui-gap-sm:7px; --ui-gap-md:9px; --ui-gap-lg:13px;
@@ -2504,4 +2508,82 @@ html #root :where(
   input[type='radio']
 ) {
   accent-color: var(--ui-accent) !important;
+}
+
+
+/* ---------- GLOBAL READABILITY BASELINE ---------- */
+/*
+ * Client review: compact typography must remain dense without becoming
+ * visually cramped. Keep geometry page-owned, but text metrics are global.
+ */
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .bp-workspace
+) {
+  line-height: var(--ui-line-normal);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .bp-workspace
+) :where(
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  button,
+  .ui-select-trigger
+) {
+  font-size: var(--module-font-control) !important;
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: var(--ui-line-tight) !important;
+  letter-spacing: .005em;
+}
+
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .bp-workspace
+) :where(
+  label,
+  legend,
+  th,
+  .desktop-field > span,
+  .pie-field > span
+) {
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: var(--ui-line-tight) !important;
+  letter-spacing: .005em;
+}
+
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .bp-workspace
+) :where(td, .pos-grid td) {
+  font-size: var(--module-font-body) !important;
+  font-weight: var(--ui-weight-normal) !important;
+  line-height: var(--ui-line-normal) !important;
 }
