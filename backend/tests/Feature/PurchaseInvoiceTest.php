@@ -605,7 +605,11 @@ class PurchaseInvoiceTest extends TestCase
             'supplier_ulid' => $supplierUlid,
             'warehouse_ulid' => $otherWarehouseUlid,
         ])->assertStatus(422)
-            ->assertJsonValidationErrors(['warehouse_ulid']);
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonPath(
+                'error.fields.warehouse_ulid.0',
+                'Purchase warehouse must match the active warehouse context.',
+            );
 
         $invoiceUlid = $this->postJson('/api/purchases', [
             'supplier_ulid' => $supplierUlid,
@@ -615,7 +619,11 @@ class PurchaseInvoiceTest extends TestCase
         $this->patchJson('/api/purchases/'.$invoiceUlid, [
             'warehouse_ulid' => $otherWarehouseUlid,
         ])->assertStatus(422)
-            ->assertJsonValidationErrors(['warehouse_ulid']);
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonPath(
+                'error.fields.warehouse_ulid.0',
+                'Purchase warehouse must match the active warehouse context.',
+            );
 
         $invoice = PurchaseInvoice::query()->where('ulid', $invoiceUlid)->firstOrFail();
         $otherWarehouseId = Warehouse::query()->where('ulid', $otherWarehouseUlid)->value('id');
