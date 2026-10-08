@@ -18,7 +18,7 @@
   padding: 0 2px 0 7px;
   border: 1px solid var(--ui-border);
   border-radius: var(--control-radius);
-  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle));
+  background: var(--ui-control-face, linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)));
   color: var(--ui-text);
   font: inherit;
   font-size: var(--ui-font-md, 11px);
@@ -96,18 +96,11 @@
 .ui-select-menu {
   box-sizing: border-box;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--ui-accent) 58%, var(--ui-border));
+  border: 1px solid var(--ui-border);
   border-radius: var(--panel-radius);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)) 0,
-      var(--ui-surface) 34px
-    );
+  background: var(--ui-surface);
   color: var(--ui-text);
-  box-shadow:
-    inset 0 2px 0 color-mix(in srgb, var(--ui-accent) 72%, transparent),
-    var(--ui-card-shadow);
+  box-shadow: var(--ui-card-shadow);
   animation: ui-select-menu-in var(--ui-transition-normal);
 }
 
@@ -215,7 +208,7 @@ html[data-animations='off'] .ui-select-option {
 .ui-select-search-wrap {
   padding: 5px;
   border-bottom: 1px solid var(--ui-border);
-  background: color-mix(in srgb, var(--ui-accent) 5%, var(--ui-surface));
+  background: var(--ui-surface-subtle);
 }
 
 .ui-select-search {
