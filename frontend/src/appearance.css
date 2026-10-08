@@ -937,12 +937,44 @@ html[data-animations='off'] #root *::after {
   --ui-warning-soft: color-mix(in srgb, var(--ui-warning) 13%, var(--ui-surface));
   --ui-danger-soft: color-mix(in srgb, var(--ui-danger) 11%, var(--ui-surface));
   --ui-info-soft: color-mix(in srgb, var(--ui-info) 11%, var(--ui-surface));
-  --ui-control-face: linear-gradient(180deg, #ffffff 0%, #eef3f8 100%);
+  /* Approved Definition visual primitives. */
+  --ui-control-face: linear-gradient(
+    180deg,
+    var(--ui-surface) 0%,
+    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface-subtle)) 100%
+  );
+  --ui-control-border: color-mix(in srgb, var(--ui-accent) 28%, var(--ui-border));
+  --ui-control-hover-bg: color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface));
+  --ui-control-hover-border: color-mix(in srgb, var(--ui-accent) 58%, var(--ui-border));
+
+  --ui-select-arrow-face: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 55%, white),
+    var(--ui-accent)
+  );
+  --ui-select-arrow-border: color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border));
+  --ui-select-menu-bg: var(--ui-surface);
+  --ui-select-hover-bg: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
+  --ui-select-hover-text: var(--ui-accent-strong);
+  --ui-select-selected-face: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ui-accent) 84%, black),
+    var(--ui-accent)
+  );
+  --ui-select-selected-text: #fff;
+
   --ui-panel-face: linear-gradient(180deg, #f7fafc 0%, #eef3f8 100%);
-  --ui-table-header: linear-gradient(180deg, #f7fafc 0%, #eef3f8 48%, #dfe8f1 100%);
+  --ui-table-header: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 6%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 13%, var(--ui-surface-subtle))
+  );
+  --ui-table-header-text: var(--ui-text);
+  --ui-table-border: var(--ui-border);
   --ui-row-alt: #f7fafc;
   --ui-row-hover: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface));
-  --ui-selected-row: var(--selected-row, color-mix(in srgb, var(--ui-accent) 24%, var(--ui-surface)));
+  --ui-selected-row: var(--selected-row, color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface)));
+  --ui-selected-row-text: var(--ui-text);
   --ui-focus-shadow: 0 0 0 2px color-mix(in srgb, var(--appearance-accent) 24%, transparent);
   --ui-card-shadow: var(--panel-shadow);
   --ui-control-shadow: var(--button-shadow);
@@ -967,12 +999,43 @@ html[data-animations='off'] #root *::after {
   --ui-warning-soft: color-mix(in srgb, var(--ui-warning) 14%, var(--ui-surface));
   --ui-danger-soft: color-mix(in srgb, var(--ui-danger) 12%, var(--ui-surface));
   --ui-info-soft: color-mix(in srgb, var(--ui-info) 12%, var(--ui-surface));
-  --ui-control-face: linear-gradient(180deg, #353c43 0%, #282e34 100%);
+  --ui-control-face: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 10%, #353c43) 0%,
+    #282e34 100%
+  );
+  --ui-control-border: color-mix(in srgb, var(--ui-accent) 26%, var(--ui-border));
+  --ui-control-hover-bg: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
+  --ui-control-hover-border: color-mix(in srgb, var(--ui-accent) 58%, var(--ui-border));
+
+  --ui-select-arrow-face: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 42%, white),
+    var(--ui-accent)
+  );
+  --ui-select-arrow-border: color-mix(in srgb, var(--ui-accent) 68%, var(--ui-border));
+  --ui-select-menu-bg: var(--ui-surface);
+  --ui-select-hover-bg: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-surface));
+  --ui-select-hover-text: color-mix(in srgb, var(--ui-accent) 72%, white);
+  --ui-select-selected-face: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--ui-accent) 68%, black),
+    var(--ui-accent)
+  );
+  --ui-select-selected-text: #fff;
+
   --ui-panel-face: linear-gradient(180deg, #2f363d 0%, #242a30 100%);
-  --ui-table-header: linear-gradient(180deg, #343c44 0%, #292f35 100%);
+  --ui-table-header: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 10%, #343c44),
+    #292f35
+  );
+  --ui-table-header-text: var(--ui-text);
+  --ui-table-border: var(--ui-border);
   --ui-row-alt: #242c33;
   --ui-row-hover: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
   --ui-selected-row: color-mix(in srgb, var(--ui-accent) 28%, var(--ui-surface));
+  --ui-selected-row-text: #fff;
   --ui-accent-strong: color-mix(in srgb, var(--appearance-accent) 78%, white);
 }
 
@@ -1314,27 +1377,28 @@ html #root .desktop-btn.is-primary .shortcut {
 }
 
 html #root .pos-grid th {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface)),
-    color-mix(in srgb, var(--ui-accent) 15%, var(--ui-surface-subtle))
-  );
-  color: var(--ui-text);
-  border-color: var(--ui-border);
+  background: var(--ui-table-header);
+  color: var(--ui-table-header-text);
+  border-color: var(--ui-table-border);
 }
 
 html #root .pos-grid td {
   background-color: var(--ui-surface);
   color: var(--ui-text);
-  border-color: color-mix(in srgb, var(--ui-border) 58%, transparent);
+  border-color: var(--ui-border-soft);
+}
+
+html #root .pos-grid tbody tr:nth-child(even) td {
+  background: var(--ui-row-alt);
 }
 
 html #root .pos-grid tbody tr:hover td {
-  background: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface));
+  background: var(--ui-row-hover);
 }
 
 html #root .pos-grid tbody tr.is-selected td {
-  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface));
+  background: var(--ui-selected-row);
+  color: var(--ui-selected-row-text);
 }
 
 html #root :where(.report-list button, .quick-command) {
