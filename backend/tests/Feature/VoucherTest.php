@@ -52,7 +52,7 @@ class VoucherTest extends TestCase
             ->assertJsonPath('lines.1.party_type', 'vendor');
 
         $voucherUlid = $draft->json('ulid');
-        $this->assertStringStartsWith('PV-', (string) $draft->json('voucher_number'));
+        $this->assertStringStartsWith('DV-', (string) $draft->json('voucher_number'));
         $this->assertNoInternalIds($draft->json());
 
         $this->postJson('/api/vouchers/'.$voucherUlid.'/post')
