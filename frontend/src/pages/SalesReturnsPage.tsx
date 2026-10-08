@@ -562,6 +562,7 @@ export function SalesReturnsPage() {
                             <button
                               key={sale.ulid}
                               type="button"
+                              className={saleLabel === sale.document_number ? 'is-selected' : undefined}
                               onClick={() => void selectSale(sale)}
                             >
                               <strong>{sale.document_number}</strong>
@@ -636,7 +637,7 @@ export function SalesReturnsPage() {
                       <div className="sales-return-detail-body">
                         <button
                           type="button"
-                          className="sales-return-detail-row"
+                          className={`sales-return-detail-row${customerFilterUlid ? '' : ' is-selected'}`}
                           onClick={() => {
                             setCustomerFilterUlid('')
                             setSaleUlid('')
@@ -654,7 +655,7 @@ export function SalesReturnsPage() {
                         {(customersQuery.data ?? []).map((customer) => (
                           <button
                             type="button"
-                            className="sales-return-detail-row"
+                            className={`sales-return-detail-row${customerFilterUlid === customer.ulid ? ' is-selected' : ''}`}
                             key={customer.ulid}
                             onClick={() => {
                               setCustomerFilterUlid(customer.ulid)
@@ -729,7 +730,7 @@ export function SalesReturnsPage() {
                       <div className="sales-return-detail-body">
                         <button
                           type="button"
-                          className="sales-return-detail-row"
+                          className={`sales-return-detail-row${salesmanFilterUlid ? '' : ' is-selected'}`}
                           onClick={() => {
                             setSalesmanFilterUlid('')
                             setSaleUlid('')
@@ -747,7 +748,7 @@ export function SalesReturnsPage() {
                         {(salesmenQuery.data ?? []).map((salesman) => (
                           <button
                             type="button"
-                            className="sales-return-detail-row"
+                            className={`sales-return-detail-row${salesmanFilterUlid === salesman.ulid ? ' is-selected' : ''}`}
                             key={salesman.ulid}
                             onClick={() => {
                               setSalesmanFilterUlid(salesman.ulid)
