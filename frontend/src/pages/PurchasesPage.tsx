@@ -1349,13 +1349,15 @@ export function PurchasesPage() {
                   aria-label="Supplier"
                   value={supplierUlid}
                   disabled={!editable}
-                  options={[
-                    { value: '', label: 'Select supplier...' },
-                    ...suppliers.map((supplier) => ({
-                      value: supplier.ulid,
-                      label: `${supplier.code} — ${supplier.name}`,
-                    })),
-                  ]}
+                  placeholder="Select supplier..."
+                  searchPlaceholder="Search supplier by name or code..."
+                  options={suppliers.map((supplier) => ({
+                    value: supplier.ulid,
+                    label: supplier.code
+                      ? `${supplier.name} — ${supplier.code}`
+                      : supplier.name,
+                    title: supplier.code || supplier.name,
+                  }))}
                   onChange={setSupplierUlid}
                 />
                 <div className="pie-supplier-actions">
