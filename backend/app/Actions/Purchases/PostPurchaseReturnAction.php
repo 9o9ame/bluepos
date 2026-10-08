@@ -8,6 +8,7 @@ use App\Enums\PurchaseInvoiceStatus;
 use App\Enums\PurchaseReturnStatus;
 use App\Enums\StockMovementType;
 use App\Enums\WarehouseStatus;
+use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceLine;
 use App\Models\PurchaseReturn;
 use App\Models\PurchaseReturnLine;
@@ -51,7 +52,12 @@ class PostPurchaseReturnAction
                 ]);
             }
 
-            $invoice = $document->purchaseInvoice;
+            $invoice = PurchaseInvoice::query()
+                ->forTenant($this->tenantContext->tenantId())
+                ->whereKey($document->purchase_invoice_id)
+                ->lockForUpdate()
+                ->first();
+
             if (! $invoice || $invoice->status !== PurchaseInvoiceStatus::Posted) {
                 throw ValidationException::withMessages([
                     'purchase_ulid' => 'Original purchase invoice must remain posted.',
