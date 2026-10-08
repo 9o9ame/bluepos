@@ -2651,3 +2651,65 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
 :root .sales-posted-history.sales-history .sales-history-count {
   align-self: end;
 }
+
+
+/* ==========================================================================
+   Sales lookup typography normalization.
+   Keep the frozen geometry; use readable global text metrics and avoid legacy
+   ultra-heavy 800/850/900 weights on compact lookup rows.
+   ========================================================================== */
+.sales-reference-screen .sales-reference-grid input.sales-pos-product-entry {
+  font-size: var(--ui-font-md) !important;
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: var(--ui-line-normal) !important;
+  letter-spacing: .005em !important;
+}
+
+.sales-reference-screen .sales-reference-grid input.sales-pos-product-entry::placeholder {
+  font-size: var(--ui-font-md) !important;
+  font-weight: var(--ui-weight-normal) !important;
+  line-height: var(--ui-line-normal) !important;
+}
+
+.sales-pos-product-results-grid,
+.sales-pos-product-grid-head,
+.sales-pos-product-grid-row,
+.sales-pos-product-grid-row > span,
+.sales-pos-product-grid-row > strong {
+  font-size: var(--ui-font-sm) !important;
+  line-height: var(--ui-line-normal) !important;
+  letter-spacing: .005em !important;
+}
+
+.sales-pos-product-grid-head {
+  font-weight: var(--ui-weight-strong) !important;
+}
+
+.sales-pos-product-grid-row {
+  font-weight: var(--ui-weight-normal) !important;
+}
+
+.sales-pos-product-grid-row > span,
+.sales-pos-product-grid-row > strong {
+  font-weight: var(--ui-weight-medium) !important;
+}
+
+.sales-pos-product-grid-row > span:nth-child(1),
+.sales-pos-product-grid-row > span:nth-child(3),
+.sales-pos-product-grid-row > span:nth-child(4),
+.sales-pos-product-grid-row > span:nth-child(5),
+.sales-pos-product-grid-row > span:nth-child(6),
+.sales-pos-product-grid-row > span:nth-child(7),
+.sales-pos-product-grid-row > span:nth-child(8) {
+  font-weight: var(--ui-weight-medium) !important;
+}
+
+.sales-pos-product-grid-row > strong {
+  font-weight: var(--ui-weight-medium) !important;
+}
+
+.sales-pos-product-grid-foot {
+  font-size: var(--ui-font-sm) !important;
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: var(--ui-line-normal) !important;
+}
