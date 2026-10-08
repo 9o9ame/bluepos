@@ -397,7 +397,9 @@ export function PurchasesPage() {
 
   const listRows = listQuery.data?.data ?? []
   const suppliers = (suppliersQuery.data ?? []).filter((s) => s.is_active)
-  const warehouses = (warehousesQuery.data ?? []).filter((w) => w.status === 'active')
+  const warehouses = (warehousesQuery.data ?? []).filter(
+    (w) => w.status === 'active' && w.ulid === session?.warehouse.ulid,
+  )
   const selectedSupplier = suppliers.find((supplier) => supplier.ulid === supplierUlid)
   const selectedWarehouse = warehouses.find((warehouse) => warehouse.ulid === warehouseUlid)
   const warehouseLabel = selectedWarehouse
@@ -1389,7 +1391,7 @@ export function PurchasesPage() {
               <UiSelect
                 aria-label="Warehouse"
                 value={warehouseUlid}
-                disabled={!editable}
+                disabled
                 options={[
                   { value: '', label: 'Select warehouse...' },
                   ...warehouses.map((warehouse) => ({
