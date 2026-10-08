@@ -481,7 +481,7 @@ class ManageVoucherAction
         ];
     }
 
-    private function voucherNumber(string $documentType, int $id): string
+    private function nextVoucherNumber(int $tenantId, string $documentType): string
     {
         $prefix = match ($documentType) {
             JournalEntry::DOCUMENT_PAYMENT_VOUCHER => 'PV',
@@ -490,7 +490,21 @@ class ManageVoucherAction
             default => 'V',
         };
 
-        return $prefix.'-'.str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+        $latest = JournalEntry::query()
+            ->forTenant($tenantId)
+            ->where('document_type', $documentType)
+            ->orderByDesc('id')
+            ->value('voucher_number');
+
+        $sequence = 1;
+        if (is_string($latest) && str_starts_with($latest, $prefix.'-')) {
+            $suffix = substr($latest, strlen($prefix) + 1);
+            if ($suffix !== '' && ctype_digit($suffix)) {
+                $sequence = (int) $suffix + 1;
+            }
+        }
+
+        return $prefix.'-'.str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
     }
 
     private function positiveMoney(string $value, string $field): string
