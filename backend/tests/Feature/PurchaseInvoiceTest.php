@@ -580,6 +580,58 @@ class PurchaseInvoiceTest extends TestCase
             ->assertJsonPath('line_total', '6100.0000'); // 5200 + 900
     }
 
+
+    public function test_purchase_invoice_is_bound_to_active_warehouse_context(): void
+    {
+        $this->signInOwner('pur-warehouse-context')->assertOk();
+
+        $me = $this->getJson('/api/auth/me')->assertOk();
+        $activeWarehouseUlid = (string) $me->json('warehouse.ulid');
+        $branchUlid = (string) $me->json('branch.ulid');
+
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-WH-CTX',
+            'name' => 'Warehouse Context Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $otherWarehouseUlid = $this->postJson('/api/warehouses', [
+            'code' => 'WH-OTHER',
+            'name' => 'Other Same Branch Warehouse',
+            'branch_ulid' => $branchUlid,
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $otherWarehouseUlid,
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['warehouse_ulid']);
+
+        $invoiceUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $activeWarehouseUlid,
+        ])->assertCreated()->json('ulid');
+
+        $this->patchJson('/api/purchases/'.$invoiceUlid, [
+            'warehouse_ulid' => $otherWarehouseUlid,
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['warehouse_ulid']);
+
+        $invoice = PurchaseInvoice::query()->where('ulid', $invoiceUlid)->firstOrFail();
+        $otherWarehouseId = Warehouse::query()->where('ulid', $otherWarehouseUlid)->value('id');
+
+        $otherWarehouseInvoice = $invoice->replicate();
+        $otherWarehouseInvoice->ulid = null;
+        $otherWarehouseInvoice->document_number = 'PUR-CTX-OTHER';
+        $otherWarehouseInvoice->warehouse_id = $otherWarehouseId;
+        $otherWarehouseInvoice->save();
+
+        $this->getJson('/api/purchases/'.$otherWarehouseInvoice->ulid)->assertNotFound();
+
+        $list = $this->getJson('/api/purchases')->assertOk();
+        $list->assertJsonMissing(['ulid' => $otherWarehouseInvoice->ulid]);
+        $list->assertJsonFragment(['ulid' => $invoiceUlid]);
+    }
+
     private function sessionWarehouseUlid(): string
     {
         return (string) $this->getJson('/api/auth/me')->assertOk()->json('warehouse.ulid');
