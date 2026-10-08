@@ -5,6 +5,8 @@ import type {
   PurchaseInvoice,
   PurchaseInvoiceLine,
   PurchaseLinePayload,
+  PurchasePayment,
+  PurchasePaymentMethod,
 } from '../types/purchases'
 
 export function fetchPurchases(params?: {
@@ -79,5 +81,24 @@ export function deletePurchaseLine(purchaseUlid: string, lineUlid: string) {
 export function postPurchase(purchaseUlid: string) {
   return apiFetch<PurchaseInvoice>(`/api/purchases/${purchaseUlid}/post`, {
     method: 'POST',
+  })
+}
+
+
+export function createPurchasePayment(
+  purchaseUlid: string,
+  payload: {
+    amount: string
+    method: PurchasePaymentMethod
+    reference?: string | null
+  },
+  idempotencyKey: string,
+) {
+  return apiFetch<PurchasePayment>(`/api/purchases/${purchaseUlid}/payments`, {
+    method: 'POST',
+    headers: {
+      'Idempotency-Key': idempotencyKey,
+    },
+    body: JSON.stringify(payload),
   })
 }
