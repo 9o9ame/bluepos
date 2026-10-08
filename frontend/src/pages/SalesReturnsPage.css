@@ -4107,3 +4107,55 @@ html[data-theme='dark'] .sales-return-detail-caret {
     width: min(660px, calc(100vw - 420px)) !important;
   }
 }
+
+
+/* ==========================================================================
+   Sales Return caret parity with Define Products / canonical UiSelect.
+   Do not soften these locally: the approved Definition pages use the full
+   Primary Theme arrow face with a white chevron.
+   ========================================================================== */
+.sales-return-sale-trigger,
+.sales-return-detail-caret,
+.sales-return-select-caret {
+  display: grid !important;
+  place-items: center !important;
+  width: 20px !important;
+  min-width: 20px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  padding: 0 !important;
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border)) !important;
+  border-radius: var(--control-radius) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 55%, white),
+    var(--ui-accent)
+  ) !important;
+  color: #fff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .28),
+    var(--ui-control-shadow) !important;
+}
+
+.sales-return-sale-trigger:hover:not(:disabled),
+.sales-return-detail-control:hover:not(:disabled) .sales-return-detail-caret {
+  border-color: color-mix(in srgb, var(--ui-accent) 82%, var(--ui-border)) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 62%, white),
+    var(--ui-accent)
+  ) !important;
+  color: #fff !important;
+}
+
+html[data-theme='dark'] .sales-return-sale-trigger,
+html[data-theme='dark'] .sales-return-detail-caret,
+html[data-theme='dark'] .sales-return-select-caret {
+  border-color: color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border)) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 40%, white),
+    var(--ui-accent)
+  ) !important;
+  color: #fff !important;
+}
