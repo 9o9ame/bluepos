@@ -51,6 +51,14 @@ class PostPurchaseAccountingAction
             ->first();
 
         if ($existing) {
+            if (! $existing->isPosted()) {
+                throw new ApiException(
+                    'PURCHASE_ACCOUNTING_CONFLICT',
+                    'An unfinished purchase accounting journal already exists.',
+                    409,
+                );
+            }
+
             $existing->load('lines');
             $this->poster->assertBalanced($existing);
 
