@@ -3628,3 +3628,189 @@ html[data-animations='off'] .sales-return-screen *::after {
   transition: none !important;
   animation: none !important;
 }
+
+
+/* ==========================================================================
+   Definition baseline bridge
+   Uses the client-approved global Definition palette without changing Sales
+   Return geometry or workflow.
+   ========================================================================== */
+
+.sales-return-screen {
+  background: var(--ui-bg) !important;
+}
+
+.sales-return-tabs {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-panel-face) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.sales-return-tabs > button {
+  min-height: var(--ui-control-h-lg, 28px) !important;
+  background: var(--ui-control-face) !important;
+  border-color: var(--ui-border) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.sales-return-tabs > button:hover:not(:disabled) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+  color: var(--ui-accent-strong) !important;
+}
+
+.sales-return-tabs > button.is-active {
+  border-color: var(--ui-accent) !important;
+  background: color-mix(in srgb, var(--ui-accent) 10%, var(--ui-surface)) !important;
+  color: var(--ui-accent-strong) !important;
+  box-shadow:
+    inset 0 -2px 0 var(--ui-accent),
+    var(--ui-control-shadow) !important;
+}
+
+.sales-return-title,
+.sales-return-tabs > strong {
+  color: var(--ui-accent-strong) !important;
+  font-size: var(--ui-font-title, 13px) !important;
+}
+
+.sales-return-head > fieldset,
+.sales-return-amounts {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-panel-face) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.sales-return-fields .sales-return-option-group > input,
+.sales-return-fields .sales-return-sale-input,
+.sales-return-fields .sales-return-sale-input > input,
+.sales-return-detail-control {
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  border-color: var(--ui-border) !important;
+}
+
+.sales-return-sale-trigger,
+.sales-return-detail-caret {
+  border-color: color-mix(in srgb, var(--ui-accent) 60%, var(--ui-border)) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 48%, white),
+    var(--ui-accent)
+  ) !important;
+  color: white !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip,
+.sales-return-amounts > div,
+.sales-return-refund-summary,
+.sales-return-refund-summary strong {
+  border-color: var(--ui-border-soft) !important;
+  background: var(--ui-surface) !important;
+}
+
+.sales-return-fields-right .is-total-balance,
+.sales-return-amounts .is-net {
+  border-color: color-mix(in srgb, var(--ui-accent) 34%, var(--ui-border)) !important;
+  background: var(--ui-accent-soft) !important;
+}
+
+.sales-return-grid-wrap {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.sales-return-grid th {
+  background: var(--ui-table-header) !important;
+  border-color: var(--ui-border) !important;
+  color: var(--ui-text) !important;
+  font-size: var(--ui-font-sm, 10px) !important;
+  font-weight: 800 !important;
+}
+
+.sales-return-grid td {
+  border-color: var(--ui-border-soft) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-return-grid tbody tr:nth-child(even) td {
+  background: var(--ui-row-alt) !important;
+}
+
+.sales-return-grid tbody tr:hover td {
+  background: var(--ui-row-hover) !important;
+}
+
+.sales-return-grid td.is-edit,
+.sales-return-grid td.is-edit input {
+  background: color-mix(in srgb, var(--ui-warning) 7%, var(--ui-surface)) !important;
+}
+
+.sales-return-grid td.is-edit input {
+  border-color: color-mix(in srgb, var(--ui-warning) 28%, var(--ui-border)) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-return-empty {
+  color: var(--ui-text-muted) !important;
+}
+
+.sales-return-footer {
+  border-top: 1px solid var(--ui-border) !important;
+  background: var(--ui-panel-face) !important;
+}
+
+.sales-return-settlement-hint,
+.sales-return-settlement > small {
+  color: var(--ui-text-muted) !important;
+}
+
+.sales-return-refund-methods button {
+  background: var(--ui-control-face) !important;
+  border-color: var(--ui-border) !important;
+}
+
+.sales-return-refund-methods button.is-active {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+  color: var(--ui-accent-strong) !important;
+}
+
+.sales-return-detail-dropdown,
+.sales-return-sale-results {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.sales-return-detail-head,
+.sales-return-sale-results-head {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-table-header) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-return-detail-row,
+.sales-return-sale-results-body > * {
+  border-color: var(--ui-border-soft) !important;
+  background: var(--ui-surface) !important;
+}
+
+.sales-return-detail-row:hover,
+.sales-return-sale-results-body > *:hover {
+  background: var(--ui-row-hover) !important;
+  color: var(--ui-text) !important;
+}
+
+html[data-theme='dark'] .sales-return-sale-trigger,
+html[data-theme='dark'] .sales-return-detail-caret {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 28%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 68%, var(--ui-surface))
+  ) !important;
+}
