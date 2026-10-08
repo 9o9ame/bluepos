@@ -27,9 +27,10 @@ class CreatePurchaseInvoiceAction
         return DB::transaction(function () use ($data): PurchaseInvoice {
             $tenantId = $this->tenantContext->tenantId();
             $supplier = $this->catalog->supplier($data['supplier_ulid']);
+            $requestedWarehouse = $this->catalog->warehouse($data['warehouse_ulid']);
             $warehouse = $this->tenantContext->warehouse();
 
-            if ((string) $data['warehouse_ulid'] !== (string) $warehouse->ulid) {
+            if ((int) $requestedWarehouse->id !== (int) $warehouse->id) {
                 throw ValidationException::withMessages([
                     'warehouse_ulid' => 'Purchase warehouse must match the active warehouse context.',
                 ]);
