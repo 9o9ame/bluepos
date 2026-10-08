@@ -78,6 +78,7 @@ class PurchaseInvoiceTest extends TestCase
         $show->assertJsonPath('tax_amount', '50.0000');
         // grand = sum(line_total) + freight + other = 4750 + 25 + 10
         $show->assertJsonPath('grand_total', '4785.0000');
+        $show->assertJsonPath('balance_payable', '4785.0000');
         $this->assertNoInternalIds($show->json());
 
         $this->patchJson('/api/purchases/'.$invoiceUlid.'/lines/'.$lineUlid, [
