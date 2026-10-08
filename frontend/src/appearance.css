@@ -2287,3 +2287,224 @@ html #root button[data-action='create'] {
   background: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface)) !important;
   color: var(--ui-accent-strong) !important;
 }
+
+
+/* ---------- DAILY ENTRIES — APPROVED DEFINITION BASELINE ---------- */
+/*
+ * Shared visual contract for Daily Entries modules.
+ * Page CSS keeps workflow geometry; visual language comes from global tokens.
+ */
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) {
+  color: var(--ui-text);
+  background: var(--ui-bg);
+  font-family: var(--app-font-family);
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(
+  fieldset,
+  .pie-panel,
+  .purchase-header,
+  .invoice-bottom
+) {
+  border-color: var(--ui-border) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  .desktop-input,
+  .desktop-select
+) {
+  border-color: var(--ui-control-border) !important;
+  background: var(--ui-control-face) !important;
+  color: var(--ui-text) !important;
+  border-radius: var(--control-radius) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  .desktop-input,
+  .desktop-select
+):hover:not(:disabled) {
+  border-color: var(--ui-control-hover-border) !important;
+  background: var(--ui-control-hover-bg) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  .desktop-input,
+  .desktop-select
+):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(
+  input:not([type='checkbox']):not([type='radio']):disabled,
+  textarea:disabled,
+  input[readonly]
+) {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+  box-shadow: none !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(label, legend, .pie-field > span) {
+  color: var(--ui-text) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(
+  .inner-tabs,
+  .sales-reference-subtabs,
+  .sales-return-tabs
+) {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-panel-face) !important;
+  color: var(--ui-text) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(
+  .inner-tab,
+  .sales-reference-subtab,
+  .sales-return-tabs > button
+) {
+  border-color: var(--ui-control-border) !important;
+  background: var(--ui-control-face) !important;
+  color: var(--ui-text) !important;
+  border-radius: var(--control-radius) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(
+  .inner-tab,
+  .sales-reference-subtab,
+  .sales-return-tabs > button
+):hover:not(:disabled) {
+  border-color: var(--ui-control-hover-border) !important;
+  background: var(--ui-control-hover-bg) !important;
+  color: var(--ui-accent-strong) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(
+  .inner-tab.is-active,
+  .sales-reference-subtab.is-active,
+  .sales-return-tabs > button.is-active
+) {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent-soft) !important;
+  color: var(--ui-accent-strong) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(table, .pos-grid) th {
+  border-color: var(--ui-table-border) !important;
+  background: var(--ui-table-header) !important;
+  color: var(--ui-table-header-text) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(table, .pos-grid) td {
+  border-color: var(--ui-border-soft) !important;
+  color: var(--ui-text) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(table, .pos-grid) tbody tr:hover td {
+  background: var(--ui-row-hover) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(table, .pos-grid) tbody tr.is-selected td {
+  background: var(--ui-selected-row) !important;
+  color: var(--ui-selected-row-text) !important;
+}
+
+html #root :where(
+  .sales-reference-screen,
+  .sales-return-screen,
+  .purchase-reference-screen,
+  .purchase-return-screen
+) :where(
+  input[type='checkbox'],
+  input[type='radio']
+) {
+  accent-color: var(--ui-accent) !important;
+}
