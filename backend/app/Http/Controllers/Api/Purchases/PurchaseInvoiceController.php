@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Purchases;
 
+use App\Enums\PurchaseReturnStatus;
 use App\Actions\Purchases\CreatePurchaseInvoiceAction;
 use App\Actions\Purchases\DeletePurchaseInvoiceLineAction;
 use App\Actions\Purchases\PayPurchaseInvoiceAction;
@@ -34,6 +35,10 @@ class PurchaseInvoiceController extends Controller
             ->where('warehouse_id', $tenantContext->warehouseId())
             ->with(['supplier', 'branch', 'warehouse'])
             ->withSum('payments as paid_amount', 'amount')
+            ->withSum([
+                'purchaseReturns as returned_amount' => fn ($query) => $query
+                    ->where('status', PurchaseReturnStatus::Posted->value),
+            ], 'grand_total')
             ->orderByDesc('invoice_date')
             ->orderByDesc('id');
 
