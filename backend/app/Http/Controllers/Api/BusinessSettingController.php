@@ -53,6 +53,6 @@ class BusinessSettingController extends Controller
         $settings->fill($data);
         $settings->save();
 
-        return new BusinessSettingResource($settings->fresh()->load(['openingBalanceEquityAccount', 'defaultCashAccount', 'salesClearingAccount']));
+        return new BusinessSettingResource($settings->fresh()->load(['openingBalanceEquityAccount', 'defaultCashAccount', 'salesClearingAccount', 'purchaseClearingAccount']));
     }
 }
