@@ -2,12 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
+use App\Models\AccountType;
 use App\Models\AuditLog;
+use App\Models\BusinessSetting;
+use App\Models\JournalEntry;
 use App\Models\Product;
 use App\Models\PurchaseInvoice;
 use App\Models\StockBalance;
 use App\Models\StockMovement;
 use App\Models\Warehouse;
+use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -18,6 +23,7 @@ class PurchaseReturnTest extends TestCase
     public function test_purchase_return_lifecycle_stock_and_costing(): void
     {
         $this->signInOwner('pr-life')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseUlid = $this->sessionWarehouseUlid();
         $pcs = $this->unitUlid('PCS');
         $ctn = $this->unitUlid('CTN');
@@ -96,6 +102,19 @@ class PurchaseReturnTest extends TestCase
         $posted->assertJsonPath('status', 'posted');
         $this->assertTrue(AuditLog::query()->where('event', 'PURCHASE_RETURN_POSTED')->where('resource_ulid', $returnUlid)->exists());
 
+        $journal = JournalEntry::query()
+            ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_RETURN)
+            ->with('lines')
+            ->firstOrFail();
+        $this->assertTrue($journal->isPosted());
+        $this->assertCount(2, $journal->lines);
+        $journalLines = $journal->lines->sortBy('sort_order')->values();
+        $this->assertSame('2375.0000', (string) $journalLines[0]->debit);
+        $this->assertSame('0.0000', (string) $journalLines[0]->credit);
+        $this->assertNotNull($journalLines[0]->supplier_id);
+        $this->assertSame('0.0000', (string) $journalLines[1]->debit);
+        $this->assertSame('2375.0000', (string) $journalLines[1]->credit);
+
         $movement = StockMovement::query()->where('movement_type', 'purchase_return')->firstOrFail();
         $this->assertSame('-24.000000', (string) $movement->quantity);
         $this->assertSame('100.0000', (string) $movement->unit_cost);
@@ -111,6 +130,12 @@ class PurchaseReturnTest extends TestCase
 
         $this->postJson('/api/purchase-returns/'.$returnUlid.'/post')->assertOk();
         $this->assertSame(1, StockMovement::query()->where('movement_type', 'purchase_return')->count());
+        $this->assertSame(
+            1,
+            JournalEntry::query()
+                ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_RETURN)
+                ->count(),
+        );
 
         $this->patchJson('/api/purchase-returns/'.$returnUlid, [
             'notes' => 'Nope',
@@ -129,6 +154,7 @@ class PurchaseReturnTest extends TestCase
     public function test_partial_multiple_returns_and_over_return_rejected(): void
     {
         $this->signInOwner('pr-multi')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseUlid = $this->sessionWarehouseUlid();
         $pcs = $this->unitUlid('PCS');
         $supplierUlid = $this->postJson('/api/suppliers', [
@@ -191,6 +217,7 @@ class PurchaseReturnTest extends TestCase
     public function test_validations_isolation_stock_and_batch(): void
     {
         $this->signInOwner('pr-iso-a')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseA = $this->sessionWarehouseUlid();
         $pcs = $this->unitUlid('PCS');
         $supplierA = $this->postJson('/api/suppliers', [
@@ -267,6 +294,7 @@ class PurchaseReturnTest extends TestCase
 
         $this->postJson('/api/auth/logout')->assertOk();
         $this->signInOwner('pr-iso-b')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseB = $this->sessionWarehouseUlid();
         $supplierB = $this->postJson('/api/suppliers', [
             'code' => 'SUP-PRB',
@@ -303,6 +331,7 @@ class PurchaseReturnTest extends TestCase
     public function test_posting_rolls_back_when_stock_insufficient_and_line_delete(): void
     {
         $this->signInOwner('pr-roll')->assertOk();
+        $this->configurePurchaseClearing();
         $warehouseUlid = $this->sessionWarehouseUlid();
         $pcs = $this->unitUlid('PCS');
         $supplierUlid = $this->postJson('/api/suppliers', [
@@ -350,8 +379,100 @@ class PurchaseReturnTest extends TestCase
 
         $this->postJson('/api/purchase-returns/'.$returnUlid.'/post')->assertStatus(422);
         $this->assertSame(0, StockMovement::query()->where('movement_type', 'purchase_return')->count());
+        $this->assertSame(
+            0,
+            JournalEntry::query()
+                ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_RETURN)
+                ->count(),
+        );
         $this->getJson('/api/purchase-returns/'.$returnUlid)->assertOk()->assertJsonPath('status', 'draft');
         $this->assertSame('1.000000', (string) StockBalance::query()->firstOrFail()->quantity);
+    }
+
+    public function test_purchase_return_requires_purchase_clearing_and_rolls_back_accounting_and_stock(): void
+    {
+        $this->signInOwner('pr-accounting-guard')->assertOk();
+        $this->configurePurchaseClearing();
+
+        $warehouseUlid = $this->sessionWarehouseUlid();
+        $pcs = $this->unitUlid('PCS');
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-PR-ACCT',
+            'name' => 'Return Accounting Supplier',
+        ])->assertCreated()->json('ulid');
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Return Accounting Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $purchaseUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+        ])->assertCreated()->json('ulid');
+
+        $purchaseLineUlid = $this->postJson('/api/purchases/'.$purchaseUlid.'/lines', [
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '2.000000',
+            'unit_cost' => '10.0000',
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchases/'.$purchaseUlid.'/post')->assertOk();
+
+        $returnUlid = $this->postJson('/api/purchase-returns', [
+            'purchase_ulid' => $purchaseUlid,
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchase-returns/'.$returnUlid.'/lines', [
+            'purchase_line_ulid' => $purchaseLineUlid,
+            'quantity' => '1.000000',
+        ])->assertCreated();
+
+        BusinessSetting::query()
+            ->forTenant(app(TenantContext::class)->tenantId())
+            ->update(['purchase_clearing_account_id' => null]);
+
+        $this->postJson('/api/purchase-returns/'.$returnUlid.'/post')
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'PURCHASE_CLEARING_ACCOUNT_REQUIRED');
+
+        $this->getJson('/api/purchase-returns/'.$returnUlid)
+            ->assertOk()
+            ->assertJsonPath('status', 'draft');
+
+        $this->assertSame(0, StockMovement::query()->where('movement_type', 'purchase_return')->count());
+        $this->assertSame(
+            0,
+            JournalEntry::query()
+                ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_RETURN)
+                ->count(),
+        );
+    }
+
+    private function configurePurchaseClearing(): void
+    {
+        $tenantContext = app(TenantContext::class);
+        $inventoryType = AccountType::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('code', '0060')
+            ->firstOrFail();
+
+        $clearing = Account::query()->firstOrCreate(
+            [
+                'tenant_id' => $tenantContext->tenantId(),
+                'code' => 'PUR-CLEAR',
+            ],
+            [
+                'name' => 'Purchase Clearing',
+                'account_type_id' => $inventoryType->id,
+                'is_active' => true,
+                'created_by' => $tenantContext->userId(),
+            ],
+        );
+
+        BusinessSetting::query()
+            ->forTenant($tenantContext->tenantId())
+            ->update(['purchase_clearing_account_id' => $clearing->id]);
     }
 
     private function sessionWarehouseUlid(): string
