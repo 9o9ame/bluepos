@@ -166,6 +166,82 @@ class VoucherTest extends TestCase
             ->assertJsonPath('status', 'posted');
     }
 
+    public function test_voucher_idempotency_search_summary_and_tenant_isolation(): void
+    {
+        $this->signInOwner('voucher-security-a')->assertOk();
+
+        $cash = $this->leafAccount('Voucher Cash A', 'V-CASH-A', '0010');
+        $expense = $this->leafAccount('Voucher Expense A', 'V-EXP-A', '0030');
+        $date = now()->toDateString();
+
+        $payload = [
+            'type' => 'payment',
+            'entry_date' => $date,
+            'description' => 'Branch expense payment',
+            'header_account_ulid' => $cash->ulid,
+            'lines' => [[
+                'account_ulid' => $expense->ulid,
+                'amount' => '12.5000',
+            ]],
+        ];
+
+        $first = $this->postJson('/api/vouchers', $payload, $this->idem('voucher-idem-1'))->assertCreated();
+        $second = $this->postJson('/api/vouchers', $payload, $this->idem('voucher-idem-1'))->assertCreated();
+
+        $this->assertSame($first->json('ulid'), $second->json('ulid'));
+        $this->assertSame(
+            1,
+            JournalEntry::query()
+                ->whereIn('document_type', [
+                    JournalEntry::DOCUMENT_PAYMENT_VOUCHER,
+                    JournalEntry::DOCUMENT_RECEIVING_VOUCHER,
+                    JournalEntry::DOCUMENT_JOURNAL_VOUCHER,
+                ])
+                ->count(),
+        );
+
+        $this->postJson('/api/vouchers', [
+            ...$payload,
+            'type' => 'receiving',
+        ], $this->idem('voucher-idem-1'))
+            ->assertStatus(409)
+            ->assertJsonPath('error.key', 'IDEMPOTENCY_KEY_CONFLICT');
+
+        $voucherUlid = $first->json('ulid');
+        $voucherNumber = $first->json('voucher_number');
+        $this->postJson('/api/vouchers/'.$voucherUlid.'/post')->assertOk();
+
+        $this->getJson('/api/vouchers?q='.urlencode((string) $voucherNumber))
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.ulid', $voucherUlid);
+
+        $this->getJson('/api/vouchers/summary?date_from='.$date.'&date_to='.$date)
+            ->assertOk()
+            ->assertJsonPath('data.0.debit', '12.5000')
+            ->assertJsonPath('data.0.credit', '12.5000');
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->postJson('/api/vouchers', $payload, $this->idem('voucher-no-auth'))
+            ->assertUnauthorized();
+
+        $this->signInOwner('voucher-security-b')->assertOk();
+        $this->getJson('/api/vouchers/'.$voucherUlid)->assertNotFound();
+
+        $otherCash = $this->leafAccount('Voucher Cash B', 'V-CASH-B', '0010');
+        $this->postJson('/api/vouchers', [
+            'type' => 'payment',
+            'entry_date' => $date,
+            'header_account_ulid' => $otherCash->ulid,
+            'lines' => [[
+                'account_ulid' => $expense->ulid,
+                'amount' => '1.0000',
+            ]],
+        ], $this->idem('voucher-cross-tenant-account'))
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+    }
+
     /**
      * @return array<string, string>
      */
