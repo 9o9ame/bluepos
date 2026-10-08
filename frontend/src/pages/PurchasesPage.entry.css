@@ -1154,3 +1154,164 @@ html[data-animations='off'] .purchase-entry-screen * {
   width: 15px;
   height: 14px;
 }
+
+
+/* ==========================================================================
+   Daily Entries global Definition baseline consumer.
+   Purchase Invoice keeps its current workflow geometry; appearance is global.
+   ========================================================================== */
+.purchase-entry-screen {
+  background: var(--ui-bg) !important;
+  color: var(--ui-text) !important;
+}
+
+.purchase-entry-screen .pie-panel {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-panel-invoice,
+  .pie-panel-gst,
+  .pie-panel-charges,
+  .pie-panel.pie-final,
+  .pie-panel-payment
+) {
+  border-top-color: var(--ui-accent) !important;
+}
+
+.purchase-entry-screen .pie-panel-head {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-table-header) !important;
+  color: var(--ui-table-header-text) !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-panel-gst .pie-panel-head,
+  .pie-panel-charges .pie-panel-head,
+  .pie-panel.pie-final .pie-panel-head,
+  .pie-panel-payment .pie-panel-head
+) {
+  background: var(--ui-table-header) !important;
+  color: var(--ui-table-header-text) !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-field input,
+  .pie-field textarea,
+  .pie-charge-grid input,
+  .pie-charge-pairs input,
+  .pie-inline-input
+) {
+  border-color: var(--ui-control-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-control-face) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-field input,
+  .pie-field textarea,
+  .pie-charge-grid input,
+  .pie-charge-pairs input,
+  .pie-inline-input
+):hover:not(:disabled) {
+  border-color: var(--ui-control-hover-border) !important;
+  background: var(--ui-control-hover-bg) !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-field input,
+  .pie-field textarea,
+  .pie-charge-grid input,
+  .pie-charge-pairs input,
+  .pie-inline-input
+):focus-visible {
+  outline: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-field > span,
+  .pie-charge-pairs label span,
+  .pie-supplier-hint,
+  .pie-muted
+) {
+  color: var(--ui-text-muted) !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-radio-grid,
+  .pie-radio-row,
+  .pie-chips
+) {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-surface-subtle) !important;
+  color: var(--ui-text) !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-radio-grid input,
+  .pie-radio-row input,
+  .pie-chips input
+) {
+  accent-color: var(--ui-accent) !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-btn,
+  .pie-chip,
+  .pie-tool-btn
+) {
+  border-color: var(--ui-control-border) !important;
+  background: var(--ui-control-face) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-btn,
+  .pie-chip,
+  .pie-tool-btn
+):hover:not(:disabled) {
+  border-color: var(--ui-control-hover-border) !important;
+  background: var(--ui-control-hover-bg) !important;
+}
+
+.purchase-entry-screen :where(
+  table th,
+  .pie-grid th
+) {
+  border-color: var(--ui-table-border) !important;
+  background: var(--ui-table-header) !important;
+  color: var(--ui-table-header-text) !important;
+}
+
+.purchase-entry-screen :where(
+  table td,
+  .pie-grid td
+) {
+  border-color: var(--ui-border-soft) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+}
+
+.purchase-entry-screen :where(
+  table tbody tr:hover td,
+  .pie-grid tbody tr:hover td
+) {
+  background: var(--ui-row-hover) !important;
+}
+
+.purchase-entry-screen .pie-error {
+  border-color: color-mix(in srgb, var(--ui-danger) 40%, var(--ui-border)) !important;
+  background: var(--ui-danger-soft) !important;
+  color: var(--ui-danger) !important;
+}
