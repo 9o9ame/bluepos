@@ -484,8 +484,8 @@ class ManageVoucherAction
     private function nextVoucherNumber(int $tenantId, string $documentType): string
     {
         $prefix = match ($documentType) {
-            JournalEntry::DOCUMENT_PAYMENT_VOUCHER => 'PV',
-            JournalEntry::DOCUMENT_RECEIVING_VOUCHER => 'RV',
+            JournalEntry::DOCUMENT_PAYMENT_VOUCHER => 'DV',
+            JournalEntry::DOCUMENT_RECEIVING_VOUCHER => 'CV',
             JournalEntry::DOCUMENT_JOURNAL_VOUCHER => 'JV',
             default => 'V',
         };
