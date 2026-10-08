@@ -5,8 +5,10 @@ namespace Tests\Feature;
 use App\Models\Account;
 use App\Models\AccountType;
 use App\Models\JournalEntry;
+use App\Models\Permission;
 use App\Models\Supplier;
 use App\Tenancy\TenantContext;
+use App\Authz\PermissionService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -240,6 +242,35 @@ class VoucherTest extends TestCase
         ], $this->idem('voucher-cross-tenant-account'))
             ->assertStatus(422)
             ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+    }
+
+    public function test_voucher_create_requires_permission(): void
+    {
+        $this->signInOwner('voucher-permission')->assertOk();
+
+        $tenant = app(TenantContext::class);
+        $role = $tenant->membership()
+            ->roles()
+            ->where('roles.tenant_id', $tenant->tenantId())
+            ->firstOrFail();
+        $permission = Permission::query()->where('key', 'vouchers.create')->firstOrFail();
+
+        $role->permissions()->detach($permission->id);
+        app()->forgetInstance(PermissionService::class);
+
+        $cash = $this->leafAccount('Voucher Permission Cash', 'V-CASH-P', '0010');
+        $expense = $this->leafAccount('Voucher Permission Expense', 'V-EXP-P', '0030');
+
+        $this->postJson('/api/vouchers', [
+            'type' => 'payment',
+            'entry_date' => now()->toDateString(),
+            'header_account_ulid' => $cash->ulid,
+            'lines' => [[
+                'account_ulid' => $expense->ulid,
+                'amount' => '1.0000',
+            ]],
+        ], $this->idem('voucher-no-permission'))
+            ->assertForbidden();
     }
 
     /**
