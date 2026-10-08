@@ -26,6 +26,10 @@ class PurchasePaymentTest extends TestCase
         $this->signInOwner('pur-pay-full')->assertOk();
         $accounts = $this->configureAccounts();
         $purchase = $this->createPostedPurchase('pur-pay-full', '100.0000');
+        $purchaseModel = PurchaseInvoice::query()->where('ulid', $purchase)->firstOrFail();
+        $supplierAccount = Account::query()
+            ->where('supplier_id', $purchaseModel->supplier_id)
+            ->firstOrFail();
 
         $payment = $this->postJson(
             '/api/purchases/'.$purchase.'/payments',
@@ -57,7 +61,7 @@ class PurchasePaymentTest extends TestCase
         $this->assertCount(2, $journal->lines);
         $this->assertSame(
             '100.0000',
-            (string) $journal->lines->firstWhere('account_id', $accounts['supplier']->id)?->debit,
+            (string) $journal->lines->firstWhere('account_id', $supplierAccount->id)?->debit,
         );
         $this->assertSame(
             '100.0000',
@@ -229,7 +233,7 @@ class PurchasePaymentTest extends TestCase
     }
 
     /**
-     * @return array{cash: Account, clearing: Account, supplier: Account}
+     * @return array{cash: Account, clearing: Account}
      */
     private function configureAccounts(): array
     {
@@ -247,7 +251,6 @@ class PurchasePaymentTest extends TestCase
         return [
             'cash' => $cash,
             'clearing' => $clearing,
-            'supplier' => $this->supplierAccountPlaceholder(),
         ];
     }
 
@@ -259,23 +262,6 @@ class PurchasePaymentTest extends TestCase
         BusinessSetting::query()
             ->forTenant($tenant->tenantId())
             ->update(['purchase_clearing_account_id' => $clearing->id]);
-    }
-
-    private function supplierAccountPlaceholder(): Account
-    {
-        $supplierId = PurchaseInvoice::query()->latest('id')->value('supplier_id');
-
-        if ($supplierId) {
-            $account = Account::query()->where('supplier_id', $supplierId)->first();
-            if ($account) {
-                return $account;
-            }
-        }
-
-        // The first test calls configureAccounts before creating the purchase.
-        // Return a harmless tenant account and refresh the real supplier line from
-        // the journal assertion after the purchase has been created.
-        return $this->leafAccount('PURCHASE PLACEHOLDER', '9299', '0020');
     }
 
     private function createPostedPurchase(string $suffix, string $amount): string
