@@ -87,6 +87,33 @@ Use the existing global variables exposed through `frontend/src/appearance.css`,
 - `--ui-transition-fast`
 - `--ui-transition-normal`
 
+The approved Definition visual baseline also exposes reusable state/face tokens for canonical controls and grids, including:
+- `--ui-control-face`
+- `--ui-control-border`
+- `--ui-control-hover-bg`
+- `--ui-control-hover-border`
+- `--ui-select-arrow-face`
+- `--ui-select-arrow-border`
+- `--ui-select-menu-bg`
+- `--ui-select-hover-bg`
+- `--ui-select-hover-text`
+- `--ui-select-selected-face`
+- `--ui-select-selected-text`
+- `--ui-button-primary-face`
+- `--ui-button-success-face`
+- `--ui-button-warning-face`
+- `--ui-button-danger-face`
+- `--ui-button-info-face`
+- `--ui-table-header`
+- `--ui-table-header-text`
+- `--ui-table-border`
+- `--ui-row-alt`
+- `--ui-row-hover`
+- `--ui-selected-row`
+- `--ui-selected-row-text`
+
+These tokens are the reusable implementation of the client-approved Definition look. Page CSS must consume them or canonical components rather than copying Definition hex colors, gradients, selected-row styles, dropdown arrow styles, or semantic button faces locally.
+
 Density-dependent font, spacing and control-height variables already exposed by the appearance/density CSS must be preferred over literal values when practical.
 
 ## 4. Canonical components
