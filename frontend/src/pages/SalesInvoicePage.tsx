@@ -1362,7 +1362,7 @@ export function SalesInvoicePage() {
                         <div className="sales-pos-salesman-grid-body">
                           <button
                             type="button"
-                            className="sales-pos-salesman-grid-row"
+                            className={`sales-pos-salesman-grid-row${selectedSalesmanUlid ? '' : ' is-selected'}`}
                             onClick={() => {
                               setSelectedSalesmanUlid(null)
                               setSalesmanSearch('')
@@ -1378,7 +1378,7 @@ export function SalesInvoicePage() {
                           {filteredSalesmen.map((salesman) => (
                             <button
                               type="button"
-                              className="sales-pos-salesman-grid-row"
+                              className={`sales-pos-salesman-grid-row${selectedSalesmanUlid === salesman.ulid ? ' is-selected' : ''}`}
                               key={salesman.ulid}
                               onClick={() => {
                                 setSelectedSalesmanUlid(salesman.ulid)
@@ -1473,7 +1473,7 @@ export function SalesInvoicePage() {
                         <div className="sales-pos-customer-grid-body">
                           <button
                             type="button"
-                            className="sales-pos-customer-grid-row"
+                            className={`sales-pos-customer-grid-row${selectedCustomer ? '' : ' is-selected'}`}
                             onClick={() => {
                               setSelectedCustomer(null)
                               cart.setCustomerUlid(null)
@@ -1492,7 +1492,7 @@ export function SalesInvoicePage() {
                           {filteredCustomers.map((party) => (
                             <button
                               type="button"
-                              className="sales-pos-customer-grid-row"
+                              className={`sales-pos-customer-grid-row${selectedCustomer?.ulid === party.ulid ? ' is-selected' : ''}`}
                               key={party.ulid}
                               onClick={() => {
                                 setSelectedCustomer(party)
