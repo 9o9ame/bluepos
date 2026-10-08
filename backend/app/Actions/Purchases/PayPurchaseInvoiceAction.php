@@ -75,6 +75,14 @@ class PayPurchaseInvoiceAction
                 ->first();
 
             if ($existing) {
+                if ((int) $existing->purchase_invoice_id !== (int) $invoice->id) {
+                    throw new ApiException(
+                        'IDEMPOTENCY_KEY_CONFLICT',
+                        'This Idempotency-Key was already used for another purchase payment.',
+                        409,
+                    );
+                }
+
                 return $existing;
             }
 
@@ -89,6 +97,21 @@ class PayPurchaseInvoiceAction
                 throw new ApiException(
                     'PURCHASE_NOT_POSTED',
                     'Purchase payments can only be recorded against posted purchase invoices.',
+                    422,
+                );
+            }
+
+            $purchaseJournal = JournalEntry::query()
+                ->forTenant($tenantId)
+                ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_INVOICE)
+                ->where('document_id', $invoice->id)
+                ->where('status', JournalStatus::Posted->value)
+                ->first();
+
+            if (! $purchaseJournal) {
+                throw new ApiException(
+                    'PURCHASE_ACCOUNTING_REQUIRED',
+                    'This posted purchase does not have a posted accounting journal and cannot be paid yet.',
                     422,
                 );
             }
