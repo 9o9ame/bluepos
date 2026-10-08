@@ -16,7 +16,7 @@
   height: var(--ui-control-h-md, 24px);
   margin: 0;
   padding: 0 2px 0 7px;
-  border: 1px solid var(--ui-border);
+  border: 1px solid var(--ui-control-border, var(--ui-border));
   border-radius: var(--control-radius);
   background: var(--ui-control-face, linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)));
   color: var(--ui-text);
@@ -34,8 +34,8 @@
 }
 
 .ui-select-trigger:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--ui-accent) 60%, var(--ui-border));
-  background: color-mix(in srgb, var(--ui-accent) 6%, var(--ui-surface));
+  border-color: var(--ui-control-hover-border, var(--ui-accent));
+  background: var(--ui-control-hover-bg, var(--ui-accent-soft));
 }
 
 .ui-select.is-open .ui-select-trigger,
@@ -64,13 +64,9 @@
   place-items: center;
   width: 20px;
   height: 18px;
-  border: 1px solid color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border));
+  border: 1px solid var(--ui-select-arrow-border, var(--ui-accent));
   border-radius: var(--control-radius);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--ui-accent) 55%, white),
-    var(--ui-accent)
-  );
+  background: var(--ui-select-arrow-face);
   color: #fff;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .28),
@@ -98,7 +94,7 @@
   overflow: hidden;
   border: 1px solid var(--ui-border);
   border-radius: var(--panel-radius);
-  background: var(--ui-surface);
+  background: var(--ui-select-menu-bg, var(--ui-surface));
   color: var(--ui-text);
   box-shadow: var(--ui-card-shadow);
   animation: ui-select-menu-in var(--ui-transition-normal);
@@ -167,18 +163,14 @@
 .ui-select-option.is-active:not(.is-selected) {
   outline: none;
   border-color: color-mix(in srgb, var(--ui-accent) 38%, transparent);
-  background: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
-  color: var(--ui-accent-strong);
+  background: var(--ui-select-hover-bg, var(--ui-accent-soft));
+  color: var(--ui-select-hover-text, var(--ui-accent-strong));
 }
 
 .ui-select-option.is-selected {
   border-color: var(--ui-accent-strong);
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--ui-accent) 84%, black),
-    var(--ui-accent)
-  );
-  color: #fff;
+  background: var(--ui-select-selected-face);
+  color: var(--ui-select-selected-text, #fff);
   font-weight: 800;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
 }
