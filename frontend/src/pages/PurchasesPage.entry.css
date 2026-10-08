@@ -1358,3 +1358,151 @@ html[data-animations='off'] .purchase-entry-screen * {
     gap: 4px;
   }
 }
+
+
+/* ==========================================================================
+   Purchase Invoice readability + approved Definition visual cleanup.
+   Geometry stays page-owned; typography/control states use global tokens.
+   ========================================================================== */
+.purchase-entry-screen .pie-panel {
+  gap: var(--ui-gap-xs) !important;
+}
+
+.purchase-entry-screen .pie-panel-head {
+  font-size: var(--ui-font-sm) !important;
+  font-weight: var(--ui-weight-strong) !important;
+  line-height: var(--ui-line-tight) !important;
+  letter-spacing: .01em !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-field > span,
+  .pie-radio-grid label,
+  .pie-radio-row label,
+  .pie-chips label,
+  .pie-charge-grid span,
+  .pie-charge-pairs label span,
+  .pie-option-block strong,
+  .pie-inline-check,
+  .pie-supplier-hint
+) {
+  font-size: var(--ui-font-sm) !important;
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: var(--ui-line-normal) !important;
+  letter-spacing: .002em !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-field input,
+  .pie-field textarea,
+  .pie-charge-grid input,
+  .pie-charge-pairs input,
+  .pie-inline-input,
+  .pie-items-toolbar .pie-search input
+) {
+  min-height: var(--ui-control-h-sm) !important;
+  height: var(--ui-control-h-sm) !important;
+  font-size: var(--ui-font-md) !important;
+  font-weight: var(--ui-weight-normal) !important;
+  line-height: var(--ui-line-normal) !important;
+}
+
+.purchase-entry-screen .pie-field textarea {
+  height: auto !important;
+  min-height: var(--ui-control-h-md) !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-radio-grid,
+  .pie-radio-row,
+  .pie-chips
+) {
+  gap: var(--ui-gap-sm) !important;
+}
+
+.purchase-entry-screen :where(
+  .pie-radio-grid input,
+  .pie-radio-row input,
+  .pie-chips input,
+  .pie-inline-check input
+) {
+  width: 13px !important;
+  height: 13px !important;
+  min-width: 13px !important;
+  min-height: 13px !important;
+}
+
+.purchase-entry-screen .pie-items-title {
+  font-size: var(--ui-font-md) !important;
+  font-weight: var(--ui-weight-strong) !important;
+  color: var(--ui-text) !important;
+  text-shadow: none !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid th {
+  font-size: var(--ui-font-sm) !important;
+  font-weight: var(--ui-weight-strong) !important;
+  line-height: var(--ui-line-tight) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid td,
+.purchase-entry-screen .purchase-reference-grid td input,
+.purchase-entry-screen .purchase-reference-grid td button {
+  font-size: var(--ui-font-sm) !important;
+  font-weight: var(--ui-weight-normal) !important;
+  line-height: var(--ui-line-normal) !important;
+}
+
+.purchase-entry-screen .pie-summary-grid > div {
+  gap: var(--ui-gap-sm) !important;
+}
+
+.purchase-entry-screen .pie-summary-grid span,
+.purchase-entry-screen .pie-payment-grid .pie-field > span,
+.purchase-entry-screen .pie-notes-inline > span {
+  font-size: var(--ui-font-sm) !important;
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: var(--ui-line-normal) !important;
+}
+
+.purchase-entry-screen .pie-summary-grid strong {
+  font-size: var(--ui-font-sm) !important;
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: var(--ui-line-normal) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.purchase-entry-screen .pie-grand,
+.purchase-entry-screen .pie-balance-payable {
+  font-size: var(--ui-font-md) !important;
+  font-weight: var(--ui-weight-strong) !important;
+  line-height: var(--ui-line-normal) !important;
+}
+
+.purchase-entry-screen .pie-grand strong,
+.purchase-entry-screen .pie-balance-payable strong {
+  font-size: var(--ui-font-md) !important;
+  font-weight: var(--ui-weight-strong) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Remove the old per-panel brand-strip language; use the shared panel border. */
+.purchase-entry-screen :where(
+  .pie-panel-invoice,
+  .pie-panel-gst,
+  .pie-panel-charges,
+  .pie-panel.pie-final,
+  .pie-panel-payment
+) {
+  border-top-width: 1px !important;
+  border-top-color: var(--ui-border) !important;
+}
+
+/* Item toolbar should read as the same Definition surface, not a second brand bar. */
+.purchase-entry-screen .pie-items-toolbar {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--panel-radius) !important;
+  background: var(--ui-panel-face) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
