@@ -2329,8 +2329,7 @@ html #root :where(
 ) :where(
   input:not([type='checkbox']):not([type='radio']),
   textarea,
-  .desktop-input,
-  .desktop-select
+  .desktop-input
 ) {
   border-color: var(--ui-control-border) !important;
   background: var(--ui-control-face) !important;
@@ -2347,8 +2346,7 @@ html #root :where(
 ) :where(
   input:not([type='checkbox']):not([type='radio']),
   textarea,
-  .desktop-input,
-  .desktop-select
+  .desktop-input
 ):hover:not(:disabled) {
   border-color: var(--ui-control-hover-border) !important;
   background: var(--ui-control-hover-bg) !important;
@@ -2362,8 +2360,7 @@ html #root :where(
 ) :where(
   input:not([type='checkbox']):not([type='radio']),
   textarea,
-  .desktop-input,
-  .desktop-select
+  .desktop-input
 ):focus-visible {
   outline: none !important;
   border-color: var(--ui-accent) !important;
