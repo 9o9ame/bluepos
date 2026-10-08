@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Purchases;
 
+use App\Enums\PurchaseReturnStatus;
 use App\Models\PurchaseInvoice;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -32,7 +33,28 @@ class PurchaseInvoiceResource extends JsonResource
             );
         }
 
-        $balancePayable = bcsub((string) $this->grand_total, $paidAmount, 4);
+        $returnedAmount = '0.0000';
+
+        if ($this->relationLoaded('purchaseReturns')) {
+            foreach ($this->purchaseReturns as $purchaseReturn) {
+                if ($purchaseReturn->status === PurchaseReturnStatus::Posted) {
+                    $returnedAmount = bcadd($returnedAmount, (string) $purchaseReturn->grand_total, 4);
+                }
+            }
+        } elseif ($this->getAttribute('returned_amount') !== null) {
+            $returnedAmount = bcadd((string) $this->getAttribute('returned_amount'), '0', 4);
+        } else {
+            $returnedAmount = bcadd(
+                (string) $this->purchaseReturns()
+                    ->where('status', PurchaseReturnStatus::Posted->value)
+                    ->sum('grand_total'),
+                '0',
+                4,
+            );
+        }
+
+        $netPayable = bcsub((string) $this->grand_total, $returnedAmount, 4);
+        $balancePayable = bcsub($netPayable, $paidAmount, 4);
         if (bccomp($balancePayable, '0.0000', 4) < 0) {
             $balancePayable = '0.0000';
         }
@@ -66,6 +88,7 @@ class PurchaseInvoiceResource extends JsonResource
             'round_off' => $this->round_off,
             'grand_total' => $this->grand_total,
             'paid_amount' => $paidAmount,
+            'returned_amount' => $returnedAmount,
             'balance_payable' => $balancePayable,
             'notes' => $this->notes,
             'tax_type' => $this->tax_type,
