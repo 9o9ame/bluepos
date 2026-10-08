@@ -29,6 +29,7 @@ import { SalesReturnsPage } from '../pages/SalesReturnsPage'
 import { StockTakingPage } from '../pages/StockTakingPage'
 import { SubcategoriesPage } from '../pages/SubcategoriesPage'
 import { UnitsPage } from '../pages/UnitsPage'
+import { VouchersPage } from '../pages/VouchersPage'
 import { UsersPage } from '../pages/UsersPage'
 import { WorkspacePage } from '../pages/WorkspacePage'
 
@@ -74,6 +75,9 @@ export function AppRoutes() {
           </Route>
           <Route element={<RequirePermission permission="purchase_returns.view" />}>
             <Route path="/daily/purchase-return" element={<PurchaseReturnsPage />} />
+          </Route>
+          <Route element={<RequirePermission permission="accounting.journal.view" />}>
+            <Route path="/daily/vouchers" element={<VouchersPage />} />
           </Route>
           <Route path="/reports" element={<ReportsPlaceholderPage />} />
           <Route path="/help/about" element={<HelpAboutPage />} />
