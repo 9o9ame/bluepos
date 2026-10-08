@@ -1625,10 +1625,14 @@ export function PurchasesPage() {
                   <button
                     key={product.ulid}
                     type="button"
+                    className="pie-lookup-option"
                     onClick={() => void addProduct(product)}
                   >
-                    {product.product_number} · {product.name}
-                    {product.sku ? ` · ${product.sku}` : ''}
+                    <span className="pie-lookup-option-main">{product.name}</span>
+                    <span className="pie-lookup-option-meta">
+                      {product.product_number}
+                      {product.sku ? ` · ${product.sku}` : ''}
+                    </span>
                   </button>
                 ))}
               </div>
