@@ -1063,9 +1063,10 @@ export function SalesReturnsPage() {
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             <label>To</label>
             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-            <button type="button" onClick={() => void historyQuery.refetch()}>
-              <Search size={13} /> View
-            </button>
+            <UiButton variant="primary" onClick={() => void historyQuery.refetch()}>
+              <Search size={13} />
+              <span>View</span>
+            </UiButton>
           </div>
 
           {historyQuery.isError ? (
@@ -1121,9 +1122,9 @@ export function SalesReturnsPage() {
             <input type="date" value={productDateFrom} onChange={(e) => setProductDateFrom(e.target.value)} />
             <label>To Date</label>
             <input type="date" value={productDateTo} onChange={(e) => setProductDateTo(e.target.value)} />
-            <button type="button" onClick={() => void productWiseQuery.refetch()}>
+            <UiButton variant="primary" onClick={() => void productWiseQuery.refetch()}>
               Show
-            </button>
+            </UiButton>
           </div>
 
           {productWiseQuery.isError ? (
