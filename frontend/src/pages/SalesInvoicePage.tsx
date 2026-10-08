@@ -202,6 +202,7 @@ export function SalesInvoicePage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Party | null>(null)
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
   const [customerSearch, setCustomerSearch] = useState('CASH IN HAND')
+  const [customerPickerSearch, setCustomerPickerSearch] = useState('')
   const [salesmanPickerOpen, setSalesmanPickerOpen] = useState(false)
   const [salesmanSearch, setSalesmanSearch] = useState('')
   const [partyModalOpen, setPartyModalOpen] = useState(false)
@@ -294,15 +295,15 @@ export function SalesInvoicePage() {
   })
 
   const filteredCustomers = useMemo(() => {
-    const query = customerSearch.trim().toLocaleLowerCase()
-    if (!query || query === 'cash in hand') return customersQuery.data ?? []
+    const query = customerPickerSearch.trim().toLocaleLowerCase()
+    if (!query) return customersQuery.data ?? []
 
     return (customersQuery.data ?? []).filter((party) =>
       [party.code, party.name, party.address, party.mobile, party.phone]
         .filter(Boolean)
         .some((value) => String(value).toLocaleLowerCase().includes(query)),
     )
-  }, [customersQuery.data, customerSearch])
+  }, [customersQuery.data, customerPickerSearch])
 
   /*
    * IMPORTANT:
@@ -1006,6 +1007,7 @@ export function SalesInvoicePage() {
     setBarcodeQuery('')
     setActiveLineKey(null)
     setCustomerPickerOpen(false)
+    setCustomerPickerSearch('')
     setSalesmanPickerOpen(false)
     setCopyFromValue('')
     setQuotationValue('')
@@ -1024,6 +1026,7 @@ export function SalesInvoicePage() {
     setSelectedCustomer(party)
     cart.setCustomerUlid(party.ulid)
     setCustomerSearch(party.name)
+    setCustomerPickerSearch('')
     setCustomerPickerOpen(false)
     setPartyModalOpen(false)
     await customersQuery.refetch()
@@ -1408,10 +1411,12 @@ export function SalesInvoicePage() {
                       autoComplete="off"
                       onFocus={() => {
                         setSalesmanPickerOpen(false)
+                        setCustomerPickerSearch('')
                         setCustomerPickerOpen(true)
                       }}
                       onChange={(event) => {
                         setCustomerSearch(event.target.value)
+                        setCustomerPickerSearch(event.target.value)
                         setSalesmanPickerOpen(false)
                         setCustomerPickerOpen(true)
                       }}
@@ -1422,7 +1427,10 @@ export function SalesInvoicePage() {
                       className="sales-reference-field-caret"
                       onClick={() => {
                         setSalesmanPickerOpen(false)
-                        setCustomerPickerOpen((open) => !open)
+                        setCustomerPickerOpen((open) => {
+                          if (!open) setCustomerPickerSearch('')
+                          return !open
+                        })
                       }}
                       title="Choose customer"
                       aria-label="Choose customer"
@@ -1447,11 +1455,11 @@ export function SalesInvoicePage() {
                       <div className="sales-pos-customer-grid" role="listbox" aria-label="Choose customer">
                         <div className="sales-picker-search">
                           <input
-                            value={customerSearch === 'CASH IN HAND' ? '' : customerSearch}
+                            value={customerPickerSearch}
                             placeholder="Search customer by code, name, address or mobile"
                             aria-label="Search customer"
                             autoComplete="off"
-                            onChange={(event) => setCustomerSearch(event.target.value)}
+                            onChange={(event) => setCustomerPickerSearch(event.target.value)}
                           />
                         </div>
 
@@ -1471,6 +1479,7 @@ export function SalesInvoicePage() {
                               cart.setCustomerUlid(null)
                               setPaymentDue(false)
                               setCustomerSearch('CASH IN HAND')
+                              setCustomerPickerSearch('')
                               setCustomerPickerOpen(false)
                             }}
                           >
@@ -1489,6 +1498,7 @@ export function SalesInvoicePage() {
                                 setSelectedCustomer(party)
                                 cart.setCustomerUlid(party.ulid)
                                 setCustomerSearch(party.name)
+                                setCustomerPickerSearch('')
                                 setCustomerPickerOpen(false)
                               }}
                             >
