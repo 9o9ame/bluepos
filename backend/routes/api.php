@@ -284,6 +284,8 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::patch('/purchases/{purchaseUlid}/lines/{lineUlid}', [PurchaseInvoiceController::class, 'updateLine']);
         Route::delete('/purchases/{purchaseUlid}/lines/{lineUlid}', [PurchaseInvoiceController::class, 'destroyLine']);
         Route::post('/purchases/{purchaseUlid}/post', [PurchaseInvoiceController::class, 'post']);
+        Route::get('/purchases/{purchaseUlid}/payments', [PurchaseInvoiceController::class, 'payments']);
+        Route::post('/purchases/{purchaseUlid}/payments', [PurchaseInvoiceController::class, 'storePayment']);
         Route::get('/purchases/{purchaseUlid}/returnable-lines', [PurchaseReturnController::class, 'returnableLines']);
     });
 
