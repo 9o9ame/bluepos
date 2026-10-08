@@ -49,7 +49,7 @@ import type {
   PurchaseInvoiceLine,
   PurchasePaymentMethod,
 } from '../types/purchases'
-import { PartiesPlaceholderPage } from './PartiesPlaceholderPage'
+import { PartyModal } from '../components/parties/PartyModal'
 import {
   applyCalcToLine,
   computeLine,
@@ -2045,17 +2045,9 @@ export function PurchasesPage() {
         </div>
       </UiModal>
 
-      <UiModal
-        open={supplierModalOpen}
-        onClose={() => setSupplierModalOpen(false)}
-        size="xl"
-        ariaLabel="New supplier"
-        className="purchase-supplier-modal"
-        bodyClassName="purchase-supplier-modal-body"
-      >
-        <PartiesPlaceholderPage
-          embedded
-          embeddedPartyType="vendor"
+      {supplierModalOpen ? (
+        <PartyModal
+          partyType="vendor"
           onClose={() => setSupplierModalOpen(false)}
           onSaved={(party) => {
             const vendorUlid =
@@ -2069,7 +2061,7 @@ export function PurchasesPage() {
             })
           }}
         />
-      </UiModal>
+      ) : null}
 
       <ColumnCustomizationPanel
         open={customizationOpen}
