@@ -1588,3 +1588,76 @@ html[data-animations='off'] .purchase-entry-screen * {
     ),
     #c8f7f5 !important;
 }
+
+
+/* ==========================================================================
+   Purchase Invoice requested geometry/readability polish.
+   Visual language remains global; this section only adjusts page geometry.
+   ========================================================================== */
+.purchase-entry-screen .pie-charge-triple {
+  gap: var(--ui-gap-sm) var(--ui-gap-md) !important;
+}
+
+.purchase-entry-screen .pie-charge-triple label {
+  grid-template-columns: minmax(0, 1fr) 72px !important;
+  gap: var(--ui-gap-sm) !important;
+}
+
+.purchase-entry-screen .pie-charge-triple label > span {
+  font-size: var(--ui-font-md) !important;
+  font-weight: var(--ui-weight-medium) !important;
+  line-height: var(--ui-line-normal) !important;
+  color: var(--ui-text) !important;
+}
+
+.purchase-entry-screen .pie-charge-triple input:not([type='checkbox']) {
+  min-height: var(--ui-control-h-md) !important;
+  height: var(--ui-control-h-md) !important;
+  padding-inline: var(--ui-pad-sm) !important;
+  font-size: var(--ui-font-md) !important;
+  font-weight: var(--ui-weight-normal) !important;
+}
+
+/* Single-value row editors should be easier to scan than dual %/Rs cells. */
+.purchase-entry-screen .purchase-reference-grid td:not(.pie-dual-cell) > input,
+.purchase-entry-screen .purchase-reference-grid td:not(.pie-dual-cell) > div > input {
+  min-height: var(--ui-control-h-lg) !important;
+  height: var(--ui-control-h-lg) !important;
+  padding-inline: var(--ui-pad-sm) !important;
+  font-size: var(--ui-font-md) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid td:not(.pie-dual-cell) .pie-line-select .ui-select-trigger {
+  min-height: var(--ui-control-h-lg) !important;
+  height: var(--ui-control-h-lg) !important;
+  font-size: var(--ui-font-md) !important;
+}
+
+/* Notes is intentionally a real multi-line editor. */
+.purchase-entry-screen .pie-panel-payment .pie-notes-inline {
+  align-items: start;
+}
+
+.purchase-entry-screen .pie-panel-payment .pie-notes-fit {
+  min-height: 52px !important;
+  height: 52px !important;
+  padding: var(--ui-pad-sm) var(--ui-pad-md) !important;
+  resize: vertical !important;
+  line-height: var(--ui-line-normal) !important;
+  font-size: var(--ui-font-md) !important;
+}
+
+/* Reuse the existing embedded Party/Vendor editor inside the canonical modal. */
+.purchase-supplier-modal {
+  width: min(1180px, calc(100vw - 28px)) !important;
+  max-height: min(92vh, 860px) !important;
+}
+
+.purchase-supplier-modal-body {
+  padding: 0 !important;
+  overflow: auto !important;
+}
+
+.purchase-supplier-modal-body .parties-vca {
+  min-height: min(78vh, 720px);
+}
