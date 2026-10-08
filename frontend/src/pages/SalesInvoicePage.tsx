@@ -24,7 +24,7 @@ import { createSale, createSaleHold, createSaleQuotation, deleteSaleHold, fetchS
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
-import { SalesPartyModal } from '../features/sales/SalesPartyModal'
+import { PartyModal } from '../components/parties/PartyModal'
 import { SchemeOfferPrompt } from '../features/sales/SchemeOfferPrompt'
 import { SalesExpenses } from '../features/sales/SalesExpenses'
 import { SalesInvoiceHistory } from '../features/sales/SalesInvoiceHistory'
@@ -2484,7 +2484,7 @@ export function SalesInvoicePage() {
       ) : null}
 
       {partyModalOpen ? (
-        <SalesPartyModal
+        <PartyModal
           onClose={() => setPartyModalOpen(false)}
           onSaved={(party) => void handlePartySaved(party)}
         />
