@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CoaChartController;
 use App\Http\Controllers\Api\AccountMainHeadController;
 use App\Http\Controllers\Api\AccountSubHeadController;
 use App\Http\Controllers\Api\AccountTypeController;
+use App\Http\Controllers\Api\Accounting\VoucherController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BarcodeGroupController;
 use App\Http\Controllers\Api\BranchController;
