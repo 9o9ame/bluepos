@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Account;
 use App\Models\AccountType;
+use App\Models\BusinessSetting;
 use App\Models\JournalEntry;
 use App\Models\Permission;
 use App\Models\Supplier;
@@ -189,6 +190,96 @@ class VoucherTest extends TestCase
         $this->postJson('/api/vouchers/'.$journalUlid.'/post')
             ->assertOk()
             ->assertJsonPath('status', 'posted');
+    }
+
+    public function test_opening_balance_voucher_uses_configured_equity_offset_and_hides_system_line(): void
+    {
+        $this->signInOwner('voucher-opening')->assertOk();
+
+        $asset = $this->leafAccount('Opening Asset', 'V-OPV-A', '0010');
+        $liability = $this->leafAccount('Opening Liability', 'V-OPV-L', '0020');
+        $equity = $this->leafAccount('Opening Equity Offset', 'V-OPV-E', '0050');
+        $date = now()->toDateString();
+
+        $payload = [
+            'type' => 'opening',
+            'entry_date' => $date,
+            'book_number' => 'OPEN-1',
+            'lines' => [
+                [
+                    'account_ulid' => $asset->ulid,
+                    'narration' => 'Opening asset',
+                    'debit' => '100.0000',
+                    'credit' => '0.0000',
+                ],
+                [
+                    'account_ulid' => $liability->ulid,
+                    'narration' => 'Opening liability',
+                    'debit' => '0.0000',
+                    'credit' => '30.0000',
+                ],
+            ],
+        ];
+
+        $draft = $this->postJson('/api/vouchers', $payload, $this->idem('voucher-opening-1'))
+            ->assertCreated()
+            ->assertJsonPath('type', 'opening')
+            ->assertJsonPath('status', 'draft')
+            ->assertJsonPath('book_number', 'OPEN-1')
+            ->assertJsonPath('total_debit', '100.0000')
+            ->assertJsonPath('total_credit', '30.0000')
+            ->assertJsonCount(2, 'lines');
+
+        $voucherUlid = $draft->json('ulid');
+        $this->assertStringStartsWith('OPV-', (string) $draft->json('voucher_number'));
+
+        $this->postJson('/api/vouchers/'.$voucherUlid.'/post')
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'OPENING_EQUITY_ACCOUNT_REQUIRED');
+
+        BusinessSetting::query()
+            ->forTenant(app(TenantContext::class)->tenantId())
+            ->update(['opening_balance_equity_account_id' => $equity->id]);
+
+        $posted = $this->postJson('/api/vouchers/'.$voucherUlid.'/post')
+            ->assertOk()
+            ->assertJsonPath('status', 'posted')
+            ->assertJsonPath('total_debit', '100.0000')
+            ->assertJsonPath('total_credit', '100.0000')
+            ->assertJsonCount(2, 'lines');
+
+        $entry = JournalEntry::query()->where('ulid', $voucherUlid)->with('lines')->firstOrFail();
+        $this->assertSame(3, $entry->lines->count());
+        $offset = $entry->lines->firstWhere('sort_order', 9999);
+        $this->assertNotNull($offset);
+        $this->assertSame($equity->id, $offset->account_id);
+        $this->assertSame('70.0000', (string) $offset->credit);
+
+        $replay = $this->postJson('/api/vouchers', $payload, $this->idem('voucher-opening-1'))
+            ->assertCreated()
+            ->assertJsonPath('ulid', $voucherUlid)
+            ->assertJsonCount(2, 'lines');
+        $this->assertSame($posted->json('ulid'), $replay->json('ulid'));
+
+        $this->getJson('/api/vouchers?type=opening&q='.urlencode((string) $draft->json('voucher_number')))
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.ulid', $voucherUlid);
+
+        $this->getJson('/api/vouchers/summary?date_from='.$date.'&date_to='.$date.'&type=opening')
+            ->assertOk()
+            ->assertJsonPath('data.0.debit', '100.0000')
+            ->assertJsonPath('data.0.credit', '100.0000');
+
+        $this->putJson('/api/vouchers/'.$voucherUlid, [
+            'entry_date' => $date,
+            'book_number' => 'OPEN-2',
+            'lines' => [[
+                'account_ulid' => $asset->ulid,
+                'debit' => '1.0000',
+                'credit' => '0.0000',
+            ]],
+        ])->assertStatus(422)->assertJsonPath('error.key', 'DOCUMENT_POSTED');
     }
 
     public function test_voucher_idempotency_search_summary_and_tenant_isolation(): void
