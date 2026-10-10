@@ -849,6 +849,122 @@ class PurchaseInvoiceTest extends TestCase
             );
     }
 
+
+    public function test_partial_purchase_order_receipts_block_over_receipt_and_close_when_complete(): void
+    {
+        $this->signInOwner('pur-po-receive')->assertOk();
+        $this->configurePurchaseClearing();
+        $warehouseUlid = $this->sessionWarehouseUlid();
+        $pcs = $this->unitUlid('PCS');
+
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-PO-RECEIVE',
+            'name' => 'PO Receive Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'PO Receive Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $order = $this->postJson('/api/purchase-orders', [
+            'supplier_ulid' => $supplierUlid,
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'unit_ulid' => $pcs,
+                'quantity' => '5.000000',
+                'unit_price' => '100.0000',
+            ]],
+        ])->assertCreated();
+
+        $orderUlid = (string) $order->json('ulid');
+        $orderLineUlid = (string) $order->json('items.0.ulid');
+
+        $firstInvoiceUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'purchase_order_ulid' => $orderUlid,
+        ])->assertCreated()->json('ulid');
+
+        $firstLine = $this->postJson('/api/purchases/'.$firstInvoiceUlid.'/lines', [
+            'purchase_order_line_ulid' => $orderLineUlid,
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '2.000000',
+            'conversion_factor' => '9.00000000',
+            'unit_cost' => '100.0000',
+        ])->assertCreated();
+
+        $firstLine->assertJsonPath('conversion_factor', '1.00000000')
+            ->assertJsonPath('base_quantity', '2.000000');
+
+        $this->postJson('/api/purchases/'.$firstInvoiceUlid.'/post')->assertOk();
+
+        $this->getJson('/api/purchase-orders/'.$orderUlid)
+            ->assertOk()
+            ->assertJsonPath('status', 'open');
+
+        $secondInvoiceUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'purchase_order_ulid' => $orderUlid,
+        ])->assertCreated()->json('ulid');
+
+        $secondLine = $this->postJson('/api/purchases/'.$secondInvoiceUlid.'/lines', [
+            'purchase_order_line_ulid' => $orderLineUlid,
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '4.000000',
+            'unit_cost' => '100.0000',
+        ])->assertCreated();
+
+        $this->postJson('/api/purchases/'.$secondInvoiceUlid.'/post')
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonPath(
+                'error.fields.lines.0',
+                'Received quantity cannot exceed the remaining Purchase Order quantity.',
+            );
+
+        $this->assertSame(
+            'draft',
+            PurchaseInvoice::query()
+                ->where('ulid', $secondInvoiceUlid)
+                ->firstOrFail()
+                ->status
+                ->value,
+        );
+
+        $this->patchJson('/api/purchases/'.$secondInvoiceUlid.'/lines/'.$secondLine->json('ulid'), [
+            'quantity' => '3.000000',
+        ])->assertOk()
+            ->assertJsonPath('base_quantity', '3.000000');
+
+        $this->postJson('/api/purchases/'.$secondInvoiceUlid.'/post')->assertOk();
+
+        $this->getJson('/api/purchase-orders/'.$orderUlid)
+            ->assertOk()
+            ->assertJsonPath('status', 'closed');
+
+        $this->assertTrue(
+            AuditLog::query()
+                ->where('event', 'PURCHASE_ORDER_CLOSED')
+                ->where('resource_ulid', $orderUlid)
+                ->exists(),
+        );
+
+        $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'purchase_order_ulid' => $orderUlid,
+        ])->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonPath(
+                'error.fields.purchase_order_ulid.0',
+                'Only open Purchase Orders can receive new Purchase Invoices.',
+            );
+    }
+
     private function configurePurchaseClearing(): void
     {
         $tenantContext = app(TenantContext::class);
