@@ -1,4 +1,4 @@
-import { FileSearch, LoaderCircle, Play, Plus, RefreshCw, Save, XCircle } from 'lucide-react'
+import { FileSearch, LoaderCircle, Play, Plus, ReceiptText, RefreshCw, Save, XCircle } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
@@ -164,7 +164,7 @@ function generatedLine(row: PurchaseOrderGenerateRow): DraftLine | null {
 }
 
 export function PurchaseOrderPage() {
-  const { closeActiveTab } = useWorkspace()
+  const { closeActiveTab, openModule } = useWorkspace()
   const feedback = useFeedback()
   const canCreate = useCan('purchases.create')
 
@@ -535,6 +535,18 @@ export function PurchaseOrderPage() {
             variant="success"
             disabled={!canCreate || readOnly || saveMutation.isPending}
             onClick={() => saveMutation.mutate()}
+          />
+          <DesktopButton
+            icon={<ReceiptText size={15} />}
+            label="To Purchase Invoice"
+            variant="primary"
+            disabled={!activeOrder}
+            onClick={() => {
+              if (!activeOrder) return
+              openModule(
+                `/daily/purchases?purchase_order=${encodeURIComponent(activeOrder.ulid)}`,
+              )
+            }}
           />
           <DesktopButton
             icon={<RefreshCw size={15} />}
