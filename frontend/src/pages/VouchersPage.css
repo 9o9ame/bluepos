@@ -79,6 +79,18 @@
   font-weight: 700;
 }
 
+.voucher-balance.is-pre {
+  background: color-mix(in srgb, var(--ui-success) 16%, var(--ui-surface));
+}
+
+.voucher-balance.is-current {
+  background: color-mix(in srgb, var(--ui-info) 16%, var(--ui-surface));
+}
+
+.voucher-balance.is-total {
+  background: color-mix(in srgb, var(--ui-warning) 18%, var(--ui-surface));
+}
+
 .voucher-line-grid-wrap {
   min-height: 320px;
   overflow: auto;
