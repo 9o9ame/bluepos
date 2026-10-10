@@ -241,6 +241,9 @@ export function VoucherPrintModal({
           <UiSelect
             value={printer}
             options={PRINTER_OPTIONS}
+            searchable={false}
+            menuPlacement="down"
+            maxMenuHeight={120}
             menuZIndex={UI_LAYER.modalDropdown}
             onChange={setPrinter}
           />
