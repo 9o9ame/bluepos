@@ -41,7 +41,6 @@ export function QuotationEstimatePage() {
   const [salesmanUlid, setSalesmanUlid] = useState<string | null>(null)
   const [productUlid, setProductUlid] = useState('')
   const [productQuery, setProductQuery] = useState('')
-  const [productPickerOpen, setProductPickerOpen] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [savedQuotation, setSavedQuotation] = useState<SaleQuotation | null>(null)
   const [openedQuotation, setOpenedQuotation] = useState<SaleQuotation | null>(null)
@@ -73,7 +72,6 @@ export function QuotationEstimatePage() {
       },
       { busy: 'none' },
     ),
-    enabled: productPickerOpen,
     retry: false,
   })
 
@@ -131,6 +129,32 @@ export function QuotationEstimatePage() {
     onError: (error) => feedback.error(errorMessage(error), 'Quotation / Estimate'),
   })
 
+  const productOptions = useMemo(
+    () => (productsQuery.data?.data ?? []).map((product) => {
+      const expectedPriceType =
+        cart.priceType === 'wholesale' ? 'wholesale' : 'retail'
+      const price = product.prices?.find(
+        (row) => row.is_active && row.price_type === expectedPriceType,
+      )?.amount ?? '0.0000'
+
+      return {
+        value: product.ulid,
+        label: `${product.product_number} — ${product.name}`,
+        columns: [
+          product.product_number,
+          product.name,
+          product.sales_lookup
+            ? Number.parseFloat(product.sales_lookup.in_stock).toFixed(3)
+            : '—',
+          price,
+          product.base_unit?.symbol ?? product.base_unit?.code ?? '—',
+          product.rack_location || '—',
+        ],
+      }
+    }),
+    [cart.priceType, productsQuery.data],
+  )
+
   const customerOptions = useMemo(
     () => [
       { value: '', label: 'Walk-in / No customer' },
@@ -164,7 +188,6 @@ export function QuotationEstimatePage() {
     setSalesmanUlid(null)
     setProductUlid('')
     setProductQuery('')
-    setProductPickerOpen(false)
     setSavedQuotation(null)
     setOpenedQuotation(null)
     idempotencyKeyRef.current = newQuotationKey()
@@ -204,11 +227,9 @@ export function QuotationEstimatePage() {
 
       setProductUlid('')
       setProductQuery('')
-      setProductPickerOpen(false)
     } catch (error) {
       setProductUlid('')
       setProductQuery('')
-      setProductPickerOpen(false)
       feedback.error(errorMessage(error), 'Unable to add product')
     }
   }
@@ -425,92 +446,27 @@ export function QuotationEstimatePage() {
                 {!readOnly ? (
                   <tr className="quotation-entry-row">
                     <td className="quotation-product-search-cell">
-                      <input
-                        className="quotation-product-search-input"
-                        value={productQuery}
+                      <UiSelect
+                        value={productUlid}
+                        className="quotation-product-select"
+                        aria-label="Product"
                         placeholder="Search / select product"
-                        aria-label="Search product"
-                        autoComplete="off"
-                        onFocus={() => setProductPickerOpen(true)}
-                        onClick={() => setProductPickerOpen(true)}
-                        onChange={(event) => {
-                          setProductQuery(event.target.value)
-                          setProductPickerOpen(true)
-                        }}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Escape') {
-                            setProductPickerOpen(false)
-                            return
-                          }
-                          if (event.key !== 'Enter') return
-
-                          const first = productsQuery.data?.data?.[0]
-                          if (!first) return
-
-                          event.preventDefault()
-                          setProductUlid(first.ulid)
-                          void addSelectedProduct(first.ulid)
-                        }}
+                        searchPlaceholder="Search by ID, description, stock, unit or location"
+                        options={productOptions}
+                        filterOptions={false}
+                        onSearchChange={setProductQuery}
+                        menuColumns={[
+                          { header: 'ID', width: '82px' },
+                          { header: 'Description', width: 'minmax(300px, 1fr)' },
+                          { header: 'In Stock', width: '92px' },
+                          { header: 'Unit Price', width: '100px' },
+                          { header: 'Unit', width: '82px' },
+                          { header: 'Location', width: '110px' },
+                        ]}
+                        menuMinWidth={900}
+                        maxMenuHeight={310}
+                        onChange={(value) => void addSelectedProduct(value)}
                       />
-
-                      {productPickerOpen ? (
-                        <div className="quotation-product-picker" role="listbox" aria-label="Choose product">
-                          <div className="quotation-product-picker-head" aria-hidden="true">
-                            <span>ID</span>
-                            <span>Description</span>
-                            <span>In Stock</span>
-                            <span>Unit Price</span>
-                            <span>Unit</span>
-                            <span>Location</span>
-                          </div>
-
-                          <div className="quotation-product-picker-body">
-                            {(productsQuery.data?.data ?? []).map((product) => {
-                              const expectedPriceType =
-                                cart.priceType === 'wholesale' ? 'wholesale' : 'retail'
-                              const price = product.prices?.find(
-                                (row) => row.is_active && row.price_type === expectedPriceType,
-                              )?.amount
-
-                              return (
-                                <button
-                                  type="button"
-                                  className="quotation-product-picker-row"
-                                  key={product.ulid}
-                                  onClick={() => {
-                                    setProductUlid(product.ulid)
-                                    void addSelectedProduct(product.ulid)
-                                  }}
-                                >
-                                  <span>{product.product_number}</span>
-                                  <strong>{product.name}</strong>
-                                  <span>
-                                    {product.sales_lookup
-                                      ? Number.parseFloat(product.sales_lookup.in_stock).toFixed(3)
-                                      : '—'}
-                                  </span>
-                                  <span>{price ?? '0.0000'}</span>
-                                  <span>{product.base_unit?.symbol ?? product.base_unit?.code ?? '—'}</span>
-                                  <span>{product.rack_location || '—'}</span>
-                                </button>
-                              )
-                            })}
-
-                            {!productsQuery.isFetching &&
-                            (productsQuery.data?.data?.length ?? 0) === 0 ? (
-                              <div className="quotation-product-picker-empty">
-                                No products found.
-                              </div>
-                            ) : null}
-                          </div>
-
-                          <div className="quotation-product-picker-foot">
-                            {productsQuery.isFetching
-                              ? 'Searching products…'
-                              : `Showing ${productsQuery.data?.data?.length ?? 0} of ${productsQuery.data?.meta.total ?? 0} Products`}
-                          </div>
-                        </div>
-                      ) : null}
                     </td>
                     <td>—</td>
                     <td className="is-num">—</td>
