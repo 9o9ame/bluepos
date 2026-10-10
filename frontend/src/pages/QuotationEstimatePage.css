@@ -196,8 +196,11 @@
   overflow: visible;
 }
 
-.quotation-product-select {
+.quotation-product-search-input {
+  width: 100% !important;
   min-width: 340px;
+  box-sizing: border-box;
+  text-align: left !important;
 }
 
 .quotation-empty {
