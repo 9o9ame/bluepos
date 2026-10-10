@@ -581,7 +581,7 @@ export function VouchersPage() {
       {tab === 'search' ? (
         <div className="voucher-search">
           <div className="voucher-filters">
-            <input className="desktop-input" placeholder="Voucher # / narration / account" value={q} onChange={(event) => setQ(event.target.value)} />
+            <input className="desktop-input" placeholder="Voucher # / Book# / narration / account" value={q} onChange={(event) => setQ(event.target.value)} />
             <UiSelect
               aria-label="Voucher type filter"
               value={typeFilter}
@@ -610,6 +610,7 @@ export function VouchersPage() {
           <PosDataGrid
             columns={[
               { key: 'voucher_number', header: 'Voucher #', width: 120, render: (row) => row.voucher_number },
+              { key: 'book_number', header: 'Book#', width: 100, render: (row) => row.book_number ?? '—' },
               { key: 'entry_date', header: 'Date', width: 105, render: (row) => row.entry_date },
               { key: 'type', header: 'Type', width: 100, render: (row) => row.type.toUpperCase() },
               { key: 'description', header: 'Narration', render: (row) => row.lines.find((line) => line.narration)?.narration ?? '—' },
