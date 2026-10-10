@@ -53,7 +53,8 @@
 }
 
 .purchase-order-entry,
-.purchase-order-search {
+.purchase-order-search,
+.purchase-order-status-view {
   min-width: 0;
   min-height: 0;
   flex: 1;
@@ -67,7 +68,8 @@
   overflow: hidden;
 }
 
-.purchase-order-search {
+.purchase-order-search,
+.purchase-order-status-view {
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -562,6 +564,57 @@
   padding: 5px 7px;
 }
 
+.purchase-order-status-filters {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: end;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.purchase-order-status-filters label {
+  display: grid;
+  gap: 3px;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+}
+
+.purchase-order-status-filters input[type='date'] {
+  box-sizing: border-box;
+  width: 132px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  padding: 5px 7px;
+  font: inherit;
+}
+
+.purchase-order-status-filters input[type='date']:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.purchase-order-status-supplier {
+  min-width: 280px;
+}
+
+.purchase-order-status-show-all {
+  display: inline-flex !important;
+  min-height: 30px;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 6px !important;
+  padding-bottom: 3px;
+  white-space: nowrap;
+}
+
+.purchase-order-status-show-all input {
+  margin: 0;
+}
+
 .purchase-order-empty {
   padding: 28px !important;
   text-align: center !important;
@@ -663,17 +716,24 @@
   }
 
   .purchase-order-entry,
-  .purchase-order-search {
+  .purchase-order-search,
+  .purchase-order-status-view {
     overflow: visible;
   }
 
-  .purchase-order-search-bar {
+  .purchase-order-search-bar,
+  .purchase-order-status-filters {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .purchase-order-search-bar > input {
+  .purchase-order-search-bar > input,
+  .purchase-order-status-supplier {
     min-width: 0;
+  }
+
+  .purchase-order-status-filters input[type='date'] {
+    width: 100%;
   }
 }
 
