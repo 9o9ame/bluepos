@@ -1453,8 +1453,17 @@ export function PurchaseOrderPage() {
       )}
       <UiModal
         open={cancelConfirmOpen && Boolean(activeOrder)}
-        title="Cancel Purchase Order"
+        title={
+          <span className="purchase-order-cancel-modal-title">
+            <AlertTriangle size={16} aria-hidden="true" />
+            Cancel Purchase Order
+          </span>
+        }
+        ariaLabel="Cancel Purchase Order"
         size="sm"
+        className="purchase-order-cancel-modal"
+        bodyClassName="purchase-order-cancel-modal-body"
+        closeOnEscape={!cancelMutation.isPending}
         onClose={() => {
           if (!cancelMutation.isPending) setCancelConfirmOpen(false)
         }}
@@ -1479,22 +1488,46 @@ export function PurchaseOrderPage() {
                 cancelMutation.mutate(activeOrder.ulid)
               }}
             >
-              {cancelMutation.isPending ? 'Cancelling…' : 'Cancel Order'}
+              {cancelMutation.isPending ? 'Cancelling…' : 'Yes, Cancel Order'}
             </UiButton>
           </>
         }
       >
         <div className="purchase-order-cancel-confirm">
-          <AlertTriangle size={22} aria-hidden="true" />
-          <div>
-            <strong>
-              Cancel {activeOrder?.document_number ?? 'this Purchase Order'}?
-            </strong>
-            <p>
-              This action cannot be undone. Any linked draft Purchase Invoice will no
-              longer be allowed to post against this order.
-            </p>
+          <div className="purchase-order-cancel-warning">
+            <AlertTriangle size={24} aria-hidden="true" />
+            <div>
+              <strong>This Purchase Order will be cancelled permanently.</strong>
+              <p>
+                Any linked draft Purchase Invoice will no longer be allowed to post
+                against this order.
+              </p>
+            </div>
           </div>
+
+          <dl className="purchase-order-cancel-summary">
+            <div>
+              <dt>Purchase Order</dt>
+              <dd>{activeOrder?.document_number ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>Supplier</dt>
+              <dd>{activeOrder?.supplier?.name ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>Order Date</dt>
+              <dd>{activeOrder?.order_date ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>Net Order</dt>
+              <dd>{activeOrder?.grand_total ?? '0.0000'}</dd>
+            </div>
+          </dl>
+
+          <p className="purchase-order-cancel-note">
+            This action cannot be undone. Orders with posted receipts are protected
+            and cannot be cancelled.
+          </p>
         </div>
       </UiModal>
     </DesktopPanel>
