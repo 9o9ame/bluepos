@@ -1,5 +1,16 @@
 .voucher-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   min-height: 0;
+}
+
+.voucher-workspace > .desktop-panel-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .voucher-permission,
@@ -28,9 +39,19 @@
 .voucher-search,
 .voucher-summary {
   display: grid;
+  flex: 1 1 auto;
   min-height: 0;
   gap: 8px;
   padding: 8px;
+}
+
+.voucher-entry {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.voucher-search,
+.voucher-summary {
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .voucher-entry-meta {
@@ -102,7 +123,8 @@
 }
 
 .voucher-line-grid-wrap {
-  min-height: 320px;
+  min-height: 0;
+  height: 100%;
   overflow: auto;
   border: 1px solid var(--ui-table-border);
   border-radius: var(--panel-radius);
@@ -164,8 +186,8 @@
 .voucher-entry-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  justify-content: flex-end;
+  min-height: var(--ui-control-h-md, 24px);
 }
 
 .voucher-totals {
@@ -194,7 +216,8 @@
 
 .voucher-search .pos-grid-wrap,
 .voucher-summary .pos-grid-wrap {
-  min-height: 420px;
+  min-height: 0;
+  height: 100%;
 }
 
 @media (max-width: 1180px) {
@@ -230,11 +253,6 @@
   .voucher-filters,
   .voucher-summary .voucher-filters {
     grid-template-columns: 1fr;
-  }
-
-  .voucher-entry-footer {
-    align-items: stretch;
-    flex-direction: column;
   }
 
   .voucher-totals {
