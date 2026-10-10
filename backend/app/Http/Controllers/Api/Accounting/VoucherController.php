@@ -96,8 +96,39 @@ class VoucherController extends Controller
 
         $validated = $request->validate([
             'as_of' => ['nullable', 'date'],
+            'before_voucher_ulid' => ['nullable', 'string', 'size:26'],
         ]);
         $asOf = $validated['as_of'] ?? now()->toDateString();
+        $beforeEntryId = null;
+
+        if (! empty($validated['before_voucher_ulid'])) {
+            $beforeEntryId = JournalEntry::query()
+                ->forTenant($tenantContext->tenantId())
+                ->where('branch_id', $tenantContext->branchId())
+                ->where('ulid', $validated['before_voucher_ulid'])
+                ->whereIn('document_type', ManageVoucherAction::manualDocumentTypes())
+                ->value('id');
+        }
+
+        $balanceScope = function ($entry) use ($asOf, $beforeEntryId): void {
+            $entry->where('journal_entries.status', JournalStatus::Posted->value);
+
+            if ($beforeEntryId) {
+                $entry->where(function ($dated) use ($asOf, $beforeEntryId): void {
+                    $dated
+                        ->whereDate('journal_entries.entry_date', '<', $asOf)
+                        ->orWhere(function ($sameDay) use ($asOf, $beforeEntryId): void {
+                            $sameDay
+                                ->whereDate('journal_entries.entry_date', '=', $asOf)
+                                ->where('journal_entries.id', '<', $beforeEntryId);
+                        });
+                });
+
+                return;
+            }
+
+            $entry->whereDate('journal_entries.entry_date', '<=', $asOf);
+        };
 
         $query = Account::query()
             ->forTenant($tenantContext->tenantId())
@@ -109,15 +140,13 @@ class VoucherController extends Controller
                     ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
                     ->whereColumn('journal_lines.account_id', 'accounts.id')
                     ->whereColumn('journal_lines.tenant_id', 'accounts.tenant_id')
-                    ->where('journal_entries.status', JournalStatus::Posted->value)
-                    ->whereDate('journal_entries.entry_date', '<=', $asOf),
+                    ->where($balanceScope),
                 'posted_credit' => JournalLine::query()
                     ->selectRaw('COALESCE(SUM(journal_lines.credit), 0)')
                     ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
                     ->whereColumn('journal_lines.account_id', 'accounts.id')
                     ->whereColumn('journal_lines.tenant_id', 'accounts.tenant_id')
-                    ->where('journal_entries.status', JournalStatus::Posted->value)
-                    ->whereDate('journal_entries.entry_date', '<=', $asOf),
+                    ->where($balanceScope),
             ])
             ->orderBy('code')
             ->orderBy('name');
