@@ -236,6 +236,43 @@ class PurchaseOrderTest extends TestCase
             ->assertJsonPath('error.key', 'VALIDATION_ERROR');
     }
 
+
+    public function test_purchase_order_generator_is_paginated_for_large_catalogs(): void
+    {
+        $this->signInOwner('po-generate-page')->assertOk();
+        $pcs = $this->unitUlid('PCS');
+
+        foreach (range(1, 21) as $index) {
+            $this->postJson('/api/products', [
+                'name' => 'Paged Generator Product '.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+                'base_unit_ulid' => $pcs,
+            ])->assertCreated();
+        }
+
+        $first = $this->postJson('/api/purchase-orders/generate', [
+            'mode' => 'get_all',
+            'page' => 1,
+            'per_page' => 10,
+        ])->assertOk();
+
+        $first->assertJsonCount(10, 'data')
+            ->assertJsonPath('meta.current_page', 1)
+            ->assertJsonPath('meta.per_page', 10)
+            ->assertJsonPath('meta.last_page', 3)
+            ->assertJsonPath('meta.total', 21)
+            ->assertJsonPath('meta.has_more', true);
+
+        $third = $this->postJson('/api/purchase-orders/generate', [
+            'mode' => 'get_all',
+            'page' => 3,
+            'per_page' => 10,
+        ])->assertOk();
+
+        $third->assertJsonCount(1, 'data')
+            ->assertJsonPath('meta.current_page', 3)
+            ->assertJsonPath('meta.has_more', false);
+    }
+
     private function unitUlid(string $code): string
     {
         $units = $this->getJson('/api/units')->assertOk()->json();
