@@ -64,6 +64,12 @@ class PurchaseInvoiceResource extends JsonResource
             'document_number' => $this->document_number,
             'supplier_invoice_number' => $this->supplier_invoice_number,
             'po_number' => $this->po_number,
+            'purchase_order' => $this->whenLoaded('purchaseOrder', function () {
+                return $this->purchaseOrder ? [
+                    'ulid' => $this->purchaseOrder->ulid,
+                    'document_number' => $this->purchaseOrder->document_number,
+                ] : null;
+            }),
             'invoice_type' => $this->invoice_type,
             'currency_code' => $this->currency_code,
             'calculation_method' => $this->calculation_method,
