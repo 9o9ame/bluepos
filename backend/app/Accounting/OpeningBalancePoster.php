@@ -82,6 +82,77 @@ class OpeningBalancePoster
         });
     }
 
+    public function postVoucher(JournalEntry $entry): JournalEntry
+    {
+        return DB::transaction(function () use ($entry): JournalEntry {
+            $entry = JournalEntry::query()
+                ->whereKey($entry->id)
+                ->lockForUpdate()
+                ->with(['lines' => fn ($query) => $query->orderBy('sort_order')])
+                ->firstOrFail();
+
+            if ($entry->isPosted()) {
+                return $entry->load('lines');
+            }
+
+            if ($entry->document_type !== JournalEntry::DOCUMENT_OPENING_BALANCE || $entry->voucher_number === null) {
+                throw new ApiException('VALIDATION_FAILED', 'Only opening balance vouchers can be posted here.', 422);
+            }
+
+            $detailLines = $entry->lines->where('sort_order', '<', 9999)->values();
+            if ($detailLines->isEmpty()) {
+                throw new ApiException('VOUCHER_LINES_REQUIRED', 'At least one opening balance line is required before posting.', 422);
+            }
+
+            $offsetAccount = $this->resolveOffsetAccount((int) $entry->tenant_id);
+            $debit = '0.0000';
+            $credit = '0.0000';
+
+            foreach ($detailLines as $line) {
+                if ((int) $line->account_id === (int) $offsetAccount->id) {
+                    throw new ApiException(
+                        'VALIDATION_FAILED',
+                        'Opening Balance Equity cannot be selected as a voucher detail account.',
+                        422,
+                    );
+                }
+
+                $this->assertMoneySides((string) $line->debit, (string) $line->credit);
+                $debit = bcadd($debit, (string) $line->debit, 4);
+                $credit = bcadd($credit, (string) $line->credit, 4);
+            }
+
+            $difference = bccomp($debit, $credit, 4);
+            if ($difference !== 0) {
+                JournalLine::query()->create([
+                    'tenant_id' => $entry->tenant_id,
+                    'journal_entry_id' => $entry->id,
+                    'account_id' => $offsetAccount->id,
+                    'description' => 'Opening balance equity offset',
+                    'debit' => $difference < 0 ? bcsub($credit, $debit, 4) : '0.0000',
+                    'credit' => $difference > 0 ? bcsub($debit, $credit, 4) : '0.0000',
+                    'sort_order' => 9999,
+                ]);
+            }
+
+            $entry->load(['lines' => fn ($query) => $query->orderBy('sort_order')]);
+            $this->assertBalanced($entry);
+
+            $entry->status = JournalStatus::Posted;
+            $entry->posted_by = $this->tenantContext->userId();
+            $entry->posted_at = now();
+            $entry->save();
+
+            $this->audit->record('OPENING_BALANCE_VOUCHER_POSTED', [
+                'resource_type' => 'journal_entry',
+                'resource_ulid' => $entry->ulid,
+                'voucher_number' => $entry->voucher_number,
+            ]);
+
+            return $entry->fresh(['lines']) ?? $entry;
+        });
+    }
+
     public function assertMoneySides(string $debit, string $credit): void
     {
         if (bccomp($debit, '0', 4) < 0 || bccomp($credit, '0', 4) < 0) {
