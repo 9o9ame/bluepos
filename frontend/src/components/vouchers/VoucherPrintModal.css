@@ -1,16 +1,29 @@
+.voucher-print-modal {
+  width: min(520px, calc(100vw - 32px));
+}
+
 .voucher-print-modal .ui-modal-body {
   overflow: visible;
+  padding: 12px;
 }
 
 .voucher-print-options {
   display: grid;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  gap: 10px 12px;
 }
 
-.voucher-print-options > label,
-.voucher-print-copies {
+.voucher-print-options > label {
   display: grid;
   gap: 4px;
+  min-width: 0;
+}
+
+.voucher-print-options > label:first-child,
+.voucher-print-options > label:nth-of-type(3),
+.voucher-print-options > label:nth-of-type(4),
+.voucher-print-note {
+  grid-column: 1 / -1;
 }
 
 .voucher-print-options label > span,
@@ -24,6 +37,8 @@
   display: flex !important;
   align-items: center;
   gap: 7px;
+  align-self: end;
+  min-height: var(--ui-control-h-md, 26px);
 }
 
 .voucher-print-check input {
@@ -31,10 +46,17 @@
 }
 
 .voucher-print-direct-row {
+  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 110px;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 12px;
   align-items: end;
+  padding-top: 2px;
+}
+
+.voucher-print-copies {
+  display: grid;
+  gap: 4px;
 }
 
 .voucher-print-note {
@@ -46,4 +68,25 @@
   color: var(--ui-text-muted);
   font-size: 10px;
   line-height: 1.4;
+}
+
+.voucher-print-modal .ui-modal-footer {
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+@media (max-width: 620px) {
+  .voucher-print-options {
+    grid-template-columns: 1fr;
+  }
+
+  .voucher-print-options > label,
+  .voucher-print-note,
+  .voucher-print-direct-row {
+    grid-column: 1;
+  }
+
+  .voucher-print-direct-row {
+    grid-template-columns: 1fr;
+  }
 }
