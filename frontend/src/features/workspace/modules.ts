@@ -458,6 +458,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
           tone: 'gold',
           hasMenu: true,
           menu: [
+            { label: 'Opening Balance Voucher', status: 'ready', path: '/daily/vouchers?type=opening' },
             { label: 'Payment Voucher (Dr)', status: 'ready', path: '/daily/vouchers?type=payment' },
             { label: 'Receiving Voucher (Cr)', status: 'ready', path: '/daily/vouchers?type=receiving' },
             { label: 'Journal Voucher (JV)', status: 'ready', path: '/daily/vouchers?type=journal' },
@@ -628,6 +629,9 @@ export function moduleTabIdentity(
   if (module.key === 'vouchers') {
     const type = new URLSearchParams(search).get('type')
 
+    if (type === 'opening') {
+      return { key: 'vouchers:opening', title: 'Opening Balance Voucher', path: pathname + search }
+    }
     if (type === 'payment') {
       return { key: 'vouchers:payment', title: 'Cash Payment Voucher', path: pathname + search }
     }
