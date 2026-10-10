@@ -97,6 +97,7 @@ export function VouchersPage() {
   const [type, setType] = useState<VoucherType>(initialType)
   const [document, setDocument] = useState<Voucher | null>(null)
   const [entryDate, setEntryDate] = useState(today())
+  const [bookNumber, setBookNumber] = useState('')
   const [headerAccountUlid, setHeaderAccountUlid] = useState('')
   const [lines, setLines] = useState<EntryLine[]>([newLine()])
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
@@ -213,6 +214,7 @@ export function VouchersPage() {
     setDocument(null)
     setType(nextType)
     setEntryDate(today())
+    setBookNumber('')
     setHeaderAccountUlid('')
     setLines([newLine()])
     setIdempotencyKey(crypto.randomUUID())
@@ -223,6 +225,7 @@ export function VouchersPage() {
     setDocument(voucher)
     setType(voucher.type)
     setEntryDate(voucher.entry_date)
+    setBookNumber(voucher.book_number ?? '')
     setHeaderAccountUlid(voucher.header_account?.ulid ?? '')
     const source = voucher.type === 'journal' ? voucher.lines : voucher.lines.filter((line) => !line.is_header)
     setLines(
@@ -261,6 +264,7 @@ export function VouchersPage() {
 
     return {
       entry_date: entryDate,
+      book_number: bookNumber || null,
       description: null,
       header_account_ulid: type === 'journal' ? null : headerAccountUlid,
       lines: detailLines,
@@ -418,26 +422,29 @@ export function VouchersPage() {
       {tab === 'entry' ? (
         <div className="voucher-entry">
           <div className="voucher-entry-meta">
-            <div className="voucher-meta-top">
-              <label>
+            <div className="voucher-meta-row">
+              <label className="voucher-no-field">
                 <span>{voucherNumberLabel(type)}</span>
                 <input className="desktop-input" value={document?.voucher_number ?? 'Auto'} disabled />
               </label>
-              <label>
+              <label className="voucher-book-field">
                 <span>Book#</span>
-                <input className="desktop-input" value="" disabled aria-label="Book number unavailable" />
+                <input
+                  className="desktop-input"
+                  value={bookNumber}
+                  disabled={readOnly}
+                  maxLength={50}
+                  onChange={(event) => setBookNumber(event.target.value)}
+                />
               </label>
-              <label>
+              <label className="voucher-date-field">
                 <span>Date</span>
                 <input className="desktop-input" type="date" value={entryDate} disabled={readOnly} onChange={(event) => setEntryDate(event.target.value)} />
               </label>
-              <label>
+              <label className="voucher-time-field">
                 <span>Time</span>
                 <input className="desktop-input" value={displayTime} disabled />
               </label>
-            </div>
-
-            <div className="voucher-meta-account">
               <label className="voucher-account-field">
                 <span>Account</span>
                 {type === 'journal' ? (
@@ -448,23 +455,38 @@ export function VouchersPage() {
                     value={headerAccountUlid}
                     disabled={readOnly}
                     placeholder="Select cash / bank account"
+                    menuMinWidth={720}
+                    menuColumns={[
+                      { header: 'Code', width: '90px' },
+                      { header: 'Vendor / Customer / Account', width: 'minmax(220px, 1.8fr)' },
+                      { header: 'Address', width: 'minmax(160px, 1fr)' },
+                      { header: 'Acc Type', width: '150px' },
+                      { header: 'Party', width: '90px' },
+                    ]}
                     options={cashAccounts.map((account) => ({
                       value: account.ulid,
                       label: `${account.code} · ${account.name}`,
+                      columns: [
+                        account.code,
+                        account.name,
+                        account.address ?? '',
+                        account.account_type ?? '',
+                        account.party_type ?? 'account',
+                      ],
                     }))}
                     onChange={setHeaderAccountUlid}
                   />
                 )}
               </label>
-              <label>
+              <label className="voucher-balance-field">
                 <span>Pre balance</span>
                 <input className="desktop-input voucher-balance is-pre" value={money(preBalance)} disabled />
               </label>
-              <label>
+              <label className="voucher-balance-field">
                 <span>This Voucher</span>
                 <input className="desktop-input voucher-balance is-current" value={money(thisVoucher)} disabled />
               </label>
-              <label>
+              <label className="voucher-balance-field">
                 <span>Total Bal</span>
                 <input className="desktop-input voucher-balance is-total" value={money(totalBalance)} disabled />
               </label>
@@ -492,9 +514,24 @@ export function VouchersPage() {
                         value={line.account_ulid}
                         disabled={readOnly}
                         placeholder="Select account"
+                        menuMinWidth={820}
+                        menuColumns={[
+                      { header: 'Code', width: '90px' },
+                      { header: 'Vendor / Customer / Account', width: 'minmax(220px, 1.8fr)' },
+                      { header: 'Address', width: 'minmax(160px, 1fr)' },
+                      { header: 'Acc Type', width: '150px' },
+                      { header: 'Party', width: '90px' },
+                    ]}
                         options={accounts.map((account) => ({
                           value: account.ulid,
                           label: `${account.code} · ${account.name}`,
+                          columns: [
+                            account.code,
+                            account.name,
+                            account.address ?? '',
+                            account.account_type ?? '',
+                            account.party_type ?? 'account',
+                          ],
                         }))}
                         onChange={(value) => updateLine(line.key, { account_ulid: value })}
                       />
