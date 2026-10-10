@@ -43,18 +43,28 @@
   box-shadow: var(--ui-card-shadow);
 }
 
-.voucher-meta-top {
+.voucher-meta-row {
   display: grid;
-  grid-template-columns: 130px 120px 180px 110px;
+  grid-template-columns:
+    100px
+    100px
+    142px
+    82px
+    minmax(300px, 1fr)
+    112px
+    112px
+    112px;
   gap: 6px;
   align-items: end;
+  min-width: 0;
 }
 
-.voucher-meta-account {
-  display: grid;
-  grid-template-columns: minmax(320px, 1.8fr) repeat(3, minmax(120px, 0.6fr));
-  gap: 6px;
-  align-items: end;
+.voucher-no-field,
+.voucher-book-field,
+.voucher-date-field,
+.voucher-time-field,
+.voucher-balance-field {
+  min-width: 0;
 }
 
 .voucher-entry-meta label {
@@ -187,13 +197,18 @@
   min-height: 420px;
 }
 
-@media (max-width: 1100px) {
-  .voucher-meta-top {
-    grid-template-columns: repeat(4, minmax(100px, 1fr));
-  }
-
-  .voucher-meta-account {
-    grid-template-columns: minmax(240px, 1.4fr) repeat(3, minmax(110px, 0.7fr));
+@media (max-width: 1180px) {
+  .voucher-meta-row {
+    grid-template-columns:
+      90px
+      90px
+      132px
+      76px
+      minmax(240px, 1fr)
+      100px
+      100px
+      100px;
+    gap: 4px;
   }
 
   .voucher-filters {
@@ -201,9 +216,17 @@
   }
 }
 
+@media (max-width: 900px) {
+  .voucher-entry-meta {
+    overflow-x: auto;
+  }
+
+  .voucher-meta-row {
+    min-width: 1020px;
+  }
+}
+
 @media (max-width: 760px) {
-  .voucher-meta-top,
-  .voucher-meta-account,
   .voucher-filters,
   .voucher-summary .voucher-filters {
     grid-template-columns: 1fr;
