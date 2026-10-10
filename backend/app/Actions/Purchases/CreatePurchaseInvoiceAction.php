@@ -5,7 +5,9 @@ namespace App\Actions\Purchases;
 use App\Catalog\TenantCatalog;
 use App\Enums\PurchaseInvoiceStatus;
 use App\Enums\WarehouseStatus;
+use App\Exceptions\ApiException;
 use App\Models\PurchaseInvoice;
+use App\Models\PurchaseOrder;
 use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
@@ -47,14 +49,36 @@ class CreatePurchaseInvoiceAction
                 ]);
             }
 
+            $purchaseOrder = null;
+            if (! empty($data['purchase_order_ulid'])) {
+                $purchaseOrder = PurchaseOrder::query()
+                    ->forTenant($tenantId)
+                    ->where('branch_id', $warehouse->branch_id)
+                    ->where('warehouse_id', $warehouse->id)
+                    ->where('ulid', (string) $data['purchase_order_ulid'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $purchaseOrder) {
+                    throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
+                }
+
+                if ((int) $purchaseOrder->supplier_id !== (int) $supplier->id) {
+                    throw ValidationException::withMessages([
+                        'supplier_ulid' => 'Purchase Invoice supplier must match the linked Purchase Order.',
+                    ]);
+                }
+            }
+
             $invoice = PurchaseInvoice::query()->create([
                 'tenant_id' => $tenantId,
                 'branch_id' => $warehouse->branch_id,
                 'warehouse_id' => $warehouse->id,
                 'supplier_id' => $supplier->id,
+                'purchase_order_id' => $purchaseOrder?->id,
                 'document_number' => $this->nextDocumentNumber($tenantId),
                 'supplier_invoice_number' => $data['supplier_invoice_number'] ?? null,
-                'po_number' => $data['po_number'] ?? null,
+                'po_number' => $purchaseOrder?->document_number ?? ($data['po_number'] ?? null),
                 'invoice_type' => $data['invoice_type'] ?? 'tax_gst',
                 'currency_code' => $data['currency_code'] ?? 'PKR',
                 'calculation_method' => $data['calculation_method'] ?? 'gst_on_trade',
@@ -113,7 +137,15 @@ class CreatePurchaseInvoiceAction
      */
     public static function with(): array
     {
-        return ['supplier', 'branch', 'warehouse', 'lines.product', 'lines.unit'];
+        return [
+            'supplier',
+            'branch',
+            'warehouse',
+            'purchaseOrder',
+            'lines.product',
+            'lines.unit',
+            'lines.purchaseOrderLine',
+        ];
     }
 
     private function nextDocumentNumber(int $tenantId): string
