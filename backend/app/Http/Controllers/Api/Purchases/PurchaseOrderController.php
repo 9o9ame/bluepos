@@ -89,6 +89,8 @@ class PurchaseOrderController extends Controller
             'category_ulid' => ['nullable', 'string', 'size:26'],
             'brand_ulid' => ['nullable', 'string', 'size:26'],
             'include_non_sold' => ['nullable', 'boolean'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:10', 'max:20'],
         ]);
 
         $mode = (string) $data['mode'];
@@ -141,7 +143,9 @@ class PurchaseOrderController extends Controller
             $query->whereNotNull('maximum_stock');
         }
 
-        $products = $query->get();
+        $perPage = min(max((int) ($data['per_page'] ?? 20), 10), 20);
+        $page = $query->paginate($perPage, ['*'], 'page', (int) ($data['page'] ?? 1));
+        $products = collect($page->items());
         $productIds = $products->pluck('id');
 
         $balances = StockBalance::query()
@@ -238,6 +242,11 @@ class PurchaseOrderController extends Controller
             'meta' => [
                 'mode' => $mode,
                 'count' => $rows->count(),
+                'current_page' => $page->currentPage(),
+                'per_page' => $page->perPage(),
+                'last_page' => $page->lastPage(),
+                'total' => $page->total(),
+                'has_more' => $page->currentPage() < $page->lastPage(),
             ],
         ];
     }
