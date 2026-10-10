@@ -819,6 +819,34 @@ class PurchaseInvoiceTest extends TestCase
                 'error.fields.product_ulid.0',
                 'Product must match the linked Purchase Order line.',
             );
+
+        $this->patchJson('/api/purchases/'.$invoiceUlid.'/lines/'.$line->json('ulid'), [
+            'product_ulid' => $otherProductUlid,
+        ])->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonPath(
+                'error.fields.product_ulid.0',
+                'Product must match the linked Purchase Order line.',
+            );
+
+        $this->patchJson('/api/purchases/'.$invoiceUlid, [
+            'po_number' => 'MUTATED-PO-NUMBER',
+        ])->assertOk()
+            ->assertJsonPath('po_number', $order->json('document_number'));
+
+        $otherSupplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-PO-LINK-OTHER',
+            'name' => 'Other PO Link Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $this->patchJson('/api/purchases/'.$invoiceUlid, [
+            'supplier_ulid' => $otherSupplierUlid,
+        ])->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonPath(
+                'error.fields.supplier_ulid.0',
+                'Purchase Invoice supplier must match the linked Purchase Order.',
+            );
     }
 
     private function configurePurchaseClearing(): void
