@@ -1,4 +1,4 @@
-import { FileSearch, LoaderCircle, Play, Plus, Printer, ReceiptText, RefreshCw, Save, XCircle } from 'lucide-react'
+import { AlertTriangle, FileSearch, LoaderCircle, Play, Plus, Printer, ReceiptText, RefreshCw, Save, XCircle } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
@@ -19,6 +19,7 @@ import {
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
+import { UiModal } from '../components/ui/UiModal'
 import { UiSelect } from '../components/ui/UiSelect'
 import { PurchaseProductLookup } from '../features/purchases/PurchaseProductLookup'
 import { useCan } from '../features/auth/useCan'
@@ -196,6 +197,7 @@ export function PurchaseOrderPage() {
   const [lines, setLines] = useState<DraftLine[]>([])
   const [savedOrder, setSavedOrder] = useState<PurchaseOrder | null>(null)
   const [openedOrder, setOpenedOrder] = useState<PurchaseOrder | null>(null)
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
 
   const [orderType, setOrderType] = useState<PurchaseOrderGenerateMode>('get_all')
   const [lastDays, setLastDays] = useState('10')
@@ -706,6 +708,7 @@ export function PurchaseOrderPage() {
   const cancelMutation = useMutation({
     mutationFn: (orderUlid: string) => cancelPurchaseOrder(orderUlid),
     onSuccess: (order) => {
+      setCancelConfirmOpen(false)
       setOpenedOrder(order)
       setSavedOrder(null)
       void ordersQuery.refetch()
@@ -763,14 +766,7 @@ export function PurchaseOrderPage() {
             }
             onClick={() => {
               if (!activeOrder || activeOrder.status !== 'open') return
-              if (
-                !window.confirm(
-                  `Cancel Purchase Order ${activeOrder.document_number}? This cannot be undone.`,
-                )
-              ) {
-                return
-              }
-              cancelMutation.mutate(activeOrder.ulid)
+              setCancelConfirmOpen(true)
             }}
           />
           <DesktopButton
@@ -1455,6 +1451,52 @@ export function PurchaseOrderPage() {
 
         </div>
       )}
+      <UiModal
+        open={cancelConfirmOpen && Boolean(activeOrder)}
+        title="Cancel Purchase Order"
+        size="sm"
+        onClose={() => {
+          if (!cancelMutation.isPending) setCancelConfirmOpen(false)
+        }}
+        footer={
+          <>
+            <UiButton
+              variant="default"
+              disabled={cancelMutation.isPending}
+              onClick={() => setCancelConfirmOpen(false)}
+            >
+              Keep Order
+            </UiButton>
+            <UiButton
+              variant="danger"
+              disabled={
+                cancelMutation.isPending ||
+                !activeOrder ||
+                activeOrder.status !== 'open'
+              }
+              onClick={() => {
+                if (!activeOrder || activeOrder.status !== 'open') return
+                cancelMutation.mutate(activeOrder.ulid)
+              }}
+            >
+              {cancelMutation.isPending ? 'Cancelling…' : 'Cancel Order'}
+            </UiButton>
+          </>
+        }
+      >
+        <div className="purchase-order-cancel-confirm">
+          <AlertTriangle size={22} aria-hidden="true" />
+          <div>
+            <strong>
+              Cancel {activeOrder?.document_number ?? 'this Purchase Order'}?
+            </strong>
+            <p>
+              This action cannot be undone. Any linked draft Purchase Invoice will no
+              longer be allowed to post against this order.
+            </p>
+          </div>
+        </div>
+      </UiModal>
     </DesktopPanel>
   )
 }
