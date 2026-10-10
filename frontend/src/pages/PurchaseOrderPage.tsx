@@ -1,5 +1,5 @@
 import { FileSearch, LoaderCircle, Play, Plus, Printer, ReceiptText, RefreshCw, Save, XCircle } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   fetchBrands,
@@ -29,7 +29,6 @@ import type {
   PurchaseOrderGenerateMode,
   PurchaseOrderGeneratePayload,
   PurchaseOrderGenerateRow,
-  PurchaseOrderStatusRow,
 } from '../types/purchases'
 import './PurchaseOrderPage.css'
 
@@ -95,6 +94,16 @@ function num(value: string | number | null | undefined): number {
 function fixedMoney(value: number): string {
   return Math.max(value, 0).toFixed(4)
 }
+
+function escapePrintHtml(value: string | null | undefined): string {
+  return String(value ?? '—')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+}
+
 
 function buildUnitOptions(product: Product): UnitOption[] {
   const map = new Map<string, UnitOption>()
@@ -181,8 +190,6 @@ export function PurchaseOrderPage() {
   const [statusFrom, setStatusFrom] = useState(daysAgoIso(30))
   const [statusTo, setStatusTo] = useState(todayIso())
   const [statusShowAll, setStatusShowAll] = useState(false)
-  const [statusPrintRows, setStatusPrintRows] = useState<PurchaseOrderStatusRow[]>([])
-  const [statusPrintPending, setStatusPrintPending] = useState(false)
   const [statusPrintLoading, setStatusPrintLoading] = useState(false)
   const [lines, setLines] = useState<DraftLine[]>([])
   const [savedOrder, setSavedOrder] = useState<PurchaseOrder | null>(null)
@@ -271,27 +278,6 @@ export function PurchaseOrderPage() {
     retry: false,
   })
 
-  useEffect(() => {
-    if (!statusPrintPending) return
-
-    let cancelled = false
-    let frameOne = 0
-    let frameTwo = 0
-
-    frameOne = window.requestAnimationFrame(() => {
-      frameTwo = window.requestAnimationFrame(() => {
-        if (cancelled) return
-        window.print()
-        setStatusPrintPending(false)
-      })
-    })
-
-    return () => {
-      cancelled = true
-      window.cancelAnimationFrame(frameOne)
-      window.cancelAnimationFrame(frameTwo)
-    }
-  }, [statusPrintPending, statusPrintRows])
 
   const supplierOptions = useMemo(
     () =>
@@ -387,8 +373,109 @@ export function PurchaseOrderPage() {
         return
       }
 
-      setStatusPrintRows(rows)
-      setStatusPrintPending(true)
+      const iframe = document.createElement('iframe')
+      iframe.setAttribute('aria-hidden', 'true')
+      iframe.style.position = 'fixed'
+      iframe.style.width = '0'
+      iframe.style.height = '0'
+      iframe.style.border = '0'
+      iframe.style.right = '0'
+      iframe.style.bottom = '0'
+      document.body.appendChild(iframe)
+
+      const printDocument = iframe.contentDocument
+      const printWindow = iframe.contentWindow
+
+      if (!printDocument || !printWindow) {
+        iframe.remove()
+        throw new Error('Unable to open the Purchase Order Status print document.')
+      }
+
+      const bodyRows = rows
+        .map(
+          (row) => `
+            <tr>
+              <td>${escapePrintHtml(row.order.ulid)}</td>
+              <td>${escapePrintHtml(row.order.document_number)}</td>
+              <td>${escapePrintHtml(row.order.order_date)}</td>
+              <td>${escapePrintHtml(row.supplier?.name)}</td>
+              <td>${escapePrintHtml(
+                row.product
+                  ? `${row.product.product_number} — ${row.product.name}`
+                  : '—',
+              )}</td>
+              <td class="number">${escapePrintHtml(row.order_quantity)}</td>
+              <td class="number">${escapePrintHtml(row.received_quantity)}</td>
+              <td class="number">${escapePrintHtml(row.remaining_quantity)}</td>
+              <td class="number">${escapePrintHtml(row.order_amount)}</td>
+              <td class="number">${escapePrintHtml(row.received_amount)}</td>
+              <td class="number">${escapePrintHtml(row.balance_amount)}</td>
+            </tr>`,
+        )
+        .join('')
+
+      printDocument.open()
+      printDocument.write(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Purchase Order Status</title>
+  <style>
+    @page { size: landscape; margin: 10mm; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; color: #000; background: #fff; font-family: Arial, sans-serif; font-size: 9pt; }
+    header { display: grid; gap: 5px; margin-bottom: 8px; }
+    h1 { margin: 0; font-size: 16pt; }
+    .filters { display: flex; flex-wrap: wrap; gap: 16px; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { border: 1px solid #000; padding: 3px 4px; vertical-align: top; overflow-wrap: anywhere; }
+    th { font-weight: 700; text-align: left; }
+    .number { text-align: right; font-variant-numeric: tabular-nums; }
+    th:nth-child(1) { width: 15%; }
+    th:nth-child(2) { width: 8%; }
+    th:nth-child(3) { width: 8%; }
+    th:nth-child(4) { width: 13%; }
+    th:nth-child(5) { width: 20%; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Purchase Order Status</h1>
+    <div class="filters">
+      <span>From: ${escapePrintHtml(statusFrom || '—')}</span>
+      <span>To: ${escapePrintHtml(statusTo || '—')}</span>
+      <span>${statusShowAll ? 'All statuses' : 'Open orders only'}</span>
+    </div>
+  </header>
+  <table>
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>OrderNo</th>
+        <th>Order Date</th>
+        <th>Party</th>
+        <th>DESCRIPTION</th>
+        <th>Order Qty</th>
+        <th>Receive Qty</th>
+        <th>Rem Qty</th>
+        <th>Order Amt</th>
+        <th>Rec Amt</th>
+        <th>Bal Amt</th>
+      </tr>
+    </thead>
+    <tbody>${bodyRows}</tbody>
+  </table>
+</body>
+</html>`)
+      printDocument.close()
+
+      const cleanup = () => {
+        window.setTimeout(() => iframe.remove(), 0)
+      }
+
+      printWindow.addEventListener('afterprint', cleanup, { once: true })
+      printWindow.focus()
+      printWindow.print()
     } catch (error) {
       feedback.error(
         error instanceof Error ? error.message : 'Unable to prepare Purchase Order Status print.',
@@ -1322,55 +1409,6 @@ export function PurchaseOrderPage() {
             emptyMessage={statusQuery.isLoading ? 'Loading…' : 'No purchase order status rows found.'}
           />
 
-          <section className="purchase-order-status-print-report" aria-hidden={!statusPrintPending}>
-            <header>
-              <h1>Purchase Order Status</h1>
-              <div>
-                <span>From: {statusFrom || '—'}</span>
-                <span>To: {statusTo || '—'}</span>
-                <span>{statusShowAll ? 'All statuses' : 'Open orders only'}</span>
-              </div>
-            </header>
-
-            <table>
-              <thead>
-                <tr>
-                  <th>Order ID</th>
-                  <th>OrderNo</th>
-                  <th>Order Date</th>
-                  <th>Party</th>
-                  <th>DESCRIPTION</th>
-                  <th>Order Qty</th>
-                  <th>Receive Qty</th>
-                  <th>Rem Qty</th>
-                  <th>Order Amt</th>
-                  <th>Rec Amt</th>
-                  <th>Bal Amt</th>
-                </tr>
-              </thead>
-              <tbody>
-                {statusPrintRows.map((row) => (
-                  <tr key={row.line_ulid}>
-                    <td>{row.order.ulid}</td>
-                    <td>{row.order.document_number}</td>
-                    <td>{row.order.order_date}</td>
-                    <td>{row.supplier?.name ?? '—'}</td>
-                    <td>
-                      {row.product
-                        ? `${row.product.product_number} — ${row.product.name}`
-                        : '—'}
-                    </td>
-                    <td>{row.order_quantity}</td>
-                    <td>{row.received_quantity}</td>
-                    <td>{row.remaining_quantity}</td>
-                    <td>{row.order_amount}</td>
-                    <td>{row.received_amount}</td>
-                    <td>{row.balance_amount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
         </div>
       )}
     </DesktopPanel>
