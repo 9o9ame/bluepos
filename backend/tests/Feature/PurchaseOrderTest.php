@@ -131,6 +131,9 @@ class PurchaseOrderTest extends TestCase
         $this->signInOwner('po-iso-b')->assertOk();
 
         $this->getJson('/api/purchase-orders/'.$orderUlid)->assertNotFound();
+        $this->getJson('/api/purchase-orders/status')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 0);
 
         $supplierB = $this->postJson('/api/suppliers', [
             'code' => 'SUP-PO-B',
