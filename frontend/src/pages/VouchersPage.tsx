@@ -66,12 +66,14 @@ function money(value: number | string): string {
 }
 
 function voucherLabel(type: VoucherType): string {
+  if (type === 'opening') return 'Opening Balance Voucher'
   if (type === 'payment') return 'Cash Payment Voucher'
   if (type === 'receiving') return 'Cash Receiving Voucher'
   return 'Journal Voucher'
 }
 
 function voucherNumberLabel(type: VoucherType): string {
+  if (type === 'opening') return 'OPV#'
   if (type === 'payment') return 'DV#'
   if (type === 'receiving') return 'CV#'
   return 'JV#'
@@ -92,7 +94,9 @@ export function VouchersPage() {
 
   const requestedType = searchParams.get('type')
   const initialType: VoucherType =
-    requestedType === 'receiving' || requestedType === 'journal' ? requestedType : 'payment'
+    requestedType === 'opening' || requestedType === 'receiving' || requestedType === 'journal'
+      ? requestedType
+      : 'payment'
 
   const [tab, setTab] = useState<'entry' | 'search' | 'summary'>('entry')
   const [type, setType] = useState<VoucherType>(initialType)
@@ -166,6 +170,7 @@ export function VouchersPage() {
   )
   const readOnly = document?.status === 'posted'
   const heading = voucherLabel(type)
+  const isDebitCreditType = type === 'journal' || type === 'opening'
   const displayTime = document?.posted_at
     ? new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', hour12: false }).format(
         new Date(document.posted_at),
@@ -174,26 +179,26 @@ export function VouchersPage() {
 
   const debitTotal = useMemo(
     () =>
-      type === 'journal'
+      isDebitCreditType
         ? lines.reduce((sum, line) => sum + (Number(line.debit) || 0), 0)
         : lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0),
     [lines, type],
   )
   const creditTotal = useMemo(
     () =>
-      type === 'journal'
+      isDebitCreditType
         ? lines.reduce((sum, line) => sum + (Number(line.credit) || 0), 0)
         : lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0),
     [lines, type],
   )
 
   const headerAccount = cashAccountMap.get(headerAccountUlid) ?? accountMap.get(headerAccountUlid)
-  const preBalance = type === 'journal' ? 0 : Number(headerAccount?.balance ?? 0)
-  const thisVoucher = type === 'journal' ? 0 : lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0)
+  const preBalance = isDebitCreditType ? 0 : Number(headerAccount?.balance ?? 0)
+  const thisVoucher = isDebitCreditType ? 0 : lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0)
   const headerDebit = type === 'receiving' ? thisVoucher : 0
   const headerCredit = type === 'payment' ? thisVoucher : 0
   const totalBalance =
-    type === 'journal'
+    isDebitCreditType
       ? 0
       : preBalance + signedEffect(headerAccount, headerDebit, headerCredit)
 
@@ -206,20 +211,20 @@ export function VouchersPage() {
       bookNumber,
       date: entryDate,
       time: displayTime,
-      account: type === 'journal' ? 'JV' : (headerAccount ? `${headerAccount.code} · ${headerAccount.name}` : ''),
+      account: type === 'opening' ? 'OPV' : type === 'journal' ? 'JV' : (headerAccount ? `${headerAccount.code} · ${headerAccount.name}` : ''),
       preBalance: money(preBalance),
       thisVoucher: money(thisVoucher),
       totalBalance: money(totalBalance),
-      type,
+      type: type === 'opening' ? 'journal' : type,
       rows: lines.map((line) => {
         const account = accountMap.get(line.account_ulid)
         return {
           account: account ? `${account.code} · ${account.name}` : '',
           narration: line.narration,
           balance: money(lineBalance(line)),
-          amount: type === 'journal' ? undefined : money(line.amount || 0),
-          debit: type === 'journal' ? money(line.debit || 0) : undefined,
-          credit: type === 'journal' ? money(line.credit || 0) : undefined,
+          amount: isDebitCreditType ? undefined : money(line.amount || 0),
+          debit: isDebitCreditType ? money(line.debit || 0) : undefined,
+          credit: isDebitCreditType ? money(line.credit || 0) : undefined,
           closing: money(lineClosing(line)),
         }
       }),
@@ -240,7 +245,12 @@ export function VouchersPage() {
   ])
 
   useEffect(() => {
-    if (requestedType !== 'payment' && requestedType !== 'receiving' && requestedType !== 'journal') {
+    if (
+      requestedType !== 'opening'
+      && requestedType !== 'payment'
+      && requestedType !== 'receiving'
+      && requestedType !== 'journal'
+    ) {
       return
     }
 
@@ -271,7 +281,10 @@ export function VouchersPage() {
     setEntryDate(voucher.entry_date)
     setBookNumber(voucher.book_number ?? '')
     setHeaderAccountUlid(voucher.header_account?.ulid ?? '')
-    const source = voucher.type === 'journal' ? voucher.lines : voucher.lines.filter((line) => !line.is_header)
+    const source =
+      voucher.type === 'payment' || voucher.type === 'receiving'
+        ? voucher.lines.filter((line) => !line.is_header)
+        : voucher.lines
     setLines(
       source.map((line) => ({
         key: line.ulid,
@@ -292,7 +305,7 @@ export function VouchersPage() {
 
   function buildPayload(): VoucherPayload {
     const detailLines: VoucherInputLine[] = lines.map((line) =>
-      type === 'journal'
+      isDebitCreditType
         ? {
             account_ulid: line.account_ulid,
             narration: line.narration || null,
@@ -310,7 +323,7 @@ export function VouchersPage() {
       entry_date: entryDate,
       book_number: bookNumber || null,
       description: null,
-      header_account_ulid: type === 'journal' ? null : headerAccountUlid,
+      header_account_ulid: isDebitCreditType ? null : headerAccountUlid,
       lines: detailLines,
     }
   }
@@ -393,7 +406,7 @@ export function VouchersPage() {
     event.preventDefault()
 
     const fields: Array<'account' | 'narration' | 'amount' | 'debit' | 'credit'> =
-      type === 'journal'
+      isDebitCreditType
         ? ['account', 'narration', 'debit', 'credit']
         : ['account', 'narration', 'amount']
     const fieldIndex = fields.indexOf(field)
@@ -537,8 +550,8 @@ export function VouchersPage() {
               </label>
               <label className="voucher-account-field">
                 <span>Account</span>
-                {type === 'journal' ? (
-                  <input className="desktop-input" value="JV" disabled />
+                {isDebitCreditType ? (
+                  <input className="desktop-input" value={type === 'opening' ? 'OPV' : 'JV'} disabled />
                 ) : (
                   <UiSelect
                     aria-label="Voucher cash or bank account"
@@ -590,7 +603,7 @@ export function VouchersPage() {
                   <th>Vendor / Customer / Account</th>
                   <th>Narration</th>
                   <th>Balance</th>
-                  {type === 'journal' ? <><th>Debit</th><th>Credit</th></> : <th>Amount</th>}
+                  {isDebitCreditType ? <><th>Debit</th><th>Credit</th></> : <th>Amount</th>}
                   <th>Closing</th>
                   <th aria-label="Actions" />
                 </tr>
@@ -646,7 +659,7 @@ export function VouchersPage() {
                       />
                     </td>
                     <td className="voucher-readonly-money">{money(lineBalance(line))}</td>
-                    {type === 'journal' ? (
+                    {isDebitCreditType ? (
                       <>
                         <td>
                           <input
@@ -723,6 +736,7 @@ export function VouchersPage() {
               value={typeFilter}
               options={[
                 { value: '', label: 'All voucher types' },
+                { value: 'opening', label: 'Opening Balance Voucher' },
                 { value: 'payment', label: 'Payment Voucher' },
                 { value: 'receiving', label: 'Receiving Voucher' },
                 { value: 'journal', label: 'Journal Voucher' },
