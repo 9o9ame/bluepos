@@ -157,5 +157,6 @@ export function generatePurchaseOrder(payload: PurchaseOrderGeneratePayload) {
   }>('/api/purchase-orders/generate', {
     method: 'POST',
     body: JSON.stringify(payload),
+    busy: 'none',
   })
 }
