@@ -17,8 +17,14 @@ import './UiSelect.css'
 export type UiSelectOption = {
   value: string
   label: string
+  columns?: string[]
   disabled?: boolean
   title?: string
+}
+
+export type UiSelectMenuColumn = {
+  header: string
+  width?: string
 }
 
 export type UiSelectProps = {
@@ -47,6 +53,8 @@ export type UiSelectProps = {
   }
   menuZIndex?: number
   maxMenuHeight?: number
+  menuColumns?: UiSelectMenuColumn[]
+  menuMinWidth?: number
   'aria-label'?: string
 }
 
@@ -79,6 +87,8 @@ export function UiSelect({
   triggerProps,
   menuZIndex = UI_LAYER.dropdown,
   maxMenuHeight = 240,
+  menuColumns,
+  menuMinWidth,
   'aria-label': ariaLabel,
 }: UiSelectProps) {
   const listId = useId()
@@ -102,7 +112,8 @@ export function UiSelect({
     return options.filter((option) => {
       const label = option.label.toLocaleLowerCase()
       const valueText = option.value.toLocaleLowerCase()
-      return label.includes(query) || valueText.includes(query)
+      const columnsText = option.columns?.join(' ').toLocaleLowerCase() ?? ''
+      return label.includes(query) || valueText.includes(query) || columnsText.includes(query)
     })
   }, [options, search, searchable])
 
@@ -272,6 +283,10 @@ export function UiSelect({
     }
   }, [open])
 
+  const columnTemplate = menuColumns?.length
+    ? menuColumns.map((column) => column.width ?? 'minmax(0, 1fr)').join(' ')
+    : undefined
+
   return (
     <div
       ref={rootRef}
@@ -376,12 +391,30 @@ export function UiSelect({
                 bottom: pos.openUp
                   ? window.innerHeight - pos.top
                   : undefined,
-                left: pos.left,
-                width: pos.width,
+                left: Math.max(
+                  8,
+                  Math.min(
+                    pos.left,
+                    window.innerWidth - Math.max(pos.width, menuMinWidth ?? pos.width) - 8,
+                  ),
+                ),
+                width: Math.max(pos.width, menuMinWidth ?? pos.width),
                 maxHeight: pos.maxHeight,
                 zIndex: menuZIndex,
               }}
             >
+              {menuColumns?.length ? (
+                <div
+                  className="ui-select-columns-header"
+                  style={{ gridTemplateColumns: columnTemplate }}
+                  aria-hidden
+                >
+                  {menuColumns.map((column, index) => (
+                    <span key={`${column.header}-${index}`}>{column.header}</span>
+                  ))}
+                </div>
+              ) : null}
+
               {searchable ? (
                 <div className="ui-select-search-wrap">
                   <input
@@ -455,8 +488,17 @@ export function UiSelect({
                           if (option.disabled) return
                           pick(option.value)
                         }}
+                        style={menuColumns?.length ? { gridTemplateColumns: columnTemplate } : undefined}
                       >
-                        <span>{option.label}</span>
+                        {menuColumns?.length ? (
+                          (option.columns ?? [option.label]).map((value, columnIndex) => (
+                            <span className="ui-select-option-cell" key={`${option.value}-${columnIndex}`}>
+                              {value}
+                            </span>
+                          ))
+                        ) : (
+                          <span>{option.label}</span>
+                        )}
                         {isSelected ? (
                           <span
                             className="ui-select-check bp-fancy-select-check"
