@@ -360,6 +360,150 @@ class PurchaseOrderTest extends TestCase
         $this->assertSame(0, $outsideDate->json('meta.total'));
     }
 
+    public function test_open_purchase_order_can_be_cancelled_idempotently_and_draft_receipt_cannot_post_afterwards(): void
+    {
+        $this->signInOwner('po-cancel')->assertOk();
+        $this->configurePurchaseClearing();
+
+        $warehouseUlid = $this->getJson('/api/auth/me')->assertOk()->json('warehouse.ulid');
+        $pcs = $this->unitUlid('PCS');
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-PO-CANCEL',
+            'name' => 'PO Cancel Supplier',
+        ])->assertCreated()->json('ulid');
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'PO Cancel Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $order = $this->postJson('/api/purchase-orders', [
+            'supplier_ulid' => $supplierUlid,
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'unit_ulid' => $pcs,
+                'quantity' => '5.000000',
+                'unit_price' => '10.0000',
+            ]],
+        ])->assertCreated();
+
+        $orderUlid = (string) $order->json('ulid');
+        $orderLineUlid = (string) $order->json('items.0.ulid');
+
+        $draftInvoiceUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'purchase_order_ulid' => $orderUlid,
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchases/'.$draftInvoiceUlid.'/lines', [
+            'purchase_order_line_ulid' => $orderLineUlid,
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '1.000000',
+            'unit_cost' => '10.0000',
+        ])->assertCreated();
+
+        $cancelled = $this->postJson('/api/purchase-orders/'.$orderUlid.'/cancel')
+            ->assertOk()
+            ->assertJsonPath('ulid', $orderUlid)
+            ->assertJsonPath('status', 'cancelled');
+
+        $this->assertNoInternalIds($cancelled->json());
+        $this->assertTrue(
+            AuditLog::query()
+                ->where('event', 'PURCHASE_ORDER_CANCELLED')
+                ->where('resource_ulid', $orderUlid)
+                ->exists(),
+        );
+
+        $this->postJson('/api/purchase-orders/'.$orderUlid.'/cancel')
+            ->assertOk()
+            ->assertJsonPath('status', 'cancelled');
+
+        $this->assertSame(
+            1,
+            AuditLog::query()
+                ->where('event', 'PURCHASE_ORDER_CANCELLED')
+                ->where('resource_ulid', $orderUlid)
+                ->count(),
+        );
+
+        $this->postJson('/api/purchases/'.$draftInvoiceUlid.'/post')
+            ->assertStatus(422);
+
+        $this->assertSame(
+            'cancelled',
+            PurchaseOrder::query()->where('ulid', $orderUlid)->value('status'),
+        );
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('po-cancel-other')->assertOk();
+
+        $this->postJson('/api/purchase-orders/'.$orderUlid.'/cancel')
+            ->assertNotFound();
+    }
+
+    public function test_purchase_order_with_posted_receipt_cannot_be_cancelled(): void
+    {
+        $this->signInOwner('po-cancel-received')->assertOk();
+        $this->configurePurchaseClearing();
+
+        $warehouseUlid = $this->getJson('/api/auth/me')->assertOk()->json('warehouse.ulid');
+        $pcs = $this->unitUlid('PCS');
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-PO-CANCEL-REC',
+            'name' => 'PO Cancel Received Supplier',
+        ])->assertCreated()->json('ulid');
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'PO Cancel Received Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $order = $this->postJson('/api/purchase-orders', [
+            'supplier_ulid' => $supplierUlid,
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'unit_ulid' => $pcs,
+                'quantity' => '5.000000',
+                'unit_price' => '10.0000',
+            ]],
+        ])->assertCreated();
+
+        $orderUlid = (string) $order->json('ulid');
+        $orderLineUlid = (string) $order->json('items.0.ulid');
+
+        $invoiceUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'purchase_order_ulid' => $orderUlid,
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchases/'.$invoiceUlid.'/lines', [
+            'purchase_order_line_ulid' => $orderLineUlid,
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '2.000000',
+            'unit_cost' => '10.0000',
+        ])->assertCreated();
+
+        $this->postJson('/api/purchases/'.$invoiceUlid.'/post')
+            ->assertOk();
+
+        $this->postJson('/api/purchase-orders/'.$orderUlid.'/cancel')
+            ->assertStatus(422);
+
+        $this->assertSame(
+            'open',
+            PurchaseOrder::query()->where('ulid', $orderUlid)->value('status'),
+        );
+        $this->assertFalse(
+            AuditLog::query()
+                ->where('event', 'PURCHASE_ORDER_CANCELLED')
+                ->where('resource_ulid', $orderUlid)
+                ->exists(),
+        );
+    }
+
     private function configurePurchaseClearing(): void
     {
         $tenantContext = app(TenantContext::class);
