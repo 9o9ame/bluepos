@@ -10,7 +10,10 @@ class AccountBalanceCalculator
     {
         $account->loadMissing('accountType');
 
-        if ($account->accountType?->is_payable) {
+        $normalBalance = $account->accountType?->normal_balance
+            ?? ($account->accountType?->is_payable ? 'credit' : 'debit');
+
+        if ($normalBalance === 'credit') {
             return bcsub($this->money($credit), $this->money($debit), 4);
         }
 
