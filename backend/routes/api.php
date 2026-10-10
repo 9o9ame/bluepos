@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\PartyProfileController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\Purchases\PurchaseInvoiceController;
+use App\Http\Controllers\Api\Purchases\PurchaseOrderController;
 use App\Http\Controllers\Api\Purchases\PurchaseReturnController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\SaleOfferController;
@@ -285,6 +286,10 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     });
 
     Route::middleware('entitled:purchases')->group(function () {
+        Route::get('/purchase-orders', [PurchaseOrderController::class, 'index']);
+        Route::post('/purchase-orders', [PurchaseOrderController::class, 'store']);
+        Route::get('/purchase-orders/{purchaseOrderUlid}', [PurchaseOrderController::class, 'show']);
+
         Route::get('/purchases', [PurchaseInvoiceController::class, 'index']);
         Route::post('/purchases', [PurchaseInvoiceController::class, 'store']);
         Route::get('/purchases/{purchaseUlid}', [PurchaseInvoiceController::class, 'show']);
