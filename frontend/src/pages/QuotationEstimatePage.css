@@ -10,26 +10,35 @@
   display: flex;
   min-height: 0;
   flex: 1;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
 }
 
 .quotation-tabs {
   display: flex;
+  width: 38px;
+  min-width: 38px;
+  flex: 0 0 38px;
+  flex-direction: column;
   gap: 4px;
-  border-bottom: 1px solid var(--ui-border);
+  border-right: 1px solid var(--ui-border);
   background: var(--ui-surface-subtle);
-  padding: 6px 8px 0;
+  padding: 6px 4px;
 }
 
 .quotation-tabs button {
+  display: flex;
+  min-height: 86px;
+  align-items: center;
+  justify-content: center;
   border: 1px solid transparent;
-  border-bottom: 0;
-  border-radius: var(--control-radius) var(--control-radius) 0 0;
+  border-radius: var(--control-radius);
   background: transparent;
   color: var(--ui-text-muted);
-  padding: 7px 14px;
+  padding: 8px 4px;
   font: inherit;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
   cursor: pointer;
 }
 
@@ -46,15 +55,16 @@
 
 .quotation-entry,
 .quotation-search {
+  min-width: 0;
   min-height: 0;
   flex: 1;
-  padding: 12px;
+  padding: 8px 10px 10px;
 }
 
 .quotation-entry {
   display: grid;
-  grid-template-rows: auto minmax(300px, 1fr) 112px auto;
-  gap: 12px;
+  grid-template-rows: auto minmax(320px, 1fr) 104px auto;
+  gap: 8px;
   overflow: hidden;
 }
 
@@ -66,17 +76,29 @@
 
 .quotation-header-grid {
   display: grid;
-  grid-template-columns: 150px 150px minmax(260px, 1.15fr) minmax(240px, 1fr) 190px;
-  gap: 10px;
-  align-items: end;
+  grid-template-columns: 170px 205px minmax(300px, 1.2fr) minmax(280px, 1fr) 230px;
+  gap: 8px;
+  align-items: center;
   border: 1px solid var(--ui-border);
   border-radius: var(--panel-radius);
   background: var(--ui-surface-subtle);
   box-shadow: var(--ui-card-shadow);
-  padding: 10px;
+  padding: 6px 8px;
 }
 
-.quotation-header-grid label,
+.quotation-header-grid label {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+}
+
+.quotation-header-grid label > span {
+  white-space: nowrap;
+}
+
 .quotation-footer-grid label {
   display: grid;
   gap: 5px;
@@ -187,7 +209,7 @@
 .quotation-footer-grid textarea {
   width: 100%;
   height: 100%;
-  min-height: 66px;
+  min-height: 58px;
   resize: none;
   box-sizing: border-box;
   padding: 10px;
@@ -239,11 +261,11 @@
 @media (max-width: 1200px) {
   .quotation-entry {
     overflow: auto;
-    grid-template-rows: auto minmax(260px, 1fr) auto auto;
+    grid-template-rows: auto minmax(280px, 1fr) auto auto;
   }
 
   .quotation-header-grid {
-    grid-template-columns: repeat(3, minmax(180px, 1fr));
+    grid-template-columns: repeat(2, minmax(260px, 1fr));
   }
 }
 
@@ -251,6 +273,27 @@
   .quotation-estimate-page,
   .quotation-estimate-page .desktop-panel-body {
     overflow: auto;
+  }
+
+  .quotation-estimate-page .desktop-panel-body {
+    flex-direction: column;
+  }
+
+  .quotation-tabs {
+    width: auto;
+    min-width: 0;
+    flex: 0 0 auto;
+    flex-direction: row;
+    border-right: 0;
+    border-bottom: 1px solid var(--ui-border);
+    padding: 4px 6px;
+  }
+
+  .quotation-tabs button {
+    min-height: 0;
+    writing-mode: horizontal-tb;
+    transform: none;
+    padding: 6px 10px;
   }
 
   .quotation-entry,
@@ -261,6 +304,10 @@
   .quotation-header-grid,
   .quotation-footer-grid {
     grid-template-columns: 1fr;
+  }
+
+  .quotation-header-grid label {
+    grid-template-columns: 88px minmax(0, 1fr);
   }
 
   .quotation-search-bar {
