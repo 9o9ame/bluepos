@@ -8,6 +8,8 @@ import type {
   PurchasePayment,
   PurchasePaymentMethod,
   PurchaseOrder,
+  PurchaseOrderGeneratePayload,
+  PurchaseOrderGenerateRow,
   PurchaseOrderPayload,
 } from '../types/purchases'
 
@@ -134,6 +136,17 @@ export function fetchPurchaseOrder(ulid: string) {
 
 export function createPurchaseOrder(payload: PurchaseOrderPayload) {
   return apiFetch<PurchaseOrder>('/api/purchase-orders', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+
+export function generatePurchaseOrder(payload: PurchaseOrderGeneratePayload) {
+  return apiFetch<{
+    data: PurchaseOrderGenerateRow[]
+    meta: { mode: string; count: number }
+  }>('/api/purchase-orders/generate', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
