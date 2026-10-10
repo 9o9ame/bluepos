@@ -620,11 +620,29 @@ export function resolveWorkspaceModule(pathname: string): WorkspaceModule {
   return match ?? WORKSPACE_MODULES[0]
 }
 
-export function moduleTabIdentity(module: WorkspaceModule, pathname: string): { key: string; title: string; path: string } {
+export function moduleTabIdentity(
+  module: WorkspaceModule,
+  pathname: string,
+  search = '',
+): { key: string; title: string; path: string } {
+  if (module.key === 'vouchers') {
+    const type = new URLSearchParams(search).get('type')
+
+    if (type === 'payment') {
+      return { key: 'vouchers:payment', title: 'Cash Payment Voucher', path: pathname + search }
+    }
+    if (type === 'receiving') {
+      return { key: 'vouchers:receiving', title: 'Cash Receiving Voucher', path: pathname + search }
+    }
+    if (type === 'journal') {
+      return { key: 'vouchers:journal', title: 'Journal Voucher', path: pathname + search }
+    }
+  }
+
   return {
     key: module.keyForPath ? module.keyForPath(pathname) : module.key,
     title: module.titleForPath ? module.titleForPath(pathname) : module.title,
-    path: pathname,
+    path: pathname + search,
   }
 }
 
