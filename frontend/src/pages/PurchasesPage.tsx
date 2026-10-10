@@ -973,7 +973,6 @@ export function PurchasesPage() {
     setAutoCalcMrp(true)
     setWithholdingIsPct(false)
     setDualModes({ ...DEFAULT_DUAL_MODES })
-    autoPurchaseOrderAttemptedRef.current = ''
   }
 
   async function openInvoice(ulid: string) {
@@ -1076,7 +1075,10 @@ export function PurchasesPage() {
   const autoPurchaseOrderUlid = searchParams.get('purchase_order')?.trim() ?? ''
 
   useEffect(() => {
-    if (!autoPurchaseOrderUlid) return
+    if (!autoPurchaseOrderUlid) {
+      autoPurchaseOrderAttemptedRef.current = ''
+      return
+    }
     if (autoPurchaseOrderAttemptedRef.current === autoPurchaseOrderUlid) return
 
     autoPurchaseOrderAttemptedRef.current = autoPurchaseOrderUlid
