@@ -293,17 +293,21 @@
   position: sticky;
   bottom: 0;
   display: flex;
-  min-height: 36px;
+  min-height: 38px;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  border-top: 1px solid var(--ui-table-border);
-  background: var(--ui-surface);
-  color: var(--ui-text-muted);
+  gap: 8px;
+  border-top: 1px solid var(--ui-border);
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-strong);
   font-size: 12px;
+  font-weight: 700;
+  box-shadow: var(--ui-card-shadow);
 }
 
 .purchase-order-load-more svg {
+  color: var(--ui-accent);
+  filter: drop-shadow(0 0 4px var(--ui-accent-soft));
   animation: purchase-order-loader-spin 0.8s linear infinite;
 }
 
