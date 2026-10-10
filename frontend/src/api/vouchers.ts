@@ -9,7 +9,9 @@ export type VoucherAccount = {
   name: string
   is_cash?: boolean
   is_bank?: boolean
+  is_payable?: boolean
   party_type?: 'vendor' | 'customer' | 'account'
+  balance: string
 }
 
 export type VoucherLine = {
@@ -58,10 +60,11 @@ export type VoucherSummaryRow = {
   credit: string
 }
 
-export function fetchVoucherAccounts(params?: { cash_only?: boolean; q?: string }) {
+export function fetchVoucherAccounts(params?: { cash_only?: boolean; q?: string; as_of?: string }) {
   const search = new URLSearchParams()
   if (params?.cash_only) search.set('cash_only', '1')
   if (params?.q) search.set('q', params.q)
+  if (params?.as_of) search.set('as_of', params.as_of)
   const suffix = search.toString() ? `?${search.toString()}` : ''
   return apiFetch<VoucherAccount[]>(`/api/vouchers/accounts${suffix}`)
 }
