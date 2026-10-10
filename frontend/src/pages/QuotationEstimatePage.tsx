@@ -36,6 +36,7 @@ export function QuotationEstimatePage() {
   const feedback = useFeedback()
   const cart = useSaleCart()
   const idempotencyKeyRef = useRef(newQuotationKey())
+  const productSearchRef = useRef<HTMLInputElement>(null)
 
   const [tab, setTab] = useState<'entry' | 'search'>('entry')
   const [quotationDate, setQuotationDate] = useState(() => new Date().toISOString().slice(0, 10))
@@ -418,6 +419,7 @@ export function QuotationEstimatePage() {
                   <tr className="quotation-entry-row">
                     <td className="quotation-product-search-cell">
                       <input
+                        ref={productSearchRef}
                         className="quotation-product-search-input sales-pos-product-entry is-active-product"
                         value={productQuery}
                         placeholder="Search / select product"
@@ -440,6 +442,7 @@ export function QuotationEstimatePage() {
                           rows={productsQuery.data.data}
                           total={productsQuery.data.meta.total}
                           priceType={cart.priceType}
+                          portalAnchorRef={productSearchRef}
                           onSelect={(product) => void addSelectedProduct(product.ulid)}
                         />
                       ) : null}
