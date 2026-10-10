@@ -282,6 +282,7 @@ class VoucherController extends Controller
     {
         $rules = [
             'entry_date' => ['required', 'date'],
+            'book_number' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string', 'max:500'],
             'header_account_ulid' => ['nullable', 'string', 'size:26'],
             'lines' => ['required', 'array', 'min:1', 'max:100'],
@@ -340,6 +341,7 @@ class VoucherController extends Controller
         return [
             'ulid' => $entry->ulid,
             'voucher_number' => $entry->voucher_number,
+            'book_number' => $entry->book_number,
             'type' => $type,
             'entry_date' => $entry->entry_date?->toDateString(),
             'description' => $entry->description,
