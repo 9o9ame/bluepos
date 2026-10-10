@@ -36,12 +36,14 @@ export function ProductLookupGrid({
   priceType,
   onSelect,
   portalAnchorRef,
+  themed = false,
 }: {
   rows: Product[]
   total: number
   priceType: SalePriceType
   onSelect: (product: Product) => void
   portalAnchorRef?: RefObject<HTMLElement | null>
+  themed?: boolean
 }) {
   const [portalStyle, setPortalStyle] = useState<{
     top: number
@@ -81,7 +83,11 @@ export function ProductLookupGrid({
 
   const grid = (
     <div
-      className={`sales-pos-product-results-grid${portalStyle ? ' is-portal' : ''}`}
+      className={[
+        'sales-pos-product-results-grid',
+        portalStyle ? 'is-portal' : '',
+        themed ? 'is-themed' : '',
+      ].filter(Boolean).join(' ')}
       style={
         portalStyle
           ? {
