@@ -183,6 +183,7 @@ class VoucherController extends Controller
                 'is_cash' => $account->accountType?->is_cash || $account->accountType?->code === '0010',
                 'is_bank' => $account->accountType?->is_bank || $account->accountType?->code === '0012',
                 'is_payable' => (bool) $account->accountType?->is_payable,
+                'normal_balance' => $account->accountType?->normal_balance ?? 'debit',
                 'party_type' => $account->supplier_id ? 'vendor' : ($account->customer_id ? 'customer' : 'account'),
                 'balance' => $balance,
             ];
