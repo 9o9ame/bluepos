@@ -287,6 +287,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::middleware('entitled:purchases')->group(function () {
         Route::get('/purchase-orders', [PurchaseOrderController::class, 'index']);
+        Route::get('/purchase-orders/status', [PurchaseOrderController::class, 'status']);
         Route::post('/purchase-orders/generate', [PurchaseOrderController::class, 'generate']);
         Route::post('/purchase-orders', [PurchaseOrderController::class, 'store']);
         Route::get('/purchase-orders/{purchaseOrderUlid}', [PurchaseOrderController::class, 'show']);
