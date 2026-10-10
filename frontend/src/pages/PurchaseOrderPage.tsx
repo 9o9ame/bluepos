@@ -9,6 +9,7 @@ import {
   fetchSuppliers,
 } from '../api/catalog'
 import {
+  cancelPurchaseOrder,
   createPurchaseOrder,
   fetchPurchaseOrder,
   fetchPurchaseOrders,
@@ -178,6 +179,7 @@ export function PurchaseOrderPage() {
   const { closeActiveTab, openModule } = useWorkspace()
   const feedback = useFeedback()
   const canCreate = useCan('purchases.create')
+  const canEdit = useCan('purchases.edit')
 
   const [tab, setTab] = useState<'entry' | 'search' | 'status'>('entry')
   const [supplierUlid, setSupplierUlid] = useState('')
@@ -701,6 +703,26 @@ export function PurchaseOrderPage() {
     },
   })
 
+  const cancelMutation = useMutation({
+    mutationFn: (orderUlid: string) => cancelPurchaseOrder(orderUlid),
+    onSuccess: (order) => {
+      setOpenedOrder(order)
+      setSavedOrder(null)
+      void ordersQuery.refetch()
+      void statusQuery.refetch()
+      feedback.success(
+        `Purchase Order ${order.document_number} cancelled.`,
+        'Purchase Order',
+      )
+    },
+    onError: (error) => {
+      feedback.error(
+        error instanceof Error ? error.message : 'Unable to cancel purchase order.',
+        'Purchase Order',
+      )
+    },
+  })
+
   const displayedLines = activeOrder?.items ?? []
 
   return (
@@ -721,12 +743,34 @@ export function PurchaseOrderPage() {
             icon={<ReceiptText size={15} />}
             label="To Purchase Invoice"
             variant="primary"
-            disabled={!activeOrder}
+            disabled={!activeOrder || activeOrder.status !== 'open'}
             onClick={() => {
-              if (!activeOrder) return
+              if (!activeOrder || activeOrder.status !== 'open') return
               openModule(
                 `/daily/purchases?purchase_order=${encodeURIComponent(activeOrder.ulid)}`,
               )
+            }}
+          />
+          <DesktopButton
+            icon={<XCircle size={15} />}
+            label="Cancel Order"
+            variant="danger"
+            disabled={
+              !canEdit ||
+              !activeOrder ||
+              activeOrder.status !== 'open' ||
+              cancelMutation.isPending
+            }
+            onClick={() => {
+              if (!activeOrder || activeOrder.status !== 'open') return
+              if (
+                !window.confirm(
+                  `Cancel Purchase Order ${activeOrder.document_number}? This cannot be undone.`,
+                )
+              ) {
+                return
+              }
+              cancelMutation.mutate(activeOrder.ulid)
             }}
           />
           <DesktopButton
