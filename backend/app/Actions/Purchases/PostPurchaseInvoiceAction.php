@@ -147,9 +147,9 @@ class PostPurchaseInvoiceAction
             ->lockForUpdate()
             ->firstOrFail();
 
-        if ((string) $purchaseOrder->status === 'cancelled') {
+        if ((string) $purchaseOrder->status !== 'open') {
             throw ValidationException::withMessages([
-                'purchase_order_ulid' => 'Cancelled Purchase Orders cannot receive Purchase Invoices.',
+                'purchase_order_ulid' => 'Only open Purchase Orders can receive Purchase Invoices.',
             ]);
         }
 
