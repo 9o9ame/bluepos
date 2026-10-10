@@ -65,8 +65,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const activeModule = useMemo(() => resolveWorkspaceModule(location.pathname), [location.pathname])
   const identity = useMemo(
-    () => moduleTabIdentity(activeModule, location.pathname),
-    [activeModule, location.pathname],
+    () => moduleTabIdentity(activeModule, location.pathname, location.search),
+    [activeModule, location.pathname, location.search],
   )
 
   useEffect(() => {
