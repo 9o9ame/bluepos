@@ -525,7 +525,7 @@ export function PurchaseOrderPage() {
               <div className="purchase-order-section-title">Purchase Order Options</div>
 
               <div className="purchase-order-option-grid">
-                <label>
+                <label className="po-option-po">
                   <span>PO #</span>
                   <input
                     value={activeOrder?.document_number ?? 'Auto'}
@@ -534,7 +534,7 @@ export function PurchaseOrderPage() {
                   />
                 </label>
 
-                <label>
+                <label className="po-option-date">
                   <span>Order Date</span>
                   <input
                     type="date"
@@ -544,7 +544,7 @@ export function PurchaseOrderPage() {
                   />
                 </label>
 
-                <label className="is-order-type">
+                <label className="is-order-type po-option-type">
                   <span>Order Type</span>
                   <UiSelect
                     value={orderType}
@@ -556,14 +556,14 @@ export function PurchaseOrderPage() {
                   />
                 </label>
 
-                <label className="purchase-order-check">
+                <label className="purchase-order-check po-option-pack">
                   <input type="checkbox" disabled checked={false} readOnly />
                   <span title="Reference behavior is not mapped to the current BluePOS unit model.">
                     Apply to Pack
                   </span>
                 </label>
 
-                <label className="purchase-order-check">
+                <label className="purchase-order-check po-option-nonsold">
                   <input
                     type="checkbox"
                     checked={includeNonSold}
@@ -573,7 +573,7 @@ export function PurchaseOrderPage() {
                   <span>Non Sold Product Also</span>
                 </label>
 
-                <label>
+                <label className="po-option-days">
                   <span>Days</span>
                   <input
                     type="number"
@@ -584,7 +584,7 @@ export function PurchaseOrderPage() {
                   />
                 </label>
 
-                <label>
+                <label className="po-option-from">
                   <span>From</span>
                   <input
                     type="date"
@@ -594,7 +594,7 @@ export function PurchaseOrderPage() {
                   />
                 </label>
 
-                <label>
+                <label className="po-option-to">
                   <span>To</span>
                   <input
                     type="date"
@@ -604,7 +604,7 @@ export function PurchaseOrderPage() {
                   />
                 </label>
 
-                <label className="is-wide">
+                <label className="is-wide po-option-supplier">
                   <span>From / Supplier</span>
                   <UiSelect
                     value={activeOrder?.supplier?.ulid ?? supplierUlid}
@@ -624,7 +624,7 @@ export function PurchaseOrderPage() {
                   />
                 </label>
 
-                <label>
+                <label className="po-option-category">
                   <span>Category</span>
                   <UiSelect
                     value={categoryUlid}
@@ -635,7 +635,7 @@ export function PurchaseOrderPage() {
                   />
                 </label>
 
-                <label>
+                <label className="po-option-company">
                   <span>Company</span>
                   <UiSelect
                     value={brandUlid}
