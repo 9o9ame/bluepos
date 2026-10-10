@@ -12,6 +12,7 @@ import {
   postVoucher,
   updateVoucher,
   type Voucher,
+  type VoucherAccount,
   type VoucherInputLine,
   type VoucherPayload,
   type VoucherType,
@@ -39,6 +40,14 @@ function today(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
+function currentTime(): string {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date())
+}
+
 function newLine(): EntryLine {
   return {
     key: crypto.randomUUID(),
@@ -50,9 +59,26 @@ function newLine(): EntryLine {
   }
 }
 
-function money(value: string): string {
+function money(value: number | string): string {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed.toFixed(4) : '0.0000'
+}
+
+function voucherLabel(type: VoucherType): string {
+  if (type === 'payment') return 'Cash Payment Voucher'
+  if (type === 'receiving') return 'Cash Receiving Voucher'
+  return 'Journal Voucher'
+}
+
+function voucherNumberLabel(type: VoucherType): string {
+  if (type === 'payment') return 'DV#'
+  if (type === 'receiving') return 'CV#'
+  return 'JV#'
+}
+
+function signedEffect(account: VoucherAccount | undefined, debit: number, credit: number): number {
+  if (!account) return 0
+  return account.is_payable ? credit - debit : debit - credit
 }
 
 export function VouchersPage() {
@@ -63,14 +89,14 @@ export function VouchersPage() {
   const canCreate = useCan('vouchers.create')
   const canApprove = useCan('vouchers.approve')
 
-  const initialType = (searchParams.get('type') ?? '') as VoucherType
+  const requestedType = searchParams.get('type')
+  const initialType: VoucherType =
+    requestedType === 'receiving' || requestedType === 'journal' ? requestedType : 'payment'
+
   const [tab, setTab] = useState<'entry' | 'search' | 'summary'>('entry')
-  const [type, setType] = useState<VoucherType>(
-    ['payment', 'receiving', 'journal'].includes(initialType) ? initialType : 'payment',
-  )
+  const [type, setType] = useState<VoucherType>(initialType)
   const [document, setDocument] = useState<Voucher | null>(null)
   const [entryDate, setEntryDate] = useState(today())
-  const [description, setDescription] = useState('')
   const [headerAccountUlid, setHeaderAccountUlid] = useState('')
   const [lines, setLines] = useState<EntryLine[]>([newLine()])
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
@@ -86,14 +112,19 @@ export function VouchersPage() {
   const [summaryTo, setSummaryTo] = useState(today())
   const [summaryType, setSummaryType] = useState('')
 
+  const balanceParams = {
+    as_of: entryDate,
+    before_voucher_ulid: document?.ulid,
+  }
+
   const allAccountsQuery = useQuery({
-    queryKey: ['voucher-accounts', 'all'],
-    queryFn: () => fetchVoucherAccounts(),
+    queryKey: ['voucher-accounts', 'all', entryDate, document?.ulid ?? 'new'],
+    queryFn: () => fetchVoucherAccounts(balanceParams),
     enabled: canView,
   })
   const cashAccountsQuery = useQuery({
-    queryKey: ['voucher-accounts', 'cash'],
-    queryFn: () => fetchVoucherAccounts({ cash_only: true }),
+    queryKey: ['voucher-accounts', 'cash', entryDate, document?.ulid ?? 'new'],
+    queryFn: () => fetchVoucherAccounts({ ...balanceParams, cash_only: true }),
     enabled: canView,
   })
   const listQuery = useQuery({
@@ -122,13 +153,21 @@ export function VouchersPage() {
 
   const accounts = allAccountsQuery.data ?? []
   const cashAccounts = cashAccountsQuery.data ?? []
+  const accountMap = useMemo(
+    () => new Map(accounts.map((account) => [account.ulid, account])),
+    [accounts],
+  )
+  const cashAccountMap = useMemo(
+    () => new Map(cashAccounts.map((account) => [account.ulid, account])),
+    [cashAccounts],
+  )
   const readOnly = document?.status === 'posted'
-  const heading =
-    type === 'payment'
-      ? 'Cash / Bank Payment Voucher'
-      : type === 'receiving'
-        ? 'Cash / Bank Receiving Voucher'
-        : 'Journal Voucher'
+  const heading = voucherLabel(type)
+  const displayTime = document?.posted_at
+    ? new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', hour12: false }).format(
+        new Date(document.posted_at),
+      )
+    : currentTime()
 
   const debitTotal = useMemo(
     () =>
@@ -145,13 +184,26 @@ export function VouchersPage() {
     [lines, type],
   )
 
+  const headerAccount = cashAccountMap.get(headerAccountUlid) ?? accountMap.get(headerAccountUlid)
+  const preBalance = type === 'journal' ? 0 : Number(headerAccount?.balance ?? 0)
+  const thisVoucher = type === 'journal' ? 0 : lines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0)
+  const headerDebit = type === 'receiving' ? thisVoucher : 0
+  const headerCredit = type === 'payment' ? thisVoucher : 0
+  const totalBalance =
+    type === 'journal'
+      ? 0
+      : preBalance + signedEffect(headerAccount, headerDebit, headerCredit)
+
   useEffect(() => {
-    const requested = searchParams.get('type')
-    if (requested === 'payment' || requested === 'receiving' || requested === 'journal') {
-      if (!document) setType(requested)
-      setTab('entry')
+    if (requestedType !== 'payment' && requestedType !== 'receiving' && requestedType !== 'journal') {
+      return
     }
-  }, [searchParams, document])
+
+    if (requestedType !== type || document) {
+      resetEditor(requestedType)
+    }
+    setTab('entry')
+  }, [requestedType])
 
   function handleError(err: unknown) {
     setError(err instanceof ApiClientError || err instanceof Error ? err.message : 'Voucher request failed.')
@@ -161,7 +213,6 @@ export function VouchersPage() {
     setDocument(null)
     setType(nextType)
     setEntryDate(today())
-    setDescription('')
     setHeaderAccountUlid('')
     setLines([newLine()])
     setIdempotencyKey(crypto.randomUUID())
@@ -172,7 +223,6 @@ export function VouchersPage() {
     setDocument(voucher)
     setType(voucher.type)
     setEntryDate(voucher.entry_date)
-    setDescription(voucher.description ?? '')
     setHeaderAccountUlid(voucher.header_account?.ulid ?? '')
     const source = voucher.type === 'journal' ? voucher.lines : voucher.lines.filter((line) => !line.is_header)
     setLines(
@@ -211,7 +261,7 @@ export function VouchersPage() {
 
     return {
       entry_date: entryDate,
-      description: description || null,
+      description: null,
       header_account_ulid: type === 'journal' ? null : headerAccountUlid,
       lines: detailLines,
     }
@@ -226,6 +276,7 @@ export function VouchersPage() {
     onSuccess: async (saved) => {
       loadVoucher(saved)
       await queryClient.invalidateQueries({ queryKey: ['vouchers'] })
+      await queryClient.invalidateQueries({ queryKey: ['voucher-accounts'] })
     },
   })
 
@@ -238,6 +289,7 @@ export function VouchersPage() {
       loadVoucher(posted)
       await queryClient.invalidateQueries({ queryKey: ['vouchers'] })
       await queryClient.invalidateQueries({ queryKey: ['voucher-summary'] })
+      await queryClient.invalidateQueries({ queryKey: ['voucher-accounts'] })
     },
   })
 
@@ -272,6 +324,26 @@ export function VouchersPage() {
 
   function updateLine(key: string, patch: Partial<EntryLine>) {
     setLines((current) => current.map((line) => (line.key === key ? { ...line, ...patch } : line)))
+  }
+
+  function lineBalance(line: EntryLine): number {
+    return Number(accountMap.get(line.account_ulid)?.balance ?? 0)
+  }
+
+  function lineClosing(line: EntryLine): number {
+    const account = accountMap.get(line.account_ulid)
+    const opening = Number(account?.balance ?? 0)
+
+    if (type === 'payment') {
+      const amount = Number(line.amount) || 0
+      return opening + signedEffect(account, amount, 0)
+    }
+    if (type === 'receiving') {
+      const amount = Number(line.amount) || 0
+      return opening + signedEffect(account, 0, amount)
+    }
+
+    return opening + signedEffect(account, Number(line.debit) || 0, Number(line.credit) || 0)
   }
 
   if (!canView) {
@@ -315,6 +387,7 @@ export function VouchersPage() {
               if (tab === 'search') void listQuery.refetch()
               else if (tab === 'summary') void summaryQuery.refetch()
               else if (document?.ulid) void openMutation.mutateAsync(document.ulid).catch(handleError)
+              else void queryClient.invalidateQueries({ queryKey: ['voucher-accounts'] })
             }}
           />
           {document?.ulid && !readOnly ? (
@@ -345,48 +418,57 @@ export function VouchersPage() {
       {tab === 'entry' ? (
         <div className="voucher-entry">
           <div className="voucher-entry-meta">
-            <label>
-              <span>Voucher Type</span>
-              <UiSelect
-                aria-label="Voucher type"
-                value={type}
-                disabled={Boolean(document?.ulid)}
-                options={[
-                  { value: 'payment', label: 'Payment Voucher (Dr)' },
-                  { value: 'receiving', label: 'Receiving Voucher (Cr)' },
-                  { value: 'journal', label: 'Journal Voucher (JV)' },
-                ]}
-                onChange={(value) => resetEditor(value as VoucherType)}
-              />
-            </label>
-            <label>
-              <span>Voucher #</span>
-              <input className="desktop-input" value={document?.voucher_number ?? 'Auto'} disabled />
-            </label>
-            <label>
-              <span>Date</span>
-              <input className="desktop-input" type="date" value={entryDate} disabled={readOnly} onChange={(event) => setEntryDate(event.target.value)} />
-            </label>
-            {type !== 'journal' ? (
-              <label className="is-wide">
-                <span>Cash / Bank Account</span>
-                <UiSelect
-                  aria-label="Cash or bank account"
-                  value={headerAccountUlid}
-                  disabled={readOnly}
-                  placeholder="Select cash / bank account"
-                  options={cashAccounts.map((account) => ({
-                    value: account.ulid,
-                    label: `${account.code} · ${account.name}`,
-                  }))}
-                  onChange={setHeaderAccountUlid}
-                />
+            <div className="voucher-meta-top">
+              <label>
+                <span>{voucherNumberLabel(type)}</span>
+                <input className="desktop-input" value={document?.voucher_number ?? 'Auto'} disabled />
               </label>
-            ) : null}
-            <label className="is-wide">
-              <span>Narration</span>
-              <input className="desktop-input" value={description} disabled={readOnly} onChange={(event) => setDescription(event.target.value)} />
-            </label>
+              <label>
+                <span>Book#</span>
+                <input className="desktop-input" value="" disabled aria-label="Book number unavailable" />
+              </label>
+              <label>
+                <span>Date</span>
+                <input className="desktop-input" type="date" value={entryDate} disabled={readOnly} onChange={(event) => setEntryDate(event.target.value)} />
+              </label>
+              <label>
+                <span>Time</span>
+                <input className="desktop-input" value={displayTime} disabled />
+              </label>
+            </div>
+
+            <div className="voucher-meta-account">
+              <label className="voucher-account-field">
+                <span>Account</span>
+                {type === 'journal' ? (
+                  <input className="desktop-input" value="JV" disabled />
+                ) : (
+                  <UiSelect
+                    aria-label="Voucher cash or bank account"
+                    value={headerAccountUlid}
+                    disabled={readOnly}
+                    placeholder="Select cash / bank account"
+                    options={cashAccounts.map((account) => ({
+                      value: account.ulid,
+                      label: `${account.code} · ${account.name}`,
+                    }))}
+                    onChange={setHeaderAccountUlid}
+                  />
+                )}
+              </label>
+              <label>
+                <span>Pre balance</span>
+                <input className="desktop-input voucher-balance is-pre" value={money(preBalance)} disabled />
+              </label>
+              <label>
+                <span>This Voucher</span>
+                <input className="desktop-input voucher-balance is-current" value={money(thisVoucher)} disabled />
+              </label>
+              <label>
+                <span>Total Bal</span>
+                <input className="desktop-input voucher-balance is-total" value={money(totalBalance)} disabled />
+              </label>
+            </div>
           </div>
 
           <div className="voucher-line-grid-wrap">
@@ -395,7 +477,9 @@ export function VouchersPage() {
                 <tr>
                   <th>Vendor / Customer / Account</th>
                   <th>Narration</th>
+                  <th>Balance</th>
                   {type === 'journal' ? <><th>Debit</th><th>Credit</th></> : <th>Amount</th>}
+                  <th>Closing</th>
                   <th aria-label="Actions" />
                 </tr>
               </thead>
@@ -418,6 +502,7 @@ export function VouchersPage() {
                     <td>
                       <input className="desktop-input" value={line.narration} disabled={readOnly} onChange={(event) => updateLine(line.key, { narration: event.target.value })} />
                     </td>
+                    <td className="voucher-readonly-money">{money(lineBalance(line))}</td>
                     {type === 'journal' ? (
                       <>
                         <td><input className="desktop-input voucher-money" inputMode="decimal" value={line.debit} disabled={readOnly} onChange={(event) => updateLine(line.key, { debit: event.target.value })} /></td>
@@ -426,6 +511,7 @@ export function VouchersPage() {
                     ) : (
                       <td><input className="desktop-input voucher-money" inputMode="decimal" value={line.amount} disabled={readOnly} onChange={(event) => updateLine(line.key, { amount: event.target.value })} /></td>
                     )}
+                    <td className="voucher-readonly-money">{money(lineClosing(line))}</td>
                     <td>
                       <UiButton
                         variant="danger"
@@ -447,8 +533,8 @@ export function VouchersPage() {
               Add Line
             </UiButton>
             <div className="voucher-totals">
-              <span>Debit <strong>{money(debitTotal.toString())}</strong></span>
-              <span>Credit <strong>{money(creditTotal.toString())}</strong></span>
+              <span>Debit <strong>{money(debitTotal)}</strong></span>
+              <span>Credit <strong>{money(creditTotal)}</strong></span>
               <span>Status <strong>{(document?.status ?? 'draft').toUpperCase()}</strong></span>
             </div>
           </div>
@@ -489,7 +575,7 @@ export function VouchersPage() {
               { key: 'voucher_number', header: 'Voucher #', width: 120, render: (row) => row.voucher_number },
               { key: 'entry_date', header: 'Date', width: 105, render: (row) => row.entry_date },
               { key: 'type', header: 'Type', width: 100, render: (row) => row.type.toUpperCase() },
-              { key: 'description', header: 'Narration', render: (row) => row.description ?? '—' },
+              { key: 'description', header: 'Narration', render: (row) => row.lines.find((line) => line.narration)?.narration ?? '—' },
               { key: 'debit', header: 'Debit', width: 120, align: 'right', render: (row) => row.total_debit },
               { key: 'credit', header: 'Credit', width: 120, align: 'right', render: (row) => row.total_credit },
               { key: 'status', header: 'Status', width: 90, render: (row) => row.status.toUpperCase() },
