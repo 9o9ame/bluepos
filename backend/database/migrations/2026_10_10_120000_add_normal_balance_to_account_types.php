@@ -10,8 +10,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('account_types', function (Blueprint $table) {
-            $table->string('normal_balance', 6)->default('debit')->after('is_payable');
+            $table->string('normal_balance', 6)->default('debit');
         });
+
+        DB::statement(
+            "ALTER TABLE account_types
+             ADD CONSTRAINT account_types_normal_balance_check
+             CHECK (normal_balance IN ('debit', 'credit'))"
+        );
 
         DB::statement(<<<'SQL'
             UPDATE account_types AS account_type
@@ -26,6 +32,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        DB::statement(
+            'ALTER TABLE account_types DROP CONSTRAINT IF EXISTS account_types_normal_balance_check'
+        );
+
         Schema::table('account_types', function (Blueprint $table) {
             $table->dropColumn('normal_balance');
         });
