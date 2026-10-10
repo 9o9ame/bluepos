@@ -140,6 +140,15 @@ class VoucherTest extends TestCase
 
         $this->postJson('/api/vouchers/'.$receiving->json('ulid').'/post')->assertOk();
 
+        $accounts = $this->getJson('/api/vouchers/accounts?as_of='.$date)->assertOk()->json();
+        $cashBalance = collect($accounts)->firstWhere('ulid', $cash->ulid);
+        $revenueBalance = collect($accounts)->firstWhere('ulid', $revenue->ulid);
+
+        $this->assertSame('debit', $cashBalance['normal_balance'] ?? null);
+        $this->assertSame('25.0000', $cashBalance['balance'] ?? null);
+        $this->assertSame('credit', $revenueBalance['normal_balance'] ?? null);
+        $this->assertSame('25.0000', $revenueBalance['balance'] ?? null);
+
         $journal = $this->postJson('/api/vouchers', [
             'type' => 'journal',
             'entry_date' => $date,
@@ -254,6 +263,18 @@ class VoucherTest extends TestCase
         $this->assertNotNull($offset);
         $this->assertSame($equity->id, $offset->account_id);
         $this->assertSame('70.0000', (string) $offset->credit);
+
+        $accounts = $this->getJson('/api/vouchers/accounts?as_of='.$date)->assertOk()->json();
+        $assetBalance = collect($accounts)->firstWhere('ulid', $asset->ulid);
+        $liabilityBalance = collect($accounts)->firstWhere('ulid', $liability->ulid);
+        $equityBalance = collect($accounts)->firstWhere('ulid', $equity->ulid);
+
+        $this->assertSame('debit', $assetBalance['normal_balance'] ?? null);
+        $this->assertSame('100.0000', $assetBalance['balance'] ?? null);
+        $this->assertSame('credit', $liabilityBalance['normal_balance'] ?? null);
+        $this->assertSame('30.0000', $liabilityBalance['balance'] ?? null);
+        $this->assertSame('credit', $equityBalance['normal_balance'] ?? null);
+        $this->assertSame('70.0000', $equityBalance['balance'] ?? null);
 
         $replay = $this->postJson('/api/vouchers', $payload, $this->idem('voucher-opening-1'))
             ->assertCreated()
