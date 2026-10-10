@@ -17,7 +17,6 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboa
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
-import type { Product } from '../types/catalog'
 import { fetchParties, fetchParty, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
 import { createSale, createSaleHold, createSaleQuotation, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen } from '../api/sales'
@@ -30,11 +29,12 @@ import { SalesExpenses } from '../features/sales/SalesExpenses'
 import { SalesInvoiceHistory } from '../features/sales/SalesInvoiceHistory'
 import { SalesPendingInvoices } from '../features/sales/SalesPendingInvoices'
 import { SalesProductWiseSummary } from '../features/sales/SalesProductWiseSummary'
+import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { useSaleCart } from '../features/sales/useSaleCart'
 import { useCan } from '../features/auth/useCan'
 import { useAuth } from '../features/auth/AuthProvider'
 import type { SaleOfferEvaluation } from '../types/saleSchemes'
-import type { Sale, SaleHold, SalePaymentMethod, SalePriceType } from '../types/sales'
+import type { Sale, SaleHold, SalePaymentMethod } from '../types/sales'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
 import { UiModal } from '../components/ui/UiModal'
 import { UiSelect } from '../components/ui/UiSelect'
@@ -83,77 +83,6 @@ function newSaleKey(): string {
 
 function newHoldKey(): string {
   return `pos-hold-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-}
-
-function productLookupPrice(product: Product, priceType: SalePriceType): string {
-  const type = priceType === 'wholesale' ? 'wholesale' : 'retail'
-  return product.prices?.find((price) => price.is_active && price.price_type === type)?.amount ?? '—'
-}
-
-function productBaseRate(product: Product): string {
-  return product.prices?.find((price) => price.is_active && price.price_type === 'minimum_sale')?.amount ?? '—'
-}
-
-function productLookupDescription(product: Product): string {
-  const barcode =
-    product.primary_barcode ??
-    product.barcodes?.find((row) => row.is_primary && row.is_active)?.barcode ??
-    product.barcodes?.find((row) => row.is_active)?.barcode ??
-    ''
-
-  const parts = [barcode, product.name, product.category?.name].filter(Boolean)
-  return parts.join(' * ')
-}
-
-function ProductLookupGrid({
-  rows,
-  total,
-  priceType,
-  onSelect,
-}: {
-  rows: Product[]
-  total: number
-  priceType: SalePriceType
-  onSelect: (product: Product) => void
-}) {
-  return (
-    <div className="sales-pos-product-results-grid" role="listbox" aria-label="Choose product">
-      <div className="sales-pos-product-grid-head" aria-hidden="true">
-        <span>ID</span>
-        <span>Description</span>
-        <span>In Stock</span>
-        <span>Unit Price</span>
-        <span>Base Rate</span>
-        <span>Cost</span>
-        <span>Unit</span>
-        <span>Location</span>
-      </div>
-
-      <div className="sales-pos-product-grid-body">
-        {rows.slice(0, 12).map((row) => (
-          <button
-            type="button"
-            className="sales-pos-product-grid-row"
-            key={row.ulid}
-            onClick={() => onSelect(row)}
-          >
-            <span>{row.product_number}</span>
-            <strong>{productLookupDescription(row)}</strong>
-            <span>{row.sales_lookup ? Number.parseFloat(row.sales_lookup.in_stock).toFixed(3) : '—'}</span>
-            <span>{productLookupPrice(row, priceType)}</span>
-            <span>{productBaseRate(row)}</span>
-            <span>{row.sales_lookup?.average_cost ?? '—'}</span>
-            <span>{row.base_unit?.symbol ?? row.base_unit?.code ?? '—'}</span>
-            <span>{row.rack_location || '—'}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="sales-pos-product-grid-foot">
-        Showing {Math.min(rows.length, 12)} of {total} Products
-      </div>
-    </div>
-  )
 }
 
 export function SalesInvoicePage() {
