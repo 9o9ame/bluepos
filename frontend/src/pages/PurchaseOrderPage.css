@@ -98,21 +98,25 @@
 }
 
 .purchase-order-options-title {
-  display: flex;
+  display: grid;
+  grid-template-columns: max-content max-content 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: start;
+  column-gap: 28px;
 }
 
 .purchase-order-title-pack {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  min-width: max-content;
   color: var(--ui-text-muted);
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .purchase-order-title-pack input {
+  flex: 0 0 auto;
   margin: 0;
 }
 
