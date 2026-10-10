@@ -205,3 +205,41 @@ export type PurchaseOrderPayload = {
   notes?: string | null
   items: PurchaseOrderItemPayload[]
 }
+
+
+export type PurchaseOrderGenerateMode =
+  | 'last_n_days'
+  | 'between_dates'
+  | 'reorder_level'
+  | 'min_level'
+  | 'max_level'
+  | 'optimum_level'
+  | 'get_all'
+
+export type PurchaseOrderGenerateRow = {
+  product: {
+    ulid: string
+    product_number: string
+    name: string
+  }
+  unit: PurchaseUnitRef | null
+  brand: { ulid: string; name: string } | null
+  category: { ulid: string; name: string } | null
+  in_stock: string
+  stock_value: string
+  consumption: string
+  difference: string
+  suggested_quantity: string
+  unit_price: string
+}
+
+export type PurchaseOrderGeneratePayload = {
+  mode: PurchaseOrderGenerateMode
+  days?: number
+  date_from?: string
+  date_to?: string
+  supplier_ulid?: string
+  category_ulid?: string
+  brand_ulid?: string
+  include_non_sold?: boolean
+}
