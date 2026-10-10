@@ -788,6 +788,7 @@ export function VouchersPage() {
               value={summaryType}
               options={[
                 { value: '', label: 'All voucher types' },
+                { value: 'opening', label: 'Opening Balance Voucher' },
                 { value: 'payment', label: 'Payment Voucher' },
                 { value: 'receiving', label: 'Receiving Voucher' },
                 { value: 'journal', label: 'Journal Voucher' },
