@@ -14,7 +14,6 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
@@ -160,8 +159,6 @@ function ProductLookupGrid({
 export function SalesInvoicePage() {
   const { closeActiveTab } = useWorkspace()
   const feedback = useFeedback()
-  const [searchParams] = useSearchParams()
-  const quotationWorkspace = searchParams.get('mode') === 'quotation'
 
   const [view, setView] = useState<'pos' | 'history' | 'pending' | 'expenses' | 'product'>('pos')
   const [customizationOpen, setCustomizationOpen] = useState(false)
@@ -362,7 +359,6 @@ export function SalesInvoicePage() {
   const idempotencyKeyRef = useRef(newSaleKey())
   const holdIdempotencyKeyRef = useRef(newHoldKey())
   const quotationIdempotencyKeyRef = useRef(newSaleKey())
-  const quotationFieldRef = useRef<HTMLInputElement | null>(null)
   const receivedRef = useRef<HTMLInputElement | null>(null)
   const productSearchRef = useRef<HTMLInputElement | null>(null)
 
@@ -519,16 +515,6 @@ export function SalesInvoicePage() {
       )
     },
   })
-
-  useEffect(() => {
-    if (!quotationWorkspace) return
-
-    const frame = window.requestAnimationFrame(() => {
-      quotationFieldRef.current?.focus()
-    })
-
-    return () => window.cancelAnimationFrame(frame)
-  }, [quotationWorkspace])
 
   const quotationLookupMutation = useMutation({
     mutationFn: async () => {
@@ -1254,7 +1240,6 @@ export function SalesInvoicePage() {
 
                   <div className="sales-reference-input-button sales-reference-inline-caret">
                     <input
-                      ref={quotationFieldRef}
                       value={quotationValue}
                       aria-label="Quotation number"
                       placeholder="Quotation #"
