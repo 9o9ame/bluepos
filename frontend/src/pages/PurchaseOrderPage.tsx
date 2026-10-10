@@ -582,7 +582,15 @@ export function PurchaseOrderPage() {
         <div className="purchase-order-entry">
           <div className="purchase-order-top">
             <section className="purchase-order-options">
-              <div className="purchase-order-section-title">Purchase Order Options</div>
+              <div className="purchase-order-section-title purchase-order-options-title">
+                <span>Purchase Order Options</span>
+                <label className="purchase-order-title-pack">
+                  <input type="checkbox" disabled checked={false} readOnly />
+                  <span title="Reference behavior is not mapped to the current BluePOS unit model.">
+                    Apply to Pack
+                  </span>
+                </label>
+              </div>
 
               <div className="purchase-order-option-grid">
                 <label className="po-option-po">
@@ -614,13 +622,6 @@ export function PurchaseOrderPage() {
                     onChange={(value) => setOrderType(value as PurchaseOrderGenerateMode)}
                     aria-label="Order type"
                   />
-                </label>
-
-                <label className="purchase-order-check po-option-pack">
-                  <input type="checkbox" disabled checked={false} readOnly />
-                  <span title="Reference behavior is not mapped to the current BluePOS unit model.">
-                    Apply to Pack
-                  </span>
                 </label>
 
                 <label className="purchase-order-check po-option-nonsold">
@@ -703,6 +704,16 @@ export function PurchaseOrderPage() {
                     disabled={readOnly}
                     onChange={setBrandUlid}
                     aria-label="Company or brand filter"
+                  />
+                </label>
+
+                <label className="po-option-expiry" title="Expiry behavior is not yet mapped to the current Purchase Order domain.">
+                  <span>Expiry</span>
+                  <input
+                    type="date"
+                    value=""
+                    disabled
+                    aria-label="Expiry"
                   />
                 </label>
 
