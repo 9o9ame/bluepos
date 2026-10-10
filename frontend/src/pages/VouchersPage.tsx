@@ -348,10 +348,10 @@ export function VouchersPage() {
 
     event.preventDefault()
 
-    const fields =
+    const fields: Array<'account' | 'narration' | 'amount' | 'debit' | 'credit'> =
       type === 'journal'
-        ? (['account', 'narration', 'debit', 'credit'] as const)
-        : (['account', 'narration', 'amount'] as const)
+        ? ['account', 'narration', 'debit', 'credit']
+        : ['account', 'narration', 'amount']
     const fieldIndex = fields.indexOf(field)
 
     if (fieldIndex >= 0 && fieldIndex < fields.length - 1) {
@@ -576,8 +576,11 @@ export function VouchersPage() {
                           'data-voucher-row': lines.indexOf(line),
                           'data-voucher-field': 'account',
                         }}
-                        onKeyDown={(event) => handleLineEnter(event, lines.indexOf(line), 'account')}
-                        onChange={(value) => updateLine(line.key, { account_ulid: value })}
+                        onChange={(value) => {
+                          const rowIndex = lines.indexOf(line)
+                          updateLine(line.key, { account_ulid: value })
+                          focusLineCell(rowIndex, 'narration')
+                        }}
                       />
                     </td>
                     <td>
