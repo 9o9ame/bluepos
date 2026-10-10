@@ -2,7 +2,7 @@ import { FileSearch, Plus, Printer, RefreshCw, Save, X, XCircle } from 'lucide-r
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
-import { fetchProducts } from '../api/catalog'
+import { fetchProduct, fetchProducts, fetchProductStock } from '../api/catalog'
 import { fetchParties } from '../api/parties'
 import {
   createSaleQuotation,
@@ -168,15 +168,42 @@ export function QuotationEstimatePage() {
     setTab('entry')
   }
 
-  function addSelectedProduct(value: string) {
+  async function addSelectedProduct(value: string) {
     setProductUlid(value)
     if (!value || readOnly) return
 
-    const product = (productsQuery.data?.data ?? []).find((row) => row.ulid === value)
-    if (!product) return
+    try {
+      const [product, stock] = await Promise.all([
+        fetchProduct(value),
+        fetchProductStock(value),
+      ])
 
-    cart.addProduct(product as Product)
-    setProductUlid('')
+      const expectedPriceType = cart.priceType === 'wholesale' ? 'wholesale' : 'retail'
+      const activePrice = product.prices?.find(
+        (price) => price.is_active && price.price_type === expectedPriceType,
+      )
+
+      const lineKey = cart.addProduct(
+        product as Product,
+        '1.000000',
+        null,
+        stock.active_warehouse.quantity,
+      )
+
+      if (!lineKey) return
+
+      if (!activePrice) {
+        feedback.warning(
+          `No active ${expectedPriceType} price is configured for ${product.product_number} — ${product.name}. The preview rate will remain 0 until the product price is configured; the server remains final authority on save.`,
+          'Quotation / Estimate',
+        )
+      }
+
+      setProductUlid('')
+    } catch (error) {
+      setProductUlid('')
+      feedback.error(errorMessage(error), 'Unable to add product')
+    }
   }
 
   return (
@@ -296,6 +323,7 @@ export function QuotationEstimatePage() {
                 <tr>
                   <th>Product</th>
                   <th>Unit</th>
+                  <th className="is-num">In Stock</th>
                   <th className="is-num">Qty</th>
                   <th className="is-num">Rate</th>
                   <th className="is-num">Disc %</th>
@@ -313,6 +341,7 @@ export function QuotationEstimatePage() {
                       <tr key={item.ulid}>
                         <td>{item.product ? `${item.product.product_number} — ${item.product.name}` : '—'}</td>
                         <td>{item.unit?.symbol ?? item.unit?.code ?? '—'}</td>
+                        <td className="is-num">—</td>
                         <td className="is-num">{item.quantity}</td>
                         <td className="is-num">{item.unit_price}</td>
                         <td className="is-num">{item.discount_percent}</td>
@@ -328,7 +357,28 @@ export function QuotationEstimatePage() {
                   return (
                     <tr key={line.line_key}>
                       <td>{line.product_number} — {line.product_name}</td>
-                      <td>{line.unit_symbol ?? line.unit_code ?? '—'}</td>
+                      <td>
+                        {(line.available_units?.length ?? 0) > 0 ? (
+                          <UiSelect
+                            value={line.unit_ulid ?? ''}
+                            className="quotation-line-unit-select"
+                            aria-label={`Unit for ${line.product_name}`}
+                            options={(line.available_units ?? []).map((unit) => ({
+                              value: unit.unit_ulid,
+                              label: unit.code,
+                            }))}
+                            onChange={(value) => cart.setLineUnit(line.line_key, value)}
+                          />
+                        ) : (
+                          line.unit_symbol ?? line.unit_code ?? '—'
+                        )}
+                      </td>
+                      <td className="is-num">
+                        {(() => {
+                          const available = cart.availableStock(line)
+                          return available === null ? '—' : Number.parseFloat(available).toFixed(3)
+                        })()}
+                      </td>
                       <td className="is-num">
                         <input
                           aria-label={`Quantity for ${line.product_name}`}
@@ -371,10 +421,11 @@ export function QuotationEstimatePage() {
                       <UiSelect
                         value={productUlid}
                         options={[{ value: '', label: 'Search / select product' }, ...productOptions]}
-                        onChange={addSelectedProduct}
+                        onChange={(value) => void addSelectedProduct(value)}
                       />
                     </td>
                     <td>—</td>
+                    <td className="is-num">—</td>
                     <td className="is-num">—</td>
                     <td className="is-num">—</td>
                     <td className="is-num">—</td>
@@ -386,7 +437,7 @@ export function QuotationEstimatePage() {
                 ) : null}
                 {readOnly && entryRows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="quotation-empty">
+                    <td colSpan={9} className="quotation-empty">
                       No quotation lines found.
                     </td>
                   </tr>
