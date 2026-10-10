@@ -77,6 +77,7 @@ class ManageVoucherAction
                 'document_type' => $documentType,
                 'document_id' => null,
                 'voucher_number' => $this->nextVoucherNumber($tenantId, $documentType),
+                'book_number' => $this->nullableText($data['book_number'] ?? null),
                 'idempotency_key' => $idempotencyKey,
                 'entry_date' => $data['entry_date'],
                 'description' => $this->nullableText($data['description'] ?? null),
@@ -115,6 +116,9 @@ class ManageVoucherAction
             }
             if (array_key_exists('description', $data)) {
                 $entry->description = $this->nullableText($data['description']);
+            }
+            if (array_key_exists('book_number', $data)) {
+                $entry->book_number = $this->nullableText($data['book_number']);
             }
             $entry->save();
 
@@ -392,6 +396,7 @@ class ManageVoucherAction
         if (
             $entry->entry_date?->toDateString() !== (string) ($data['entry_date'] ?? '')
             || $entry->description !== $this->nullableText($data['description'] ?? null)
+            || $entry->book_number !== $this->nullableText($data['book_number'] ?? null)
         ) {
             return false;
         }
