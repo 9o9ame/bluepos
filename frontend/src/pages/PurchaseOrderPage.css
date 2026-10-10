@@ -203,15 +203,19 @@
 
 .po-option-from { grid-column: 2; grid-row: 2; }
 .po-option-to { grid-column: 3; grid-row: 2; }
-.po-option-expiry { grid-column: 4; grid-row: 2; }
 
 .purchase-order-option-grid .po-option-supplier {
-  grid-column: 1 / 3;
-  grid-row: 3;
+  grid-column: 4;
+  grid-row: 2;
 }
 
-.po-option-category { grid-column: 3; grid-row: 3; }
-.po-option-company { grid-column: 4; grid-row: 3; }
+.po-option-category { grid-column: 1 / 3; grid-row: 3; }
+.po-option-company { grid-column: 3; grid-row: 3; }
+.po-option-expiry { grid-column: 4; grid-row: 3; }
+
+.purchase-order-option-grid .po-option-supplier .ui-select {
+  min-width: 230px;
+}
 
 .purchase-order-option-grid .po-option-company .ui-select {
   min-width: 220px;
