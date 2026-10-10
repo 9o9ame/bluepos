@@ -193,6 +193,7 @@ export function PurchaseOrderPage() {
   const [generationLastPage, setGenerationLastPage] = useState(0)
 
   const productSearchRef = useRef<HTMLInputElement | null>(null)
+  const requestedGenerationPageRef = useRef(0)
 
   const activeOrder = openedOrder ?? savedOrder
   const readOnly = Boolean(activeOrder)
@@ -323,6 +324,7 @@ export function PurchaseOrderPage() {
     setGenerationPayload(null)
     setGenerationPage(0)
     setGenerationLastPage(0)
+    requestedGenerationPageRef.current = 0
   }
 
   function patchLine(key: string, patch: Partial<DraftLine>) {
@@ -398,6 +400,7 @@ export function PurchaseOrderPage() {
       setGenerationPayload({ ...variables, page: undefined })
       setGenerationPage(payload.meta.current_page)
       setGenerationLastPage(payload.meta.last_page)
+      requestedGenerationPageRef.current = payload.meta.current_page
 
       feedback.success(
         `Loaded ${next.length} product${next.length === 1 ? '' : 's'}. More products will load as you scroll.`,
@@ -439,8 +442,10 @@ export function PurchaseOrderPage() {
       })
       setGenerationPage(payload.meta.current_page)
       setGenerationLastPage(payload.meta.last_page)
+      requestedGenerationPageRef.current = payload.meta.current_page
     },
     onError: (error) => {
+      requestedGenerationPageRef.current = generationPage
       feedback.error(
         error instanceof Error ? error.message : 'Unable to load more products.',
         'Purchase Order',
@@ -760,9 +765,13 @@ export function PurchaseOrderPage() {
 
               if (remaining > 180) return
 
+              const nextPage = generationPage + 1
+              if (requestedGenerationPageRef.current >= nextPage) return
+
+              requestedGenerationPageRef.current = nextPage
               loadMoreMutation.mutate({
                 payload: generationPayload,
-                page: generationPage + 1,
+                page: nextPage,
               })
             }}
           >
