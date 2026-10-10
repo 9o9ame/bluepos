@@ -155,6 +155,12 @@ export function fetchPurchaseOrder(ulid: string) {
   return apiFetch<PurchaseOrder>(`/api/purchase-orders/${ulid}`)
 }
 
+export function cancelPurchaseOrder(ulid: string) {
+  return apiFetch<PurchaseOrder>(`/api/purchase-orders/${ulid}/cancel`, {
+    method: 'POST',
+  })
+}
+
 export function createPurchaseOrder(payload: PurchaseOrderPayload) {
   return apiFetch<PurchaseOrder>('/api/purchase-orders', {
     method: 'POST',
