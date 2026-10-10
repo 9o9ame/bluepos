@@ -205,6 +205,61 @@ html[data-animations='off'] .ui-select-option {
   background: var(--ui-surface-subtle);
 }
 
+.ui-select-columns-header {
+  display: grid;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid var(--ui-table-border);
+  background: var(--ui-table-header);
+  color: var(--ui-table-header-text);
+  font-size: var(--ui-font-sm, 11px);
+  font-weight: 800;
+}
+
+.ui-select-columns-header > span {
+  min-width: 0;
+  padding: 5px 8px;
+  overflow: hidden;
+  border-right: 1px solid var(--ui-table-border);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-select-columns-header > span:last-child {
+  border-right: 0;
+}
+
+.ui-select-menu:has(.ui-select-columns-header) .ui-select-option {
+  position: relative;
+  display: grid;
+  align-items: center;
+  justify-content: stretch;
+  gap: 0;
+  padding: 0;
+  border-radius: 0;
+}
+
+.ui-select-option-cell {
+  min-width: 0;
+  min-height: 27px;
+  padding: 5px 8px;
+  overflow: hidden;
+  border-right: 1px solid var(--ui-table-border);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-select-option-cell:last-of-type {
+  border-right: 0;
+}
+
+.ui-select-menu:has(.ui-select-columns-header) .ui-select-check {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .ui-select-search {
   box-sizing: border-box;
   width: 100%;
