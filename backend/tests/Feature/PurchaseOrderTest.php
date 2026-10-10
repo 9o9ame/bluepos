@@ -4,8 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\AuditLog;
 use App\Models\JournalEntry;
+use App\Models\Product;
 use App\Models\PurchaseOrder;
+use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\StockBalance;
 use App\Models\StockMovement;
+use App\Models\Unit;
+use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -140,6 +146,96 @@ class PurchaseOrderTest extends TestCase
 
         $this->assertSame(1, PurchaseOrder::query()->count());
     }
+
+    public function test_purchase_order_generator_uses_posted_sales_and_active_warehouse_stock(): void
+    {
+        $this->signInOwner('po-generate')->assertOk();
+
+        $pcs = $this->unitUlid('PCS');
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Generator Product',
+            'base_unit_ulid' => $pcs,
+            'reorder_level' => '8.000000',
+        ])->assertCreated()->json('ulid');
+
+        $tenantContext = app(TenantContext::class);
+        $warehouse = $tenantContext->warehouse();
+        $product = Product::query()->where('ulid', $productUlid)->firstOrFail();
+        $unit = Unit::query()->where('ulid', $pcs)->firstOrFail();
+
+        StockBalance::query()->create([
+            'tenant_id' => $tenantContext->tenantId(),
+            'branch_id' => $tenantContext->branchId(),
+            'warehouse_id' => $tenantContext->warehouseId(),
+            'product_id' => $product->id,
+            'quantity' => '2.000000',
+            'average_cost' => '10.0000',
+            'stock_value' => '20.0000',
+        ]);
+
+        $sale = Sale::query()->create([
+            'tenant_id' => $tenantContext->tenantId(),
+            'branch_id' => $tenantContext->branchId(),
+            'warehouse_id' => $warehouse->id,
+            'document_number' => 'SAL-PO-GEN-1',
+            'status' => 'posted',
+            'sale_date' => '2026-10-10',
+            'price_type' => 'retail',
+            'subtotal' => '50.0000',
+            'discount_amount' => '0.0000',
+            'tax_amount' => '0.0000',
+            'grand_total' => '50.0000',
+            'idempotency_key' => 'po-generator-sale',
+            'created_by' => $tenantContext->userId(),
+            'posted_at' => now(),
+        ]);
+
+        SaleItem::query()->create([
+            'tenant_id' => $tenantContext->tenantId(),
+            'sale_id' => $sale->id,
+            'product_id' => $product->id,
+            'unit_id' => $unit->id,
+            'conversion_factor' => '1.00000000',
+            'line_kind' => 'sale',
+            'quantity' => '5.000000',
+            'stock_quantity' => '5.000000',
+            'price_type' => 'retail',
+            'unit_price' => '10.0000',
+            'gross_amount' => '50.0000',
+            'discount_percent' => '0.00000000',
+            'discount_amount' => '0.0000',
+            'tax_percent' => '0.00000000',
+            'tax_amount' => '0.0000',
+            'line_total' => '50.0000',
+        ]);
+
+        $between = $this->postJson('/api/purchase-orders/generate', [
+            'mode' => 'between_dates',
+            'date_from' => '2026-10-10',
+            'date_to' => '2026-10-10',
+        ])->assertOk();
+
+        $between->assertJsonPath('data.0.product.ulid', $productUlid)
+            ->assertJsonPath('data.0.in_stock', '2.000000')
+            ->assertJsonPath('data.0.stock_value', '20.0000')
+            ->assertJsonPath('data.0.consumption', '5.000000')
+            ->assertJsonPath('data.0.difference', '3.000000')
+            ->assertJsonPath('data.0.suggested_quantity', '3.000000')
+            ->assertJsonPath('data.0.unit_price', '10.0000');
+
+        $reorder = $this->postJson('/api/purchase-orders/generate', [
+            'mode' => 'reorder_level',
+        ])->assertOk();
+
+        $reorder->assertJsonPath('data.0.difference', '6.000000')
+            ->assertJsonPath('data.0.suggested_quantity', '6.000000');
+
+        $this->postJson('/api/purchase-orders/generate', [
+            'mode' => 'optimum_level',
+        ])->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+    }
+
     private function unitUlid(string $code): string
     {
         $units = $this->getJson('/api/units')->assertOk()->json();
