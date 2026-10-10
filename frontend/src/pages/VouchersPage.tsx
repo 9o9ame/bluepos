@@ -81,7 +81,7 @@ function voucherNumberLabel(type: VoucherType): string {
 
 function signedEffect(account: VoucherAccount | undefined, debit: number, credit: number): number {
   if (!account) return 0
-  return account.is_payable ? credit - debit : debit - credit
+  return account.normal_balance === 'credit' ? credit - debit : debit - credit
 }
 
 export function VouchersPage() {
