@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'branch_id',
     'warehouse_id',
     'supplier_id',
+    'purchase_order_id',
     'document_number',
     'supplier_invoice_number',
     'po_number',
@@ -119,6 +120,11 @@ class PurchaseInvoice extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class);
     }
 
     /**
