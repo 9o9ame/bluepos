@@ -96,10 +96,16 @@ class UpsertPurchaseInvoiceLineAction
                 }
             }
 
-            $conversion = array_key_exists('conversion_factor', $data)
-                ? (string) $data['conversion_factor']
-                : '1.00000000';
-            if ((int) $unit->id === (int) $product->base_unit_id && ! array_key_exists('conversion_factor', $data)) {
+            $conversion = $purchaseOrderLine
+                ? (string) $purchaseOrderLine->conversion_factor
+                : (array_key_exists('conversion_factor', $data)
+                    ? (string) $data['conversion_factor']
+                    : '1.00000000');
+            if (
+                ! $purchaseOrderLine
+                && (int) $unit->id === (int) $product->base_unit_id
+                && ! array_key_exists('conversion_factor', $data)
+            ) {
                 $conversion = '1.00000000';
             }
 
