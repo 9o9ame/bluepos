@@ -33,6 +33,7 @@ class VoucherController extends Controller
             ->forTenant($tenantContext->tenantId())
             ->where('branch_id', $tenantContext->branchId())
             ->whereIn('document_type', ManageVoucherAction::manualDocumentTypes())
+            ->whereNotNull('voucher_number')
             ->with(['lines' => fn ($line) => $line->orderBy('sort_order'), 'lines.account.accountType'])
             ->orderByDesc('entry_date')
             ->orderByDesc('id');
@@ -108,6 +109,7 @@ class VoucherController extends Controller
                 ->where('branch_id', $tenantContext->branchId())
                 ->where('ulid', $validated['before_voucher_ulid'])
                 ->whereIn('document_type', ManageVoucherAction::manualDocumentTypes())
+                ->whereNotNull('voucher_number')
                 ->value('id');
         }
 
@@ -194,7 +196,7 @@ class VoucherController extends Controller
         $data = $request->validate([
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
-            'type' => ['nullable', 'in:payment,receiving,journal'],
+            'type' => ['nullable', 'in:payment,receiving,journal,opening'],
         ]);
 
         $dateFrom = $data['date_from'] ?? now()->toDateString();
@@ -204,6 +206,7 @@ class VoucherController extends Controller
             ->forTenant($tenantContext->tenantId())
             ->where('branch_id', $tenantContext->branchId())
             ->whereIn('document_type', ManageVoucherAction::manualDocumentTypes())
+            ->whereNotNull('voucher_number')
             ->where('status', JournalStatus::Posted->value)
             ->whereDate('entry_date', '>=', $dateFrom)
             ->whereDate('entry_date', '<=', $dateTo)
@@ -297,7 +300,7 @@ class VoucherController extends Controller
         ];
 
         if ($withType) {
-            $rules['type'] = ['required', 'in:payment,receiving,journal'];
+            $rules['type'] = ['required', 'in:payment,receiving,journal,opening'];
         }
 
         return $rules;
@@ -310,6 +313,7 @@ class VoucherController extends Controller
             ->where('branch_id', $tenantContext->branchId())
             ->where('ulid', $voucherUlid)
             ->whereIn('document_type', ManageVoucherAction::manualDocumentTypes())
+            ->whereNotNull('voucher_number')
             ->with(['lines' => fn ($line) => $line->orderBy('sort_order'), 'lines.account.accountType'])
             ->first();
 
@@ -338,8 +342,14 @@ class VoucherController extends Controller
             JournalEntry::DOCUMENT_PAYMENT_VOUCHER => 'payment',
             JournalEntry::DOCUMENT_RECEIVING_VOUCHER => 'receiving',
             JournalEntry::DOCUMENT_JOURNAL_VOUCHER => 'journal',
+            JournalEntry::DOCUMENT_OPENING_BALANCE => 'opening',
             default => null,
         };
+
+        $displayLines = $type === 'opening'
+            ? $entry->lines->where('sort_order', '<', 9999)->values()
+            : $entry->lines->values();
+        $hasHeader = in_array($type, ['payment', 'receiving'], true);
 
         return [
             'ulid' => $entry->ulid,
@@ -352,10 +362,10 @@ class VoucherController extends Controller
             'posted_at' => $entry->posted_at?->toIso8601String(),
             'total_debit' => $debit,
             'total_credit' => $credit,
-            'header_account' => $type !== 'journal' ? $this->lineAccount($entry->lines->first()) : null,
-            'lines' => $entry->lines->map(fn (JournalLine $line, int $index) => [
+            'header_account' => $hasHeader ? $this->lineAccount($entry->lines->first()) : null,
+            'lines' => $displayLines->map(fn (JournalLine $line, int $index) => [
                 'ulid' => $line->ulid,
-                'is_header' => $type !== 'journal' && $index === 0,
+                'is_header' => $hasHeader && $index === 0,
                 'account' => $this->lineAccount($line),
                 'narration' => $line->description,
                 'debit' => (string) $line->debit,
@@ -387,7 +397,8 @@ class VoucherController extends Controller
             'payment' => JournalEntry::DOCUMENT_PAYMENT_VOUCHER,
             'receiving' => JournalEntry::DOCUMENT_RECEIVING_VOUCHER,
             'journal' => JournalEntry::DOCUMENT_JOURNAL_VOUCHER,
-            default => throw new ApiException('VALIDATION_FAILED', 'type must be payment, receiving, or journal.', 422),
+            'opening' => JournalEntry::DOCUMENT_OPENING_BALANCE,
+            default => throw new ApiException('VALIDATION_FAILED', 'type must be payment, receiving, journal, or opening.', 422),
         };
     }
 
