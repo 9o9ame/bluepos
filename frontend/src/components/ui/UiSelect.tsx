@@ -41,9 +41,6 @@ export type UiSelectProps = {
   placeholder?: string
   searchable?: boolean
   searchPlaceholder?: string
-  filterOptions?: boolean
-  onSearchChange?: (value: string) => void
-  onOpenChange?: (open: boolean) => void
   onFocus?: FocusEventHandler<HTMLButtonElement>
   onBlur?: FocusEventHandler<HTMLButtonElement>
   onKeyDown?: KeyboardEventHandler<HTMLButtonElement>
@@ -84,9 +81,6 @@ export function UiSelect({
   placeholder = '—',
   searchable = true,
   searchPlaceholder = 'Search…',
-  filterOptions = true,
-  onSearchChange,
-  onOpenChange,
   onFocus,
   onBlur,
   onKeyDown,
@@ -115,7 +109,7 @@ export function UiSelect({
 
   const filteredOptions = useMemo(() => {
     const query = search.trim().toLocaleLowerCase()
-    if (!searchable || !query || !filterOptions) return options
+    if (!searchable || !query) return options
 
     return options.filter((option) => {
       const label = option.label.toLocaleLowerCase()
@@ -123,7 +117,7 @@ export function UiSelect({
       const columnsText = option.columns?.join(' ').toLocaleLowerCase() ?? ''
       return label.includes(query) || valueText.includes(query) || columnsText.includes(query)
     })
-  }, [filterOptions, options, search, searchable])
+  }, [options, search, searchable])
 
   const selected =
     options.find((option) => option.value === currentValue) ?? null
@@ -191,7 +185,6 @@ export function UiSelect({
     if (disabled || options.length === 0) return
 
     setSearch('')
-    onSearchChange?.('')
     const selectedIndex = Math.max(
       0,
       options.findIndex((option) => option.value === currentValue),
@@ -199,14 +192,11 @@ export function UiSelect({
     const enabled = firstEnabledIndex(options, selectedIndex, 1)
     setActiveIndex(enabled >= 0 ? enabled : 0)
     setOpen(true)
-    onOpenChange?.(true)
   }
 
   function closeMenu() {
     setOpen(false)
     setSearch('')
-    onSearchChange?.('')
-    onOpenChange?.(false)
   }
 
   function pick(next: string) {
@@ -442,11 +432,7 @@ export function UiSelect({
                     value={search}
                     placeholder={searchPlaceholder}
                     aria-label={`Search ${ariaLabel ?? 'options'}`}
-                    onChange={(event) => {
-                      const next = event.target.value
-                      setSearch(next)
-                      onSearchChange?.(next)
-                    }}
+                    onChange={(event) => setSearch(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === 'ArrowDown') {
                         event.preventDefault()
