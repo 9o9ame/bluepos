@@ -175,6 +175,8 @@ class VoucherController extends Controller
                 'ulid' => $account->ulid,
                 'code' => $account->code,
                 'name' => $account->name,
+                'address' => $account->address,
+                'account_type' => $account->accountType?->name,
                 'is_cash' => $account->accountType?->is_cash || $account->accountType?->code === '0010',
                 'is_bank' => $account->accountType?->is_bank || $account->accountType?->code === '0012',
                 'is_payable' => (bool) $account->accountType?->is_payable,
