@@ -646,10 +646,6 @@ export function PurchaseOrderPage() {
                   />
                 </label>
 
-                <div className="purchase-order-unmapped">
-                  <span>Outlet / Pay Thru / Expiry</span>
-                  <small>Not mapped to the current non-posting PO domain.</small>
-                </div>
               </div>
             </section>
 
