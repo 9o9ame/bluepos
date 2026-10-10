@@ -103,18 +103,22 @@ class VoucherController extends Controller
             ->forTenant($tenantContext->tenantId())
             ->where('is_active', true)
             ->with('accountType')
-            ->withSum([
-                'journalLines as posted_debit' => fn ($lines) => $lines
-                    ->whereHas('journalEntry', fn ($entry) => $entry
-                        ->where('status', JournalStatus::Posted->value)
-                        ->whereDate('entry_date', '<=', $asOf)),
-            ], 'debit')
-            ->withSum([
-                'journalLines as posted_credit' => fn ($lines) => $lines
-                    ->whereHas('journalEntry', fn ($entry) => $entry
-                        ->where('status', JournalStatus::Posted->value)
-                        ->whereDate('entry_date', '<=', $asOf)),
-            ], 'credit')
+            ->addSelect([
+                'posted_debit' => JournalLine::query()
+                    ->selectRaw('COALESCE(SUM(journal_lines.debit), 0)')
+                    ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
+                    ->whereColumn('journal_lines.account_id', 'accounts.id')
+                    ->whereColumn('journal_lines.tenant_id', 'accounts.tenant_id')
+                    ->where('journal_entries.status', JournalStatus::Posted->value)
+                    ->whereDate('journal_entries.entry_date', '<=', $asOf),
+                'posted_credit' => JournalLine::query()
+                    ->selectRaw('COALESCE(SUM(journal_lines.credit), 0)')
+                    ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
+                    ->whereColumn('journal_lines.account_id', 'accounts.id')
+                    ->whereColumn('journal_lines.tenant_id', 'accounts.tenant_id')
+                    ->where('journal_entries.status', JournalStatus::Posted->value)
+                    ->whereDate('journal_entries.entry_date', '<=', $asOf),
+            ])
             ->orderBy('code')
             ->orderBy('name');
 
