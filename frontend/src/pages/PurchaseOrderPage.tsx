@@ -26,6 +26,7 @@ import type { Product } from '../types/catalog'
 import type {
   PurchaseOrder,
   PurchaseOrderGenerateMode,
+  PurchaseOrderGeneratePayload,
   PurchaseOrderGenerateRow,
 } from '../types/purchases'
 import './PurchaseOrderPage.css'
@@ -186,6 +187,10 @@ export function PurchaseOrderPage() {
   const [includeNonSold, setIncludeNonSold] = useState(false)
   const [categoryUlid, setCategoryUlid] = useState('')
   const [brandUlid, setBrandUlid] = useState('')
+  const [generationPayload, setGenerationPayload] =
+    useState<PurchaseOrderGeneratePayload | null>(null)
+  const [generationPage, setGenerationPage] = useState(0)
+  const [generationLastPage, setGenerationLastPage] = useState(0)
 
   const productSearchRef = useRef<HTMLInputElement | null>(null)
 
@@ -315,6 +320,9 @@ export function PurchaseOrderPage() {
     setIncludeNonSold(false)
     setCategoryUlid('')
     setBrandUlid('')
+    setGenerationPayload(null)
+    setGenerationPage(0)
+    setGenerationLastPage(0)
   }
 
   function patchLine(key: string, patch: Partial<DraftLine>) {
@@ -363,31 +371,78 @@ export function PurchaseOrderPage() {
     }
   }
 
+  function currentGenerationPayload(): PurchaseOrderGeneratePayload {
+    return {
+      mode: orderType,
+      days: orderType === 'last_n_days' ? Number(lastDays) : undefined,
+      date_from: orderType === 'between_dates' ? dateFrom : undefined,
+      date_to: orderType === 'between_dates' ? dateTo : undefined,
+      supplier_ulid: supplierUlid || undefined,
+      category_ulid: categoryUlid || undefined,
+      brand_ulid: brandUlid || undefined,
+      include_non_sold: includeNonSold,
+      page: 1,
+      per_page: 20,
+    }
+  }
+
   const generateMutation = useMutation({
-    mutationFn: () =>
-      generatePurchaseOrder({
-        mode: orderType,
-        days: orderType === 'last_n_days' ? Number(lastDays) : undefined,
-        date_from: orderType === 'between_dates' ? dateFrom : undefined,
-        date_to: orderType === 'between_dates' ? dateTo : undefined,
-        supplier_ulid: supplierUlid || undefined,
-        category_ulid: categoryUlid || undefined,
-        brand_ulid: brandUlid || undefined,
-        include_non_sold: includeNonSold,
-      }),
-    onSuccess: (payload) => {
+    mutationFn: (payload: PurchaseOrderGeneratePayload) =>
+      generatePurchaseOrder(payload),
+    onSuccess: (payload, variables) => {
       const next = payload.data
         .map(generatedLine)
         .filter((line): line is DraftLine => line !== null)
+
       setLines(next)
+      setGenerationPayload({ ...variables, page: undefined })
+      setGenerationPage(payload.meta.current_page)
+      setGenerationLastPage(payload.meta.last_page)
+
       feedback.success(
-        `Generated ${next.length} purchase order line${next.length === 1 ? '' : 's'} from server planning data.`,
+        `Loaded ${next.length} product${next.length === 1 ? '' : 's'}. More products will load as you scroll.`,
         'Purchase Order',
       )
     },
     onError: (error) => {
       feedback.error(
         error instanceof Error ? error.message : 'Unable to generate purchase order.',
+        'Purchase Order',
+      )
+    },
+  })
+
+  const loadMoreMutation = useMutation({
+    mutationFn: ({
+      payload,
+      page,
+    }: {
+      payload: PurchaseOrderGeneratePayload
+      page: number
+    }) =>
+      generatePurchaseOrder({
+        ...payload,
+        page,
+        per_page: 20,
+      }),
+    onSuccess: (payload) => {
+      const incoming = payload.data
+        .map(generatedLine)
+        .filter((line): line is DraftLine => line !== null)
+
+      setLines((current) => {
+        const existing = new Set(current.map((line) => line.product_ulid))
+        return [
+          ...current,
+          ...incoming.filter((line) => !existing.has(line.product_ulid)),
+        ]
+      })
+      setGenerationPage(payload.meta.current_page)
+      setGenerationLastPage(payload.meta.last_page)
+    },
+    onError: (error) => {
+      feedback.error(
+        error instanceof Error ? error.message : 'Unable to load more products.',
         'Purchase Order',
       )
     },
@@ -653,7 +708,7 @@ export function PurchaseOrderPage() {
               <UiButton
                 variant="success"
                 disabled={readOnly || generateMutation.isPending}
-                onClick={() => generateMutation.mutate()}
+                onClick={() => generateMutation.mutate(currentGenerationPayload())}
               >
                 <Play size={16} />
                 Generate
@@ -687,7 +742,30 @@ export function PurchaseOrderPage() {
             </aside>
           </div>
 
-          <div className="purchase-order-lines-wrap">
+          <div
+            className="purchase-order-lines-wrap"
+            onScroll={(event) => {
+              if (
+                readOnly ||
+                !generationPayload ||
+                generationPage >= generationLastPage ||
+                loadMoreMutation.isPending
+              ) {
+                return
+              }
+
+              const target = event.currentTarget
+              const remaining =
+                target.scrollHeight - target.scrollTop - target.clientHeight
+
+              if (remaining > 180) return
+
+              loadMoreMutation.mutate({
+                payload: generationPayload,
+                page: generationPage + 1,
+              })
+            }}
+          >
             <table className="purchase-order-lines">
               <thead>
                 <tr>
