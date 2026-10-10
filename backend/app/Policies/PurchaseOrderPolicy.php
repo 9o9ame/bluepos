@@ -22,4 +22,10 @@ class PurchaseOrderPolicy extends CatalogPolicy
     {
         return $this->permissions->can('purchases.create');
     }
+
+    public function cancel(User $user, PurchaseOrder $order): bool
+    {
+        return $this->permissions->can('purchases.edit')
+            && $this->sameTenant((int) $order->tenant_id);
+    }
 }
