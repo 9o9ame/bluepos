@@ -99,7 +99,7 @@
 
 .purchase-order-option-grid {
   display: grid;
-  grid-template-columns: 130px 190px minmax(300px, 1.35fr) 140px;
+  grid-template-columns: 130px 155px minmax(300px, 1.35fr) 210px;
   gap: 5px 8px;
   padding: 7px 8px 8px;
 }
@@ -139,6 +139,23 @@
   width: 100%;
   min-width: 0;
   padding: 4px 6px;
+}
+
+.purchase-order-option-grid > label:nth-child(6) {
+  grid-template-columns: max-content 72px;
+}
+
+.purchase-order-option-grid > label:nth-child(7),
+.purchase-order-option-grid > label:nth-child(8) {
+  grid-template-columns: max-content 118px;
+}
+
+.purchase-order-option-grid > label:nth-child(7) {
+  justify-content: start;
+}
+
+.purchase-order-option-grid > label:nth-child(11) .ui-select {
+  min-width: 190px;
 }
 
 .purchase-order-option-grid input:focus,
