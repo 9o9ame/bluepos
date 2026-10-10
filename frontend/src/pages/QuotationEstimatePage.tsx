@@ -1,4 +1,4 @@
-import { FileSearch, Plus, Printer, RefreshCw, Save, X, XCircle } from 'lucide-react'
+import { FileSearch, Plus, Printer, ReceiptText, RefreshCw, Save, X, XCircle } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
@@ -34,7 +34,7 @@ function errorMessage(error: unknown): string {
 }
 
 export function QuotationEstimatePage() {
-  const { closeActiveTab } = useWorkspace()
+  const { closeActiveTab, openModule } = useWorkspace()
   const { session } = useAuth()
   const feedback = useFeedback()
   const cart = useSaleCart()
@@ -244,6 +244,18 @@ export function QuotationEstimatePage() {
                   'Quotation Print',
                 )
               }
+            }}
+          />
+          <DesktopButton
+            icon={<ReceiptText size={15} />}
+            label="Convert to Sale"
+            variant="primary"
+            disabled={!activeQuotation}
+            onClick={() => {
+              if (!activeQuotation) return
+              openModule(
+                `/daily/sales?quotation=${encodeURIComponent(activeQuotation.document_number)}`,
+              )
             }}
           />
           <DesktopButton
