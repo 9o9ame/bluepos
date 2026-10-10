@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
-import { CheckCircle2, Plus, RefreshCw, Save, Search, Trash2, X } from 'lucide-react'
+import { CheckCircle2, Plus, Printer, RefreshCw, Save, Search, Trash2, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import {
@@ -23,6 +23,7 @@ import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
+import { VoucherPrintModal, type VoucherPrintData } from '../components/vouchers/VoucherPrintModal'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import './VouchersPage.css'
@@ -102,6 +103,7 @@ export function VouchersPage() {
   const [lines, setLines] = useState<EntryLine[]>([newLine()])
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
   const [error, setError] = useState<string | null>(null)
+  const [printOpen, setPrintOpen] = useState(false)
 
   const [q, setQ] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -194,6 +196,48 @@ export function VouchersPage() {
     type === 'journal'
       ? 0
       : preBalance + signedEffect(headerAccount, headerDebit, headerCredit)
+
+  const printData = useMemo<VoucherPrintData | null>(() => {
+    if (!document) return null
+
+    return {
+      title: heading,
+      voucherNumber: document.voucher_number,
+      bookNumber,
+      date: entryDate,
+      time: displayTime,
+      account: type === 'journal' ? 'JV' : (headerAccount ? `${headerAccount.code} · ${headerAccount.name}` : ''),
+      preBalance: money(preBalance),
+      thisVoucher: money(thisVoucher),
+      totalBalance: money(totalBalance),
+      type,
+      rows: lines.map((line) => {
+        const account = accountMap.get(line.account_ulid)
+        return {
+          account: account ? `${account.code} · ${account.name}` : '',
+          narration: line.narration,
+          balance: money(lineBalance(line)),
+          amount: type === 'journal' ? undefined : money(line.amount || 0),
+          debit: type === 'journal' ? money(line.debit || 0) : undefined,
+          credit: type === 'journal' ? money(line.credit || 0) : undefined,
+          closing: money(lineClosing(line)),
+        }
+      }),
+    }
+  }, [
+    accountMap,
+    bookNumber,
+    displayTime,
+    document,
+    entryDate,
+    headerAccount,
+    heading,
+    lines,
+    preBalance,
+    thisVoucher,
+    totalBalance,
+    type,
+  ])
 
   useEffect(() => {
     if (requestedType !== 'payment' && requestedType !== 'receiving' && requestedType !== 'journal') {
@@ -421,6 +465,13 @@ export function VouchersPage() {
                 void postMutation.mutateAsync().catch(handleError)
               })()
             }}
+          />
+          <DesktopButton
+            icon={<Printer size={13} />}
+            label="Print"
+            variant="info"
+            disabled={tab !== 'entry' || !document?.ulid}
+            onClick={() => setPrintOpen(true)}
           />
           <DesktopButton
             icon={<RefreshCw size={13} />}
@@ -742,6 +793,12 @@ export function VouchersPage() {
           />
         </div>
       ) : null}
+
+      <VoucherPrintModal
+        open={printOpen}
+        onClose={() => setPrintOpen(false)}
+        data={printData}
+      />
     </DesktopPanel>
   )
 }
