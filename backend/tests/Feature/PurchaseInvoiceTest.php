@@ -735,6 +735,92 @@ class PurchaseInvoiceTest extends TestCase
         $list->assertJsonFragment(['ulid' => $invoiceUlid]);
     }
 
+
+    public function test_purchase_invoice_links_to_purchase_order_and_order_lines(): void
+    {
+        $this->signInOwner('pur-po-link')->assertOk();
+        $warehouseUlid = $this->sessionWarehouseUlid();
+        $pcs = $this->unitUlid('PCS');
+
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-PO-LINK',
+            'name' => 'PO Link Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'PO Link Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $order = $this->postJson('/api/purchase-orders', [
+            'supplier_ulid' => $supplierUlid,
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'unit_ulid' => $pcs,
+                'quantity' => '5.000000',
+                'unit_price' => '100.0000',
+                'discount_amount' => '10.0000',
+            ]],
+        ])->assertCreated();
+
+        $invoice = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'purchase_order_ulid' => $order->json('ulid'),
+            'po_number' => 'CLIENT-SHOULD-NOT-WIN',
+        ])->assertCreated();
+
+        $invoice->assertJsonPath('purchase_order.ulid', $order->json('ulid'))
+            ->assertJsonPath('purchase_order.document_number', $order->json('document_number'))
+            ->assertJsonPath('po_number', $order->json('document_number'));
+
+        $invoiceUlid = $invoice->json('ulid');
+        $orderLineUlid = $order->json('items.0.ulid');
+
+        $line = $this->postJson('/api/purchases/'.$invoiceUlid.'/lines', [
+            'purchase_order_line_ulid' => $orderLineUlid,
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '2.000000',
+            'conversion_factor' => '1.00000000',
+            'unit_cost' => '100.0000',
+            'discount_amount' => '4.0000',
+        ])->assertCreated();
+
+        $line->assertJsonPath('purchase_order_line_ulid', $orderLineUlid);
+
+        $stored = PurchaseInvoice::query()
+            ->with('lines')
+            ->where('ulid', $invoiceUlid)
+            ->firstOrFail();
+
+        $this->assertNotNull($stored->purchase_order_id);
+        $this->assertNotNull($stored->lines->firstOrFail()->purchase_order_line_id);
+
+        $show = $this->getJson('/api/purchases/'.$invoiceUlid)->assertOk();
+        $show->assertJsonPath('purchase_order.ulid', $order->json('ulid'))
+            ->assertJsonPath('lines.0.purchase_order_line_ulid', $orderLineUlid);
+        $this->assertNoInternalIds($show->json());
+
+        $otherProductUlid = $this->postJson('/api/products', [
+            'name' => 'Wrong PO Link Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchases/'.$invoiceUlid.'/lines', [
+            'purchase_order_line_ulid' => $orderLineUlid,
+            'product_ulid' => $otherProductUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '1.000000',
+            'unit_cost' => '10.0000',
+        ])->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonPath(
+                'error.fields.product_ulid.0',
+                'Product must match the linked Purchase Order line.',
+            );
+    }
+
     private function configurePurchaseClearing(): void
     {
         $tenantContext = app(TenantContext::class);
