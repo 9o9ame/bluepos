@@ -1,3 +1,6 @@
+import { useLayoutEffect, useState, type RefObject } from 'react'
+import { createPortal } from 'react-dom'
+import { UI_LAYER } from '../../components/ui/uiLayers'
 import type { Product } from '../../types/catalog'
 import type { SalePriceType } from '../../types/sales'
 import './ProductLookupGrid.css'
@@ -32,15 +35,65 @@ export function ProductLookupGrid({
   total,
   priceType,
   onSelect,
+  portalAnchorRef,
 }: {
   rows: Product[]
   total: number
   priceType: SalePriceType
   onSelect: (product: Product) => void
+  portalAnchorRef?: RefObject<HTMLElement | null>
 }) {
-  return (
+  const [portalStyle, setPortalStyle] = useState<{
+    top: number
+    left: number
+    width: number
+  } | null>(null)
+
+  useLayoutEffect(() => {
+    if (!portalAnchorRef?.current) {
+      setPortalStyle(null)
+      return
+    }
+
+    const update = () => {
+      const rect = portalAnchorRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const width = Math.min(1080, Math.max(700, window.innerWidth - rect.left - 16))
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))
+
+      setPortalStyle({
+        top: rect.bottom - 1,
+        left,
+        width,
+      })
+    }
+
+    update()
+    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, true)
+
+    return () => {
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update, true)
+    }
+  }, [portalAnchorRef])
+
+  const grid = (
     <div
-      className="sales-pos-product-results-grid"
+      className={`sales-pos-product-results-grid${portalStyle ? ' is-portal' : ''}`}
+      style={
+        portalStyle
+          ? {
+              position: 'fixed',
+              top: portalStyle.top,
+              left: portalStyle.left,
+              width: portalStyle.width,
+              maxWidth: 'none',
+              zIndex: UI_LAYER.dropdown,
+            }
+          : undefined
+      }
       role="listbox"
       aria-label="Choose product"
     >
@@ -84,4 +137,10 @@ export function ProductLookupGrid({
       </div>
     </div>
   )
+
+  if (portalStyle && typeof document !== 'undefined') {
+    return createPortal(grid, document.body)
+  }
+
+  return grid
 }
