@@ -5,13 +5,16 @@ namespace App\Http\Controllers\Api\Purchases;
 use App\Actions\Purchases\CreatePurchaseOrderAction;
 use App\Catalog\TenantCatalog;
 use App\Enums\ProductStatus;
+use App\Enums\PurchaseInvoiceStatus;
 use App\Enums\SaleStatus;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchases\StorePurchaseOrderRequest;
 use App\Http\Resources\Purchases\PurchaseOrderResource;
 use App\Models\Product;
+use App\Models\PurchaseInvoiceLine;
 use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderLine;
 use App\Models\SaleItem;
 use App\Models\StockBalance;
 use App\Tenancy\TenantContext;
@@ -64,6 +67,142 @@ class PurchaseOrderController extends Controller
 
         return [
             'data' => PurchaseOrderResource::collection($page->items()),
+            'meta' => [
+                'current_page' => $page->currentPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
+                'last_page' => $page->lastPage(),
+            ],
+        ];
+    }
+
+    public function status(
+        Request $request,
+        TenantContext $tenantContext,
+    ): array {
+        $this->authorize('viewAny', PurchaseOrder::class);
+
+        $data = $request->validate([
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'supplier_ulid' => ['nullable', 'string', 'size:26'],
+            'status' => ['nullable', 'in:open,closed,cancelled'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $query = PurchaseOrderLine::query()
+            ->forTenant($tenantContext->tenantId())
+            ->whereHas('purchaseOrder', fn ($orders) => $orders
+                ->forTenant($tenantContext->tenantId())
+                ->where('branch_id', $tenantContext->branchId())
+                ->where('warehouse_id', $tenantContext->warehouseId()))
+            ->with([
+                'purchaseOrder.supplier',
+                'product',
+                'unit',
+            ])
+            ->orderByDesc(
+                PurchaseOrder::query()
+                    ->select('order_date')
+                    ->whereColumn('purchase_orders.id', 'purchase_order_lines.purchase_order_id')
+                    ->limit(1),
+            )
+            ->orderByDesc('purchase_order_id')
+            ->orderBy('id');
+
+        if (! empty($data['date_from'])) {
+            $query->whereHas('purchaseOrder', fn ($orders) => $orders
+                ->whereDate('order_date', '>=', (string) $data['date_from']));
+        }
+
+        if (! empty($data['date_to'])) {
+            $query->whereHas('purchaseOrder', fn ($orders) => $orders
+                ->whereDate('order_date', '<=', (string) $data['date_to']));
+        }
+
+        if (! empty($data['supplier_ulid'])) {
+            $query->whereHas('purchaseOrder.supplier', fn ($supplier) => $supplier
+                ->where('ulid', (string) $data['supplier_ulid']));
+        }
+
+        if (! empty($data['status'])) {
+            $query->whereHas('purchaseOrder', fn ($orders) => $orders
+                ->where('status', (string) $data['status']));
+        }
+
+        $perPage = min(max((int) ($data['per_page'] ?? 50), 1), 100);
+        $page = $query->paginate($perPage, ['*'], 'page', (int) ($data['page'] ?? 1));
+        $lines = collect($page->items());
+        $lineIds = $lines->pluck('id');
+
+        $received = PurchaseInvoiceLine::query()
+            ->whereIn('purchase_order_line_id', $lineIds)
+            ->whereHas('purchaseInvoice', fn ($invoices) => $invoices
+                ->forTenant($tenantContext->tenantId())
+                ->where('branch_id', $tenantContext->branchId())
+                ->where('warehouse_id', $tenantContext->warehouseId())
+                ->where('status', PurchaseInvoiceStatus::Posted->value))
+            ->selectRaw(
+                'purchase_order_line_id, '
+                .'COALESCE(SUM(base_quantity), 0) as received_base_quantity, '
+                .'COALESCE(SUM(line_total), 0) as received_amount'
+            )
+            ->groupBy('purchase_order_line_id')
+            ->get()
+            ->keyBy('purchase_order_line_id');
+
+        $rows = $lines->map(function (PurchaseOrderLine $line) use ($received): array {
+            $receipt = $received->get($line->id);
+            $receivedBase = bcadd((string) ($receipt?->received_base_quantity ?? '0'), '0', 6);
+            $factor = bcadd((string) $line->conversion_factor, '0', 8);
+            $receivedQty = bccomp($factor, '0', 8) === 1
+                ? bcdiv($receivedBase, $factor, 6)
+                : '0.000000';
+            $remainingQty = bcsub((string) $line->quantity, $receivedQty, 6);
+            if (bccomp($remainingQty, '0', 6) < 0) {
+                $remainingQty = '0.000000';
+            }
+
+            $receivedAmount = bcadd((string) ($receipt?->received_amount ?? '0'), '0', 4);
+            $balanceAmount = bcsub((string) $line->line_total, $receivedAmount, 4);
+
+            $order = $line->purchaseOrder;
+
+            return [
+                'order' => [
+                    'ulid' => $order->ulid,
+                    'document_number' => $order->document_number,
+                    'order_date' => $order->order_date?->toDateString(),
+                    'status' => $order->status,
+                ],
+                'supplier' => $order->supplier ? [
+                    'ulid' => $order->supplier->ulid,
+                    'code' => $order->supplier->code,
+                    'name' => $order->supplier->name,
+                ] : null,
+                'line_ulid' => $line->ulid,
+                'product' => $line->product ? [
+                    'ulid' => $line->product->ulid,
+                    'product_number' => $line->product->product_number,
+                    'name' => $line->product->name,
+                ] : null,
+                'unit' => $line->unit ? [
+                    'ulid' => $line->unit->ulid,
+                    'code' => $line->unit->code,
+                    'name' => $line->unit->name,
+                ] : null,
+                'order_quantity' => bcadd((string) $line->quantity, '0', 6),
+                'received_quantity' => $receivedQty,
+                'remaining_quantity' => $remainingQty,
+                'order_amount' => bcadd((string) $line->line_total, '0', 4),
+                'received_amount' => $receivedAmount,
+                'balance_amount' => $balanceAmount,
+            ];
+        })->values();
+
+        return [
+            'data' => $rows,
             'meta' => [
                 'current_page' => $page->currentPage(),
                 'per_page' => $page->perPage(),
