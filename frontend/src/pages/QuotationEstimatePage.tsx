@@ -16,6 +16,7 @@ import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
+import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { useSaleCart } from '../features/sales/useSaleCart'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
@@ -39,7 +40,6 @@ export function QuotationEstimatePage() {
   const [tab, setTab] = useState<'entry' | 'search'>('entry')
   const [quotationDate, setQuotationDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [salesmanUlid, setSalesmanUlid] = useState<string | null>(null)
-  const [productUlid, setProductUlid] = useState('')
   const [productQuery, setProductQuery] = useState('')
   const [searchText, setSearchText] = useState('')
   const [savedQuotation, setSavedQuotation] = useState<SaleQuotation | null>(null)
@@ -72,6 +72,7 @@ export function QuotationEstimatePage() {
       },
       { busy: 'none' },
     ),
+    enabled: productQuery.trim().length > 0,
     retry: false,
   })
 
@@ -129,32 +130,6 @@ export function QuotationEstimatePage() {
     onError: (error) => feedback.error(errorMessage(error), 'Quotation / Estimate'),
   })
 
-  const productOptions = useMemo(
-    () => (productsQuery.data?.data ?? []).map((product) => {
-      const expectedPriceType =
-        cart.priceType === 'wholesale' ? 'wholesale' : 'retail'
-      const price = product.prices?.find(
-        (row) => row.is_active && row.price_type === expectedPriceType,
-      )?.amount ?? '0.0000'
-
-      return {
-        value: product.ulid,
-        label: `${product.product_number} — ${product.name}`,
-        columns: [
-          product.product_number,
-          product.name,
-          product.sales_lookup
-            ? Number.parseFloat(product.sales_lookup.in_stock).toFixed(3)
-            : '—',
-          price,
-          product.base_unit?.symbol ?? product.base_unit?.code ?? '—',
-          product.rack_location || '—',
-        ],
-      }
-    }),
-    [cart.priceType, productsQuery.data],
-  )
-
   const customerOptions = useMemo(
     () => [
       { value: '', label: 'Walk-in / No customer' },
@@ -186,7 +161,6 @@ export function QuotationEstimatePage() {
     cart.setPriceType('default')
     setQuotationDate(new Date().toISOString().slice(0, 10))
     setSalesmanUlid(null)
-    setProductUlid('')
     setProductQuery('')
     setSavedQuotation(null)
     setOpenedQuotation(null)
@@ -195,7 +169,6 @@ export function QuotationEstimatePage() {
   }
 
   async function addSelectedProduct(value: string) {
-    setProductUlid(value)
     if (!value || readOnly) return
 
     try {
@@ -219,17 +192,15 @@ export function QuotationEstimatePage() {
       if (!lineKey) return
 
       if (!activePrice) {
-        feedback.warning(
+        feedback.info(
           `No active ${expectedPriceType} price is configured for ${product.product_number} — ${product.name}. The preview rate will remain 0 until the product price is configured; the server remains final authority on save.`,
           'Quotation / Estimate',
         )
       }
 
-      setProductUlid('')
-      setProductQuery('')
+        setProductQuery('')
     } catch (error) {
-      setProductUlid('')
-      setProductQuery('')
+        setProductQuery('')
       feedback.error(errorMessage(error), 'Unable to add product')
     }
   }
@@ -446,27 +417,32 @@ export function QuotationEstimatePage() {
                 {!readOnly ? (
                   <tr className="quotation-entry-row">
                     <td className="quotation-product-search-cell">
-                      <UiSelect
-                        value={productUlid}
-                        className="quotation-product-select"
-                        aria-label="Product"
+                      <input
+                        className="quotation-product-search-input sales-pos-product-entry is-active-product"
+                        value={productQuery}
                         placeholder="Search / select product"
-                        searchPlaceholder="Search by ID, description, stock, unit or location"
-                        options={productOptions}
-                        filterOptions={false}
-                        onSearchChange={setProductQuery}
-                        menuColumns={[
-                          { header: 'ID', width: '82px' },
-                          { header: 'Description', width: 'minmax(300px, 1fr)' },
-                          { header: 'In Stock', width: '92px' },
-                          { header: 'Unit Price', width: '100px' },
-                          { header: 'Unit', width: '82px' },
-                          { header: 'Location', width: '110px' },
-                        ]}
-                        menuMinWidth={900}
-                        maxMenuHeight={310}
-                        onChange={(value) => void addSelectedProduct(value)}
+                        aria-label="Search product"
+                        autoComplete="off"
+                        onChange={(event) => setProductQuery(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key !== 'Enter') return
+                          const first = productsQuery.data?.data?.[0]
+                          if (!first) return
+
+                          event.preventDefault()
+                          void addSelectedProduct(first.ulid)
+                        }}
                       />
+
+                      {productQuery.trim().length > 0 &&
+                      productsQuery.data?.data?.length ? (
+                        <ProductLookupGrid
+                          rows={productsQuery.data.data}
+                          total={productsQuery.data.meta.total}
+                          priceType={cart.priceType}
+                          onSelect={(product) => void addSelectedProduct(product.ulid)}
+                        />
+                      ) : null}
                     </td>
                     <td>—</td>
                     <td className="is-num">—</td>
