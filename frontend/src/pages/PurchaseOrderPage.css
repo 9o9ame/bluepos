@@ -1,0 +1,395 @@
+.purchase-order-page {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.purchase-order-page .desktop-panel-body {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.purchase-order-tabs {
+  display: flex;
+  width: 42px;
+  min-width: 42px;
+  flex: 0 0 42px;
+  flex-direction: column;
+  gap: 4px;
+  border-right: 1px solid var(--ui-border);
+  background: var(--ui-surface-subtle);
+  padding: 6px 4px;
+}
+
+.purchase-order-tabs button {
+  display: flex;
+  min-height: 108px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  background: transparent;
+  color: var(--ui-text-muted);
+  padding: 8px 4px;
+  font: inherit;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  cursor: pointer;
+}
+
+.purchase-order-tabs button:hover {
+  background: var(--ui-control-hover-bg);
+  color: var(--ui-text);
+}
+
+.purchase-order-tabs button.is-active {
+  border-color: var(--ui-border);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+}
+
+.purchase-order-entry,
+.purchase-order-search {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  padding: 8px 10px 10px;
+}
+
+.purchase-order-entry {
+  display: grid;
+  grid-template-rows: auto minmax(360px, 1fr) auto;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.purchase-order-search {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.purchase-order-header {
+  display: grid;
+  grid-template-columns: 170px 210px minmax(320px, 1fr) minmax(320px, 1fr);
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface-subtle);
+  box-shadow: var(--ui-card-shadow);
+  padding: 7px 8px;
+}
+
+.purchase-order-header label {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+}
+
+.purchase-order-header label > span {
+  white-space: nowrap;
+}
+
+.purchase-order-header input,
+.purchase-order-lines input,
+.purchase-order-search-bar input {
+  box-sizing: border-box;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+}
+
+.purchase-order-header input {
+  min-width: 0;
+  width: 100%;
+  padding: 5px 7px;
+}
+
+.purchase-order-header input:focus,
+.purchase-order-lines input:focus,
+.purchase-order-search-bar input:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.purchase-order-lines-wrap {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--ui-table-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.purchase-order-lines {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font-size: 13px;
+}
+
+.purchase-order-lines th,
+.purchase-order-lines td {
+  border-bottom: 1px solid var(--ui-table-border);
+  padding: 5px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.purchase-order-lines th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ui-table-header);
+  color: var(--ui-table-header-text);
+  font-weight: 600;
+}
+
+.purchase-order-lines tbody tr:nth-child(even) {
+  background: var(--ui-row-alt);
+}
+
+.purchase-order-lines tbody tr:hover {
+  background: var(--ui-row-hover);
+}
+
+.purchase-order-lines .is-num {
+  text-align: right;
+}
+
+.purchase-order-lines input {
+  width: 86px;
+  padding: 4px 6px;
+  text-align: right;
+}
+
+.purchase-order-lines th:nth-child(1),
+.purchase-order-lines td:nth-child(1) {
+  min-width: 360px;
+}
+
+.purchase-order-lines th:nth-child(2),
+.purchase-order-lines td:nth-child(2) {
+  width: 110px;
+}
+
+.purchase-order-unit {
+  min-width: 92px;
+}
+
+.purchase-order-entry-row td {
+  background: var(--ui-surface-subtle);
+}
+
+.purchase-order-product-cell {
+  position: relative;
+  min-width: 360px;
+  overflow: visible;
+}
+
+.purchase-order-product-input {
+  width: 100% !important;
+  min-width: 340px;
+  text-align: left !important;
+}
+
+.purchase-order-product-results {
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 0;
+  z-index: 4;
+  width: min(780px, calc(100vw - 120px));
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-select-menu-bg, var(--ui-surface));
+  box-shadow: var(--ui-card-shadow);
+  color: var(--ui-text);
+}
+
+.purchase-order-product-results-head,
+.purchase-order-product-results button {
+  display: grid;
+  grid-template-columns: 100px minmax(260px, 1fr) 100px 110px 80px;
+  align-items: center;
+  width: 100%;
+}
+
+.purchase-order-product-results-head {
+  background: var(--ui-table-header);
+  color: var(--ui-table-header-text);
+  font-weight: 700;
+}
+
+.purchase-order-product-results-head span,
+.purchase-order-product-results button span,
+.purchase-order-product-results button strong {
+  min-width: 0;
+  overflow: hidden;
+  padding: 6px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.purchase-order-product-results button {
+  border: 0;
+  border-top: 1px solid var(--ui-table-border);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.purchase-order-product-results button:nth-of-type(even) {
+  background: var(--ui-row-alt);
+}
+
+.purchase-order-product-results button:hover,
+.purchase-order-product-results button:focus-visible {
+  outline: none;
+  background: var(--ui-row-hover);
+}
+
+.purchase-order-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 460px;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.purchase-order-status-note,
+.purchase-order-totals {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface-subtle);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.purchase-order-status-note {
+  display: flex;
+  align-items: center;
+  color: var(--ui-text-muted);
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.purchase-order-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 9px 12px;
+}
+
+.purchase-order-totals div {
+  display: grid;
+  gap: 3px;
+}
+
+.purchase-order-totals span {
+  color: var(--ui-text-muted);
+  font-size: 11px;
+}
+
+.purchase-order-totals strong {
+  text-align: right;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.purchase-order-totals .is-grand strong {
+  color: var(--ui-accent-strong);
+  font-size: 15px;
+}
+
+.purchase-order-search-bar {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.purchase-order-search-bar input {
+  min-width: 340px;
+  padding: 6px 8px;
+}
+
+.purchase-order-empty {
+  padding: 28px !important;
+  text-align: center !important;
+  color: var(--ui-text-muted);
+}
+
+@media (max-width: 1200px) {
+  .purchase-order-entry {
+    overflow: auto;
+    grid-template-rows: auto minmax(320px, 1fr) auto;
+  }
+
+  .purchase-order-header {
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+  }
+
+  .purchase-order-footer {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .purchase-order-page,
+  .purchase-order-page .desktop-panel-body {
+    overflow: auto;
+  }
+
+  .purchase-order-page .desktop-panel-body {
+    flex-direction: column;
+  }
+
+  .purchase-order-tabs {
+    width: auto;
+    min-width: 0;
+    flex: 0 0 auto;
+    flex-direction: row;
+    border-right: 0;
+    border-bottom: 1px solid var(--ui-border);
+  }
+
+  .purchase-order-tabs button {
+    min-height: 0;
+    writing-mode: horizontal-tb;
+    transform: none;
+    padding: 6px 10px;
+  }
+
+  .purchase-order-header,
+  .purchase-order-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-order-header label {
+    grid-template-columns: 100px minmax(0, 1fr);
+  }
+
+  .purchase-order-entry,
+  .purchase-order-search {
+    overflow: visible;
+  }
+}
+
+html[data-animations='off'] .purchase-order-tabs button,
+html[data-animations='off'] .purchase-order-product-results button {
+  transition: none !important;
+}
