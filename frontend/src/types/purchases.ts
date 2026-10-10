@@ -34,6 +34,7 @@ export type PurchaseUnitRef = {
 
 export type PurchaseInvoiceLine = {
   ulid: string
+  purchase_order_line_ulid?: string | null
   quantity: string
   conversion_factor: string
   base_quantity: string
@@ -67,6 +68,7 @@ export type PurchaseInvoice = {
   document_number: string
   supplier_invoice_number: string | null
   po_number?: string | null
+  purchase_order?: { ulid: string; document_number: string } | null
   invoice_type?: string
   currency_code?: string
   calculation_method?: string
@@ -109,6 +111,7 @@ export type PurchaseHeaderPayload = {
   invoice_date?: string
   due_date?: string | null
   supplier_invoice_number?: string | null
+  purchase_order_ulid?: string | null
   po_number?: string | null
   invoice_type?: string
   currency_code?: string
@@ -131,6 +134,7 @@ export type PurchaseHeaderPayload = {
 }
 
 export type PurchaseLinePayload = {
+  purchase_order_line_ulid?: string | null
   product_ulid: string
   unit_ulid: string
   quantity: string
