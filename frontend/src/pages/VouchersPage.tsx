@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { CheckCircle2, Plus, RefreshCw, Save, Search, Trash2, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
@@ -330,6 +330,45 @@ export function VouchersPage() {
     setLines((current) => current.map((line) => (line.key === key ? { ...line, ...patch } : line)))
   }
 
+  function focusLineCell(rowIndex: number, field: string) {
+    requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>(
+        `[data-voucher-row="${rowIndex}"][data-voucher-field="${field}"]`,
+      )
+      target?.focus()
+    })
+  }
+
+  function handleLineEnter(
+    event: KeyboardEvent<HTMLElement>,
+    rowIndex: number,
+    field: 'account' | 'narration' | 'amount' | 'debit' | 'credit',
+  ) {
+    if (event.key !== 'Enter' || readOnly) return
+
+    event.preventDefault()
+
+    const fields =
+      type === 'journal'
+        ? (['account', 'narration', 'debit', 'credit'] as const)
+        : (['account', 'narration', 'amount'] as const)
+    const fieldIndex = fields.indexOf(field)
+
+    if (fieldIndex >= 0 && fieldIndex < fields.length - 1) {
+      focusLineCell(rowIndex, fields[fieldIndex + 1])
+      return
+    }
+
+    const nextRowIndex = rowIndex + 1
+    if (nextRowIndex < lines.length) {
+      focusLineCell(nextRowIndex, 'account')
+      return
+    }
+
+    setLines((current) => [...current, newLine()])
+    focusLineCell(nextRowIndex, 'account')
+  }
+
   function lineBalance(line: EntryLine): number {
     return Number(accountMap.get(line.account_ulid)?.balance ?? 0)
   }
@@ -533,20 +572,66 @@ export function VouchersPage() {
                             account.party_type ?? 'account',
                           ],
                         }))}
+                        triggerProps={{
+                          'data-voucher-row': lines.indexOf(line),
+                          'data-voucher-field': 'account',
+                        }}
+                        onKeyDown={(event) => handleLineEnter(event, lines.indexOf(line), 'account')}
                         onChange={(value) => updateLine(line.key, { account_ulid: value })}
                       />
                     </td>
                     <td>
-                      <input className="desktop-input" value={line.narration} disabled={readOnly} onChange={(event) => updateLine(line.key, { narration: event.target.value })} />
+                      <input
+                        className="desktop-input"
+                        value={line.narration}
+                        disabled={readOnly}
+                        data-voucher-row={lines.indexOf(line)}
+                        data-voucher-field="narration"
+                        onKeyDown={(event) => handleLineEnter(event, lines.indexOf(line), 'narration')}
+                        onChange={(event) => updateLine(line.key, { narration: event.target.value })}
+                      />
                     </td>
                     <td className="voucher-readonly-money">{money(lineBalance(line))}</td>
                     {type === 'journal' ? (
                       <>
-                        <td><input className="desktop-input voucher-money" inputMode="decimal" value={line.debit} disabled={readOnly} onChange={(event) => updateLine(line.key, { debit: event.target.value })} /></td>
-                        <td><input className="desktop-input voucher-money" inputMode="decimal" value={line.credit} disabled={readOnly} onChange={(event) => updateLine(line.key, { credit: event.target.value })} /></td>
+                        <td>
+                          <input
+                            className="desktop-input voucher-money"
+                            inputMode="decimal"
+                            value={line.debit}
+                            disabled={readOnly}
+                            data-voucher-row={lines.indexOf(line)}
+                            data-voucher-field="debit"
+                            onKeyDown={(event) => handleLineEnter(event, lines.indexOf(line), 'debit')}
+                            onChange={(event) => updateLine(line.key, { debit: event.target.value })}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="desktop-input voucher-money"
+                            inputMode="decimal"
+                            value={line.credit}
+                            disabled={readOnly}
+                            data-voucher-row={lines.indexOf(line)}
+                            data-voucher-field="credit"
+                            onKeyDown={(event) => handleLineEnter(event, lines.indexOf(line), 'credit')}
+                            onChange={(event) => updateLine(line.key, { credit: event.target.value })}
+                          />
+                        </td>
                       </>
                     ) : (
-                      <td><input className="desktop-input voucher-money" inputMode="decimal" value={line.amount} disabled={readOnly} onChange={(event) => updateLine(line.key, { amount: event.target.value })} /></td>
+                      <td>
+                        <input
+                          className="desktop-input voucher-money"
+                          inputMode="decimal"
+                          value={line.amount}
+                          disabled={readOnly}
+                          data-voucher-row={lines.indexOf(line)}
+                          data-voucher-field="amount"
+                          onKeyDown={(event) => handleLineEnter(event, lines.indexOf(line), 'amount')}
+                          onChange={(event) => updateLine(line.key, { amount: event.target.value })}
+                        />
+                      </td>
                     )}
                     <td className="voucher-readonly-money">{money(lineClosing(line))}</td>
                     <td>
@@ -566,9 +651,6 @@ export function VouchersPage() {
           </div>
 
           <div className="voucher-entry-footer">
-            <UiButton variant="primary" disabled={readOnly} icon={<Plus size={13} />} onClick={() => setLines((current) => [...current, newLine()])}>
-              Add Line
-            </UiButton>
             <div className="voucher-totals">
               <span>Debit <strong>{money(debitTotal)}</strong></span>
               <span>Credit <strong>{money(creditTotal)}</strong></span>
