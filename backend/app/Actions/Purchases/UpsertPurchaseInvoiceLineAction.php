@@ -8,6 +8,7 @@ use App\Enums\PurchaseInvoiceStatus;
 use App\Exceptions\ApiException;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceLine;
+use App\Models\PurchaseOrderLine;
 use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
@@ -48,6 +49,43 @@ class UpsertPurchaseInvoiceLineAction
             }
 
             $unit = $this->catalog->unit($data['unit_ulid']);
+
+            $purchaseOrderLineId = $line?->purchase_order_line_id;
+            if (! empty($data['purchase_order_line_ulid'])) {
+                $purchaseOrderLine = PurchaseOrderLine::query()
+                    ->forTenant($this->tenantContext->tenantId())
+                    ->where('ulid', (string) $data['purchase_order_line_ulid'])
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $purchaseOrderLine) {
+                    throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
+                }
+
+                if (
+                    $invoice->purchase_order_id === null
+                    || (int) $purchaseOrderLine->purchase_order_id !== (int) $invoice->purchase_order_id
+                ) {
+                    throw ValidationException::withMessages([
+                        'purchase_order_line_ulid' => 'Purchase Order line does not belong to the linked Purchase Order.',
+                    ]);
+                }
+
+                if ((int) $purchaseOrderLine->product_id !== (int) $product->id) {
+                    throw ValidationException::withMessages([
+                        'product_ulid' => 'Product must match the linked Purchase Order line.',
+                    ]);
+                }
+
+                if ((int) $purchaseOrderLine->unit_id !== (int) $unit->id) {
+                    throw ValidationException::withMessages([
+                        'unit_ulid' => 'Unit must match the linked Purchase Order line.',
+                    ]);
+                }
+
+                $purchaseOrderLineId = $purchaseOrderLine->id;
+            }
+
             $conversion = array_key_exists('conversion_factor', $data)
                 ? (string) $data['conversion_factor']
                 : '1.00000000';
@@ -90,6 +128,7 @@ class UpsertPurchaseInvoiceLineAction
             $mrp = $this->money((string) ($data['mrp'] ?? '0'));
 
             $payload = [
+                'purchase_order_line_id' => $purchaseOrderLineId,
                 'product_id' => $product->id,
                 'unit_id' => $unit->id,
                 'quantity' => bcadd($quantity, '0', 6),
