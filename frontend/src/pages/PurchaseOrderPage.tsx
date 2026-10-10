@@ -12,6 +12,7 @@ import {
   createPurchaseOrder,
   fetchPurchaseOrder,
   fetchPurchaseOrders,
+  fetchPurchaseOrderStatus,
   generatePurchaseOrder,
 } from '../api/purchases'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
@@ -168,7 +169,7 @@ export function PurchaseOrderPage() {
   const feedback = useFeedback()
   const canCreate = useCan('purchases.create')
 
-  const [tab, setTab] = useState<'entry' | 'search'>('entry')
+  const [tab, setTab] = useState<'entry' | 'search' | 'status'>('entry')
   const [supplierUlid, setSupplierUlid] = useState('')
   const [orderDate, setOrderDate] = useState(todayIso())
   const [notes, setNotes] = useState('')
@@ -176,6 +177,10 @@ export function PurchaseOrderPage() {
   const [searchText, setSearchText] = useState('')
   const [searchFrom, setSearchFrom] = useState(daysAgoIso(30))
   const [searchTo, setSearchTo] = useState(todayIso())
+  const [statusFrom, setStatusFrom] = useState(daysAgoIso(30))
+  const [statusTo, setStatusTo] = useState(todayIso())
+  const [statusSupplierUlid, setStatusSupplierUlid] = useState('')
+  const [statusShowAll, setStatusShowAll] = useState(false)
   const [lines, setLines] = useState<DraftLine[]>([])
   const [savedOrder, setSavedOrder] = useState<PurchaseOrder | null>(null)
   const [openedOrder, setOpenedOrder] = useState<PurchaseOrder | null>(null)
@@ -242,6 +247,26 @@ export function PurchaseOrderPage() {
         per_page: 50,
       }),
     enabled: tab === 'search',
+    retry: false,
+  })
+
+  const statusQuery = useQuery({
+    queryKey: [
+      'purchase-order-status',
+      statusFrom,
+      statusTo,
+      statusSupplierUlid,
+      statusShowAll,
+    ],
+    queryFn: () =>
+      fetchPurchaseOrderStatus({
+        date_from: statusFrom || undefined,
+        date_to: statusTo || undefined,
+        supplier_ulid: statusSupplierUlid || undefined,
+        status: statusShowAll ? undefined : 'open',
+        per_page: 100,
+      }),
+    enabled: tab === 'status',
     retry: false,
   })
 
@@ -554,6 +579,7 @@ export function PurchaseOrderPage() {
             variant="info"
             onClick={() => {
               if (tab === 'search') void ordersQuery.refetch()
+              else if (tab === 'status') void statusQuery.refetch()
               else startNew()
             }}
           />
@@ -587,6 +613,13 @@ export function PurchaseOrderPage() {
           onClick={() => setTab('search')}
         >
           Search
+        </button>
+        <button
+          type="button"
+          className={tab === 'status' ? 'is-active' : ''}
+          onClick={() => setTab('status')}
+        >
+          Order Status
         </button>
       </div>
 
@@ -1012,7 +1045,7 @@ export function PurchaseOrderPage() {
             </div>
           </div>
         </div>
-      ) : (
+      ) : tab === 'search' ? (
         <div className="purchase-order-search">
           <div className="purchase-order-search-bar">
             <input
@@ -1079,6 +1112,134 @@ export function PurchaseOrderPage() {
             rowKey={(row) => row.ulid}
             onActivate={(row) => openMutation.mutate(row.ulid)}
             emptyMessage="No purchase orders found."
+          />
+        </div>
+      ) : (
+        <div className="purchase-order-status-view">
+          <div className="purchase-order-status-filters">
+            <label>
+              <span>From</span>
+              <input
+                type="date"
+                value={statusFrom}
+                onChange={(event) => setStatusFrom(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>To</span>
+              <input
+                type="date"
+                value={statusTo}
+                onChange={(event) => setStatusTo(event.target.value)}
+              />
+            </label>
+            <label className="purchase-order-status-supplier">
+              <span>Distributor</span>
+              <UiSelect
+                value={statusSupplierUlid}
+                options={[
+                  { value: '', label: 'All Distributors' },
+                  ...supplierOptions,
+                ]}
+                onChange={setStatusSupplierUlid}
+                placeholder="All Distributors"
+                searchPlaceholder="Search distributor"
+                aria-label="Purchase order status distributor"
+              />
+            </label>
+            <label className="purchase-order-status-show-all">
+              <input
+                type="checkbox"
+                checked={statusShowAll}
+                onChange={(event) => setStatusShowAll(event.target.checked)}
+              />
+              <span>Show All</span>
+            </label>
+            <UiButton variant="info" onClick={() => void statusQuery.refetch()}>
+              View
+            </UiButton>
+          </div>
+
+          <PosDataGrid
+            columns={[
+              {
+                key: 'order_no',
+                header: 'Order No',
+                width: 130,
+                render: (row) => row.order.document_number,
+              },
+              {
+                key: 'order_date',
+                header: 'Order Date',
+                width: 110,
+                render: (row) => row.order.order_date,
+              },
+              {
+                key: 'party',
+                header: 'Party',
+                width: 180,
+                render: (row) => row.supplier?.name ?? '—',
+              },
+              {
+                key: 'description',
+                header: 'Description',
+                render: (row) =>
+                  row.product
+                    ? `${row.product.product_number} — ${row.product.name}`
+                    : '—',
+              },
+              {
+                key: 'order_qty',
+                header: 'Order Qty',
+                width: 105,
+                align: 'right',
+                render: (row) => row.order_quantity,
+              },
+              {
+                key: 'receive_qty',
+                header: 'Receive Qty',
+                width: 105,
+                align: 'right',
+                render: (row) => row.received_quantity,
+              },
+              {
+                key: 'remaining_qty',
+                header: 'Rem Qty',
+                width: 105,
+                align: 'right',
+                render: (row) => row.remaining_quantity,
+              },
+              {
+                key: 'order_amount',
+                header: 'Order Amt',
+                width: 120,
+                align: 'right',
+                render: (row) => row.order_amount,
+              },
+              {
+                key: 'received_amount',
+                header: 'Rec Amt',
+                width: 120,
+                align: 'right',
+                render: (row) => row.received_amount,
+              },
+              {
+                key: 'balance_amount',
+                header: 'Bal Amt',
+                width: 120,
+                align: 'right',
+                render: (row) => row.balance_amount,
+              },
+              {
+                key: 'status',
+                header: 'Status',
+                width: 90,
+                render: (row) => row.order.status,
+              },
+            ]}
+            rows={statusQuery.data?.data ?? []}
+            rowKey={(row) => row.line_ulid}
+            emptyMessage={statusQuery.isLoading ? 'Loading…' : 'No purchase order status rows found.'}
           />
         </div>
       )}
