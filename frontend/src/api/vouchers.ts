@@ -27,6 +27,7 @@ export type VoucherLine = {
 export type Voucher = {
   ulid: string
   voucher_number: string
+  book_number: string | null
   type: VoucherType
   entry_date: string
   description: string | null
@@ -49,6 +50,7 @@ export type VoucherInputLine = {
 export type VoucherPayload = {
   type?: VoucherType
   entry_date: string
+  book_number?: string | null
   description?: string | null
   header_account_ulid?: string | null
   lines: VoucherInputLine[]
