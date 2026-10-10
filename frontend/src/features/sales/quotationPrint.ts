@@ -53,13 +53,21 @@ function quotationHtml(
     ? `<section class="notes"><strong>Notes / Remarks</strong><div>${escapeHtml(quotation.notes)}</div></section>`
     : ''
 
+  const customerHtml = quotation.customer
+    ? `<strong>${escapeHtml(quotation.customer.name)}</strong><small>${escapeHtml(quotation.customer.code)}</small>`
+    : '<strong>Walk-in / No customer</strong>'
+
+  const salesmanHtml = quotation.salesman
+    ? `<strong>${escapeHtml(quotation.salesman.name)}</strong><small>${escapeHtml(quotation.salesman.code ?? '')}</small>`
+    : '<strong>No salesman</strong>'
+
   return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8" />
 <title>${escapeHtml(quotation.document_number)} - Quotation</title>
 <style>
-  @page { size: A4 portrait; margin: 12mm; }
+  @page { size: A4 portrait; margin: 11mm 12mm; }
   * { box-sizing: border-box; }
   body {
     margin: 0;
@@ -69,69 +77,96 @@ function quotationHtml(
     font-size: 11px;
     line-height: 1.35;
   }
-  .document { width: 100%; }
+  .document {
+    width: 100%;
+    max-width: 190mm;
+    margin: 0 auto;
+  }
   .header {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 20px;
-    align-items: start;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #263746;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    gap: 24px;
+    align-items: center;
+    padding: 0 0 12px;
+    border-bottom: 2px solid #334155;
   }
   .business h1 {
     margin: 0;
-    font-size: 20px;
-    line-height: 1.1;
+    font-size: 23px;
+    line-height: 1.05;
+    letter-spacing: -.01em;
   }
   .business .sub {
     margin-top: 4px;
-    color: #4b5563;
+    color: #475569;
+    font-size: 10.5px;
   }
   .doc-title {
-    min-width: 210px;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
     text-align: right;
   }
   .doc-title h2 {
     margin: 0;
-    font-size: 24px;
-    letter-spacing: .04em;
+    font-size: 21px;
+    line-height: 1.05;
+    letter-spacing: .06em;
   }
   .doc-title strong {
     display: block;
-    margin-top: 4px;
+    margin-top: 6px;
     font-size: 13px;
+    letter-spacing: .02em;
   }
   .meta {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px 24px;
-    margin: 12px 0;
-    padding: 9px 10px;
+    gap: 7px 26px;
+    margin: 12px 0 10px;
+    padding: 10px 12px;
     border: 1px solid #cbd5e1;
     background: #f8fafc;
   }
   .meta-row {
     display: grid;
     grid-template-columns: 92px minmax(0, 1fr);
-    gap: 8px;
+    gap: 9px;
+    align-items: start;
   }
-  .meta-row span { color: #64748b; }
-  .meta-row strong { overflow-wrap: anywhere; }
+  .meta-row span {
+    color: #64748b;
+    font-size: 10px;
+  }
+  .meta-row strong {
+    display: block;
+    overflow-wrap: anywhere;
+    font-size: 10.5px;
+  }
+  .meta-row small {
+    display: block;
+    margin-top: 1px;
+    color: #64748b;
+    font-size: 9px;
+  }
   table {
     width: 100%;
     border-collapse: collapse;
     table-layout: fixed;
   }
   th, td {
-    padding: 5px 5px;
+    padding: 5px 6px;
     border: 1px solid #cbd5e1;
     vertical-align: top;
   }
   th {
-    background: #e5e7eb;
-    font-size: 10px;
+    background: #e2e8f0;
+    color: #1f2937;
+    font-size: 9.5px;
+    font-weight: 700;
     text-align: left;
   }
+  .items tbody tr:nth-child(even) { background: #f8fafc; }
   .center { text-align: center; }
   .num {
     text-align: right;
@@ -153,21 +188,23 @@ function quotationHtml(
   .items th:nth-child(9) { width: 82px; }
   .bottom {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 270px;
-    gap: 18px;
+    grid-template-columns: minmax(0, 1fr) 285px;
+    gap: 16px;
     align-items: start;
     margin-top: 10px;
   }
   .notes {
-    min-height: 72px;
+    min-height: 64px;
     padding: 8px 10px;
     border: 1px solid #cbd5e1;
+    background: #fff;
   }
   .notes strong { display: block; margin-bottom: 5px; }
   .notes div { white-space: pre-wrap; }
   .totals {
     border: 1px solid #94a3b8;
     border-collapse: collapse;
+    background: #fff;
   }
   .totals td {
     border: 0;
@@ -181,11 +218,11 @@ function quotationHtml(
     font-weight: 700;
   }
   .footnote {
-    margin-top: 10px;
-    padding-top: 7px;
+    margin-top: 12px;
+    padding-top: 8px;
     border-top: 1px solid #cbd5e1;
-    color: #64748b;
-    font-size: 9px;
+    color: #475569;
+    font-size: 9.5px;
     text-align: center;
   }
   @media print {
@@ -212,8 +249,8 @@ function quotationHtml(
     <section class="meta">
       <div class="meta-row"><span>Quotation Date</span><strong>${escapeHtml(quotation.quotation_date)}</strong></div>
       <div class="meta-row"><span>Price Type</span><strong>${escapeHtml(priceTypeLabel(quotation.price_type))}</strong></div>
-      <div class="meta-row"><span>Customer</span><strong>${escapeHtml(quotation.customer ? `${quotation.customer.code} — ${quotation.customer.name}` : 'Walk-in / No customer')}</strong></div>
-      <div class="meta-row"><span>Salesman</span><strong>${escapeHtml(quotation.salesman ? `${quotation.salesman.code ?? ''}${quotation.salesman.code ? ' — ' : ''}${quotation.salesman.name}` : 'No salesman')}</strong></div>
+      <div class="meta-row"><span>Customer</span><div>${customerHtml}</div></div>
+      <div class="meta-row"><span>Salesman</span><div>${salesmanHtml}</div></div>
       <div class="meta-row"><span>Branch</span><strong>${escapeHtml(quotation.branch.name)}</strong></div>
       <div class="meta-row"><span>Warehouse</span><strong>${escapeHtml(quotation.warehouse.name)}</strong></div>
     </section>
