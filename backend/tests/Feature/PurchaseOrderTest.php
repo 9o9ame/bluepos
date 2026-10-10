@@ -140,4 +140,25 @@ class PurchaseOrderTest extends TestCase
 
         $this->assertSame(1, PurchaseOrder::query()->count());
     }
+    private function unitUlid(string $code): string
+    {
+        $units = $this->getJson('/api/units')->assertOk()->json();
+
+        foreach ($units as $unit) {
+            if ($unit['code'] === $code) {
+                return $unit['ulid'];
+            }
+        }
+
+        if ($code === 'CTN') {
+            return $this->postJson('/api/units', [
+                'code' => 'CTN',
+                'name' => 'Carton',
+                'symbol' => 'CTN',
+                'allows_decimal' => false,
+            ])->assertCreated()->json('ulid');
+        }
+
+        $this->fail('Missing unit '.$code);
+    }
 }
