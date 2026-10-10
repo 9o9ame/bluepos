@@ -160,6 +160,15 @@
 .purchase-order-option-grid .po-option-to {
   grid-template-columns: max-content 118px;
   justify-content: start;
+  justify-self: start;
+}
+
+.purchase-order-option-grid .po-option-date input[type='date'],
+.purchase-order-option-grid .po-option-from input[type='date'],
+.purchase-order-option-grid .po-option-to input[type='date'] {
+  width: 118px;
+  min-width: 118px;
+  max-width: 118px;
 }
 
 .po-option-from { grid-column: 2; grid-row: 2; }
