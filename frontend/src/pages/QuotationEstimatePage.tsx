@@ -288,15 +288,6 @@ export function QuotationEstimatePage() {
                 onChange={(value) => cart.setPriceType(value as 'default' | 'retail' | 'wholesale')}
               />
             </label>
-            <label className="quotation-product-picker">
-              <span>Add Product</span>
-              <UiSelect
-                value={productUlid}
-                disabled={readOnly}
-                options={[{ value: '', label: 'Search / select product' }, ...productOptions]}
-                onChange={addSelectedProduct}
-              />
-            </label>
           </div>
 
           <div className="quotation-lines-wrap">
@@ -374,10 +365,29 @@ export function QuotationEstimatePage() {
                     </tr>
                   )
                 })}
-                {entryRows.length === 0 ? (
+                {!readOnly ? (
+                  <tr className="quotation-entry-row">
+                    <td>
+                      <UiSelect
+                        value={productUlid}
+                        options={[{ value: '', label: 'Search / select product' }, ...productOptions]}
+                        onChange={addSelectedProduct}
+                      />
+                    </td>
+                    <td>—</td>
+                    <td className="is-num">—</td>
+                    <td className="is-num">—</td>
+                    <td className="is-num">—</td>
+                    <td className="is-num">—</td>
+                    <td className="is-num">—</td>
+                    <td className="is-num">—</td>
+                    <td />
+                  </tr>
+                ) : null}
+                {readOnly && entryRows.length === 0 ? (
                   <tr>
-                    <td colSpan={readOnly ? 8 : 9} className="quotation-empty">
-                      Add products to prepare an estimate.
+                    <td colSpan={8} className="quotation-empty">
+                      No quotation lines found.
                     </td>
                   </tr>
                 ) : null}
