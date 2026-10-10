@@ -1,4 +1,4 @@
-import { FileSearch, LoaderCircle, Play, Plus, ReceiptText, RefreshCw, Save, XCircle } from 'lucide-react'
+import { FileSearch, LoaderCircle, Play, Plus, Printer, ReceiptText, RefreshCw, Save, XCircle } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
@@ -179,7 +179,6 @@ export function PurchaseOrderPage() {
   const [searchTo, setSearchTo] = useState(todayIso())
   const [statusFrom, setStatusFrom] = useState(daysAgoIso(30))
   const [statusTo, setStatusTo] = useState(todayIso())
-  const [statusSupplierUlid, setStatusSupplierUlid] = useState('')
   const [statusShowAll, setStatusShowAll] = useState(false)
   const [lines, setLines] = useState<DraftLine[]>([])
   const [savedOrder, setSavedOrder] = useState<PurchaseOrder | null>(null)
@@ -255,14 +254,12 @@ export function PurchaseOrderPage() {
       'purchase-order-status',
       statusFrom,
       statusTo,
-      statusSupplierUlid,
       statusShowAll,
     ],
     queryFn: () =>
       fetchPurchaseOrderStatus({
         date_from: statusFrom || undefined,
         date_to: statusTo || undefined,
-        supplier_ulid: statusSupplierUlid || undefined,
         status: statusShowAll ? undefined : 'open',
         per_page: 100,
       }),
@@ -1116,56 +1113,73 @@ export function PurchaseOrderPage() {
         </div>
       ) : (
         <div className="purchase-order-status-view">
-          <div className="purchase-order-status-filters">
-            <label>
-              <span>From</span>
-              <input
-                type="date"
-                value={statusFrom}
-                onChange={(event) => setStatusFrom(event.target.value)}
-              />
-            </label>
-            <label>
-              <span>To</span>
-              <input
-                type="date"
-                value={statusTo}
-                onChange={(event) => setStatusTo(event.target.value)}
-              />
-            </label>
-            <label className="purchase-order-status-supplier">
-              <span>Distributor</span>
-              <UiSelect
-                value={statusSupplierUlid}
-                options={[
-                  { value: '', label: 'All Distributors' },
-                  ...supplierOptions,
-                ]}
-                onChange={setStatusSupplierUlid}
-                placeholder="All Distributors"
-                searchPlaceholder="Search distributor"
-                aria-label="Purchase order status distributor"
-              />
-            </label>
-            <label className="purchase-order-status-show-all">
-              <input
-                type="checkbox"
-                checked={statusShowAll}
-                onChange={(event) => setStatusShowAll(event.target.checked)}
-              />
-              <span>Show All</span>
-            </label>
-            <UiButton variant="info" onClick={() => void statusQuery.refetch()}>
-              View
-            </UiButton>
-          </div>
+          <section className="purchase-order-status-selections">
+            <div className="purchase-order-status-selections-title">Selections:</div>
+            <div className="purchase-order-status-selections-body">
+              <div className="purchase-order-status-dates">
+                <label>
+                  <span>From:</span>
+                  <input
+                    type="date"
+                    value={statusFrom}
+                    onChange={(event) => setStatusFrom(event.target.value)}
+                  />
+                </label>
+                <label>
+                  <span>To:</span>
+                  <input
+                    type="date"
+                    value={statusTo}
+                    onChange={(event) => setStatusTo(event.target.value)}
+                  />
+                </label>
+              </div>
+
+              <div className="purchase-order-status-actions">
+                <UiButton variant="info" onClick={() => void statusQuery.refetch()}>
+                  View
+                </UiButton>
+                <UiButton
+                  variant="info"
+                  disabled
+                  title="Purchase Order Status printing is not yet mapped to a reusable BluePOS print flow."
+                >
+                  <Printer size={14} />
+                  Print
+                </UiButton>
+              </div>
+
+              <div className="purchase-order-status-options">
+                <label
+                  title="The reference option exists, but BluePOS has no defined semantics for products outside a Purchase Order."
+                >
+                  <input type="checkbox" disabled checked={false} readOnly />
+                  <span>Show Products That are Not in [PO]</span>
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={statusShowAll}
+                    onChange={(event) => setStatusShowAll(event.target.checked)}
+                  />
+                  <span>Show All</span>
+                </label>
+              </div>
+            </div>
+          </section>
 
           <PosDataGrid
             columns={[
               {
+                key: 'order_id',
+                header: 'Order ID',
+                width: 165,
+                render: (row) => row.order.ulid,
+              },
+              {
                 key: 'order_no',
-                header: 'Order No',
-                width: 130,
+                header: 'OrderNo',
+                width: 120,
                 render: (row) => row.order.document_number,
               },
               {
@@ -1182,7 +1196,7 @@ export function PurchaseOrderPage() {
               },
               {
                 key: 'description',
-                header: 'Description',
+                header: 'DESCRIPTION',
                 render: (row) =>
                   row.product
                     ? `${row.product.product_number} — ${row.product.name}`
@@ -1191,50 +1205,44 @@ export function PurchaseOrderPage() {
               {
                 key: 'order_qty',
                 header: 'Order Qty',
-                width: 105,
+                width: 95,
                 align: 'right',
                 render: (row) => row.order_quantity,
               },
               {
                 key: 'receive_qty',
                 header: 'Receive Qty',
-                width: 105,
+                width: 95,
                 align: 'right',
                 render: (row) => row.received_quantity,
               },
               {
                 key: 'remaining_qty',
                 header: 'Rem Qty',
-                width: 105,
+                width: 90,
                 align: 'right',
                 render: (row) => row.remaining_quantity,
               },
               {
                 key: 'order_amount',
                 header: 'Order Amt',
-                width: 120,
+                width: 110,
                 align: 'right',
                 render: (row) => row.order_amount,
               },
               {
                 key: 'received_amount',
                 header: 'Rec Amt',
-                width: 120,
+                width: 105,
                 align: 'right',
                 render: (row) => row.received_amount,
               },
               {
                 key: 'balance_amount',
                 header: 'Bal Amt',
-                width: 120,
+                width: 110,
                 align: 'right',
                 render: (row) => row.balance_amount,
-              },
-              {
-                key: 'status',
-                header: 'Status',
-                width: 90,
-                render: (row) => row.order.status,
               },
             ]}
             rows={statusQuery.data?.data ?? []}
