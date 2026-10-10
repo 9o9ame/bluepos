@@ -17,7 +17,9 @@ import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
+import { printSaleQuotation } from '../features/sales/quotationPrint'
 import { useSaleCart } from '../features/sales/useSaleCart'
+import { useAuth } from '../features/auth/AuthProvider'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import './QuotationEstimatePage.css'
@@ -33,6 +35,7 @@ function errorMessage(error: unknown): string {
 
 export function QuotationEstimatePage() {
   const { closeActiveTab } = useWorkspace()
+  const { session } = useAuth()
   const feedback = useFeedback()
   const cart = useSaleCart()
   const idempotencyKeyRef = useRef(newQuotationKey())
@@ -230,8 +233,18 @@ export function QuotationEstimatePage() {
             icon={<Printer size={15} />}
             label="Print"
             variant="info"
-            disabled={!activeQuotation}
-            onClick={() => window.print()}
+            disabled={!activeQuotation || !session}
+            onClick={() => {
+              if (!activeQuotation || !session) return
+
+              const opened = printSaleQuotation(activeQuotation, session)
+              if (!opened) {
+                feedback.error(
+                  'The print window was blocked by the browser. Allow pop-ups for BluePOS and try again.',
+                  'Quotation Print',
+                )
+              }
+            }}
           />
           <DesktopButton
             icon={<RefreshCw size={15} />}
