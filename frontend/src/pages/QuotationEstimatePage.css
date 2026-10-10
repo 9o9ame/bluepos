@@ -168,9 +168,18 @@
 }
 
 .quotation-lines input {
-  width: 90px;
+  width: 82px;
   padding: 4px 6px;
   text-align: right;
+}
+
+.quotation-line-unit-select {
+  min-width: 92px;
+}
+
+.quotation-lines th:nth-child(3),
+.quotation-lines td:nth-child(3) {
+  width: 84px;
 }
 
 .quotation-entry-row td {
