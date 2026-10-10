@@ -155,3 +155,53 @@ export type PurchaseLinePayload = {
   tax_pct?: string
   further_tax_pct?: string
 }
+
+
+export type PurchaseOrderStatus = 'open' | 'closed' | 'cancelled'
+
+export type PurchaseOrderLine = {
+  ulid: string
+  quantity: string
+  conversion_factor: string
+  base_quantity: string
+  unit_price: string
+  gross_amount: string
+  discount_percent: string
+  discount_amount: string
+  line_total: string
+  notes: string | null
+  product?: PurchaseProductRef | null
+  unit?: PurchaseUnitRef | null
+}
+
+export type PurchaseOrder = {
+  ulid: string
+  document_number: string
+  order_date: string
+  status: PurchaseOrderStatus
+  subtotal: string
+  discount_amount: string
+  grand_total: string
+  notes: string | null
+  supplier?: PurchaseRef | null
+  branch?: PurchaseRef | null
+  warehouse?: PurchaseRef | null
+  items?: PurchaseOrderLine[]
+}
+
+export type PurchaseOrderItemPayload = {
+  product_ulid: string
+  unit_ulid: string
+  quantity: string
+  unit_price: string
+  discount_percent?: string
+  discount_amount?: string
+  notes?: string | null
+}
+
+export type PurchaseOrderPayload = {
+  supplier_ulid: string
+  order_date?: string
+  notes?: string | null
+  items: PurchaseOrderItemPayload[]
+}
