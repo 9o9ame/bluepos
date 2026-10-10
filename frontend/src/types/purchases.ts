@@ -242,4 +242,6 @@ export type PurchaseOrderGeneratePayload = {
   category_ulid?: string
   brand_ulid?: string
   include_non_sold?: boolean
+  page?: number
+  per_page?: number
 }
