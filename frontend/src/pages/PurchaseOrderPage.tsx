@@ -1,4 +1,4 @@
-import { FileSearch, Play, Plus, RefreshCw, Save, XCircle } from 'lucide-react'
+import { FileSearch, LoaderCircle, Play, Plus, RefreshCw, Save, XCircle } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
@@ -959,6 +959,13 @@ export function PurchaseOrderPage() {
                 ) : null}
               </tbody>
             </table>
+
+            {loadMoreMutation.isPending ? (
+              <div className="purchase-order-load-more" role="status" aria-live="polite">
+                <LoaderCircle size={17} aria-hidden />
+                <span>Loading more products…</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="purchase-order-footer">
