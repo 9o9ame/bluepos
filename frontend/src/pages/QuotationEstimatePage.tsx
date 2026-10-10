@@ -420,7 +420,7 @@ export function QuotationEstimatePage() {
                     <td className="quotation-product-search-cell">
                       <input
                         ref={productSearchRef}
-                        className="quotation-product-search-input sales-pos-product-entry is-active-product"
+                        className="quotation-product-search-input"
                         value={productQuery}
                         placeholder="Search / select product"
                         aria-label="Search product"
@@ -443,6 +443,7 @@ export function QuotationEstimatePage() {
                           total={productsQuery.data.meta.total}
                           priceType={cart.priceType}
                           portalAnchorRef={productSearchRef}
+                          themed
                           onSelect={(product) => void addSelectedProduct(product.ulid)}
                         />
                       ) : null}
