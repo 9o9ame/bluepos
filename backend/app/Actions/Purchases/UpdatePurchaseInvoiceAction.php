@@ -43,6 +43,15 @@ class UpdatePurchaseInvoiceAction
                         'supplier_ulid' => 'Purchases cannot use an inactive supplier.',
                     ]);
                 }
+                if (
+                    $invoice->purchase_order_id !== null
+                    && (int) $invoice->purchaseOrder()->value('supplier_id') !== (int) $supplier->id
+                ) {
+                    throw ValidationException::withMessages([
+                        'supplier_ulid' => 'Purchase Invoice supplier must match the linked Purchase Order.',
+                    ]);
+                }
+
                 $invoice->supplier_id = $supplier->id;
             }
 
@@ -65,7 +74,6 @@ class UpdatePurchaseInvoiceAction
 
             foreach ([
                 'supplier_invoice_number',
-                'po_number',
                 'invoice_type',
                 'currency_code',
                 'calculation_method',
@@ -80,6 +88,13 @@ class UpdatePurchaseInvoiceAction
                 if (array_key_exists($field, $data)) {
                     $invoice->{$field} = $data[$field];
                 }
+            }
+
+            if ($invoice->purchase_order_id !== null) {
+                $invoice->loadMissing('purchaseOrder');
+                $invoice->po_number = $invoice->purchaseOrder?->document_number;
+            } elseif (array_key_exists('po_number', $data)) {
+                $invoice->po_number = $data['po_number'];
             }
 
             foreach ([
