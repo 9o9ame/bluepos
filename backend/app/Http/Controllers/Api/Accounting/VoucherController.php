@@ -59,6 +59,7 @@ class VoucherController extends Controller
             $query->where(function ($inner) use ($term): void {
                 $inner
                     ->where('voucher_number', 'ilike', $term)
+                    ->orWhere('book_number', 'ilike', $term)
                     ->orWhere('description', 'ilike', $term)
                     ->orWhereHas('lines', fn ($line) => $line
                         ->where('description', 'ilike', $term))
