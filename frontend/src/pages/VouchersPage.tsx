@@ -332,7 +332,7 @@ export function VouchersPage() {
 
   function focusLineCell(rowIndex: number, field: string) {
     requestAnimationFrame(() => {
-      const target = document.querySelector<HTMLElement>(
+      const target = window.document.querySelector<HTMLElement>(
         `[data-voucher-row="${rowIndex}"][data-voucher-field="${field}"]`,
       )
       target?.focus()
