@@ -185,7 +185,7 @@ class UpsertPurchaseInvoiceLineAction
                 'line_ulid' => $line->ulid,
             ]);
 
-            return $line->fresh(['product', 'unit']) ?? $line;
+            return $line->fresh(['product', 'unit', 'purchaseOrderLine']) ?? $line;
         });
     }
 
