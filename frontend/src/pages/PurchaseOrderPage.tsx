@@ -1,11 +1,18 @@
-import { FileSearch, Plus, RefreshCw, Save, XCircle } from 'lucide-react'
+import { FileSearch, Play, Plus, RefreshCw, Save, XCircle } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { fetchProduct, fetchProducts, fetchSuppliers } from '../api/catalog'
+import {
+  fetchBrands,
+  fetchCategories,
+  fetchProduct,
+  fetchProducts,
+  fetchSuppliers,
+} from '../api/catalog'
 import {
   createPurchaseOrder,
   fetchPurchaseOrder,
   fetchPurchaseOrders,
+  generatePurchaseOrder,
 } from '../api/purchases'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
@@ -16,7 +23,11 @@ import { useCan } from '../features/auth/useCan'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import type { Product } from '../types/catalog'
-import type { PurchaseOrder } from '../types/purchases'
+import type {
+  PurchaseOrder,
+  PurchaseOrderGenerateMode,
+  PurchaseOrderGenerateRow,
+} from '../types/purchases'
 import './PurchaseOrderPage.css'
 
 type UnitOption = {
@@ -33,14 +44,44 @@ type DraftLine = {
   unit_ulid: string
   unit_code: string
   unit_options: UnitOption[]
+  in_stock: string
+  stock_value: string
+  consumption: string
+  difference: string
   quantity: string
   unit_price: string
   discount_percent: string
   discount_amount: string
 }
 
+const ORDER_TYPE_OPTIONS: Array<{
+  value: PurchaseOrderGenerateMode
+  label: string
+  disabled?: boolean
+  title?: string
+}> = [
+  { value: 'last_n_days', label: 'Last N Days Sale' },
+  { value: 'between_dates', label: 'Between Dates Sale' },
+  { value: 'reorder_level', label: 'Reorder Level' },
+  { value: 'min_level', label: 'Min Level' },
+  { value: 'max_level', label: 'Max Level' },
+  {
+    value: 'optimum_level',
+    label: 'Optimum Level',
+    disabled: true,
+    title: 'Current BluePOS product master has no Optimum Level field.',
+  },
+  { value: 'get_all', label: 'Get All Products' },
+]
+
 function todayIso() {
   return new Date().toISOString().slice(0, 10)
+}
+
+function daysAgoIso(days: number) {
+  const date = new Date()
+  date.setDate(date.getDate() - Math.max(days - 1, 0))
+  return date.toISOString().slice(0, 10)
 }
 
 function num(value: string | number | null | undefined): number {
@@ -84,11 +125,40 @@ function linePreview(line: DraftLine) {
   const pct = num(line.discount_percent)
   const explicit = num(line.discount_amount)
   const discount = pct > 0 ? (gross * pct) / 100 : explicit
+  const safeDiscount = Math.min(Math.max(discount, 0), Math.max(gross, 0))
 
   return {
     gross: fixedMoney(gross),
-    discount: fixedMoney(Math.min(Math.max(discount, 0), Math.max(gross, 0))),
-    total: fixedMoney(gross - Math.min(Math.max(discount, 0), Math.max(gross, 0))),
+    discount: fixedMoney(safeDiscount),
+    total: fixedMoney(gross - safeDiscount),
+  }
+}
+
+function generatedLine(row: PurchaseOrderGenerateRow): DraftLine | null {
+  if (!row.unit) return null
+
+  return {
+    key: crypto.randomUUID(),
+    product_ulid: row.product.ulid,
+    product_number: row.product.product_number,
+    product_name: row.product.name,
+    unit_ulid: row.unit.ulid,
+    unit_code: row.unit.code,
+    unit_options: [
+      {
+        ulid: row.unit.ulid,
+        code: row.unit.code,
+        factor: '1.00000000',
+      },
+    ],
+    in_stock: row.in_stock,
+    stock_value: row.stock_value,
+    consumption: row.consumption,
+    difference: row.difference,
+    quantity: row.suggested_quantity,
+    unit_price: row.unit_price,
+    discount_percent: '0',
+    discount_amount: '0.0000',
   }
 }
 
@@ -103,9 +173,20 @@ export function PurchaseOrderPage() {
   const [notes, setNotes] = useState('')
   const [productQuery, setProductQuery] = useState('')
   const [searchText, setSearchText] = useState('')
+  const [searchFrom, setSearchFrom] = useState(daysAgoIso(30))
+  const [searchTo, setSearchTo] = useState(todayIso())
   const [lines, setLines] = useState<DraftLine[]>([])
   const [savedOrder, setSavedOrder] = useState<PurchaseOrder | null>(null)
   const [openedOrder, setOpenedOrder] = useState<PurchaseOrder | null>(null)
+
+  const [orderType, setOrderType] = useState<PurchaseOrderGenerateMode>('get_all')
+  const [lastDays, setLastDays] = useState('10')
+  const [dateFrom, setDateFrom] = useState(daysAgoIso(10))
+  const [dateTo, setDateTo] = useState(todayIso())
+  const [includeNonSold, setIncludeNonSold] = useState(false)
+  const [categoryUlid, setCategoryUlid] = useState('')
+  const [brandUlid, setBrandUlid] = useState('')
+
   const productSearchRef = useRef<HTMLInputElement | null>(null)
 
   const activeOrder = openedOrder ?? savedOrder
@@ -114,6 +195,18 @@ export function PurchaseOrderPage() {
   const suppliersQuery = useQuery({
     queryKey: ['suppliers', 'purchase-order'],
     queryFn: fetchSuppliers,
+    retry: false,
+  })
+
+  const categoriesQuery = useQuery({
+    queryKey: ['categories', 'purchase-order'],
+    queryFn: fetchCategories,
+    retry: false,
+  })
+
+  const brandsQuery = useQuery({
+    queryKey: ['brands', 'purchase-order'],
+    queryFn: fetchBrands,
     retry: false,
   })
 
@@ -134,10 +227,12 @@ export function PurchaseOrderPage() {
   })
 
   const ordersQuery = useQuery({
-    queryKey: ['purchase-orders', searchText],
+    queryKey: ['purchase-orders', searchText, searchFrom, searchTo],
     queryFn: () =>
       fetchPurchaseOrders({
         q: searchText.trim() || undefined,
+        date_from: searchFrom || undefined,
+        date_to: searchTo || undefined,
         per_page: 50,
       }),
     enabled: tab === 'search',
@@ -151,9 +246,42 @@ export function PurchaseOrderPage() {
         .map((supplier) => ({
           value: supplier.ulid,
           label: `${supplier.code} — ${supplier.name}`,
-          columns: [supplier.code, supplier.name],
+          columns: [
+            supplier.code,
+            supplier.name,
+            supplier.address ?? '',
+            supplier.mobile ?? supplier.phone ?? '',
+          ],
         })),
     [suppliersQuery.data],
+  )
+
+  const categoryOptions = useMemo(
+    () => [
+      { value: '', label: 'All Categories' },
+      ...(categoriesQuery.data ?? [])
+        .filter((category) => category.is_active)
+        .map((category) => ({
+          value: category.ulid,
+          label: category.name,
+          columns: [category.code, category.name],
+        })),
+    ],
+    [categoriesQuery.data],
+  )
+
+  const brandOptions = useMemo(
+    () => [
+      { value: '', label: 'All Companies / Brands' },
+      ...(brandsQuery.data ?? [])
+        .filter((brand) => brand.is_active)
+        .map((brand) => ({
+          value: brand.ulid,
+          label: brand.name,
+          columns: [brand.code, brand.name],
+        })),
+    ],
+    [brandsQuery.data],
   )
 
   const totals = useMemo(() => {
@@ -169,6 +297,8 @@ export function PurchaseOrderPage() {
     )
   }, [lines])
 
+  const netAmount = activeOrder?.grand_total ?? fixedMoney(totals.total)
+
   function startNew() {
     setSupplierUlid('')
     setOrderDate(todayIso())
@@ -178,6 +308,13 @@ export function PurchaseOrderPage() {
     setSavedOrder(null)
     setOpenedOrder(null)
     setTab('entry')
+    setOrderType('get_all')
+    setLastDays('10')
+    setDateFrom(daysAgoIso(10))
+    setDateTo(todayIso())
+    setIncludeNonSold(false)
+    setCategoryUlid('')
+    setBrandUlid('')
   }
 
   function patchLine(key: string, patch: Partial<DraftLine>) {
@@ -207,6 +344,10 @@ export function PurchaseOrderPage() {
           unit_ulid: unit.ulid,
           unit_code: unit.code,
           unit_options: unitOptions,
+          in_stock: productRow.sales_lookup?.in_stock ?? '0.000000',
+          stock_value: '0.0000',
+          consumption: '0.000000',
+          difference: '0.000000',
           quantity: '1.000000',
           unit_price: productRow.sales_lookup?.average_cost ?? '0.0000',
           discount_percent: '0',
@@ -222,20 +363,55 @@ export function PurchaseOrderPage() {
     }
   }
 
+  const generateMutation = useMutation({
+    mutationFn: () =>
+      generatePurchaseOrder({
+        mode: orderType,
+        days: orderType === 'last_n_days' ? Number(lastDays) : undefined,
+        date_from: orderType === 'between_dates' ? dateFrom : undefined,
+        date_to: orderType === 'between_dates' ? dateTo : undefined,
+        supplier_ulid: supplierUlid || undefined,
+        category_ulid: categoryUlid || undefined,
+        brand_ulid: brandUlid || undefined,
+        include_non_sold: includeNonSold,
+      }),
+    onSuccess: (payload) => {
+      const next = payload.data
+        .map(generatedLine)
+        .filter((line): line is DraftLine => line !== null)
+      setLines(next)
+      feedback.success(
+        `Generated ${next.length} purchase order line${next.length === 1 ? '' : 's'} from server planning data.`,
+        'Purchase Order',
+      )
+    },
+    onError: (error) => {
+      feedback.error(
+        error instanceof Error ? error.message : 'Unable to generate purchase order.',
+        'Purchase Order',
+      )
+    },
+  })
+
   const saveMutation = useMutation({
     mutationFn: () => {
       if (!supplierUlid) {
         throw new Error('Select a supplier before saving the purchase order.')
       }
       if (lines.length === 0) {
-        throw new Error('Add at least one product before saving the purchase order.')
+        throw new Error('Add or generate at least one product before saving the purchase order.')
+      }
+
+      const orderable = lines.filter((line) => num(line.quantity) > 0)
+      if (orderable.length === 0) {
+        throw new Error('At least one line must have an order quantity greater than zero.')
       }
 
       return createPurchaseOrder({
         supplier_ulid: supplierUlid,
         order_date: orderDate,
         notes: notes.trim() || null,
-        items: lines.map((line) => ({
+        items: orderable.map((line) => ({
           product_ulid: line.product_ulid,
           unit_ulid: line.unit_ulid,
           quantity: line.quantity,
@@ -331,7 +507,7 @@ export function PurchaseOrderPage() {
           className={tab === 'entry' ? 'is-active' : ''}
           onClick={() => setTab('entry')}
         >
-          Purchase Order
+          Orders Entry
         </button>
         <button
           type="button"
@@ -344,65 +520,191 @@ export function PurchaseOrderPage() {
 
       {tab === 'entry' ? (
         <div className="purchase-order-entry">
-          <div className="purchase-order-header">
-            <label>
-              <span>PO #</span>
-              <input
-                value={activeOrder?.document_number ?? 'Auto'}
-                disabled
-                aria-label="Purchase order number"
-              />
-            </label>
+          <div className="purchase-order-top">
+            <section className="purchase-order-options">
+              <div className="purchase-order-section-title">Purchase Order Options</div>
 
-            <label>
-              <span>Order Date</span>
-              <input
-                type="date"
-                value={activeOrder?.order_date ?? orderDate}
-                disabled={readOnly}
-                onChange={(event) => setOrderDate(event.target.value)}
-              />
-            </label>
+              <div className="purchase-order-option-grid">
+                <label>
+                  <span>PO #</span>
+                  <input
+                    value={activeOrder?.document_number ?? 'Auto'}
+                    disabled
+                    aria-label="Purchase order number"
+                  />
+                </label>
 
-            <label className="is-wide">
-              <span>Supplier / From</span>
-              <UiSelect
-                value={activeOrder?.supplier?.ulid ?? supplierUlid}
-                options={supplierOptions}
-                disabled={readOnly}
-                placeholder="Select supplier"
-                searchPlaceholder="Search supplier"
-                menuColumns={[
-                  { header: 'Code', width: '110px' },
-                  { header: 'Supplier' },
-                ]}
-                menuMinWidth={360}
-                onChange={setSupplierUlid}
-                aria-label="Supplier"
-              />
-            </label>
+                <label>
+                  <span>Order Date</span>
+                  <input
+                    type="date"
+                    value={activeOrder?.order_date ?? orderDate}
+                    disabled={readOnly}
+                    onChange={(event) => setOrderDate(event.target.value)}
+                  />
+                </label>
 
-            <label className="is-wide">
+                <label className="is-order-type">
+                  <span>Order Type</span>
+                  <UiSelect
+                    value={orderType}
+                    disabled={readOnly}
+                    searchable={false}
+                    options={ORDER_TYPE_OPTIONS}
+                    onChange={(value) => setOrderType(value as PurchaseOrderGenerateMode)}
+                    aria-label="Order type"
+                  />
+                </label>
+
+                <label className="purchase-order-check">
+                  <input type="checkbox" disabled checked={false} readOnly />
+                  <span title="Reference behavior is not mapped to the current BluePOS unit model.">
+                    Apply to Pack
+                  </span>
+                </label>
+
+                <label className="purchase-order-check">
+                  <input
+                    type="checkbox"
+                    checked={includeNonSold}
+                    disabled={readOnly || !['last_n_days', 'between_dates'].includes(orderType)}
+                    onChange={(event) => setIncludeNonSold(event.target.checked)}
+                  />
+                  <span>Non Sold Product Also</span>
+                </label>
+
+                <label>
+                  <span>Days</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={lastDays}
+                    disabled={readOnly || orderType !== 'last_n_days'}
+                    onChange={(event) => setLastDays(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  <span>From</span>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    disabled={readOnly || orderType !== 'between_dates'}
+                    onChange={(event) => setDateFrom(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  <span>To</span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    disabled={readOnly || orderType !== 'between_dates'}
+                    onChange={(event) => setDateTo(event.target.value)}
+                  />
+                </label>
+
+                <label className="is-wide">
+                  <span>From / Supplier</span>
+                  <UiSelect
+                    value={activeOrder?.supplier?.ulid ?? supplierUlid}
+                    options={supplierOptions}
+                    disabled={readOnly}
+                    placeholder="Select supplier / distributor"
+                    searchPlaceholder="Search supplier"
+                    menuColumns={[
+                      { header: 'Code', width: '100px' },
+                      { header: 'Name', width: '220px' },
+                      { header: 'Address', width: '240px' },
+                      { header: 'Mobile', width: '130px' },
+                    ]}
+                    menuMinWidth={720}
+                    onChange={setSupplierUlid}
+                    aria-label="Supplier"
+                  />
+                </label>
+
+                <label>
+                  <span>Category</span>
+                  <UiSelect
+                    value={categoryUlid}
+                    options={categoryOptions}
+                    disabled={readOnly}
+                    onChange={setCategoryUlid}
+                    aria-label="Category filter"
+                  />
+                </label>
+
+                <label>
+                  <span>Company</span>
+                  <UiSelect
+                    value={brandUlid}
+                    options={brandOptions}
+                    disabled={readOnly}
+                    onChange={setBrandUlid}
+                    aria-label="Company or brand filter"
+                  />
+                </label>
+
+                <div className="purchase-order-unmapped">
+                  <span>Outlet / Pay Thru / Expiry</span>
+                  <small>Not mapped to the current non-posting PO domain.</small>
+                </div>
+              </div>
+            </section>
+
+            <div className="purchase-order-generate">
+              <UiButton
+                variant="success"
+                disabled={readOnly || generateMutation.isPending}
+                onClick={() => generateMutation.mutate()}
+              >
+                <Play size={16} />
+                Generate
+              </UiButton>
+            </div>
+
+            <label className="purchase-order-remarks">
               <span>Remarks</span>
-              <input
+              <textarea
                 value={activeOrder?.notes ?? notes}
                 disabled={readOnly}
-                placeholder="Order remarks"
+                rows={5}
                 onChange={(event) => setNotes(event.target.value)}
               />
             </label>
+
+            <aside className="purchase-order-amount-options">
+              <div className="purchase-order-section-title">Amount Options</div>
+              <div>
+                <span>Net</span>
+                <strong>{netAmount}</strong>
+              </div>
+              <div>
+                <span>Paid</span>
+                <strong>0.0000</strong>
+              </div>
+              <div>
+                <span>Diff</span>
+                <strong>{netAmount}</strong>
+              </div>
+            </aside>
           </div>
 
           <div className="purchase-order-lines-wrap">
             <table className="purchase-order-lines">
               <thead>
                 <tr>
-                  <th>Product Description</th>
-                  <th>Unit</th>
-                  <th className="is-num">Qty</th>
+                  <th>Item / Product Description</th>
+                  <th className="is-num">In Stock</th>
+                  <th className="is-num">Stock Val</th>
+                  <th className="is-num">Consumption</th>
+                  <th className="is-num">Difference</th>
+                  <th className="is-num">Quantity</th>
                   <th className="is-num">Price</th>
-                  <th className="is-num">Disc %</th>
-                  <th className="is-num">Disc Rs</th>
+                  <th className="is-num">Amt</th>
+                  <th className="is-num">Dis %</th>
+                  <th className="is-num">Dis-Rs</th>
                   <th className="is-num">Amount</th>
                   <th aria-label="Actions" />
                 </tr>
@@ -416,9 +718,13 @@ export function PurchaseOrderPage() {
                             ? `${line.product.product_number} — ${line.product.name}`
                             : '—'}
                         </td>
-                        <td>{line.unit?.code ?? '—'}</td>
+                        <td className="is-num">—</td>
+                        <td className="is-num">—</td>
+                        <td className="is-num">—</td>
+                        <td className="is-num">—</td>
                         <td className="is-num">{line.quantity}</td>
                         <td className="is-num">{line.unit_price}</td>
+                        <td className="is-num">{line.gross_amount}</td>
                         <td className="is-num">{line.discount_percent}</td>
                         <td className="is-num">{line.discount_amount}</td>
                         <td className="is-num">{line.line_total}</td>
@@ -429,26 +735,32 @@ export function PurchaseOrderPage() {
                       const preview = linePreview(line)
                       return (
                         <tr key={line.key}>
-                          <td>{line.product_number} — {line.product_name}</td>
                           <td>
-                            <UiSelect
-                              className="purchase-order-unit"
-                              value={line.unit_ulid}
-                              searchable={false}
-                              options={line.unit_options.map((unit) => ({
-                                value: unit.ulid,
-                                label: unit.code,
-                              }))}
-                              onChange={(value) => {
-                                const unit = line.unit_options.find((row) => row.ulid === value)
-                                patchLine(line.key, {
-                                  unit_ulid: value,
-                                  unit_code: unit?.code ?? line.unit_code,
-                                })
-                              }}
-                              aria-label={`Unit for ${line.product_name}`}
-                            />
+                            <div className="purchase-order-product-name">
+                              <strong>{line.product_number} — {line.product_name}</strong>
+                              <UiSelect
+                                className="purchase-order-unit"
+                                value={line.unit_ulid}
+                                searchable={false}
+                                options={line.unit_options.map((unit) => ({
+                                  value: unit.ulid,
+                                  label: unit.code,
+                                }))}
+                                onChange={(value) => {
+                                  const unit = line.unit_options.find((row) => row.ulid === value)
+                                  patchLine(line.key, {
+                                    unit_ulid: value,
+                                    unit_code: unit?.code ?? line.unit_code,
+                                  })
+                                }}
+                                aria-label={`Unit for ${line.product_name}`}
+                              />
+                            </div>
                           </td>
+                          <td className="is-num">{line.in_stock}</td>
+                          <td className="is-num">{line.stock_value}</td>
+                          <td className="is-num">{line.consumption}</td>
+                          <td className="is-num">{line.difference}</td>
                           <td className="is-num">
                             <input
                               value={line.quantity}
@@ -467,6 +779,7 @@ export function PurchaseOrderPage() {
                               }
                             />
                           </td>
+                          <td className="is-num">{preview.gross}</td>
                           <td className="is-num">
                             <input
                               value={line.discount_percent}
@@ -520,7 +833,7 @@ export function PurchaseOrderPage() {
                         ref={productSearchRef}
                         className="purchase-order-product-input"
                         value={productQuery}
-                        placeholder="Search product / barcode"
+                        placeholder="Search / select product"
                         autoComplete="off"
                         onChange={(event) => setProductQuery(event.target.value)}
                         onKeyDown={(event) => {
@@ -540,7 +853,11 @@ export function PurchaseOrderPage() {
                         />
                       ) : null}
                     </td>
-                    <td>—</td>
+                    <td className="is-num">—</td>
+                    <td className="is-num">—</td>
+                    <td className="is-num">—</td>
+                    <td className="is-num">—</td>
+                    <td className="is-num">—</td>
                     <td className="is-num">—</td>
                     <td className="is-num">—</td>
                     <td className="is-num">—</td>
@@ -552,7 +869,7 @@ export function PurchaseOrderPage() {
 
                 {readOnly && displayedLines.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="purchase-order-empty">
+                    <td colSpan={12} className="purchase-order-empty">
                       No purchase order lines found.
                     </td>
                   </tr>
@@ -563,27 +880,21 @@ export function PurchaseOrderPage() {
 
           <div className="purchase-order-footer">
             <div className="purchase-order-status-note">
-              Purchase Order is non-posting. Stock and accounting are affected only by
-              the linked Purchase Invoice posting flow.
+              Generated planning values are informational until Save. Purchase Order remains
+              non-posting; stock/accounting change only through Purchase Invoice posting.
             </div>
             <div className="purchase-order-totals">
               <div>
                 <span>Subtotal</span>
-                <strong>
-                  {activeOrder?.subtotal ?? fixedMoney(totals.subtotal)}
-                </strong>
+                <strong>{activeOrder?.subtotal ?? fixedMoney(totals.subtotal)}</strong>
               </div>
               <div>
                 <span>Discount</span>
-                <strong>
-                  {activeOrder?.discount_amount ?? fixedMoney(totals.discount)}
-                </strong>
+                <strong>{activeOrder?.discount_amount ?? fixedMoney(totals.discount)}</strong>
               </div>
               <div className="is-grand">
                 <span>Net Order</span>
-                <strong>
-                  {activeOrder?.grand_total ?? fixedMoney(totals.total)}
-                </strong>
+                <strong>{netAmount}</strong>
               </div>
             </div>
           </div>
@@ -593,12 +904,28 @@ export function PurchaseOrderPage() {
           <div className="purchase-order-search-bar">
             <input
               className="desktop-input"
-              placeholder="PO # or supplier"
+              placeholder="PO # or distributor"
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
             />
+            <label>
+              <span>From</span>
+              <input
+                type="date"
+                value={searchFrom}
+                onChange={(event) => setSearchFrom(event.target.value)}
+              />
+            </label>
+            <label>
+              <span>To</span>
+              <input
+                type="date"
+                value={searchTo}
+                onChange={(event) => setSearchTo(event.target.value)}
+              />
+            </label>
             <UiButton variant="info" onClick={() => void ordersQuery.refetch()}>
-              Search
+              View
             </UiButton>
           </div>
 
@@ -607,7 +934,7 @@ export function PurchaseOrderPage() {
               {
                 key: 'number',
                 header: 'PO #',
-                width: 150,
+                width: 160,
                 render: (row) => row.document_number,
               },
               {
@@ -618,7 +945,7 @@ export function PurchaseOrderPage() {
               },
               {
                 key: 'supplier',
-                header: 'Supplier / From',
+                header: 'Distributor',
                 render: (row) => row.supplier?.name ?? '—',
               },
               {
@@ -628,7 +955,7 @@ export function PurchaseOrderPage() {
                 render: (row) => row.status,
               },
               {
-                key: 'total',
+                key: 'net',
                 header: 'Net',
                 width: 150,
                 align: 'right',
