@@ -51,6 +51,8 @@ class UpsertPurchaseInvoiceLineAction
             $unit = $this->catalog->unit($data['unit_ulid']);
 
             $purchaseOrderLineId = $line?->purchase_order_line_id;
+            $purchaseOrderLine = null;
+
             if (! empty($data['purchase_order_line_ulid'])) {
                 $purchaseOrderLine = PurchaseOrderLine::query()
                     ->forTenant($this->tenantContext->tenantId())
@@ -62,6 +64,16 @@ class UpsertPurchaseInvoiceLineAction
                     throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
                 }
 
+                $purchaseOrderLineId = $purchaseOrderLine->id;
+            } elseif ($purchaseOrderLineId !== null) {
+                $purchaseOrderLine = PurchaseOrderLine::query()
+                    ->forTenant($this->tenantContext->tenantId())
+                    ->whereKey($purchaseOrderLineId)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+            }
+
+            if ($purchaseOrderLine) {
                 if (
                     $invoice->purchase_order_id === null
                     || (int) $purchaseOrderLine->purchase_order_id !== (int) $invoice->purchase_order_id
@@ -82,8 +94,6 @@ class UpsertPurchaseInvoiceLineAction
                         'unit_ulid' => 'Unit must match the linked Purchase Order line.',
                     ]);
                 }
-
-                $purchaseOrderLineId = $purchaseOrderLine->id;
             }
 
             $conversion = array_key_exists('conversion_factor', $data)
