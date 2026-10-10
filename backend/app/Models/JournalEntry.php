@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'document_type',
     'document_id',
     'voucher_number',
+    'book_number',
     'idempotency_key',
     'entry_date',
     'description',
