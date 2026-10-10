@@ -11,7 +11,7 @@ import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
-import { UI_LAYER } from '../components/ui/uiLayers'
+import { PurchaseProductLookup } from '../features/purchases/PurchaseProductLookup'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
@@ -533,38 +533,11 @@ export function PurchaseOrderPage() {
                       />
 
                       {productQuery.trim() && productsQuery.data?.data?.length ? (
-                        <div
-                          className="purchase-order-product-results"
-                          role="listbox"
-                          style={{ zIndex: UI_LAYER.dropdown }}
-                        >
-                          <div className="purchase-order-product-results-head">
-                            <span>ID</span>
-                            <span>Description</span>
-                            <span>In Stock</span>
-                            <span>Avg Cost</span>
-                            <span>Unit</span>
-                          </div>
-                          {productsQuery.data.data.slice(0, 10).map((product) => (
-                            <button
-                              type="button"
-                              key={product.ulid}
-                              onClick={() => void addProduct(product)}
-                            >
-                              <span>{product.product_number}</span>
-                              <strong>{product.name}</strong>
-                              <span>
-                                {product.sales_lookup
-                                  ? Number(product.sales_lookup.in_stock).toFixed(3)
-                                  : '—'}
-                              </span>
-                              <span>{product.sales_lookup?.average_cost ?? '—'}</span>
-                              <span>
-                                {product.base_unit?.symbol ?? product.base_unit?.code ?? '—'}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
+                        <PurchaseProductLookup
+                          rows={productsQuery.data.data}
+                          anchorRef={productSearchRef}
+                          onSelect={(product) => void addProduct(product)}
+                        />
                       ) : null}
                     </td>
                     <td>—</td>
