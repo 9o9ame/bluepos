@@ -57,11 +57,11 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#039;')
 }
 
-function pageSize(format: string): string {
-  if (format === 'a4') return 'A4 portrait'
+function pageSize(format: string, rotated: boolean): string {
   if (format === 'pos') return '80mm auto'
-  if (format.startsWith('a6')) return 'A6 portrait'
-  return 'A5 portrait'
+
+  const size = format === 'a4' ? 'A4' : format.startsWith('a6') ? 'A6' : 'A5'
+  return `${size} ${rotated ? 'landscape' : 'portrait'}`
 }
 
 function renderVoucherHtml(
@@ -122,10 +122,10 @@ function renderVoucherHtml(
 <meta charset="utf-8" />
 <title>${escapeHtml(data.voucherNumber)} - ${escapeHtml(data.title)}</title>
 <style>
-  @page { size: ${pageSize(format)}; margin: 10mm; }
+  @page { size: ${pageSize(format, rotated)}; margin: 10mm; }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: Arial, sans-serif; color: #111; background: #fff; }
-  .voucher-page { page-break-after: always; padding: 4mm; ${rotated ? 'writing-mode: horizontal-tb;' : ''} }
+  .voucher-page { page-break-after: always; padding: 4mm; }
   .voucher-page:last-child { page-break-after: auto; }
   h1 { margin: 0 0 8px; font-size: 18px; text-align: center; }
   .heading-kicker { font-size: 10px; text-align: center; margin-bottom: 2px; }
@@ -169,9 +169,10 @@ export function VoucherPrintModal({
   function openPrintWindow(printImmediately: boolean) {
     if (!data) return
 
-    const popup = window.open('', '_blank', 'noopener,noreferrer')
+    const popup = window.open('', '_blank')
     if (!popup) return
 
+    popup.opener = null
     popup.document.open()
     popup.document.write(
       renderVoucherHtml(data, format, rotated, heading, hidePreviousBalance, copyCount),
@@ -179,10 +180,10 @@ export function VoucherPrintModal({
     popup.document.close()
 
     if (printImmediately) {
-      popup.addEventListener('load', () => {
+      window.setTimeout(() => {
         popup.focus()
         popup.print()
-      })
+      }, 150)
     }
   }
 
