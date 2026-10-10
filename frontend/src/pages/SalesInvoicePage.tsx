@@ -14,6 +14,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
@@ -88,6 +89,7 @@ function newHoldKey(): string {
 export function SalesInvoicePage() {
   const { closeActiveTab } = useWorkspace()
   const feedback = useFeedback()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [view, setView] = useState<'pos' | 'history' | 'pending' | 'expenses' | 'product'>('pos')
   const [customizationOpen, setCustomizationOpen] = useState(false)
@@ -446,8 +448,8 @@ export function SalesInvoicePage() {
   })
 
   const quotationLookupMutation = useMutation({
-    mutationFn: async () => {
-      const requestedNumber = quotationValue.trim()
+    mutationFn: async (requestedNumberOverride?: string) => {
+      const requestedNumber = (requestedNumberOverride ?? quotationValue).trim()
 
       if (!requestedNumber) {
         throw new Error('Enter a quotation number to load.')
@@ -546,6 +548,12 @@ export function SalesInvoicePage() {
         `Loaded ${source.document_number} into a new unsaved Sales Invoice. Pricing and stock will be revalidated on save.`,
         'Quotation',
       )
+
+      if (searchParams.has('quotation')) {
+        const nextParams = new URLSearchParams(searchParams)
+        nextParams.delete('quotation')
+        setSearchParams(nextParams, { replace: true })
+      }
     },
 
     onError: (err) => {
@@ -556,6 +564,19 @@ export function SalesInvoicePage() {
       )
     },
   })
+
+  const autoQuotationNumber = searchParams.get('quotation')?.trim() ?? ''
+  const autoQuotationAttemptedRef = useRef('')
+
+  useEffect(() => {
+    if (!autoQuotationNumber) return
+    if (autoQuotationAttemptedRef.current === autoQuotationNumber) return
+    if (quotationLookupMutation.isPending) return
+
+    autoQuotationAttemptedRef.current = autoQuotationNumber
+    setQuotationValue(autoQuotationNumber)
+    quotationLookupMutation.mutate(autoQuotationNumber)
+  }, [autoQuotationNumber, quotationLookupMutation.isPending])
 
   const saveMutation = useMutation({
     mutationFn: async () => {
