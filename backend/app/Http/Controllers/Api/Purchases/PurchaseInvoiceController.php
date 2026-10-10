@@ -290,6 +290,7 @@ class PurchaseInvoiceController extends Controller
             'invoice_date' => [$updating ? 'sometimes' : 'nullable', 'date'],
             'due_date' => ['nullable', 'date'],
             'supplier_invoice_number' => ['nullable', 'string', 'max:100'],
+            'purchase_order_ulid' => ['nullable', 'string', 'size:26'],
             'po_number' => ['nullable', 'string', 'max:100'],
             'invoice_type' => ['nullable', 'string', 'max:40'],
             'currency_code' => ['nullable', 'string', 'size:3'],
@@ -323,6 +324,7 @@ class PurchaseInvoiceController extends Controller
         $req = $updating ? ['sometimes', 'required'] : ['required'];
 
         return [
+            'purchase_order_line_ulid' => ['nullable', 'string', 'size:26'],
             'product_ulid' => [...$req, 'string', 'size:26'],
             'unit_ulid' => [...$req, 'string', 'size:26'],
             'quantity' => [...$req, 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],
