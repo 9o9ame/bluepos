@@ -1,6 +1,6 @@
 import { apiFetch } from './client'
 
-export type VoucherType = 'payment' | 'receiving' | 'journal'
+export type VoucherType = 'payment' | 'receiving' | 'journal' | 'opening'
 export type VoucherStatus = 'draft' | 'posted'
 
 export type VoucherAccount = {
