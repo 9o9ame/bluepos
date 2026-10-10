@@ -7,6 +7,8 @@ export type VoucherAccount = {
   ulid: string
   code: string
   name: string
+  address?: string | null
+  account_type?: string | null
   is_cash?: boolean
   is_bank?: boolean
   is_payable?: boolean
