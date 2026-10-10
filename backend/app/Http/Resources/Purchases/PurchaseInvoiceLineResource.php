@@ -18,6 +18,10 @@ class PurchaseInvoiceLineResource extends JsonResource
     {
         return [
             'ulid' => $this->ulid,
+            'purchase_order_line_ulid' => $this->whenLoaded(
+                'purchaseOrderLine',
+                fn () => $this->purchaseOrderLine?->ulid,
+            ),
             'quantity' => $this->quantity,
             'conversion_factor' => $this->conversion_factor,
             'base_quantity' => $this->base_quantity,
