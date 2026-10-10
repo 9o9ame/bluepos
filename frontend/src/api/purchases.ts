@@ -11,6 +11,7 @@ import type {
   PurchaseOrderGeneratePayload,
   PurchaseOrderGenerateRow,
   PurchaseOrderPayload,
+  PurchaseOrderStatusRow,
 } from '../types/purchases'
 
 export function fetchPurchases(params?: {
@@ -128,6 +129,26 @@ export function fetchPurchaseOrders(params?: {
   const suffix = search.toString() ? `?${search.toString()}` : ''
 
   return apiFetch<Paginated<PurchaseOrder>>(`/api/purchase-orders${suffix}`)
+}
+
+export function fetchPurchaseOrderStatus(params?: {
+  supplier_ulid?: string
+  status?: string
+  date_from?: string
+  date_to?: string
+  page?: number
+  per_page?: number
+}) {
+  const search = new URLSearchParams()
+  if (params?.supplier_ulid) search.set('supplier_ulid', params.supplier_ulid)
+  if (params?.status) search.set('status', params.status)
+  if (params?.date_from) search.set('date_from', params.date_from)
+  if (params?.date_to) search.set('date_to', params.date_to)
+  if (params?.page) search.set('page', String(params.page))
+  search.set('per_page', String(params?.per_page ?? 50))
+  const suffix = search.toString() ? `?${search.toString()}` : ''
+
+  return apiFetch<Paginated<PurchaseOrderStatusRow>>(`/api/purchase-orders/status${suffix}`)
 }
 
 export function fetchPurchaseOrder(ulid: string) {
