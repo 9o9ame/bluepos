@@ -143,3 +143,59 @@
     max-width: calc(100vw - 300px);
   }
 }
+
+
+/* Theme-aware variant for non-frozen screens such as Quotation.
+   Geometry stays identical to the Sales lookup; visual states follow Theme & Appearance. */
+.sales-pos-product-results-grid.is-themed {
+  border-color: var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-select-menu-bg, var(--ui-surface));
+  color: var(--ui-text);
+  box-shadow: var(--ui-card-shadow);
+  font-family: var(--app-font-family);
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head {
+  border-bottom-color: var(--ui-table-border);
+  background: var(--ui-table-header);
+  color: var(--ui-table-header-text);
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head > span,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row > span,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row > strong {
+  border-right-color: var(--ui-table-border);
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-body {
+  background: var(--ui-surface);
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row {
+  border-bottom-color: var(--ui-table-border) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:nth-child(even) {
+  background: var(--ui-row-alt) !important;
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:hover,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:focus-visible {
+  background: var(--ui-row-hover) !important;
+  color: var(--ui-text) !important;
+  outline: none !important;
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-foot {
+  border-top-color: var(--ui-border);
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text-muted);
+}
+
+html[data-animations='off'] .sales-pos-product-results-grid.is-themed,
+html[data-animations='off'] .sales-pos-product-results-grid.is-themed * {
+  transition: none !important;
+}
