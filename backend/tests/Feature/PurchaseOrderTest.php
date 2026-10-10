@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
+use App\Models\AccountType;
 use App\Models\AuditLog;
+use App\Models\BusinessSetting;
 use App\Models\JournalEntry;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
@@ -271,6 +274,113 @@ class PurchaseOrderTest extends TestCase
         $third->assertJsonCount(1, 'data')
             ->assertJsonPath('meta.current_page', 3)
             ->assertJsonPath('meta.has_more', false);
+    }
+
+
+    public function test_purchase_order_status_uses_only_posted_linked_receipts(): void
+    {
+        $this->signInOwner('po-status')->assertOk();
+        $this->configurePurchaseClearing();
+        $warehouseUlid = $this->getJson('/api/auth/me')->assertOk()->json('warehouse.ulid');
+        $pcs = $this->unitUlid('PCS');
+
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-PO-STATUS',
+            'name' => 'PO Status Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'PO Status Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $order = $this->postJson('/api/purchase-orders', [
+            'supplier_ulid' => $supplierUlid,
+            'order_date' => '2026-10-10',
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'unit_ulid' => $pcs,
+                'quantity' => '5.000000',
+                'unit_price' => '100.0000',
+            ]],
+        ])->assertCreated();
+
+        $orderUlid = (string) $order->json('ulid');
+        $orderLineUlid = (string) $order->json('items.0.ulid');
+
+        $draftInvoiceUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'purchase_order_ulid' => $orderUlid,
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchases/'.$draftInvoiceUlid.'/lines', [
+            'purchase_order_line_ulid' => $orderLineUlid,
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '2.000000',
+            'unit_cost' => '100.0000',
+        ])->assertCreated();
+
+        $beforePost = $this->getJson(
+            '/api/purchase-orders/status?date_from=2026-10-10&date_to=2026-10-10&supplier_ulid='.$supplierUlid
+        )->assertOk();
+
+        $beforePost->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.order.ulid', $orderUlid)
+            ->assertJsonPath('data.0.order.document_number', $order->json('document_number'))
+            ->assertJsonPath('data.0.order.status', 'open')
+            ->assertJsonPath('data.0.supplier.ulid', $supplierUlid)
+            ->assertJsonPath('data.0.product.ulid', $productUlid)
+            ->assertJsonPath('data.0.order_quantity', '5.000000')
+            ->assertJsonPath('data.0.received_quantity', '0.000000')
+            ->assertJsonPath('data.0.remaining_quantity', '5.000000')
+            ->assertJsonPath('data.0.order_amount', '500.0000')
+            ->assertJsonPath('data.0.received_amount', '0.0000')
+            ->assertJsonPath('data.0.balance_amount', '500.0000');
+
+        $this->postJson('/api/purchases/'.$draftInvoiceUlid.'/post')->assertOk();
+
+        $afterPost = $this->getJson('/api/purchase-orders/status?status=open')->assertOk();
+        $afterPost->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.received_quantity', '2.000000')
+            ->assertJsonPath('data.0.remaining_quantity', '3.000000')
+            ->assertJsonPath('data.0.received_amount', '200.0000')
+            ->assertJsonPath('data.0.balance_amount', '300.0000');
+
+        $this->assertNoInternalIds($afterPost->json());
+
+        $outsideDate = $this->getJson(
+            '/api/purchase-orders/status?date_from=2026-10-11&date_to=2026-10-11'
+        )->assertOk();
+
+        $this->assertSame(0, $outsideDate->json('meta.total'));
+    }
+
+    private function configurePurchaseClearing(): void
+    {
+        $tenantContext = app(TenantContext::class);
+        $inventoryType = AccountType::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('code', '0060')
+            ->firstOrFail();
+
+        $clearing = Account::query()->firstOrCreate(
+            [
+                'tenant_id' => $tenantContext->tenantId(),
+                'code' => 'PUR-CLEAR-PO-STATUS',
+            ],
+            [
+                'name' => 'Purchase Clearing PO Status',
+                'account_type_id' => $inventoryType->id,
+                'is_active' => true,
+                'created_by' => $tenantContext->userId(),
+            ],
+        );
+
+        BusinessSetting::query()
+            ->forTenant($tenantContext->tenantId())
+            ->update(['purchase_clearing_account_id' => $clearing->id]);
     }
 
     private function unitUlid(string $code): string
