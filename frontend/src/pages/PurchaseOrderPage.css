@@ -653,25 +653,108 @@
   margin: 0;
 }
 
+.purchase-order-cancel-modal {
+  width: min(520px, calc(100vw - 32px));
+  border-color: color-mix(in srgb, var(--ui-danger) 28%, var(--ui-border));
+}
+
+.purchase-order-cancel-modal .ui-modal-header {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-danger) 8%, var(--ui-surface)),
+      var(--ui-surface-subtle)
+    );
+}
+
+.purchase-order-cancel-modal-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ui-danger);
+}
+
+.purchase-order-cancel-modal-body {
+  padding: 14px;
+}
+
 .purchase-order-cancel-confirm {
+  display: grid;
+  gap: 12px;
+}
+
+.purchase-order-cancel-warning {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 10px;
   align-items: start;
+  padding: 11px 12px;
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 38%, var(--ui-border));
+  border-radius: var(--control-radius);
+  background: color-mix(in srgb, var(--ui-danger) 8%, var(--ui-surface));
 }
 
-.purchase-order-cancel-confirm > svg {
+.purchase-order-cancel-warning > svg {
   margin-top: 1px;
   color: var(--ui-danger);
 }
 
-.purchase-order-cancel-confirm strong {
+.purchase-order-cancel-warning strong {
   display: block;
+  color: var(--ui-text);
+  font-size: 13px;
 }
 
-.purchase-order-cancel-confirm p {
-  margin: 5px 0 0;
+.purchase-order-cancel-warning p {
+  margin: 4px 0 0;
   color: var(--ui-text-muted);
+  line-height: 1.45;
+}
+
+.purchase-order-cancel-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface-subtle);
+}
+
+.purchase-order-cancel-summary > div {
+  min-width: 0;
+  padding: 9px 11px;
+  border-right: 1px solid var(--ui-border);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.purchase-order-cancel-summary > div:nth-child(2n) {
+  border-right: 0;
+}
+
+.purchase-order-cancel-summary > div:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.purchase-order-cancel-summary dt {
+  margin-bottom: 3px;
+  color: var(--ui-text-muted);
+  font-size: 11px;
+}
+
+.purchase-order-cancel-summary dd {
+  margin: 0;
+  overflow: hidden;
+  color: var(--ui-text);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.purchase-order-cancel-note {
+  margin: 0;
+  color: var(--ui-text-muted);
+  font-size: 11px;
   line-height: 1.45;
 }
 
