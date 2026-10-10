@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   Plus,
   Printer,
@@ -13,6 +13,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { fetchProduct, fetchProducts, fetchSuppliers } from '../api/catalog'
 import { ApiClientError } from '../api/client'
 import { askConfirm } from '../feedback/FeedbackProvider'
@@ -23,6 +24,7 @@ import {
   createPurchasePayment,
   deletePurchaseLine,
   fetchPurchase,
+  fetchPurchaseOrder,
   fetchPurchases,
   postPurchase,
   updatePurchase,
@@ -69,6 +71,7 @@ type UnitOption = {
 type DraftLine = {
   key: string
   ulid?: string
+  purchase_order_line_ulid?: string | null
   product_ulid: string
   product_label: string
   item_code: string
@@ -247,6 +250,7 @@ function lineFromServer(line: PurchaseInvoiceLine): DraftLine {
   return {
     key: line.ulid,
     ulid: line.ulid,
+    purchase_order_line_ulid: line.purchase_order_line_ulid ?? null,
     product_ulid: line.product?.ulid ?? '',
     product_label: line.product
       ? `${line.product.product_number} · ${line.product.name}`
@@ -306,6 +310,7 @@ function moneyOrZero(value: string | null | undefined): string {
 
 export function PurchasesPage() {
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { closeActiveTab, openModule } = useWorkspace()
   const { session } = useAuth()
 
@@ -352,6 +357,7 @@ export function PurchasesPage() {
   const [shellTaxType, setShellTaxType] = useState('standard')
   const [shellPaymentTerms, setShellPaymentTerms] = useState('credit')
   const [shellPoNo, setShellPoNo] = useState('')
+  const [purchaseOrderUlid, setPurchaseOrderUlid] = useState<string | null>(null)
   const [shellInvoiceType, setShellInvoiceType] = useState('tax_gst')
   const [shellCurrency, setShellCurrency] = useState('PKR')
   const [shellBrand, setShellBrand] = useState('')
@@ -368,6 +374,7 @@ export function PurchasesPage() {
   const [autoCalcMrp, setAutoCalcMrp] = useState(true)
   const [withholdingIsPct, setWithholdingIsPct] = useState(false)
   const [dualModes, setDualModes] = useState<Record<string, DualMode>>({ ...DEFAULT_DUAL_MODES })
+  const autoPurchaseOrderAttemptedRef = useRef('')
 
   const calcSettings: PurchaseCalcSettings = useMemo(
     () => ({ calcMethod, discountApplyOn, dualModes }),
@@ -848,6 +855,7 @@ export function PurchasesPage() {
     setOtherCharges(invoice.other_charges)
     setNotes(invoice.notes ?? '')
     setShellPoNo(invoice.po_number ?? '')
+    setPurchaseOrderUlid(invoice.purchase_order?.ulid ?? null)
     setShellInvoiceType(invoice.invoice_type ?? 'tax_gst')
     setShellCurrency(invoice.currency_code ?? 'PKR')
     setShellDefaultSalesTax(invoice.default_sales_tax_pct ?? '18')
@@ -878,12 +886,12 @@ export function PurchasesPage() {
   async function enrichLineUnits(rows: DraftLine[]) {
     const unique = [...new Set(rows.map((row) => row.product_ulid).filter(Boolean))]
     if (unique.length === 0) return
-    const optionsByProduct = new Map<string, UnitOption[]>()
+    const productByUlid = new Map<string, Product>()
     await Promise.all(
       unique.map(async (ulid) => {
         try {
           const product = await fetchProduct(ulid)
-          optionsByProduct.set(ulid, buildUnitOptions(product))
+          productByUlid.set(ulid, product)
         } catch {
           // Keep the single unit from the invoice line when product fetch fails.
         }
@@ -891,8 +899,16 @@ export function PurchasesPage() {
     )
     setLines((prev) =>
       prev.map((line) => {
-        const options = optionsByProduct.get(line.product_ulid)
-        if (!options || options.length === 0) return line
+        const product = productByUlid.get(line.product_ulid)
+        if (!product) return line
+        const options = buildUnitOptions(product)
+        if (options.length === 0) return {
+          ...line,
+          brand_label: product.brand?.name ?? line.brand_label,
+          location_label: product.rack_location ?? line.location_label,
+          track_batch: product.track_batch,
+          track_expiry: product.track_expiry,
+        }
         const merged = [...options]
         if (line.unit_ulid && !merged.some((unit) => unit.ulid === line.unit_ulid)) {
           merged.unshift({
@@ -901,7 +917,14 @@ export function PurchasesPage() {
             conversion_factor: line.conversion_factor,
           })
         }
-        return { ...line, unit_options: merged }
+        return {
+          ...line,
+          unit_options: merged,
+          brand_label: product.brand?.name ?? line.brand_label,
+          location_label: product.rack_location ?? line.location_label,
+          track_batch: product.track_batch,
+          track_expiry: product.track_expiry,
+        }
       }),
     )
   }
@@ -933,6 +956,7 @@ export function PurchasesPage() {
     setShellTaxType('standard')
     setShellPaymentTerms('credit')
     setShellPoNo('')
+    setPurchaseOrderUlid(null)
     setShellInvoiceType('tax_gst')
     setShellCurrency('PKR')
     setShellBrand('')
@@ -949,6 +973,7 @@ export function PurchasesPage() {
     setAutoCalcMrp(true)
     setWithholdingIsPct(false)
     setDualModes({ ...DEFAULT_DUAL_MODES })
+    autoPurchaseOrderAttemptedRef.current = ''
   }
 
   async function openInvoice(ulid: string) {
@@ -973,6 +998,107 @@ export function PurchasesPage() {
     void queryClient.invalidateQueries({ queryKey: ['purchases'] })
   }
 
+  async function loadPurchaseOrderIntoDraft(orderUlid: string) {
+    if (invoiceUlid || lines.length > 0) {
+      throw new Error('Clear or save the current Purchase Invoice draft before loading a Purchase Order.')
+    }
+
+    const order = await fetchPurchaseOrder(orderUlid)
+
+    if (!order.supplier?.ulid) {
+      throw new Error('Purchase Order has no supplier.')
+    }
+    if (order.warehouse?.ulid && order.warehouse.ulid !== (session?.warehouse.ulid ?? '')) {
+      throw new Error('Purchase Order warehouse must match the active warehouse.')
+    }
+
+    const mapped = (order.items ?? [])
+      .filter((line) => line.product?.ulid && line.unit?.ulid)
+      .map((line): DraftLine => {
+        const discount = line.discount_amount ?? '0.0000'
+        return applyCalcToLine(
+          {
+            key: `po-${line.ulid}`,
+            purchase_order_line_ulid: line.ulid,
+            product_ulid: line.product?.ulid ?? '',
+            product_label: line.product
+              ? `${line.product.product_number} · ${line.product.name}`
+              : '',
+            ...emptyShellFields(),
+            item_code: line.product?.product_number ?? '',
+            unit_ulid: line.unit?.ulid ?? '',
+            unit_label: line.unit?.code ?? '',
+            unit_options: line.unit
+              ? [{
+                  ulid: line.unit.ulid,
+                  code: line.unit.code,
+                  conversion_factor: line.conversion_factor,
+                }]
+              : [],
+            quantity: line.quantity,
+            conversion_factor: line.conversion_factor,
+            unit_cost: line.unit_price,
+            discount_amount: discount,
+            regular_disc_rs: discount,
+            regular_disc_pct: line.discount_percent ?? '0',
+            tax_amount: '0.0000',
+            supplier_product_code: '',
+            batch_number: '',
+            expiry_date: '',
+            notes: line.notes ?? '',
+            location_label: '',
+            track_batch: false,
+            track_expiry: false,
+            further_tax_amount: '0.0000',
+            disc_after_gst_pct: '0',
+            disc_after_gst_rs: '0',
+            advance_tax_pct: '0',
+            advance_tax_amount: '0',
+            special_disc_rs: '0.0000',
+            sale_price: '0.0000',
+          },
+          calcSettings,
+        )
+      })
+
+    resetEditor()
+    setMode('editor')
+    setSupplierUlid(order.supplier.ulid)
+    setWarehouseUlid(session?.warehouse.ulid ?? order.warehouse?.ulid ?? '')
+    setShellPoNo(order.document_number)
+    setPurchaseOrderUlid(order.ulid)
+    setNotes(order.notes ?? '')
+    setLines(mapped)
+    setSelectedLineKey(mapped[0]?.key ?? null)
+    void enrichLineUnits(mapped)
+  }
+
+  const autoPurchaseOrderUlid = searchParams.get('purchase_order')?.trim() ?? ''
+
+  useEffect(() => {
+    if (!autoPurchaseOrderUlid) return
+    if (autoPurchaseOrderAttemptedRef.current === autoPurchaseOrderUlid) return
+
+    autoPurchaseOrderAttemptedRef.current = autoPurchaseOrderUlid
+
+    void loadPurchaseOrderIntoDraft(autoPurchaseOrderUlid)
+      .then(() => {
+        const next = new URLSearchParams(searchParams)
+        next.delete('purchase_order')
+        setSearchParams(next, { replace: true })
+        setError(null)
+      })
+      .catch((err) => {
+        setError(
+          err instanceof ApiClientError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Unable to load Purchase Order.',
+        )
+      })
+  }, [autoPurchaseOrderUlid])
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!supplierUlid || !warehouseUlid) {
@@ -984,6 +1110,7 @@ export function PurchasesPage() {
         invoice_date: invoiceDate,
         due_date: dueDate || null,
         supplier_invoice_number: supplierInvoiceNumber || null,
+        purchase_order_ulid: !invoiceUlid ? purchaseOrderUlid : undefined,
         po_number: shellPoNo || null,
         invoice_type: shellInvoiceType,
         currency_code: shellCurrency,
@@ -1016,6 +1143,7 @@ export function PurchasesPage() {
           discountApplyOn === 'trade' &&
           (dualModes.regular_disc === 'pct' || dualModes.special_disc === 'pct')
         const payload = {
+          purchase_order_line_ulid: line.purchase_order_line_ulid ?? null,
           product_ulid: line.product_ulid,
           unit_ulid: line.unit_ulid,
           quantity: line.quantity || '0',
@@ -1179,6 +1307,7 @@ export function PurchasesPage() {
     const draft = applyCalcToLine(
       {
         key,
+        purchase_order_line_ulid: null,
         product_ulid: product.ulid,
         product_label: `${product.product_number} · ${product.name}`,
         ...emptyShellFields(),
