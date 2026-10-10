@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'tenant_id',
     'purchase_invoice_id',
+    'purchase_order_line_id',
     'product_id',
     'unit_id',
     'quantity',
@@ -80,6 +81,11 @@ class PurchaseInvoiceLine extends Model
     public function purchaseInvoice(): BelongsTo
     {
         return $this->belongsTo(PurchaseInvoice::class);
+    }
+
+    public function purchaseOrderLine(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrderLine::class);
     }
 
     /**
