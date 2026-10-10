@@ -3,6 +3,7 @@ import { Printer } from 'lucide-react'
 import { UiButton } from '../ui/UiButton'
 import { UiModal } from '../ui/UiModal'
 import { UiSelect } from '../ui/UiSelect'
+import { UI_LAYER } from '../ui/uiLayers'
 import './VoucherPrintModal.css'
 
 export type VoucherPrintRow = {
@@ -46,6 +47,11 @@ const HEADING_OPTIONS = [
   { value: 'pos', label: 'POS' },
   { value: 'prod-template', label: 'ProdTemplate' },
   { value: 'zap-sale-footer', label: 'ZapSaleFooter' },
+]
+
+const PRINTER_OPTIONS = [
+  { value: 'system', label: 'System Printer Dialog' },
+  { value: 'pdf', label: 'Save / Print to PDF (via system dialog)' },
 ]
 
 function escapeHtml(value: string): string {
@@ -156,6 +162,7 @@ export function VoucherPrintModal({
   const [format, setFormat] = useState('a5-1')
   const [rotated, setRotated] = useState(false)
   const [heading, setHeading] = useState('default')
+  const [printer, setPrinter] = useState('system')
   const [directPrint, setDirectPrint] = useState(false)
   const [hidePreviousBalance, setHidePreviousBalance] = useState(false)
   const [copies, setCopies] = useState('1')
@@ -191,7 +198,7 @@ export function VoucherPrintModal({
     <UiModal
       open={open}
       title="Print Voucher Options"
-      size="sm"
+      size="md"
       className="voucher-print-modal"
       onClose={onClose}
       footer={
@@ -206,7 +213,12 @@ export function VoucherPrintModal({
       <div className="voucher-print-options">
         <label>
           <span>Print this Voucher On</span>
-          <UiSelect value={format} options={FORMAT_OPTIONS} onChange={setFormat} />
+          <UiSelect
+            value={format}
+            options={FORMAT_OPTIONS}
+            menuZIndex={UI_LAYER.modalDropdown}
+            onChange={setFormat}
+          />
         </label>
 
         <label className="voucher-print-check">
@@ -216,12 +228,22 @@ export function VoucherPrintModal({
 
         <label>
           <span>Select Heading Option</span>
-          <UiSelect value={heading} options={HEADING_OPTIONS} onChange={setHeading} />
+          <UiSelect
+            value={heading}
+            options={HEADING_OPTIONS}
+            menuZIndex={UI_LAYER.modalDropdown}
+            onChange={setHeading}
+          />
         </label>
 
         <label>
           <span>On Printer</span>
-          <input className="desktop-input" value="System printer dialog" disabled />
+          <UiSelect
+            value={printer}
+            options={PRINTER_OPTIONS}
+            menuZIndex={UI_LAYER.modalDropdown}
+            onChange={setPrinter}
+          />
         </label>
 
         <div className="voucher-print-direct-row">
@@ -250,7 +272,7 @@ export function VoucherPrintModal({
         </label>
 
         <p className="voucher-print-note">
-          Browser apps cannot enumerate or silently select installed printers. Print uses the operating-system/browser printer dialog.
+          Installed Windows printers are selected in the browser/system print dialog after Preview or Print.
         </p>
       </div>
     </UiModal>
