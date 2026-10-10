@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Purchases;
 
+use App\Actions\Purchases\CancelPurchaseOrderAction;
 use App\Actions\Purchases\CreatePurchaseOrderAction;
 use App\Catalog\TenantCatalog;
 use App\Enums\ProductStatus;
@@ -399,6 +400,27 @@ class PurchaseOrderController extends Controller
         $order = $create->execute($request->validated());
 
         return (new PurchaseOrderResource($order))->response()->setStatusCode(201);
+    }
+
+    public function cancel(
+        string $purchaseOrderUlid,
+        TenantContext $tenantContext,
+        CancelPurchaseOrderAction $cancel,
+    ): PurchaseOrderResource {
+        $order = PurchaseOrder::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
+            ->where('warehouse_id', $tenantContext->warehouseId())
+            ->where('ulid', $purchaseOrderUlid)
+            ->first();
+
+        if (! $order) {
+            throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
+        }
+
+        $this->authorize('cancel', $order);
+
+        return new PurchaseOrderResource($cancel->execute($order));
     }
 
     public function show(
