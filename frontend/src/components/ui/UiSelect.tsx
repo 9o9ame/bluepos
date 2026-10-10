@@ -55,6 +55,7 @@ export type UiSelectProps = {
   maxMenuHeight?: number
   menuColumns?: UiSelectMenuColumn[]
   menuMinWidth?: number
+  menuPlacement?: 'auto' | 'down' | 'up'
   'aria-label'?: string
 }
 
@@ -89,6 +90,7 @@ export function UiSelect({
   maxMenuHeight = 240,
   menuColumns,
   menuMinWidth,
+  menuPlacement = 'auto',
   'aria-label': ariaLabel,
 }: UiSelectProps) {
   const listId = useId()
@@ -152,9 +154,15 @@ export function UiSelect({
     const gap = 4
     const spaceBelow = window.innerHeight - rect.bottom - 8
     const spaceAbove = rect.top - 8
-    const openUp =
+    const autoOpenUp =
       spaceBelow < maxMenuHeight ||
       (spaceAbove > 140 && spaceBelow < spaceAbove + 40)
+    const openUp =
+      menuPlacement === 'up'
+        ? true
+        : menuPlacement === 'down'
+          ? false
+          : autoOpenUp
     const available = openUp ? spaceAbove - gap : spaceBelow - gap
     const resolvedMaxHeight = Math.max(
       120,
