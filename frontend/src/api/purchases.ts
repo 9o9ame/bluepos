@@ -145,7 +145,15 @@ export function createPurchaseOrder(payload: PurchaseOrderPayload) {
 export function generatePurchaseOrder(payload: PurchaseOrderGeneratePayload) {
   return apiFetch<{
     data: PurchaseOrderGenerateRow[]
-    meta: { mode: string; count: number }
+    meta: {
+      mode: string
+      count: number
+      current_page: number
+      per_page: number
+      last_page: number
+      total: number
+      has_more: boolean
+    }
   }>('/api/purchase-orders/generate', {
     method: 'POST',
     body: JSON.stringify(payload),
