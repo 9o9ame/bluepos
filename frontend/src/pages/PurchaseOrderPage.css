@@ -653,6 +653,28 @@
   margin: 0;
 }
 
+.purchase-order-cancel-confirm {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.purchase-order-cancel-confirm > svg {
+  margin-top: 1px;
+  color: var(--ui-danger);
+}
+
+.purchase-order-cancel-confirm strong {
+  display: block;
+}
+
+.purchase-order-cancel-confirm p {
+  margin: 5px 0 0;
+  color: var(--ui-text-muted);
+  line-height: 1.45;
+}
+
 @media (max-width: 1380px) {
   .purchase-order-top {
     grid-template-columns: minmax(620px, 1fr) 90px minmax(200px, 0.38fr);
