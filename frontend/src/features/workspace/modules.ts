@@ -232,6 +232,15 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     entitlement: 'sales',
   },
   {
+    key: 'quotation-estimate',
+    title: 'Quotation / Estimate',
+    path: '/daily/quotation-estimate',
+    ribbon: 'daily-entries',
+    status: 'ready',
+    permission: 'sales.view',
+    entitlement: 'sales',
+  },
+  {
     key: 'sales-return',
     title: 'Sales Return',
     path: '/daily/sales-return',
@@ -432,6 +441,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       caption: 'Sales',
       commands: [
         { id: 'sales-invoice', label: 'Sales Invoice', icon: ShoppingCart, moduleKey: 'sales-invoice', permission: 'sales.view', entitlement: 'sales', status: 'ready', tone: 'blue' },
+        { id: 'quotation-estimate', label: 'Quotation / Estimate', icon: FileText, moduleKey: 'quotation-estimate', permission: 'sales.view', entitlement: 'sales', status: 'ready', tone: 'gold' },
         { id: 'sales-return', label: 'Sales Return', icon: Undo2, moduleKey: 'sales-return', permission: 'sales.return', entitlement: 'sales', status: 'ready', tone: 'slate' },
       ],
     },
@@ -462,7 +472,6 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Payment Voucher (Dr)', status: 'ready', path: '/daily/vouchers?type=payment' },
             { label: 'Receiving Voucher (Cr)', status: 'ready', path: '/daily/vouchers?type=receiving' },
             { label: 'Journal Voucher (JV)', status: 'ready', path: '/daily/vouchers?type=journal' },
-            { label: 'Quotation / Estimate', status: 'ready', path: '/daily/sales?mode=quotation' },
           ],
         },
         { id: 'product-view', label: 'Product View', icon: Package, moduleKey: 'products', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'green' },
@@ -627,18 +636,6 @@ export function moduleTabIdentity(
   pathname: string,
   search = '',
 ): { key: string; title: string; path: string } {
-  if (module.key === 'sales-invoice') {
-    const mode = new URLSearchParams(search).get('mode')
-
-    if (mode === 'quotation') {
-      return {
-        key: 'sales-invoice:quotation',
-        title: 'Quotation / Estimate',
-        path: pathname + search,
-      }
-    }
-  }
-
   if (module.key === 'vouchers') {
     const type = new URLSearchParams(search).get('type')
 
