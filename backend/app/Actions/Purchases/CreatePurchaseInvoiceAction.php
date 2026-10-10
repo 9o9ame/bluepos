@@ -68,6 +68,12 @@ class CreatePurchaseInvoiceAction
                         'supplier_ulid' => 'Purchase Invoice supplier must match the linked Purchase Order.',
                     ]);
                 }
+
+                if ((string) $purchaseOrder->status !== 'open') {
+                    throw ValidationException::withMessages([
+                        'purchase_order_ulid' => 'Only open Purchase Orders can receive new Purchase Invoices.',
+                    ]);
+                }
             }
 
             $invoice = PurchaseInvoice::query()->create([
