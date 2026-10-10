@@ -20,6 +20,7 @@ import { PartiesPlaceholderPage } from '../pages/PartiesPlaceholderPage'
 import { ProductsPage } from '../pages/ProductsPage'
 import { ProductTabularViewPage } from '../pages/ProductTabularViewPage'
 import { PurchasesPage } from '../pages/PurchasesPage'
+import { PurchaseOrderPage } from '../pages/PurchaseOrderPage'
 import { PurchaseReturnsPage } from '../pages/PurchaseReturnsPage'
 import { ReportsPlaceholderPage } from '../pages/ReportsPlaceholderPage'
 import { RoleEditorPage } from '../pages/RoleEditorPage'
@@ -76,6 +77,7 @@ export function AppRoutes() {
           </Route>
           <Route element={<RequirePermission permission="purchases.view" />}>
             <Route path="/daily/purchases" element={<PurchasesPage />} />
+            <Route path="/daily/purchase-orders" element={<PurchaseOrderPage />} />
           </Route>
           <Route element={<RequirePermission permission="purchase_returns.view" />}>
             <Route path="/daily/purchase-return" element={<PurchaseReturnsPage />} />
