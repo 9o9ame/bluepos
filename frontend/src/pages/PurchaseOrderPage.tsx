@@ -1,5 +1,5 @@
 import { FileSearch, LoaderCircle, Play, Plus, Printer, ReceiptText, RefreshCw, Save, XCircle } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   fetchBrands,
@@ -29,6 +29,7 @@ import type {
   PurchaseOrderGenerateMode,
   PurchaseOrderGeneratePayload,
   PurchaseOrderGenerateRow,
+  PurchaseOrderStatusRow,
 } from '../types/purchases'
 import './PurchaseOrderPage.css'
 
@@ -180,6 +181,9 @@ export function PurchaseOrderPage() {
   const [statusFrom, setStatusFrom] = useState(daysAgoIso(30))
   const [statusTo, setStatusTo] = useState(todayIso())
   const [statusShowAll, setStatusShowAll] = useState(false)
+  const [statusPrintRows, setStatusPrintRows] = useState<PurchaseOrderStatusRow[]>([])
+  const [statusPrintPending, setStatusPrintPending] = useState(false)
+  const [statusPrintLoading, setStatusPrintLoading] = useState(false)
   const [lines, setLines] = useState<DraftLine[]>([])
   const [savedOrder, setSavedOrder] = useState<PurchaseOrder | null>(null)
   const [openedOrder, setOpenedOrder] = useState<PurchaseOrder | null>(null)
@@ -267,6 +271,28 @@ export function PurchaseOrderPage() {
     retry: false,
   })
 
+  useEffect(() => {
+    if (!statusPrintPending) return
+
+    let cancelled = false
+    let frameOne = 0
+    let frameTwo = 0
+
+    frameOne = window.requestAnimationFrame(() => {
+      frameTwo = window.requestAnimationFrame(() => {
+        if (cancelled) return
+        window.print()
+        setStatusPrintPending(false)
+      })
+    })
+
+    return () => {
+      cancelled = true
+      window.cancelAnimationFrame(frameOne)
+      window.cancelAnimationFrame(frameTwo)
+    }
+  }, [statusPrintPending, statusPrintRows])
+
   const supplierOptions = useMemo(
     () =>
       (suppliersQuery.data ?? [])
@@ -326,6 +352,52 @@ export function PurchaseOrderPage() {
   }, [lines])
 
   const netAmount = activeOrder?.grand_total ?? fixedMoney(totals.total)
+
+  async function printStatusReport() {
+    if (statusPrintLoading) return
+
+    setStatusPrintLoading(true)
+
+    try {
+      const first =
+        statusQuery.data ??
+        (await fetchPurchaseOrderStatus({
+          date_from: statusFrom || undefined,
+          date_to: statusTo || undefined,
+          status: statusShowAll ? undefined : 'open',
+          page: 1,
+          per_page: 100,
+        }))
+
+      const rows = [...first.data]
+
+      for (let page = 2; page <= first.meta.last_page; page += 1) {
+        const response = await fetchPurchaseOrderStatus({
+          date_from: statusFrom || undefined,
+          date_to: statusTo || undefined,
+          status: statusShowAll ? undefined : 'open',
+          page,
+          per_page: 100,
+        })
+        rows.push(...response.data)
+      }
+
+      if (rows.length === 0) {
+        feedback.error('There are no Purchase Order Status rows to print.', 'Purchase Order')
+        return
+      }
+
+      setStatusPrintRows(rows)
+      setStatusPrintPending(true)
+    } catch (error) {
+      feedback.error(
+        error instanceof Error ? error.message : 'Unable to prepare Purchase Order Status print.',
+        'Purchase Order',
+      )
+    } finally {
+      setStatusPrintLoading(false)
+    }
+  }
 
   function startNew() {
     setSupplierUlid('')
@@ -1141,11 +1213,11 @@ export function PurchaseOrderPage() {
                 </UiButton>
                 <UiButton
                   variant="primary"
-                  disabled
-                  title="Purchase Order Status printing is not yet mapped to a reusable BluePOS print flow."
+                  disabled={statusPrintLoading || statusQuery.isLoading}
+                  onClick={() => void printStatusReport()}
                 >
                   <Printer size={14} />
-                  Print
+                  {statusPrintLoading ? 'Preparing…' : 'Print'}
                 </UiButton>
               </div>
 
@@ -1249,6 +1321,56 @@ export function PurchaseOrderPage() {
             rowKey={(row) => row.line_ulid}
             emptyMessage={statusQuery.isLoading ? 'Loading…' : 'No purchase order status rows found.'}
           />
+
+          <section className="purchase-order-status-print-report" aria-hidden={!statusPrintPending}>
+            <header>
+              <h1>Purchase Order Status</h1>
+              <div>
+                <span>From: {statusFrom || '—'}</span>
+                <span>To: {statusTo || '—'}</span>
+                <span>{statusShowAll ? 'All statuses' : 'Open orders only'}</span>
+              </div>
+            </header>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>OrderNo</th>
+                  <th>Order Date</th>
+                  <th>Party</th>
+                  <th>DESCRIPTION</th>
+                  <th>Order Qty</th>
+                  <th>Receive Qty</th>
+                  <th>Rem Qty</th>
+                  <th>Order Amt</th>
+                  <th>Rec Amt</th>
+                  <th>Bal Amt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {statusPrintRows.map((row) => (
+                  <tr key={row.line_ulid}>
+                    <td>{row.order.ulid}</td>
+                    <td>{row.order.document_number}</td>
+                    <td>{row.order.order_date}</td>
+                    <td>{row.supplier?.name ?? '—'}</td>
+                    <td>
+                      {row.product
+                        ? `${row.product.product_number} — ${row.product.name}`
+                        : '—'}
+                    </td>
+                    <td>{row.order_quantity}</td>
+                    <td>{row.received_quantity}</td>
+                    <td>{row.remaining_quantity}</td>
+                    <td>{row.order_amount}</td>
+                    <td>{row.received_amount}</td>
+                    <td>{row.balance_amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
         </div>
       )}
     </DesktopPanel>
