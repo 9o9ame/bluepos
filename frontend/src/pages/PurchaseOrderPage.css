@@ -584,21 +584,23 @@
 
 .purchase-order-status-selections-body {
   display: grid;
-  grid-template-columns: 160px auto minmax(340px, 1fr);
+  grid-template-columns: 328px auto minmax(340px, 1fr);
   gap: 8px;
   align-items: center;
   padding: 5px 7px 6px;
 }
 
 .purchase-order-status-dates {
-  display: grid;
-  gap: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .purchase-order-status-dates label {
   display: grid;
   grid-template-columns: 38px 118px;
   gap: 4px;
+  flex: 0 0 auto;
   align-items: center;
   color: var(--ui-text-muted);
   font-size: 12px;
