@@ -144,7 +144,7 @@
 .quotation-lines th,
 .quotation-lines td {
   border-bottom: 1px solid var(--ui-table-border);
-  padding: 7px 8px;
+  padding: 5px 8px;
   text-align: left;
   white-space: nowrap;
 }
@@ -169,7 +169,7 @@
 
 .quotation-lines input {
   width: 90px;
-  padding: 5px 6px;
+  padding: 4px 6px;
   text-align: right;
 }
 
