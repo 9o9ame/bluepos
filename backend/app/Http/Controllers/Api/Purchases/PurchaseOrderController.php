@@ -3,11 +3,17 @@
 namespace App\Http\Controllers\Api\Purchases;
 
 use App\Actions\Purchases\CreatePurchaseOrderAction;
+use App\Catalog\TenantCatalog;
+use App\Enums\ProductStatus;
+use App\Enums\SaleStatus;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchases\StorePurchaseOrderRequest;
 use App\Http\Resources\Purchases\PurchaseOrderResource;
+use App\Models\Product;
 use App\Models\PurchaseOrder;
+use App\Models\SaleItem;
+use App\Models\StockBalance;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -63,6 +69,175 @@ class PurchaseOrderController extends Controller
                 'per_page' => $page->perPage(),
                 'total' => $page->total(),
                 'last_page' => $page->lastPage(),
+            ],
+        ];
+    }
+
+    public function generate(
+        Request $request,
+        TenantContext $tenantContext,
+        TenantCatalog $catalog,
+    ): array {
+        $this->authorize('create', PurchaseOrder::class);
+
+        $data = $request->validate([
+            'mode' => ['required', 'in:last_n_days,between_dates,reorder_level,min_level,max_level,optimum_level,get_all'],
+            'days' => ['nullable', 'integer', 'min:1', 'max:3650'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'supplier_ulid' => ['nullable', 'string', 'size:26'],
+            'category_ulid' => ['nullable', 'string', 'size:26'],
+            'brand_ulid' => ['nullable', 'string', 'size:26'],
+            'include_non_sold' => ['nullable', 'boolean'],
+        ]);
+
+        $mode = (string) $data['mode'];
+
+        if ($mode === 'optimum_level') {
+            throw new ApiException(
+                'VALIDATION_ERROR',
+                'Optimum Level is not configured in the current product master.',
+                422,
+            );
+        }
+
+        if ($mode === 'last_n_days' && empty($data['days'])) {
+            throw new ApiException('VALIDATION_ERROR', 'Days are required for Last N Days Sale.', 422);
+        }
+
+        if ($mode === 'between_dates' && (empty($data['date_from']) || empty($data['date_to']))) {
+            throw new ApiException('VALIDATION_ERROR', 'From and To dates are required for Between Dates Sale.', 422);
+        }
+
+        $query = Product::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('status', ProductStatus::Active->value)
+            ->where('is_active', true)
+            ->with(['baseUnit', 'brand', 'category'])
+            ->orderBy('product_number');
+
+        if (! empty($data['supplier_ulid'])) {
+            $supplier = $catalog->supplier((string) $data['supplier_ulid']);
+            $query->whereHas('productSuppliers', fn ($links) => $links
+                ->where('supplier_id', $supplier->id)
+                ->where('is_active', true));
+        }
+
+        if (! empty($data['category_ulid'])) {
+            $category = $catalog->category((string) $data['category_ulid']);
+            $query->where('category_id', $category->id);
+        }
+
+        if (! empty($data['brand_ulid'])) {
+            $brand = $catalog->brand((string) $data['brand_ulid']);
+            $query->where('brand_id', $brand->id);
+        }
+
+        if ($mode === 'reorder_level') {
+            $query->whereNotNull('reorder_level');
+        } elseif ($mode === 'min_level') {
+            $query->whereNotNull('minimum_stock');
+        } elseif ($mode === 'max_level') {
+            $query->whereNotNull('maximum_stock');
+        }
+
+        $products = $query->get();
+        $productIds = $products->pluck('id');
+
+        $balances = StockBalance::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
+            ->where('warehouse_id', $tenantContext->warehouseId())
+            ->whereIn('product_id', $productIds)
+            ->get()
+            ->keyBy('product_id');
+
+        $consumption = collect();
+
+        if (in_array($mode, ['last_n_days', 'between_dates'], true) && $productIds->isNotEmpty()) {
+            $dateFrom = $mode === 'last_n_days'
+                ? now()->subDays(((int) $data['days']) - 1)->toDateString()
+                : (string) $data['date_from'];
+            $dateTo = $mode === 'last_n_days'
+                ? now()->toDateString()
+                : (string) $data['date_to'];
+
+            $consumption = SaleItem::query()
+                ->forTenant($tenantContext->tenantId())
+                ->whereIn('product_id', $productIds)
+                ->whereHas('sale', fn ($sales) => $sales
+                    ->where('branch_id', $tenantContext->branchId())
+                    ->where('warehouse_id', $tenantContext->warehouseId())
+                    ->where('status', SaleStatus::Posted->value)
+                    ->whereDate('sale_date', '>=', $dateFrom)
+                    ->whereDate('sale_date', '<=', $dateTo))
+                ->selectRaw('product_id, COALESCE(SUM(stock_quantity), 0) as consumption')
+                ->groupBy('product_id')
+                ->pluck('consumption', 'product_id');
+        }
+
+        $includeNonSold = (bool) ($data['include_non_sold'] ?? false);
+
+        $rows = $products
+            ->map(function (Product $product) use ($mode, $balances, $consumption): array {
+                $balance = $balances->get($product->id);
+                $inStock = bcadd((string) ($balance?->quantity ?? '0'), '0', 6);
+                $stockValue = bcadd((string) ($balance?->stock_value ?? '0'), '0', 4);
+                $consumed = bcadd((string) ($consumption->get($product->id) ?? '0'), '0', 6);
+
+                $target = match ($mode) {
+                    'last_n_days', 'between_dates' => $consumed,
+                    'reorder_level' => bcadd((string) ($product->reorder_level ?? '0'), '0', 6),
+                    'min_level' => bcadd((string) ($product->minimum_stock ?? '0'), '0', 6),
+                    'max_level' => bcadd((string) ($product->maximum_stock ?? '0'), '0', 6),
+                    default => $inStock,
+                };
+
+                $difference = $mode === 'get_all'
+                    ? '0.000000'
+                    : bcsub($target, $inStock, 6);
+                $suggested = bccomp($difference, '0', 6) === 1
+                    ? $difference
+                    : '0.000000';
+
+                return [
+                    'product' => [
+                        'ulid' => $product->ulid,
+                        'product_number' => $product->product_number,
+                        'name' => $product->name,
+                    ],
+                    'unit' => $product->baseUnit ? [
+                        'ulid' => $product->baseUnit->ulid,
+                        'code' => $product->baseUnit->code,
+                        'name' => $product->baseUnit->name,
+                    ] : null,
+                    'brand' => $product->brand ? [
+                        'ulid' => $product->brand->ulid,
+                        'name' => $product->brand->name,
+                    ] : null,
+                    'category' => $product->category ? [
+                        'ulid' => $product->category->ulid,
+                        'name' => $product->category->name,
+                    ] : null,
+                    'in_stock' => $inStock,
+                    'stock_value' => $stockValue,
+                    'consumption' => $consumed,
+                    'difference' => $difference,
+                    'suggested_quantity' => $suggested,
+                    'unit_price' => bcadd((string) ($balance?->average_cost ?? '0'), '0', 4),
+                ];
+            })
+            ->when(
+                in_array($mode, ['last_n_days', 'between_dates'], true) && ! $includeNonSold,
+                fn ($rows) => $rows->filter(fn ($row) => bccomp($row['consumption'], '0', 6) === 1),
+            )
+            ->values();
+
+        return [
+            'data' => $rows,
+            'meta' => [
+                'mode' => $mode,
+                'count' => $rows->count(),
             ],
         ];
     }
