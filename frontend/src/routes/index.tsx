@@ -15,6 +15,7 @@ import { HelpAboutPage } from '../pages/HelpAboutPage'
 import { LoginPage } from '../pages/LoginPage'
 import { OpeningStockPage } from '../pages/OpeningStockPage'
 import { PriceListsPage } from '../pages/PriceListsPage'
+import { QuotationEstimatePage } from '../pages/QuotationEstimatePage'
 import { PartiesPlaceholderPage } from '../pages/PartiesPlaceholderPage'
 import { ProductsPage } from '../pages/ProductsPage'
 import { ProductTabularViewPage } from '../pages/ProductTabularViewPage'
@@ -67,6 +68,9 @@ export function AppRoutes() {
           <Route path="/" element={<WorkspacePage />} />
           <Route path="/definition/parties" element={<PartiesPlaceholderPage />} />
           <Route path="/daily/sales" element={<SalesInvoicePage />} />
+          <Route element={<RequirePermission permission="sales.view" />}>
+            <Route path="/daily/quotation-estimate" element={<QuotationEstimatePage />} />
+          </Route>
           <Route element={<RequirePermission permission="sales.return" />}>
             <Route path="/daily/sales-return" element={<SalesReturnsPage />} />
           </Route>
