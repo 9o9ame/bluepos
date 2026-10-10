@@ -1136,11 +1136,11 @@ export function PurchaseOrderPage() {
               </div>
 
               <div className="purchase-order-status-actions">
-                <UiButton variant="info" onClick={() => void statusQuery.refetch()}>
+                <UiButton variant="primary" onClick={() => void statusQuery.refetch()}>
                   View
                 </UiButton>
                 <UiButton
-                  variant="info"
+                  variant="primary"
                   disabled
                   title="Purchase Order Status printing is not yet mapped to a reusable BluePOS print flow."
                 >
