@@ -143,6 +143,10 @@ class ManageVoucherAction
                 return $entry;
             }
 
+            if ($entry->document_type === JournalEntry::DOCUMENT_OPENING_BALANCE) {
+                return $this->poster->postVoucher($entry);
+            }
+
             if ($entry->lines->count() < 2) {
                 throw new ApiException(
                     'VOUCHER_LINES_REQUIRED',
@@ -200,6 +204,12 @@ class ManageVoucherAction
 
         if ($entry->document_type === JournalEntry::DOCUMENT_JOURNAL_VOUCHER) {
             $this->writeJournalLines($entry, $data['lines'] ?? []);
+
+            return;
+        }
+
+        if ($entry->document_type === JournalEntry::DOCUMENT_OPENING_BALANCE) {
+            $this->writeOpeningLines($entry, $data['lines'] ?? []);
 
             return;
         }
@@ -286,6 +296,41 @@ class ManageVoucherAction
     /**
      * @param mixed $rows
      */
+    private function writeOpeningLines(JournalEntry $entry, mixed $rows): void
+    {
+        if (! is_array($rows) || count($rows) < 1) {
+            throw ValidationException::withMessages([
+                'lines' => 'Opening balance vouchers require at least one line.',
+            ]);
+        }
+
+        foreach ($rows as $index => $row) {
+            if (! is_array($row)) {
+                throw ValidationException::withMessages([
+                    "lines.$index" => 'Invalid voucher line.',
+                ]);
+            }
+
+            $account = $this->resolveAccount(
+                (string) ($row['account_ulid'] ?? ''),
+                "lines.$index.account_ulid",
+            );
+            $debit = $this->money((string) ($row['debit'] ?? '0'), "lines.$index.debit");
+            $credit = $this->money((string) ($row['credit'] ?? '0'), "lines.$index.credit");
+
+            $this->poster->assertMoneySides($debit, $credit);
+
+            $this->createLine(
+                $entry,
+                $account,
+                $debit,
+                $credit,
+                $this->nullableText($row['narration'] ?? null),
+                $index,
+            );
+        }
+    }
+
     private function writeJournalLines(JournalEntry $entry, mixed $rows): void
     {
         if (! is_array($rows) || count($rows) < 2) {
@@ -374,6 +419,7 @@ class ManageVoucherAction
             ->where('branch_id', $this->tenantContext->branchId())
             ->whereKey($entry->id)
             ->whereIn('document_type', self::manualDocumentTypes())
+            ->whereNotNull('voucher_number')
             ->lockForUpdate();
 
         if ($withLines) {
@@ -407,8 +453,15 @@ class ManageVoucherAction
             return false;
         }
 
-        if ($entry->document_type === JournalEntry::DOCUMENT_JOURNAL_VOUCHER) {
-            if ($lines->count() !== count($rows)) {
+        if (in_array($entry->document_type, [
+            JournalEntry::DOCUMENT_JOURNAL_VOUCHER,
+            JournalEntry::DOCUMENT_OPENING_BALANCE,
+        ], true)) {
+            $expectedLineCount = count($rows);
+            if ($entry->document_type === JournalEntry::DOCUMENT_OPENING_BALANCE && $entry->isPosted()) {
+                $lines = $lines->where('sort_order', '<', 9999)->values();
+            }
+            if ($lines->count() !== $expectedLineCount) {
                 return false;
             }
 
@@ -468,8 +521,9 @@ class ManageVoucherAction
             'payment' => JournalEntry::DOCUMENT_PAYMENT_VOUCHER,
             'receiving' => JournalEntry::DOCUMENT_RECEIVING_VOUCHER,
             'journal' => JournalEntry::DOCUMENT_JOURNAL_VOUCHER,
+            'opening' => JournalEntry::DOCUMENT_OPENING_BALANCE,
             default => throw ValidationException::withMessages([
-                'type' => 'Voucher type must be payment, receiving, or journal.',
+                'type' => 'Voucher type must be payment, receiving, journal, or opening.',
             ]),
         };
     }
@@ -483,6 +537,7 @@ class ManageVoucherAction
             JournalEntry::DOCUMENT_PAYMENT_VOUCHER,
             JournalEntry::DOCUMENT_RECEIVING_VOUCHER,
             JournalEntry::DOCUMENT_JOURNAL_VOUCHER,
+            JournalEntry::DOCUMENT_OPENING_BALANCE,
         ];
     }
 
@@ -492,6 +547,7 @@ class ManageVoucherAction
             JournalEntry::DOCUMENT_PAYMENT_VOUCHER => 'DV',
             JournalEntry::DOCUMENT_RECEIVING_VOUCHER => 'CV',
             JournalEntry::DOCUMENT_JOURNAL_VOUCHER => 'JV',
+            JournalEntry::DOCUMENT_OPENING_BALANCE => 'OPV',
             default => 'V',
         };
 
