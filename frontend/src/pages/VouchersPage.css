@@ -35,8 +35,7 @@
 
 .voucher-entry-meta {
   display: grid;
-  grid-template-columns: repeat(3, minmax(160px, 1fr));
-  gap: 8px;
+  gap: 6px;
   padding: 8px;
   border: 1px solid var(--ui-border);
   border-radius: var(--panel-radius);
@@ -44,9 +43,23 @@
   box-shadow: var(--ui-card-shadow);
 }
 
+.voucher-meta-top {
+  display: grid;
+  grid-template-columns: 130px 120px 180px 110px;
+  gap: 6px;
+  align-items: end;
+}
+
+.voucher-meta-account {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.8fr) repeat(3, minmax(120px, 0.6fr));
+  gap: 6px;
+  align-items: end;
+}
+
 .voucher-entry-meta label {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   min-width: 0;
 }
 
@@ -56,8 +69,14 @@
   color: var(--ui-text-muted);
 }
 
-.voucher-entry-meta .is-wide {
-  grid-column: span 2;
+.voucher-account-field {
+  min-width: 0;
+}
+
+.voucher-balance {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
 }
 
 .voucher-line-grid-wrap {
@@ -95,11 +114,11 @@
 }
 
 .voucher-line-grid th:nth-child(2) {
-  width: 34%;
+  width: 20%;
 }
 
 .voucher-line-grid th:last-child {
-  width: 44px;
+  width: 42px;
   text-align: center;
 }
 
@@ -109,9 +128,15 @@
   min-width: 0;
 }
 
-.voucher-money {
+.voucher-money,
+.voucher-readonly-money {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+.voucher-readonly-money {
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .voucher-entry-footer {
@@ -150,9 +175,13 @@
   min-height: 420px;
 }
 
-@media (max-width: 1050px) {
-  .voucher-entry-meta {
-    grid-template-columns: repeat(2, minmax(150px, 1fr));
+@media (max-width: 1100px) {
+  .voucher-meta-top {
+    grid-template-columns: repeat(4, minmax(100px, 1fr));
+  }
+
+  .voucher-meta-account {
+    grid-template-columns: minmax(240px, 1.4fr) repeat(3, minmax(110px, 0.7fr));
   }
 
   .voucher-filters {
@@ -160,15 +189,12 @@
   }
 }
 
-@media (max-width: 720px) {
-  .voucher-entry-meta,
+@media (max-width: 760px) {
+  .voucher-meta-top,
+  .voucher-meta-account,
   .voucher-filters,
   .voucher-summary .voucher-filters {
     grid-template-columns: 1fr;
-  }
-
-  .voucher-entry-meta .is-wide {
-    grid-column: auto;
   }
 
   .voucher-entry-footer {
