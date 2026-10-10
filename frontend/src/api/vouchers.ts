@@ -12,6 +12,7 @@ export type VoucherAccount = {
   is_cash?: boolean
   is_bank?: boolean
   is_payable?: boolean
+  normal_balance?: 'debit' | 'credit'
   party_type?: 'vendor' | 'customer' | 'account'
   balance: string
 }
