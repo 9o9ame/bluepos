@@ -211,6 +211,29 @@ export type PurchaseOrderPayload = {
 }
 
 
+export type PurchaseOrderStatusRow = {
+  order: {
+    ulid: string
+    document_number: string
+    order_date: string
+    status: PurchaseOrderStatus
+  }
+  supplier: PurchaseRef | null
+  line_ulid: string
+  product: {
+    ulid: string
+    product_number: string
+    name: string
+  } | null
+  unit: PurchaseUnitRef | null
+  order_quantity: string
+  received_quantity: string
+  remaining_quantity: string
+  order_amount: string
+  received_amount: string
+  balance_amount: string
+}
+
 export type PurchaseOrderGenerateMode =
   | 'last_n_days'
   | 'between_dates'
