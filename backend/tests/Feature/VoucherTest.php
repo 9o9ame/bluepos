@@ -59,6 +59,26 @@ class VoucherTest extends TestCase
             ->assertOk()
             ->assertJsonPath('status', 'posted');
 
+        $accounts = $this->getJson('/api/vouchers/accounts?as_of='.$date)
+            ->assertOk()
+            ->json();
+
+        $cashRow = collect($accounts)->firstWhere('ulid', $cash->ulid);
+        $supplierRow = collect($accounts)->firstWhere('ulid', $supplierAccount->ulid);
+
+        $this->assertSame('-30.0000', $cashRow['balance'] ?? null);
+        $this->assertSame('-30.0000', $supplierRow['balance'] ?? null);
+
+        $preVoucherAccounts = $this->getJson(
+            '/api/vouchers/accounts?as_of='.$date.'&before_voucher_ulid='.$voucherUlid,
+        )->assertOk()->json();
+
+        $preCashRow = collect($preVoucherAccounts)->firstWhere('ulid', $cash->ulid);
+        $preSupplierRow = collect($preVoucherAccounts)->firstWhere('ulid', $supplierAccount->ulid);
+
+        $this->assertSame('0.0000', $preCashRow['balance'] ?? null);
+        $this->assertSame('0.0000', $preSupplierRow['balance'] ?? null);
+
         $journal = JournalEntry::query()
             ->where('ulid', $voucherUlid)
             ->with('lines')
