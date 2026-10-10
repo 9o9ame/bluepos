@@ -210,7 +210,6 @@
   position: absolute;
   top: calc(100% - 1px);
   left: 0;
-  z-index: 4;
   width: min(780px, calc(100vw - 120px));
   overflow: hidden;
   border: 1px solid var(--ui-border);
