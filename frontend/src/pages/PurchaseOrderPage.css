@@ -653,10 +653,105 @@
   margin: 0;
 }
 
+.purchase-order-status-print-report {
+  display: none;
+}
+
 .purchase-order-empty {
   padding: 28px !important;
   text-align: center !important;
   color: var(--ui-text-muted);
+}
+
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .purchase-order-status-print-report,
+  .purchase-order-status-print-report * {
+    visibility: visible !important;
+  }
+
+  .purchase-order-status-print-report {
+    display: block !important;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    color: black;
+    background: white;
+    font-family: var(--app-font-family);
+    font-size: 9pt;
+  }
+
+  .purchase-order-status-print-report header {
+    display: grid;
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+
+  .purchase-order-status-print-report h1 {
+    margin: 0;
+    font-size: 16pt;
+  }
+
+  .purchase-order-status-print-report header div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 9pt;
+  }
+
+  .purchase-order-status-print-report table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .purchase-order-status-print-report th,
+  .purchase-order-status-print-report td {
+    border: 1px solid currentColor;
+    padding: 3px 4px;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+
+  .purchase-order-status-print-report th {
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .purchase-order-status-print-report th:nth-child(n + 6),
+  .purchase-order-status-print-report td:nth-child(n + 6) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .purchase-order-status-print-report th:nth-child(1) {
+    width: 15%;
+  }
+
+  .purchase-order-status-print-report th:nth-child(2) {
+    width: 8%;
+  }
+
+  .purchase-order-status-print-report th:nth-child(3) {
+    width: 8%;
+  }
+
+  .purchase-order-status-print-report th:nth-child(4) {
+    width: 13%;
+  }
+
+  .purchase-order-status-print-report th:nth-child(5) {
+    width: 20%;
+  }
 }
 
 @media (max-width: 1380px) {
