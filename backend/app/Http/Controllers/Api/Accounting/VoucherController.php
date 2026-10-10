@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Accounting;
 
+use App\Accounting\AccountBalanceCalculator;
 use App\Actions\Accounting\ManageVoucherAction;
 use App\Authz\PermissionService;
 use App\Enums\JournalStatus;
@@ -20,6 +21,7 @@ class VoucherController extends Controller
     public function __construct(
         private readonly ManageVoucherAction $vouchers,
         private readonly PermissionService $permissions,
+        private readonly AccountBalanceCalculator $balances,
     ) {}
 
     public function index(Request $request, TenantContext $tenantContext): array
@@ -58,6 +60,8 @@ class VoucherController extends Controller
                 $inner
                     ->where('voucher_number', 'ilike', $term)
                     ->orWhere('description', 'ilike', $term)
+                    ->orWhereHas('lines', fn ($line) => $line
+                        ->where('description', 'ilike', $term))
                     ->orWhereHas('lines.account', fn ($account) => $account
                         ->where('code', 'ilike', $term)
                         ->orWhere('name', 'ilike', $term));
@@ -90,10 +94,27 @@ class VoucherController extends Controller
     {
         $this->requirePermission('accounting.journal.view');
 
+        $validated = $request->validate([
+            'as_of' => ['nullable', 'date'],
+        ]);
+        $asOf = $validated['as_of'] ?? now()->toDateString();
+
         $query = Account::query()
             ->forTenant($tenantContext->tenantId())
             ->where('is_active', true)
             ->with('accountType')
+            ->withSum([
+                'journalLines as posted_debit' => fn ($lines) => $lines
+                    ->whereHas('journalEntry', fn ($entry) => $entry
+                        ->where('status', JournalStatus::Posted->value)
+                        ->whereDate('entry_date', '<=', $asOf)),
+            ], 'debit')
+            ->withSum([
+                'journalLines as posted_credit' => fn ($lines) => $lines
+                    ->whereHas('journalEntry', fn ($entry) => $entry
+                        ->where('status', JournalStatus::Posted->value)
+                        ->whereDate('entry_date', '<=', $asOf)),
+            ], 'credit')
             ->orderBy('code')
             ->orderBy('name');
 
@@ -112,14 +133,22 @@ class VoucherController extends Controller
                 ->orWhere('name', 'ilike', $term));
         }
 
-        return $query->limit(250)->get()->map(fn (Account $account) => [
-            'ulid' => $account->ulid,
-            'code' => $account->code,
-            'name' => $account->name,
-            'is_cash' => $account->accountType?->is_cash || $account->accountType?->code === '0010',
-            'is_bank' => $account->accountType?->is_bank || $account->accountType?->code === '0012',
-            'party_type' => $account->supplier_id ? 'vendor' : ($account->customer_id ? 'customer' : 'account'),
-        ])->values()->all();
+        return $query->limit(250)->get()->map(function (Account $account): array {
+            $debit = $this->balances->money((string) ($account->getAttribute('posted_debit') ?? '0'));
+            $credit = $this->balances->money((string) ($account->getAttribute('posted_credit') ?? '0'));
+            $balance = $this->balances->signedEffect($account, $debit, $credit);
+
+            return [
+                'ulid' => $account->ulid,
+                'code' => $account->code,
+                'name' => $account->name,
+                'is_cash' => $account->accountType?->is_cash || $account->accountType?->code === '0010',
+                'is_bank' => $account->accountType?->is_bank || $account->accountType?->code === '0012',
+                'is_payable' => (bool) $account->accountType?->is_payable,
+                'party_type' => $account->supplier_id ? 'vendor' : ($account->customer_id ? 'customer' : 'account'),
+                'balance' => $balance,
+            ];
+        })->values()->all();
     }
 
     public function summary(Request $request, TenantContext $tenantContext): array
