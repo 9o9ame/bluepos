@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'is_bank',
     'is_receivable',
     'is_payable',
+    'normal_balance',
     'pnl_grouping_label',
     'hint',
     'sort_order',
@@ -24,6 +25,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AccountType extends Model
 {
     use Concerns\BelongsToTenant, HasPublicUlid;
+
+    protected static function booted(): void
+    {
+        static::saving(function (AccountType $accountType): void {
+            if (! $accountType->exists || $accountType->isDirty('sub_head_id')) {
+                $subHead = AccountSubHead::query()
+                    ->with('mainHead')
+                    ->find($accountType->sub_head_id);
+
+                $mainHead = strtoupper(trim((string) $subHead?->mainHead?->name));
+                $accountType->normal_balance = in_array(
+                    $mainHead,
+                    ['LIABILITIES', 'REVENUES', 'CAPITAL'],
+                    true,
+                ) ? 'credit' : 'debit';
+            }
+        });
+    }
 
     protected function casts(): array
     {
