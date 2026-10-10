@@ -33,6 +33,7 @@ class VoucherTest extends TestCase
         $draft = $this->postJson('/api/vouchers', [
             'type' => 'payment',
             'entry_date' => $date,
+            'book_number' => 'BOOK-42',
             'description' => 'Supplier settlement',
             'header_account_ulid' => $cash->ulid,
             'lines' => [[
@@ -43,6 +44,7 @@ class VoucherTest extends TestCase
         ], $this->idem('voucher-payment-1'))->assertCreated();
 
         $draft->assertJsonPath('type', 'payment')
+            ->assertJsonPath('book_number', 'BOOK-42')
             ->assertJsonPath('status', 'draft')
             ->assertJsonPath('total_debit', '30.0000')
             ->assertJsonPath('total_credit', '30.0000')
@@ -96,6 +98,7 @@ class VoucherTest extends TestCase
 
         $this->putJson('/api/vouchers/'.$voucherUlid, [
             'entry_date' => $date,
+            'book_number' => 'BOOK-43',
             'description' => 'Changed',
             'header_account_ulid' => $cash->ulid,
             'lines' => [[
