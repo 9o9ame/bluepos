@@ -1,0 +1,49 @@
+.voucher-print-modal .ui-modal-body {
+  overflow: visible;
+}
+
+.voucher-print-options {
+  display: grid;
+  gap: 10px;
+}
+
+.voucher-print-options > label,
+.voucher-print-copies {
+  display: grid;
+  gap: 4px;
+}
+
+.voucher-print-options label > span,
+.voucher-print-copies > span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ui-text-muted);
+}
+
+.voucher-print-check {
+  display: flex !important;
+  align-items: center;
+  gap: 7px;
+}
+
+.voucher-print-check input {
+  margin: 0;
+}
+
+.voucher-print-direct-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  gap: 10px;
+  align-items: end;
+}
+
+.voucher-print-note {
+  margin: 0;
+  padding: 7px 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
