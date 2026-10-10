@@ -565,7 +565,7 @@
 }
 
 .purchase-order-status-selections {
-  width: min(590px, 100%);
+  width: min(760px, 100%);
   flex: 0 0 auto;
   margin-bottom: 6px;
   border: 1px solid var(--ui-border);
@@ -584,7 +584,7 @@
 
 .purchase-order-status-selections-body {
   display: grid;
-  grid-template-columns: 160px auto minmax(220px, 1fr);
+  grid-template-columns: 160px auto minmax(340px, 1fr);
   gap: 8px;
   align-items: center;
   padding: 5px 7px 6px;
@@ -630,15 +630,17 @@
 }
 
 .purchase-order-status-options {
-  display: grid;
-  gap: 5px;
-  align-content: center;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
 }
 
 .purchase-order-status-options label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex: 0 0 auto;
   color: var(--ui-text);
   font-size: 12px;
   white-space: nowrap;
