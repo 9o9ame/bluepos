@@ -112,6 +112,8 @@ export type ProductPrice = {
   amount: string
   currency_code: string
   is_active: boolean
+  effective_from?: string | null
+  effective_to?: string | null
 }
 
 export type Product = {
@@ -152,6 +154,8 @@ export type Product = {
   sales_lookup?: {
     in_stock: string
     average_cost: string | null
+    stock_value?: string | null
+    retail_stock_value?: string | null
   }
 }
 
