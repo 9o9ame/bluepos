@@ -36,6 +36,10 @@ class BusinessSettingResource extends JsonResource
             ? $this->salesRevenueAccount
             : $this->salesRevenueAccount()->first();
 
+        $salesTaxPayable = $this->relationLoaded('salesTaxPayableAccount')
+            ? $this->salesTaxPayableAccount
+            : $this->salesTaxPayableAccount()->first();
+
         $inventory = $this->relationLoaded('inventoryAccount')
             ? $this->inventoryAccount
             : $this->inventoryAccount()->first();
@@ -94,6 +98,12 @@ class BusinessSettingResource extends JsonResource
                 'ulid' => $salesRevenue->ulid,
                 'code' => $salesRevenue->code,
                 'name' => $salesRevenue->name,
+            ] : null,
+            'sales_tax_payable_account_ulid' => $salesTaxPayable?->ulid,
+            'sales_tax_payable_account' => $salesTaxPayable ? [
+                'ulid' => $salesTaxPayable->ulid,
+                'code' => $salesTaxPayable->code,
+                'name' => $salesTaxPayable->name,
             ] : null,
             'inventory_account_ulid' => $inventory?->ulid,
             'inventory_account' => $inventory ? [
