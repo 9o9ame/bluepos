@@ -10,6 +10,7 @@ use App\Enums\WarehouseStatus;
 use App\Models\SaleItem;
 use App\Models\SaleReturn;
 use App\Models\SaleReturnLine;
+use App\Models\StockMovement;
 use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
@@ -89,11 +90,26 @@ class PostSaleReturnAction
                     $document->id,
                 );
 
+                $saleMovement = StockMovement::query()
+                    ->where('tenant_id', $document->tenant_id)
+                    ->where('warehouse_id', $document->warehouse_id)
+                    ->where('product_id', $line->product_id)
+                    ->where('movement_type', StockMovementType::Sale->value)
+                    ->where('reference_type', 'sale')
+                    ->where('reference_ulid', $document->sale->ulid)
+                    ->where('reference_line_ulid', $saleItem->ulid)
+                    ->first();
+
+                $originalUnitCost = $saleMovement?->unit_cost === null
+                    ? null
+                    : bcadd((string) $saleMovement->unit_cost, '0', 4);
+
                 $this->postMovement->execute([
                     'warehouse' => $document->warehouse,
                     'product' => $line->product,
                     'movement_type' => StockMovementType::SaleReturn,
                     'quantity' => (string) $line->stock_quantity,
+                    'unit_cost' => $originalUnitCost,
                     'reference_type' => 'sale_return',
                     'reference_ulid' => $document->ulid,
                     'reference_line_ulid' => $line->ulid,
