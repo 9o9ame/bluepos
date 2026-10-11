@@ -300,10 +300,10 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
   },
   {
     key: 'party-ledger',
-    title: 'Customer / Vendor Ledger',
+    title: 'Vendor / Customer Ledger',
     path: '/daily/ledger',
     ribbon: 'daily-entries',
-    status: 'later',
+    status: 'ready',
   },
   {
     key: 'cash-position',
@@ -485,7 +485,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
           ],
         },
         { id: 'product-view', label: 'Product View', icon: Package, moduleKey: 'products', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'green' },
-        { id: 'ledger', label: 'Vendor / Customer Ledger', icon: BookOpen, status: 'later', tone: 'gold' },
+        { id: 'ledger', label: 'Vendor / Customer Ledger', icon: BookOpen, moduleKey: 'party-ledger', status: 'ready', tone: 'gold' },
         { id: 'cash', label: 'Daily Cash Position', icon: Banknote, status: 'later', tone: 'teal' },
       ],
     },
