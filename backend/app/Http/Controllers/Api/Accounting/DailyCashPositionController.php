@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Accounting;
 
 use App\Accounting\CashBookReportBuilder;
+use App\Accounting\CashCreditSummaryBuilder;
 use App\Authz\PermissionService;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
@@ -15,6 +16,7 @@ class DailyCashPositionController extends Controller
 {
     public function __construct(
         private readonly CashBookReportBuilder $cashBook,
+        private readonly CashCreditSummaryBuilder $cashCreditSummary,
         private readonly PermissionService $permissions,
     ) {}
 
@@ -79,6 +81,21 @@ class DailyCashPositionController extends Controller
             $dateFrom,
             $dateTo,
             $ignoreDate,
+        ));
+    }
+
+    public function summary(Request $request, TenantContext $tenantContext): JsonResponse
+    {
+        $this->requirePermission();
+
+        $data = $request->validate([
+            'date' => ['nullable', 'date'],
+        ]);
+
+        return response()->json($this->cashCreditSummary->build(
+            $tenantContext->tenantId(),
+            $tenantContext->branchId(),
+            (string) ($data['date'] ?? now()->toDateString()),
         ));
     }
 
