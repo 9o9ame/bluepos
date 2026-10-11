@@ -135,6 +135,77 @@ class PartyLedgerTest extends TestCase
         $this->assertTrue(JournalLine::query()->exists());
     }
 
+    public function test_ledger_supports_date_range_carry_forward_and_opening_balance_exclusion(): void
+    {
+        $this->signInOwner('ldg-range')->assertOk();
+        $coa = $this->seedCoa();
+        $this->configureEquity($coa['equity']);
+
+        $customerUlid = $this->postJson('/api/parties', [
+            'party_type' => 'customer',
+            'code' => 'C-RANGE',
+            'name' => 'Customer Range',
+            'account_type_ulid' => $coa['ar'],
+        ])->assertCreated()->json('ulid');
+
+        $opening = $this->postJson('/api/parties/'.$customerUlid.'/opening-balances?type=customer', [
+            'opening_date' => '2026-01-01',
+            'narration' => 'Opening',
+            'debit' => '100.0000',
+            'credit' => '0.0000',
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/parties/'.$customerUlid.'/opening-balances/'.$opening.'/post?type=customer')
+            ->assertOk();
+
+        $leaf = Account::query()->where('customer_id', '!=', null)->firstOrFail();
+        $entry = JournalEntry::query()->create([
+            'tenant_id' => app(TenantContext::class)->tenantId(),
+            'branch_id' => app(TenantContext::class)->branchId(),
+            'document_type' => 'journal_voucher',
+            'voucher_number' => 'JV-RANGE-1',
+            'entry_date' => '2026-02-10',
+            'description' => 'Range transaction',
+            'status' => 'posted',
+            'created_by' => app(TenantContext::class)->userId(),
+            'posted_by' => app(TenantContext::class)->userId(),
+            'posted_at' => now(),
+        ]);
+
+        JournalLine::query()->create([
+            'tenant_id' => app(TenantContext::class)->tenantId(),
+            'journal_entry_id' => $entry->id,
+            'account_id' => $leaf->id,
+            'description' => 'Range debit',
+            'debit' => '25.0000',
+            'credit' => '0.0000',
+            'sort_order' => 1,
+        ]);
+
+        $ranged = $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28'
+        )->assertOk();
+
+        $ranged->assertJsonCount(1, 'rows')
+            ->assertJsonPath('carry_forward', '100.0000')
+            ->assertJsonPath('rows.0.debit', '25.0000')
+            ->assertJsonPath('rows.0.balance', '125.0000')
+            ->assertJsonPath('totals.debit', '25.0000')
+            ->assertJsonPath('totals.closing_balance', '125.0000');
+
+        $withoutOpening = $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&include_opening_balance=0'
+        )->assertOk();
+
+        $withoutOpening->assertJsonPath('carry_forward', '0.0000')
+            ->assertJsonPath('rows.0.balance', '25.0000')
+            ->assertJsonPath('totals.closing_balance', '25.0000');
+
+        $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-03-01&date_to=2026-02-01'
+        )->assertStatus(422);
+    }
+
     public function test_ledger_tenant_isolation(): void
     {
         $this->signInOwner('ldg-a')->assertOk();
