@@ -32,6 +32,18 @@ class BusinessSettingResource extends JsonResource
             ? $this->purchaseClearingAccount
             : $this->purchaseClearingAccount()->first();
 
+        $salesRevenue = $this->relationLoaded('salesRevenueAccount')
+            ? $this->salesRevenueAccount
+            : $this->salesRevenueAccount()->first();
+
+        $inventory = $this->relationLoaded('inventoryAccount')
+            ? $this->inventoryAccount
+            : $this->inventoryAccount()->first();
+
+        $cogs = $this->relationLoaded('cogsAccount')
+            ? $this->cogsAccount
+            : $this->cogsAccount()->first();
+
         return [
             'ulid' => $this->ulid,
             'business_name' => $this->business_name,
@@ -76,6 +88,24 @@ class BusinessSettingResource extends JsonResource
                 'ulid' => $purchaseClearing->ulid,
                 'code' => $purchaseClearing->code,
                 'name' => $purchaseClearing->name,
+            ] : null,
+            'sales_revenue_account_ulid' => $salesRevenue?->ulid,
+            'sales_revenue_account' => $salesRevenue ? [
+                'ulid' => $salesRevenue->ulid,
+                'code' => $salesRevenue->code,
+                'name' => $salesRevenue->name,
+            ] : null,
+            'inventory_account_ulid' => $inventory?->ulid,
+            'inventory_account' => $inventory ? [
+                'ulid' => $inventory->ulid,
+                'code' => $inventory->code,
+                'name' => $inventory->name,
+            ] : null,
+            'cogs_account_ulid' => $cogs?->ulid,
+            'cogs_account' => $cogs ? [
+                'ulid' => $cogs->ulid,
+                'code' => $cogs->code,
+                'name' => $cogs->name,
             ] : null,
         ];
     }
