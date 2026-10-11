@@ -276,10 +276,12 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
   },
   {
     key: 'adjustments',
-    title: 'Adjustments',
+    title: 'Adjustments of Items',
     path: '/daily/adjustments',
     ribbon: 'daily-entries',
-    status: 'later',
+    status: 'ready',
+    permission: 'inventory.view',
+    entitlement: 'inventory',
   },
   {
     key: 'vouchers',
@@ -462,7 +464,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
         { id: 'purchase-invoice', label: 'Purchase Invoice', icon: ClipboardList, moduleKey: 'purchase-invoice', permission: 'purchases.view', entitlement: 'purchases', status: 'ready', tone: 'navy' },
         { id: 'purchase-order', label: 'Purchase Order', icon: FileText, moduleKey: 'purchase-order', permission: 'purchases.view', entitlement: 'purchases', status: 'ready', tone: 'gold' },
         { id: 'purchase-return', label: 'Purchase Return', icon: RotateCcw, moduleKey: 'purchase-return', permission: 'purchase_returns.view', entitlement: 'purchase_returns', status: 'ready', tone: 'orange' },
-        { id: 'adjustments', label: 'Adjustments of Items', icon: SlidersHorizontal, status: 'later', tone: 'slate' },
+        { id: 'adjustments', label: 'Adjustments of Items', icon: SlidersHorizontal, moduleKey: 'adjustments', permission: 'inventory.view', entitlement: 'inventory', status: 'ready', tone: 'slate' },
       ],
     },
     {
