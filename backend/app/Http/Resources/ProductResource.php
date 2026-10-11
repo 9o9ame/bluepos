@@ -78,11 +78,19 @@ class ProductResource extends JsonResource
                 $this->relationLoaded('stockBalances'),
                 function (): array {
                     $balance = $this->stockBalances->first();
+                    $canViewInventory = app(\App\Authz\PermissionService::class)->can('inventory.view');
+                    $retail = $this->relationLoaded('prices')
+                        ? $this->prices->first(
+                            fn ($price) => $price->is_active && $price->price_type->value === 'retail',
+                        )
+                        : null;
 
                     return [
                         'in_stock' => $balance?->quantity ?? '0.000000',
-                        'average_cost' => app(\App\Authz\PermissionService::class)->can('inventory.view')
-                            ? $balance?->average_cost
+                        'average_cost' => $canViewInventory ? $balance?->average_cost : null,
+                        'stock_value' => $canViewInventory ? $balance?->stock_value : null,
+                        'retail_stock_value' => $balance && $retail
+                            ? bcmul((string) $balance->quantity, (string) $retail->amount, 4)
                             : null,
                     ];
                 },
