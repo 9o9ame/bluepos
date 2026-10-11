@@ -53,3 +53,50 @@ export function fetchCashBook(
     `/api/cash-position/${encodeURIComponent(accountUlid)}/book${suffix}`,
   )
 }
+
+
+export type CashCreditMetric = {
+  supported: boolean
+  cash: string | null
+  credit: string | null
+}
+
+export type CashCreditPositionRow = {
+  account: {
+    ulid: string
+    code: string
+    name: string
+    account_type: string | null
+  }
+  opening: string
+  debit: string
+  credit: string
+  closing: string
+}
+
+export type CashCreditSummary = {
+  date: string
+  metrics: {
+    sales: CashCreditMetric
+    retail_sale: CashCreditMetric
+    sale_return: CashCreditMetric
+    purchase: CashCreditMetric
+    purchase_return: CashCreditMetric
+    recovery: CashCreditMetric
+    payment: CashCreditMetric
+    receivings: CashCreditMetric
+  }
+  positions: CashCreditPositionRow[]
+  totals: {
+    opening: string
+    debit: string
+    credit: string
+    closing: string
+  }
+  unsupported_reasons: Record<string, string>
+}
+
+export function fetchCashCreditSummary(date: string) {
+  const search = new URLSearchParams({ date })
+  return apiFetch<CashCreditSummary>(`/api/cash-position/summary?${search.toString()}`)
+}
