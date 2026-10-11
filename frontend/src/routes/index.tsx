@@ -20,6 +20,7 @@ import { QuotationEstimatePage } from '../pages/QuotationEstimatePage'
 import { PartiesPlaceholderPage } from '../pages/PartiesPlaceholderPage'
 import { ProductsPage } from '../pages/ProductsPage'
 import { ProductTabularViewPage } from '../pages/ProductTabularViewPage'
+import { ProductViewPage } from '../pages/ProductViewPage'
 import { PurchasesPage } from '../pages/PurchasesPage'
 import { PurchaseOrderPage } from '../pages/PurchaseOrderPage'
 import { PurchaseReturnsPage } from '../pages/PurchaseReturnsPage'
@@ -86,6 +87,9 @@ export function AppRoutes() {
           </Route>
           <Route element={<RequirePermission permission="accounting.journal.view" />}>
             <Route path="/daily/vouchers" element={<VouchersPage />} />
+          </Route>
+          <Route element={<RequirePermission permission="products.view" />}>
+            <Route path="/daily/product-view" element={<ProductViewPage />} />
           </Route>
           <Route path="/daily/ledger" element={<VendorCustomerLedgerPage />} />
           <Route element={<RequirePermission permission="accounting.journal.view" />}>
