@@ -27,6 +27,7 @@ const LEDGER_GROUP_FIELDS = [
   { value: 'entry_date', label: 'Date' },
   { value: 'user_name', label: 'User Name' },
   { value: 'area_name', label: 'Area Name' },
+  { value: 'sales_person', label: 'Sales Person Name' },
 ]
 
 const LEDGER_FILTER_FIELDS = [
@@ -35,6 +36,7 @@ const LEDGER_FILTER_FIELDS = [
   { value: 'entry_date', label: 'Date' },
   { value: 'user_name', label: 'User Name' },
   { value: 'area_name', label: 'Area Name' },
+  { value: 'sales_person', label: 'Sales Person Name' },
 ]
 
 const LEDGER_DOCUMENT_OPTIONS = [
@@ -153,6 +155,7 @@ export function VendorCustomerLedgerPage() {
   const [hideSubgroupTotals, setHideSubgroupTotals] = useState(false)
   const [resetSubgroupTotal, setResetSubgroupTotal] = useState(false)
   const [narrationColumn, setNarrationColumn] = useState('remarks')
+  const [saleMode, setSaleMode] = useState('')
   const [selectedDocumentTypes, setSelectedDocumentTypes] = useState<string[]>([])
   const [groupBy, setGroupBy] = useState('')
   const [filterBy, setFilterBy] = useState('')
@@ -206,6 +209,7 @@ export function VendorCustomerLedgerPage() {
       dateTo,
       includeOpeningBalance,
       selectedDocumentTypes.join(','),
+      saleMode,
       filterBy,
     ],
     enabled: Boolean(selected && filterBy),
@@ -214,6 +218,7 @@ export function VendorCustomerLedgerPage() {
       date_to: allDates ? undefined : dateTo,
       include_opening_balance: includeOpeningBalance,
       document_types: selectedDocumentTypes.length > 0 ? selectedDocumentTypes : undefined,
+      sale_mode: saleMode ? (saleMode as 'wholesale' | 'non_wholesale') : undefined,
       per_page: 1,
     }),
   })
@@ -311,6 +316,7 @@ export function VendorCustomerLedgerPage() {
             group_by: groupBy || undefined,
             filter_by: filterBy || undefined,
             only_for: filterBy && onlyFor ? onlyFor : undefined,
+            sale_mode: saleMode ? (saleMode as 'wholesale' | 'non_wholesale') : undefined,
           }),
         })),
       )
@@ -553,15 +559,14 @@ export function VendorCustomerLedgerPage() {
                   <div className="party-ledger-field-row party-ledger-show-only">
                     <span>Show Only:</span>
                     <UiSelect
-                      value=""
-                      disabled
+                      value={saleMode}
                       searchable={false}
                       options={[
                         { value: '', label: 'All' },
-                        { value: 'non-whole-sale', label: 'Non-Whole Sale' },
-                        { value: 'whole-sale', label: 'Whole Sale' },
+                        { value: 'non_wholesale', label: 'Non-Whole Sale' },
+                        { value: 'wholesale', label: 'Whole Sale' },
                       ]}
-                      onChange={() => undefined}
+                      onChange={setSaleMode}
                       aria-label="Show only"
                     />
                   </div>
@@ -869,7 +874,7 @@ export function VendorCustomerLedgerPage() {
                 ['DOC', 'Document'],
                 ['EntryDate', 'Date'],
                 ['MAreaName', 'Main Area Name'],
-                ['SaleMan', 'Sales Person Name'],
+                ['SaleMan', 'Sales Person Name (functional for sale-linked ledger rows)'],
                 ['UserName', 'User Name'],
               ].map(([field, label]) => (
                 <tr key={field}>
@@ -880,7 +885,7 @@ export function VendorCustomerLedgerPage() {
             </tbody>
           </table>
           <p className="party-ledger-config-note">
-            Document, Date, User Name, and Area Name are functional. Main Area, Category, and Sales Person remain reference-only until matching source data exists.
+            Document, Date, User Name, Area Name, and Sales Person are functional. Sales Person is populated for sale-linked ledger rows; Main Area and Category remain reference-only until matching source data exists.
           </p>
         </div>
       </UiModal>
