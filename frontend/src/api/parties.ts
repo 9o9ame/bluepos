@@ -361,6 +361,8 @@ export type PartyLedgerRow = {
   remarks: string | null
   line_description: string | null
   entry_description: string | null
+  salesman_name: string | null
+  sale_price_type: string | null
   group_key: string | null
   group_label: string | null
   subgroup_balance: string | null
@@ -407,6 +409,7 @@ export type PartyLedgerOptions = {
   group_by?: string
   filter_by?: string
   only_for?: string
+  sale_mode?: 'wholesale' | 'non_wholesale'
   per_page?: number
 }
 
@@ -490,6 +493,7 @@ export function fetchPartyLedger(
   if (options?.group_by) qs.set('group_by', options.group_by)
   if (options?.filter_by) qs.set('filter_by', options.filter_by)
   if (options?.only_for) qs.set('only_for', options.only_for)
+  if (options?.sale_mode) qs.set('sale_mode', options.sale_mode)
   return apiFetch<PartyLedger>(`/api/parties/${partyUlid}/ledger?${qs.toString()}`)
 }
 
