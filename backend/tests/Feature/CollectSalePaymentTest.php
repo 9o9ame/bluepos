@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Accounting\CashierTransactionLock;
 use App\Accounting\PartyLeafAccountSync;
 use App\Models\Account;
 use App\Models\BusinessSetting;
@@ -166,6 +167,12 @@ class CollectSalePaymentTest extends TestCase
         $this->signInOwner('pay-1')->assertOk();
         $accounts = $this->configureAccounts();
         $sale = $this->createSale('pay-1', '100.0000');
+
+        $this->mock(CashierTransactionLock::class, function (\Mockery\MockInterface $mock): void {
+            $mock->shouldReceive('lockCurrent')
+                ->once()
+                ->andReturn(app(\App\Tenancy\TenantContext::class)->membership());
+        });
 
         $payment = $this->postJson('/api/sales/'.$sale.'/payments', [
             'amount' => '100.0000',
