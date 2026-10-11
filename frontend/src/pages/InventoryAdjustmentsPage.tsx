@@ -577,6 +577,7 @@ export function InventoryAdjustmentsPage() {
               <UiButton
                 variant="primary"
                 onClick={newDocument}
+                disabled={!canAdjust}
               >
                 <Plus size={15} /> New
               </UiButton>
@@ -584,6 +585,7 @@ export function InventoryAdjustmentsPage() {
                 variant="success"
                 onClick={() => saveHeader.mutate()}
                 disabled={
+                  !canAdjust ||
                   Boolean(document && document.status === 'posted') ||
                   (!headerDirty && Boolean(document)) ||
                   saveHeader.isPending
