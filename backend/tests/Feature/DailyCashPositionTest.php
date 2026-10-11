@@ -469,8 +469,9 @@ class DailyCashPositionTest extends TestCase
             ->assertJsonPath('category_totals.amount', '150.0000')
             ->assertJsonPath('current_shift.ulid', $shift->ulid)
             ->assertJsonPath('current_shift.opening_cash', '100.0000')
-            ->assertJsonPath('current_shift.expected_cash', '250.0000')
-            ->assertJsonPath('close_action_available', false);
+            ->assertJsonPath('current_shift.expected_cash', '100.0000')
+            ->assertJsonPath('close_action_available', true)
+            ->assertJsonPath('close_action_reason', null);
 
         $this->assertCount(1, $response->json('open_shift_positions'));
         $this->assertNoInternalIds($response->json());
