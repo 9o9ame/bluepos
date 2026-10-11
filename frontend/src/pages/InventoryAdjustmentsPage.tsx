@@ -101,7 +101,6 @@ export function InventoryAdjustmentsPage() {
   const [qtyMinus, setQtyMinus] = useState('')
   const [lineRemarks, setLineRemarks] = useState('')
   const [selectedLineUlid, setSelectedLineUlid] = useState<string | null>(null)
-  const [lineDirty, setLineDirty] = useState(false)
   const [productPickerOpen, setProductPickerOpen] = useState(false)
 
   const productInputRef = useRef<HTMLInputElement | null>(null)
@@ -185,7 +184,6 @@ export function InventoryAdjustmentsPage() {
     setQtyMinus('')
     setLineRemarks('')
     setSelectedLineUlid(null)
-    setLineDirty(false)
     setProductPickerOpen(false)
 
     if (focusProduct) {
@@ -213,7 +211,6 @@ export function InventoryAdjustmentsPage() {
     setQtyPlus(line.qty_plus === '0.000000' ? '' : line.qty_plus)
     setQtyMinus(line.qty_minus === '0.000000' ? '' : line.qty_minus)
     setLineRemarks(line.remarks ?? '')
-    setLineDirty(false)
     setProductPickerOpen(false)
 
     window.setTimeout(() => {
@@ -226,7 +223,6 @@ export function InventoryAdjustmentsPage() {
     setProductUlid(product.ulid)
     setProductSearch(productLabel(product))
     setProductPickerOpen(false)
-    setLineDirty(true)
 
     window.setTimeout(() => {
       qtyPlusRef.current?.focus()
@@ -432,17 +428,12 @@ export function InventoryAdjustmentsPage() {
   const selectedExistingLine = (document?.lines ?? []).find((row) => row.ulid === selectedLineUlid) ?? null
 
   const entryPreview = useMemo(() => {
-    if (selectedExistingLine) {
-      return {
-        inStock: selectedExistingLine.in_stock,
-        afterStock: selectedExistingLine.after_stock,
-        price: selectedExistingLine.price,
-        amount: selectedExistingLine.amount,
-      }
-    }
-
-    const inStock = selectedEntryProduct?.sales_lookup?.in_stock ?? '0.000000'
-    const price = selectedEntryProduct?.sales_lookup?.average_cost ?? '0.0000'
+    const inStock = selectedExistingLine?.in_stock
+      ?? selectedEntryProduct?.sales_lookup?.in_stock
+      ?? '0.000000'
+    const price = selectedExistingLine?.price
+      ?? selectedEntryProduct?.sales_lookup?.average_cost
+      ?? '0.0000'
     const plus = Number.parseFloat(qtyPlus || '0') || 0
     const minus = Number.parseFloat(qtyMinus || '0') || 0
     const stock = Number.parseFloat(inStock || '0') || 0
@@ -611,8 +602,7 @@ export function InventoryAdjustmentsPage() {
                               setProductSearch(event.target.value)
                               setProductUlid('')
                               setProductPickerOpen(true)
-                              setLineDirty(true)
-                            }}
+                                                      }}
                             onKeyDown={(event) => {
                               if (event.key === 'ArrowDown') {
                                 event.preventDefault()
@@ -664,8 +654,7 @@ export function InventoryAdjustmentsPage() {
                           onChange={(event) => {
                             setQtyPlus(event.target.value)
                             if (event.target.value.trim()) setQtyMinus('')
-                            setLineDirty(true)
-                          }}
+                                                  }}
                           onKeyDown={(event) => {
                             if (event.key !== 'Enter') return
                             event.preventDefault()
@@ -684,8 +673,7 @@ export function InventoryAdjustmentsPage() {
                           onChange={(event) => {
                             setQtyMinus(event.target.value)
                             if (event.target.value.trim()) setQtyPlus('')
-                            setLineDirty(true)
-                          }}
+                                                  }}
                           onKeyDown={(event) => {
                             if (event.key !== 'Enter') return
                             event.preventDefault()
@@ -705,8 +693,7 @@ export function InventoryAdjustmentsPage() {
                           placeholder="Remarks"
                           onChange={(event) => {
                             setLineRemarks(event.target.value)
-                            setLineDirty(true)
-                          }}
+                                                  }}
                           onKeyDown={(event) => {
                             if (event.key !== 'Enter') return
                             event.preventDefault()
