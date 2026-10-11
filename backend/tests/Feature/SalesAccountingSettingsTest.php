@@ -23,18 +23,22 @@ class SalesAccountingSettingsTest extends TestCase
             ->firstOrFail();
 
         $revenue = $this->account($tenant->tenantId(), $tenant->userId(), $accountType->id, 'SALES-REV', 'Sales Revenue');
+        $taxPayable = $this->account($tenant->tenantId(), $tenant->userId(), $accountType->id, 'SALES-TAX', 'Sales Tax Payable');
         $inventory = $this->account($tenant->tenantId(), $tenant->userId(), $accountType->id, 'INV-CTRL', 'Inventory Control');
         $cogs = $this->account($tenant->tenantId(), $tenant->userId(), $accountType->id, 'COGS-CTRL', 'Cost of Goods Sold');
 
         $response = $this->patchJson('/api/settings/business', [
             'sales_revenue_account_ulid' => $revenue->ulid,
+            'sales_tax_payable_account_ulid' => $taxPayable->ulid,
             'inventory_account_ulid' => $inventory->ulid,
             'cogs_account_ulid' => $cogs->ulid,
         ])->assertOk()
             ->assertJsonPath('sales_revenue_account_ulid', $revenue->ulid)
+            ->assertJsonPath('sales_tax_payable_account_ulid', $taxPayable->ulid)
             ->assertJsonPath('inventory_account_ulid', $inventory->ulid)
             ->assertJsonPath('cogs_account_ulid', $cogs->ulid)
             ->assertJsonPath('sales_revenue_account.ulid', $revenue->ulid)
+            ->assertJsonPath('sales_tax_payable_account.ulid', $taxPayable->ulid)
             ->assertJsonPath('inventory_account.ulid', $inventory->ulid)
             ->assertJsonPath('cogs_account.ulid', $cogs->ulid);
 
@@ -43,6 +47,7 @@ class SalesAccountingSettingsTest extends TestCase
         $this->getJson('/api/settings/business')
             ->assertOk()
             ->assertJsonPath('sales_revenue_account_ulid', $revenue->ulid)
+            ->assertJsonPath('sales_tax_payable_account_ulid', $taxPayable->ulid)
             ->assertJsonPath('inventory_account_ulid', $inventory->ulid)
             ->assertJsonPath('cogs_account_ulid', $cogs->ulid);
     }
