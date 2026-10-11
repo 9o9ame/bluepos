@@ -19,6 +19,18 @@ import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import './VendorCustomerLedgerPage.css'
 
+const LEDGER_DOCUMENT_OPTIONS = [
+  { value: 'purchase_invoice', label: 'PURCHASES', enabled: true },
+  { value: 'purchase_return', label: 'PURCHASE RETURN', enabled: true },
+  { value: 'payment_voucher', label: 'PAYMENT VOUCHER', enabled: true },
+  { value: 'receiving_voucher', label: 'RECEIVING VOUCHER', enabled: true },
+  { value: 'opening_balance', label: 'OPENING VOUCHER', enabled: true },
+  { value: 'journal_voucher', label: 'JOURNAL VOUCHER', enabled: true },
+  { value: 'sale_payment', label: 'SALE PAYMENT', enabled: true },
+  { value: 'sales_invoice', label: 'SALES INVOICE', enabled: false },
+  { value: 'sales_return', label: 'SALES RETURN', enabled: false },
+] as const
+
 type LedgerPartyRow = {
   rowNo: number
   key: string
@@ -102,6 +114,9 @@ export function VendorCustomerLedgerPage() {
   const [dateTo, setDateTo] = useState(todayIso())
   const [includeOpeningBalance, setIncludeOpeningBalance] = useState(true)
   const [reverseOrder, setReverseOrder] = useState(false)
+  const [withoutHeading, setWithoutHeading] = useState(false)
+  const [showBookNumber, setShowBookNumber] = useState(false)
+  const [selectedDocumentTypes, setSelectedDocumentTypes] = useState<string[]>([])
   const [reportTypeOptionsOpen, setReportTypeOptionsOpen] = useState(false)
   const [groupFieldsOpen, setGroupFieldsOpen] = useState(false)
   const [remarksFontSize, setRemarksFontSize] = useState(9)
@@ -159,6 +174,7 @@ export function VendorCustomerLedgerPage() {
         date_from: allDates ? undefined : dateFrom,
         date_to: allDates ? undefined : dateTo,
         include_opening_balance: includeOpeningBalance,
+        document_types: selectedDocumentTypes.length > 0 ? selectedDocumentTypes : undefined,
         per_page: 100,
       })
       setPreview(data)
@@ -216,8 +232,12 @@ export function VendorCustomerLedgerPage() {
           <div className="party-ledger-options-title">
             <span>Additional Selection and Actions</span>
             <div className="party-ledger-reference-options">
-              <label title="Report-heading suppression will be enabled with printable ledger output.">
-                <input type="checkbox" disabled />
+              <label>
+                <input
+                  type="checkbox"
+                  checked={withoutHeading}
+                  onChange={(event) => setWithoutHeading(event.target.checked)}
+                />
                 <span>Without Heading</span>
               </label>
               <label title="Narration field mapping is not defined by the reference screenshots.">
@@ -308,12 +328,30 @@ export function VendorCustomerLedgerPage() {
                     </fieldset>
                   </div>
 
-                  <fieldset className="party-ledger-documents" disabled>
+                  <fieldset className="party-ledger-documents">
                     <legend>Select a Document</legend>
-                    {['PURCHASES', 'PURCHASE RETURN', 'SALES INVOICE', 'SALES RETURN', 'ADJUSTMENTS', 'LOCAL PURCHASE', 'SALES RETAIL'].map((label) => (
-                      <label key={label}>
-                        <input type="checkbox" />
-                        <span>{label}</span>
+                    {LEDGER_DOCUMENT_OPTIONS.map((option) => (
+                      <label
+                        key={option.value}
+                        title={
+                          option.enabled
+                            ? 'Filter the ledger to this posted journal source.'
+                            : 'This source has no posted ledger journal in BluePOS yet.'
+                        }
+                      >
+                        <input
+                          type="checkbox"
+                          disabled={!option.enabled}
+                          checked={option.enabled && selectedDocumentTypes.includes(option.value)}
+                          onChange={(event) => {
+                            setSelectedDocumentTypes((current) =>
+                              event.target.checked
+                                ? [...current, option.value]
+                                : current.filter((value) => value !== option.value),
+                            )
+                          }}
+                        />
+                        <span>{option.label}</span>
                       </label>
                     ))}
                   </fieldset>
@@ -437,8 +475,12 @@ export function VendorCustomerLedgerPage() {
                     <input type="checkbox" disabled />
                     <span>Each Ledger on Separate Page</span>
                   </label>
-                  <label title="Book number display will be enabled with the printable report phase.">
-                    <input type="checkbox" disabled />
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={showBookNumber}
+                      onChange={(event) => setShowBookNumber(event.target.checked)}
+                    />
                     <span>Book No Also</span>
                   </label>
                 </div>
@@ -563,17 +605,19 @@ export function VendorCustomerLedgerPage() {
       >
         {preview ? (
           <div className="party-ledger-preview">
-            <div className="party-ledger-statement-head">
-              <div className="party-ledger-statement-title">ACCOUNT STATEMENT</div>
-              <div className="party-ledger-statement-period">
-                {allDates ? 'ALL DATES' : `${dateFrom} TO ${dateTo}`}
+            {!withoutHeading ? (
+              <div className="party-ledger-statement-head">
+                <div className="party-ledger-statement-title">ACCOUNT STATEMENT</div>
+                <div className="party-ledger-statement-period">
+                  {allDates ? 'ALL DATES' : `${dateFrom} TO ${dateTo}`}
+                </div>
+                <div className="party-ledger-statement-name">{preview.account.name}</div>
+                <div className="party-ledger-statement-info">
+                  <span><strong>Code:</strong> {preview.account.code}</span>
+                  <span><strong>Address:</strong> {preview.account.address || '—'}</span>
+                </div>
               </div>
-              <div className="party-ledger-statement-name">{preview.account.name}</div>
-              <div className="party-ledger-statement-info">
-                <span><strong>Code:</strong> {preview.account.code}</span>
-                <span><strong>Address:</strong> {preview.account.address || '—'}</span>
-              </div>
-            </div>
+            ) : null}
 
             <div className="party-ledger-preview-grid">
               <table>
@@ -583,6 +627,7 @@ export function VendorCustomerLedgerPage() {
                     <th>Date</th>
                     <th>Trans#</th>
                     <th>DOC</th>
+                    {showBookNumber ? <th>Book No</th> : null}
                     <th>Narration</th>
                     <th className="is-num">Debit</th>
                     <th className="is-num">Credit</th>
@@ -591,7 +636,7 @@ export function VendorCustomerLedgerPage() {
                 </thead>
                 <tbody>
                   <tr className="party-ledger-opening-row">
-                    <td colSpan={7}>Opening Balance:</td>
+                    <td colSpan={showBookNumber ? 8 : 7}>Opening Balance:</td>
                     <td className="is-num">{preview.carry_forward}</td>
                   </tr>
                   {previewRows.map((row, index) => (
@@ -600,6 +645,7 @@ export function VendorCustomerLedgerPage() {
                       <td>{row.date}</td>
                       <td>{row.trans_no}</td>
                       <td>{row.doc}</td>
+                      {showBookNumber ? <td>{row.book_number ?? '—'}</td> : null}
                       <td style={{ fontSize: `${remarksFontSize}px` }}>{row.remarks ?? '—'}</td>
                       <td className="is-num">{row.debit}</td>
                       <td className="is-num">{row.credit}</td>
@@ -608,13 +654,13 @@ export function VendorCustomerLedgerPage() {
                   ))}
                   {previewRows.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="party-ledger-preview-empty">No posted ledger transactions in this period.</td>
+                      <td colSpan={showBookNumber ? 9 : 8} className="party-ledger-preview-empty">No posted ledger transactions in this period.</td>
                     </tr>
                   ) : null}
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={5}>Totals</td>
+                    <td colSpan={showBookNumber ? 6 : 5}>Totals</td>
                     <td className="is-num">{preview.totals.debit}</td>
                     <td className="is-num">{preview.totals.credit}</td>
                     <td className="is-num">{preview.totals.closing_balance}</td>
