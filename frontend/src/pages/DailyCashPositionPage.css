@@ -121,7 +121,7 @@
   color: var(--ui-text);
   background: var(--ui-surface-muted);
   border: 1px solid var(--ui-border);
-  border-radius: 0;
+  border-radius: var(--control-radius);
 }
 
 .dcp-summary > div:nth-child(1) strong {
@@ -172,17 +172,18 @@
   display: flex;
   flex-direction: column;
   height: calc(100% - 42px);
-  padding: 8px 10px 10px;
-  gap: 6px;
+  padding: 6px 10px 8px;
+  gap: 4px;
 }
 
 .dcp-credit-heading-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 4px 6px;
+  gap: 10px;
+  padding: 3px 6px;
   border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
   background: var(--ui-surface-subtle);
 }
 
@@ -224,7 +225,7 @@
 .dcp-metrics-grid {
   display: grid;
   grid-template-columns: repeat(8, minmax(92px, 1fr));
-  gap: 4px;
+  gap: 3px;
   max-width: 980px;
   margin: 0 auto;
   width: 100%;
@@ -233,13 +234,15 @@
 .dcp-metric-card {
   display: grid;
   grid-template-rows: auto auto auto;
-  min-height: 74px;
+  min-height: 66px;
+  overflow: hidden;
   border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
   background: var(--ui-surface);
 }
 
 .dcp-metric-card > span {
-  padding: 4px;
+  padding: 3px 4px;
   text-align: center;
   font-weight: 700;
   background: var(--ui-surface-subtle);
@@ -247,14 +250,14 @@
 }
 
 .dcp-metric-card > strong {
-  padding: 6px 5px 3px;
+  padding: 4px 5px 2px;
   text-align: right;
-  font-size: 1.15em;
+  font-size: 1.1em;
   background: var(--ui-accent-soft);
 }
 
 .dcp-metric-card > small {
-  padding: 2px 5px 4px;
+  padding: 1px 5px 3px;
   text-align: right;
   color: var(--ui-text-muted);
 }
@@ -268,40 +271,44 @@
 }
 
 .dcp-credit-band {
+  box-sizing: border-box;
   max-width: 980px;
   width: 100%;
   margin: 0 auto;
-  padding: 3px 6px;
+  padding: 2px 6px;
   text-align: center;
   font-weight: 800;
   border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
   background: var(--ui-info);
 }
 
 .dcp-credit-values {
   display: grid;
   grid-template-columns: repeat(5, minmax(92px, 1fr));
-  gap: 4px;
+  gap: 3px;
   max-width: 610px;
-  width: 100%;
+  width: 62.25%;
   margin: 0 auto;
 }
 
 .dcp-credit-values > div {
   display: grid;
   grid-template-rows: auto auto;
+  overflow: hidden;
   border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
 }
 
 .dcp-credit-values span {
-  padding: 3px 4px;
+  padding: 2px 4px;
   text-align: center;
   font-weight: 700;
   background: var(--ui-surface-subtle);
 }
 
 .dcp-credit-values strong {
-  padding: 5px;
+  padding: 3px 5px;
   text-align: right;
   background: var(--ui-surface);
 }
@@ -322,10 +329,11 @@
 }
 
 .dcp-credit-grid-title {
-  padding: 3px 6px;
+  padding: 2px 6px;
   text-align: center;
   font-weight: 800;
   border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
   background: var(--ui-surface-subtle);
 }
 
@@ -341,7 +349,9 @@
 .dcp-credit-total-row {
   display: grid;
   grid-template-columns: minmax(280px, 1fr) repeat(4, 180px);
+  overflow: hidden;
   border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
   background: var(--ui-surface-subtle);
 }
 
