@@ -10,6 +10,9 @@ use Illuminate\Support\Collection;
 
 class DayCloseOverviewBuilder
 {
+    public function __construct(
+        private readonly CashierShiftLifecycle $shiftLifecycle,
+    ) {}
     /**
      * @return array<string, mixed>
      */
@@ -79,20 +82,27 @@ class DayCloseOverviewBuilder
                     '0.0000',
                 )),
             ],
-            'current_shift' => $currentShift ? $this->shiftSnapshot($currentShift) : null,
+            'current_shift' => $currentShift
+                ? $this->shiftSnapshot($currentShift, $this->shiftLifecycle->expectedCash($currentShift))
+                : null,
             'open_shift_positions' => $branchOpenShifts
-                ->map(fn (CashierShift $shift): array => $this->shiftSnapshot($shift))
+                ->map(fn (CashierShift $shift): array => $this->shiftSnapshot(
+                    $shift,
+                    $this->shiftLifecycle->expectedCash($shift),
+                ))
                 ->values()
                 ->all(),
-            'close_action_available' => false,
-            'close_action_reason' => 'Cashier shift persistence exists, but BluePOS has no implemented open/close shift workflow yet.',
+            'close_action_available' => $currentShift !== null,
+            'close_action_reason' => $currentShift
+                ? null
+                : 'Open a cash shift before closing the day.',
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function shiftSnapshot(CashierShift $shift): array
+    private function shiftSnapshot(CashierShift $shift, ?string $expectedCash = null): array
     {
         return [
             'ulid' => $shift->ulid,
@@ -104,9 +114,11 @@ class DayCloseOverviewBuilder
             ],
             'opened_at' => $shift->opened_at?->toISOString(),
             'opening_cash' => $this->money((string) $shift->opening_cash),
-            'expected_cash' => $shift->expected_cash === null
-                ? null
-                : $this->money((string) $shift->expected_cash),
+            'expected_cash' => $expectedCash !== null
+                ? $this->money($expectedCash)
+                : ($shift->expected_cash === null
+                    ? null
+                    : $this->money((string) $shift->expected_cash)),
             'actual_cash' => $shift->actual_cash === null
                 ? null
                 : $this->money((string) $shift->actual_cash),
