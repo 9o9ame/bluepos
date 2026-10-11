@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Accounting;
 use App\Accounting\CashBookReportBuilder;
 use App\Accounting\CashCreditSummaryBuilder;
 use App\Accounting\DailyCashDashboardBuilder;
+use App\Accounting\DayCloseOverviewBuilder;
 use App\Authz\PermissionService;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
@@ -20,6 +21,7 @@ class DailyCashPositionController extends Controller
         private readonly CashBookReportBuilder $cashBook,
         private readonly CashCreditSummaryBuilder $cashCreditSummary,
         private readonly DailyCashDashboardBuilder $dashboard,
+        private readonly DayCloseOverviewBuilder $dayClose,
         private readonly PermissionService $permissions,
     ) {}
 
@@ -120,6 +122,22 @@ class DailyCashPositionController extends Controller
             $tenantContext->branchId(),
             (string) ($data['date'] ?? now()->toDateString()),
             (int) ($data['days'] ?? 7),
+        ));
+    }
+
+    public function dayClose(Request $request, TenantContext $tenantContext): JsonResponse
+    {
+        abort_unless($this->permissions->can('cash_sessions.view'), 403);
+
+        $data = $request->validate([
+            'date' => ['nullable', 'date'],
+        ]);
+
+        return response()->json($this->dayClose->build(
+            $tenantContext->tenantId(),
+            $tenantContext->branchId(),
+            $tenantContext->membershipId(),
+            (string) ($data['date'] ?? now()->toDateString()),
         ));
     }
 
