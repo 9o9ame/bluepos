@@ -26,6 +26,7 @@ import {
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
+import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
@@ -36,13 +37,20 @@ import type {
 } from '../types/inventory'
 import './InventoryAdjustmentsPage.css'
 
+function localIsoDate(date = new Date()) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function todayIso() {
-  return new Date().toISOString().slice(0, 10)
+  return localIsoDate()
 }
 
 function monthStartIso() {
   const now = new Date()
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
 }
 
 function productLabel(product: Product) {
@@ -73,6 +81,7 @@ type ProductWiseRow = {
 export function InventoryAdjustmentsPage() {
   const queryClient = useQueryClient()
   const feedback = useFeedback()
+  const { session } = useAuth()
   const { closeActiveTab } = useWorkspace()
   const canAdjust = useCan('inventory.adjust')
 
@@ -354,7 +363,7 @@ export function InventoryAdjustmentsPage() {
   }, [listQuery.data, deferredProductWiseSearch])
 
   const productWiseColumns = useMemo<PosGridColumn<ProductWiseRow>[]>(() => [
-    { key: 'number', header: 'ID', width: 115, render: (row) => row.document_number },
+    { key: 'number', header: 'Adj #', width: 115, render: (row) => row.document_number },
     { key: 'date', header: 'Date', width: 105, render: (row) => row.date },
     { key: 'account', header: 'Account', width: '24%', render: (row) => row.account },
     { key: 'product', header: 'Product', width: '32%', render: (row) => row.product },
@@ -365,6 +374,23 @@ export function InventoryAdjustmentsPage() {
   ], [])
 
   const selectedSearchDocument = (listQuery.data ?? []).find((row) => row.ulid === selectedSearchUlid) ?? null
+
+  function previewProductWise() {
+    const root = document.documentElement
+    const cleanup = () => {
+      root.removeAttribute('data-adjustment-product-print')
+      window.removeEventListener('afterprint', cleanup)
+    }
+
+    root.setAttribute('data-adjustment-product-print', 'true')
+    window.addEventListener('afterprint', cleanup, { once: true })
+    window.requestAnimationFrame(() => window.print())
+  }
+
+  const generatedAt = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date())
 
   return (
     <section className="inventory-adjustments-page">
@@ -677,6 +703,20 @@ export function InventoryAdjustmentsPage() {
 
       {tab === 'product' ? (
         <>
+          <header className="inventory-adjustments-print-header" aria-hidden="true">
+            <div>
+              <h1>Product Wise Adjustments</h1>
+              <p>
+                {session?.tenant.name ?? 'BluePOS'} · {session?.branch.code ?? '—'} — {session?.branch.name ?? '—'} · {session?.warehouse.name ?? '—'}
+              </p>
+            </div>
+            <div className="inventory-adjustments-print-meta">
+              <span>{fromDate} to {toDate}</span>
+              {deferredProductWiseSearch.trim() ? <span>Product: {deferredProductWiseSearch.trim()}</span> : null}
+              <span>Generated {generatedAt}</span>
+            </div>
+          </header>
+
           <div className="inventory-adjustments-report-toolbar">
             <label>
               <span>From Date:</span>
@@ -697,7 +737,7 @@ export function InventoryAdjustmentsPage() {
             <UiButton variant="info" onClick={() => void listQuery.refetch()}>
               <PackageSearch size={15} /> Show
             </UiButton>
-            <UiButton variant="info" onClick={() => window.print()}>
+            <UiButton variant="info" onClick={previewProductWise}>
               Preview
             </UiButton>
           </div>
