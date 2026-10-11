@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Accounting\AccountLedgerBuilder;
 use App\Accounting\PartyLeafAccountResolver;
+use App\Accounting\PartyLedgerBalanceSummary;
 use App\Accounting\PartyLeafAccountSync;
 use App\Catalog\TenantCatalog;
 use App\Exceptions\ApiException;
@@ -21,6 +22,7 @@ class PartyLedgerController extends Controller
     public function __construct(
         private readonly PartyLeafAccountResolver $resolver,
         private readonly AccountLedgerBuilder $ledger,
+        private readonly PartyLedgerBalanceSummary $balanceSummary,
         private readonly PartyLeafAccountSync $leafSync,
         private readonly TenantCatalog $catalog,
     ) {}
@@ -76,6 +78,31 @@ class PartyLedgerController extends Controller
         }
 
         return response()->json($payload);
+    }
+
+    public function balances(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'items' => ['required', 'array', 'min:1', 'max:250'],
+            'items.*.type' => ['required', 'string', Rule::in(['vendor', 'customer', 'account'])],
+            'items.*.ulid' => ['required', 'string', 'size:26'],
+        ]);
+
+        $types = collect($data['items'])->pluck('type')->unique();
+
+        if ($types->contains('vendor')) {
+            $this->authorize('viewAny', Supplier::class);
+        }
+        if ($types->contains('customer')) {
+            $this->authorize('viewAny', Customer::class);
+        }
+        if ($types->contains('account')) {
+            $this->authorize('viewAny', Account::class);
+        }
+
+        return response()->json([
+            'balances' => $this->balanceSummary->build(array_values($data['items'])),
+        ]);
     }
 
     public function ensureLeafAccount(Request $request, string $partyUlid): JsonResponse
