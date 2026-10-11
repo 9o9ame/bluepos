@@ -3,8 +3,10 @@ import { Banknote, Printer, RefreshCw } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import {
   fetchCashBook,
+  fetchCashCreditSummary,
   fetchCashPositionAccounts,
   type CashBookRow,
+  type CashCreditPositionRow,
 } from '../api/cashPosition'
 import { DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
@@ -37,6 +39,7 @@ function escapeHtml(value: string | null | undefined) {
 export function DailyCashPositionPage() {
   const { closeActiveTab } = useWorkspace()
   const feedback = useFeedback()
+  const [activeView, setActiveView] = useState<'cash-book' | 'cash-credit'>('cash-book')
   const [accountUlid, setAccountUlid] = useState('')
   const [dateFrom, setDateFrom] = useState(todayIso())
   const [dateTo, setDateTo] = useState(todayIso())
@@ -52,6 +55,12 @@ export function DailyCashPositionPage() {
       setAccountUlid(accountsQuery.data[0].ulid)
     }
   }, [accountUlid, accountsQuery.data])
+
+  const summaryQuery = useQuery({
+    queryKey: ['cash-credit-summary', dateTo],
+    enabled: activeView === 'cash-credit',
+    queryFn: () => fetchCashCreditSummary(dateTo),
+  })
 
   const reportQuery = useQuery({
     queryKey: ['cash-book', accountUlid, dateFrom, dateTo, ignoreDate],
@@ -78,6 +87,11 @@ export function DailyCashPositionPage() {
   )
 
   function refresh() {
+    if (activeView === 'cash-credit') {
+      void summaryQuery.refetch()
+      return
+    }
+
     void accountsQuery.refetch()
     if (accountUlid) void reportQuery.refetch()
   }
@@ -161,6 +175,33 @@ export function DailyCashPositionPage() {
   }
 
   const report = reportQuery.data
+  const cashCredit = summaryQuery.data
+
+  const positionColumns = useMemo<PosGridColumn<CashCreditPositionRow>[]>(
+    () => [
+      {
+        key: 'account',
+        header: 'BANK / CASH ACCOUNT',
+        render: (row) => row.account.name,
+      },
+      { key: 'opening', header: 'Opening', width: 180, align: 'right', render: (row) => money(row.opening) },
+      { key: 'debit', header: 'Debit', width: 180, align: 'right', render: (row) => money(row.debit) },
+      { key: 'credit', header: 'Credit', width: 180, align: 'right', render: (row) => money(row.credit) },
+      { key: 'closing', header: 'Closing', width: 180, align: 'right', render: (row) => money(row.closing) },
+    ],
+    [],
+  )
+
+  const metricCards = [
+    ['Sales', cashCredit?.metrics.sales],
+    ['Retail Sale', cashCredit?.metrics.retail_sale],
+    ['Sale Return', cashCredit?.metrics.sale_return],
+    ['Purchase', cashCredit?.metrics.purchase],
+    ['Pur. Return', cashCredit?.metrics.purchase_return],
+    ['Recovery', cashCredit?.metrics.recovery],
+    ['Payment', cashCredit?.metrics.payment],
+    ['Receivings', cashCredit?.metrics.receivings],
+  ] as const
 
   return (
     <DesktopPanel
@@ -168,12 +209,25 @@ export function DailyCashPositionPage() {
       title="Cash book view"
     >
       <div className="dcp-tabs" role="tablist" aria-label="Daily Cash Position views">
-        <UiButton variant="primary" icon={<Banknote size={14} />}>Cash Book</UiButton>
-        <UiButton disabled title="Cash/Credit Summary will be implemented in the next phase.">Cash/Credit Summary</UiButton>
+        <UiButton
+          variant={activeView === 'cash-book' ? 'primary' : 'default'}
+          icon={<Banknote size={14} />}
+          onClick={() => setActiveView('cash-book')}
+        >
+          Cash Book
+        </UiButton>
+        <UiButton
+          variant={activeView === 'cash-credit' ? 'primary' : 'default'}
+          onClick={() => setActiveView('cash-credit')}
+        >
+          Cash/Credit Summary
+        </UiButton>
         <UiButton disabled title="Dashboard will be implemented in a later phase.">Dash Board</UiButton>
         <UiButton disabled title="Day Close requires separate close-day workflow and controls.">Day Close</UiButton>
       </div>
 
+      {activeView === 'cash-book' ? (
+      <>
       <div className="dcp-filter-strip">
         <div className="dcp-account-block">
           <div className="dcp-account-label">Cash &amp; Bank Book</div>
@@ -251,6 +305,106 @@ export function DailyCashPositionPage() {
         <div><span>Bal</span><strong>{money(report?.summary.balance)}</strong></div>
         <div><span>Closing</span><strong>{money(report?.summary.closing)}</strong></div>
       </div>
+      </>
+      ) : (
+        <div className="dcp-credit-summary">
+          <div className="dcp-credit-heading-row">
+            <div>
+              <strong>Daily Cash / Credit Summary</strong>
+              <span>Authoritative posted accounting for {dateTo}</span>
+            </div>
+            <div className="dcp-credit-actions">
+              <label>
+                <span>Date:</span>
+                <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+              </label>
+              <UiButton variant="info" icon={<RefreshCw size={14} />} onClick={refresh}>Refresh</UiButton>
+              <UiButton variant="info" onClick={closeActiveTab}>Close</UiButton>
+            </div>
+          </div>
+
+          <div className="dcp-metrics-grid">
+            {metricCards.map(([label, metric]) => {
+              const supported = metric?.supported ?? true
+              return (
+                <div
+                  className={`dcp-metric-card${supported ? '' : ' is-unsupported'}`}
+                  key={label}
+                  title={
+                    supported
+                      ? undefined
+                      : cashCredit?.unsupported_reasons[
+                          label === 'Retail Sale'
+                            ? 'retail_sale'
+                            : label === 'Sale Return'
+                              ? 'sale_return'
+                              : 'sales'
+                        ]
+                  }
+                >
+                  <span>{label}</span>
+                  <strong>{supported ? money(metric?.cash) : 'N/A'}</strong>
+                  <small>{supported ? `Credit: ${money(metric?.credit)}` : 'Accounting source unavailable'}</small>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="dcp-credit-band">CREDIT</div>
+          <div className="dcp-credit-values">
+            {metricCards.slice(0, 5).map(([label, metric]) => (
+              <div key={`credit-${label}`}>
+                <span>{label}</span>
+                <strong>{metric?.supported ? money(metric.credit) : 'N/A'}</strong>
+              </div>
+            ))}
+          </div>
+
+          <div className="dcp-credit-filters">
+            <label>
+              <span>Filter By:</span>
+              <UiSelect
+                aria-label="Cash summary filter"
+                value=""
+                disabled
+                title="Filter semantics will be added only when matching source dimensions are implemented server-side."
+                options={[{ value: '', label: 'No Filter' }]}
+              />
+            </label>
+            <label>
+              <span>Only For:</span>
+              <UiSelect
+                aria-label="Cash summary only for"
+                value=""
+                disabled
+                title="Select a Filter By dimension first."
+                options={[{ value: '', label: 'All Values' }]}
+              />
+            </label>
+          </div>
+
+          {summaryQuery.isError ? (
+            <div className="dcp-error">Unable to load Cash/Credit Summary.</div>
+          ) : null}
+
+          <div className="dcp-credit-grid-title">Overall Bank / Cash Position For The Date: {dateTo}</div>
+          <div className="dcp-credit-grid">
+            <PosDataGrid
+              columns={positionColumns}
+              rows={cashCredit?.positions ?? []}
+              rowKey={(row) => row.account.ulid}
+              emptyMessage={summaryQuery.isFetching ? 'Loading cash / bank position…' : 'No cash or bank accounts available.'}
+            />
+          </div>
+          <div className="dcp-credit-total-row">
+            <span>Totals</span>
+            <strong>{money(cashCredit?.totals.opening)}</strong>
+            <strong>{money(cashCredit?.totals.debit)}</strong>
+            <strong>{money(cashCredit?.totals.credit)}</strong>
+            <strong>{money(cashCredit?.totals.closing)}</strong>
+          </div>
+        </div>
+      )}
     </DesktopPanel>
   )
 }
