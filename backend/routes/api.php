@@ -114,6 +114,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::get('/cash-position/accounts', [DailyCashPositionController::class, 'accounts']);
     Route::get('/cash-position/summary', [DailyCashPositionController::class, 'summary']);
     Route::get('/cash-position/dashboard', [DailyCashPositionController::class, 'dashboard']);
+    Route::get('/cash-position/day-close', [DailyCashPositionController::class, 'dayClose']);
     Route::get('/cash-position/{accountUlid}/book', [DailyCashPositionController::class, 'cashBook']);
     Route::get('/vouchers/accounts', [VoucherController::class, 'accounts']);
     Route::get('/vouchers/summary', [VoucherController::class, 'summary']);
