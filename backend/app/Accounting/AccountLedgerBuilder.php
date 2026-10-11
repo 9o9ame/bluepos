@@ -63,9 +63,13 @@ class AccountLedgerBuilder
             ->leftJoin('users', 'users.id', '=', 'journal_entries.created_by')
             ->leftJoin('sales', function ($join): void {
                 $join->on('sales.id', '=', 'journal_entries.document_id')
+                    ->on('sales.tenant_id', '=', 'journal_entries.tenant_id')
                     ->where('journal_entries.document_type', '=', 'sale_payment');
             })
-            ->leftJoin('party_profiles as salesman_profiles', 'salesman_profiles.id', '=', 'sales.salesman_party_profile_id')
+            ->leftJoin('party_profiles as salesman_profiles', function ($join): void {
+                $join->on('salesman_profiles.id', '=', 'sales.salesman_party_profile_id')
+                    ->on('salesman_profiles.tenant_id', '=', 'journal_entries.tenant_id');
+            })
             ->where('journal_lines.account_id', $leaf->id)
             ->where('journal_lines.tenant_id', $leaf->tenant_id)
             ->where('journal_entries.tenant_id', $leaf->tenant_id)
