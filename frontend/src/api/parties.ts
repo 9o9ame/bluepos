@@ -430,6 +430,44 @@ export async function fetchPartyLedgerBalances(items: PartyLedgerBalanceItem[]) 
   return balances
 }
 
+export async function fetchPartyLedgerAll(
+  partyUlid: string,
+  type: PartyTypeApi,
+  options?: PartyLedgerOptions,
+): Promise<PartyLedger> {
+  const first = await fetchPartyLedger(partyUlid, type, 1, {
+    ...options,
+    per_page: 100,
+  })
+
+  if (first.pagination.last_page <= 1) {
+    return first
+  }
+
+  const remaining = await Promise.all(
+    Array.from({ length: first.pagination.last_page - 1 }, (_, index) =>
+      fetchPartyLedger(partyUlid, type, index + 2, {
+        ...options,
+        per_page: 100,
+      }),
+    ),
+  )
+
+  return {
+    ...first,
+    rows: [
+      ...first.rows,
+      ...remaining.flatMap((page) => page.rows),
+    ],
+    pagination: {
+      ...first.pagination,
+      page: 1,
+      per_page: first.pagination.total,
+      last_page: 1,
+    },
+  }
+}
+
 export function fetchPartyLedger(
   partyUlid: string,
   type: PartyTypeApi,
