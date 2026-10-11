@@ -134,6 +134,8 @@ export function VendorCustomerLedgerPage() {
   const [withoutHeading, setWithoutHeading] = useState(false)
   const [showBookNumber, setShowBookNumber] = useState(false)
   const [hideSubgroupTotals, setHideSubgroupTotals] = useState(false)
+  const [resetSubgroupTotal, setResetSubgroupTotal] = useState(false)
+  const [narrationColumn, setNarrationColumn] = useState('remarks')
   const [selectedDocumentTypes, setSelectedDocumentTypes] = useState<string[]>([])
   const [groupBy, setGroupBy] = useState('')
   const [filterBy, setFilterBy] = useState('')
@@ -346,18 +348,17 @@ export function VendorCustomerLedgerPage() {
                   <div className="party-ledger-field-row">
                     <span>Narration Col:</span>
                     <UiSelect
-                      value="remarks"
-                      disabled
+                      value={narrationColumn}
                       searchable={false}
                       options={[
                         { value: 'remarks', label: 'Remarks' },
-                        { value: 'detail1', label: 'Detail1' },
-                        { value: 'detail2', label: 'Detail2' },
-                        { value: 'detail3', label: 'Detail3' },
-                        { value: 'detailall', label: 'DetailALL' },
                         { value: 'onlydesc', label: 'OnlyDesc' },
+                        { value: 'detail1', label: 'Detail1', disabled: true, title: 'No separate Detail1 field exists in the current journal model.' },
+                        { value: 'detail2', label: 'Detail2', disabled: true, title: 'No separate Detail2 field exists in the current journal model.' },
+                        { value: 'detail3', label: 'Detail3', disabled: true, title: 'No separate Detail3 field exists in the current journal model.' },
+                        { value: 'detailall', label: 'DetailALL', disabled: true, title: 'Separate detail fields do not exist in the current journal model.' },
                       ]}
-                      onChange={() => undefined}
+                      onChange={setNarrationColumn}
                       aria-label="Narration column"
                     />
                   </div>
@@ -561,8 +562,13 @@ export function VendorCustomerLedgerPage() {
                     />
                     <span>Don't Show Total (Subgroup)</span>
                   </label>
-                  <label title="Subgroup reset semantics are not defined by the reference screenshots.">
-                    <input type="checkbox" disabled />
+                  <label title={groupBy ? 'Reset the displayed running balance at each subgroup boundary.' : 'Select Group by first.'}>
+                    <input
+                      type="checkbox"
+                      disabled={!groupBy}
+                      checked={resetSubgroupTotal}
+                      onChange={(event) => setResetSubgroupTotal(event.target.checked)}
+                    />
                     <span>Reset Total (Subgroup)</span>
                   </label>
                   <label title="Separate-page behavior will be enabled with printable multi-account reports.">
@@ -756,10 +762,18 @@ export function VendorCustomerLedgerPage() {
                           <td>{row.trans_no}</td>
                           <td>{row.doc}</td>
                           {showBookNumber ? <td>{row.book_number ?? '—'}</td> : null}
-                          <td style={{ fontSize: `${remarksFontSize}px` }}>{row.remarks ?? '—'}</td>
+                          <td style={{ fontSize: `${remarksFontSize}px` }}>
+                            {narrationColumn === 'onlydesc'
+                              ? row.entry_description ?? '—'
+                              : row.remarks ?? '—'}
+                          </td>
                           <td className="is-num">{row.debit}</td>
                           <td className="is-num">{row.credit}</td>
-                          <td className="is-num">{row.balance}</td>
+                          <td className="is-num">
+                            {resetSubgroupTotal && groupBy
+                              ? row.subgroup_balance ?? row.balance
+                              : row.balance}
+                          </td>
                         </tr>
                       </Fragment>
                     )
