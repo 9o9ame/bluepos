@@ -373,8 +373,13 @@ export function VendorCustomerLedgerPage() {
           </div>`
         : ''
 
+      const pageBreak = eachLedgerSeparatePage && ledgerIndex > 0
+        ? '<div class="print-page-break" aria-hidden="true"></div>'
+        : ''
+
       return `
-        <section class="ledger-section ${eachLedgerSeparatePage && ledgerIndex > 0 ? 'page-start' : ''}">
+        ${pageBreak}
+        <section class="ledger-section">
           ${withoutHeading ? '' : `
             <header>
               <h1>ACCOUNT STATEMENT</h1>
@@ -411,9 +416,13 @@ export function VendorCustomerLedgerPage() {
     @page { size: A4 landscape; margin: 10mm; }
     body { font-family: Arial, sans-serif; color: #111; margin: 0; font-size: 11px; }
     .ledger-section { margin: 0 0 18px; }
-    .page-start { break-before: page; page-break-before: always; }
+    .print-page-break { display: block; height: 0; margin: 0; padding: 0; }
     @media print {
-      .page-start { break-before: page !important; page-break-before: always !important; }
+      .print-page-break {
+        display: block !important;
+        break-before: page !important;
+        page-break-before: always !important;
+      }
     }
     header { margin-bottom: 10px; }
     h1 { text-align: center; font-size: 20px; margin: 0 0 4px; }
