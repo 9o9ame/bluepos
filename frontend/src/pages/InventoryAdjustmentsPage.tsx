@@ -564,12 +564,16 @@ export function InventoryAdjustmentsPage() {
                   options={[{ value: 'stock_adjustment', label: 'Stock Adjustment' }]}
                   onChange={() => undefined}
                   searchable={false}
-                  disabled
                 />
               </label>
               <label>
                 <span>Net Amount:</span>
-                <input value={document?.net_amount ?? '0.0000'} readOnly />
+                <input
+                  className="inventory-adjustments-net-amount"
+                  value={document?.net_amount ?? '0.0000'}
+                  readOnly
+                  aria-readonly="true"
+                />
               </label>
             </div>
           </div>
