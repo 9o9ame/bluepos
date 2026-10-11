@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\BusinessSettingController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DeviceController;
+use App\Http\Controllers\Api\Inventory\InventoryAdjustmentController;
 use App\Http\Controllers\Api\Inventory\OpeningBalanceController;
 use App\Http\Controllers\Api\Inventory\StockController;
 use App\Http\Controllers\Api\Inventory\StockTakeController;
@@ -275,6 +276,17 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::middleware('entitled:inventory')->group(function () {
         Route::get('/inventory/stock', [StockController::class, 'index']);
+
+        Route::get('/inventory/adjustments/accounts', [InventoryAdjustmentController::class, 'accounts']);
+        Route::get('/inventory/adjustments', [InventoryAdjustmentController::class, 'index']);
+        Route::post('/inventory/adjustments', [InventoryAdjustmentController::class, 'store']);
+        Route::get('/inventory/adjustments/{adjustmentUlid}', [InventoryAdjustmentController::class, 'show']);
+        Route::patch('/inventory/adjustments/{adjustmentUlid}', [InventoryAdjustmentController::class, 'update']);
+        Route::delete('/inventory/adjustments/{adjustmentUlid}', [InventoryAdjustmentController::class, 'destroy']);
+        Route::post('/inventory/adjustments/{adjustmentUlid}/lines', [InventoryAdjustmentController::class, 'storeLine']);
+        Route::patch('/inventory/adjustments/{adjustmentUlid}/lines/{lineUlid}', [InventoryAdjustmentController::class, 'updateLine']);
+        Route::delete('/inventory/adjustments/{adjustmentUlid}/lines/{lineUlid}', [InventoryAdjustmentController::class, 'destroyLine']);
+        Route::post('/inventory/adjustments/{adjustmentUlid}/post', [InventoryAdjustmentController::class, 'post']);
 
         Route::get('/inventory/opening-balances', [OpeningBalanceController::class, 'index']);
         Route::post('/inventory/opening-balances', [OpeningBalanceController::class, 'store']);
