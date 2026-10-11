@@ -172,21 +172,26 @@ export function VendorCustomerLedgerPage() {
   const previewRows = reverseOrder ? [...(preview?.rows ?? [])].reverse() : preview?.rows ?? []
 
   return (
-    <DesktopPanel className="party-ledger-page" title="Vendor / Customer Ledger Options" flush>
+    <DesktopPanel
+      className="party-ledger-page"
+      title={
+        <div className="party-ledger-panel-title">
+          <span>Vendor / Customer Ledger Options</span>
+          <label title="Balance column requires a future summary endpoint; disabled to avoid N+1 ledger requests.">
+            <input
+              type="checkbox"
+              checked={showBalances}
+              disabled
+              onChange={(event) => setShowBalances(event.target.checked)}
+            />
+            <span>Show Balances</span>
+          </label>
+        </div>
+      }
+      flush
+    >
       <div className="party-ledger-layout">
         <section className="party-ledger-accounts" aria-label="Vendor Customer Accounts">
-          <div className="party-ledger-grid-toolbar">
-            <label title="Balance column requires a future summary endpoint; disabled to avoid N+1 ledger requests.">
-              <input
-                type="checkbox"
-                checked={showBalances}
-                disabled
-                onChange={(event) => setShowBalances(event.target.checked)}
-              />
-              <span>Show Balances</span>
-            </label>
-          </div>
-
           <div className="party-ledger-grid-shell">
             <PosDataGrid
               columns={columns}
@@ -345,68 +350,70 @@ export function VendorCustomerLedgerPage() {
                   </label>
                 </div>
 
-                <div className="party-ledger-field-row">
-                  <span>Select a Ledger Type:</span>
-                  <div className="party-ledger-select-plus">
-                    <UiSelect
-                      value="summary"
-                      searchable={false}
-                      options={[
-                        { value: 'summary', label: 'Summary Ledger' },
-                        { value: 'above', label: 'Above List View', disabled: true, title: 'Reference layout semantics not yet mapped.' },
-                        { value: 'pos', label: 'POS Ledger', disabled: true, title: 'Reference layout semantics not yet mapped.' },
-                      ]}
-                      onChange={() => undefined}
-                      aria-label="Ledger type"
-                    />
-                    <UiButton
-                      variant="primary"
-                      className="party-ledger-plus-button"
-                      title="Report Type On / Off Options"
-                      aria-label="Report Type On / Off Options"
-                      onClick={() => setReportTypeOptionsOpen(true)}
-                    >
-                      <Plus size={14} />
-                    </UiButton>
+                <div className="party-ledger-report-fields">
+                  <div className="party-ledger-field-row">
+                    <span>Select a Ledger Type:</span>
+                    <div className="party-ledger-select-plus">
+                      <UiSelect
+                        value="summary"
+                        searchable={false}
+                        options={[
+                          { value: 'summary', label: 'Summary Ledger' },
+                          { value: 'above', label: 'Above List View', disabled: true, title: 'Reference layout semantics not yet mapped.' },
+                          { value: 'pos', label: 'POS Ledger', disabled: true, title: 'Reference layout semantics not yet mapped.' },
+                        ]}
+                        onChange={() => undefined}
+                        aria-label="Ledger type"
+                      />
+                      <UiButton
+                        variant="primary"
+                        className="party-ledger-plus-button"
+                        title="Report Type On / Off Options"
+                        aria-label="Report Type On / Off Options"
+                        onClick={() => setReportTypeOptionsOpen(true)}
+                      >
+                        <Plus size={14} />
+                      </UiButton>
+                    </div>
                   </div>
-                </div>
 
-                <div className="party-ledger-field-row">
-                  <span>Group by:</span>
-                  <div className="party-ledger-select-plus">
-                    <UiSelect
-                      value=""
-                      disabled
-                      searchable={false}
-                      options={[{ value: '', label: 'Not mapped yet' }]}
-                      onChange={() => undefined}
-                      aria-label="Group by"
-                    />
-                    <UiButton
-                      variant="primary"
-                      className="party-ledger-plus-button"
-                      title="Ledger Group Fields"
-                      aria-label="Ledger Group Fields"
-                      onClick={() => setGroupFieldsOpen(true)}
-                    >
-                      <Plus size={14} />
-                    </UiButton>
+                  <div className="party-ledger-field-row">
+                    <span>Group by:</span>
+                    <div className="party-ledger-select-plus">
+                      <UiSelect
+                        value=""
+                        disabled
+                        searchable={false}
+                        options={[{ value: '', label: 'Not mapped yet' }]}
+                        onChange={() => undefined}
+                        aria-label="Group by"
+                      />
+                      <UiButton
+                        variant="primary"
+                        className="party-ledger-plus-button"
+                        title="Ledger Group Fields"
+                        aria-label="Ledger Group Fields"
+                        onClick={() => setGroupFieldsOpen(true)}
+                      >
+                        <Plus size={14} />
+                      </UiButton>
+                    </div>
                   </div>
-                </div>
 
-                {['Filter By:', 'Only For:'].map((label) => (
-                  <div className="party-ledger-field-row" key={label}>
-                    <span>{label}</span>
-                    <UiSelect
-                      value=""
-                      disabled
-                      searchable={false}
-                      options={[{ value: '', label: 'Not mapped yet' }]}
-                      onChange={() => undefined}
-                      aria-label={label}
-                    />
-                  </div>
-                ))}
+                  {['Filter By:', 'Only For:'].map((label) => (
+                    <div className="party-ledger-field-row" key={label}>
+                      <span>{label}</span>
+                      <UiSelect
+                        value=""
+                        disabled
+                        searchable={false}
+                        options={[{ value: '', label: 'Not mapped yet' }]}
+                        onChange={() => undefined}
+                        aria-label={label}
+                      />
+                    </div>
+                  ))}
+                </div>
 
                 <div className="party-ledger-bottom-checks">
                   <label>
