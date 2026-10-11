@@ -145,6 +145,7 @@ class PartyLedgerTest extends TestCase
             'party_type' => 'customer',
             'code' => 'C-RANGE',
             'name' => 'Customer Range',
+            'area' => 'RYK',
             'account_type_ulid' => $coa['ar'],
         ])->assertCreated()->json('ulid');
 
@@ -203,8 +204,37 @@ class PartyLedgerTest extends TestCase
             ->assertJsonPath('rows.0.doc', 'JOURNAL VOUCHER')
             ->assertJsonPath('rows.0.book_number', 'BOOK-7');
 
+        $grouped = $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&group_by=document'
+        )->assertOk();
+
+        $grouped->assertJsonPath('account.area', 'RYK')
+            ->assertJsonPath('rows.0.group_key', 'journal_voucher')
+            ->assertJsonPath('rows.0.group_label', 'JOURNAL VOUCHER');
+
+        $areaFiltered = $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&filter_by=area_name&only_for=RYK'
+        )->assertOk();
+
+        $areaFiltered->assertJsonCount(1, 'rows')
+            ->assertJsonPath('filter_options.area_name.0.value', 'RYK')
+            ->assertJsonPath('filter_options.area_name.0.label', 'RYK');
+
+        $noMatch = $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&filter_by=entry_date&only_for=2026-02-11'
+        )->assertOk();
+
+        $noMatch->assertJsonCount(0, 'rows')
+            ->assertJsonPath('totals.debit', '0.0000');
+
+        $this->assertNoInternalIds($grouped->json());
+
         $this->getJson(
             '/api/parties/'.$customerUlid.'/ledger?type=customer&document_types%5B0%5D=sales_invoice'
+        )->assertStatus(422);
+
+        $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&group_by=unsupported'
         )->assertStatus(422);
 
         $withoutOpening = $this->getJson(
