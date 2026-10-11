@@ -2,6 +2,7 @@
 
 namespace App\Actions\Sales;
 
+use App\Accounting\CashierTransactionLock;
 use App\Accounting\OpeningBalancePoster;
 use App\Accounting\PartyLeafAccountSync;
 use App\Enums\JournalStatus;
@@ -28,6 +29,7 @@ class RefundSaleReturnAction
         private readonly TenantContext $tenantContext,
         private readonly OpeningBalancePoster $poster,
         private readonly PartyLeafAccountSync $partyAccounts,
+        private readonly CashierTransactionLock $cashierLock,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -79,6 +81,8 @@ class RefundSaleReturnAction
             if ($existing) {
                 return $existing->load('account');
             }
+
+            $this->cashierLock->lockCurrent();
 
             $document = SaleReturn::query()
                 ->forTenant($tenantId)
