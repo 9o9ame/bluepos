@@ -10,6 +10,7 @@ import { BusinessSettingsPage } from '../pages/BusinessSettingsPage'
 import { CategoriesPage } from '../pages/CategoriesPage'
 import { ChangePasswordPage } from '../pages/ChangePasswordPage'
 import { DevicesPage } from '../pages/DevicesPage'
+import { DailyCashPositionPage } from '../pages/DailyCashPositionPage'
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
 import { HelpAboutPage } from '../pages/HelpAboutPage'
 import { LoginPage } from '../pages/LoginPage'
@@ -87,6 +88,9 @@ export function AppRoutes() {
             <Route path="/daily/vouchers" element={<VouchersPage />} />
           </Route>
           <Route path="/daily/ledger" element={<VendorCustomerLedgerPage />} />
+          <Route element={<RequirePermission permission="accounting.journal.view" />}>
+            <Route path="/daily/cash" element={<DailyCashPositionPage />} />
+          </Route>
           <Route path="/reports" element={<ReportsPlaceholderPage />} />
           <Route path="/help/about" element={<HelpAboutPage />} />
           <Route path="/administration/account" element={<AccountPage />} />
