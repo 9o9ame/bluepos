@@ -139,7 +139,34 @@ class RefundSaleReturnAction
                 ]);
             }
 
-            [$debitAccount, $creditAccount] = $this->resolveAccounts($document, $method);
+            if ($method === SalePaymentMethod::Credit) {
+                $receivable = $this->receivableAccount($document);
+
+                $refund = SaleReturnRefund::query()->create([
+                    'tenant_id' => $tenantId,
+                    'branch_id' => $document->branch_id,
+                    'sale_return_id' => $document->id,
+                    'account_id' => $receivable->id,
+                    'method' => $method,
+                    'reference' => $data['reference'] ?? null,
+                    'amount' => $amount,
+                    'journal_entry_ulid' => null,
+                    'idempotency_key' => $idempotencyKey,
+                    'created_by' => $this->tenantContext->userId(),
+                ]);
+
+                $this->audit->record('SALE_RETURN_REFUNDED', [
+                    'resource_type' => 'sale_return_refund',
+                    'resource_ulid' => $refund->ulid,
+                    'sale_return_ulid' => $document->ulid,
+                    'amount' => $amount,
+                    'method' => $method->value,
+                ]);
+
+                return $refund->load('account');
+            }
+
+            [$debitAccount, $creditAccount] = $this->resolveAccounts($document);
 
             $journal = JournalEntry::query()->create([
                 'tenant_id' => $tenantId,
@@ -278,55 +305,16 @@ class RefundSaleReturnAction
     /**
      * @return array{0:Account,1:Account}
      */
-    private function resolveAccounts(
-        SaleReturn $document,
-        SalePaymentMethod $method,
-    ): array {
+    /**
+     * @return array{0:Account,1:Account}
+     */
+    private function resolveAccounts(SaleReturn $document): array
+    {
         $tenantId = $this->tenantContext->tenantId();
 
         $settings = BusinessSetting::query()
             ->forTenant($tenantId)
             ->first();
-
-        $clearing = $this->clearingAccount($settings, $tenantId);
-
-        if ($method === SalePaymentMethod::Credit) {
-            $customerId = $document->customer_id === null
-                ? null
-                : (int) $document->customer_id;
-
-            if ($customerId === null) {
-                throw new ApiException(
-                    'CREDIT_REQUIRES_CUSTOMER',
-                    'An on-account refund needs the sales return to have a customer.',
-                    422,
-                );
-            }
-
-            $customer = Customer::query()
-                ->forTenant($tenantId)
-                ->whereKey($customerId)
-                ->first();
-
-            if (! $customer || ! $customer->is_active) {
-                throw new ApiException(
-                    'CREDIT_REQUIRES_CUSTOMER',
-                    'This customer is missing or inactive.',
-                    422,
-                );
-            }
-
-            $receivable = Account::query()
-                ->forTenant($tenantId)
-                ->where('customer_id', $customer->id)
-                ->first();
-
-            if (! $receivable) {
-                $receivable = $this->partyAccounts->syncCustomer($customer);
-            }
-
-            return [$clearing, $receivable];
-        }
 
         $accountId = $settings?->default_cash_account_id;
 
@@ -351,7 +339,61 @@ class RefundSaleReturnAction
             );
         }
 
-        return [$clearing, $cash];
+        return [
+            $document->customer_id !== null
+                ? $this->receivableAccount($document)
+                : $this->clearingAccount($settings, $tenantId),
+            $cash,
+        ];
+    }
+
+    private function receivableAccount(SaleReturn $document): Account
+    {
+        $tenantId = $this->tenantContext->tenantId();
+        $customerId = $document->customer_id === null
+            ? null
+            : (int) $document->customer_id;
+
+        if ($customerId === null) {
+            throw new ApiException(
+                'CREDIT_REQUIRES_CUSTOMER',
+                'An on-account refund requires the sales return to have a customer.',
+                422,
+            );
+        }
+
+        $customer = Customer::query()
+            ->forTenant($tenantId)
+            ->whereKey($customerId)
+            ->with('accountType')
+            ->first();
+
+        if (! $customer || ! $customer->is_active || ! $customer->accountType?->is_receivable) {
+            throw new ApiException(
+                'CUSTOMER_RECEIVABLE_ACCOUNT_REQUIRED',
+                'Configure the customer with an active Accounts Receivable account type.',
+                422,
+            );
+        }
+
+        $receivable = Account::query()
+            ->forTenant($tenantId)
+            ->where('customer_id', $customer->id)
+            ->first();
+
+        if (! $receivable) {
+            $receivable = $this->partyAccounts->syncCustomer($customer);
+        }
+
+        if (! $receivable->is_active) {
+            throw new ApiException(
+                'CUSTOMER_RECEIVABLE_ACCOUNT_REQUIRED',
+                'The customer receivable account is inactive.',
+                422,
+            );
+        }
+
+        return $receivable;
     }
 
     private function clearingAccount(
