@@ -357,6 +357,7 @@ export type PartyLedgerRow = {
   trans_no: string
   date: string
   doc: string
+  book_number: string | null
   remarks: string | null
   debit: string
   credit: string
@@ -390,6 +391,7 @@ export type PartyLedgerOptions = {
   date_from?: string
   date_to?: string
   include_opening_balance?: boolean
+  document_types?: string[]
   per_page?: number
 }
 
@@ -408,6 +410,9 @@ export function fetchPartyLedger(
   if (options?.date_to) qs.set('date_to', options.date_to)
   if (options?.include_opening_balance !== undefined) {
     qs.set('include_opening_balance', options.include_opening_balance ? '1' : '0')
+  }
+  for (const documentType of options?.document_types ?? []) {
+    qs.append('document_types[]', documentType)
   }
   return apiFetch<PartyLedger>(`/api/parties/${partyUlid}/ledger?${qs.toString()}`)
 }
