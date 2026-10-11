@@ -38,16 +38,39 @@ class ProductController extends Controller
         $query = $this->filteredProductsQuery($request, $tenantContext);
 
         $stockTotal = null;
+        $stockValueTotal = null;
+        $retailStockValueTotal = null;
+
         if ($request->boolean('sales_lookup')) {
-            $stockTotal = (string) StockBalance::query()
-                ->where('tenant_id', $tenantContext->tenantId())
-                ->where('branch_id', $tenantContext->branchId())
-                ->where('warehouse_id', $tenantContext->warehouseId())
+            $productIds = (clone $query)->reorder()->select('products.id');
+            $balances = StockBalance::query()
+                ->where('stock_balances.tenant_id', $tenantContext->tenantId())
+                ->where('stock_balances.branch_id', $tenantContext->branchId())
+                ->where('stock_balances.warehouse_id', $tenantContext->warehouseId())
+                ->whereIn('stock_balances.product_id', $productIds);
+
+            $stockTotal = (string) (clone $balances)->sum('stock_balances.quantity');
+
+            if (app(\App\Authz\PermissionService::class)->can('inventory.view')) {
+                $stockValueTotal = (string) (clone $balances)->sum('stock_balances.stock_value');
+            }
+
+            $retailStockValueTotal = (string) StockBalance::query()
+                ->join('product_prices', function ($join): void {
+                    $join->on('product_prices.product_id', '=', 'stock_balances.product_id')
+                        ->on('product_prices.tenant_id', '=', 'stock_balances.tenant_id');
+                })
+                ->where('stock_balances.tenant_id', $tenantContext->tenantId())
+                ->where('stock_balances.branch_id', $tenantContext->branchId())
+                ->where('stock_balances.warehouse_id', $tenantContext->warehouseId())
+                ->where('product_prices.price_type', 'retail')
+                ->where('product_prices.is_active', true)
                 ->whereIn(
-                    'product_id',
+                    'stock_balances.product_id',
                     (clone $query)->reorder()->select('products.id'),
                 )
-                ->sum('quantity');
+                ->selectRaw('COALESCE(SUM(stock_balances.quantity * product_prices.amount), 0) AS total')
+                ->value('total');
         }
 
         $page = $query->paginate($perPage);
@@ -60,6 +83,8 @@ class ProductController extends Controller
                 'total' => $page->total(),
                 'last_page' => $page->lastPage(),
                 'stock_total' => $stockTotal,
+                'stock_value_total' => $stockValueTotal,
+                'retail_stock_value_total' => $retailStockValueTotal,
             ],
         ];
     }
