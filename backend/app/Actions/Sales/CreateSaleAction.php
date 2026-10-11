@@ -46,6 +46,7 @@ class CreateSaleAction
         private readonly TenantCatalog $catalog,
         private readonly ValidateAppliedSaleOffersAction $validateOffers,
         private readonly PostStockMovementAction $postMovement,
+        private readonly PostSaleAccountingAction $postAccounting,
         private readonly CollectSalePaymentAction $collectPayment,
         private readonly AuditLogger $audit,
     ) {}
@@ -185,6 +186,8 @@ class CreateSaleAction
                 ->forTenant($tenantId)
                 ->where('idempotency_key', $idempotencyKey)
                 ->firstOrFail();
+
+            $this->postAccounting->execute($sale);
 
             $initialPayment = $data['initial_payment'] ?? null;
             if (is_array($initialPayment)) {
