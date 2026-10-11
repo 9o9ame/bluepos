@@ -129,6 +129,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::get('/parties', [PartyController::class, 'index']);
     Route::post('/parties', [PartyController::class, 'store']);
+    Route::post('/parties/ledger-balances', [PartyLedgerController::class, 'balances']);
     Route::patch('/parties/bulk', [PartyBulkController::class, 'update']);
     Route::get('/parties/excel-template', [PartyBulkController::class, 'template']);
     Route::post('/parties/excel/preview', [PartyBulkController::class, 'preview']);
