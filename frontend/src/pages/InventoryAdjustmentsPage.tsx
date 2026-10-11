@@ -155,6 +155,32 @@ export function InventoryAdjustmentsPage() {
   const entryEnabled = canAdjust && (!document || document.status === 'draft')
 
   useEffect(() => {
+    if (!productPickerOpen) return
+
+    const handleOutsidePointer = (event: MouseEvent) => {
+      const target = event.target
+      if (!(target instanceof Node)) return
+
+      if (productAnchorRef.current?.contains(target)) return
+
+      if (
+        target instanceof Element
+        && target.closest('.sales-pos-product-results-grid')
+      ) {
+        return
+      }
+
+      setProductPickerOpen(false)
+    }
+
+    window.document.addEventListener('mousedown', handleOutsidePointer)
+
+    return () => {
+      window.document.removeEventListener('mousedown', handleOutsidePointer)
+    }
+  }, [productPickerOpen])
+
+  useEffect(() => {
     if (!document) return
     setAdjustmentDate(document.adjustment_date)
     setAccountUlid(document.account?.ulid ?? '')
@@ -594,7 +620,9 @@ export function InventoryAdjustmentsPage() {
                             autoComplete="off"
                             placeholder="Search product name, number, SKU or barcode"
                             onFocus={() => {
-                              if (productSearch.trim()) setProductPickerOpen(true)
+                              if (productSearch.trim() || (productsQuery.data?.data?.length ?? 0) > 0) {
+                                setProductPickerOpen(true)
+                              }
                             }}
                             onChange={(event) => {
                               setProductSearch(event.target.value)
