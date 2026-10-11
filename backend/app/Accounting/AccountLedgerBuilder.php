@@ -34,7 +34,10 @@ class AccountLedgerBuilder
         $page = max(1, $page);
         $perPage = max(1, min(100, $perPage));
 
-        $leaf->loadMissing('accountType');
+        $leaf->loadMissing(['accountType', 'supplier', 'customer']);
+        $accountArea = $leaf->area
+            ?? $leaf->supplier?->area
+            ?? $leaf->customer?->area;
 
         $lines = JournalLine::query()
             ->select([
@@ -72,7 +75,7 @@ class AccountLedgerBuilder
             ->orderBy('journal_lines.ulid')
             ->get();
 
-        $filterOptions = $this->filterOptions($lines, $leaf);
+        $filterOptions = $this->filterOptions($lines, $leaf, $accountArea);
 
         $runningBalance = '0.0000';
         $periodDebit = '0.0000';
@@ -81,7 +84,7 @@ class AccountLedgerBuilder
         $openingCarry = '0.0000';
 
         foreach ($lines as $line) {
-            if (! $this->matchesFilter($line, $leaf, $filterBy, $onlyFor)) {
+            if (! $this->matchesFilter($line, $accountArea, $filterBy, $onlyFor)) {
                 continue;
             }
 
@@ -115,8 +118,8 @@ class AccountLedgerBuilder
                 'doc' => $this->documentLabel((string) $line->document_type),
                 'book_number' => $line->book_number,
                 'remarks' => $line->line_description ?: $line->entry_description,
-                'group_key' => $this->groupKey($line, $leaf, $groupBy),
-                'group_label' => $this->groupLabel($line, $leaf, $groupBy),
+                'group_key' => $this->groupKey($line, $accountArea, $groupBy),
+                'group_label' => $this->groupLabel($line, $accountArea, $groupBy),
                 'debit' => $debit,
                 'credit' => $credit,
                 'balance' => $this->balances->money($runningBalance),
@@ -144,7 +147,7 @@ class AccountLedgerBuilder
                 'code' => $leaf->code,
                 'name' => $leaf->name,
                 'address' => $leaf->address,
-                'area' => $leaf->area,
+                'area' => $accountArea,
             ],
             'rows' => array_values($pageRows),
             'filter_options' => $filterOptions,
@@ -163,7 +166,7 @@ class AccountLedgerBuilder
         ];
     }
 
-    private function matchesFilter(object $line, Account $leaf, ?string $filterBy, ?string $onlyFor): bool
+    private function matchesFilter(object $line, ?string $accountArea, ?string $filterBy, ?string $onlyFor): bool
     {
         if ($filterBy === null || $onlyFor === null || $onlyFor === '') {
             return true;
@@ -173,29 +176,29 @@ class AccountLedgerBuilder
             'document' => (string) $line->document_type === $onlyFor,
             'entry_date' => \Illuminate\Support\Carbon::parse($line->entry_date)->format('Y-m-d') === $onlyFor,
             'user_name' => (string) ($line->creator_ulid ?? '') === $onlyFor,
-            'area_name' => (string) ($leaf->area ?? '') === $onlyFor,
+            'area_name' => (string) ($accountArea ?? '') === $onlyFor,
             default => true,
         };
     }
 
-    private function groupKey(object $line, Account $leaf, ?string $groupBy): ?string
+    private function groupKey(object $line, ?string $accountArea, ?string $groupBy): ?string
     {
         return match ($groupBy) {
             'document' => (string) $line->document_type,
             'entry_date' => \Illuminate\Support\Carbon::parse($line->entry_date)->format('Y-m-d'),
             'user_name' => $line->creator_ulid ? (string) $line->creator_ulid : null,
-            'area_name' => $leaf->area ? (string) $leaf->area : null,
+            'area_name' => $accountArea ?: null,
             default => null,
         };
     }
 
-    private function groupLabel(object $line, Account $leaf, ?string $groupBy): ?string
+    private function groupLabel(object $line, ?string $accountArea, ?string $groupBy): ?string
     {
         return match ($groupBy) {
             'document' => $this->documentLabel((string) $line->document_type),
             'entry_date' => \Illuminate\Support\Carbon::parse($line->entry_date)->format('Y-m-d'),
             'user_name' => $line->creator_name ? (string) $line->creator_name : 'Unknown User',
-            'area_name' => $leaf->area ? (string) $leaf->area : 'No Area',
+            'area_name' => $accountArea ?: 'No Area',
             default => null,
         };
     }
@@ -204,7 +207,7 @@ class AccountLedgerBuilder
      * @param \Illuminate\Support\Collection<int, object> $lines
      * @return array<string, list<array{value: string, label: string}>>
      */
-    private function filterOptions($lines, Account $leaf): array
+    private function filterOptions($lines, Account $leaf, ?string $accountArea): array
     {
         $documents = [];
         $dates = [];
@@ -233,8 +236,8 @@ class AccountLedgerBuilder
         ));
 
         $areas = [];
-        if ($leaf->area) {
-            $areas[(string) $leaf->area] = (string) $leaf->area;
+        if ($accountArea) {
+            $areas[$accountArea] = $accountArea;
         }
 
         return [
