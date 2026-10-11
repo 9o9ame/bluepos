@@ -213,7 +213,7 @@ class SaleReturnTest extends TestCase
 
         $this->mock(CashierTransactionLock::class, function (\Mockery\MockInterface $mock): void {
             $mock->shouldReceive('lockCurrent')
-                ->times(2)
+                ->times(3)
                 ->andReturn(app(TenantContext::class)->membership());
         });
 
