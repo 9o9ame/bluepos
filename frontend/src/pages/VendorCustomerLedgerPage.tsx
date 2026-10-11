@@ -510,11 +510,11 @@ export function VendorCustomerLedgerPage() {
                 />
                 <span>Without Heading</span>
               </label>
-              <label title="Narration field mapping is not defined by the reference screenshots.">
+              <label title="BluePOS does not store a separate user-defined ledger narration field. Use Narration Col: Remarks or OnlyDesc.">
                 <input type="checkbox" disabled />
                 <span>User Defined Narration</span>
               </label>
-              <label title="Sales-officer semantics are not defined by the current accounting model.">
+              <label title="No separate Sales Officer role/link is stored on posted ledger journals. Sales Person grouping/filtering is available for sale-linked rows instead.">
                 <input type="checkbox" disabled />
                 <span>Treat as Sales Officer</span>
               </label>
@@ -532,7 +532,7 @@ export function VendorCustomerLedgerPage() {
           <div className="party-ledger-options-body">
             <div className="party-ledger-options-columns">
               <div className="party-ledger-left-options">
-                <label className="party-ledger-check disabled-option" title="Document filtering requires a server-side report filter to keep totals authoritative.">
+                <label className="party-ledger-check disabled-option" title="No automatic salesman-selection rule is stored for ledger accounts. Use Group by / Filter By: Sales Person Name for sale-linked rows.">
                   <input type="checkbox" disabled />
                   <span>Auto Sale Man</span>
                 </label>
@@ -563,8 +563,8 @@ export function VendorCustomerLedgerPage() {
                       searchable={false}
                       options={[
                         { value: '', label: 'All' },
-                        { value: 'non_wholesale', label: 'Non-Whole Sale' },
-                        { value: 'wholesale', label: 'Whole Sale' },
+                        { value: 'non_wholesale', label: 'Non-Whole Sale', title: 'Applies to sale-linked ledger rows using the posted sale price type.' },
+                        { value: 'wholesale', label: 'Whole Sale', title: 'Applies to sale-linked ledger rows using the posted sale price type.' },
                       ]}
                       onChange={setSaleMode}
                       aria-label="Show only"
@@ -587,12 +587,22 @@ export function VendorCustomerLedgerPage() {
                   <div className="party-ledger-zm-stack">
                     <div className="party-ledger-zm-row">
                       <span>ZM:</span>
-                      <input type="text" value="" disabled aria-label="ZM" />
+                      <input
+                        type="text"
+                        value="Not available"
+                        disabled
+                        aria-label="ZM"
+                        title="No ZM entity or mapping exists in the current BluePOS data model."
+                      />
                     </div>
 
-                    <fieldset className="party-ledger-zm-card" disabled>
+                    <fieldset
+                      className="party-ledger-zm-card"
+                      disabled
+                      title="The reference ZM list has no matching BluePOS entity or persisted relationship."
+                    >
                       <legend>ZM Selection</legend>
-                      <label><input type="checkbox" /><span>Selection semantics not mapped yet</span></label>
+                      <label><input type="checkbox" /><span>No matching BluePOS data source</span></label>
                     </fieldset>
                   </div>
 
@@ -885,7 +895,7 @@ export function VendorCustomerLedgerPage() {
             </tbody>
           </table>
           <p className="party-ledger-config-note">
-            Document, Date, User Name, Area Name, and Sales Person are functional. Sales Person is populated for sale-linked ledger rows; Main Area and Category remain reference-only until matching source data exists.
+            Document, Date, User Name, Area Name, and Sales Person are functional. Sales Person and Show Only use sale-linked posted ledger rows. Main Area and Category remain reference-only until matching source data exists.
           </p>
         </div>
       </UiModal>
