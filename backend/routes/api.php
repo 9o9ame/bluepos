@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AccountMainHeadController;
 use App\Http\Controllers\Api\AccountSubHeadController;
 use App\Http\Controllers\Api\AccountTypeController;
 use App\Http\Controllers\Api\Accounting\VoucherController;
+use App\Http\Controllers\Api\Accounting\CashierShiftController;
 use App\Http\Controllers\Api\Accounting\DailyCashPositionController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BarcodeGroupController;
@@ -111,6 +112,10 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::get('/settings/business', [BusinessSettingController::class, 'show']);
     Route::patch('/settings/business', [BusinessSettingController::class, 'update']);
     Route::get('/settings/entitlements', [TenantEntitlementController::class, 'show']);
+    Route::get('/cash-sessions/current', [CashierShiftController::class, 'current']);
+    Route::post('/cash-sessions/open', [CashierShiftController::class, 'open']);
+    Route::post('/cash-sessions/{shiftUlid}/close', [CashierShiftController::class, 'close']);
+
     Route::get('/cash-position/accounts', [DailyCashPositionController::class, 'accounts']);
     Route::get('/cash-position/summary', [DailyCashPositionController::class, 'summary']);
     Route::get('/cash-position/dashboard', [DailyCashPositionController::class, 'dashboard']);
