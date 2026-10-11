@@ -79,7 +79,8 @@
 }
 
 .inventory-adjustments-options {
-  grid-template-columns: 180px 190px minmax(260px, 1fr);
+  grid-template-columns: 170px 190px minmax(300px, 560px);
+  justify-content: start;
 }
 
 .inventory-adjustments-section-title {
@@ -142,8 +143,32 @@
 }
 
 .inventory-adjustments-amount-options {
-  grid-template-columns: minmax(180px, 1fr) minmax(140px, .8fr);
+  grid-template-columns: minmax(190px, 1fr) minmax(180px, .9fr);
   align-items: end;
+}
+
+.inventory-adjustments-options > label,
+.inventory-adjustments-amount-options > label {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+
+.inventory-adjustments-options > label > span,
+.inventory-adjustments-amount-options > label > span {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.inventory-adjustments-account {
+  max-width: 560px;
+}
+
+.inventory-adjustments-account .ui-select,
+.inventory-adjustments-account .ui-select-trigger {
+  width: 100%;
+  min-width: 0;
 }
 
 .inventory-adjustments-amount-options .inventory-adjustments-section-title {
