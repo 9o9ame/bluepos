@@ -323,6 +323,10 @@ class CatalogTest extends TestCase
             ->assertJsonPath('data.0.sales_lookup.retail_stock_value', '450.0000')
             ->assertJsonPath('data.0.rack_location', 'R-A1');
 
+        $this->assertSame('7.500000', bcadd((string) $response->json('meta.stock_total'), '0', 6));
+        $this->assertSame('309.3750', bcadd((string) $response->json('meta.stock_value_total'), '0', 4));
+        $this->assertSame('450.0000', bcadd((string) $response->json('meta.retail_stock_value_total'), '0', 4));
+
         $this->assertNoInternalIds($response->json());
     }
 
