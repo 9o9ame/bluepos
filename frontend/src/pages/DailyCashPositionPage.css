@@ -262,12 +262,57 @@
   color: var(--ui-text-muted);
 }
 
+.dcp-metric-card.tone-sales > strong,
+.dcp-metric-card.tone-retail > strong,
+.dcp-metric-card.tone-receiving > strong {
+  background: var(--ui-success);
+}
+
+.dcp-metric-card.tone-purchase > strong,
+.dcp-metric-card.tone-recovery > strong {
+  background: var(--ui-info);
+}
+
+.dcp-metric-card.tone-return > strong,
+.dcp-metric-card.tone-payment > strong {
+  background: var(--ui-danger);
+}
+
+.dcp-metric-card.tone-purchase-return > strong {
+  background: var(--ui-warning);
+}
+
+.dcp-metric-card.tone-sales > span,
+.dcp-metric-card.tone-retail > span,
+.dcp-metric-card.tone-receiving > span {
+  color: var(--ui-success);
+}
+
+.dcp-metric-card.tone-purchase > span,
+.dcp-metric-card.tone-recovery > span {
+  color: var(--ui-info);
+}
+
+.dcp-metric-card.tone-return > span,
+.dcp-metric-card.tone-payment > span {
+  color: var(--ui-danger);
+}
+
+.dcp-metric-card.tone-purchase-return > span {
+  color: var(--ui-warning);
+}
+
 .dcp-metric-card.is-unsupported {
   opacity: .62;
 }
 
 .dcp-metric-card.is-unsupported > strong {
+  color: var(--ui-text-muted);
   background: var(--ui-surface-muted);
+}
+
+.dcp-metric-card.is-unsupported > span {
+  color: var(--ui-text-muted);
 }
 
 .dcp-credit-band {
@@ -311,6 +356,23 @@
   padding: 3px 5px;
   text-align: right;
   background: var(--ui-surface);
+}
+
+.dcp-credit-values .tone-sales strong,
+.dcp-credit-values .tone-retail strong {
+  background: var(--ui-success);
+}
+
+.dcp-credit-values .tone-return strong {
+  background: var(--ui-danger);
+}
+
+.dcp-credit-values .tone-purchase strong {
+  background: var(--ui-info);
+}
+
+.dcp-credit-values .tone-purchase-return strong {
+  background: var(--ui-warning);
 }
 
 .dcp-credit-filters {
