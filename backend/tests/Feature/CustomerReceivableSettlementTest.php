@@ -151,7 +151,7 @@ class CustomerReceivableSettlementTest extends TestCase
             ->json('ulid');
 
         $this->postJson('/api/sales/'.$saleUlid.'/payments', [
-            'amount' => '100.0000',
+            'amount' => '200.0000',
             'method' => 'cash',
         ], $this->idem('customer-ar-return-cash'))
             ->assertCreated();
