@@ -2,6 +2,7 @@
 
 namespace App\Actions\Sales;
 
+use App\Accounting\CashierTransactionLock;
 use App\Accounting\OpeningBalancePoster;
 use App\Accounting\PartyLeafAccountSync;
 use App\Enums\JournalStatus;
@@ -38,6 +39,7 @@ class CollectSalePaymentAction
         private readonly TenantContext $tenantContext,
         private readonly OpeningBalancePoster $poster,
         private readonly PartyLeafAccountSync $partyAccounts,
+        private readonly CashierTransactionLock $cashierLock,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -86,6 +88,8 @@ class CollectSalePaymentAction
             if ($existing) {
                 return $existing;
             }
+
+            $this->cashierLock->lockCurrent();
 
             $sale = Sale::query()
                 ->forTenant($tenantId)
