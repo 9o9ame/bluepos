@@ -2,6 +2,7 @@
 
 namespace App\Actions\Accounting;
 
+use App\Accounting\CashierTransactionLock;
 use App\Accounting\OpeningBalancePoster;
 use App\Enums\JournalStatus;
 use App\Exceptions\ApiException;
@@ -19,6 +20,7 @@ class ManageVoucherAction
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly OpeningBalancePoster $poster,
+        private readonly CashierTransactionLock $cashierLock,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -142,6 +144,10 @@ class ManageVoucherAction
             if ($entry->isPosted()) {
                 return $entry;
             }
+
+            // Conservatively serialize every manual voucher post. Journal and
+            // opening vouchers may also touch cash/bank accounts.
+            $this->cashierLock->lockCurrent();
 
             if ($entry->document_type === JournalEntry::DOCUMENT_OPENING_BALANCE) {
                 return $this->poster->postVoucher($entry);
