@@ -19,8 +19,14 @@ class AccountLedgerBuilder
      *   carry_forward: string
      * }
      */
-    public function build(Account $leaf, int $page = 1, int $perPage = 100): array
-    {
+    public function build(
+        Account $leaf,
+        int $page = 1,
+        int $perPage = 100,
+        ?string $dateFrom = null,
+        ?string $dateTo = null,
+        bool $includeOpeningBalance = true,
+    ): array {
         $page = max(1, $page);
         $perPage = max(1, min(100, $perPage));
 
@@ -44,47 +50,72 @@ class AccountLedgerBuilder
             ->where('journal_lines.tenant_id', $leaf->tenant_id)
             ->where('journal_entries.tenant_id', $leaf->tenant_id)
             ->where('journal_entries.status', JournalStatus::Posted->value)
+            ->when(
+                ! $includeOpeningBalance,
+                fn ($query) => $query->where('journal_entries.document_type', '!=', 'opening_balance'),
+            )
             ->orderBy('journal_entries.entry_date')
             ->orderByRaw('COALESCE(journal_entries.voucher_number, journal_entries.ulid)')
             ->orderBy('journal_lines.sort_order')
             ->orderBy('journal_lines.ulid')
             ->get();
 
-        $totalDebit = '0.0000';
-        $totalCredit = '0.0000';
-        $closing = '0.0000';
-        $runningRows = [];
+        $runningBalance = '0.0000';
+        $periodDebit = '0.0000';
+        $periodCredit = '0.0000';
+        $periodRows = [];
+        $openingCarry = '0.0000';
 
         foreach ($lines as $line) {
             $debit = $this->balances->money((string) $line->debit);
             $credit = $this->balances->money((string) $line->credit);
-            $closing = bcadd($closing, $this->balances->signedEffect($leaf, $debit, $credit), 4);
-            $totalDebit = bcadd($totalDebit, $debit, 4);
-            $totalCredit = bcadd($totalCredit, $credit, 4);
+            $runningBalance = bcadd(
+                $runningBalance,
+                $this->balances->signedEffect($leaf, $debit, $credit),
+                4,
+            );
 
-            $runningRows[] = [
+            $entryDate = \Illuminate\Support\Carbon::parse($line->entry_date)->format('Y-m-d');
+
+            if ($dateFrom !== null && $entryDate < $dateFrom) {
+                $openingCarry = $this->balances->money($runningBalance);
+
+                continue;
+            }
+
+            if ($dateTo !== null && $entryDate > $dateTo) {
+                continue;
+            }
+
+            $periodDebit = bcadd($periodDebit, $debit, 4);
+            $periodCredit = bcadd($periodCredit, $credit, 4);
+
+            $periodRows[] = [
                 'line_ulid' => $line->ulid,
                 'trans_no' => $line->voucher_number ?: $line->entry_ulid,
-                'date' => \Illuminate\Support\Carbon::parse($line->entry_date)->format('Y-m-d'),
+                'date' => $entryDate,
                 'doc' => $this->documentLabel((string) $line->document_type),
                 'remarks' => $line->line_description ?: $line->entry_description,
                 'debit' => $debit,
                 'credit' => $credit,
-                'balance' => $this->balances->money($closing),
+                'balance' => $this->balances->money($runningBalance),
             ];
         }
 
-        $total = count($runningRows);
+        $total = count($periodRows);
         $lastPage = max(1, (int) ceil($total / $perPage));
         $page = min($page, $lastPage);
         $offset = ($page - 1) * $perPage;
 
-        $carryForward = '0.0000';
+        $carryForward = $openingCarry;
         if ($offset > 0) {
-            $carryForward = $runningRows[$offset - 1]['balance'];
+            $carryForward = $periodRows[$offset - 1]['balance'];
         }
 
-        $pageRows = array_slice($runningRows, $offset, $perPage);
+        $pageRows = array_slice($periodRows, $offset, $perPage);
+        $closingBalance = $periodRows !== []
+            ? $periodRows[array_key_last($periodRows)]['balance']
+            : $openingCarry;
 
         return [
             'account' => [
@@ -96,9 +127,9 @@ class AccountLedgerBuilder
             ],
             'rows' => array_values($pageRows),
             'totals' => [
-                'debit' => $totalDebit,
-                'credit' => $totalCredit,
-                'closing_balance' => $this->balances->money($closing),
+                'debit' => $periodDebit,
+                'credit' => $periodCredit,
+                'closing_balance' => $this->balances->money($closingBalance),
             ],
             'pagination' => [
                 'page' => $page,
