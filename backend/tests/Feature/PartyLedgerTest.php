@@ -206,6 +206,8 @@ class PartyLedgerTest extends TestCase
             ->assertJsonPath('carry_forward', '100.0000')
             ->assertJsonPath('rows.0.debit', '25.0000')
             ->assertJsonPath('rows.0.book_number', 'BOOK-7')
+            ->assertJsonPath('rows.0.line_description', 'Range debit')
+            ->assertJsonPath('rows.0.entry_description', 'Range transaction')
             ->assertJsonPath('rows.0.balance', '125.0000')
             ->assertJsonPath('totals.debit', '25.0000')
             ->assertJsonPath('totals.closing_balance', '125.0000');
@@ -225,6 +227,7 @@ class PartyLedgerTest extends TestCase
         $grouped->assertJsonPath('account.area', 'RYK')
             ->assertJsonPath('rows.0.group_key', 'journal_voucher')
             ->assertJsonPath('rows.0.group_label', 'JOURNAL VOUCHER')
+            ->assertJsonPath('rows.0.subgroup_balance', '25.0000')
             ->assertJsonPath('group_totals.0.key', 'journal_voucher')
             ->assertJsonPath('group_totals.0.label', 'JOURNAL VOUCHER')
             ->assertJsonPath('group_totals.0.debit', '25.0000')
