@@ -386,12 +386,29 @@ export type PartyLedger = {
   carry_forward: string
 }
 
-export function fetchPartyLedger(partyUlid: string, type: PartyTypeApi, page = 1) {
+export type PartyLedgerOptions = {
+  date_from?: string
+  date_to?: string
+  include_opening_balance?: boolean
+  per_page?: number
+}
+
+export function fetchPartyLedger(
+  partyUlid: string,
+  type: PartyTypeApi,
+  page = 1,
+  options?: PartyLedgerOptions,
+) {
   const qs = new URLSearchParams({
     type,
     page: String(page),
-    per_page: '100',
+    per_page: String(options?.per_page ?? 100),
   })
+  if (options?.date_from) qs.set('date_from', options.date_from)
+  if (options?.date_to) qs.set('date_to', options.date_to)
+  if (options?.include_opening_balance !== undefined) {
+    qs.set('include_opening_balance', options.include_opening_balance ? '1' : '0')
+  }
   return apiFetch<PartyLedger>(`/api/parties/${partyUlid}/ledger?${qs.toString()}`)
 }
 
