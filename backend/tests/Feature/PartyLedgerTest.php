@@ -124,6 +124,20 @@ class PartyLedgerTest extends TestCase
             ->assertOk()
             ->assertJsonPath('rows.0.balance', '50.0000');
 
+        $balances = $this->postJson('/api/parties/ledger-balances', [
+            'items' => [
+                ['type' => 'vendor', 'ulid' => $vendorUlid],
+                ['type' => 'customer', 'ulid' => $customer],
+                ['type' => 'account', 'ulid' => $manual],
+            ],
+        ])->assertOk();
+
+        $balances
+            ->assertJsonPath('balances.vendor:'.$vendorUlid, '1000.0000')
+            ->assertJsonPath('balances.customer:'.$customer, '250.0000')
+            ->assertJsonPath('balances.account:'.$manual, '50.0000');
+        $this->assertNoInternalIds($balances->json());
+
         $ensure = $this->postJson('/api/parties/'.$vendorUlid.'/ensure-leaf-account?type=vendor')
             ->assertOk();
         $ensure->assertJsonPath('status', 'already_linked');
@@ -210,7 +224,11 @@ class PartyLedgerTest extends TestCase
 
         $grouped->assertJsonPath('account.area', 'RYK')
             ->assertJsonPath('rows.0.group_key', 'journal_voucher')
-            ->assertJsonPath('rows.0.group_label', 'JOURNAL VOUCHER');
+            ->assertJsonPath('rows.0.group_label', 'JOURNAL VOUCHER')
+            ->assertJsonPath('group_totals.0.key', 'journal_voucher')
+            ->assertJsonPath('group_totals.0.label', 'JOURNAL VOUCHER')
+            ->assertJsonPath('group_totals.0.debit', '25.0000')
+            ->assertJsonPath('group_totals.0.credit', '0.0000');
 
         $areaFiltered = $this->getJson(
             '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&filter_by=area_name&only_for=RYK'
@@ -274,5 +292,12 @@ class PartyLedgerTest extends TestCase
 
         $this->getJson('/api/parties/'.$vendor.'/ledger?type=vendor')->assertNotFound();
         $this->postJson('/api/parties/'.$vendor.'/ensure-leaf-account?type=vendor')->assertNotFound();
+
+        $this->postJson('/api/parties/ledger-balances', [
+            'items' => [
+                ['type' => 'vendor', 'ulid' => $vendor],
+            ],
+        ])->assertOk()
+            ->assertJsonPath('balances.vendor:'.$vendor, '0.0000');
     }
 }
