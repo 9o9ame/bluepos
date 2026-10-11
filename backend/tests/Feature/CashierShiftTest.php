@@ -162,7 +162,7 @@ class CashierShiftTest extends TestCase
 
         $openPermission = Permission::query()->where('key', 'cash_sessions.open')->firstOrFail();
         $role->permissions()->detach($openPermission->id);
-        app()->forgetInstance(PermissionService::class);
+        app(PermissionService::class)->clearCache();
 
         $this->postJson(
             '/api/cash-sessions/open',
@@ -173,7 +173,7 @@ class CashierShiftTest extends TestCase
         $role->permissions()->syncWithoutDetaching([
             $openPermission->id => ['ulid' => (string) Str::ulid()],
         ]);
-        app()->forgetInstance(PermissionService::class);
+        app(PermissionService::class)->clearCache();
 
         $shiftUlid = $this->postJson(
             '/api/cash-sessions/open',
@@ -183,7 +183,7 @@ class CashierShiftTest extends TestCase
 
         $closePermission = Permission::query()->where('key', 'cash_sessions.close')->firstOrFail();
         $role->permissions()->detach($closePermission->id);
-        app()->forgetInstance(PermissionService::class);
+        app(PermissionService::class)->clearCache();
 
         $this->postJson(
             '/api/cash-sessions/'.$shiftUlid.'/close',
@@ -194,7 +194,7 @@ class CashierShiftTest extends TestCase
         $role->permissions()->syncWithoutDetaching([
             $closePermission->id => ['ulid' => (string) Str::ulid()],
         ]);
-        app()->forgetInstance(PermissionService::class);
+        app(PermissionService::class)->clearCache();
 
         $otherBranch = Branch::query()->create([
             'tenant_id' => $tenant->tenantId(),
