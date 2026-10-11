@@ -22,6 +22,7 @@ class UpdateBusinessSettingsRequest extends FormRequest
             'sales_clearing_account_ulid',
             'purchase_clearing_account_ulid',
             'sales_revenue_account_ulid',
+            'sales_tax_payable_account_ulid',
             'inventory_account_ulid',
             'cogs_account_ulid',
         ] as $field) {
@@ -104,6 +105,15 @@ class UpdateBusinessSettingsRequest extends FormRequest
             ],
 
             'sales_revenue_account_ulid' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'size:26',
+                Rule::exists('accounts', 'ulid')
+                    ->where('tenant_id', $tenantId)
+                    ->where('is_active', true),
+            ],
+            'sales_tax_payable_account_ulid' => [
                 'sometimes',
                 'nullable',
                 'string',
