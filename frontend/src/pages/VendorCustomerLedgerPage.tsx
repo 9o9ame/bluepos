@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   fetchParties,
   fetchPartyLedger,
+  fetchPartyLedgerBalances,
   fetchPartyProfiles,
   type Party,
   type PartyLedger,
@@ -132,6 +133,7 @@ export function VendorCustomerLedgerPage() {
   const [reverseOrder, setReverseOrder] = useState(false)
   const [withoutHeading, setWithoutHeading] = useState(false)
   const [showBookNumber, setShowBookNumber] = useState(false)
+  const [hideSubgroupTotals, setHideSubgroupTotals] = useState(false)
   const [selectedDocumentTypes, setSelectedDocumentTypes] = useState<string[]>([])
   const [groupBy, setGroupBy] = useState('')
   const [filterBy, setFilterBy] = useState('')
@@ -166,6 +168,15 @@ export function VendorCustomerLedgerPage() {
 
   const selected = rows.find((row) => row.key === selectedKey) ?? null
 
+  const balancesQuery = useQuery({
+    queryKey: ['ledger-balances', rows.map((row) => row.key).join('|')],
+    enabled: showBalances && rows.length > 0,
+    queryFn: () => fetchPartyLedgerBalances(
+      rows.map((row) => ({ type: row.partyType, ulid: row.ulid })),
+    ),
+    staleTime: 30_000,
+  })
+
   const filterOptionsQuery = useQuery({
     queryKey: [
       'ledger-filter-options',
@@ -194,14 +205,31 @@ export function VendorCustomerLedgerPage() {
   const loading = profilesQuery.isLoading || manualAccountsQuery.isLoading || accountTypesQuery.isLoading
   const loadError = profilesQuery.error || manualAccountsQuery.error || accountTypesQuery.error
 
-  const columns = useMemo<PosGridColumn<LedgerPartyRow>[]>(() => [
-    { key: 'rowNo', header: '#', width: 44, align: 'center', render: (row) => row.rowNo },
-    { key: 'code', header: 'CODE', width: 150, render: (row) => row.code },
-    { key: 'name', header: 'Vendor / Customer / Accounts', render: (row) => row.name },
-    { key: 'contact', header: 'Contacts', width: 210, render: (row) => row.contact || '—' },
-    { key: 'accountType', header: 'Account Type', width: 210, render: (row) => row.accountType || '—' },
-    { key: 'type', header: 'TYPE', width: 160, render: (row) => row.typeLabel },
-  ], [])
+  const columns = useMemo<PosGridColumn<LedgerPartyRow>[]>(() => {
+    const base: PosGridColumn<LedgerPartyRow>[] = [
+      { key: 'rowNo', header: '#', width: 44, align: 'center', render: (row) => row.rowNo },
+      { key: 'code', header: 'CODE', width: 150, render: (row) => row.code },
+      { key: 'name', header: 'Vendor / Customer / Accounts', render: (row) => row.name },
+      { key: 'contact', header: 'Contacts', width: 210, render: (row) => row.contact || '—' },
+      { key: 'accountType', header: 'Account Type', width: 210, render: (row) => row.accountType || '—' },
+      { key: 'type', header: 'TYPE', width: 160, render: (row) => row.typeLabel },
+    ]
+
+    if (showBalances) {
+      base.push({
+        key: 'balance',
+        header: 'BALANCE',
+        width: 140,
+        align: 'right',
+        render: (row) =>
+          balancesQuery.isFetching
+            ? '…'
+            : balancesQuery.data?.[row.key] ?? '0.0000',
+      })
+    }
+
+    return base
+  }, [showBalances, balancesQuery.data, balancesQuery.isFetching])
 
   async function openPreview(target: LedgerPartyRow | null = selected) {
     if (!target) {
@@ -241,11 +269,10 @@ export function VendorCustomerLedgerPage() {
       title={
         <div className="party-ledger-panel-title">
           <span>Vendor / Customer Ledger Options</span>
-          <label title="Balance column requires a future summary endpoint; disabled to avoid N+1 ledger requests.">
+          <label>
             <input
               type="checkbox"
               checked={showBalances}
-              disabled
               onChange={(event) => setShowBalances(event.target.checked)}
             />
             <span>Show Balances</span>
@@ -525,8 +552,13 @@ export function VendorCustomerLedgerPage() {
                     />
                     <span>Don't Include Opening Bal</span>
                   </label>
-                  <label title="Subgroup total suppression requires server-side grouping support.">
-                    <input type="checkbox" disabled />
+                  <label title={groupBy ? undefined : 'Select Group by first.'}>
+                    <input
+                      type="checkbox"
+                      disabled={!groupBy}
+                      checked={hideSubgroupTotals}
+                      onChange={(event) => setHideSubgroupTotals(event.target.checked)}
+                    />
                     <span>Don't Show Total (Subgroup)</span>
                   </label>
                   <label title="Subgroup reset semantics are not defined by the reference screenshots.">
@@ -748,6 +780,30 @@ export function VendorCustomerLedgerPage() {
                 </tfoot>
               </table>
             </div>
+
+            {groupBy && !hideSubgroupTotals && preview.group_totals.length > 0 ? (
+              <div className="party-ledger-subgroup-summary">
+                <div className="party-ledger-subgroup-title">Subgroup Totals</div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Group</th>
+                      <th className="is-num">Debit</th>
+                      <th className="is-num">Credit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.group_totals.map((group) => (
+                      <tr key={group.key}>
+                        <td>{group.label}</td>
+                        <td className="is-num">{group.debit}</td>
+                        <td className="is-num">{group.credit}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </UiModal>
