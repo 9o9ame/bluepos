@@ -3,11 +3,13 @@
 namespace App\Actions\Sales;
 
 use App\Accounting\OpeningBalancePoster;
+use App\Accounting\PartyLeafAccountSync;
 use App\Enums\JournalStatus;
 use App\Enums\StockMovementType;
 use App\Exceptions\ApiException;
 use App\Models\Account;
 use App\Models\BusinessSetting;
+use App\Models\Customer;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
 use App\Models\SaleReturn;
@@ -19,6 +21,7 @@ class PostSaleReturnAccountingAction
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly OpeningBalancePoster $poster,
+        private readonly PartyLeafAccountSync $partyAccounts,
     ) {}
 
     public function execute(SaleReturn $document): ?JournalEntry
@@ -108,12 +111,7 @@ class PostSaleReturnAccountingAction
             );
         }
 
-        $clearing = $this->requiredAccount(
-            $settings?->sales_clearing_account_id,
-            $tenantId,
-            'SALES_CLEARING_ACCOUNT_REQUIRED',
-            'Configure a sales clearing account in business settings before posting sales return accounting.',
-        );
+        $settlement = $this->settlementAccount($document, $settings, $tenantId);
         $revenue = $this->requiredAccount(
             $settings?->sales_revenue_account_id,
             $tenantId,
@@ -144,7 +142,7 @@ class PostSaleReturnAccountingAction
         }
 
         $ids = array_filter([
-            $clearing->id,
+            $settlement->id,
             $revenue->id,
             $inventory->id,
             $cogs->id,
@@ -231,9 +229,9 @@ class PostSaleReturnAccountingAction
             JournalLine::query()->create([
                 'tenant_id' => $tenantId,
                 'journal_entry_id' => $journal->id,
-                'account_id' => $clearing->id,
+                'account_id' => $settlement->id,
                 'customer_id' => $document->customer_id,
-                'description' => 'Sales clearing reversal',
+                'description' => $document->customer_id ? 'Customer receivable reversal' : 'Sales clearing reversal',
                 'debit' => '0.0000',
                 'credit' => $grandTotal,
                 'sort_order' => $sort++,
@@ -266,6 +264,54 @@ class PostSaleReturnAccountingAction
         $this->poster->assertBalanced($journal);
 
         return $journal;
+    }
+
+    private function settlementAccount(
+        SaleReturn $document,
+        ?BusinessSetting $settings,
+        int $tenantId,
+    ): Account {
+        if ($document->customer_id !== null) {
+            $customer = Customer::query()
+                ->forTenant($tenantId)
+                ->whereKey((int) $document->customer_id)
+                ->with('accountType')
+                ->first();
+
+            if (! $customer || ! $customer->is_active || ! $customer->accountType?->is_receivable) {
+                throw new ApiException(
+                    'CUSTOMER_RECEIVABLE_ACCOUNT_REQUIRED',
+                    'Configure the customer with an active Accounts Receivable account type before posting the sales return.',
+                    422,
+                );
+            }
+
+            $receivable = Account::query()
+                ->forTenant($tenantId)
+                ->where('customer_id', $customer->id)
+                ->first();
+
+            if (! $receivable) {
+                $receivable = $this->partyAccounts->syncCustomer($customer);
+            }
+
+            if (! $receivable->is_active) {
+                throw new ApiException(
+                    'CUSTOMER_RECEIVABLE_ACCOUNT_REQUIRED',
+                    'The customer receivable account is inactive.',
+                    422,
+                );
+            }
+
+            return $receivable;
+        }
+
+        return $this->requiredAccount(
+            $settings?->sales_clearing_account_id,
+            $tenantId,
+            'SALES_CLEARING_ACCOUNT_REQUIRED',
+            'Configure a sales clearing account in business settings before posting walk-in sales return accounting.',
+        );
     }
 
     private function hasAnyAccountingControl(?BusinessSetting $settings): bool
