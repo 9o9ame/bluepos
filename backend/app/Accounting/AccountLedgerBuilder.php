@@ -5,6 +5,7 @@ namespace App\Accounting;
 use App\Enums\JournalStatus;
 use App\Models\Account;
 use App\Models\JournalLine;
+use Illuminate\Support\Facades\DB;
 
 class AccountLedgerBuilder
 {
@@ -55,20 +56,33 @@ class AccountLedgerBuilder
                 'journal_entries.description as entry_description',
                 'users.ulid as creator_ulid',
                 'users.name as creator_name',
-                'sales.price_type as sale_price_type',
-                'salesman_profiles.ulid as salesman_ulid',
-                'salesman_profiles.name as salesman_name',
+                DB::raw('COALESCE(direct_sales.price_type, return_sales.price_type) as sale_price_type'),
+                DB::raw('COALESCE(direct_salesman.ulid, return_salesman.ulid) as salesman_ulid'),
+                DB::raw('COALESCE(direct_salesman.name, return_salesman.name) as salesman_name'),
             ])
             ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
             ->leftJoin('users', 'users.id', '=', 'journal_entries.created_by')
-            ->leftJoin('sales', function ($join): void {
-                $join->on('sales.id', '=', 'journal_entries.document_id')
-                    ->on('sales.tenant_id', '=', 'journal_entries.tenant_id')
-                    ->where('journal_entries.document_type', '=', 'sale_payment');
+            ->leftJoin('sales as direct_sales', function ($join): void {
+                $join->on('direct_sales.id', '=', 'journal_entries.document_id')
+                    ->on('direct_sales.tenant_id', '=', 'journal_entries.tenant_id')
+                    ->whereIn('journal_entries.document_type', ['sale_payment', 'sale_invoice']);
             })
-            ->leftJoin('party_profiles as salesman_profiles', function ($join): void {
-                $join->on('salesman_profiles.id', '=', 'sales.salesman_party_profile_id')
-                    ->on('salesman_profiles.tenant_id', '=', 'journal_entries.tenant_id');
+            ->leftJoin('sale_returns', function ($join): void {
+                $join->on('sale_returns.id', '=', 'journal_entries.document_id')
+                    ->on('sale_returns.tenant_id', '=', 'journal_entries.tenant_id')
+                    ->where('journal_entries.document_type', '=', 'sale_return');
+            })
+            ->leftJoin('sales as return_sales', function ($join): void {
+                $join->on('return_sales.id', '=', 'sale_returns.sale_id')
+                    ->on('return_sales.tenant_id', '=', 'journal_entries.tenant_id');
+            })
+            ->leftJoin('party_profiles as direct_salesman', function ($join): void {
+                $join->on('direct_salesman.id', '=', 'direct_sales.salesman_party_profile_id')
+                    ->on('direct_salesman.tenant_id', '=', 'journal_entries.tenant_id');
+            })
+            ->leftJoin('party_profiles as return_salesman', function ($join): void {
+                $join->on('return_salesman.id', '=', 'return_sales.salesman_party_profile_id')
+                    ->on('return_salesman.tenant_id', '=', 'journal_entries.tenant_id');
             })
             ->where('journal_lines.account_id', $leaf->id)
             ->where('journal_lines.tenant_id', $leaf->tenant_id)
@@ -338,6 +352,8 @@ class AccountLedgerBuilder
     {
         return match ($documentType) {
             'opening_balance' => 'Opening Balance',
+            'sale_invoice' => 'SALE INVOICE',
+            'sale_return' => 'SALES RETURN',
             default => strtoupper(str_replace('_', ' ', $documentType)),
         };
     }
