@@ -14,6 +14,7 @@ use App\Models\Supplier;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PartyLedgerController extends Controller
 {
@@ -35,6 +36,19 @@ class PartyLedgerController extends Controller
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
             'include_opening_balance' => ['nullable', 'boolean'],
+            'document_types' => ['nullable', 'array', 'max:12'],
+            'document_types.*' => [
+                'string',
+                Rule::in([
+                    'opening_balance',
+                    'purchase_invoice',
+                    'purchase_return',
+                    'payment_voucher',
+                    'receiving_voucher',
+                    'journal_voucher',
+                    'sale_payment',
+                ]),
+            ],
         ]);
 
         $page = max(1, (int) ($data['page'] ?? 1));
@@ -47,6 +61,7 @@ class PartyLedgerController extends Controller
             isset($data['date_from']) ? (string) $data['date_from'] : null,
             isset($data['date_to']) ? (string) $data['date_to'] : null,
             (bool) ($data['include_opening_balance'] ?? true),
+            array_values($data['document_types'] ?? []),
         );
 
         if ($party instanceof Supplier || $party instanceof Customer) {
