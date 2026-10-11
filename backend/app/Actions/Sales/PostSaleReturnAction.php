@@ -22,6 +22,7 @@ class PostSaleReturnAction
         private readonly TenantContext $tenantContext,
         private readonly PostStockMovementAction $postMovement,
         private readonly RecalculateSaleReturnTotalsAction $recalculate,
+        private readonly PostSaleReturnAccountingAction $postAccounting,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -119,6 +120,8 @@ class PostSaleReturnAction
                     'notes' => $line->reason,
                 ]);
             }
+
+            $this->postAccounting->execute($document);
 
             $document->status = SaleReturnStatus::Posted;
             $document->posted_by = $this->tenantContext->userId();
