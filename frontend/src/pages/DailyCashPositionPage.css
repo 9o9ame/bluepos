@@ -772,3 +772,292 @@
 .dcp-dashboard-side {
   align-items: stretch;
 }
+
+
+.dcp-day-close {
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 42px);
+  padding: 6px 10px 8px;
+  gap: 6px;
+}
+
+.dcp-day-close-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--ui-accent-soft) 70%, var(--ui-surface-subtle)),
+      var(--ui-surface-subtle)
+    );
+}
+
+.dcp-day-close-heading > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.dcp-day-close-heading span {
+  color: var(--ui-text-muted);
+}
+
+.dcp-day-close-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dcp-day-close-actions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+}
+
+.dcp-day-close-actions input {
+  height: var(--control-height);
+  padding: 0 8px;
+  color: var(--ui-text);
+  background: var(--ui-control-face);
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+}
+
+.dcp-day-close-body {
+  display: grid;
+  grid-template-columns: minmax(260px, 28%) minmax(420px, 1fr) minmax(300px, 28%);
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.dcp-day-close-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.dcp-day-close-card-title {
+  padding: 5px 7px;
+  text-align: center;
+  font-weight: 800;
+  color: var(--ui-text);
+  border-bottom: 1px solid var(--ui-border);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-info) 18%, var(--ui-table-header)),
+      var(--ui-table-header)
+    );
+}
+
+.dcp-day-close-categories .dcp-day-close-card-title {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-warning) 24%, var(--ui-table-header)),
+      var(--ui-table-header)
+    );
+}
+
+.dcp-day-close-positions .dcp-day-close-card-title {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-success) 20%, var(--ui-table-header)),
+      var(--ui-table-header)
+    );
+}
+
+.dcp-day-close-grid {
+  flex: 1;
+  min-height: 0;
+}
+
+.dcp-day-close-grid .pos-grid-wrap {
+  height: 100%;
+}
+
+.dcp-day-close-total {
+  display: grid;
+  grid-template-columns: 1fr 90px 130px;
+  font-weight: 800;
+  border-top: 1px solid var(--ui-border);
+  background: var(--ui-surface-subtle);
+}
+
+.dcp-day-close-total > * {
+  padding: 4px 6px;
+  text-align: right;
+  border-left: 1px solid var(--ui-border);
+}
+
+.dcp-day-close-total > span {
+  text-align: left;
+  border-left: 0;
+}
+
+.dcp-day-close-top-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 7px;
+  background: var(--ui-surface-subtle);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.dcp-denomination-table {
+  width: min(520px, calc(100% - 20px));
+  margin: 8px auto 6px;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+}
+
+.dcp-denomination-head,
+.dcp-denomination-row {
+  display: grid;
+  grid-template-columns: 1.15fr .8fr 1fr;
+  align-items: center;
+}
+
+.dcp-denomination-head {
+  font-weight: 800;
+  text-align: center;
+  color: var(--ui-table-header-text);
+  background: var(--ui-table-header);
+}
+
+.dcp-denomination-head > *,
+.dcp-denomination-row > * {
+  min-height: 28px;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  border-right: 1px solid var(--ui-border);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.dcp-denomination-head > *:last-child,
+.dcp-denomination-row > *:last-child {
+  border-right: 0;
+}
+
+.dcp-denomination-row:last-child > * {
+  border-bottom: 0;
+}
+
+.dcp-denomination-row strong {
+  text-align: center;
+  background: color-mix(in srgb, var(--ui-warning) 28%, var(--ui-surface));
+}
+
+.dcp-denomination-row input {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  text-align: right;
+  color: var(--ui-text);
+  background: var(--ui-control-face);
+  border: 0;
+  outline: 0;
+}
+
+.dcp-denomination-row input:focus {
+  box-shadow: inset 0 0 0 2px var(--ui-accent);
+}
+
+.dcp-denomination-row span {
+  text-align: right;
+  background: color-mix(in srgb, var(--ui-warning) 16%, var(--ui-surface));
+}
+
+.dcp-day-close-cash-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  width: min(620px, calc(100% - 20px));
+  margin: 0 auto 6px;
+}
+
+.dcp-day-close-cash-summary > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface-subtle);
+}
+
+.dcp-day-close-cash-summary span {
+  font-weight: 700;
+}
+
+.dcp-day-close-cash-summary strong {
+  text-align: right;
+  padding: 3px 5px;
+  border-radius: var(--control-radius);
+  background: var(--ui-accent-soft);
+}
+
+.dcp-day-close-cash-summary > div:nth-child(1) strong {
+  background: var(--ui-warning);
+}
+
+.dcp-day-close-cash-summary > div:nth-child(2) strong {
+  background: var(--ui-info);
+}
+
+.dcp-day-close-cash-summary .is-balanced strong {
+  background: var(--ui-success);
+}
+
+.dcp-day-close-cash-summary .is-difference strong {
+  background: var(--ui-danger);
+}
+
+.dcp-day-close-note {
+  margin: auto 8px 8px;
+  padding: 5px 7px;
+  color: var(--ui-text-muted);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface-subtle);
+}
+
+.dcp-day-close-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 7px;
+  border-top: 1px solid var(--ui-border);
+  background: color-mix(in srgb, var(--ui-info) 12%, var(--ui-surface-subtle));
+}
+
+.dcp-day-close-status span {
+  font-weight: 700;
+  color: var(--ui-info);
+}
+
+@media (max-width: 1180px) {
+  .dcp-day-close-body {
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+
+  .dcp-day-close-card {
+    min-height: 320px;
+  }
+}
