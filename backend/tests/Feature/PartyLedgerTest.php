@@ -260,15 +260,18 @@ class PartyLedgerTest extends TestCase
             '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28'
         )->assertOk();
 
-        $ranged->assertJsonCount(1, 'rows')
+        $ranged->assertJsonCount(2, 'rows')
             ->assertJsonPath('carry_forward', '100.0000')
             ->assertJsonPath('rows.0.debit', '25.0000')
             ->assertJsonPath('rows.0.book_number', 'BOOK-7')
             ->assertJsonPath('rows.0.line_description', 'Range debit')
             ->assertJsonPath('rows.0.entry_description', 'Range transaction')
             ->assertJsonPath('rows.0.balance', '125.0000')
-            ->assertJsonPath('totals.debit', '25.0000')
-            ->assertJsonPath('totals.closing_balance', '125.0000');
+            ->assertJsonPath('rows.1.doc', 'SALE PAYMENT')
+            ->assertJsonPath('rows.1.debit', '15.0000')
+            ->assertJsonPath('rows.1.balance', '140.0000')
+            ->assertJsonPath('totals.debit', '40.0000')
+            ->assertJsonPath('totals.closing_balance', '140.0000');
 
         $filtered = $this->getJson(
             '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&document_types%5B0%5D=journal_voucher'
@@ -295,7 +298,7 @@ class PartyLedgerTest extends TestCase
             '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&filter_by=area_name&only_for=RYK'
         )->assertOk();
 
-        $areaFiltered->assertJsonCount(1, 'rows')
+        $areaFiltered->assertJsonCount(2, 'rows')
             ->assertJsonPath('filter_options.area_name.0.value', 'RYK')
             ->assertJsonPath('filter_options.area_name.0.label', 'RYK');
 
@@ -343,9 +346,12 @@ class PartyLedgerTest extends TestCase
             '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&include_opening_balance=0'
         )->assertOk();
 
-        $withoutOpening->assertJsonPath('carry_forward', '0.0000')
+        $withoutOpening->assertJsonCount(2, 'rows')
+            ->assertJsonPath('carry_forward', '0.0000')
             ->assertJsonPath('rows.0.balance', '25.0000')
-            ->assertJsonPath('totals.closing_balance', '25.0000');
+            ->assertJsonPath('rows.1.balance', '40.0000')
+            ->assertJsonPath('totals.debit', '40.0000')
+            ->assertJsonPath('totals.closing_balance', '40.0000');
 
         $this->getJson(
             '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-03-01&date_to=2026-02-01'
