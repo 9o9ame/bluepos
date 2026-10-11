@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Accounting\CashierTransactionLock;
 use App\Models\Account;
 use App\Models\AccountType;
 use App\Models\Expense;
@@ -33,6 +34,12 @@ class ExpenseTest extends TestCase
                 'code' => $paymentAccount->code,
                 'name' => $paymentAccount->name,
             ]);
+
+        $this->mock(CashierTransactionLock::class, function (\Mockery\MockInterface $mock): void {
+            $mock->shouldReceive('lockCurrent')
+                ->once()
+                ->andReturn(app(TenantContext::class)->membership());
+        });
 
         $payload = [
             'expense_date' => '2026-10-07',
