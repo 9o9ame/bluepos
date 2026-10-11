@@ -26,6 +26,14 @@ class PermissionService
         return in_array($key, $this->keys(), true);
     }
 
+    public function clearCache(): void
+    {
+        $this->keys = null;
+        $this->allBranches = null;
+        $this->branchIds = null;
+        $this->hydratedMembershipId = null;
+    }
+
     /**
      * @return list<string>
      */
