@@ -292,7 +292,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
   {
     key: 'product-view',
     title: 'Product View',
-    path: '/definition/products',
+    path: '/daily/product-view',
     ribbon: 'daily-entries',
     status: 'ready',
     permission: 'products.view',
@@ -485,7 +485,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Journal Voucher (JV)', status: 'ready', path: '/daily/vouchers?type=journal' },
           ],
         },
-        { id: 'product-view', label: 'Product View', icon: Package, moduleKey: 'products', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'green' },
+        { id: 'product-view', label: 'Product View', icon: Package, moduleKey: 'product-view', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'green' },
         { id: 'ledger', label: 'Vendor / Customer Ledger', icon: BookOpen, moduleKey: 'party-ledger', status: 'ready', tone: 'gold' },
         { id: 'cash', label: 'Daily Cash Position', icon: Banknote, moduleKey: 'cash-position', permission: 'accounting.journal.view', status: 'ready', tone: 'teal' },
       ],
