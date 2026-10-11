@@ -79,8 +79,8 @@
 }
 
 .inventory-adjustments-options {
-  grid-template-columns: 150px 175px minmax(280px, 440px);
-  justify-content: start;
+  grid-template-columns: 150px 175px minmax(360px, 1fr);
+  justify-content: stretch;
 }
 
 .inventory-adjustments-section-title {
@@ -162,7 +162,8 @@
 }
 
 .inventory-adjustments-account {
-  max-width: 440px;
+  width: 100%;
+  max-width: none;
 }
 
 .inventory-adjustments-account .ui-select,
