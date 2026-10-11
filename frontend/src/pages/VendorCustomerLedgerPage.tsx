@@ -289,25 +289,29 @@ export function VendorCustomerLedgerPage() {
                   </label>
                 </div>
 
-                <div className="party-ledger-zm-row">
-                  <span>ZM:</span>
-                  <input type="text" value="" disabled aria-label="ZM" />
+                <div className="party-ledger-left-lower">
+                  <div className="party-ledger-zm-stack">
+                    <div className="party-ledger-zm-row">
+                      <span>ZM:</span>
+                      <input type="text" value="" disabled aria-label="ZM" />
+                    </div>
+
+                    <fieldset className="party-ledger-zm-card" disabled>
+                      <legend>ZM Selection</legend>
+                      <label><input type="checkbox" /><span>Selection semantics not mapped yet</span></label>
+                    </fieldset>
+                  </div>
+
+                  <fieldset className="party-ledger-documents" disabled>
+                    <legend>Select a Document</legend>
+                    {['PURCHASES', 'PURCHASE RETURN', 'SALES INVOICE', 'SALES RETURN', 'ADJUSTMENTS', 'LOCAL PURCHASE', 'SALES RETAIL'].map((label) => (
+                      <label key={label}>
+                        <input type="checkbox" />
+                        <span>{label}</span>
+                      </label>
+                    ))}
+                  </fieldset>
                 </div>
-
-                <fieldset className="party-ledger-zm-card" disabled>
-                  <legend>ZM Selection</legend>
-                  <label><input type="checkbox" /><span>Selection semantics not mapped yet</span></label>
-                </fieldset>
-
-                <fieldset className="party-ledger-documents" disabled>
-                  <legend>Select a Document</legend>
-                  {['PURCHASES', 'PURCHASE RETURN', 'SALES INVOICE', 'SALES RETURN', 'ADJUSTMENTS', 'LOCAL PURCHASE', 'SALES RETAIL'].map((label) => (
-                    <label key={label}>
-                      <input type="checkbox" />
-                      <span>{label}</span>
-                    </label>
-                  ))}
-                </fieldset>
               </div>
 
               <div className="party-ledger-right-options">
