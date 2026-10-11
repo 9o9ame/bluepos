@@ -1,7 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight, Eye, RefreshCw } from 'lucide-react'
-import { fetchProducts, fetchProductStock } from '../api/catalog'
+import { fetchProducts } from '../api/catalog'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { useCan } from '../features/auth/useCan'
@@ -139,12 +139,6 @@ export function ProductViewPage() {
   const selectedRow = rows.find((row) => row.key === selectedKey) ?? null
   const selectedProduct = selectedRow?.product ?? null
 
-  const stockQuery = useQuery({
-    queryKey: ['product-stock', 'daily-product-view', selectedProduct?.ulid],
-    queryFn: () => fetchProductStock(selectedProduct!.ulid),
-    enabled: Boolean(selectedProduct),
-  })
-
   const columns = useMemo<PosGridColumn<ProductViewRow>[]>(() => [
     {
       key: 'product_number',
@@ -259,7 +253,6 @@ export function ProductViewPage() {
   ], [canViewInventory])
 
   const saleRates = (selectedProduct?.prices ?? []).filter((price) => price.is_active)
-  const activeWarehouse = stockQuery.data?.active_warehouse
 
   function resetPage() {
     setPage(1)
@@ -380,8 +373,8 @@ export function ProductViewPage() {
           <section className="product-view-side-card">
             <h3>Store Stock</h3>
             <div className="product-view-store">
-              <span>{activeWarehouse?.name ?? 'Current warehouse'}</span>
-              <strong>{quantity(activeWarehouse?.quantity)}</strong>
+              <span>Active warehouse</span>
+              <strong>{quantity(selectedProduct?.sales_lookup?.in_stock)}</strong>
             </div>
           </section>
 
