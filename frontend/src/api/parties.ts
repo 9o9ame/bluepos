@@ -359,8 +359,11 @@ export type PartyLedgerRow = {
   doc: string
   book_number: string | null
   remarks: string | null
+  line_description: string | null
+  entry_description: string | null
   group_key: string | null
   group_label: string | null
+  subgroup_balance: string | null
   debit: string
   credit: string
   balance: string
