@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { BookOpen, Eye, Plus, XCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -18,6 +18,22 @@ import { UiSelect } from '../components/ui/UiSelect'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import './VendorCustomerLedgerPage.css'
+
+const LEDGER_GROUP_FIELDS = [
+  { value: '', label: 'No Grouping' },
+  { value: 'document', label: 'Document' },
+  { value: 'entry_date', label: 'Date' },
+  { value: 'user_name', label: 'User Name' },
+  { value: 'area_name', label: 'Area Name' },
+]
+
+const LEDGER_FILTER_FIELDS = [
+  { value: '', label: 'No Filter' },
+  { value: 'document', label: 'Document' },
+  { value: 'entry_date', label: 'Date' },
+  { value: 'user_name', label: 'User Name' },
+  { value: 'area_name', label: 'Area Name' },
+]
 
 const LEDGER_DOCUMENT_OPTIONS = [
   { value: 'purchase_invoice', label: 'PURCHASES', enabled: true },
@@ -117,6 +133,9 @@ export function VendorCustomerLedgerPage() {
   const [withoutHeading, setWithoutHeading] = useState(false)
   const [showBookNumber, setShowBookNumber] = useState(false)
   const [selectedDocumentTypes, setSelectedDocumentTypes] = useState<string[]>([])
+  const [groupBy, setGroupBy] = useState('')
+  const [filterBy, setFilterBy] = useState('')
+  const [onlyFor, setOnlyFor] = useState('')
   const [reportTypeOptionsOpen, setReportTypeOptionsOpen] = useState(false)
   const [groupFieldsOpen, setGroupFieldsOpen] = useState(false)
   const [remarksFontSize, setRemarksFontSize] = useState(9)
@@ -146,6 +165,32 @@ export function VendorCustomerLedgerPage() {
   )
 
   const selected = rows.find((row) => row.key === selectedKey) ?? null
+
+  const filterOptionsQuery = useQuery({
+    queryKey: [
+      'ledger-filter-options',
+      selected?.key ?? '',
+      allDates,
+      dateFrom,
+      dateTo,
+      includeOpeningBalance,
+      selectedDocumentTypes.join(','),
+      filterBy,
+    ],
+    enabled: Boolean(selected && filterBy),
+    queryFn: () => fetchPartyLedger(selected!.ulid, selected!.partyType, 1, {
+      date_from: allDates ? undefined : dateFrom,
+      date_to: allDates ? undefined : dateTo,
+      include_opening_balance: includeOpeningBalance,
+      document_types: selectedDocumentTypes.length > 0 ? selectedDocumentTypes : undefined,
+      per_page: 1,
+    }),
+  })
+
+  const onlyForOptions = filterBy
+    ? filterOptionsQuery.data?.filter_options?.[filterBy] ?? []
+    : []
+
   const loading = profilesQuery.isLoading || manualAccountsQuery.isLoading || accountTypesQuery.isLoading
   const loadError = profilesQuery.error || manualAccountsQuery.error || accountTypesQuery.error
 
@@ -175,6 +220,9 @@ export function VendorCustomerLedgerPage() {
         date_to: allDates ? undefined : dateTo,
         include_opening_balance: includeOpeningBalance,
         document_types: selectedDocumentTypes.length > 0 ? selectedDocumentTypes : undefined,
+        group_by: groupBy || undefined,
+        filter_by: filterBy || undefined,
+        only_for: filterBy && onlyFor ? onlyFor : undefined,
         per_page: 100,
       })
       setPreview(data)
@@ -420,11 +468,10 @@ export function VendorCustomerLedgerPage() {
                     <span>Group by:</span>
                     <div className="party-ledger-select-plus">
                       <UiSelect
-                        value=""
-                        disabled
+                        value={groupBy}
                         searchable={false}
-                        options={[{ value: '', label: 'Not mapped yet' }]}
-                        onChange={() => undefined}
+                        options={LEDGER_GROUP_FIELDS}
+                        onChange={setGroupBy}
                         aria-label="Group by"
                       />
                       <UiButton
@@ -439,19 +486,34 @@ export function VendorCustomerLedgerPage() {
                     </div>
                   </div>
 
-                  {['Filter By:', 'Only For:'].map((label) => (
-                    <div className="party-ledger-field-row" key={label}>
-                      <span>{label}</span>
-                      <UiSelect
-                        value=""
-                        disabled
-                        searchable={false}
-                        options={[{ value: '', label: 'Not mapped yet' }]}
-                        onChange={() => undefined}
-                        aria-label={label}
-                      />
-                    </div>
-                  ))}
+                  <div className="party-ledger-field-row">
+                    <span>Filter By:</span>
+                    <UiSelect
+                      value={filterBy}
+                      searchable={false}
+                      options={LEDGER_FILTER_FIELDS}
+                      onChange={(value) => {
+                        setFilterBy(value)
+                        setOnlyFor('')
+                      }}
+                      aria-label="Filter By"
+                    />
+                  </div>
+
+                  <div className="party-ledger-field-row">
+                    <span>Only For:</span>
+                    <UiSelect
+                      value={onlyFor}
+                      disabled={!filterBy || filterOptionsQuery.isFetching}
+                      searchable
+                      options={[
+                        { value: '', label: filterBy ? 'All Values' : 'Select Filter By first' },
+                        ...onlyForOptions,
+                      ]}
+                      onChange={setOnlyFor}
+                      aria-label="Only For"
+                    />
+                  </div>
                 </div>
 
                 <div className="party-ledger-bottom-checks">
@@ -584,7 +646,7 @@ export function VendorCustomerLedgerPage() {
             </tbody>
           </table>
           <p className="party-ledger-config-note">
-            These fields are shown from the reference. Grouped ledger calculation will be enabled only after the matching server-side data is available.
+            Document, Date, User Name, and Area Name are functional. Main Area, Category, and Sales Person remain reference-only until matching source data exists.
           </p>
         </div>
       </UiModal>
@@ -639,19 +701,37 @@ export function VendorCustomerLedgerPage() {
                     <td colSpan={showBookNumber ? 8 : 7}>Opening Balance:</td>
                     <td className="is-num">{preview.carry_forward}</td>
                   </tr>
-                  {previewRows.map((row, index) => (
-                    <tr key={row.line_ulid}>
-                      <td className="is-center">{index + 1}</td>
-                      <td>{row.date}</td>
-                      <td>{row.trans_no}</td>
-                      <td>{row.doc}</td>
-                      {showBookNumber ? <td>{row.book_number ?? '—'}</td> : null}
-                      <td style={{ fontSize: `${remarksFontSize}px` }}>{row.remarks ?? '—'}</td>
-                      <td className="is-num">{row.debit}</td>
-                      <td className="is-num">{row.credit}</td>
-                      <td className="is-num">{row.balance}</td>
-                    </tr>
-                  ))}
+                  {previewRows.map((row, index) => {
+                    const previous = index > 0 ? previewRows[index - 1] : null
+                    const showGroupHeader = Boolean(
+                      groupBy &&
+                      row.group_label &&
+                      (!previous || previous.group_key !== row.group_key),
+                    )
+
+                    return (
+                      <Fragment key={row.line_ulid}>
+                        {showGroupHeader ? (
+                          <tr className="party-ledger-group-row">
+                            <td colSpan={showBookNumber ? 9 : 8}>
+                              {row.group_label}
+                            </td>
+                          </tr>
+                        ) : null}
+                        <tr>
+                          <td className="is-center">{index + 1}</td>
+                          <td>{row.date}</td>
+                          <td>{row.trans_no}</td>
+                          <td>{row.doc}</td>
+                          {showBookNumber ? <td>{row.book_number ?? '—'}</td> : null}
+                          <td style={{ fontSize: `${remarksFontSize}px` }}>{row.remarks ?? '—'}</td>
+                          <td className="is-num">{row.debit}</td>
+                          <td className="is-num">{row.credit}</td>
+                          <td className="is-num">{row.balance}</td>
+                        </tr>
+                      </Fragment>
+                    )
+                  })}
                   {previewRows.length === 0 ? (
                     <tr>
                       <td colSpan={showBookNumber ? 9 : 8} className="party-ledger-preview-empty">No posted ledger transactions in this period.</td>
