@@ -11,6 +11,7 @@ use App\Models\Account;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class DailyCashPositionController extends Controller
 {
@@ -90,12 +91,16 @@ class DailyCashPositionController extends Controller
 
         $data = $request->validate([
             'date' => ['nullable', 'date'],
+            'filter_by' => ['nullable', 'string', Rule::in(['document', 'entry_date', 'user_name', 'sales_person'])],
+            'only_for' => ['nullable', 'string', 'max:255'],
         ]);
 
         return response()->json($this->cashCreditSummary->build(
             $tenantContext->tenantId(),
             $tenantContext->branchId(),
             (string) ($data['date'] ?? now()->toDateString()),
+            isset($data['filter_by']) ? (string) $data['filter_by'] : null,
+            isset($data['only_for']) ? (string) $data['only_for'] : null,
         ));
     }
 
