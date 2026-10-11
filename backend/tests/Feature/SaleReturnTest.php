@@ -88,6 +88,8 @@ class SaleReturnTest extends TestCase
             ->firstOrFail();
 
         $this->assertSame('1.000000', (string) $movement->quantity);
+        $this->assertSame('10.0000', (string) $movement->unit_cost);
+        $this->assertSame('10.0000', (string) $movement->total_cost);
         $this->assertSame('sale_return', $movement->reference_type);
         $this->assertSame('sale_return:'.$returnUlid.':'.$movement->reference_line_ulid, $movement->idempotency_key);
 
@@ -103,6 +105,16 @@ class SaleReturnTest extends TestCase
         $original = Sale::query()->where('ulid', $saleUlid)->firstOrFail();
         $this->assertSame('posted', $original->status->value);
         $this->assertSame('400.0000', (string) $original->grand_total);
+
+        $saleMovement = StockMovement::query()
+            ->where('movement_type', 'sale')
+            ->where('reference_ulid', $saleUlid)
+            ->where('reference_line_ulid', $saleItemUlid)
+            ->firstOrFail();
+
+        $this->assertSame('-4.000000', (string) $saleMovement->quantity);
+        $this->assertSame('10.0000', (string) $saleMovement->unit_cost);
+        $this->assertSame('-40.0000', (string) $saleMovement->total_cost);
 
         $this->patchJson('/api/sales-returns/'.$returnUlid, [
             'notes' => 'No edit after post',
