@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Accounting\CashierTransactionLock;
 use App\Models\Account;
 use App\Models\AccountType;
 use App\Models\BusinessSetting;
@@ -57,6 +58,12 @@ class VoucherTest extends TestCase
         $voucherUlid = $draft->json('ulid');
         $this->assertStringStartsWith('DV-', (string) $draft->json('voucher_number'));
         $this->assertNoInternalIds($draft->json());
+
+        $this->mock(CashierTransactionLock::class, function (\Mockery\MockInterface $mock): void {
+            $mock->shouldReceive('lockCurrent')
+                ->once()
+                ->andReturn(app(TenantContext::class)->membership());
+        });
 
         $this->postJson('/api/vouchers/'.$voucherUlid.'/post')
             ->assertOk()
