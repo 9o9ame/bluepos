@@ -34,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'sales_clearing_account_id',
     'purchase_clearing_account_id',
     'sales_revenue_account_id',
+    'sales_tax_payable_account_id',
     'inventory_account_id',
     'cogs_account_id',
 ])]
@@ -95,6 +96,11 @@ class BusinessSetting extends Model
     public function salesRevenueAccount(): BelongsTo
     {
         return $this->belongsTo(Account::class, 'sales_revenue_account_id');
+    }
+
+    public function salesTaxPayableAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'sales_tax_payable_account_id');
     }
 
     public function inventoryAccount(): BelongsTo
