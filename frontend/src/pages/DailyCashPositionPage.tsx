@@ -6,6 +6,7 @@ import {
   fetchCashCreditSummary,
   fetchCashPositionAccounts,
   type CashBookRow,
+  type CashCreditFilterKey,
   type CashCreditPositionRow,
 } from '../api/cashPosition'
 import { DesktopPanel } from '../components/desktop/DesktopPanel'
@@ -44,6 +45,8 @@ export function DailyCashPositionPage() {
   const [dateFrom, setDateFrom] = useState(todayIso())
   const [dateTo, setDateTo] = useState(todayIso())
   const [ignoreDate, setIgnoreDate] = useState(false)
+  const [summaryFilterBy, setSummaryFilterBy] = useState<CashCreditFilterKey | ''>('')
+  const [summaryOnlyFor, setSummaryOnlyFor] = useState('')
 
   const accountsQuery = useQuery({
     queryKey: ['cash-position-accounts'],
@@ -57,9 +60,13 @@ export function DailyCashPositionPage() {
   }, [accountUlid, accountsQuery.data])
 
   const summaryQuery = useQuery({
-    queryKey: ['cash-credit-summary', dateTo],
+    queryKey: ['cash-credit-summary', dateTo, summaryFilterBy, summaryOnlyFor],
     enabled: activeView === 'cash-credit',
-    queryFn: () => fetchCashCreditSummary(dateTo),
+    queryFn: () =>
+      fetchCashCreditSummary(dateTo, {
+        filter_by: summaryFilterBy || undefined,
+        only_for: summaryOnlyFor || undefined,
+      }),
   })
 
   const reportQuery = useQuery({
@@ -191,6 +198,21 @@ export function DailyCashPositionPage() {
     ],
     [],
   )
+
+  const summaryFilterOptions = [
+    { value: '', label: 'No Filter' },
+    { value: 'document', label: 'Document' },
+    { value: 'entry_date', label: 'Date' },
+    { value: 'user_name', label: 'User Name' },
+    { value: 'sales_person', label: 'Sales Person Name' },
+  ]
+
+  const summaryOnlyForOptions = summaryFilterBy
+    ? [
+        { value: '', label: 'All Values' },
+        ...(cashCredit?.filter_options[summaryFilterBy] ?? []),
+      ]
+    : [{ value: '', label: 'Select Filter By first' }]
 
   const metricCards = [
     ['Sales', cashCredit?.metrics.sales, 'sales'],
@@ -365,20 +387,24 @@ export function DailyCashPositionPage() {
               <span>Filter By:</span>
               <UiSelect
                 aria-label="Cash summary filter"
-                value=""
-                disabled
-                title="Filter semantics will be added only when matching source dimensions are implemented server-side."
-                options={[{ value: '', label: 'No Filter' }]}
+                value={summaryFilterBy}
+                title="Supported: Document, Date, User Name, Sales Person Name. Area/Main Area/Category need an authoritative journal-level source."
+                options={summaryFilterOptions}
+                onChange={(value) => {
+                  setSummaryFilterBy(value as CashCreditFilterKey | '')
+                  setSummaryOnlyFor('')
+                }}
               />
             </label>
             <label>
               <span>Only For:</span>
               <UiSelect
                 aria-label="Cash summary only for"
-                value=""
-                disabled
-                title="Select a Filter By dimension first."
-                options={[{ value: '', label: 'All Values' }]}
+                value={summaryOnlyFor}
+                disabled={!summaryFilterBy}
+                title={summaryFilterBy ? 'Filter the selected day by this value.' : 'Select Filter By first.'}
+                options={summaryOnlyForOptions}
+                onChange={setSummaryOnlyFor}
               />
             </label>
           </div>
