@@ -426,9 +426,10 @@ export function DailyCashPositionPage() {
     const count = Number(denominationCounts[denomination] ?? 0)
     return total + (Number.isFinite(count) ? Math.max(0, count) * denomination : 0)
   }, 0)
-  const computerCash = dayClose?.current_shift?.expected_cash === null || dayClose?.current_shift === null
+  const expectedCash = dayClose?.current_shift?.expected_cash
+  const computerCash = expectedCash == null
     ? null
-    : Number(dayClose.current_shift.expected_cash)
+    : Number(expectedCash)
   const cashDifference = computerCash === null || !Number.isFinite(computerCash)
     ? null
     : drawerCash - computerCash
