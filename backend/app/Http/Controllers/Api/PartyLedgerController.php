@@ -49,6 +49,9 @@ class PartyLedgerController extends Controller
                     'sale_payment',
                 ]),
             ],
+            'group_by' => ['nullable', 'string', Rule::in(['document', 'entry_date', 'user_name', 'area_name'])],
+            'filter_by' => ['nullable', 'string', Rule::in(['document', 'entry_date', 'user_name', 'area_name'])],
+            'only_for' => ['nullable', 'string', 'max:255'],
         ]);
 
         $page = max(1, (int) ($data['page'] ?? 1));
@@ -62,6 +65,9 @@ class PartyLedgerController extends Controller
             isset($data['date_to']) ? (string) $data['date_to'] : null,
             (bool) ($data['include_opening_balance'] ?? true),
             array_values($data['document_types'] ?? []),
+            isset($data['group_by']) ? (string) $data['group_by'] : null,
+            isset($data['filter_by']) ? (string) $data['filter_by'] : null,
+            isset($data['only_for']) ? (string) $data['only_for'] : null,
         );
 
         if ($party instanceof Supplier || $party instanceof Customer) {
