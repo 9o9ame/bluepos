@@ -135,8 +135,8 @@ export function VendorCustomerLedgerPage() {
     { key: 'type', header: 'TYPE', width: 160, render: (row) => row.typeLabel },
   ], [])
 
-  async function openPreview() {
-    if (!selected) {
+  async function openPreview(target: LedgerPartyRow | null = selected) {
+    if (!target) {
       feedback.error('Select a Vendor, Customer, or Account first.', 'Ledger')
       return
     }
@@ -147,7 +147,7 @@ export function VendorCustomerLedgerPage() {
 
     setPreviewLoading(true)
     try {
-      const data = await fetchPartyLedger(selected.ulid, selected.partyType, 1, {
+      const data = await fetchPartyLedger(target.ulid, target.partyType, 1, {
         date_from: allDates ? undefined : dateFrom,
         date_to: allDates ? undefined : dateTo,
         include_opening_balance: includeOpeningBalance,
@@ -188,7 +188,7 @@ export function VendorCustomerLedgerPage() {
               onSelect={(row) => setSelectedKey(row.key)}
               onActivate={(row) => {
                 setSelectedKey(row.key)
-                void openPreview()
+                void openPreview(row)
               }}
               emptyMessage={loading ? 'Loading accounts…' : loadError ? 'Unable to load accounts' : 'No Vendor / Customer / Accounts'}
             />
