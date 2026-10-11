@@ -31,6 +31,7 @@ import { SalesReturnsPage } from '../pages/SalesReturnsPage'
 import { StockTakingPage } from '../pages/StockTakingPage'
 import { SubcategoriesPage } from '../pages/SubcategoriesPage'
 import { UnitsPage } from '../pages/UnitsPage'
+import { VendorCustomerLedgerPage } from '../pages/VendorCustomerLedgerPage'
 import { VouchersPage } from '../pages/VouchersPage'
 import { UsersPage } from '../pages/UsersPage'
 import { WorkspacePage } from '../pages/WorkspacePage'
@@ -85,6 +86,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="accounting.journal.view" />}>
             <Route path="/daily/vouchers" element={<VouchersPage />} />
           </Route>
+          <Route path="/daily/ledger" element={<VendorCustomerLedgerPage />} />
           <Route path="/reports" element={<ReportsPlaceholderPage />} />
           <Route path="/help/about" element={<HelpAboutPage />} />
           <Route path="/administration/account" element={<AccountPage />} />
