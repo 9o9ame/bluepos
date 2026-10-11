@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\InventoryAdjustmentStatus;
 use App\Enums\StockMovementType;
 use App\Models\Account;
 use App\Models\AccountType;
@@ -190,7 +191,7 @@ class InventoryAdjustmentTest extends TestCase
 
         $this->assertSame('5.000000', $this->stock($product));
         $this->assertSame(
-            'draft',
+            InventoryAdjustmentStatus::Draft,
             InventoryAdjustment::query()->where('ulid', $adjustmentUlid)->value('status'),
         );
         $this->assertSame(
