@@ -104,3 +104,49 @@ export type StockTake = {
   } | null
   lines?: StockTakeLine[]
 }
+
+
+export type InventoryAdjustmentLine = {
+  ulid: string
+  in_stock: string
+  qty_plus: string
+  qty_minus: string
+  after_stock: string
+  price: string
+  amount: string
+  remarks: string | null
+  product?: {
+    ulid: string
+    product_number: string
+    sku: string | null
+    name: string
+  } | null
+}
+
+export type InventoryAdjustment = {
+  ulid: string
+  document_number: string
+  adjustment_date: string
+  adjustment_type: 'stock_adjustment'
+  status: 'draft' | 'posted'
+  notes: string | null
+  net_amount: string
+  posted_at: string | null
+  warehouse?: {
+    ulid: string
+    code: string
+    name: string
+  } | null
+  account?: {
+    ulid: string
+    code: string
+    name: string
+  } | null
+  lines?: InventoryAdjustmentLine[]
+}
+
+export type InventoryAdjustmentAccount = {
+  ulid: string
+  code: string
+  name: string
+}
