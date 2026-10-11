@@ -13,6 +13,7 @@ use App\Models\JournalLine;
 use App\Models\Permission;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class CashierShiftTest extends TestCase
@@ -169,7 +170,9 @@ class CashierShiftTest extends TestCase
             $this->idem('cash-shift-open-forbidden'),
         )->assertForbidden();
 
-        $role->permissions()->syncWithoutDetaching([$openPermission->id]);
+        $role->permissions()->syncWithoutDetaching([
+            $openPermission->id => ['ulid' => (string) Str::ulid()],
+        ]);
         app()->forgetInstance(PermissionService::class);
 
         $shiftUlid = $this->postJson(
@@ -188,7 +191,9 @@ class CashierShiftTest extends TestCase
             $this->idem('cash-shift-close-forbidden'),
         )->assertForbidden();
 
-        $role->permissions()->syncWithoutDetaching([$closePermission->id]);
+        $role->permissions()->syncWithoutDetaching([
+            $closePermission->id => ['ulid' => (string) Str::ulid()],
+        ]);
         app()->forgetInstance(PermissionService::class);
 
         $otherBranch = Branch::query()->create([
