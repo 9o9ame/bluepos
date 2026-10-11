@@ -30,6 +30,7 @@ class AccountLedgerBuilder
         ?string $groupBy = null,
         ?string $filterBy = null,
         ?string $onlyFor = null,
+        ?string $saleMode = null,
     ): array {
         $page = max(1, $page);
         $perPage = max(1, min(100, $perPage));
@@ -54,9 +55,17 @@ class AccountLedgerBuilder
                 'journal_entries.description as entry_description',
                 'users.ulid as creator_ulid',
                 'users.name as creator_name',
+                'sales.price_type as sale_price_type',
+                'salesman_profiles.ulid as salesman_ulid',
+                'salesman_profiles.name as salesman_name',
             ])
             ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
             ->leftJoin('users', 'users.id', '=', 'journal_entries.created_by')
+            ->leftJoin('sales', function ($join): void {
+                $join->on('sales.id', '=', 'journal_entries.document_id')
+                    ->where('journal_entries.document_type', '=', 'sale_payment');
+            })
+            ->leftJoin('party_profiles as salesman_profiles', 'salesman_profiles.id', '=', 'sales.salesman_party_profile_id')
             ->where('journal_lines.account_id', $leaf->id)
             ->where('journal_lines.tenant_id', $leaf->tenant_id)
             ->where('journal_entries.tenant_id', $leaf->tenant_id)
@@ -87,6 +96,10 @@ class AccountLedgerBuilder
 
         foreach ($lines as $line) {
             if (! $this->matchesFilter($line, $accountArea, $filterBy, $onlyFor)) {
+                continue;
+            }
+
+            if (! $this->matchesSaleMode($line, $saleMode)) {
                 continue;
             }
 
@@ -135,6 +148,8 @@ class AccountLedgerBuilder
                 'remarks' => $line->line_description ?: $line->entry_description,
                 'line_description' => $line->line_description,
                 'entry_description' => $line->entry_description,
+                'salesman_name' => $line->salesman_name,
+                'sale_price_type' => $line->sale_price_type,
                 'group_key' => $groupKey,
                 'group_label' => $this->groupLabel($line, $accountArea, $groupBy),
                 'subgroup_balance' => $groupBy !== null ? $this->balances->money($subgroupBalance) : null,
@@ -219,8 +234,24 @@ class AccountLedgerBuilder
             'entry_date' => \Illuminate\Support\Carbon::parse($line->entry_date)->format('Y-m-d') === $onlyFor,
             'user_name' => (string) ($line->creator_ulid ?? '') === $onlyFor,
             'area_name' => (string) ($accountArea ?? '') === $onlyFor,
+            'sales_person' => (string) ($line->salesman_ulid ?? '') === $onlyFor,
             default => true,
         };
+    }
+
+    private function matchesSaleMode(object $line, ?string $saleMode): bool
+    {
+        if ($saleMode === null || $saleMode === '') {
+            return true;
+        }
+
+        if (! $line->sale_price_type) {
+            return false;
+        }
+
+        return $saleMode === 'wholesale'
+            ? (string) $line->sale_price_type === 'wholesale'
+            : (string) $line->sale_price_type !== 'wholesale';
     }
 
     private function groupKey(object $line, ?string $accountArea, ?string $groupBy): ?string
@@ -230,6 +261,7 @@ class AccountLedgerBuilder
             'entry_date' => \Illuminate\Support\Carbon::parse($line->entry_date)->format('Y-m-d'),
             'user_name' => $line->creator_ulid ? (string) $line->creator_ulid : null,
             'area_name' => $accountArea ?: null,
+            'sales_person' => $line->salesman_ulid ? (string) $line->salesman_ulid : 'none',
             default => null,
         };
     }
@@ -241,6 +273,7 @@ class AccountLedgerBuilder
             'entry_date' => \Illuminate\Support\Carbon::parse($line->entry_date)->format('Y-m-d'),
             'user_name' => $line->creator_name ? (string) $line->creator_name : 'Unknown User',
             'area_name' => $accountArea ?: 'No Area',
+            'sales_person' => $line->salesman_name ? (string) $line->salesman_name : 'No Sales Person',
             default => null,
         };
     }
@@ -254,6 +287,7 @@ class AccountLedgerBuilder
         $documents = [];
         $dates = [];
         $users = [];
+        $salesPeople = [];
 
         foreach ($lines as $line) {
             $documentType = (string) $line->document_type;
@@ -265,11 +299,16 @@ class AccountLedgerBuilder
             if ($line->creator_ulid) {
                 $users[(string) $line->creator_ulid] = (string) ($line->creator_name ?: 'Unknown User');
             }
+
+            if ($line->salesman_ulid) {
+                $salesPeople[(string) $line->salesman_ulid] = (string) ($line->salesman_name ?: 'Unknown Sales Person');
+            }
         }
 
         ksort($documents);
         ksort($dates);
         asort($users, SORT_NATURAL | SORT_FLAG_CASE);
+        asort($salesPeople, SORT_NATURAL | SORT_FLAG_CASE);
 
         $toOptions = static fn (array $items): array => array_values(array_map(
             static fn (string $label, string $value): array => ['value' => $value, 'label' => $label],
@@ -287,6 +326,7 @@ class AccountLedgerBuilder
             'entry_date' => $toOptions($dates),
             'user_name' => $toOptions($users),
             'area_name' => $toOptions($areas),
+            'sales_person' => $toOptions($salesPeople),
         ];
     }
 
