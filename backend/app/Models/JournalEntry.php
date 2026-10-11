@@ -35,6 +35,7 @@ class JournalEntry extends Model
     public const DOCUMENT_PURCHASE_PAYMENT = 'purchase_payment';
     public const DOCUMENT_SALE_INVOICE = 'sale_invoice';
     public const DOCUMENT_SALE_RETURN = 'sale_return';
+    public const DOCUMENT_INVENTORY_ADJUSTMENT = 'inventory_adjustment';
     public const DOCUMENT_PAYMENT_VOUCHER = 'payment_voucher';
     public const DOCUMENT_RECEIVING_VOUCHER = 'receiving_voucher';
     public const DOCUMENT_JOURNAL_VOUCHER = 'journal_voucher';
