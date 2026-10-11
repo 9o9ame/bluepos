@@ -126,6 +126,29 @@ class AccountLedgerBuilder
             ];
         }
 
+        $groupTotals = [];
+        if ($groupBy !== null) {
+            foreach ($periodRows as $row) {
+                $key = (string) ($row['group_key'] ?? '');
+                $label = (string) ($row['group_label'] ?? '');
+                if ($key === '') {
+                    continue;
+                }
+
+                if (! isset($groupTotals[$key])) {
+                    $groupTotals[$key] = [
+                        'key' => $key,
+                        'label' => $label,
+                        'debit' => '0.0000',
+                        'credit' => '0.0000',
+                    ];
+                }
+
+                $groupTotals[$key]['debit'] = bcadd($groupTotals[$key]['debit'], (string) $row['debit'], 4);
+                $groupTotals[$key]['credit'] = bcadd($groupTotals[$key]['credit'], (string) $row['credit'], 4);
+            }
+        }
+
         $total = count($periodRows);
         $lastPage = max(1, (int) ceil($total / $perPage));
         $page = min($page, $lastPage);
@@ -151,6 +174,7 @@ class AccountLedgerBuilder
             ],
             'rows' => array_values($pageRows),
             'filter_options' => $filterOptions,
+            'group_totals' => array_values($groupTotals),
             'totals' => [
                 'debit' => $periodDebit,
                 'credit' => $periodCredit,
