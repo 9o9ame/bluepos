@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Accounting\CashierTransactionLock;
 use App\Models\Account;
 use App\Models\AccountType;
 use App\Models\BusinessSetting;
@@ -30,6 +31,12 @@ class PurchasePaymentTest extends TestCase
         $supplierAccount = Account::query()
             ->where('supplier_id', $purchaseModel->supplier_id)
             ->firstOrFail();
+
+        $this->mock(CashierTransactionLock::class, function (\Mockery\MockInterface $mock): void {
+            $mock->shouldReceive('lockCurrent')
+                ->once()
+                ->andReturn(app(TenantContext::class)->membership());
+        });
 
         $payment = $this->postJson(
             '/api/purchases/'.$purchase.'/payments',
