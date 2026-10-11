@@ -74,8 +74,18 @@ export type CashCreditPositionRow = {
   closing: string
 }
 
+export type CashCreditFilterKey = 'document' | 'entry_date' | 'user_name' | 'sales_person'
+
+export type CashCreditFilterOption = {
+  value: string
+  label: string
+}
+
 export type CashCreditSummary = {
   date: string
+  filter_by: CashCreditFilterKey | null
+  only_for: string | null
+  filter_options: Record<CashCreditFilterKey, CashCreditFilterOption[]>
   metrics: {
     sales: CashCreditMetric
     retail_sale: CashCreditMetric
@@ -93,10 +103,17 @@ export type CashCreditSummary = {
     credit: string
     closing: string
   }
+  unsupported_filters: Record<string, string>
   unsupported_reasons: Record<string, string>
 }
 
-export function fetchCashCreditSummary(date: string) {
+export function fetchCashCreditSummary(
+  date: string,
+  params: { filter_by?: CashCreditFilterKey; only_for?: string } = {},
+) {
   const search = new URLSearchParams({ date })
+  if (params.filter_by) search.set('filter_by', params.filter_by)
+  if (params.only_for) search.set('only_for', params.only_for)
+
   return apiFetch<CashCreditSummary>(`/api/cash-position/summary?${search.toString()}`)
 }
