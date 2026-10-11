@@ -14,19 +14,20 @@
 
 .party-ledger-accounts {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   min-height: 0;
   padding: 5px 7px 0;
 }
 
-.party-ledger-grid-toolbar {
+.party-ledger-panel-title {
   display: flex;
-  justify-content: flex-end;
-  min-height: 26px;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
 }
 
-.party-ledger-grid-toolbar label,
+.party-ledger-panel-title label,
 .party-ledger-reference-options label,
 .party-ledger-check,
 .party-ledger-bottom-checks label,
@@ -281,6 +282,16 @@
   align-items: center;
 }
 
+.party-ledger-report-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 10px;
+}
+
+.party-ledger-report-fields .party-ledger-field-row {
+  grid-template-columns: 102px minmax(150px, 1fr);
+}
+
 .party-ledger-plus-button {
   min-width: 30px;
   width: 30px;
@@ -479,6 +490,10 @@
   .party-ledger-bottom-checks {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .party-ledger-report-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 700px) {
@@ -487,7 +502,8 @@
   .party-ledger-bottom-checks,
   .party-ledger-field-row,
   .party-ledger-inline-options,
-  .party-ledger-left-lower {
+  .party-ledger-left-lower,
+  .party-ledger-report-fields {
     grid-template-columns: 1fr;
   }
 
