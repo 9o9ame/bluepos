@@ -213,9 +213,8 @@ export function VendorCustomerLedgerPage() {
         </section>
 
         <section className="party-ledger-options" aria-label="Additional Selection and Actions">
-          <div className="party-ledger-options-title">Additional Selection and Actions</div>
-
-          <div className="party-ledger-options-body">
+          <div className="party-ledger-options-title">
+            <span>Additional Selection and Actions</span>
             <div className="party-ledger-reference-options">
               <label title="Report-heading suppression will be enabled with printable ledger output.">
                 <input type="checkbox" disabled />
@@ -238,7 +237,9 @@ export function VendorCustomerLedgerPage() {
                 <span>In Reverse Order</span>
               </label>
             </div>
+          </div>
 
+          <div className="party-ledger-options-body">
             <div className="party-ledger-options-columns">
               <div className="party-ledger-left-options">
                 <label className="party-ledger-check disabled-option" title="Document filtering requires a server-side report filter to keep totals authoritative.">
