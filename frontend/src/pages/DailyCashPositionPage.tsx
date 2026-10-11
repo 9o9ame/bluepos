@@ -166,13 +166,6 @@ export function DailyCashPositionPage() {
     <DesktopPanel
       className="daily-cash-position"
       title="Cash book view"
-      toolbar={
-        <>
-          <UiButton variant="info" icon={<RefreshCw size={14} />} onClick={refresh}>Refresh</UiButton>
-          <UiButton variant="info" icon={<Printer size={14} />} disabled={!report} onClick={printView}>Print View</UiButton>
-          <UiButton variant="info" onClick={closeActiveTab}>Close</UiButton>
-        </>
-      }
     >
       <div className="dcp-tabs" role="tablist" aria-label="Daily Cash Position views">
         <UiButton variant="primary" icon={<Banknote size={14} />}>Cash Book</UiButton>
@@ -212,15 +205,22 @@ export function DailyCashPositionPage() {
           </label>
         </div>
 
-        <div className="dcp-dates">
-          <label>
-            <span>From:</span>
-            <input type="date" value={dateFrom} disabled={ignoreDate} onChange={(event) => setDateFrom(event.target.value)} />
-          </label>
-          <label>
-            <span>To:</span>
-            <input type="date" value={dateTo} disabled={ignoreDate} onChange={(event) => setDateTo(event.target.value)} />
-          </label>
+        <div className="dcp-right-controls">
+          <div className="dcp-dates">
+            <label>
+              <span>From:</span>
+              <input type="date" value={dateFrom} disabled={ignoreDate} onChange={(event) => setDateFrom(event.target.value)} />
+            </label>
+            <label>
+              <span>To:</span>
+              <input type="date" value={dateTo} disabled={ignoreDate} onChange={(event) => setDateTo(event.target.value)} />
+            </label>
+          </div>
+          <div className="dcp-actions">
+            <UiButton variant="info" icon={<RefreshCw size={14} />} onClick={refresh}>Refresh</UiButton>
+            <UiButton variant="info" icon={<Printer size={14} />} disabled={!report} onClick={printView}>Print View</UiButton>
+            <UiButton variant="info" onClick={closeActiveTab}>Close</UiButton>
+          </div>
         </div>
       </div>
 
