@@ -164,6 +164,7 @@ class PartyLedgerTest extends TestCase
             'branch_id' => app(TenantContext::class)->branchId(),
             'document_type' => 'journal_voucher',
             'voucher_number' => 'JV-RANGE-1',
+            'book_number' => 'BOOK-7',
             'entry_date' => '2026-02-10',
             'description' => 'Range transaction',
             'status' => 'posted',
@@ -189,9 +190,22 @@ class PartyLedgerTest extends TestCase
         $ranged->assertJsonCount(1, 'rows')
             ->assertJsonPath('carry_forward', '100.0000')
             ->assertJsonPath('rows.0.debit', '25.0000')
+            ->assertJsonPath('rows.0.book_number', 'BOOK-7')
             ->assertJsonPath('rows.0.balance', '125.0000')
             ->assertJsonPath('totals.debit', '25.0000')
             ->assertJsonPath('totals.closing_balance', '125.0000');
+
+        $filtered = $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&document_types%5B0%5D=journal_voucher'
+        )->assertOk();
+
+        $filtered->assertJsonCount(1, 'rows')
+            ->assertJsonPath('rows.0.doc', 'JOURNAL VOUCHER')
+            ->assertJsonPath('rows.0.book_number', 'BOOK-7');
+
+        $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&document_types%5B0%5D=sales_invoice'
+        )->assertStatus(422);
 
         $withoutOpening = $this->getJson(
             '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&include_opening_balance=0'
