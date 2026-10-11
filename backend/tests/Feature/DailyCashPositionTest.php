@@ -61,6 +61,15 @@ class DailyCashPositionTest extends TestCase
             'credit' => '0.0000',
             'sort_order' => 0,
         ]);
+        JournalLine::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'journal_entry_id' => $foreignBranchEntry->id,
+            'account_id' => $revenue->id,
+            'description' => 'Other branch offset',
+            'debit' => '0.0000',
+            'credit' => '777.0000',
+            'sort_order' => 1,
+        ]);
 
         $accounts = $this->getJson('/api/cash-position/accounts')->assertOk();
         $cashRow = collect($accounts->json())->firstWhere('ulid', $cash->ulid);
@@ -88,7 +97,7 @@ class DailyCashPositionTest extends TestCase
         $rows = $report->json('rows');
         $this->assertSame('50.0000', $rows[0]['debit']);
         $this->assertSame('0.0000', $rows[0]['credit']);
-        $this->assertSame('100.0000', $rows[1]['credit']);
+        $this->assertSame('30.0000', $rows[1]['credit']);
         $this->assertNoInternalIds($report->json());
     }
 
