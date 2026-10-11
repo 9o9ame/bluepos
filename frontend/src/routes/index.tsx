@@ -15,6 +15,7 @@ import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
 import { HelpAboutPage } from '../pages/HelpAboutPage'
 import { LoginPage } from '../pages/LoginPage'
 import { OpeningStockPage } from '../pages/OpeningStockPage'
+import { InventoryAdjustmentsPage } from '../pages/InventoryAdjustmentsPage'
 import { PriceListsPage } from '../pages/PriceListsPage'
 import { QuotationEstimatePage } from '../pages/QuotationEstimatePage'
 import { PartiesPlaceholderPage } from '../pages/PartiesPlaceholderPage'
@@ -84,6 +85,9 @@ export function AppRoutes() {
           </Route>
           <Route element={<RequirePermission permission="purchase_returns.view" />}>
             <Route path="/daily/purchase-return" element={<PurchaseReturnsPage />} />
+          </Route>
+          <Route element={<RequirePermission permission="inventory.view" />}>
+            <Route path="/daily/adjustments" element={<InventoryAdjustmentsPage />} />
           </Route>
           <Route element={<RequirePermission permission="accounting.journal.view" />}>
             <Route path="/daily/vouchers" element={<VouchersPage />} />
