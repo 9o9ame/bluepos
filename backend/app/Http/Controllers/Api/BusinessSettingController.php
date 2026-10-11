@@ -16,7 +16,15 @@ class BusinessSettingController extends Controller
         $settings = $provisioner->provision($tenantContext->tenant());
         $this->authorize('view', $settings);
 
-        return new BusinessSettingResource($settings->load(['openingBalanceEquityAccount', 'defaultCashAccount', 'salesClearingAccount', 'purchaseClearingAccount']));
+        return new BusinessSettingResource($settings->load([
+            'openingBalanceEquityAccount',
+            'defaultCashAccount',
+            'salesClearingAccount',
+            'purchaseClearingAccount',
+            'salesRevenueAccount',
+            'inventoryAccount',
+            'cogsAccount',
+        ]));
     }
 
     public function update(
@@ -33,6 +41,9 @@ class BusinessSettingController extends Controller
             'default_cash_account_ulid' => 'default_cash_account_id',
             'sales_clearing_account_ulid' => 'sales_clearing_account_id',
             'purchase_clearing_account_ulid' => 'purchase_clearing_account_id',
+            'sales_revenue_account_ulid' => 'sales_revenue_account_id',
+            'inventory_account_ulid' => 'inventory_account_id',
+            'cogs_account_ulid' => 'cogs_account_id',
         ] as $ulidField => $idField) {
             if (! array_key_exists($ulidField, $data)) {
                 continue;
@@ -53,6 +64,14 @@ class BusinessSettingController extends Controller
         $settings->fill($data);
         $settings->save();
 
-        return new BusinessSettingResource($settings->fresh()->load(['openingBalanceEquityAccount', 'defaultCashAccount', 'salesClearingAccount', 'purchaseClearingAccount']));
+        return new BusinessSettingResource($settings->fresh()->load([
+            'openingBalanceEquityAccount',
+            'defaultCashAccount',
+            'salesClearingAccount',
+            'purchaseClearingAccount',
+            'salesRevenueAccount',
+            'inventoryAccount',
+            'cogsAccount',
+        ]));
     }
 }
