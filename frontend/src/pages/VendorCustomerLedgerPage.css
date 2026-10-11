@@ -71,6 +71,10 @@
 }
 
 .party-ledger-options-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 4px 8px;
   border-bottom: 1px solid var(--ui-border);
   background: var(--ui-surface-subtle);
@@ -85,9 +89,9 @@
 .party-ledger-reference-options {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 10px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--ui-border);
+  font-weight: 400;
 }
 
 .party-ledger-options-columns {
@@ -468,6 +472,15 @@
 }
 
 @media (max-width: 1050px) {
+  .party-ledger-options-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .party-ledger-reference-options {
+    justify-content: flex-start;
+  }
+
   .party-ledger-options-columns {
     grid-template-columns: 1fr;
   }
