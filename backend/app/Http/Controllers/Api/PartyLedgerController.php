@@ -49,6 +49,8 @@ class PartyLedgerController extends Controller
                     'receiving_voucher',
                     'journal_voucher',
                     'sale_payment',
+                    'sale_invoice',
+                    'sale_return',
                 ]),
             ],
             'group_by' => ['nullable', 'string', Rule::in(['document', 'entry_date', 'user_name', 'area_name', 'sales_person'])],
