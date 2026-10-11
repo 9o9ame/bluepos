@@ -6,6 +6,9 @@ use App\Models\Account;
 use App\Models\BusinessSetting;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
+use App\Models\PartyProfile;
+use App\Models\Sale;
+use App\Models\Warehouse;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -198,6 +201,61 @@ class PartyLedgerTest extends TestCase
             'sort_order' => 1,
         ]);
 
+        $salesman = PartyProfile::query()->create([
+            'tenant_id' => app(TenantContext::class)->tenantId(),
+            'code' => 'SM-RANGE',
+            'name' => 'Sales Person Range',
+            'is_active' => true,
+            'created_by' => app(TenantContext::class)->userId(),
+        ]);
+
+        $warehouse = Warehouse::query()
+            ->forTenant(app(TenantContext::class)->tenantId())
+            ->firstOrFail();
+
+        $sale = Sale::query()->create([
+            'tenant_id' => app(TenantContext::class)->tenantId(),
+            'branch_id' => app(TenantContext::class)->branchId(),
+            'warehouse_id' => $warehouse->id,
+            'customer_id' => $leaf->customer_id,
+            'salesman_party_profile_id' => $salesman->id,
+            'document_number' => 'SAL-LDG-RANGE',
+            'status' => 'posted',
+            'sale_date' => '2026-02-12',
+            'price_type' => 'wholesale',
+            'subtotal' => '15.0000',
+            'discount_amount' => '0.0000',
+            'tax_amount' => '0.0000',
+            'grand_total' => '15.0000',
+            'idempotency_key' => 'sale-ledger-range',
+            'created_by' => app(TenantContext::class)->userId(),
+            'posted_at' => now(),
+        ]);
+
+        $saleEntry = JournalEntry::query()->create([
+            'tenant_id' => app(TenantContext::class)->tenantId(),
+            'branch_id' => app(TenantContext::class)->branchId(),
+            'document_type' => 'sale_payment',
+            'document_id' => $sale->id,
+            'voucher_number' => 'SP-RANGE-1',
+            'entry_date' => '2026-02-12',
+            'description' => 'Sale-linked payment',
+            'status' => 'posted',
+            'created_by' => app(TenantContext::class)->userId(),
+            'posted_by' => app(TenantContext::class)->userId(),
+            'posted_at' => now(),
+        ]);
+
+        JournalLine::query()->create([
+            'tenant_id' => app(TenantContext::class)->tenantId(),
+            'journal_entry_id' => $saleEntry->id,
+            'account_id' => $leaf->id,
+            'description' => 'Sale-linked debit',
+            'debit' => '15.0000',
+            'credit' => '0.0000',
+            'sort_order' => 1,
+        ]);
+
         $ranged = $this->getJson(
             '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28'
         )->assertOk();
@@ -241,6 +299,25 @@ class PartyLedgerTest extends TestCase
             ->assertJsonPath('filter_options.area_name.0.value', 'RYK')
             ->assertJsonPath('filter_options.area_name.0.label', 'RYK');
 
+        $salesPersonGrouped = $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&group_by=sales_person&sale_mode=wholesale'
+        )->assertOk();
+
+        $salesPersonGrouped->assertJsonCount(1, 'rows')
+            ->assertJsonPath('rows.0.salesman_name', 'Sales Person Range')
+            ->assertJsonPath('rows.0.sale_price_type', 'wholesale')
+            ->assertJsonPath('rows.0.group_key', $salesman->ulid)
+            ->assertJsonPath('rows.0.group_label', 'Sales Person Range')
+            ->assertJsonPath('filter_options.sales_person.0.value', $salesman->ulid)
+            ->assertJsonPath('filter_options.sales_person.0.label', 'Sales Person Range');
+        $this->assertNoInternalIds($salesPersonGrouped->json());
+
+        $nonWholesale = $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&sale_mode=non_wholesale'
+        )->assertOk();
+
+        $nonWholesale->assertJsonCount(0, 'rows');
+
         $noMatch = $this->getJson(
             '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-02-01&date_to=2026-02-28&filter_by=entry_date&only_for=2026-02-11'
         )->assertOk();
@@ -256,6 +333,10 @@ class PartyLedgerTest extends TestCase
 
         $this->getJson(
             '/api/parties/'.$customerUlid.'/ledger?type=customer&group_by=unsupported'
+        )->assertStatus(422);
+
+        $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&sale_mode=unsupported'
         )->assertStatus(422);
 
         $withoutOpening = $this->getJson(
