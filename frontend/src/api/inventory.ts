@@ -7,6 +7,9 @@ import type {
   StockBalance,
   StockTake,
   StockTakeLine,
+  InventoryAdjustment,
+  InventoryAdjustmentAccount,
+  InventoryAdjustmentLine,
 } from '../types/inventory'
 import type { Warehouse } from '../types/auth'
 
@@ -216,6 +219,111 @@ export function deleteStockTakeLine(documentUlid: string, lineUlid: string) {
 
 export function postStockTake(documentUlid: string) {
   return apiFetch<StockTake>(`/api/inventory/stock-takes/${documentUlid}/post`, {
+    method: 'POST',
+  })
+}
+
+
+export function fetchInventoryAdjustmentAccounts() {
+  return apiFetch<{ data: InventoryAdjustmentAccount[] }>('/api/inventory/adjustments/accounts')
+}
+
+export function fetchInventoryAdjustments(params?: {
+  status?: string
+  from_date?: string
+  to_date?: string
+  product_ulid?: string
+}) {
+  const search = new URLSearchParams()
+  if (params?.status) search.set('status', params.status)
+  if (params?.from_date) search.set('from_date', params.from_date)
+  if (params?.to_date) search.set('to_date', params.to_date)
+  if (params?.product_ulid) search.set('product_ulid', params.product_ulid)
+
+  const suffix = search.toString() ? `?${search.toString()}` : ''
+  return apiFetch<InventoryAdjustment[]>(`/api/inventory/adjustments${suffix}`)
+}
+
+export function fetchInventoryAdjustment(ulid: string) {
+  return apiFetch<InventoryAdjustment>(`/api/inventory/adjustments/${ulid}`)
+}
+
+export function createInventoryAdjustment(payload: {
+  account_ulid: string
+  adjustment_date?: string
+  adjustment_type?: 'stock_adjustment'
+  notes?: string | null
+}) {
+  return apiFetch<InventoryAdjustment>('/api/inventory/adjustments', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateInventoryAdjustment(
+  ulid: string,
+  payload: {
+    account_ulid?: string
+    adjustment_date?: string
+    adjustment_type?: 'stock_adjustment'
+    notes?: string | null
+  },
+) {
+  return apiFetch<InventoryAdjustment>(`/api/inventory/adjustments/${ulid}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteInventoryAdjustment(ulid: string) {
+  return apiFetch<{ ok: boolean }>(`/api/inventory/adjustments/${ulid}`, {
+    method: 'DELETE',
+  })
+}
+
+export function createInventoryAdjustmentLine(
+  documentUlid: string,
+  payload: {
+    product_ulid: string
+    qty_plus?: string | null
+    qty_minus?: string | null
+    notes?: string | null
+  },
+) {
+  return apiFetch<InventoryAdjustmentLine>(`/api/inventory/adjustments/${documentUlid}/lines`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateInventoryAdjustmentLine(
+  documentUlid: string,
+  lineUlid: string,
+  payload: {
+    product_ulid?: string
+    qty_plus?: string | null
+    qty_minus?: string | null
+    notes?: string | null
+  },
+) {
+  return apiFetch<InventoryAdjustmentLine>(
+    `/api/inventory/adjustments/${documentUlid}/lines/${lineUlid}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    },
+  )
+}
+
+export function deleteInventoryAdjustmentLine(documentUlid: string, lineUlid: string) {
+  return apiFetch<{ ok: boolean }>(
+    `/api/inventory/adjustments/${documentUlid}/lines/${lineUlid}`,
+    { method: 'DELETE' },
+  )
+}
+
+export function postInventoryAdjustment(documentUlid: string) {
+  return apiFetch<InventoryAdjustment>(`/api/inventory/adjustments/${documentUlid}/post`, {
     method: 'POST',
   })
 }
