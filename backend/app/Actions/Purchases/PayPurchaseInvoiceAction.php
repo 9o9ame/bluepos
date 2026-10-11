@@ -2,6 +2,7 @@
 
 namespace App\Actions\Purchases;
 
+use App\Accounting\CashierTransactionLock;
 use App\Accounting\OpeningBalancePoster;
 use App\Accounting\PartyLeafAccountSync;
 use App\Enums\JournalStatus;
@@ -27,6 +28,7 @@ class PayPurchaseInvoiceAction
         private readonly TenantContext $tenantContext,
         private readonly OpeningBalancePoster $poster,
         private readonly PartyLeafAccountSync $partyAccounts,
+        private readonly CashierTransactionLock $cashierLock,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -85,6 +87,8 @@ class PayPurchaseInvoiceAction
 
                 return $existing;
             }
+
+            $this->cashierLock->lockCurrent();
 
             $invoice = PurchaseInvoice::query()
                 ->forTenant($tenantId)
