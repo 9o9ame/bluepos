@@ -166,3 +166,202 @@
     grid-template-columns: repeat(2, minmax(140px, 1fr));
   }
 }
+
+
+.dcp-credit-summary {
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 42px);
+  padding: 8px 10px 10px;
+  gap: 6px;
+}
+
+.dcp-credit-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 6px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-subtle);
+}
+
+.dcp-credit-heading-row > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.dcp-credit-heading-row strong {
+  font-size: 1.05em;
+}
+
+.dcp-credit-heading-row span {
+  color: var(--ui-text-muted);
+}
+
+.dcp-credit-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.dcp-credit-actions label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+}
+
+.dcp-credit-actions input {
+  height: var(--control-height);
+  padding: 0 8px;
+  color: var(--ui-text);
+  background: var(--ui-control-face);
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+}
+
+.dcp-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(92px, 1fr));
+  gap: 4px;
+  max-width: 980px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.dcp-metric-card {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  min-height: 74px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+}
+
+.dcp-metric-card > span {
+  padding: 4px;
+  text-align: center;
+  font-weight: 700;
+  background: var(--ui-surface-subtle);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.dcp-metric-card > strong {
+  padding: 6px 5px 3px;
+  text-align: right;
+  font-size: 1.15em;
+  background: var(--ui-accent-soft);
+}
+
+.dcp-metric-card > small {
+  padding: 2px 5px 4px;
+  text-align: right;
+  color: var(--ui-text-muted);
+}
+
+.dcp-metric-card.is-unsupported {
+  opacity: .62;
+}
+
+.dcp-metric-card.is-unsupported > strong {
+  background: var(--ui-surface-muted);
+}
+
+.dcp-credit-band {
+  max-width: 980px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 3px 6px;
+  text-align: center;
+  font-weight: 800;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-info);
+}
+
+.dcp-credit-values {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(92px, 1fr));
+  gap: 4px;
+  max-width: 610px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.dcp-credit-values > div {
+  display: grid;
+  grid-template-rows: auto auto;
+  border: 1px solid var(--ui-border);
+}
+
+.dcp-credit-values span {
+  padding: 3px 4px;
+  text-align: center;
+  font-weight: 700;
+  background: var(--ui-surface-subtle);
+}
+
+.dcp-credit-values strong {
+  padding: 5px;
+  text-align: right;
+  background: var(--ui-surface);
+}
+
+.dcp-credit-filters {
+  display: grid;
+  grid-template-columns: minmax(260px, 380px) minmax(300px, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.dcp-credit-filters label {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 6px;
+  align-items: center;
+  font-weight: 700;
+}
+
+.dcp-credit-grid-title {
+  padding: 3px 6px;
+  text-align: center;
+  font-weight: 800;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-subtle);
+}
+
+.dcp-credit-grid {
+  flex: 1;
+  min-height: 280px;
+}
+
+.dcp-credit-grid .pos-grid-wrap {
+  height: 100%;
+}
+
+.dcp-credit-total-row {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) repeat(4, 180px);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-subtle);
+}
+
+.dcp-credit-total-row > * {
+  padding: 4px 6px;
+  text-align: right;
+  border-right: 1px solid var(--ui-border);
+}
+
+.dcp-credit-total-row > span {
+  text-align: left;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .dcp-metrics-grid {
+    grid-template-columns: repeat(4, minmax(110px, 1fr));
+  }
+
+  .dcp-credit-total-row {
+    grid-template-columns: minmax(220px, 1fr) repeat(4, 130px);
+  }
+}
