@@ -163,7 +163,6 @@ export function VendorCustomerLedgerPage() {
   const [previewLedgers, setPreviewLedgers] = useState<LedgerPreviewEntry[]>([])
   const [previewLoading, setPreviewLoading] = useState(false)
 
-  const preview = previewLedgers[0]?.ledger ?? null
 
   const profilesQuery = useQuery({
     queryKey: ['ledger-party-profiles'],
@@ -749,7 +748,7 @@ export function VendorCustomerLedgerPage() {
                     <input
                       type="checkbox"
                       disabled={selectedKeys.length < 2}
-                      checked={eachLedgerSeparatePage}
+                      checked={selectedKeys.length > 1 && eachLedgerSeparatePage}
                       onChange={(event) => setEachLedgerSeparatePage(event.target.checked)}
                     />
                     <span>Each Ledger on Separate Page</span>
@@ -768,7 +767,11 @@ export function VendorCustomerLedgerPage() {
           </div>
 
           <div className="party-ledger-actions">
-            <UiButton variant="info" disabled={previewLoading || !selected} onClick={() => void openPreview()}>
+            <UiButton
+              variant="info"
+              disabled={previewLoading || (!selected && selectedKeys.length === 0)}
+              onClick={() => void openPreview()}
+            >
               <Eye size={16} />
               {previewLoading ? 'Loading…' : 'Preview'}
             </UiButton>
