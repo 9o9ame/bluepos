@@ -193,14 +193,14 @@ export function DailyCashPositionPage() {
   )
 
   const metricCards = [
-    ['Sales', cashCredit?.metrics.sales],
-    ['Retail Sale', cashCredit?.metrics.retail_sale],
-    ['Sale Return', cashCredit?.metrics.sale_return],
-    ['Purchase', cashCredit?.metrics.purchase],
-    ['Pur. Return', cashCredit?.metrics.purchase_return],
-    ['Recovery', cashCredit?.metrics.recovery],
-    ['Payment', cashCredit?.metrics.payment],
-    ['Receivings', cashCredit?.metrics.receivings],
+    ['Sales', cashCredit?.metrics.sales, 'sales'],
+    ['Retail Sale', cashCredit?.metrics.retail_sale, 'retail'],
+    ['Sale Return', cashCredit?.metrics.sale_return, 'return'],
+    ['Purchase', cashCredit?.metrics.purchase, 'purchase'],
+    ['Pur. Return', cashCredit?.metrics.purchase_return, 'purchase-return'],
+    ['Recovery', cashCredit?.metrics.recovery, 'recovery'],
+    ['Payment', cashCredit?.metrics.payment, 'payment'],
+    ['Receivings', cashCredit?.metrics.receivings, 'receiving'],
   ] as const
 
   return (
@@ -324,11 +324,11 @@ export function DailyCashPositionPage() {
           </div>
 
           <div className="dcp-metrics-grid">
-            {metricCards.map(([label, metric]) => {
+            {metricCards.map(([label, metric, tone]) => {
               const supported = metric?.supported ?? true
               return (
                 <div
-                  className={`dcp-metric-card${supported ? '' : ' is-unsupported'}`}
+                  className={`dcp-metric-card tone-${tone}${supported ? '' : ' is-unsupported'}`}
                   key={label}
                   title={
                     supported
@@ -352,8 +352,8 @@ export function DailyCashPositionPage() {
 
           <div className="dcp-credit-band">CREDIT</div>
           <div className="dcp-credit-values">
-            {metricCards.slice(0, 5).map(([label, metric]) => (
-              <div key={`credit-${label}`}>
+            {metricCards.slice(0, 5).map(([label, metric, tone]) => (
+              <div className={`tone-${tone}`} key={`credit-${label}`}>
                 <span>{label}</span>
                 <strong>{metric?.supported ? money(metric.credit) : 'N/A'}</strong>
               </div>
