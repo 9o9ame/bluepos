@@ -1,9 +1,10 @@
 import { Fragment, useMemo, useState } from 'react'
-import { BookOpen, Eye, Plus, XCircle } from 'lucide-react'
+import { BookOpen, Eye, Plus, Printer, XCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import {
   fetchParties,
   fetchPartyLedger,
+  fetchPartyLedgerAll,
   fetchPartyLedgerBalances,
   fetchPartyProfiles,
   type Party,
@@ -47,6 +48,20 @@ const LEDGER_DOCUMENT_OPTIONS = [
   { value: 'sales_invoice', label: 'SALES INVOICE', enabled: false },
   { value: 'sales_return', label: 'SALES RETURN', enabled: false },
 ] as const
+
+type LedgerPreviewEntry = {
+  key: string
+  ledger: PartyLedger
+}
+
+function escapeReportHtml(value: string | null | undefined) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+}
 
 type LedgerPartyRow = {
   rowNo: number
@@ -125,6 +140,7 @@ export function VendorCustomerLedgerPage() {
   const feedback = useFeedback()
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([])
   const [showBalances, setShowBalances] = useState(false)
   const [allDates, setAllDates] = useState(true)
   const [dateFrom, setDateFrom] = useState(firstDayOfYearIso())
@@ -133,6 +149,7 @@ export function VendorCustomerLedgerPage() {
   const [reverseOrder, setReverseOrder] = useState(false)
   const [withoutHeading, setWithoutHeading] = useState(false)
   const [showBookNumber, setShowBookNumber] = useState(false)
+  const [eachLedgerSeparatePage, setEachLedgerSeparatePage] = useState(false)
   const [hideSubgroupTotals, setHideSubgroupTotals] = useState(false)
   const [resetSubgroupTotal, setResetSubgroupTotal] = useState(false)
   const [narrationColumn, setNarrationColumn] = useState('remarks')
@@ -143,8 +160,10 @@ export function VendorCustomerLedgerPage() {
   const [reportTypeOptionsOpen, setReportTypeOptionsOpen] = useState(false)
   const [groupFieldsOpen, setGroupFieldsOpen] = useState(false)
   const [remarksFontSize, setRemarksFontSize] = useState(9)
-  const [preview, setPreview] = useState<PartyLedger | null>(null)
+  const [previewLedgers, setPreviewLedgers] = useState<LedgerPreviewEntry[]>([])
   const [previewLoading, setPreviewLoading] = useState(false)
+
+  const preview = previewLedgers[0]?.ledger ?? null
 
   const profilesQuery = useQuery({
     queryKey: ['ledger-party-profiles'],
@@ -208,7 +227,36 @@ export function VendorCustomerLedgerPage() {
   const loadError = profilesQuery.error || manualAccountsQuery.error || accountTypesQuery.error
 
   const columns = useMemo<PosGridColumn<LedgerPartyRow>[]>(() => {
+    const allSelected = rows.length > 0 && selectedKeys.length === rows.length
     const base: PosGridColumn<LedgerPartyRow>[] = [
+      {
+        key: 'select',
+        header: (
+          <input
+            type="checkbox"
+            checked={allSelected}
+            aria-label="Select all ledger accounts"
+            onChange={(event) => setSelectedKeys(event.target.checked ? rows.map((row) => row.key) : [])}
+          />
+        ),
+        width: 34,
+        align: 'center',
+        render: (row) => (
+          <input
+            type="checkbox"
+            checked={selectedKeys.includes(row.key)}
+            aria-label={`Select ${row.name}`}
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) => {
+              setSelectedKeys((current) =>
+                event.target.checked
+                  ? current.includes(row.key) ? current : [...current, row.key]
+                  : current.filter((key) => key !== row.key),
+              )
+            }}
+          />
+        ),
+      },
       { key: 'rowNo', header: '#', width: 44, align: 'center', render: (row) => row.rowNo },
       { key: 'code', header: 'CODE', width: 150, render: (row) => row.code },
       { key: 'name', header: 'Vendor / Customer / Accounts', render: (row) => row.name },
@@ -231,10 +279,18 @@ export function VendorCustomerLedgerPage() {
     }
 
     return base
-  }, [showBalances, balancesQuery.data, balancesQuery.isFetching])
+  }, [rows, selectedKeys, showBalances, balancesQuery.data, balancesQuery.isFetching])
 
-  async function openPreview(target: LedgerPartyRow | null = selected) {
-    if (!target) {
+  async function openPreview(target: LedgerPartyRow | null = null) {
+    const targets = target
+      ? [target]
+      : selectedKeys.length > 0
+        ? rows.filter((row) => selectedKeys.includes(row.key))
+        : selected
+          ? [selected]
+          : []
+
+    if (targets.length === 0) {
       feedback.error('Select a Vendor, Customer, or Account first.', 'Ledger')
       return
     }
@@ -245,17 +301,21 @@ export function VendorCustomerLedgerPage() {
 
     setPreviewLoading(true)
     try {
-      const data = await fetchPartyLedger(target.ulid, target.partyType, 1, {
-        date_from: allDates ? undefined : dateFrom,
-        date_to: allDates ? undefined : dateTo,
-        include_opening_balance: includeOpeningBalance,
-        document_types: selectedDocumentTypes.length > 0 ? selectedDocumentTypes : undefined,
-        group_by: groupBy || undefined,
-        filter_by: filterBy || undefined,
-        only_for: filterBy && onlyFor ? onlyFor : undefined,
-        per_page: 100,
-      })
-      setPreview(data)
+      const ledgers = await Promise.all(
+        targets.map(async (item): Promise<LedgerPreviewEntry> => ({
+          key: item.key,
+          ledger: await fetchPartyLedgerAll(item.ulid, item.partyType, {
+            date_from: allDates ? undefined : dateFrom,
+            date_to: allDates ? undefined : dateTo,
+            include_opening_balance: includeOpeningBalance,
+            document_types: selectedDocumentTypes.length > 0 ? selectedDocumentTypes : undefined,
+            group_by: groupBy || undefined,
+            filter_by: filterBy || undefined,
+            only_for: filterBy && onlyFor ? onlyFor : undefined,
+          }),
+        })),
+      )
+      setPreviewLedgers(ledgers)
     } catch (error) {
       feedback.error(error instanceof Error ? error.message : 'Unable to load ledger.', 'Ledger')
     } finally {
@@ -263,7 +323,118 @@ export function VendorCustomerLedgerPage() {
     }
   }
 
-  const previewRows = reverseOrder ? [...(preview?.rows ?? [])].reverse() : preview?.rows ?? []
+  function rowsForPreview(ledger: PartyLedger) {
+    return reverseOrder ? [...ledger.rows].reverse() : ledger.rows
+  }
+
+  function narrationForRow(row: PartyLedger['rows'][number]) {
+    return narrationColumn === 'onlydesc'
+      ? row.entry_description ?? '—'
+      : row.remarks ?? '—'
+  }
+
+  function printPreview() {
+    if (previewLedgers.length === 0) return
+
+    const reportWindow = window.open('', '_blank', 'width=1100,height=800')
+    if (!reportWindow) {
+      feedback.error('Allow pop-ups to print the ledger report.', 'Ledger')
+      return
+    }
+
+    const sections = previewLedgers.map(({ ledger }, ledgerIndex) => {
+      const reportRows = rowsForPreview(ledger)
+      const bodyRows = reportRows.map((row, index) => `
+        <tr>
+          <td class="center">${index + 1}</td>
+          <td>${escapeReportHtml(row.date)}</td>
+          <td>${escapeReportHtml(row.trans_no)}</td>
+          <td>${escapeReportHtml(row.doc)}</td>
+          ${showBookNumber ? `<td>${escapeReportHtml(row.book_number || '—')}</td>` : ''}
+          <td>${escapeReportHtml(narrationForRow(row))}</td>
+          <td class="num">${escapeReportHtml(row.debit)}</td>
+          <td class="num">${escapeReportHtml(row.credit)}</td>
+          <td class="num">${escapeReportHtml(
+            resetSubgroupTotal && groupBy ? row.subgroup_balance ?? row.balance : row.balance,
+          )}</td>
+        </tr>`).join('')
+
+      const subgroupRows = groupBy && !hideSubgroupTotals && ledger.group_totals.length > 0
+        ? `<div class="subgroups">
+            <strong>Subgroup Totals</strong>
+            <table>
+              <thead><tr><th>Group</th><th>Debit</th><th>Credit</th></tr></thead>
+              <tbody>${ledger.group_totals.map((group) => `
+                <tr>
+                  <td>${escapeReportHtml(group.label)}</td>
+                  <td class="num">${escapeReportHtml(group.debit)}</td>
+                  <td class="num">${escapeReportHtml(group.credit)}</td>
+                </tr>`).join('')}</tbody>
+            </table>
+          </div>`
+        : ''
+
+      return `
+        <section class="ledger-section ${eachLedgerSeparatePage && ledgerIndex < previewLedgers.length - 1 ? 'page-break' : ''}">
+          ${withoutHeading ? '' : `
+            <header>
+              <h1>ACCOUNT STATEMENT</h1>
+              <div class="period">${allDates ? 'ALL DATES' : `${escapeReportHtml(dateFrom)} TO ${escapeReportHtml(dateTo)}`}</div>
+              <h2>${escapeReportHtml(ledger.account.name)}</h2>
+              <div><strong>Code:</strong> ${escapeReportHtml(ledger.account.code)} &nbsp;&nbsp; <strong>Address:</strong> ${escapeReportHtml(ledger.account.address || '—')}</div>
+            </header>`}
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>Date</th><th>Trans#</th><th>DOC</th>
+                ${showBookNumber ? '<th>Book No</th>' : ''}
+                <th>Narration</th><th>Debit</th><th>Credit</th><th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="opening"><td colspan="${showBookNumber ? 8 : 7}">Opening Balance:</td><td class="num">${escapeReportHtml(ledger.carry_forward)}</td></tr>
+              ${bodyRows || `<tr><td colspan="${showBookNumber ? 9 : 8}" class="center empty">No posted ledger transactions in this period.</td></tr>`}
+            </tbody>
+            <tfoot>
+              <tr><td colspan="${showBookNumber ? 6 : 5}">Totals</td><td class="num">${escapeReportHtml(ledger.totals.debit)}</td><td class="num">${escapeReportHtml(ledger.totals.credit)}</td><td class="num">${escapeReportHtml(ledger.totals.closing_balance)}</td></tr>
+            </tfoot>
+          </table>
+          ${subgroupRows}
+        </section>`
+    }).join('')
+
+    reportWindow.document.write(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Vendor Customer Ledger</title>
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    body { font-family: Arial, sans-serif; color: #111; margin: 0; font-size: 11px; }
+    .ledger-section { margin: 0 0 18px; }
+    .page-break { break-after: page; page-break-after: always; }
+    header { margin-bottom: 10px; }
+    h1 { text-align: center; font-size: 20px; margin: 0 0 4px; }
+    h2 { font-size: 15px; margin: 3px 0; }
+    .period { text-align: right; font-weight: 700; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { border: 1px solid #777; padding: 4px 5px; overflow-wrap: anywhere; }
+    th { background: #eee; }
+    tfoot td, .opening td { font-weight: 700; background: #f5f5f5; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .center { text-align: center; }
+    .empty { padding: 18px 5px; }
+    .subgroups { margin-top: 8px; }
+    .subgroups > strong { display: block; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+  ${sections}
+  <script>window.addEventListener('load', () => { window.print(); });<\/script>
+</body>
+</html>`)
+    reportWindow.document.close()
+  }
 
   return (
     <DesktopPanel
@@ -302,6 +473,9 @@ export function VendorCustomerLedgerPage() {
 
           <div className="party-ledger-count">
             Count of Vendors / Customer / Account: <strong>{rows.length}</strong>
+            {selectedKeys.length > 0 ? (
+              <span className="party-ledger-selected-count">Selected: <strong>{selectedKeys.length}</strong></span>
+            ) : null}
           </div>
         </section>
 
@@ -571,8 +745,13 @@ export function VendorCustomerLedgerPage() {
                     />
                     <span>Reset Total (Subgroup)</span>
                   </label>
-                  <label title="Separate-page behavior will be enabled with printable multi-account reports.">
-                    <input type="checkbox" disabled />
+                  <label title={selectedKeys.length > 1 ? 'Start each selected ledger on a new printed page.' : 'Select two or more ledger accounts first.'}>
+                    <input
+                      type="checkbox"
+                      disabled={selectedKeys.length < 2}
+                      checked={eachLedgerSeparatePage}
+                      onChange={(event) => setEachLedgerSeparatePage(event.target.checked)}
+                    />
                     <span>Each Ledger on Separate Page</span>
                   </label>
                   <label>
@@ -690,134 +869,149 @@ export function VendorCustomerLedgerPage() {
       </UiModal>
 
       <UiModal
-        open={Boolean(preview)}
+        open={previewLedgers.length > 0}
         title={
           <span className="party-ledger-preview-title">
             <BookOpen size={16} />
-            {preview?.account.name ?? 'Ledger Preview'}
+            {previewLedgers.length === 1
+              ? previewLedgers[0].ledger.account.name
+              : `${previewLedgers.length} Ledger Statements`}
           </span>
         }
         size="xl"
-        onClose={() => setPreview(null)}
+        onClose={() => setPreviewLedgers([])}
         footer={
-          <UiButton variant="info" onClick={() => setPreview(null)}>Close</UiButton>
+          <>
+            <UiButton variant="info" onClick={printPreview}>
+              <Printer size={16} />
+              Print
+            </UiButton>
+            <UiButton variant="info" onClick={() => setPreviewLedgers([])}>Close</UiButton>
+          </>
         }
       >
-        {preview ? (
-          <div className="party-ledger-preview">
-            {!withoutHeading ? (
-              <div className="party-ledger-statement-head">
-                <div className="party-ledger-statement-title">ACCOUNT STATEMENT</div>
-                <div className="party-ledger-statement-period">
-                  {allDates ? 'ALL DATES' : `${dateFrom} TO ${dateTo}`}
-                </div>
-                <div className="party-ledger-statement-name">{preview.account.name}</div>
-                <div className="party-ledger-statement-info">
-                  <span><strong>Code:</strong> {preview.account.code}</span>
-                  <span><strong>Address:</strong> {preview.account.address || '—'}</span>
-                </div>
-              </div>
-            ) : null}
+        {previewLedgers.length > 0 ? (
+          <div className="party-ledger-preview party-ledger-preview-print-root">
+            {previewLedgers.map(({ key, ledger }, ledgerIndex) => {
+              const previewRows = rowsForPreview(ledger)
 
-            <div className="party-ledger-preview-grid">
-              <table>
-                <thead>
-                  <tr>
-                    <th className="is-center">#</th>
-                    <th>Date</th>
-                    <th>Trans#</th>
-                    <th>DOC</th>
-                    {showBookNumber ? <th>Book No</th> : null}
-                    <th>Narration</th>
-                    <th className="is-num">Debit</th>
-                    <th className="is-num">Credit</th>
-                    <th className="is-num">Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="party-ledger-opening-row">
-                    <td colSpan={showBookNumber ? 8 : 7}>Opening Balance:</td>
-                    <td className="is-num">{preview.carry_forward}</td>
-                  </tr>
-                  {previewRows.map((row, index) => {
-                    const previous = index > 0 ? previewRows[index - 1] : null
-                    const showGroupHeader = Boolean(
-                      groupBy &&
-                      row.group_label &&
-                      (!previous || previous.group_key !== row.group_key),
-                    )
+              return (
+                <section
+                  key={key}
+                  className={`party-ledger-statement-section${eachLedgerSeparatePage && ledgerIndex < previewLedgers.length - 1 ? ' is-page-separated' : ''}`}
+                >
+                  {!withoutHeading ? (
+                    <div className="party-ledger-statement-head">
+                      <div className="party-ledger-statement-title">ACCOUNT STATEMENT</div>
+                      <div className="party-ledger-statement-period">
+                        {allDates ? 'ALL DATES' : `${dateFrom} TO ${dateTo}`}
+                      </div>
+                      <div className="party-ledger-statement-name">{ledger.account.name}</div>
+                      <div className="party-ledger-statement-info">
+                        <span><strong>Code:</strong> {ledger.account.code}</span>
+                        <span><strong>Address:</strong> {ledger.account.address || '—'}</span>
+                      </div>
+                    </div>
+                  ) : null}
 
-                    return (
-                      <Fragment key={row.line_ulid}>
-                        {showGroupHeader ? (
-                          <tr className="party-ledger-group-row">
-                            <td colSpan={showBookNumber ? 9 : 8}>
-                              {row.group_label}
+                  <div className="party-ledger-preview-grid">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th className="is-center">#</th>
+                          <th>Date</th>
+                          <th>Trans#</th>
+                          <th>DOC</th>
+                          {showBookNumber ? <th>Book No</th> : null}
+                          <th>Narration</th>
+                          <th className="is-num">Debit</th>
+                          <th className="is-num">Credit</th>
+                          <th className="is-num">Balance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="party-ledger-opening-row">
+                          <td colSpan={showBookNumber ? 8 : 7}>Opening Balance:</td>
+                          <td className="is-num">{ledger.carry_forward}</td>
+                        </tr>
+                        {previewRows.map((row, index) => {
+                          const previous = index > 0 ? previewRows[index - 1] : null
+                          const showGroupHeader = Boolean(
+                            groupBy &&
+                            row.group_label &&
+                            (!previous || previous.group_key !== row.group_key),
+                          )
+
+                          return (
+                            <Fragment key={row.line_ulid}>
+                              {showGroupHeader ? (
+                                <tr className="party-ledger-group-row">
+                                  <td colSpan={showBookNumber ? 9 : 8}>{row.group_label}</td>
+                                </tr>
+                              ) : null}
+                              <tr>
+                                <td className="is-center">{index + 1}</td>
+                                <td>{row.date}</td>
+                                <td>{row.trans_no}</td>
+                                <td>{row.doc}</td>
+                                {showBookNumber ? <td>{row.book_number ?? '—'}</td> : null}
+                                <td style={{ fontSize: `${remarksFontSize}px` }}>{narrationForRow(row)}</td>
+                                <td className="is-num">{row.debit}</td>
+                                <td className="is-num">{row.credit}</td>
+                                <td className="is-num">
+                                  {resetSubgroupTotal && groupBy
+                                    ? row.subgroup_balance ?? row.balance
+                                    : row.balance}
+                                </td>
+                              </tr>
+                            </Fragment>
+                          )
+                        })}
+                        {previewRows.length === 0 ? (
+                          <tr>
+                            <td colSpan={showBookNumber ? 9 : 8} className="party-ledger-preview-empty">
+                              No posted ledger transactions in this period.
                             </td>
                           </tr>
                         ) : null}
+                      </tbody>
+                      <tfoot>
                         <tr>
-                          <td className="is-center">{index + 1}</td>
-                          <td>{row.date}</td>
-                          <td>{row.trans_no}</td>
-                          <td>{row.doc}</td>
-                          {showBookNumber ? <td>{row.book_number ?? '—'}</td> : null}
-                          <td style={{ fontSize: `${remarksFontSize}px` }}>
-                            {narrationColumn === 'onlydesc'
-                              ? row.entry_description ?? '—'
-                              : row.remarks ?? '—'}
-                          </td>
-                          <td className="is-num">{row.debit}</td>
-                          <td className="is-num">{row.credit}</td>
-                          <td className="is-num">
-                            {resetSubgroupTotal && groupBy
-                              ? row.subgroup_balance ?? row.balance
-                              : row.balance}
-                          </td>
+                          <td colSpan={showBookNumber ? 6 : 5}>Totals</td>
+                          <td className="is-num">{ledger.totals.debit}</td>
+                          <td className="is-num">{ledger.totals.credit}</td>
+                          <td className="is-num">{ledger.totals.closing_balance}</td>
                         </tr>
-                      </Fragment>
-                    )
-                  })}
-                  {previewRows.length === 0 ? (
-                    <tr>
-                      <td colSpan={showBookNumber ? 9 : 8} className="party-ledger-preview-empty">No posted ledger transactions in this period.</td>
-                    </tr>
-                  ) : null}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={showBookNumber ? 6 : 5}>Totals</td>
-                    <td className="is-num">{preview.totals.debit}</td>
-                    <td className="is-num">{preview.totals.credit}</td>
-                    <td className="is-num">{preview.totals.closing_balance}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                      </tfoot>
+                    </table>
+                  </div>
 
-            {groupBy && !hideSubgroupTotals && preview.group_totals.length > 0 ? (
-              <div className="party-ledger-subgroup-summary">
-                <div className="party-ledger-subgroup-title">Subgroup Totals</div>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Group</th>
-                      <th className="is-num">Debit</th>
-                      <th className="is-num">Credit</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.group_totals.map((group) => (
-                      <tr key={group.key}>
-                        <td>{group.label}</td>
-                        <td className="is-num">{group.debit}</td>
-                        <td className="is-num">{group.credit}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : null}
+                  {groupBy && !hideSubgroupTotals && ledger.group_totals.length > 0 ? (
+                    <div className="party-ledger-subgroup-summary">
+                      <div className="party-ledger-subgroup-title">Subgroup Totals</div>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Group</th>
+                            <th className="is-num">Debit</th>
+                            <th className="is-num">Credit</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ledger.group_totals.map((group) => (
+                            <tr key={group.key}>
+                              <td>{group.label}</td>
+                              <td className="is-num">{group.debit}</td>
+                              <td className="is-num">{group.credit}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : null}
+                </section>
+              )
+            })}
           </div>
         ) : null}
       </UiModal>
