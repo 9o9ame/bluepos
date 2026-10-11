@@ -29,10 +29,25 @@ class PartyLedgerController extends Controller
         [$party, $partyType, $leaf] = $this->ownedParty($request, $partyUlid);
         $this->authorize('view', $party);
 
-        $page = max(1, (int) $request->query('page', 1));
-        $perPage = max(1, min(100, (int) $request->query('per_page', 100)));
+        $data = $request->validate([
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'include_opening_balance' => ['nullable', 'boolean'],
+        ]);
 
-        $payload = $this->ledger->build($leaf, $page, $perPage);
+        $page = max(1, (int) ($data['page'] ?? 1));
+        $perPage = max(1, min(100, (int) ($data['per_page'] ?? 100)));
+
+        $payload = $this->ledger->build(
+            $leaf,
+            $page,
+            $perPage,
+            isset($data['date_from']) ? (string) $data['date_from'] : null,
+            isset($data['date_to']) ? (string) $data['date_to'] : null,
+            (bool) ($data['include_opening_balance'] ?? true),
+        );
 
         if ($party instanceof Supplier || $party instanceof Customer) {
             $payload['account']['name'] = $party->name;
