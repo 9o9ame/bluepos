@@ -26,6 +26,7 @@ class AccountLedgerBuilder
         ?string $dateFrom = null,
         ?string $dateTo = null,
         bool $includeOpeningBalance = true,
+        array $documentTypes = [],
     ): array {
         $page = max(1, $page);
         $perPage = max(1, min(100, $perPage));
@@ -42,6 +43,7 @@ class AccountLedgerBuilder
                 'journal_entries.ulid as entry_ulid',
                 'journal_entries.entry_date',
                 'journal_entries.voucher_number',
+                'journal_entries.book_number',
                 'journal_entries.document_type',
                 'journal_entries.description as entry_description',
             ])
@@ -53,6 +55,10 @@ class AccountLedgerBuilder
             ->when(
                 ! $includeOpeningBalance,
                 fn ($query) => $query->where('journal_entries.document_type', '!=', 'opening_balance'),
+            )
+            ->when(
+                $documentTypes !== [],
+                fn ($query) => $query->whereIn('journal_entries.document_type', $documentTypes),
             )
             ->orderBy('journal_entries.entry_date')
             ->orderByRaw('COALESCE(journal_entries.voucher_number, journal_entries.ulid)')
@@ -95,6 +101,7 @@ class AccountLedgerBuilder
                 'trans_no' => $line->voucher_number ?: $line->entry_ulid,
                 'date' => $entryDate,
                 'doc' => $this->documentLabel((string) $line->document_type),
+                'book_number' => $line->book_number,
                 'remarks' => $line->line_description ?: $line->entry_description,
                 'debit' => $debit,
                 'credit' => $credit,
