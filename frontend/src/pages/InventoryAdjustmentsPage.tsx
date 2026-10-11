@@ -95,7 +95,8 @@ export function InventoryAdjustmentsPage() {
   const [headerDirty, setHeaderDirty] = useState(false)
 
   const [productSearch, setProductSearch] = useState('')
-  const deferredProductSearch = useDeferredValue(productSearch)
+  const [productLookupQuery, setProductLookupQuery] = useState('')
+  const deferredProductSearch = useDeferredValue(productLookupQuery)
   const [productUlid, setProductUlid] = useState('')
   const [qtyPlus, setQtyPlus] = useState('')
   const [qtyMinus, setQtyMinus] = useState('')
@@ -173,6 +174,7 @@ export function InventoryAdjustmentsPage() {
 
   function clearLineForm(focusProduct = false) {
     setProductSearch('')
+    setProductLookupQuery('')
     setProductUlid('')
     setQtyPlus('')
     setQtyMinus('')
@@ -202,6 +204,7 @@ export function InventoryAdjustmentsPage() {
     setSelectedLineUlid(line.ulid)
     setProductUlid(line.product?.ulid ?? '')
     setProductSearch(line.product ? `${line.product.product_number} · ${line.product.name}` : '')
+    setProductLookupQuery(line.product?.name ?? '')
     setQtyPlus(line.qty_plus === '0.000000' ? '' : line.qty_plus)
     setQtyMinus(line.qty_minus === '0.000000' ? '' : line.qty_minus)
     setLineRemarks(line.remarks ?? '')
@@ -216,6 +219,7 @@ export function InventoryAdjustmentsPage() {
   function selectEntryProduct(product: Product) {
     setProductUlid(product.ulid)
     setProductSearch(productLabel(product))
+    setProductLookupQuery(product.name)
     setProductPickerOpen(true)
 
     window.setTimeout(() => {
@@ -594,6 +598,7 @@ export function InventoryAdjustmentsPage() {
                             }}
                             onChange={(event) => {
                               setProductSearch(event.target.value)
+                              setProductLookupQuery(event.target.value)
                               setProductUlid('')
                               setProductPickerOpen(true)
                                                       }}
