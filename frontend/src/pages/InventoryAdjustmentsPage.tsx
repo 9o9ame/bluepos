@@ -412,7 +412,7 @@ export function InventoryAdjustmentsPage() {
   const selectedSearchDocument = (listQuery.data ?? []).find((row) => row.ulid === selectedSearchUlid) ?? null
 
   function previewProductWise() {
-    const root = document.documentElement
+    const root = window.document.documentElement
     const cleanup = () => {
       root.removeAttribute('data-adjustment-product-print')
       window.removeEventListener('afterprint', cleanup)
