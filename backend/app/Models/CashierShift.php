@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'actual_cash',
     'difference',
     'notes',
+    'open_idempotency_key',
+    'close_idempotency_key',
 ])]
 class CashierShift extends Model
 {
