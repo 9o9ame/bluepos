@@ -359,6 +359,8 @@ export type PartyLedgerRow = {
   doc: string
   book_number: string | null
   remarks: string | null
+  group_key: string | null
+  group_label: string | null
   debit: string
   credit: string
   balance: string
@@ -373,6 +375,7 @@ export type PartyLedger = {
     area: string | null
   }
   rows: PartyLedgerRow[]
+  filter_options: Record<string, Array<{ value: string; label: string }>>
   totals: {
     debit: string
     credit: string
@@ -392,6 +395,9 @@ export type PartyLedgerOptions = {
   date_to?: string
   include_opening_balance?: boolean
   document_types?: string[]
+  group_by?: string
+  filter_by?: string
+  only_for?: string
   per_page?: number
 }
 
@@ -414,6 +420,9 @@ export function fetchPartyLedger(
   for (const documentType of options?.document_types ?? []) {
     qs.append('document_types[]', documentType)
   }
+  if (options?.group_by) qs.set('group_by', options.group_by)
+  if (options?.filter_by) qs.set('filter_by', options.filter_by)
+  if (options?.only_for) qs.set('only_for', options.only_for)
   return apiFetch<PartyLedger>(`/api/parties/${partyUlid}/ledger?${qs.toString()}`)
 }
 
