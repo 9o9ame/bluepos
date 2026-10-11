@@ -4,12 +4,20 @@ namespace Tests\Feature;
 
 use App\Authz\PermissionService;
 use App\Enums\BranchStatus;
+use App\Enums\CashierShiftStatus;
+use App\Enums\ProductStatus;
 use App\Models\Account;
 use App\Models\AccountType;
 use App\Models\Branch;
+use App\Models\CashierShift;
+use App\Models\Category;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
 use App\Models\Permission;
+use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\Unit;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -373,6 +381,118 @@ class DailyCashPositionTest extends TestCase
             ->assertJsonPath('totals.credit', '140.0000');
 
         $this->assertNoInternalIds($response->json());
+    }
+
+    public function test_day_close_overview_returns_category_sales_and_open_shift_snapshot(): void
+    {
+        $this->signInOwner('daily-cash-day-close')->assertOk();
+
+        $tenant = app(TenantContext::class);
+        $unit = Unit::query()
+            ->forTenant($tenant->tenantId())
+            ->where('code', 'PCS')
+            ->firstOrFail();
+
+        $category = Category::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'code' => 'DAY-CAT',
+            'name' => 'Day Close Category',
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+
+        $product = Product::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'product_number' => 'DAY-PROD-1',
+            'name' => 'Day Close Product',
+            'category_id' => $category->id,
+            'base_unit_id' => $unit->id,
+            'tax_percent' => '0.00000000',
+            'status' => ProductStatus::Active->value,
+            'is_active' => true,
+            'created_by' => $tenant->userId(),
+        ]);
+
+        $sale = Sale::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'branch_id' => $tenant->branchId(),
+            'warehouse_id' => $tenant->warehouseId(),
+            'document_number' => 'DAY-SALE-1',
+            'status' => 'posted',
+            'sale_date' => '2026-10-11',
+            'subtotal' => '150.0000',
+            'discount_amount' => '0.0000',
+            'tax_amount' => '0.0000',
+            'grand_total' => '150.0000',
+            'idempotency_key' => 'day-close-sale-1',
+            'created_by' => $tenant->userId(),
+            'posted_at' => now(),
+        ]);
+
+        SaleItem::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'sale_id' => $sale->id,
+            'product_id' => $product->id,
+            'unit_id' => $unit->id,
+            'line_kind' => 'sale',
+            'quantity' => '3.000000',
+            'stock_quantity' => '3.000000',
+            'conversion_factor' => '1.00000000',
+            'price_type' => 'retail',
+            'unit_price' => '50.0000',
+            'gross_amount' => '150.0000',
+            'discount_percent' => '0.00000000',
+            'discount_amount' => '0.0000',
+            'tax_percent' => '0.00000000',
+            'tax_amount' => '0.0000',
+            'line_total' => '150.0000',
+        ]);
+
+        $shift = CashierShift::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'branch_id' => $tenant->branchId(),
+            'membership_id' => $tenant->membershipId(),
+            'opened_at' => now()->subHour(),
+            'status' => CashierShiftStatus::Open->value,
+            'opening_cash' => '100.0000',
+            'expected_cash' => '250.0000',
+        ]);
+
+        $response = $this->getJson('/api/cash-position/day-close?date=2026-10-11')
+            ->assertOk()
+            ->assertJsonPath('date', '2026-10-11')
+            ->assertJsonPath('category_sales.0.category.ulid', $category->ulid)
+            ->assertJsonPath('category_sales.0.category.name', 'Day Close Category')
+            ->assertJsonPath('category_sales.0.orders', 1)
+            ->assertJsonPath('category_sales.0.amount', '150.0000')
+            ->assertJsonPath('category_totals.orders', 1)
+            ->assertJsonPath('category_totals.amount', '150.0000')
+            ->assertJsonPath('current_shift.ulid', $shift->ulid)
+            ->assertJsonPath('current_shift.opening_cash', '100.0000')
+            ->assertJsonPath('current_shift.expected_cash', '250.0000')
+            ->assertJsonPath('close_action_available', false);
+
+        $this->assertCount(1, $response->json('open_shift_positions'));
+        $this->assertNoInternalIds($response->json());
+    }
+
+    public function test_day_close_overview_requires_cash_session_view_permission(): void
+    {
+        $this->signInOwner('daily-cash-day-close-permission')->assertOk();
+
+        $tenant = app(TenantContext::class);
+        $role = $tenant->membership()
+            ->roles()
+            ->where('roles.tenant_id', $tenant->tenantId())
+            ->firstOrFail();
+        $permission = Permission::query()
+            ->where('key', 'cash_sessions.view')
+            ->firstOrFail();
+
+        $role->permissions()->detach($permission->id);
+        app()->forgetInstance(PermissionService::class);
+
+        $this->getJson('/api/cash-position/day-close')->assertForbidden();
     }
 
     public function test_cash_book_rejects_non_cash_and_cross_tenant_accounts(): void
