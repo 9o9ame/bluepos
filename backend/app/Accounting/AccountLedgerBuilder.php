@@ -82,6 +82,8 @@ class AccountLedgerBuilder
         $periodCredit = '0.0000';
         $periodRows = [];
         $openingCarry = '0.0000';
+        $subgroupBalance = '0.0000';
+        $previousGroupKey = null;
 
         foreach ($lines as $line) {
             if (! $this->matchesFilter($line, $accountArea, $filterBy, $onlyFor)) {
@@ -111,6 +113,19 @@ class AccountLedgerBuilder
             $periodDebit = bcadd($periodDebit, $debit, 4);
             $periodCredit = bcadd($periodCredit, $credit, 4);
 
+            $groupKey = $this->groupKey($line, $accountArea, $groupBy);
+            if ($groupBy !== null) {
+                if ($groupKey !== $previousGroupKey) {
+                    $subgroupBalance = '0.0000';
+                    $previousGroupKey = $groupKey;
+                }
+                $subgroupBalance = bcadd(
+                    $subgroupBalance,
+                    $this->balances->signedEffect($leaf, $debit, $credit),
+                    4,
+                );
+            }
+
             $periodRows[] = [
                 'line_ulid' => $line->ulid,
                 'trans_no' => $line->voucher_number ?: $line->entry_ulid,
@@ -118,8 +133,11 @@ class AccountLedgerBuilder
                 'doc' => $this->documentLabel((string) $line->document_type),
                 'book_number' => $line->book_number,
                 'remarks' => $line->line_description ?: $line->entry_description,
-                'group_key' => $this->groupKey($line, $accountArea, $groupBy),
+                'line_description' => $line->line_description,
+                'entry_description' => $line->entry_description,
+                'group_key' => $groupKey,
                 'group_label' => $this->groupLabel($line, $accountArea, $groupBy),
+                'subgroup_balance' => $groupBy !== null ? $this->balances->money($subgroupBalance) : null,
                 'debit' => $debit,
                 'credit' => $credit,
                 'balance' => $this->balances->money($runningBalance),
