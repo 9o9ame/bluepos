@@ -144,6 +144,7 @@ export function InventoryAdjustmentsPage() {
 
   const document = documentQuery.data ?? null
   const editable = Boolean(document && document.status === 'draft' && canAdjust)
+  const entryEnabled = canAdjust && (!document || document.status === 'draft')
 
   useEffect(() => {
     if (!document) return
@@ -238,11 +239,27 @@ export function InventoryAdjustmentsPage() {
   })
 
   const saveLine = useMutation({
-    mutationFn: () => {
-      if (!documentUlid) throw new Error('Save the adjustment header first.')
+    mutationFn: async () => {
       if (!productUlid) throw new Error('Select a product.')
       if (!qtyPlus.trim() && !qtyMinus.trim()) {
         throw new Error('Enter Qty + or Qty -.')
+      }
+
+      let targetDocumentUlid = documentUlid
+      let createdDocumentNumber: string | null = null
+
+      if (!targetDocumentUlid) {
+        if (!accountUlid) throw new Error('Select an adjustment account.')
+
+        const created = await createInventoryAdjustment({
+          account_ulid: accountUlid,
+          adjustment_date: adjustmentDate,
+          adjustment_type: 'stock_adjustment',
+          notes: documentNotes.trim() || null,
+        })
+
+        targetDocumentUlid = created.ulid
+        createdDocumentNumber = created.document_number
       }
 
       const payload = {
@@ -252,20 +269,39 @@ export function InventoryAdjustmentsPage() {
         notes: lineRemarks.trim() || null,
       }
 
-      return selectedLineUlid
-        ? updateInventoryAdjustmentLine(documentUlid, selectedLineUlid, payload)
-        : createInventoryAdjustmentLine(documentUlid, payload)
+      const line = selectedLineUlid
+        ? await updateInventoryAdjustmentLine(targetDocumentUlid, selectedLineUlid, payload)
+        : await createInventoryAdjustmentLine(targetDocumentUlid, payload)
+
+      return {
+        line,
+        documentUlid: targetDocumentUlid,
+        createdDocumentNumber,
+      }
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
       const wasUpdate = Boolean(selectedLineUlid)
+
+      if (!documentUlid) {
+        setDocumentUlid(result.documentUlid)
+        setHeaderDirty(false)
+      }
+
       clearLineForm()
-      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustment', documentUlid] })
+      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustment', result.documentUlid] })
       await queryClient.invalidateQueries({ queryKey: ['inventory-adjustments'] })
-      feedback.success(wasUpdate ? 'Adjustment line updated.' : 'Adjustment line added.')
+
+      feedback.success(
+        result.createdDocumentNumber
+          ? `Adjustment ${result.createdDocumentNumber} created and line added.`
+          : wasUpdate
+            ? 'Adjustment line updated.'
+            : 'Adjustment line added.',
+      )
     },
     onError: (error) => {
       if (error instanceof Error && (
-        error.message === 'Save the adjustment header first.' ||
+        error.message === 'Select an adjustment account.' ||
         error.message === 'Select a product.' ||
         error.message === 'Enter Qty + or Qty -.'
       )) {
@@ -480,7 +516,7 @@ export function InventoryAdjustmentsPage() {
               <span>ITEM / PRODUCT DESCRIPTION</span>
               <input
                 value={productSearch}
-                disabled={!editable}
+                disabled={!entryEnabled}
                 placeholder="Product #, SKU, barcode or name"
                 onChange={(event) => {
                   setProductSearch(event.target.value)
@@ -499,7 +535,7 @@ export function InventoryAdjustmentsPage() {
                   if (product) setProductSearch(productLabel(product))
                   setLineDirty(true)
                 }}
-                disabled={!editable}
+                disabled={!entryEnabled}
                 placeholder={productsQuery.isFetching ? 'Searching…' : 'Select product'}
                 searchPlaceholder="Filter loaded products…"
               />
@@ -509,7 +545,7 @@ export function InventoryAdjustmentsPage() {
               <input
                 inputMode="decimal"
                 value={qtyPlus}
-                disabled={!editable}
+                disabled={!entryEnabled}
                 onChange={(event) => {
                   setQtyPlus(event.target.value)
                   if (event.target.value.trim()) setQtyMinus('')
@@ -523,7 +559,7 @@ export function InventoryAdjustmentsPage() {
               <input
                 inputMode="decimal"
                 value={qtyMinus}
-                disabled={!editable}
+                disabled={!entryEnabled}
                 onChange={(event) => {
                   setQtyMinus(event.target.value)
                   if (event.target.value.trim()) setQtyPlus('')
@@ -537,7 +573,7 @@ export function InventoryAdjustmentsPage() {
               <input
                 value={lineRemarks}
                 maxLength={500}
-                disabled={!editable}
+                disabled={!entryEnabled}
                 onChange={(event) => {
                   setLineRemarks(event.target.value)
                   setLineDirty(true)
@@ -548,7 +584,7 @@ export function InventoryAdjustmentsPage() {
               <UiButton
                 variant="primary"
                 onClick={() => saveLine.mutate()}
-                disabled={!editable || saveLine.isPending}
+                disabled={!entryEnabled || saveLine.isPending}
               >
                 {selectedLineUlid ? <Save size={15} /> : <Plus size={15} />}
                 {selectedLineUlid ? 'Update' : 'Add'}
@@ -581,7 +617,7 @@ export function InventoryAdjustmentsPage() {
               selectedKey={selectedLineUlid}
               onSelect={fillLineForm}
               onActivate={fillLineForm}
-              emptyMessage={documentUlid ? 'No adjustment lines yet.' : 'Save the header to start adding products.'}
+              emptyMessage={documentUlid ? 'No adjustment lines yet.' : 'Select an account and add the first product.'}
             />
           </div>
 
