@@ -376,6 +376,12 @@ export type PartyLedger = {
   }
   rows: PartyLedgerRow[]
   filter_options: Record<string, Array<{ value: string; label: string }>>
+  group_totals: Array<{
+    key: string
+    label: string
+    debit: string
+    credit: string
+  }>
   totals: {
     debit: string
     credit: string
@@ -399,6 +405,26 @@ export type PartyLedgerOptions = {
   filter_by?: string
   only_for?: string
   per_page?: number
+}
+
+export type PartyLedgerBalanceItem = {
+  type: Exclude<PartyTypeApi, 'salesman'>
+  ulid: string
+}
+
+export async function fetchPartyLedgerBalances(items: PartyLedgerBalanceItem[]) {
+  const balances: Record<string, string> = {}
+
+  for (let offset = 0; offset < items.length; offset += 250) {
+    const chunk = items.slice(offset, offset + 250)
+    const response = await apiFetch<{ balances: Record<string, string> }>('/api/parties/ledger-balances', {
+      method: 'POST',
+      body: JSON.stringify({ items: chunk }),
+    })
+    Object.assign(balances, response.balances)
+  }
+
+  return balances
 }
 
 export function fetchPartyLedger(
