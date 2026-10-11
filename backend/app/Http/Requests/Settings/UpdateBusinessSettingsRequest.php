@@ -21,6 +21,9 @@ class UpdateBusinessSettingsRequest extends FormRequest
             'default_cash_account_ulid',
             'sales_clearing_account_ulid',
             'purchase_clearing_account_ulid',
+            'sales_revenue_account_ulid',
+            'inventory_account_ulid',
+            'cogs_account_ulid',
         ] as $field) {
             if (! $this->exists($field)) {
                 continue;
@@ -91,6 +94,34 @@ class UpdateBusinessSettingsRequest extends FormRequest
                     ->where('is_active', true),
             ],
             'purchase_clearing_account_ulid' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'size:26',
+                Rule::exists('accounts', 'ulid')
+                    ->where('tenant_id', $tenantId)
+                    ->where('is_active', true),
+            ],
+
+            'sales_revenue_account_ulid' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'size:26',
+                Rule::exists('accounts', 'ulid')
+                    ->where('tenant_id', $tenantId)
+                    ->where('is_active', true),
+            ],
+            'inventory_account_ulid' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'size:26',
+                Rule::exists('accounts', 'ulid')
+                    ->where('tenant_id', $tenantId)
+                    ->where('is_active', true),
+            ],
+            'cogs_account_ulid' => [
                 'sometimes',
                 'nullable',
                 'string',
