@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Accounting\CashierTransactionLock;
 use App\Models\Account;
 use App\Models\Branch;
 use App\Models\BusinessSetting;
@@ -209,6 +210,12 @@ class SaleReturnTest extends TestCase
         $this->postJson('/api/sales-returns/'.$returnUlid.'/post')
             ->assertOk()
             ->assertJsonPath('grand_total', '100.0000');
+
+        $this->mock(CashierTransactionLock::class, function (\Mockery\MockInterface $mock): void {
+            $mock->shouldReceive('lockCurrent')
+                ->times(2)
+                ->andReturn(app(TenantContext::class)->membership());
+        });
 
         $first = $this->postJson('/api/sales-returns/'.$returnUlid.'/refunds', [
             'amount' => '60.0000',
