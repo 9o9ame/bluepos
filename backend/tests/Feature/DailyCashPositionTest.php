@@ -251,6 +251,130 @@ class DailyCashPositionTest extends TestCase
         )->assertUnprocessable();
     }
 
+    public function test_dashboard_returns_branch_scoped_cash_series_and_trial_balance_accounts(): void
+    {
+        $this->signInOwner('daily-cash-dashboard')->assertOk();
+
+        $cash = $this->leafAccount('Dashboard Cash', 'DASH-CASH', '0010');
+        $bank = $this->leafAccount('Dashboard Bank', 'DASH-BANK', '0012');
+        $expense = $this->leafAccount('Dashboard Expense', 'DASH-EXP', '0030');
+        $revenue = $this->leafAccount('Dashboard Revenue', 'DASH-REV', '0040');
+
+        $this->postedJournal(
+            'opening_balance',
+            '2026-10-04',
+            [
+                [$cash, '100.0000', '0.0000'],
+                [$revenue, '0.0000', '100.0000'],
+            ],
+            'Dashboard opening',
+        );
+
+        $this->postedJournal(
+            'receiving_voucher',
+            '2026-10-08',
+            [
+                [$bank, '40.0000', '0.0000'],
+                [$revenue, '0.0000', '40.0000'],
+            ],
+            'Dashboard bank receipt',
+        );
+
+        $this->postedJournal(
+            'payment_voucher',
+            '2026-10-10',
+            [
+                [$expense, '25.0000', '0.0000'],
+                [$cash, '0.0000', '25.0000'],
+            ],
+            'Dashboard cash payment',
+        );
+
+        $tenant = app(TenantContext::class);
+        $draft = JournalEntry::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'branch_id' => $tenant->branchId(),
+            'document_type' => 'receiving_voucher',
+            'entry_date' => '2026-10-11',
+            'description' => 'Dashboard draft',
+            'status' => 'draft',
+            'created_by' => $tenant->userId(),
+        ]);
+        JournalLine::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'journal_entry_id' => $draft->id,
+            'account_id' => $cash->id,
+            'debit' => '999.0000',
+            'credit' => '0.0000',
+            'sort_order' => 0,
+        ]);
+
+        $otherBranch = Branch::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'code' => 'DASH-OTHER',
+            'name' => 'Dashboard Other Branch',
+            'status' => BranchStatus::Active,
+            'is_default' => false,
+        ]);
+        $otherEntry = JournalEntry::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'branch_id' => $otherBranch->id,
+            'document_type' => 'receiving_voucher',
+            'entry_date' => '2026-10-11',
+            'description' => 'Other branch dashboard receipt',
+            'status' => 'posted',
+            'created_by' => $tenant->userId(),
+            'posted_by' => $tenant->userId(),
+            'posted_at' => now(),
+        ]);
+        JournalLine::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'journal_entry_id' => $otherEntry->id,
+            'account_id' => $cash->id,
+            'debit' => '500.0000',
+            'credit' => '0.0000',
+            'sort_order' => 0,
+        ]);
+        JournalLine::query()->create([
+            'tenant_id' => $tenant->tenantId(),
+            'journal_entry_id' => $otherEntry->id,
+            'account_id' => $revenue->id,
+            'debit' => '0.0000',
+            'credit' => '500.0000',
+            'sort_order' => 1,
+        ]);
+
+        $response = $this->getJson('/api/cash-position/dashboard?date=2026-10-11&days=7')
+            ->assertOk()
+            ->assertJsonPath('date', '2026-10-11')
+            ->assertJsonPath('days', 7)
+            ->assertJsonCount(7, 'chart.dates');
+
+        $cashSeries = collect($response->json('chart.series'))
+            ->firstWhere('account.ulid', $cash->ulid);
+        $bankSeries = collect($response->json('chart.series'))
+            ->firstWhere('account.ulid', $bank->ulid);
+
+        $this->assertSame('100.0000', $cashSeries['values'][0] ?? null);
+        $this->assertSame('75.0000', $cashSeries['values'][5] ?? null);
+        $this->assertSame('75.0000', $cashSeries['values'][6] ?? null);
+        $this->assertSame('0.0000', $bankSeries['values'][0] ?? null);
+        $this->assertSame('40.0000', $bankSeries['values'][3] ?? null);
+        $this->assertSame('40.0000', $bankSeries['values'][6] ?? null);
+
+        $debitRows = collect($response->json('debit_accounts'));
+        $creditRows = collect($response->json('credit_accounts'));
+
+        $this->assertSame('75.0000', $debitRows->firstWhere('account.ulid', $cash->ulid)['amount'] ?? null);
+        $this->assertSame('40.0000', $debitRows->firstWhere('account.ulid', $bank->ulid)['amount'] ?? null);
+        $this->assertSame('25.0000', $debitRows->firstWhere('account.ulid', $expense->ulid)['amount'] ?? null);
+        $this->assertSame('140.0000', $creditRows->firstWhere('account.ulid', $revenue->ulid)['amount'] ?? null);
+        $response->assertJsonPath('totals.debit', '140.0000')
+            ->assertJsonPath('totals.credit', '140.0000');
+
+        $this->assertNoInternalIds($response->json());
+    }
+
     public function test_cash_book_rejects_non_cash_and_cross_tenant_accounts(): void
     {
         $this->signInOwner('daily-cash-security-a')->assertOk();
@@ -285,6 +409,7 @@ class DailyCashPositionTest extends TestCase
 
         $this->getJson('/api/cash-position/accounts')->assertForbidden();
         $this->getJson('/api/cash-position/summary')->assertForbidden();
+        $this->getJson('/api/cash-position/dashboard')->assertForbidden();
     }
 
     /**
