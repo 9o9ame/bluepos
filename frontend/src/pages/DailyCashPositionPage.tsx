@@ -206,7 +206,7 @@ export function DailyCashPositionPage() {
   return (
     <DesktopPanel
       className="daily-cash-position"
-      title="Cash book view"
+      title={activeView === 'cash-book' ? 'Cash book view' : 'Daily Cash / Credit Summary'}
     >
       <div className="dcp-tabs" role="tablist" aria-label="Daily Cash Position views">
         <UiButton
