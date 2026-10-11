@@ -69,7 +69,16 @@ function CashBalanceChart({
   const barWidth = series.length
     ? Math.max(3, Math.min(18, (groupWidth - 10) / series.length - barGap))
     : 8
-  const tones = ['var(--ui-accent)', 'var(--ui-info)', 'var(--ui-success)', 'var(--ui-warning)', 'var(--ui-danger)']
+  const tones = [
+    'var(--ui-success)',
+    'var(--ui-info)',
+    'var(--ui-warning)',
+    'var(--ui-danger)',
+    'var(--ui-accent)',
+    'var(--ui-accent-strong)',
+    'color-mix(in srgb, var(--ui-success) 60%, var(--ui-info))',
+    'color-mix(in srgb, var(--ui-warning) 65%, var(--ui-danger))',
+  ]
 
   if (loading && dates.length === 0) {
     return <div className="dcp-dashboard-empty">Loading dashboard chart…</div>
@@ -81,7 +90,19 @@ function CashBalanceChart({
 
   return (
     <div className="dcp-dashboard-chart-wrap">
+      <div className="dcp-dashboard-chart-title">
+        <strong>7-Day Cash / Bank Closing Balance</strong>
+        <span>Hover a bar to see the exact account balance</span>
+      </div>
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Cash and bank closing balance trend">
+        <rect
+          x={pad.left}
+          y={pad.top}
+          width={plotWidth}
+          height={plotHeight}
+          className="dcp-chart-plot-bg"
+          rx={8}
+        />
         {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
           const value = maxValue - range * ratio
           const lineY = pad.top + plotHeight * ratio
@@ -114,7 +135,8 @@ function CashBalanceChart({
                     y={rectY}
                     width={barWidth}
                     height={rectHeight}
-                    rx={1}
+                    rx={3}
+                    className="dcp-chart-bar"
                     style={{ fill: tones[seriesIndex % tones.length] }}
                   >
                     <title>{item.account.name}: {money(String(value))}</title>
@@ -606,7 +628,7 @@ export function DailyCashPositionPage() {
             </div>
 
             <div className="dcp-dashboard-side">
-              <div className="dcp-dashboard-table-card">
+              <div className="dcp-dashboard-table-card is-debit">
                 <div className="dcp-dashboard-table-title">Debit Balance Accounts</div>
                 <PosDataGrid
                   columns={dashboardAccountColumns}
@@ -619,7 +641,7 @@ export function DailyCashPositionPage() {
                 </div>
               </div>
 
-              <div className="dcp-dashboard-table-card">
+              <div className="dcp-dashboard-table-card is-credit">
                 <div className="dcp-dashboard-table-title">Credit Balance Accounts</div>
                 <PosDataGrid
                   columns={dashboardAccountColumns}
