@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { UiButton } from '../ui/UiButton'
 
 type DesktopPanelProps = {
-  title?: string
+  title?: ReactNode
   toolbar?: ReactNode
   footer?: ReactNode
   flush?: boolean
