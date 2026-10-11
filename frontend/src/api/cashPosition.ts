@@ -156,3 +156,45 @@ export function fetchCashDashboard(date: string, days = 7) {
   const search = new URLSearchParams({ date, days: String(days) })
   return apiFetch<CashDashboard>(`/api/cash-position/dashboard?${search.toString()}`)
 }
+
+
+export type DayCloseCategoryRow = {
+  category: {
+    ulid: string | null
+    code: string
+    name: string
+  }
+  orders: number
+  amount: string
+}
+
+export type DayCloseShiftSnapshot = {
+  ulid: string
+  operator: {
+    membership_ulid: string | null
+    name: string
+  }
+  opened_at: string | null
+  opening_cash: string
+  expected_cash: string | null
+  actual_cash: string | null
+  difference: string | null
+}
+
+export type DayCloseOverview = {
+  date: string
+  category_sales: DayCloseCategoryRow[]
+  category_totals: {
+    orders: number
+    amount: string
+  }
+  current_shift: DayCloseShiftSnapshot | null
+  open_shift_positions: DayCloseShiftSnapshot[]
+  close_action_available: boolean
+  close_action_reason: string
+}
+
+export function fetchDayCloseOverview(date: string) {
+  const search = new URLSearchParams({ date })
+  return apiFetch<DayCloseOverview>(`/api/cash-position/day-close?${search.toString()}`)
+}
