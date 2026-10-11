@@ -222,7 +222,33 @@ class DailyCashPositionTest extends TestCase
         $this->assertSame('45.0000', $position['credit'] ?? null);
         $this->assertSame('115.0000', $position['closing'] ?? null);
         $this->assertNotEmpty($response->json('unsupported_reasons.sales'));
+        $this->assertSame(
+            'receiving_voucher',
+            collect($response->json('filter_options.document'))->firstWhere('value', 'receiving_voucher')['value'] ?? null,
+        );
+        $this->assertNotEmpty($response->json('filter_options.user_name'));
         $this->assertNoInternalIds($response->json());
+
+        $filtered = $this->getJson(
+            '/api/cash-position/summary?date=2026-10-11&filter_by=document&only_for=receiving_voucher'
+        )->assertOk()
+            ->assertJsonPath('filter_by', 'document')
+            ->assertJsonPath('only_for', 'receiving_voucher')
+            ->assertJsonPath('metrics.receivings.cash', '10.0000')
+            ->assertJsonPath('metrics.payment.cash', '0.0000')
+            ->assertJsonPath('metrics.purchase.credit', '0.0000');
+
+        $filteredPosition = collect($filtered->json('positions'))
+            ->firstWhere('account.ulid', $cash->ulid);
+
+        $this->assertSame('100.0000', $filteredPosition['opening'] ?? null);
+        $this->assertSame('10.0000', $filteredPosition['debit'] ?? null);
+        $this->assertSame('0.0000', $filteredPosition['credit'] ?? null);
+        $this->assertSame('110.0000', $filteredPosition['closing'] ?? null);
+
+        $this->getJson(
+            '/api/cash-position/summary?date=2026-10-11&filter_by=area_name&only_for=RYK'
+        )->assertUnprocessable();
     }
 
     public function test_cash_book_rejects_non_cash_and_cross_tenant_accounts(): void
