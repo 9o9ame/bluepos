@@ -37,6 +37,7 @@ export function ProductLookupGrid({
   onSelect,
   portalAnchorRef,
   themed = false,
+  selectedUlid,
 }: {
   rows: Product[]
   total: number
@@ -44,6 +45,7 @@ export function ProductLookupGrid({
   onSelect: (product: Product) => void
   portalAnchorRef?: RefObject<HTMLElement | null>
   themed?: boolean
+  selectedUlid?: string | null
 }) {
   const [portalStyle, setPortalStyle] = useState<{
     top: number
@@ -118,8 +120,12 @@ export function ProductLookupGrid({
         {rows.slice(0, 12).map((row) => (
           <button
             type="button"
-            className="sales-pos-product-grid-row"
+            className={[
+              'sales-pos-product-grid-row',
+              selectedUlid === row.ulid ? 'is-selected' : '',
+            ].filter(Boolean).join(' ')}
             key={row.ulid}
+            aria-selected={selectedUlid === row.ulid}
             onClick={() => onSelect(row)}
           >
             <span>{row.product_number}</span>
