@@ -22,6 +22,7 @@ class BusinessSettingController extends Controller
             'salesClearingAccount',
             'purchaseClearingAccount',
             'salesRevenueAccount',
+            'salesTaxPayableAccount',
             'inventoryAccount',
             'cogsAccount',
         ]));
@@ -42,6 +43,7 @@ class BusinessSettingController extends Controller
             'sales_clearing_account_ulid' => 'sales_clearing_account_id',
             'purchase_clearing_account_ulid' => 'purchase_clearing_account_id',
             'sales_revenue_account_ulid' => 'sales_revenue_account_id',
+            'sales_tax_payable_account_ulid' => 'sales_tax_payable_account_id',
             'inventory_account_ulid' => 'inventory_account_id',
             'cogs_account_ulid' => 'cogs_account_id',
         ] as $ulidField => $idField) {
@@ -70,6 +72,7 @@ class BusinessSettingController extends Controller
             'salesClearingAccount',
             'purchaseClearingAccount',
             'salesRevenueAccount',
+            'salesTaxPayableAccount',
             'inventoryAccount',
             'cogsAccount',
         ]));
