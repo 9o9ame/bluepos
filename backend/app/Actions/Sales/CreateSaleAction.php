@@ -19,6 +19,7 @@ use App\Models\ProductBarcode;
 use App\Models\ProductPrice;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\StockBalance;
 use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Security\AuditLogger;
@@ -398,6 +399,22 @@ class CreateSaleAction
             );
 
             /*
+             * Snapshot the authoritative weighted-average cost while holding
+             * the stock balance row lock. The immutable sale movement then
+             * preserves the exact COGS basis for later accounting and returns.
+             */
+            $balance = StockBalance::query()
+                ->where('tenant_id', $tenantId)
+                ->where('warehouse_id', $warehouse->id)
+                ->where('product_id', $product->id)
+                ->lockForUpdate()
+                ->first();
+
+            $averageCost = $balance?->average_cost === null
+                ? null
+                : bcadd((string) $balance->average_cost, '0', 4);
+
+            /*
              * Every sale line consumes stock, including:
              *
              * - normal sale items
@@ -409,6 +426,7 @@ class CreateSaleAction
                 'product' => $product,
                 'movement_type' => StockMovementType::Sale,
                 'quantity' => bcsub('0', $line['stock_quantity'], 6),
+                'unit_cost' => $averageCost,
                 'reference_type' => 'sale',
                 'reference_ulid' => $sale->ulid,
                 'reference_line_ulid' => $item->ulid,
