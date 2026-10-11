@@ -149,7 +149,7 @@ export function VendorCustomerLedgerPage() {
   const [reverseOrder, setReverseOrder] = useState(false)
   const [withoutHeading, setWithoutHeading] = useState(false)
   const [showBookNumber, setShowBookNumber] = useState(false)
-  const [eachLedgerSeparatePage, setEachLedgerSeparatePage] = useState(false)
+  const [eachLedgerSeparatePage, setEachLedgerSeparatePage] = useState(true)
   const [hideSubgroupTotals, setHideSubgroupTotals] = useState(false)
   const [resetSubgroupTotal, setResetSubgroupTotal] = useState(false)
   const [narrationColumn, setNarrationColumn] = useState('remarks')
@@ -335,6 +335,8 @@ export function VendorCustomerLedgerPage() {
   function printPreview() {
     if (previewLedgers.length === 0) return
 
+    const separatePages = previewLedgers.length > 1 && eachLedgerSeparatePage
+
     const reportWindow = window.open('', '_blank', 'width=1100,height=800')
     if (!reportWindow) {
       feedback.error('Allow pop-ups to print the ledger report.', 'Ledger')
@@ -373,7 +375,7 @@ export function VendorCustomerLedgerPage() {
           </div>`
         : ''
 
-      const pageBreak = eachLedgerSeparatePage && ledgerIndex > 0
+      const pageBreak = separatePages && ledgerIndex > 0
         ? '<div class="print-page-break" aria-hidden="true"></div>'
         : ''
 
@@ -890,7 +892,7 @@ export function VendorCustomerLedgerPage() {
             <BookOpen size={16} />
             {previewLedgers.length === 1
               ? previewLedgers[0].ledger.account.name
-              : `${previewLedgers.length} Ledger Statements`}
+              : `${previewLedgers.length} Ledger Statements${eachLedgerSeparatePage ? ' • Separate Pages' : ''}`}
           </span>
         }
         size="xl"
