@@ -216,7 +216,7 @@ export function InventoryAdjustmentsPage() {
   function selectEntryProduct(product: Product) {
     setProductUlid(product.ulid)
     setProductSearch(productLabel(product))
-    setProductPickerOpen(false)
+    setProductPickerOpen(true)
 
     window.setTimeout(() => {
       qtyPlusRef.current?.focus()
@@ -633,6 +633,7 @@ export function InventoryAdjustmentsPage() {
                               onSelect={selectEntryProduct}
                               portalAnchorRef={productAnchorRef}
                               themed
+                              selectedUlid={productUlid}
                             />
                           ) : null}
                         </div>
