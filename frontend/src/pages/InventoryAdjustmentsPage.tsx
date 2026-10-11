@@ -151,7 +151,6 @@ export function InventoryAdjustmentsPage() {
   })
 
   const document = documentQuery.data ?? null
-  const editable = Boolean(document && document.status === 'draft' && canAdjust)
   const entryEnabled = canAdjust && (!document || document.status === 'draft')
 
   useEffect(() => {
@@ -170,11 +169,6 @@ export function InventoryAdjustmentsPage() {
   const accountOptions = (accountsQuery.data?.data ?? []).map((account) => ({
     value: account.ulid,
     label: `${account.code} — ${account.name}`,
-  }))
-
-  const productOptions = (productsQuery.data?.data ?? []).map((product) => ({
-    value: product.ulid,
-    label: productLabel(product),
   }))
 
   function clearLineForm(focusProduct = false) {
