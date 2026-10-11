@@ -310,7 +310,8 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     title: 'Daily Cash Position',
     path: '/daily/cash',
     ribbon: 'daily-entries',
-    status: 'later',
+    status: 'ready',
+    permission: 'accounting.journal.view',
   },
   {
     key: 'reports-home',
@@ -486,7 +487,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
         },
         { id: 'product-view', label: 'Product View', icon: Package, moduleKey: 'products', permission: 'products.view', entitlement: 'catalog', status: 'ready', tone: 'green' },
         { id: 'ledger', label: 'Vendor / Customer Ledger', icon: BookOpen, moduleKey: 'party-ledger', status: 'ready', tone: 'gold' },
-        { id: 'cash', label: 'Daily Cash Position', icon: Banknote, status: 'later', tone: 'teal' },
+        { id: 'cash', label: 'Daily Cash Position', icon: Banknote, moduleKey: 'cash-position', permission: 'accounting.journal.view', status: 'ready', tone: 'teal' },
       ],
     },
   ],
