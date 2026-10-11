@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Eye, RefreshCw } from 'lucide-react'
 import { fetchProducts } from '../api/catalog'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
+import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import type { Product, ProductBarcode, ProductPrice } from '../types/catalog'
 import './ProductViewPage.css'
@@ -83,6 +84,7 @@ function expandedRows(products: Product[], singleProductRow: boolean): ProductVi
 }
 
 export function ProductViewPage() {
+  const { session } = useAuth()
   const canViewInventory = useCan('inventory.view')
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search)
@@ -259,8 +261,49 @@ export function ProductViewPage() {
     setSelectedKey(null)
   }
 
+  function previewPrint() {
+    const root = document.documentElement
+    const cleanup = () => {
+      root.removeAttribute('data-product-view-print')
+      window.removeEventListener('afterprint', cleanup)
+    }
+
+    root.setAttribute('data-product-view-print', 'true')
+    window.addEventListener('afterprint', cleanup, { once: true })
+
+    window.requestAnimationFrame(() => {
+      window.print()
+    })
+  }
+
+  const filterSummary = [
+    withBalance ? 'Having Balance' : null,
+    activeOnly ? 'Active Only' : null,
+    lessThanReorder ? 'Less than Reorder' : null,
+    singleProductRow ? 'Single row per product' : 'Barcode rows',
+    deferredSearch.trim() ? `Search: "${deferredSearch.trim()}"` : null,
+  ].filter(Boolean).join(' · ')
+
+  const generatedAt = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date())
+
   return (
     <section className="product-view-page" aria-label="Product View">
+      <header className="product-view-print-header" aria-hidden="true">
+        <div>
+          <h1>Product View</h1>
+          <p>
+            {session?.tenant.name ?? 'BluePOS'} · {session?.branch.code ?? '—'} — {session?.branch.name ?? '—'} · {session?.warehouse.name ?? '—'}
+          </p>
+        </div>
+        <div className="product-view-print-meta">
+          <span>{filterSummary || 'All products'}</span>
+          <span>Generated {generatedAt}</span>
+        </div>
+      </header>
+
       <div className="product-view-toolbar">
         <UiButton
           variant="info"
@@ -335,7 +378,7 @@ export function ProductViewPage() {
           variant="info"
           icon={<Eye size={15} />}
           label="Preview"
-          onClick={() => window.print()}
+          onClick={previewPrint}
         />
       </div>
 
