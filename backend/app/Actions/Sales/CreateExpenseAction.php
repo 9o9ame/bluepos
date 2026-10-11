@@ -2,6 +2,7 @@
 
 namespace App\Actions\Sales;
 
+use App\Accounting\CashierTransactionLock;
 use App\Accounting\OpeningBalancePoster;
 use App\Enums\JournalStatus;
 use App\Exceptions\ApiException;
@@ -19,6 +20,7 @@ class CreateExpenseAction
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly OpeningBalancePoster $poster,
+        private readonly CashierTransactionLock $cashierLock,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -51,6 +53,8 @@ class CreateExpenseAction
             if ($existing) {
                 return $existing->load(['expenseAccount', 'paymentAccount']);
             }
+
+            $this->cashierLock->lockCurrent();
 
             $expenseAccount = $this->resolveAccount((string) $data['expense_account_ulid'], 'expense_account_ulid');
             $paymentAccount = $this->resolveAccount((string) $data['payment_account_ulid'], 'payment_account_ulid');
