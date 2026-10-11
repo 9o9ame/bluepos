@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { BookOpen, Eye, XCircle } from 'lucide-react'
+import { BookOpen, Eye, Plus, XCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import {
   fetchParties,
@@ -102,6 +102,9 @@ export function VendorCustomerLedgerPage() {
   const [dateTo, setDateTo] = useState(todayIso())
   const [includeOpeningBalance, setIncludeOpeningBalance] = useState(true)
   const [reverseOrder, setReverseOrder] = useState(false)
+  const [reportTypeOptionsOpen, setReportTypeOptionsOpen] = useState(false)
+  const [groupFieldsOpen, setGroupFieldsOpen] = useState(false)
+  const [remarksFontSize, setRemarksFontSize] = useState(9)
   const [preview, setPreview] = useState<PartyLedger | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
 
@@ -238,24 +241,63 @@ export function VendorCustomerLedgerPage() {
                   <span>Auto Sale Man</span>
                 </label>
 
-                <div className="party-ledger-field-row">
-                  <span>Narration Col:</span>
-                  <UiSelect
-                    value="remarks"
-                    disabled
-                    searchable={false}
-                    options={[
-                      { value: 'remarks', label: 'Remarks' },
-                      { value: 'detail1', label: 'Detail1' },
-                      { value: 'detail2', label: 'Detail2' },
-                      { value: 'detail3', label: 'Detail3' },
-                      { value: 'detailall', label: 'DetailALL' },
-                      { value: 'onlydesc', label: 'OnlyDesc' },
-                    ]}
-                    onChange={() => undefined}
-                    aria-label="Narration column"
-                  />
+                <div className="party-ledger-inline-options">
+                  <div className="party-ledger-field-row">
+                    <span>Narration Col:</span>
+                    <UiSelect
+                      value="remarks"
+                      disabled
+                      searchable={false}
+                      options={[
+                        { value: 'remarks', label: 'Remarks' },
+                        { value: 'detail1', label: 'Detail1' },
+                        { value: 'detail2', label: 'Detail2' },
+                        { value: 'detail3', label: 'Detail3' },
+                        { value: 'detailall', label: 'DetailALL' },
+                        { value: 'onlydesc', label: 'OnlyDesc' },
+                      ]}
+                      onChange={() => undefined}
+                      aria-label="Narration column"
+                    />
+                  </div>
+
+                  <div className="party-ledger-field-row party-ledger-show-only">
+                    <span>Show Only:</span>
+                    <UiSelect
+                      value=""
+                      disabled
+                      searchable={false}
+                      options={[
+                        { value: '', label: 'All' },
+                        { value: 'non-whole-sale', label: 'Non-Whole Sale' },
+                        { value: 'whole-sale', label: 'Whole Sale' },
+                      ]}
+                      onChange={() => undefined}
+                      aria-label="Show only"
+                    />
+                  </div>
+
+                  <label className="party-ledger-remarks-size">
+                    <span>Remarks Font Size:</span>
+                    <input
+                      type="number"
+                      min={7}
+                      max={16}
+                      value={remarksFontSize}
+                      onChange={(event) => setRemarksFontSize(Math.max(7, Math.min(16, Number(event.target.value) || 9)))}
+                    />
+                  </label>
                 </div>
+
+                <div className="party-ledger-zm-row">
+                  <span>ZM:</span>
+                  <input type="text" value="" disabled aria-label="ZM" />
+                </div>
+
+                <fieldset className="party-ledger-zm-card" disabled>
+                  <legend>ZM Selection</legend>
+                  <label><input type="checkbox" /><span>Selection semantics not mapped yet</span></label>
+                </fieldset>
 
                 <fieldset className="party-ledger-documents" disabled>
                   <legend>Select a Document</legend>
@@ -301,20 +343,54 @@ export function VendorCustomerLedgerPage() {
 
                 <div className="party-ledger-field-row">
                   <span>Select a Ledger Type:</span>
-                  <UiSelect
-                    value="summary"
-                    searchable={false}
-                    options={[
-                      { value: 'summary', label: 'Summary Ledger' },
-                      { value: 'above', label: 'Above List View', disabled: true, title: 'Reference layout semantics not yet mapped.' },
-                      { value: 'pos', label: 'POS Ledger', disabled: true, title: 'Reference layout semantics not yet mapped.' },
-                    ]}
-                    onChange={() => undefined}
-                    aria-label="Ledger type"
-                  />
+                  <div className="party-ledger-select-plus">
+                    <UiSelect
+                      value="summary"
+                      searchable={false}
+                      options={[
+                        { value: 'summary', label: 'Summary Ledger' },
+                        { value: 'above', label: 'Above List View', disabled: true, title: 'Reference layout semantics not yet mapped.' },
+                        { value: 'pos', label: 'POS Ledger', disabled: true, title: 'Reference layout semantics not yet mapped.' },
+                      ]}
+                      onChange={() => undefined}
+                      aria-label="Ledger type"
+                    />
+                    <UiButton
+                      variant="primary"
+                      className="party-ledger-plus-button"
+                      title="Report Type On / Off Options"
+                      aria-label="Report Type On / Off Options"
+                      onClick={() => setReportTypeOptionsOpen(true)}
+                    >
+                      <Plus size={14} />
+                    </UiButton>
+                  </div>
                 </div>
 
-                {['Group by:', 'Filter By:', 'Only For:'].map((label) => (
+                <div className="party-ledger-field-row">
+                  <span>Group by:</span>
+                  <div className="party-ledger-select-plus">
+                    <UiSelect
+                      value=""
+                      disabled
+                      searchable={false}
+                      options={[{ value: '', label: 'Not mapped yet' }]}
+                      onChange={() => undefined}
+                      aria-label="Group by"
+                    />
+                    <UiButton
+                      variant="primary"
+                      className="party-ledger-plus-button"
+                      title="Ledger Group Fields"
+                      aria-label="Ledger Group Fields"
+                      onClick={() => setGroupFieldsOpen(true)}
+                    >
+                      <Plus size={14} />
+                    </UiButton>
+                  </div>
+                </div>
+
+                {['Filter By:', 'Only For:'].map((label) => (
                   <div className="party-ledger-field-row" key={label}>
                     <span>{label}</span>
                     <UiSelect
@@ -336,6 +412,10 @@ export function VendorCustomerLedgerPage() {
                       onChange={(event) => setIncludeOpeningBalance(!event.target.checked)}
                     />
                     <span>Don't Include Opening Bal</span>
+                  </label>
+                  <label title="Subgroup total suppression requires server-side grouping support.">
+                    <input type="checkbox" disabled />
+                    <span>Don't Show Total (Subgroup)</span>
                   </label>
                   <label title="Subgroup reset semantics are not defined by the reference screenshots.">
                     <input type="checkbox" disabled />
@@ -368,6 +448,94 @@ export function VendorCustomerLedgerPage() {
       </div>
 
       <UiModal
+        open={reportTypeOptionsOpen}
+        title="Report Type On / Off Options"
+        size="md"
+        onClose={() => setReportTypeOptionsOpen(false)}
+        footer={
+          <UiButton variant="info" onClick={() => setReportTypeOptionsOpen(false)}>Close</UiButton>
+        }
+      >
+        <div className="party-ledger-config-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Index</th>
+                <th>Report Name</th>
+                <th>Used For</th>
+                <th>Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ['0', 'Summary Ledger', true],
+                ['1', 'Detailed Ledger (Short Form)', false],
+                ['2', 'Invoice - Receipt Ledger', false],
+                ['3', 'Category Wise VC Ledger', false],
+                ['4', 'Detailed Ledger (Landscape)', false],
+                ['5', 'Vochers Seperate Ledger', false],
+                ['6', 'Above List View', false],
+                ['7', 'Ledger With Product Grouping', false],
+                ['8', 'POS Ledger', false],
+              ].map(([index, name, active]) => (
+                <tr key={String(index)}>
+                  <td>{index}</td>
+                  <td>{name}</td>
+                  <td>Ledger</td>
+                  <td className="is-center">
+                    <input type="checkbox" checked={Boolean(active)} disabled readOnly />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="party-ledger-config-note">
+            Summary Ledger is implemented. Other report layouts remain disabled until their report semantics are mapped.
+          </p>
+        </div>
+      </UiModal>
+
+      <UiModal
+        open={groupFieldsOpen}
+        title="Ledger Group Fields"
+        size="md"
+        onClose={() => setGroupFieldsOpen(false)}
+        footer={
+          <UiButton variant="info" onClick={() => setGroupFieldsOpen(false)}>Close</UiButton>
+        }
+      >
+        <div className="party-ledger-config-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Field of Database</th>
+                <th>Field Display to User</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ['AreaName', 'Area Name'],
+                ['CategoryName', 'Category Name'],
+                ['DOC', 'Document'],
+                ['EntryDate', 'Date'],
+                ['MAreaName', 'Main Area Name'],
+                ['SaleMan', 'Sales Person Name'],
+                ['UserName', 'User Name'],
+              ].map(([field, label]) => (
+                <tr key={field}>
+                  <td>{field}</td>
+                  <td>{label}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="party-ledger-config-note">
+            These fields are shown from the reference. Grouped ledger calculation will be enabled only after the matching server-side data is available.
+          </p>
+        </div>
+      </UiModal>
+
+      <UiModal
         open={Boolean(preview)}
         title={
           <span className="party-ledger-preview-title">
@@ -383,32 +551,44 @@ export function VendorCustomerLedgerPage() {
       >
         {preview ? (
           <div className="party-ledger-preview">
-            <div className="party-ledger-preview-meta">
-              <span><strong>Code:</strong> {preview.account.code}</span>
-              <span><strong>Period:</strong> {allDates ? 'All Dates' : `${dateFrom} to ${dateTo}`}</span>
-              <span><strong>B/F:</strong> {preview.carry_forward}</span>
+            <div className="party-ledger-statement-head">
+              <div className="party-ledger-statement-title">ACCOUNT STATEMENT</div>
+              <div className="party-ledger-statement-period">
+                {allDates ? 'ALL DATES' : `${dateFrom} TO ${dateTo}`}
+              </div>
+              <div className="party-ledger-statement-name">{preview.account.name}</div>
+              <div className="party-ledger-statement-info">
+                <span><strong>Code:</strong> {preview.account.code}</span>
+                <span><strong>Address:</strong> {preview.account.address || '—'}</span>
+              </div>
             </div>
 
             <div className="party-ledger-preview-grid">
               <table>
                 <thead>
                   <tr>
+                    <th className="is-center">#</th>
                     <th>Date</th>
-                    <th>Trans No</th>
-                    <th>Document</th>
-                    <th>Remarks</th>
+                    <th>Trans#</th>
+                    <th>DOC</th>
+                    <th>Narration</th>
                     <th className="is-num">Debit</th>
                     <th className="is-num">Credit</th>
                     <th className="is-num">Balance</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {previewRows.map((row) => (
+                  <tr className="party-ledger-opening-row">
+                    <td colSpan={7}>Opening Balance:</td>
+                    <td className="is-num">{preview.carry_forward}</td>
+                  </tr>
+                  {previewRows.map((row, index) => (
                     <tr key={row.line_ulid}>
+                      <td className="is-center">{index + 1}</td>
                       <td>{row.date}</td>
                       <td>{row.trans_no}</td>
                       <td>{row.doc}</td>
-                      <td>{row.remarks ?? '—'}</td>
+                      <td style={{ fontSize: `${remarksFontSize}px` }}>{row.remarks ?? '—'}</td>
                       <td className="is-num">{row.debit}</td>
                       <td className="is-num">{row.credit}</td>
                       <td className="is-num">{row.balance}</td>
@@ -416,13 +596,13 @@ export function VendorCustomerLedgerPage() {
                   ))}
                   {previewRows.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="party-ledger-preview-empty">No posted ledger transactions in this period.</td>
+                      <td colSpan={8} className="party-ledger-preview-empty">No posted ledger transactions in this period.</td>
                     </tr>
                   ) : null}
                 </tbody>
                 <tfoot>
                   <tr>
-                    <td colSpan={4}>Totals</td>
+                    <td colSpan={5}>Totals</td>
                     <td className="is-num">{preview.totals.debit}</td>
                     <td className="is-num">{preview.totals.credit}</td>
                     <td className="is-num">{preview.totals.closing_balance}</td>
