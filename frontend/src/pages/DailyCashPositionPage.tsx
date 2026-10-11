@@ -6,10 +6,13 @@ import {
   fetchCashCreditSummary,
   fetchCashDashboard,
   fetchCashPositionAccounts,
+  fetchDayCloseOverview,
   type CashBookRow,
   type CashCreditFilterKey,
   type CashCreditPositionRow,
   type CashDashboardAccountRow,
+  type DayCloseCategoryRow,
+  type DayCloseShiftSnapshot,
 } from '../api/cashPosition'
 import { DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
@@ -166,13 +169,14 @@ function CashBalanceChart({
 export function DailyCashPositionPage() {
   const { closeActiveTab } = useWorkspace()
   const feedback = useFeedback()
-  const [activeView, setActiveView] = useState<'cash-book' | 'cash-credit' | 'dashboard'>('cash-book')
+  const [activeView, setActiveView] = useState<'cash-book' | 'cash-credit' | 'dashboard' | 'day-close'>('cash-book')
   const [accountUlid, setAccountUlid] = useState('')
   const [dateFrom, setDateFrom] = useState(todayIso())
   const [dateTo, setDateTo] = useState(todayIso())
   const [ignoreDate, setIgnoreDate] = useState(false)
   const [summaryFilterBy, setSummaryFilterBy] = useState<CashCreditFilterKey | ''>('')
   const [summaryOnlyFor, setSummaryOnlyFor] = useState('')
+  const [denominationCounts, setDenominationCounts] = useState<Record<number, string>>({})
 
   const accountsQuery = useQuery({
     queryKey: ['cash-position-accounts'],
@@ -184,6 +188,12 @@ export function DailyCashPositionPage() {
       setAccountUlid(accountsQuery.data[0].ulid)
     }
   }, [accountUlid, accountsQuery.data])
+
+  const dayCloseQuery = useQuery({
+    queryKey: ['day-close-overview', dateTo],
+    enabled: activeView === 'day-close',
+    queryFn: () => fetchDayCloseOverview(dateTo),
+  })
 
   const dashboardQuery = useQuery({
     queryKey: ['cash-dashboard', dateTo],
@@ -226,6 +236,11 @@ export function DailyCashPositionPage() {
   )
 
   function refresh() {
+    if (activeView === 'day-close') {
+      void dayCloseQuery.refetch()
+      return
+    }
+
     if (activeView === 'dashboard') {
       void dashboardQuery.refetch()
       return
@@ -321,6 +336,7 @@ export function DailyCashPositionPage() {
   const report = reportQuery.data
   const cashCredit = summaryQuery.data
   const dashboard = dashboardQuery.data
+  const dayClose = dayCloseQuery.data
 
   const positionColumns = useMemo<PosGridColumn<CashCreditPositionRow>[]>(
     () => [
@@ -354,6 +370,68 @@ export function DailyCashPositionPage() {
     ],
     [],
   )
+
+  const dayCloseCategoryColumns = useMemo<PosGridColumn<DayCloseCategoryRow>[]>(
+    () => [
+      {
+        key: 'category',
+        header: 'CATEGORY',
+        render: (row) => row.category.name,
+      },
+      {
+        key: 'orders',
+        header: 'Orders',
+        width: 90,
+        align: 'right',
+        render: (row) => row.orders,
+      },
+      {
+        key: 'amount',
+        header: 'Amount',
+        width: 130,
+        align: 'right',
+        render: (row) => money(row.amount),
+      },
+    ],
+    [],
+  )
+
+  const dayCloseShiftColumns = useMemo<PosGridColumn<DayCloseShiftSnapshot>[]>(
+    () => [
+      {
+        key: 'operator',
+        header: 'OPERATOR',
+        render: (row) => row.operator.name,
+      },
+      {
+        key: 'opening',
+        header: 'Opening',
+        width: 120,
+        align: 'right',
+        render: (row) => money(row.opening_cash),
+      },
+      {
+        key: 'expected',
+        header: 'Expected',
+        width: 120,
+        align: 'right',
+        render: (row) => row.expected_cash === null ? '—' : money(row.expected_cash),
+      },
+    ],
+    [],
+  )
+
+  const denominations = [5000, 1000, 500, 100, 50, 20, 10, 5, 2, 1]
+  const drawerCash = denominations.reduce((total, denomination) => {
+    const count = Number(denominationCounts[denomination] ?? 0)
+    return total + (Number.isFinite(count) ? Math.max(0, count) * denomination : 0)
+  }, 0)
+  const computerCash = dayClose?.current_shift?.expected_cash === null || dayClose?.current_shift === null
+    ? null
+    : Number(dayClose.current_shift.expected_cash)
+  const cashDifference = computerCash === null || !Number.isFinite(computerCash)
+    ? null
+    : drawerCash - computerCash
 
   const summaryFilterOptions = [
     { value: '', label: 'No Filter' },
@@ -389,7 +467,9 @@ export function DailyCashPositionPage() {
           ? 'Cash book view'
           : activeView === 'cash-credit'
             ? 'Daily Cash / Credit Summary'
-            : 'Daily Cash Dashboard'
+            : activeView === 'dashboard'
+              ? 'Daily Cash Dashboard'
+              : 'Day Close'
       }
     >
       <div className="dcp-tabs" role="tablist" aria-label="Daily Cash Position views">
@@ -412,7 +492,12 @@ export function DailyCashPositionPage() {
         >
           Dash Board
         </UiButton>
-        <UiButton disabled title="Day Close requires separate close-day workflow and controls.">Day Close</UiButton>
+        <UiButton
+          variant={activeView === 'day-close' ? 'primary' : 'default'}
+          onClick={() => setActiveView('day-close')}
+        >
+          Day Close
+        </UiButton>
       </div>
 
       {activeView === 'cash-book' ? (
@@ -597,7 +682,7 @@ export function DailyCashPositionPage() {
             <strong>{money(cashCredit?.totals.closing)}</strong>
           </div>
         </div>
-      ) : (
+      ) : activeView === 'dashboard' ? (
         <div className="dcp-dashboard">
           <div className="dcp-dashboard-heading">
             <div>
@@ -654,6 +739,129 @@ export function DailyCashPositionPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      ) : (
+        <div className="dcp-day-close">
+          <div className="dcp-day-close-heading">
+            <div>
+              <strong>Day Close Preview</strong>
+              <span>Read-only reconciliation for {dateTo}; actual close remains disabled until shift lifecycle is implemented.</span>
+            </div>
+            <div className="dcp-day-close-actions">
+              <label>
+                <span>Date:</span>
+                <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+              </label>
+              <UiButton variant="info" icon={<RefreshCw size={14} />} onClick={refresh}>Refresh</UiButton>
+              <UiButton variant="info" onClick={() => window.print()}>POS Preview</UiButton>
+              <UiButton variant="info" onClick={closeActiveTab}>Close</UiButton>
+            </div>
+          </div>
+
+          {dayCloseQuery.isError ? (
+            <div className="dcp-error">Unable to load Day Close overview.</div>
+          ) : null}
+
+          <div className="dcp-day-close-body">
+            <section className="dcp-day-close-card dcp-day-close-categories">
+              <div className="dcp-day-close-card-title">Today's Category Wise Sale</div>
+              <div className="dcp-day-close-grid">
+                <PosDataGrid
+                  columns={dayCloseCategoryColumns}
+                  rows={dayClose?.category_sales ?? []}
+                  rowKey={(row) => row.category.ulid ?? row.category.code}
+                  emptyMessage={dayCloseQuery.isFetching ? 'Loading category sales…' : 'No posted sales for this date.'}
+                />
+              </div>
+              <div className="dcp-day-close-total">
+                <span>Total</span>
+                <strong>{dayClose?.category_totals.orders ?? 0}</strong>
+                <strong>{money(dayClose?.category_totals.amount)}</strong>
+              </div>
+            </section>
+
+            <section className="dcp-day-close-card dcp-day-close-counter">
+              <div className="dcp-day-close-top-actions">
+                <UiButton
+                  variant="success"
+                  disabled
+                  title={dayClose?.close_action_reason ?? 'Actual close workflow is not implemented yet.'}
+                >
+                  Close Day
+                </UiButton>
+                <UiButton
+                  variant="warning"
+                  disabled
+                  title="Cash adjustment requires a separate posted accounting workflow."
+                >
+                  Adjust [CASH]
+                </UiButton>
+              </div>
+
+              <div className="dcp-day-close-card-title">Currency Note Counting</div>
+              <div className="dcp-denomination-table">
+                <div className="dcp-denomination-head">
+                  <span>DENOMINATION</span><span>Count</span><span>Amount</span>
+                </div>
+                {denominations.map((denomination) => {
+                  const raw = denominationCounts[denomination] ?? ''
+                  const count = Number(raw || 0)
+                  const amount = Number.isFinite(count) ? Math.max(0, count) * denomination : 0
+                  return (
+                    <div className="dcp-denomination-row" key={denomination}>
+                      <strong>{denomination}</strong>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputMode="numeric"
+                        value={raw}
+                        onChange={(event) =>
+                          setDenominationCounts((current) => ({
+                            ...current,
+                            [denomination]: event.target.value,
+                          }))
+                        }
+                        aria-label={`Count of ${denomination} notes`}
+                      />
+                      <span>{money(String(amount))}</span>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="dcp-day-close-cash-summary">
+                <div><span>Computer Cash</span><strong>{computerCash === null ? 'N/A' : money(String(computerCash))}</strong></div>
+                <div><span>Drawer Cash</span><strong>{money(String(drawerCash))}</strong></div>
+                <div className={cashDifference === null ? '' : cashDifference === 0 ? 'is-balanced' : 'is-difference'}>
+                  <span>Difference</span>
+                  <strong>{cashDifference === null ? 'N/A' : money(String(cashDifference))}</strong>
+                </div>
+              </div>
+
+              <div className="dcp-day-close-note">
+                {dayClose?.current_shift
+                  ? `Open shift: ${dayClose.current_shift.operator.name} · Opening ${money(dayClose.current_shift.opening_cash)}`
+                  : 'No open cashier shift exists for the current user. Computer Cash cannot be inferred.'}
+              </div>
+            </section>
+
+            <section className="dcp-day-close-card dcp-day-close-positions">
+              <div className="dcp-day-close-card-title">Today's Cash Counter Position</div>
+              <div className="dcp-day-close-grid">
+                <PosDataGrid
+                  columns={dayCloseShiftColumns}
+                  rows={dayClose?.open_shift_positions ?? []}
+                  rowKey={(row) => row.ulid}
+                  emptyMessage={dayCloseQuery.isFetching ? 'Loading open shifts…' : 'No open cashier shifts for this branch.'}
+                />
+              </div>
+              <div className="dcp-day-close-status">
+                <strong>Close status</strong>
+                <span>{dayClose?.close_action_available ? 'Available' : 'Preview only'}</span>
+              </div>
+            </section>
           </div>
         </div>
       )}
