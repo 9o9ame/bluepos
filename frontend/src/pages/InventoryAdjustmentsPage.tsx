@@ -1,6 +1,7 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  ChevronDown,
   FileSearch,
   PackageSearch,
   Plus,
@@ -24,6 +25,7 @@ import {
   updateInventoryAdjustmentLine,
 } from '../api/inventory'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
+import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -100,6 +102,13 @@ export function InventoryAdjustmentsPage() {
   const [lineRemarks, setLineRemarks] = useState('')
   const [selectedLineUlid, setSelectedLineUlid] = useState<string | null>(null)
   const [lineDirty, setLineDirty] = useState(false)
+  const [productPickerOpen, setProductPickerOpen] = useState(false)
+
+  const productInputRef = useRef<HTMLInputElement | null>(null)
+  const productAnchorRef = useRef<HTMLDivElement | null>(null)
+  const qtyPlusRef = useRef<HTMLInputElement | null>(null)
+  const qtyMinusRef = useRef<HTMLInputElement | null>(null)
+  const remarksRef = useRef<HTMLInputElement | null>(null)
 
   const [fromDate, setFromDate] = useState(monthStartIso())
   const [toDate, setToDate] = useState(todayIso())
@@ -169,7 +178,7 @@ export function InventoryAdjustmentsPage() {
     label: productLabel(product),
   }))
 
-  function clearLineForm() {
+  function clearLineForm(focusProduct = false) {
     setProductSearch('')
     setProductUlid('')
     setQtyPlus('')
@@ -177,6 +186,14 @@ export function InventoryAdjustmentsPage() {
     setLineRemarks('')
     setSelectedLineUlid(null)
     setLineDirty(false)
+    setProductPickerOpen(false)
+
+    if (focusProduct) {
+      window.setTimeout(() => {
+        productInputRef.current?.focus()
+        productInputRef.current?.select()
+      }, 0)
+    }
   }
 
   function newDocument() {
@@ -197,6 +214,24 @@ export function InventoryAdjustmentsPage() {
     setQtyMinus(line.qty_minus === '0.000000' ? '' : line.qty_minus)
     setLineRemarks(line.remarks ?? '')
     setLineDirty(false)
+    setProductPickerOpen(false)
+
+    window.setTimeout(() => {
+      qtyPlusRef.current?.focus()
+      qtyPlusRef.current?.select()
+    }, 0)
+  }
+
+  function selectEntryProduct(product: Product) {
+    setProductUlid(product.ulid)
+    setProductSearch(productLabel(product))
+    setProductPickerOpen(false)
+    setLineDirty(true)
+
+    window.setTimeout(() => {
+      qtyPlusRef.current?.focus()
+      qtyPlusRef.current?.select()
+    }, 0)
   }
 
   function openDocument(row: InventoryAdjustment) {
@@ -287,7 +322,7 @@ export function InventoryAdjustmentsPage() {
         setHeaderDirty(false)
       }
 
-      clearLineForm()
+      clearLineForm(true)
       await queryClient.invalidateQueries({ queryKey: ['inventory-adjustment', result.documentUlid] })
       await queryClient.invalidateQueries({ queryKey: ['inventory-adjustments'] })
 
@@ -315,7 +350,7 @@ export function InventoryAdjustmentsPage() {
   const removeLine = useMutation({
     mutationFn: (lineUlid: string) => deleteInventoryAdjustmentLine(documentUlid as string, lineUlid),
     onSuccess: async () => {
-      clearLineForm()
+      clearLineForm(true)
       await queryClient.invalidateQueries({ queryKey: ['inventory-adjustment', documentUlid] })
       await queryClient.invalidateQueries({ queryKey: ['inventory-adjustments'] })
       feedback.success('Adjustment line removed.')
@@ -347,22 +382,6 @@ export function InventoryAdjustmentsPage() {
     },
     onError: (error) => feedback.fromApiError(error, 'Unable to delete adjustment.'),
   })
-
-  const lineColumns = useMemo<PosGridColumn<InventoryAdjustmentLine>[]>(() => [
-    {
-      key: 'product',
-      header: 'ITEM / PRODUCT DESCRIPTION',
-      width: '30%',
-      render: (row) => row.product ? `${row.product.product_number} · ${row.product.name}` : '—',
-    },
-    { key: 'instock', header: 'In Stock', width: 95, align: 'right', render: (row) => row.in_stock },
-    { key: 'plus', header: 'Qty +', width: 95, align: 'right', render: (row) => row.qty_plus },
-    { key: 'minus', header: 'Qty -', width: 95, align: 'right', render: (row) => row.qty_minus },
-    { key: 'after', header: 'After Stock', width: 105, align: 'right', render: (row) => row.after_stock },
-    { key: 'price', header: 'Price', width: 100, align: 'right', render: (row) => row.price },
-    { key: 'amount', header: 'Amount', width: 110, align: 'right', render: (row) => row.amount },
-    { key: 'remarks', header: 'Remarks', render: (row) => row.remarks ?? '—' },
-  ], [])
 
   const searchColumns = useMemo<PosGridColumn<InventoryAdjustment>[]>(() => [
     { key: 'number', header: 'Adj #', width: 120, render: (row) => row.document_number },
@@ -408,6 +427,35 @@ export function InventoryAdjustmentsPage() {
     { key: 'amount', header: 'Amount', width: 110, align: 'right', render: (row) => row.amount },
     { key: 'remarks', header: 'Remarks', render: (row) => row.remarks ?? '—' },
   ], [])
+
+  const selectedEntryProduct = productsQuery.data?.data.find((row) => row.ulid === productUlid) ?? null
+  const selectedExistingLine = (document?.lines ?? []).find((row) => row.ulid === selectedLineUlid) ?? null
+
+  const entryPreview = useMemo(() => {
+    if (selectedExistingLine) {
+      return {
+        inStock: selectedExistingLine.in_stock,
+        afterStock: selectedExistingLine.after_stock,
+        price: selectedExistingLine.price,
+        amount: selectedExistingLine.amount,
+      }
+    }
+
+    const inStock = selectedEntryProduct?.sales_lookup?.in_stock ?? '0.000000'
+    const price = selectedEntryProduct?.sales_lookup?.average_cost ?? '0.0000'
+    const plus = Number.parseFloat(qtyPlus || '0') || 0
+    const minus = Number.parseFloat(qtyMinus || '0') || 0
+    const stock = Number.parseFloat(inStock || '0') || 0
+    const cost = Number.parseFloat(price || '0') || 0
+    const delta = plus - minus
+
+    return {
+      inStock,
+      afterStock: (stock + delta).toFixed(6),
+      price,
+      amount: (Math.abs(delta) * cost).toFixed(4),
+    }
+  }, [qtyMinus, qtyPlus, selectedEntryProduct, selectedExistingLine])
 
   const selectedSearchDocument = (listQuery.data ?? []).find((row) => row.ulid === selectedSearchUlid) ?? null
 
@@ -511,114 +559,180 @@ export function InventoryAdjustmentsPage() {
             </div>
           </div>
 
-          <div className="inventory-adjustments-line-entry">
-            <label className="inventory-adjustments-product-search">
-              <span>ITEM / PRODUCT DESCRIPTION</span>
-              <input
-                value={productSearch}
-                disabled={!entryEnabled}
-                placeholder="Product #, SKU, barcode or name"
-                onChange={(event) => {
-                  setProductSearch(event.target.value)
-                  setLineDirty(true)
-                }}
-              />
-            </label>
-            <label className="inventory-adjustments-product-select">
-              <span>Product</span>
-              <UiSelect
-                value={productUlid}
-                options={productOptions}
-                onChange={(value) => {
-                  setProductUlid(value)
-                  const product = productsQuery.data?.data.find((row) => row.ulid === value)
-                  if (product) setProductSearch(productLabel(product))
-                  setLineDirty(true)
-                }}
-                disabled={!entryEnabled}
-                placeholder={productsQuery.isFetching ? 'Searching…' : 'Select product'}
-                searchPlaceholder="Filter loaded products…"
-              />
-            </label>
-            <label>
-              <span>Qty +</span>
-              <input
-                inputMode="decimal"
-                value={qtyPlus}
-                disabled={!entryEnabled}
-                onChange={(event) => {
-                  setQtyPlus(event.target.value)
-                  if (event.target.value.trim()) setQtyMinus('')
-                  setLineDirty(true)
-                }}
-                placeholder="0.000000"
-              />
-            </label>
-            <label>
-              <span>Qty -</span>
-              <input
-                inputMode="decimal"
-                value={qtyMinus}
-                disabled={!entryEnabled}
-                onChange={(event) => {
-                  setQtyMinus(event.target.value)
-                  if (event.target.value.trim()) setQtyPlus('')
-                  setLineDirty(true)
-                }}
-                placeholder="0.000000"
-              />
-            </label>
-            <label className="inventory-adjustments-remarks">
-              <span>Remarks</span>
-              <input
-                value={lineRemarks}
-                maxLength={500}
-                disabled={!entryEnabled}
-                onChange={(event) => {
-                  setLineRemarks(event.target.value)
-                  setLineDirty(true)
-                }}
-              />
-            </label>
-            <div className="inventory-adjustments-line-actions">
-              <UiButton
-                variant="primary"
-                onClick={() => saveLine.mutate()}
-                disabled={!entryEnabled || saveLine.isPending}
-              >
-                {selectedLineUlid ? <Save size={15} /> : <Plus size={15} />}
-                {selectedLineUlid ? 'Update' : 'Add'}
-              </UiButton>
-              <UiButton
-                onClick={clearLineForm}
-                disabled={!selectedLineUlid && !lineDirty}
-              >
-                Clear
-              </UiButton>
-              <UiButton
-                variant="danger"
-                onClick={async () => {
-                  if (!selectedLineUlid) return
-                  if (!await feedback.confirm('Remove this adjustment line?')) return
-                  removeLine.mutate(selectedLineUlid)
-                }}
-                disabled={!editable || !selectedLineUlid || removeLine.isPending}
-              >
-                <Trash2 size={15} /> Remove
-              </UiButton>
-            </div>
-          </div>
-
           <div className="inventory-adjustments-grid">
-            <PosDataGrid
-              columns={lineColumns}
-              rows={document?.lines ?? []}
-              rowKey={(row) => row.ulid}
-              selectedKey={selectedLineUlid}
-              onSelect={fillLineForm}
-              onActivate={fillLineForm}
-              emptyMessage={documentUlid ? 'No adjustment lines yet.' : 'Select an account and add the first product.'}
-            />
+            <div className="inventory-adjustments-entry-grid-wrap">
+              <table className="inventory-adjustments-entry-grid">
+                <thead>
+                  <tr>
+                    <th>ITEM / PRODUCT DESCRIPTION</th>
+                    <th>In Stock</th>
+                    <th>Qty +</th>
+                    <th>Qty -</th>
+                    <th>After Stock</th>
+                    <th>Price</th>
+                    <th>Amount</th>
+                    <th>Remarks</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(document?.lines ?? []).map((line) => (
+                    <tr
+                      key={line.ulid}
+                      className={line.ulid === selectedLineUlid ? 'is-selected' : ''}
+                      title={document?.status === 'draft' ? 'Double-click to edit this line' : undefined}
+                      onDoubleClick={() => {
+                        if (document?.status === 'draft' && canAdjust) fillLineForm(line)
+                      }}
+                    >
+                      <td>{line.product ? `${line.product.product_number} · ${line.product.name}` : '—'}</td>
+                      <td className="is-num">{line.in_stock}</td>
+                      <td className="is-num">{line.qty_plus}</td>
+                      <td className="is-num">{line.qty_minus}</td>
+                      <td className="is-num">{line.after_stock}</td>
+                      <td className="is-num">{line.price}</td>
+                      <td className="is-num">{line.amount}</td>
+                      <td>{line.remarks ?? '—'}</td>
+                    </tr>
+                  ))}
+
+                  {entryEnabled ? (
+                    <tr className="is-entry-row">
+                      <td className="inventory-adjustments-product-cell">
+                        <div ref={productAnchorRef} className="inventory-adjustments-product-entry">
+                          <input
+                            ref={productInputRef}
+                            value={productSearch}
+                            autoComplete="off"
+                            placeholder="Search product name, number, SKU or barcode"
+                            onFocus={() => {
+                              if (productSearch.trim()) setProductPickerOpen(true)
+                            }}
+                            onChange={(event) => {
+                              setProductSearch(event.target.value)
+                              setProductUlid('')
+                              setProductPickerOpen(true)
+                              setLineDirty(true)
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key === 'ArrowDown') {
+                                event.preventDefault()
+                                setProductPickerOpen(true)
+                                return
+                              }
+
+                              if (event.key !== 'Enter') return
+
+                              const first = productsQuery.data?.data?.[0]
+                              if (first) {
+                                event.preventDefault()
+                                selectEntryProduct(first)
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="inventory-adjustments-product-arrow"
+                            aria-label="Open product list"
+                            onClick={() => {
+                              setProductPickerOpen((open) => !open)
+                              window.setTimeout(() => productInputRef.current?.focus(), 0)
+                            }}
+                          >
+                            <ChevronDown size={14} />
+                          </button>
+
+                          {productPickerOpen && (productsQuery.data?.data?.length ?? 0) > 0 ? (
+                            <ProductLookupGrid
+                              rows={productsQuery.data?.data ?? []}
+                              total={productsQuery.data?.meta.total ?? 0}
+                              priceType="default"
+                              onSelect={selectEntryProduct}
+                              portalAnchorRef={productAnchorRef}
+                              themed
+                            />
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="is-num is-readonly">{productUlid ? entryPreview.inStock : '—'}</td>
+                      <td>
+                        <input
+                          ref={qtyPlusRef}
+                          className="inventory-adjustments-entry-number"
+                          inputMode="decimal"
+                          value={qtyPlus}
+                          placeholder="0.000000"
+                          onChange={(event) => {
+                            setQtyPlus(event.target.value)
+                            if (event.target.value.trim()) setQtyMinus('')
+                            setLineDirty(true)
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter') return
+                            event.preventDefault()
+                            qtyMinusRef.current?.focus()
+                            qtyMinusRef.current?.select()
+                          }}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          ref={qtyMinusRef}
+                          className="inventory-adjustments-entry-number"
+                          inputMode="decimal"
+                          value={qtyMinus}
+                          placeholder="0.000000"
+                          onChange={(event) => {
+                            setQtyMinus(event.target.value)
+                            if (event.target.value.trim()) setQtyPlus('')
+                            setLineDirty(true)
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter') return
+                            event.preventDefault()
+                            remarksRef.current?.focus()
+                            remarksRef.current?.select()
+                          }}
+                        />
+                      </td>
+                      <td className="is-num is-readonly">{productUlid ? entryPreview.afterStock : '—'}</td>
+                      <td className="is-num is-readonly">{productUlid ? entryPreview.price : '—'}</td>
+                      <td className="is-num is-readonly">{productUlid ? entryPreview.amount : '—'}</td>
+                      <td className="inventory-adjustments-entry-remarks">
+                        <input
+                          ref={remarksRef}
+                          value={lineRemarks}
+                          maxLength={500}
+                          placeholder="Remarks"
+                          onChange={(event) => {
+                            setLineRemarks(event.target.value)
+                            setLineDirty(true)
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter') return
+                            event.preventDefault()
+                            if (!saveLine.isPending) saveLine.mutate()
+                          }}
+                        />
+                        {selectedLineUlid ? (
+                          <button
+                            type="button"
+                            className="inventory-adjustments-line-remove"
+                            aria-label="Remove adjustment line"
+                            onClick={async () => {
+                              if (!await feedback.confirm('Remove this adjustment line?')) return
+                              removeLine.mutate(selectedLineUlid)
+                            }}
+                            disabled={removeLine.isPending}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <footer className="inventory-adjustments-footer">
