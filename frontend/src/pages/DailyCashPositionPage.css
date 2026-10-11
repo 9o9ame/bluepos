@@ -623,3 +623,152 @@
     min-height: 300px;
   }
 }
+
+
+/* Daily Cash Dashboard visual polish: theme-safe, no hard-coded brand colors. */
+.dcp-dashboard-heading {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--ui-accent-soft) 72%, var(--ui-surface-subtle)),
+      var(--ui-surface-subtle)
+    );
+}
+
+.dcp-dashboard-chart-card {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-info) 7%, var(--ui-surface)),
+      var(--ui-surface) 34%
+    );
+}
+
+.dcp-dashboard-chart-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 2px 4px;
+  padding: 5px 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--ui-accent) 16%, var(--ui-surface)),
+      color-mix(in srgb, var(--ui-info) 10%, var(--ui-surface))
+    );
+}
+
+.dcp-dashboard-chart-title strong {
+  color: var(--ui-text);
+  font-size: 1.02em;
+}
+
+.dcp-dashboard-chart-title span {
+  color: var(--ui-text-muted);
+}
+
+.dcp-chart-plot-bg {
+  fill: color-mix(in srgb, var(--ui-surface-subtle) 86%, var(--ui-accent-soft));
+  stroke: var(--ui-border);
+  stroke-width: 1;
+}
+
+.dcp-chart-grid-line {
+  stroke: color-mix(in srgb, var(--ui-border) 78%, var(--ui-info));
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.dcp-chart-zero-line {
+  stroke: var(--ui-accent-strong);
+  stroke-width: 2;
+}
+
+.dcp-chart-bar {
+  stroke: color-mix(in srgb, var(--ui-text) 18%, transparent);
+  stroke-width: 0.7;
+  opacity: .9;
+  transition:
+    opacity var(--ui-transition-fast),
+    filter var(--ui-transition-fast);
+}
+
+.dcp-chart-bar:hover {
+  opacity: 1;
+  filter: brightness(1.06);
+}
+
+.dcp-dashboard-legend {
+  gap: 6px 8px;
+  padding: 6px 8px;
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--ui-accent-soft) 54%, var(--ui-surface-subtle)),
+      var(--ui-surface-subtle)
+    );
+}
+
+.dcp-dashboard-legend > div {
+  padding: 2px 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-control-shadow);
+}
+
+.dcp-dashboard-legend-swatch {
+  width: 11px;
+  height: 11px;
+  border: 0;
+  box-shadow: var(--ui-control-shadow);
+}
+
+.dcp-dashboard-table-card.is-debit {
+  border-color: color-mix(in srgb, var(--ui-info) 46%, var(--ui-border));
+}
+
+.dcp-dashboard-table-card.is-credit {
+  border-color: color-mix(in srgb, var(--ui-warning) 48%, var(--ui-border));
+}
+
+.dcp-dashboard-table-card.is-debit .dcp-dashboard-table-title {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-info) 30%, var(--ui-table-header)),
+      var(--ui-table-header)
+    );
+}
+
+.dcp-dashboard-table-card.is-credit .dcp-dashboard-table-title {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-warning) 30%, var(--ui-table-header)),
+      var(--ui-table-header)
+    );
+}
+
+.dcp-dashboard-table-card.is-debit .dcp-dashboard-table-total strong {
+  background: color-mix(in srgb, var(--ui-info) 20%, var(--ui-surface));
+}
+
+.dcp-dashboard-table-card.is-credit .dcp-dashboard-table-total strong {
+  background: color-mix(in srgb, var(--ui-warning) 20%, var(--ui-surface));
+}
+
+.dcp-dashboard-table-total {
+  font-weight: 800;
+}
+
+.dcp-dashboard-table-total span {
+  color: var(--ui-text);
+}
+
+.dcp-dashboard-side {
+  align-items: stretch;
+}
