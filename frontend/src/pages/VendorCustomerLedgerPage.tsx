@@ -20,6 +20,7 @@ import { useFeedback } from '../feedback/FeedbackProvider'
 import './VendorCustomerLedgerPage.css'
 
 type LedgerPartyRow = {
+  rowNo: number
   key: string
   ulid: string
   partyType: Exclude<PartyTypeApi, 'salesman'>
@@ -59,6 +60,7 @@ function buildLedgerRows(
     if (rows.has(key)) return
     const accountTypeUlid = roleAccountTypeUlid(party, type)
     rows.set(key, {
+      rowNo: 0,
       key,
       ulid,
       partyType: type,
@@ -81,10 +83,12 @@ function buildLedgerRows(
     push(account, 'account', account.ulid)
   }
 
-  return [...rows.values()].sort((a, b) =>
-    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) ||
-    a.code.localeCompare(b.code, undefined, { sensitivity: 'base' }),
-  )
+  return [...rows.values()]
+    .sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }) ||
+      a.code.localeCompare(b.code, undefined, { sensitivity: 'base' }),
+    )
+    .map((row, index) => ({ ...row, rowNo: index + 1 }))
 }
 
 export function VendorCustomerLedgerPage() {
@@ -128,7 +132,8 @@ export function VendorCustomerLedgerPage() {
   const loadError = profilesQuery.error || manualAccountsQuery.error || accountTypesQuery.error
 
   const columns = useMemo<PosGridColumn<LedgerPartyRow>[]>(() => [
-    { key: 'code', header: 'CODE', width: 130, render: (row) => row.code },
+    { key: 'rowNo', header: '#', width: 44, align: 'center', render: (row) => row.rowNo },
+    { key: 'code', header: 'CODE', width: 150, render: (row) => row.code },
     { key: 'name', header: 'Vendor / Customer / Accounts', render: (row) => row.name },
     { key: 'contact', header: 'Contacts', width: 210, render: (row) => row.contact || '—' },
     { key: 'accountType', header: 'Account Type', width: 210, render: (row) => row.accountType || '—' },
