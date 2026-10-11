@@ -117,3 +117,42 @@ export function fetchCashCreditSummary(
 
   return apiFetch<CashCreditSummary>(`/api/cash-position/summary?${search.toString()}`)
 }
+
+
+export type CashDashboardSeries = {
+  account: {
+    ulid: string
+    code: string
+    name: string
+  }
+  values: string[]
+}
+
+export type CashDashboardAccountRow = {
+  account: {
+    ulid: string
+    code: string
+    name: string
+  }
+  amount: string
+}
+
+export type CashDashboard = {
+  date: string
+  days: number
+  chart: {
+    dates: string[]
+    series: CashDashboardSeries[]
+  }
+  debit_accounts: CashDashboardAccountRow[]
+  credit_accounts: CashDashboardAccountRow[]
+  totals: {
+    debit: string
+    credit: string
+  }
+}
+
+export function fetchCashDashboard(date: string, days = 7) {
+  const search = new URLSearchParams({ date, days: String(days) })
+  return apiFetch<CashDashboard>(`/api/cash-position/dashboard?${search.toString()}`)
+}
