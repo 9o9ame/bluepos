@@ -3,11 +3,13 @@
 namespace App\Actions\Sales;
 
 use App\Accounting\OpeningBalancePoster;
+use App\Accounting\PartyLeafAccountSync;
 use App\Enums\JournalStatus;
 use App\Enums\StockMovementType;
 use App\Exceptions\ApiException;
 use App\Models\Account;
 use App\Models\BusinessSetting;
+use App\Models\Customer;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
 use App\Models\Sale;
@@ -19,6 +21,7 @@ class PostSaleAccountingAction
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly OpeningBalancePoster $poster,
+        private readonly PartyLeafAccountSync $partyAccounts,
     ) {}
 
     public function execute(Sale $sale): ?JournalEntry
@@ -83,12 +86,7 @@ class PostSaleAccountingAction
             );
         }
 
-        $clearing = $this->requiredAccount(
-            $settings?->sales_clearing_account_id,
-            $tenantId,
-            'SALES_CLEARING_ACCOUNT_REQUIRED',
-            'Configure a sales clearing account in business settings before posting sales accounting.',
-        );
+        $settlement = $this->settlementAccount($sale, $settings, $tenantId);
         $revenue = $this->requiredAccount(
             $settings?->sales_revenue_account_id,
             $tenantId,
@@ -119,7 +117,7 @@ class PostSaleAccountingAction
         }
 
         $ids = array_filter([
-            $clearing->id,
+            $settlement->id,
             $revenue->id,
             $inventory->id,
             $cogs->id,
@@ -185,9 +183,9 @@ class PostSaleAccountingAction
             JournalLine::query()->create([
                 'tenant_id' => $tenantId,
                 'journal_entry_id' => $journal->id,
-                'account_id' => $clearing->id,
+                'account_id' => $settlement->id,
                 'customer_id' => $sale->customer_id,
-                'description' => 'Sales clearing',
+                'description' => $sale->customer_id ? 'Customer receivable' : 'Sales clearing',
                 'debit' => $grandTotal,
                 'credit' => '0.0000',
                 'sort_order' => $sort++,
@@ -244,6 +242,54 @@ class PostSaleAccountingAction
         $this->poster->assertBalanced($journal);
 
         return $journal;
+    }
+
+    private function settlementAccount(
+        Sale $sale,
+        ?BusinessSetting $settings,
+        int $tenantId,
+    ): Account {
+        if ($sale->customer_id !== null) {
+            $customer = Customer::query()
+                ->forTenant($tenantId)
+                ->whereKey((int) $sale->customer_id)
+                ->with('accountType')
+                ->first();
+
+            if (! $customer || ! $customer->is_active || ! $customer->accountType?->is_receivable) {
+                throw new ApiException(
+                    'CUSTOMER_RECEIVABLE_ACCOUNT_REQUIRED',
+                    'Configure the customer with an active Accounts Receivable account type before posting the sale.',
+                    422,
+                );
+            }
+
+            $receivable = Account::query()
+                ->forTenant($tenantId)
+                ->where('customer_id', $customer->id)
+                ->first();
+
+            if (! $receivable) {
+                $receivable = $this->partyAccounts->syncCustomer($customer);
+            }
+
+            if (! $receivable->is_active) {
+                throw new ApiException(
+                    'CUSTOMER_RECEIVABLE_ACCOUNT_REQUIRED',
+                    'The customer receivable account is inactive.',
+                    422,
+                );
+            }
+
+            return $receivable;
+        }
+
+        return $this->requiredAccount(
+            $settings?->sales_clearing_account_id,
+            $tenantId,
+            'SALES_CLEARING_ACCOUNT_REQUIRED',
+            'Configure a sales clearing account in business settings before posting walk-in sales accounting.',
+        );
     }
 
     private function hasAnyAccountingControl(?BusinessSetting $settings): bool
