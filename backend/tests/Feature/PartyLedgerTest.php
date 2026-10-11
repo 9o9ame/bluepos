@@ -7,7 +7,10 @@ use App\Models\BusinessSetting;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
 use App\Models\PartyProfile;
+use App\Models\PartyProfileType;
+use App\Models\Product;
 use App\Models\Sale;
+use App\Models\StockBalance;
 use App\Models\Warehouse;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -331,7 +334,7 @@ class PartyLedgerTest extends TestCase
         $this->assertNoInternalIds($grouped->json());
 
         $this->getJson(
-            '/api/parties/'.$customerUlid.'/ledger?type=customer&document_types%5B0%5D=sales_invoice'
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&document_types%5B0%5D=unsupported_sales_document'
         )->assertStatus(422);
 
         $this->getJson(
@@ -356,6 +359,178 @@ class PartyLedgerTest extends TestCase
         $this->getJson(
             '/api/parties/'.$customerUlid.'/ledger?type=customer&date_from=2026-03-01&date_to=2026-02-01'
         )->assertStatus(422);
+    }
+
+    public function test_customer_ledger_exposes_posted_sales_invoice_and_return_with_sales_metadata(): void
+    {
+        $this->signInOwner('ldg-sales-accounting')->assertOk();
+
+        $context = app(TenantContext::class);
+        $coa = $this->seedCoa();
+
+        $customerUlid = $this->postJson('/api/parties', [
+            'party_type' => 'customer',
+            'code' => 'C-SALES-LEDGER',
+            'name' => 'Sales Ledger Customer',
+            'account_type_ulid' => $coa['ar'],
+        ])->assertCreated()->json('ulid');
+
+        $type = \App\Models\AccountType::query()
+            ->forTenant($context->tenantId())
+            ->orderBy('id')
+            ->firstOrFail();
+
+        $revenue = Account::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => 'LDG-SALES-REV',
+            'name' => 'Ledger Sales Revenue',
+            'account_type_id' => $type->id,
+            'is_active' => true,
+            'created_by' => $context->userId(),
+        ]);
+
+        $inventory = Account::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => 'LDG-SALES-INV',
+            'name' => 'Ledger Inventory',
+            'account_type_id' => $type->id,
+            'is_active' => true,
+            'created_by' => $context->userId(),
+        ]);
+
+        $cogs = Account::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => 'LDG-SALES-COGS',
+            'name' => 'Ledger COGS',
+            'account_type_id' => $type->id,
+            'is_active' => true,
+            'created_by' => $context->userId(),
+        ]);
+
+        BusinessSetting::query()
+            ->forTenant($context->tenantId())
+            ->update([
+                'sales_revenue_account_id' => $revenue->id,
+                'inventory_account_id' => $inventory->id,
+                'cogs_account_id' => $cogs->id,
+            ]);
+
+        $salesman = PartyProfile::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => 'SM-LDG-SALES',
+            'name' => 'Ledger Sales Person',
+            'is_active' => true,
+            'created_by' => $context->userId(),
+        ]);
+        PartyProfileType::query()->create([
+            'party_profile_id' => $salesman->id,
+            'type' => 'salesman',
+        ]);
+
+        $productResponse = $this->postJson('/api/products', [
+            'name' => 'Ledger Wholesale Item',
+            'base_unit_ulid' => $this->unitUlidForLedger('PCS'),
+            'prices' => [
+                ['price_type' => 'retail', 'amount' => '120.0000'],
+                ['price_type' => 'wholesale', 'amount' => '100.0000'],
+            ],
+        ])->assertCreated();
+
+        $product = Product::query()
+            ->where('ulid', $productResponse->json('ulid'))
+            ->firstOrFail();
+
+        $balance = StockBalance::query()->firstOrCreate(
+            [
+                'tenant_id' => $context->tenantId(),
+                'warehouse_id' => $context->warehouseId(),
+                'product_id' => $product->id,
+            ],
+            [
+                'branch_id' => $context->branchId(),
+                'quantity' => '0.000000',
+            ],
+        );
+        $balance->quantity = '10.000000';
+        $balance->average_cost = '25.0000';
+        $balance->stock_value = '250.0000';
+        $balance->save();
+
+        $saleUlid = $this->postJson('/api/sales', [
+            'customer_ulid' => $customerUlid,
+            'salesman_ulid' => $salesman->ulid,
+            'price_type' => 'wholesale',
+            'items' => [[
+                'product_ulid' => $product->ulid,
+                'quantity' => '2.000000',
+            ]],
+        ], ['Idempotency-Key' => 'ldg-sales-invoice'])
+            ->assertCreated()
+            ->assertJsonPath('grand_total', '200.0000')
+            ->json('ulid');
+
+        $saleItemUlid = $this->getJson('/api/sales/'.$saleUlid.'/returnable-lines')
+            ->assertOk()
+            ->json('data.0.sale_item_ulid');
+
+        $returnUlid = $this->postJson('/api/sales-returns', [
+            'sale_ulid' => $saleUlid,
+        ], ['Idempotency-Key' => 'ldg-sales-return'])
+            ->assertCreated()
+            ->json('ulid');
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/lines', [
+            'sale_item_ulid' => $saleItemUlid,
+            'quantity' => '1.000000',
+        ])->assertCreated();
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/post')
+            ->assertOk()
+            ->assertJsonPath('grand_total', '100.0000');
+
+        $ledger = $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&sale_mode=wholesale&group_by=sales_person'
+        )->assertOk();
+
+        $ledger->assertJsonCount(2, 'rows')
+            ->assertJsonPath('rows.0.doc', 'SALE INVOICE')
+            ->assertJsonPath('rows.0.debit', '200.0000')
+            ->assertJsonPath('rows.0.salesman_name', 'Ledger Sales Person')
+            ->assertJsonPath('rows.0.sale_price_type', 'wholesale')
+            ->assertJsonPath('rows.0.group_key', $salesman->ulid)
+            ->assertJsonPath('rows.1.doc', 'SALES RETURN')
+            ->assertJsonPath('rows.1.credit', '100.0000')
+            ->assertJsonPath('rows.1.salesman_name', 'Ledger Sales Person')
+            ->assertJsonPath('rows.1.sale_price_type', 'wholesale')
+            ->assertJsonPath('rows.1.balance', '100.0000')
+            ->assertJsonPath('totals.debit', '200.0000')
+            ->assertJsonPath('totals.credit', '100.0000')
+            ->assertJsonPath('totals.closing_balance', '100.0000');
+
+        $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&document_types%5B0%5D=sale_invoice'
+        )->assertOk()
+            ->assertJsonCount(1, 'rows')
+            ->assertJsonPath('rows.0.doc', 'SALE INVOICE');
+
+        $this->getJson(
+            '/api/parties/'.$customerUlid.'/ledger?type=customer&document_types%5B0%5D=sale_return'
+        )->assertOk()
+            ->assertJsonCount(1, 'rows')
+            ->assertJsonPath('rows.0.doc', 'SALES RETURN');
+
+        $this->assertNoInternalIds($ledger->json());
+    }
+
+    private function unitUlidForLedger(string $code): string
+    {
+        foreach ($this->getJson('/api/units')->assertOk()->json() as $unit) {
+            if ($unit['code'] === $code) {
+                return $unit['ulid'];
+            }
+        }
+
+        $this->fail('Missing unit '.$code);
     }
 
     public function test_ledger_tenant_isolation(): void
