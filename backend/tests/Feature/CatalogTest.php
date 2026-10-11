@@ -306,11 +306,21 @@ class CatalogTest extends TestCase
             'stock_value' => '309.3750',
         ]);
 
+        $this->putJson('/api/products/'.$productUlid.'/prices', [
+            'prices' => [[
+                'price_type' => 'retail',
+                'amount' => '60.0000',
+                'is_active' => true,
+            ]],
+        ])->assertOk();
+
         $response = $this->getJson('/api/products?q=Lookup%20Cola&sales_lookup=1')
             ->assertOk()
             ->assertJsonPath('data.0.ulid', $productUlid)
             ->assertJsonPath('data.0.sales_lookup.in_stock', '7.500000')
             ->assertJsonPath('data.0.sales_lookup.average_cost', '41.2500')
+            ->assertJsonPath('data.0.sales_lookup.stock_value', '309.3750')
+            ->assertJsonPath('data.0.sales_lookup.retail_stock_value', '450.0000')
             ->assertJsonPath('data.0.rack_location', 'R-A1');
 
         $this->assertNoInternalIds($response->json());
