@@ -466,6 +466,44 @@
   font-variant-numeric: tabular-nums;
 }
 
+.party-ledger-subgroup-summary {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--ui-table-border);
+  border-radius: var(--control-radius);
+  overflow: hidden;
+}
+
+.party-ledger-subgroup-title {
+  padding: 5px 7px;
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text);
+  font-weight: 800;
+}
+
+.party-ledger-subgroup-summary table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.party-ledger-subgroup-summary th,
+.party-ledger-subgroup-summary td {
+  padding: 5px 7px;
+  border-top: 1px solid var(--ui-table-border);
+  color: var(--ui-text);
+}
+
+.party-ledger-subgroup-summary th {
+  background: var(--ui-table-header);
+  color: var(--ui-table-header-text);
+  text-align: left;
+}
+
+.party-ledger-subgroup-summary .is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .party-ledger-preview-empty {
   height: 80px;
   text-align: center;
