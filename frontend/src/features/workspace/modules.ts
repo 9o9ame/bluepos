@@ -111,6 +111,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'settings.view',
   },
   {
+    key: 'report-headings',
+    title: 'Report Headings',
+    path: '/tools/report-headings',
+    ribbon: 'tools',
+    status: 'ready',
+    permission: 'settings.view',
+  },
+  {
     key: 'products',
     title: 'Products',
     path: '/definition/products',
@@ -592,7 +600,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       caption: 'Others',
       commands: [
         { id: 'custom-query', label: 'Custom Query', icon: FileSpreadsheet, status: 'later', tone: 'slate' },
-        { id: 'report-headings', label: 'Report Headings', icon: List, status: 'later', tone: 'slate' },
+        { id: 'report-headings', label: 'Report Headings', icon: List, moduleKey: 'report-headings', permission: 'settings.view', status: 'ready', tone: 'slate' },
         { id: 'options', label: 'Software Options', icon: Settings, moduleKey: 'settings', permission: 'settings.view', status: 'ready', tone: 'navy' },
         { id: 'recalc-stock', label: 'Recalculate Stock', icon: Boxes, status: 'later', tone: 'orange' },
         { id: 'calculator', label: 'Calculator', icon: Calculator, status: 'ready', action: 'calculator', tone: 'gold' },
