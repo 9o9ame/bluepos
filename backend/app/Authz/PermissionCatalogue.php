@@ -127,6 +127,7 @@ final class PermissionCatalogue
             ['purchase_returns.edit', 'Edit purchase return drafts', 'purchases', null],
             ['purchase_returns.post', 'Post purchase returns', 'purchases', null],
             ['inventory.view', 'View inventory', 'inventory', null],
+            ['inventory.recalculate', 'Recalculate stock', 'inventory', 'Repair cached stock balances from immutable stock movements'],
             ['inventory.opening_balance.view', 'View opening balances', 'inventory', null],
             ['inventory.opening_balance.create', 'Create opening balances', 'inventory', null],
             ['inventory.opening_balance.edit', 'Edit opening balances', 'inventory', null],
