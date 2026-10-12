@@ -222,6 +222,28 @@ export function SalesInvoicePage() {
   const saleSoftwareOptions = businessSettingsQuery.data?.software_options?.sale
   const generalSoftwareOptions = businessSettingsQuery.data?.software_options?.general
 
+  const effectiveSalesColumns = useMemo(
+    () =>
+      columnLayout.visibleColumns.filter((col) => {
+        if (col.key === 'disc_pct' && saleSoftwareOptions?.show_discount_percent === false) {
+          return false
+        }
+        if (col.key === 'disc_rs' && saleSoftwareOptions?.show_discount_amount === false) {
+          return false
+        }
+        if (col.key === 'remarks' && saleSoftwareOptions?.show_remarks === false) {
+          return false
+        }
+        return true
+      }),
+    [
+      columnLayout.visibleColumns,
+      saleSoftwareOptions?.show_discount_percent,
+      saleSoftwareOptions?.show_discount_amount,
+      saleSoftwareOptions?.show_remarks,
+    ],
+  )
+
   const customersQuery = useQuery({
     queryKey: ['parties', 'customers', 'pos'],
     queryFn: () => fetchParties('customer'),
@@ -1119,7 +1141,10 @@ export function SalesInvoicePage() {
 
 
         {view === 'history' ? (
-          <SalesInvoiceHistory historyDays={generalSoftwareOptions?.view_history_days ?? 8} />
+          <SalesInvoiceHistory
+            historyDays={generalSoftwareOptions?.view_history_days ?? 8}
+            disableSearchDates={generalSoftwareOptions?.disable_search_dates ?? false}
+          />
         ) : view === 'pending' ? (
           <SalesPendingInvoices onRecallHeld={recallHeldCart} />
         ) : view === 'expenses' ? (
@@ -1577,7 +1602,7 @@ export function SalesInvoicePage() {
             <div className="sales-reference-grid-wrap">
               <table className="sales-reference-grid">
                 <colgroup>
-                  {columnLayout.visibleColumns.map((col) => (
+                  {effectiveSalesColumns.map((col) => (
                     <col
                       key={col.key}
                       className={salesColClass(col)}
@@ -1587,7 +1612,7 @@ export function SalesInvoicePage() {
 
                 <thead>
                   <tr>
-                    {columnLayout.visibleColumns.map((col) => (
+                    {effectiveSalesColumns.map((col) => (
                       <th
                         key={col.key}
                         className={salesColClass(col)}
@@ -1676,7 +1701,7 @@ export function SalesInvoicePage() {
                             className="is-entry-row sales-pos-line is-active-entry"
                             data-sale-line={line.line_key}
                           >
-                            {columnLayout.visibleColumns.map((col) => {
+                            {effectiveSalesColumns.map((col) => {
                               if (col.key === 'selector') {
                                 return <td key={col.key} className="sales-reference-row-arrow">›</td>
                               }
@@ -1835,7 +1860,7 @@ export function SalesInvoicePage() {
                         ))
                     : (
                       <tr className="is-entry-row">
-                        {columnLayout.visibleColumns.map((col) => {
+                        {effectiveSalesColumns.map((col) => {
                           if (col.key === 'selector') {
                             return <td key={col.key} className="sales-reference-row-arrow">›</td>
                           }
@@ -1893,7 +1918,7 @@ export function SalesInvoicePage() {
                       title={line.line_kind === 'sale' ? 'Double-click to edit this line' : undefined}
                       onDoubleClick={() => reopenCompletedLine(line)}
                     >
-                      {columnLayout.visibleColumns.map((col) => {
+                      {effectiveSalesColumns.map((col) => {
                         if (col.key === 'selector') {
                           return <td key={col.key} className="sales-reference-row-arrow">›</td>
                         }
@@ -2360,17 +2385,21 @@ export function SalesInvoicePage() {
               />
             </div>
 
-            <label className="sales-reference-remarks-label">
-              Remarks:
-            </label>
+            {saleSoftwareOptions?.show_remarks !== false ? (
+              <>
+                <label className="sales-reference-remarks-label">
+                  Remarks:
+                </label>
 
-            <textarea
-              value={cart.notes}
-              onChange={(e) =>
-                cart.setNotes(e.target.value)
-              }
-              placeholder="Enter invoice remarks..."
-            />
+                <textarea
+                  value={cart.notes}
+                  onChange={(e) =>
+                    cart.setNotes(e.target.value)
+                  }
+                  placeholder="Enter invoice remarks..."
+                />
+              </>
+            ) : null}
 
             <label className="sales-reference-remarks-label">
               Payment Reference:
