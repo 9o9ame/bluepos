@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Database, Play, RefreshCw, Save, X } from 'lucide-react'
+import { Database, FileSpreadsheet, FileText, Play, RefreshCw, Save, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchCustomQueryCatalog,
@@ -16,6 +16,7 @@ import { UiModal } from '../components/ui/UiModal'
 import { UiSelect } from '../components/ui/UiSelect'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
+import { exportCustomQueryCsv, exportCustomQueryExcel } from './customQueryExport'
 import './CustomQueryPage.css'
 
 type BottomTab = 'results' | 'messages' | 'useful' | 'helping' | 'exports'
@@ -228,10 +229,39 @@ export function CustomQueryPage() {
             ) : null}
 
             {bottomTab === 'exports' ? (
-              <InfoPane
-                title="Exports"
-                text="Result export is not enabled in Phase 1. Query execution remains read-only and tenant-scoped."
-              />
+              <div className="custom-query-info-pane">
+                <strong>Exports</strong>
+                <p>Export the current safe query result only. No additional database access is performed.</p>
+                <div className="custom-query-export-actions">
+                  <UiButton
+                    icon={<FileText size={14} />}
+                    label="Export CSV"
+                    disabled={!result || result.row_count === 0}
+                    onClick={() => {
+                      if (!result) return
+                      exportCustomQueryCsv(result)
+                      feedback.success('Custom query results exported as CSV.')
+                    }}
+                  />
+                  <UiButton
+                    icon={<FileSpreadsheet size={14} />}
+                    label="Export Excel (.xls)"
+                    disabled={!result || result.row_count === 0}
+                    onClick={() => {
+                      if (!result) return
+                      exportCustomQueryExcel(result)
+                      feedback.success('Custom query results exported for Excel.')
+                    }}
+                  />
+                </div>
+                {!result || result.row_count === 0 ? (
+                  <p className="custom-query-export-empty">Run a query with at least one result row to enable exports.</p>
+                ) : (
+                  <p className="custom-query-export-ready">
+                    Ready to export {result.row_count} row{result.row_count === 1 ? '' : 's'} from {result.dataset}.
+                  </p>
+                )}
+              </div>
             ) : null}
           </div>
 
