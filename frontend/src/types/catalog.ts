@@ -35,6 +35,7 @@ export type Supplier = {
   mobile_secondary?: string | null
   phone_secondary?: string | null
   email: string | null
+  backup_email: string | null
   address: string | null
   billing_address?: string | null
   deals_in?: string | null
