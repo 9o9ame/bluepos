@@ -141,6 +141,31 @@ class ReportHeadingTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_report_heading_preserves_only_allowlisted_editor_styles(): void
+    {
+        $this->signInOwner('report-heading-styles')->assertOk();
+
+        $created = $this->postJson('/api/report-headings', [
+            'head_id' => 'StyledHead',
+            'used_for' => 'Styled Report',
+            'content_html' => '<p style="text-align: center; position: fixed"><span style="font-family: Arial; font-size: 16px; color: #FF0000; background-color: #FFFF00; background-image: url(javascript:alert(1))">Styled</span></p>',
+        ])->assertCreated();
+
+        $this->assertSame(
+            '<p style="text-align: center"><span style="font-family: Arial; font-size: 16px; color: #ff0000; background-color: #ffff00">Styled</span></p>',
+            $created->json('content_html'),
+        );
+
+        $updated = $this->patchJson('/api/report-headings/'.$created->json('ulid'), [
+            'content_html' => '<h2 style="text-align: right"><span style="font-family: BadFont; font-size: 99px; color: expression(alert(1))">Unsafe styles removed</span></h2>',
+        ])->assertOk();
+
+        $this->assertSame(
+            '<h2 style="text-align: right"><span>Unsafe styles removed</span></h2>',
+            $updated->json('content_html'),
+        );
+    }
+
     public function test_report_heading_validation_prevents_duplicate_ids_and_unsafe_identifiers(): void
     {
         $this->signInOwner('report-heading-validation')->assertOk();
