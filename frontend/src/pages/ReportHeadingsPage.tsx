@@ -1,16 +1,23 @@
-import { type ClipboardEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { EditorContent, useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Bold,
   Copy,
+  Heading2,
   Italic,
   List,
   ListOrdered,
+  Pilcrow,
   Plus,
+  Redo2,
   RefreshCw,
+  RemoveFormatting,
   Save,
+  Strikethrough,
   Trash2,
-  Underline,
+  Undo2,
   X,
 } from 'lucide-react'
 import {
@@ -31,12 +38,13 @@ import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import type { ReportHeading } from '../types/reportHeadings'
 import './ReportHeadingsPage.css'
 
+const EDITOR_TABS = ['Home', 'View', 'Page Layout', 'Insert', 'Quick Settings'] as const
+
 export function ReportHeadingsPage() {
   const { closeActiveTab } = useWorkspace()
   const canManage = useCan('settings.manage')
   const feedback = useFeedback()
   const queryClient = useQueryClient()
-  const editorRef = useRef<HTMLDivElement | null>(null)
 
   const query = useQuery({
     queryKey: ['report-headings'],
@@ -49,11 +57,27 @@ export function ReportHeadingsPage() {
   const [newOpen, setNewOpen] = useState(false)
   const [newHeadId, setNewHeadId] = useState('')
   const [newUsedFor, setNewUsedFor] = useState('')
+  const [editorTab, setEditorTab] = useState<(typeof EDITOR_TABS)[number]>('Home')
 
   const selected = useMemo(
     () => query.data?.find((row) => row.ulid === selectedUlid) ?? null,
     [query.data, selectedUlid],
   )
+
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: '',
+    editable: false,
+    editorProps: {
+      attributes: {
+        class: 'report-headings-document',
+        'aria-label': 'Report heading rich text editor',
+      },
+    },
+    onUpdate: ({ editor: currentEditor }) => {
+      setContentHtml(currentEditor.getHTML())
+    },
+  })
 
   useEffect(() => {
     if (!query.data?.length) {
@@ -67,20 +91,22 @@ export function ReportHeadingsPage() {
   }, [query.data, selectedUlid])
 
   useEffect(() => {
+    if (!editor) return
+
     if (!selected) {
       setUsedFor('')
       setContentHtml('')
-      if (editorRef.current) editorRef.current.innerHTML = ''
+      editor.commands.setContent('', { emitUpdate: false })
+      editor.setEditable(false)
       return
     }
 
     const nextHtml = selected.content_html ?? ''
     setUsedFor(selected.used_for)
     setContentHtml(nextHtml)
-    if (editorRef.current && editorRef.current.innerHTML !== nextHtml) {
-      editorRef.current.innerHTML = nextHtml
-    }
-  }, [selected])
+    editor.commands.setContent(nextHtml, { emitUpdate: false })
+    editor.setEditable(canManage)
+  }, [canManage, editor, selected])
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -158,26 +184,13 @@ export function ReportHeadingsPage() {
     copyMutation.mutate(selected.ulid)
   }
 
-  function applyFormat(command: 'bold' | 'italic' | 'underline' | 'insertUnorderedList' | 'insertOrderedList') {
-    if (!canManage) return
-    editorRef.current?.focus()
-    document.execCommand(command)
-    setContentHtml(editorRef.current?.innerHTML ?? '')
-  }
-
-  function onPaste(event: ClipboardEvent<HTMLDivElement>) {
-    if (!canManage) return
-    event.preventDefault()
-    const text = event.clipboardData.getData('text/plain')
-    document.execCommand('insertText', false, text)
-    setContentHtml(editorRef.current?.innerHTML ?? '')
-  }
-
   function submitNew(event: FormEvent) {
     event.preventDefault()
     if (!newHeadId.trim() || !newUsedFor.trim() || createMutation.isPending) return
     createMutation.mutate()
   }
+
+  const editorDisabled = !canManage || !selected || !editor
 
   return (
     <>
@@ -212,6 +225,116 @@ export function ReportHeadingsPage() {
         }
       >
         <div className="report-headings-reference-layout">
+          <div className="report-headings-editor-tabs" role="tablist" aria-label="Editor ribbon tabs">
+            {EDITOR_TABS.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                role="tab"
+                aria-selected={editorTab === tab}
+                className={editorTab === tab ? 'is-active' : undefined}
+                onClick={() => setEditorTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <div className="report-headings-editor-ribbon" role="tabpanel">
+            {editorTab === 'Home' ? (
+              <>
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton
+                      icon={<Undo2 size={14} />}
+                      label="Undo"
+                      disabled={editorDisabled || !editor?.can().chain().focus().undo().run()}
+                      onClick={() => editor?.chain().focus().undo().run()}
+                    />
+                    <UiButton
+                      icon={<Redo2 size={14} />}
+                      label="Redo"
+                      disabled={editorDisabled || !editor?.can().chain().focus().redo().run()}
+                      onClick={() => editor?.chain().focus().redo().run()}
+                    />
+                  </div>
+                  <span>Common</span>
+                </div>
+
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton
+                      className={editor?.isActive('bold') ? 'is-editor-active' : undefined}
+                      icon={<Bold size={14} />}
+                      label="Bold"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().toggleBold().run()}
+                    />
+                    <UiButton
+                      className={editor?.isActive('italic') ? 'is-editor-active' : undefined}
+                      icon={<Italic size={14} />}
+                      label="Italic"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().toggleItalic().run()}
+                    />
+                    <UiButton
+                      className={editor?.isActive('strike') ? 'is-editor-active' : undefined}
+                      icon={<Strikethrough size={14} />}
+                      label="Strike"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().toggleStrike().run()}
+                    />
+                    <UiButton
+                      icon={<RemoveFormatting size={14} />}
+                      label="Clear"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().clearNodes().unsetAllMarks().run()}
+                    />
+                  </div>
+                  <span>Font</span>
+                </div>
+
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton
+                      className={editor?.isActive('paragraph') ? 'is-editor-active' : undefined}
+                      icon={<Pilcrow size={14} />}
+                      label="Paragraph"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().setParagraph().run()}
+                    />
+                    <UiButton
+                      className={editor?.isActive('heading', { level: 2 }) ? 'is-editor-active' : undefined}
+                      icon={<Heading2 size={14} />}
+                      label="Heading"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+                    />
+                    <UiButton
+                      className={editor?.isActive('bulletList') ? 'is-editor-active' : undefined}
+                      icon={<List size={14} />}
+                      label="Bullets"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().toggleBulletList().run()}
+                    />
+                    <UiButton
+                      className={editor?.isActive('orderedList') ? 'is-editor-active' : undefined}
+                      icon={<ListOrdered size={14} />}
+                      label="Numbering"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+                    />
+                  </div>
+                  <span>Paragraph</span>
+                </div>
+              </>
+            ) : (
+              <div className="report-headings-editor-placeholder">
+                {editorTab} options will be enabled as the editor feature set is expanded.
+              </div>
+            )}
+          </div>
+
           <div className="report-headings-selector-row">
             <label>
               <span>Head ID</span>
@@ -238,52 +361,16 @@ export function ReportHeadingsPage() {
             </label>
           </div>
 
-          <div className="report-headings-editor-toolbar" aria-label="Formatting toolbar">
-            <UiButton
-              icon={<Bold size={14} />}
-              label="Bold"
-              disabled={!canManage || !selected}
-              onClick={() => applyFormat('bold')}
-            />
-            <UiButton
-              icon={<Italic size={14} />}
-              label="Italic"
-              disabled={!canManage || !selected}
-              onClick={() => applyFormat('italic')}
-            />
-            <UiButton
-              icon={<Underline size={14} />}
-              label="Underline"
-              disabled={!canManage || !selected}
-              onClick={() => applyFormat('underline')}
-            />
-            <UiButton
-              icon={<List size={14} />}
-              label="Bullets"
-              disabled={!canManage || !selected}
-              onClick={() => applyFormat('insertUnorderedList')}
-            />
-            <UiButton
-              icon={<ListOrdered size={14} />}
-              label="Numbering"
-              disabled={!canManage || !selected}
-              onClick={() => applyFormat('insertOrderedList')}
-            />
-          </div>
-
           <div className="report-headings-workarea">
             <div className="report-headings-document-shell">
-              <div
-                ref={editorRef}
-                className="report-headings-document"
-                contentEditable={Boolean(canManage && selected)}
-                suppressContentEditableWarning
-                role="textbox"
-                aria-multiline="true"
-                data-readonly={!canManage || !selected ? 'true' : 'false'}
-                onInput={(event) => setContentHtml(event.currentTarget.innerHTML)}
-                onPaste={onPaste}
-              />
+              <div className="report-headings-ruler" aria-hidden>
+                {Array.from({ length: 21 }, (_, index) => (
+                  <span key={index}>{index % 2 === 0 ? index / 2 : ''}</span>
+                ))}
+              </div>
+              <div className="report-headings-paper">
+                <EditorContent editor={editor} />
+              </div>
             </div>
 
             <div className="report-headings-record-list">
