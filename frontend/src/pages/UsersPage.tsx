@@ -13,6 +13,7 @@ import {
   saveMembershipBranches,
   saveMembershipRoles,
   saveMembershipSalesman,
+  saveMembershipFingerprint,
 } from '../api/memberships'
 import { fetchRoles } from '../api/roles'
 import { ApiClientError } from '../api/client'
@@ -65,8 +66,11 @@ export function UsersPage() {
   const [selectedRowUlid, setSelectedRowUlid] = useState<string | null>(null)
   const [selectedSalesmanRowUlid, setSelectedSalesmanRowUlid] = useState<string | null>(null)
   const [salesmanDrafts, setSalesmanDrafts] = useState<Record<string, SalesmanDraft>>({})
+  const [selectedFingerprintRowUlid, setSelectedFingerprintRowUlid] = useState<string | null>(null)
+  const [fingerprintDrafts, setFingerprintDrafts] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [savingSalesman, setSavingSalesman] = useState(false)
+  const [savingFingerprint, setSavingFingerprint] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const roles = rolesQuery.data ?? []
@@ -114,6 +118,18 @@ export function UsersPage() {
             startTime: normalizeTime(membership.salesman_start_time),
             endTime: normalizeTime(membership.salesman_end_time),
           }
+        }
+      }
+      return next
+    })
+  }, [rows])
+
+  useEffect(() => {
+    setFingerprintDrafts((current) => {
+      const next = { ...current }
+      for (const membership of rows) {
+        if (next[membership.ulid] === undefined) {
+          next[membership.ulid] = membership.fingerprint_ref ?? ''
         }
       }
       return next
@@ -213,6 +229,26 @@ export function UsersPage() {
     }
   }
 
+  async function saveSelectedFingerprint() {
+    if (!selectedFingerprintRowUlid || !canEdit) return
+
+    const fingerprintRef = (fingerprintDrafts[selectedFingerprintRowUlid] ?? '').trim()
+
+    setSavingFingerprint(true)
+    setError(null)
+    try {
+      await saveMembershipFingerprint(
+        selectedFingerprintRowUlid,
+        fingerprintRef === '' ? null : fingerprintRef,
+      )
+      await queryClient.invalidateQueries({ queryKey: ['memberships'] })
+    } catch (err) {
+      setError(err instanceof ApiClientError || err instanceof Error ? err.message : 'Unable to save fingerprint mapping.')
+    } finally {
+      setSavingFingerprint(false)
+    }
+  }
+
   async function runSelectedAction(action: 'activate' | 'deactivate' | 'logout') {
     if (!selectedRow) return
     setError(null)
@@ -238,6 +274,8 @@ export function UsersPage() {
         form?.requestSubmit()
       } else if (tab === 'salesman') {
         void saveSelectedSalesman()
+      } else if (tab === 'fp2') {
+        void saveSelectedFingerprint()
       }
     },
     refresh: () => {
@@ -281,9 +319,7 @@ export function UsersPage() {
           <TabButton tab="users" current={tab} onChange={setTab}>View Users</TabButton>
           <TabButton tab="others" current={tab} onChange={setTab}>Others</TabButton>
           <TabButton tab="salesman" current={tab} onChange={setTab}>User To SO</TabButton>
-          <button type="button" role="tab" aria-selected={false} disabled title="Reference details required">
-            FP 2 User
-          </button>
+          <TabButton tab="fp2" current={tab} onChange={setTab}>FP 2 User</TabButton>
         </div>
 
         {error ? <div className="configure-users-error">{error}</div> : null}
@@ -508,6 +544,58 @@ export function UsersPage() {
                 shortcut="F9"
                 disabled={!canEdit || !selectedSalesmanRowUlid || savingSalesman}
                 onClick={() => void saveSelectedSalesman()}
+              />
+            </div>
+          </div>
+        ) : null}
+        {tab === 'fp2' ? (
+          <div className="configure-users-list">
+            <div className="configure-users-grid configure-users-fingerprint-grid">
+              <PosDataGrid
+                columns={[
+                  {
+                    key: 'row',
+                    header: 'ID',
+                    width: 70,
+                    render: (row) => String(rows.findIndex((item) => item.ulid === row.ulid) + 1),
+                  },
+                  { key: 'user', header: 'User', width: 220, render: (row) => row.username },
+                  {
+                    key: 'fp',
+                    header: 'FP',
+                    width: 320,
+                    render: (row) => (
+                      <input
+                        className="configure-users-fingerprint"
+                        value={fingerprintDrafts[row.ulid] ?? row.fingerprint_ref ?? ''}
+                        maxLength={64}
+                        disabled={!canEdit}
+                        onChange={(event) => {
+                          const value = event.target.value
+                          setFingerprintDrafts((current) => ({
+                            ...current,
+                            [row.ulid]: value,
+                          }))
+                        }}
+                      />
+                    ),
+                  },
+                ]}
+                rows={rows}
+                rowKey={(row) => row.ulid}
+                selectedKey={selectedFingerprintRowUlid}
+                onSelect={(row) => setSelectedFingerprintRowUlid(row.ulid)}
+                emptyMessage={membershipsQuery.isLoading ? 'Loading users…' : 'No users found.'}
+              />
+            </div>
+            <div className="configure-users-list-footer">
+              <span>Select a user row and enter the fingerprint reference.</span>
+              <DesktopButton
+                icon={<Save size={13} />}
+                label="Save"
+                shortcut="F9"
+                disabled={!canEdit || !selectedFingerprintRowUlid || savingFingerprint}
+                onClick={() => void saveSelectedFingerprint()}
               />
             </div>
           </div>
