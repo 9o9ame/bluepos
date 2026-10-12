@@ -240,15 +240,17 @@ class SafeCustomQueryRunner
                 throw $this->invalid('NULL only supports = or != comparisons.');
             }
 
+            $quoted = str_starts_with($rawValue, "'");
+
             if (strcasecmp($rawValue, 'TRUE') === 0 || strcasecmp($rawValue, 'FALSE') === 0) {
                 $value = strcasecmp($rawValue, 'TRUE') === 0;
-            } elseif (str_starts_with($rawValue, "'")) {
+            } elseif ($quoted) {
                 $value = str_replace("''", "'", substr($rawValue, 1, -1));
             } else {
                 $value = $rawValue;
             }
 
-            if (in_array($operator, ['LIKE', 'ILIKE'], true) && ! is_string($value)) {
+            if (in_array($operator, ['LIKE', 'ILIKE'], true) && ! $quoted) {
                 throw $this->invalid('LIKE and ILIKE require a quoted string value.');
             }
 
