@@ -120,6 +120,9 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="settings.view" />}>
             <Route path="/administration/settings" element={<BusinessSettingsPage />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="warehouses.manage" />}>
             <Route path="/administration/warehouses" element={<WarehousesPage />} />
           </Route>
 
