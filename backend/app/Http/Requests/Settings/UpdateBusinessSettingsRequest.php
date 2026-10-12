@@ -69,7 +69,7 @@ class UpdateBusinessSettingsRequest extends FormRequest
             'default_price_level' => ['sometimes', 'required', Rule::enum(PriceType::class)],
             'software_options' => ['sometimes', 'array:sale,purchase,general'],
 
-            'software_options.sale' => ['sometimes', 'array:expiry_warning_days,show_receiving_window,manual_date_change,keep_pending_invoice_date,print_dotted_line,dont_round_off,message,show_remarks,show_discount_percent,show_discount_amount,show_previous_rates,amount_editable,amount_change_updates_qty,disable_txt_id,fbr_message,show_qty_option_discount,invoice_on,default_yes,disallow_duplicate_products'],
+            'software_options.sale' => ['sometimes', 'array:expiry_warning_days,show_receiving_window,manual_date_change,keep_pending_invoice_date,print_dotted_line,dont_round_off,message,print_heading,show_remarks,show_discount_percent,show_discount_amount,show_previous_rates,amount_editable,amount_change_updates_qty,disable_txt_id,fbr_message,show_qty_option_discount,invoice_on,default_yes,disallow_duplicate_products'],
             'software_options.sale.expiry_warning_days' => ['sometimes', 'integer', 'min:0', 'max:3650'],
             'software_options.sale.show_receiving_window' => ['sometimes', 'boolean'],
             'software_options.sale.manual_date_change' => ['sometimes', 'boolean'],
@@ -77,6 +77,7 @@ class UpdateBusinessSettingsRequest extends FormRequest
             'software_options.sale.print_dotted_line' => ['sometimes', 'boolean'],
             'software_options.sale.dont_round_off' => ['sometimes', 'boolean'],
             'software_options.sale.message' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'software_options.sale.print_heading' => ['sometimes', 'nullable', 'string', 'max:160'],
             'software_options.sale.show_remarks' => ['sometimes', 'boolean'],
             'software_options.sale.show_discount_percent' => ['sometimes', 'boolean'],
             'software_options.sale.show_discount_amount' => ['sometimes', 'boolean'],
