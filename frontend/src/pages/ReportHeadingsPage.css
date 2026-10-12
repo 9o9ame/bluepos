@@ -1,7 +1,7 @@
 .report-headings-reference-layout {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  height: calc(100dvh - 258px);
+  height: calc(100dvh - 300px);
   min-height: 0;
   overflow: hidden;
   background: var(--ui-surface-subtle);
@@ -275,7 +275,7 @@
 
 .report-headings-paper {
   width: var(--report-page-width);
-  min-height: min(var(--report-page-height), calc(100dvh - 390px));
+  min-height: min(var(--report-page-height), calc(100dvh - 440px));
   margin: 0;
   border: 1px solid var(--ui-border);
   border-radius: var(--panel-radius);
@@ -284,7 +284,7 @@
 }
 
 .report-headings-paper .tiptap {
-  min-height: min(var(--report-page-height), calc(100dvh - 390px));
+  min-height: min(var(--report-page-height), calc(100dvh - 440px));
   box-sizing: border-box;
   padding: var(--report-page-margin);
   column-count: var(--report-columns);
