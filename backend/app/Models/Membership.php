@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
     'salesman_party_profile_id',
     'salesman_start_time',
     'salesman_end_time',
+    'fingerprint_ref',
 ])]
 class Membership extends Model
 {
