@@ -8,6 +8,7 @@ import { BrandsPage } from '../pages/BrandsPage'
 import { BarcodePrintingPage } from '../pages/BarcodePrintingPage'
 import { BusinessSettingsPage } from '../pages/BusinessSettingsPage'
 import { CategoriesPage } from '../pages/CategoriesPage'
+import { CustomQueryPage } from '../pages/CustomQueryPage'
 import { ChangePasswordPage } from '../pages/ChangePasswordPage'
 import { DevicesPage } from '../pages/DevicesPage'
 import { DailyCashPositionPage } from '../pages/DailyCashPositionPage'
@@ -120,6 +121,10 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="devices.view" />}>
             <Route path="/administration/devices" element={<DevicesPage />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="database.query.read" />}>
+            <Route path="/tools/custom-query" element={<CustomQueryPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="settings.view" />}>
