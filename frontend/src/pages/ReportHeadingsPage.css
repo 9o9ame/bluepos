@@ -1,7 +1,20 @@
+.workspace-host-inner:has(.report-headings-reference-layout) {
+  overflow: hidden;
+}
+
+.workspace-host-inner:has(.report-headings-reference-layout) > .desktop-panel {
+  height: 100%;
+  min-height: 0;
+}
+
+.workspace-host-inner:has(.report-headings-reference-layout) .desktop-panel-body {
+  overflow: hidden;
+}
+
 .report-headings-reference-layout {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  height: calc(100dvh - 230px);
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   background: var(--ui-surface-subtle);
