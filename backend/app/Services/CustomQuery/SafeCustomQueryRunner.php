@@ -128,7 +128,11 @@ class SafeCustomQueryRunner
             $this->assertColumn($order, $allowed);
         }
 
-        $direction = strtoupper((string) ($matches['direction'] ?? 'ASC'));
+        $directionRaw = trim((string) ($matches['direction'] ?? ''));
+        $direction = $directionRaw !== ''
+            ? strtoupper($directionRaw)
+            : 'ASC';
+
         if (! in_array($direction, ['ASC', 'DESC'], true)) {
             throw $this->invalid('ORDER BY direction must be ASC or DESC.');
         }
