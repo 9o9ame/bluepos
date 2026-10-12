@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { RefreshCw, Save, UserRoundCog, Users, X } from 'lucide-react'
+import { RefreshCw, Save, UserRoundCog, X } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchBranches } from '../api/branches'
 import {
