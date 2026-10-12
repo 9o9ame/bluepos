@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Database, Eye, FileSpreadsheet, FileText, Pencil, Play, Printer, RefreshCw, Save, Trash2, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Database, Eye, FileSpreadsheet, FileText, Pencil, Play, Printer, RefreshCw, Save, Search, Trash2, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   deleteCustomQuery,
@@ -54,6 +54,8 @@ export function CustomQueryPage() {
   const [saveTitle, setSaveTitle] = useState('')
   const [manageOpen, setManageOpen] = useState(false)
   const [manageTitle, setManageTitle] = useState('')
+  const [datasetSearch, setDatasetSearch] = useState('')
+  const lineNumbersRef = useRef<HTMLDivElement | null>(null)
 
   const runMutation = useMutation({
     mutationFn: (submittedQuery: string) => runCustomQuery(submittedQuery),
@@ -179,6 +181,32 @@ export function CustomQueryPage() {
 
   const selectedSaved = savedQuery.data?.find((item) => item.ulid === selectedSavedUlid) ?? null
 
+  const lineNumbers = useMemo(
+    () => Array.from({ length: Math.max(1, queryText.split(/\r\n|\r|\n/).length) }, (_, index) => index + 1),
+    [queryText],
+  )
+
+  const filteredDatasets = useMemo(() => {
+    const needle = datasetSearch.trim().toLowerCase()
+    const datasets = catalogQuery.data?.datasets ?? []
+
+    if (!needle) return datasets
+
+    return datasets
+      .map((dataset) => {
+        const datasetMatches = dataset.name.toLowerCase().includes(needle)
+        const matchingColumns = dataset.columns.filter((column) => column.toLowerCase().includes(needle))
+
+        if (!datasetMatches && matchingColumns.length === 0) return null
+
+        return {
+          ...dataset,
+          columns: datasetMatches ? dataset.columns : matchingColumns,
+        }
+      })
+      .filter((dataset): dataset is NonNullable<typeof dataset> => dataset !== null)
+  }, [catalogQuery.data?.datasets, datasetSearch])
+
   const savedOptions = [
     { value: '', label: '— Saved queries —' },
     ...(savedQuery.data ?? []).map((saved) => ({
@@ -264,12 +292,22 @@ export function CustomQueryPage() {
           </div>
 
           <div className="custom-query-editor-shell">
-            <div className="custom-query-line-number" aria-hidden>1</div>
+            <div ref={lineNumbersRef} className="custom-query-line-numbers" aria-hidden>
+              {lineNumbers.map((lineNumber) => (
+                <span key={lineNumber}>{lineNumber}</span>
+              ))}
+            </div>
             <textarea
               className="custom-query-editor"
               spellCheck={false}
+              wrap="off"
               value={queryText}
               aria-label="Safe custom query editor"
+              onScroll={(event) => {
+                if (lineNumbersRef.current) {
+                  lineNumbersRef.current.scrollTop = event.currentTarget.scrollTop
+                }
+              }}
               onChange={(event) => setQueryText(event.target.value)}
             />
           </div>
@@ -293,7 +331,18 @@ export function CustomQueryPage() {
             ) : null}
 
             {bottomTab === 'messages' ? (
-              <pre className="custom-query-message-pane">{message}</pre>
+              <div className="custom-query-message-pane">
+                <strong>{result ? 'Last query status' : 'Status'}</strong>
+                <pre>{message}</pre>
+                {result ? (
+                  <div className="custom-query-message-meta">
+                    <span>Dataset: {result.dataset}</span>
+                    <span>Rows: {result.row_count}</span>
+                    <span>Limit: {result.limit}</span>
+                    <span>{result.truncated ? 'Result truncated' : 'Complete within limit'}</span>
+                  </div>
+                ) : null}
+              </div>
             ) : null}
 
             {bottomTab === 'useful' ? (
@@ -304,10 +353,24 @@ export function CustomQueryPage() {
             ) : null}
 
             {bottomTab === 'helping' ? (
-              <InfoPane
-                title="Safe query syntax"
-                text={catalogQuery.data?.syntax ?? 'Loading safe query syntax…'}
-              />
+              <div className="custom-query-info-pane">
+                <strong>Safe query syntax</strong>
+                <p>{catalogQuery.data?.syntax ?? 'Loading safe query syntax…'}</p>
+                <div className="custom-query-help-grid">
+                  <div>
+                    <span>Example</span>
+                    <code>SELECT ulid, code, name FROM party_profiles ORDER BY name LIMIT 50</code>
+                  </div>
+                  <div>
+                    <span>WHERE</span>
+                    <code>WHERE is_active = TRUE AND name ILIKE 'A%'</code>
+                  </div>
+                  <div>
+                    <span>Safety</span>
+                    <p>Only allowlisted datasets and columns are available. Tenant, branch, and warehouse scope is applied by the server.</p>
+                  </div>
+                </div>
+              </div>
             ) : null}
 
             {bottomTab === 'exports' ? (
@@ -357,10 +420,24 @@ export function CustomQueryPage() {
           <div className="custom-query-browser-title">
             <Database size={14} aria-hidden />
             <strong>Safe datasets</strong>
-            <span>Count: {catalogQuery.data?.datasets.length ?? 0}</span>
+            <span>Count: {filteredDatasets.length}</span>
           </div>
+          <label className="custom-query-browser-search">
+            <Search size={13} aria-hidden />
+            <input
+              value={datasetSearch}
+              aria-label="Filter datasets and columns"
+              placeholder="Filter datasets or columns"
+              onChange={(event) => setDatasetSearch(event.target.value)}
+            />
+            {datasetSearch ? (
+              <button type="button" aria-label="Clear dataset filter" onClick={() => setDatasetSearch('')}>
+                <X size={12} />
+              </button>
+            ) : null}
+          </label>
           <div className="custom-query-browser-body">
-            {(catalogQuery.data?.datasets ?? []).map((dataset) => (
+            {filteredDatasets.map((dataset) => (
               <details key={dataset.name} className="custom-query-dataset" open>
                 <summary>
                   <span>{dataset.name}</span>
@@ -384,6 +461,9 @@ export function CustomQueryPage() {
             ))}
             {catalogQuery.isLoading ? <div className="custom-query-browser-empty">Loading datasets…</div> : null}
             {catalogQuery.isError ? <div className="custom-query-browser-empty">Unable to load datasets.</div> : null}
+            {!catalogQuery.isLoading && !catalogQuery.isError && filteredDatasets.length === 0 ? (
+              <div className="custom-query-browser-empty">No matching datasets or columns.</div>
+            ) : null}
           </div>
         </aside>
       </div>
