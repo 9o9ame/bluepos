@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { type CSSProperties, FormEvent, useEffect, useMemo, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TextStyleKit } from '@tiptap/extension-text-style'
@@ -43,7 +43,7 @@ import { UiSelect } from '../components/ui/UiSelect'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
-import type { ReportHeading } from '../types/reportHeadings'
+import type { ReportHeading, ReportHeadingLayout } from '../types/reportHeadings'
 import './ReportHeadingsPage.css'
 
 const EDITOR_TABS = ['Home', 'View', 'Page Layout', 'Insert', 'Quick Settings'] as const
@@ -63,6 +63,27 @@ const FONT_SIZES = ['8', '9', '10', '11', '12', '14', '16', '18', '20', '24', '2
   label: size,
 }))
 
+const DEFAULT_LAYOUT: ReportHeadingLayout = {
+  margin: 'normal',
+  orientation: 'portrait',
+  page_size: 'a4',
+  columns: 1,
+  line_numbers: false,
+  page_color: '#ffffff',
+}
+
+const PAGE_SIZES = {
+  a4: { width: 794, height: 1123 },
+  letter: { width: 816, height: 1056 },
+  legal: { width: 816, height: 1344 },
+} as const
+
+const PAGE_MARGINS = {
+  narrow: 36,
+  normal: 72,
+  wide: 96,
+} as const
+
 export function ReportHeadingsPage() {
   const { closeActiveTab } = useWorkspace()
   const canManage = useCan('settings.manage')
@@ -81,6 +102,11 @@ export function ReportHeadingsPage() {
   const [newHeadId, setNewHeadId] = useState('')
   const [newUsedFor, setNewUsedFor] = useState('')
   const [editorTab, setEditorTab] = useState<(typeof EDITOR_TABS)[number]>('Home')
+  const [layout, setLayout] = useState<ReportHeadingLayout>(DEFAULT_LAYOUT)
+  const [viewMode, setViewMode] = useState<'simple' | 'draft' | 'print'>('print')
+  const [zoom, setZoom] = useState(100)
+  const [showHorizontalRuler, setShowHorizontalRuler] = useState(true)
+  const [showVerticalRuler, setShowVerticalRuler] = useState(false)
 
   const selected = useMemo(
     () => query.data?.find((row) => row.ulid === selectedUlid) ?? null,
@@ -128,6 +154,7 @@ export function ReportHeadingsPage() {
     if (!selected) {
       setUsedFor('')
       setContentHtml('')
+      setLayout(DEFAULT_LAYOUT)
       editor.commands.setContent('', { emitUpdate: false })
       editor.setEditable(false)
       return
@@ -136,6 +163,7 @@ export function ReportHeadingsPage() {
     const nextHtml = selected.content_html ?? ''
     setUsedFor(selected.used_for)
     setContentHtml(nextHtml)
+    setLayout(selected.layout_settings ?? DEFAULT_LAYOUT)
     editor.commands.setContent(nextHtml, { emitUpdate: false })
     editor.setEditable(canManage)
   }, [canManage, editor, selected])
@@ -146,6 +174,7 @@ export function ReportHeadingsPage() {
       return updateReportHeading(selected.ulid, {
         used_for: usedFor.trim(),
         content_html: contentHtml || null,
+        layout_settings: layout,
       })
     },
     onSuccess: async (row) => {
@@ -223,6 +252,25 @@ export function ReportHeadingsPage() {
   }
 
   const editorDisabled = !canManage || !selected || !editor
+  const selectedPageSize = PAGE_SIZES[layout.page_size]
+  const pageWidth = layout.orientation === 'landscape' ? selectedPageSize.height : selectedPageSize.width
+  const pageHeight = layout.orientation === 'landscape' ? selectedPageSize.width : selectedPageSize.height
+  const pageStyle = {
+    '--report-page-width': `${pageWidth}px`,
+    '--report-page-height': `${pageHeight}px`,
+    '--report-page-margin': `${PAGE_MARGINS[layout.margin]}px`,
+    '--report-page-color': layout.page_color,
+    '--report-columns': String(layout.columns),
+    '--report-heading-zoom': String(zoom / 100),
+  } as CSSProperties
+
+  function updateLayout<K extends keyof ReportHeadingLayout>(key: K, value: ReportHeadingLayout[K]) {
+    setLayout((current) => ({ ...current, [key]: value }))
+  }
+
+  function changeZoom(delta: number) {
+    setZoom((current) => Math.min(160, Math.max(60, current + delta)))
+  }
 
   return (
     <>
@@ -441,9 +489,153 @@ export function ReportHeadingsPage() {
                   <span>Paragraph</span>
                 </div>
               </>
+            ) : editorTab === 'View' ? (
+              <>
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton
+                      className={showHorizontalRuler ? 'is-editor-active' : undefined}
+                      label="Horizontal Ruler"
+                      onClick={() => setShowHorizontalRuler((current) => !current)}
+                    />
+                    <UiButton
+                      className={showVerticalRuler ? 'is-editor-active' : undefined}
+                      label="Vertical Ruler"
+                      onClick={() => setShowVerticalRuler((current) => !current)}
+                    />
+                  </div>
+                  <span>Show</span>
+                </div>
+
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton label="Zoom Out" onClick={() => changeZoom(-10)} disabled={zoom <= 60} />
+                    <UiButton label="Zoom In" onClick={() => changeZoom(10)} disabled={zoom >= 160} />
+                    <span className="report-headings-zoom-value">{zoom}%</span>
+                  </div>
+                  <span>Zoom</span>
+                </div>
+
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton
+                      className={viewMode === 'simple' ? 'is-editor-active' : undefined}
+                      label="Simple View"
+                      onClick={() => setViewMode('simple')}
+                    />
+                    <UiButton
+                      className={viewMode === 'draft' ? 'is-editor-active' : undefined}
+                      label="Draft View"
+                      onClick={() => setViewMode('draft')}
+                    />
+                    <UiButton
+                      className={viewMode === 'print' ? 'is-editor-active' : undefined}
+                      label="Print Layout"
+                      onClick={() => setViewMode('print')}
+                    />
+                  </div>
+                  <span>Document Views</span>
+                </div>
+              </>
+            ) : editorTab === 'Page Layout' ? (
+              <>
+                <div className="report-headings-editor-group is-layout-group">
+                  <div className="report-headings-editor-layout-fields">
+                    <label>
+                      <span>Margins</span>
+                      <UiSelect
+                        value={layout.margin}
+                        searchable={false}
+                        disabled={!canManage || !selected}
+                        options={[
+                          { value: 'normal', label: 'Normal' },
+                          { value: 'narrow', label: 'Narrow' },
+                          { value: 'wide', label: 'Wide' },
+                        ]}
+                        onChange={(value) => updateLayout('margin', value as ReportHeadingLayout['margin'])}
+                      />
+                    </label>
+                    <label>
+                      <span>Orientation</span>
+                      <UiSelect
+                        value={layout.orientation}
+                        searchable={false}
+                        disabled={!canManage || !selected}
+                        options={[
+                          { value: 'portrait', label: 'Portrait' },
+                          { value: 'landscape', label: 'Landscape' },
+                        ]}
+                        onChange={(value) => updateLayout('orientation', value as ReportHeadingLayout['orientation'])}
+                      />
+                    </label>
+                    <label>
+                      <span>Size</span>
+                      <UiSelect
+                        value={layout.page_size}
+                        searchable={false}
+                        disabled={!canManage || !selected}
+                        options={[
+                          { value: 'a4', label: 'A4' },
+                          { value: 'letter', label: 'Letter' },
+                          { value: 'legal', label: 'Legal' },
+                        ]}
+                        onChange={(value) => updateLayout('page_size', value as ReportHeadingLayout['page_size'])}
+                      />
+                    </label>
+                    <label>
+                      <span>Columns</span>
+                      <UiSelect
+                        value={String(layout.columns)}
+                        searchable={false}
+                        disabled={!canManage || !selected}
+                        options={[
+                          { value: '1', label: '1' },
+                          { value: '2', label: '2' },
+                          { value: '3', label: '3' },
+                        ]}
+                        onChange={(value) => updateLayout('columns', Number(value) as ReportHeadingLayout['columns'])}
+                      />
+                    </label>
+                  </div>
+                  <span>Page Setup</span>
+                </div>
+
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton
+                      label="Break"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().setHorizontalRule().run()}
+                    />
+                    <UiButton
+                      className={layout.line_numbers ? 'is-editor-active' : undefined}
+                      label="Line Numbers"
+                      disabled={!canManage || !selected}
+                      onClick={() => updateLayout('line_numbers', !layout.line_numbers)}
+                    />
+                  </div>
+                  <span>Page</span>
+                </div>
+
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <label className="report-headings-color-control" title="Page color">
+                      <span>Page</span>
+                      <input
+                        type="color"
+                        aria-label="Page color"
+                        disabled={!canManage || !selected}
+                        value={layout.page_color}
+                        onChange={(event) => updateLayout('page_color', event.target.value)}
+                      />
+                    </label>
+                  </div>
+                  <span>Background</span>
+                </div>
+              </>
             ) : (
               <div className="report-headings-editor-placeholder">
-                {editorTab} options will be enabled as the editor feature set is expanded.
+                {editorTab} options will be enabled in the next Report Headings phase.
               </div>
             )}
           </div>
@@ -475,14 +667,32 @@ export function ReportHeadingsPage() {
           </div>
 
           <div className="report-headings-workarea">
-            <div className="report-headings-document-shell">
-              <div className="report-headings-ruler" aria-hidden>
-                {Array.from({ length: 21 }, (_, index) => (
-                  <span key={index}>{index % 2 === 0 ? index / 2 : ''}</span>
-                ))}
-              </div>
-              <div className="report-headings-paper">
-                <EditorContent editor={editor} />
+            <div className={`report-headings-document-shell is-${viewMode}-view`}>
+              <div className="report-headings-document-stage" style={pageStyle}>
+                {showHorizontalRuler ? (
+                  <div className="report-headings-ruler" aria-hidden>
+                    {Array.from({ length: 21 }, (_, index) => (
+                      <span key={index}>{index % 2 === 0 ? index / 2 : ''}</span>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="report-headings-page-row">
+                  {showVerticalRuler ? (
+                    <div className="report-headings-vertical-ruler" aria-hidden>
+                      {Array.from({ length: 15 }, (_, index) => (
+                        <span key={index}>{index}</span>
+                      ))}
+                    </div>
+                  ) : null}
+                  <div
+                    className={[
+                      'report-headings-paper',
+                      layout.line_numbers ? 'show-line-numbers' : '',
+                    ].filter(Boolean).join(' ')}
+                  >
+                    <EditorContent editor={editor} />
+                  </div>
+                </div>
               </div>
             </div>
 
