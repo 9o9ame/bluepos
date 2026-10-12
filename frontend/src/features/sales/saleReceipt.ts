@@ -1,10 +1,16 @@
 import type { Sale } from '../../types/sales'
 
+export type SaleReceiptOptions = {
+  heading?: string | null
+  message?: string | null
+  fbrMessage?: string | null
+}
+
 /**
  * 80mm receipt preview/print. Opens a standalone window like barcode
  * printing does, so the POS screen keeps its state.
  */
-function receiptHtml(sale: Sale): string {
+function receiptHtml(sale: Sale, options: SaleReceiptOptions = {}): string {
   const items = sale.items
     .map(
       (item) => `
@@ -42,7 +48,7 @@ function receiptHtml(sale: Sale): string {
 </style>
 </head>
 <body>
-  <div class="center"><h2>RETAIL INVOICE</h2></div>
+  <div class="center"><h2>${escapeHtml(options.heading?.trim() || 'RETAIL INVOICE')}</h2></div>
   <div>Invoice #: ${escapeHtml(sale.document_number)}</div>
   <div>Date: ${escapeHtml(sale.sale_date)}</div>
   <div>Customer: ${escapeHtml(sale.customer?.name ?? 'CASH IN HAND')}</div>
@@ -59,6 +65,8 @@ function receiptHtml(sale: Sale): string {
     <tr><td><strong>TOTAL</strong></td><td class="r"><strong>${escapeHtml(sale.grand_total)}</strong></td></tr>
   </table>
   ${payments ? `<div class="line"></div><table>${payments}</table>` : ''}
+  ${options.message?.trim() ? `<div class="line"></div><div class="center">${escapeHtml(options.message)}</div>` : ''}
+  ${options.fbrMessage?.trim() ? `<div class="line"></div><div class="center">${escapeHtml(options.fbrMessage)}</div>` : ''}
   <div class="line"></div>
   <div class="center">Thank you</div>
   <script>
@@ -81,20 +89,20 @@ function escapeHtml(value: string | null | undefined): string {
     .replace(/"/g, '&quot;')
 }
 
-function openReceipt(sale: Sale, autoPrint: boolean) {
+function openReceipt(sale: Sale, autoPrint: boolean, options: SaleReceiptOptions = {}) {
   const printWindow = window.open('', '_blank', 'width=420,height=640')
   if (!printWindow) return
   printWindow.document.open()
-  printWindow.document.write(receiptHtml(sale).replace('__AUTOPRINT__', autoPrint ? 'window.print()' : ''))
+  printWindow.document.write(receiptHtml(sale, options).replace('__AUTOPRINT__', autoPrint ? 'window.print()' : ''))
   printWindow.document.close()
 }
 
 /** Preview: opens the receipt window without triggering the print dialog. */
-export function previewSaleReceipt(sale: Sale): void {
-  openReceipt(sale, false)
+export function previewSaleReceipt(sale: Sale, options: SaleReceiptOptions = {}): void {
+  openReceipt(sale, false, options)
 }
 
 /** Print: opens the receipt window and triggers the print dialog. */
-export function printSaleReceipt(sale: Sale): void {
-  openReceipt(sale, true)
+export function printSaleReceipt(sale: Sale, options: SaleReceiptOptions = {}): void {
+  openReceipt(sale, true, options)
 }
