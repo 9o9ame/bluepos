@@ -19,7 +19,6 @@ import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { UiSelect } from '../components/ui/UiSelect'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
-import type { Membership } from '../types/auth'
 import './UsersPage.css'
 
 type ConfigureUsersTab = 'administration' | 'users' | 'others' | 'salesman' | 'fp2'
