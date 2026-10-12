@@ -20,7 +20,7 @@ class SecuritySessionController extends Controller
         $this->authorize('viewAny', AuthSessionRecord::class);
 
         $query = AuthSessionRecord::query()
-            ->with('device')
+            ->with(['device', 'membership.user'])
             ->where('tenant_id', $tenantContext->tenantId())
             ->orderByDesc('last_seen_at');
 
