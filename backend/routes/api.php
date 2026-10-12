@@ -296,6 +296,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::middleware('entitled:inventory')->group(function () {
         Route::get('/inventory/stock', [StockController::class, 'index']);
+        Route::post('/inventory/stock/recalculate', [StockController::class, 'recalculate']);
 
         Route::get('/inventory/adjustments/accounts', [InventoryAdjustmentController::class, 'accounts']);
         Route::get('/inventory/adjustments', [InventoryAdjustmentController::class, 'index']);
