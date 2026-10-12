@@ -54,6 +54,7 @@ class BusinessSettingResource extends JsonResource
             'legal_name' => $this->legal_name,
             'phone' => $this->phone,
             'email' => $this->email,
+            'backup_email' => $this->backup_email,
             'address' => $this->address,
             'city' => $this->city,
             'country_code' => $this->country_code,
