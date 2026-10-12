@@ -12,7 +12,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['tenant_id', 'user_id', 'username', 'status', 'is_owner', 'security_version', 'mfa_required'])]
+#[Fillable([
+    'tenant_id',
+    'user_id',
+    'username',
+    'status',
+    'is_owner',
+    'security_version',
+    'mfa_required',
+    'salesman_party_profile_id',
+    'salesman_start_time',
+    'salesman_end_time',
+])]
 class Membership extends Model
 {
     /** @use HasFactory<MembershipFactory> */
@@ -60,6 +71,11 @@ class Membership extends Model
     {
         return $this->belongsToMany(Branch::class, 'membership_branches')
             ->withTimestamps();
+    }
+
+    public function salesmanProfile(): BelongsTo
+    {
+        return $this->belongsTo(PartyProfile::class, 'salesman_party_profile_id');
     }
 
     /**
