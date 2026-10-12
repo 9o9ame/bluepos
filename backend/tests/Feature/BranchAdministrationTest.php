@@ -66,22 +66,26 @@ class BranchAdministrationTest extends TestCase
         $this->patchJson('/api/branches/'.$northUlid, [
             'code' => 'SOUTH',
         ])->assertUnprocessable()
-            ->assertJsonValidationErrors(['code']);
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonStructure(['error' => ['fields' => ['code']]]);
 
         $this->patchJson('/api/branches/'.$mainUlid, [
             'status' => 'inactive',
         ])->assertUnprocessable()
-            ->assertJsonValidationErrors(['status']);
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonStructure(['error' => ['fields' => ['status']]]);
 
         $this->patchJson('/api/branches/'.$southUlid, [
             'status' => 'inactive',
         ])->assertUnprocessable()
-            ->assertJsonValidationErrors(['status']);
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonStructure(['error' => ['fields' => ['status']]]);
 
         $this->patchJson('/api/branches/'.$southUlid, [
             'is_default' => false,
         ])->assertUnprocessable()
-            ->assertJsonValidationErrors(['is_default']);
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonStructure(['error' => ['fields' => ['is_default']]]);
 
         $branches = $this->getJson('/api/branches')->assertOk();
         $this->assertNoInternalIds($branches->json());
