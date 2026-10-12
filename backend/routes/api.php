@@ -105,6 +105,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::put('/memberships/{membershipUlid}/roles', [MembershipController::class, 'syncRoles']);
     Route::put('/memberships/{membershipUlid}/branches', [MembershipController::class, 'syncBranches']);
     Route::put('/memberships/{membershipUlid}/salesman', [MembershipController::class, 'updateSalesman']);
+    Route::put('/memberships/{membershipUlid}/fingerprint', [MembershipController::class, 'updateFingerprint']);
 
     Route::get('/devices', [DeviceController::class, 'index']);
     Route::post('/devices/{deviceUlid}/approve', [DeviceController::class, 'approve']);
