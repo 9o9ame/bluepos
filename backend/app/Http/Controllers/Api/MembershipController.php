@@ -15,6 +15,7 @@ use App\Http\Requests\Memberships\StoreMembershipRequest;
 use App\Http\Requests\Memberships\SyncMembershipBranchesRequest;
 use App\Http\Requests\Memberships\SyncMembershipRolesRequest;
 use App\Http\Requests\Memberships\UpdateMembershipSalesmanRequest;
+use App\Http\Requests\Memberships\UpdateMembershipFingerprintRequest;
 use App\Http\Resources\MembershipResource;
 use App\Models\Membership;
 use App\Models\PartyProfile;
@@ -206,6 +207,38 @@ class MembershipController extends Controller
             'salesman_start_time' => $data['start_time'] ?? null,
             'salesman_end_time' => $data['end_time'] ?? null,
         ])->save();
+
+        return new MembershipResource(
+            $membership->refresh()->load(['user', 'roles', 'branches', 'salesmanProfile'])
+        );
+    }
+
+    public function updateFingerprint(
+        UpdateMembershipFingerprintRequest $request,
+        string $membershipUlid,
+        TenantContext $tenantContext,
+    ): MembershipResource {
+        $membership = $this->findTenantMembership($tenantContext, $membershipUlid);
+        $this->authorize('update', $membership);
+
+        $fingerprintRef = trim((string) ($request->validated('fingerprint_ref') ?? ''));
+        $fingerprintRef = $fingerprintRef === '' ? null : $fingerprintRef;
+
+        if ($fingerprintRef !== null) {
+            $duplicate = Membership::query()
+                ->where('tenant_id', $tenantContext->tenantId())
+                ->where('fingerprint_ref', $fingerprintRef)
+                ->whereKeyNot($membership->id)
+                ->exists();
+
+            if ($duplicate) {
+                throw new ApiException('VALIDATION_ERROR', 'This fingerprint reference is already assigned to another user.', 422, [
+                    'fingerprint_ref' => ['This fingerprint reference is already assigned to another user.'],
+                ]);
+            }
+        }
+
+        $membership->forceFill(['fingerprint_ref' => $fingerprintRef])->save();
 
         return new MembershipResource(
             $membership->refresh()->load(['user', 'roles', 'branches', 'salesmanProfile'])
