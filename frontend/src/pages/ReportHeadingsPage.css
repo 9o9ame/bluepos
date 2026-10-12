@@ -362,7 +362,7 @@
 }
 
 .report-headings-document-shell.is-simple-view .report-headings-paper {
-  width: min(100vw - 420px, var(--report-page-width));
+  width: min(calc(100vw - 420px), var(--report-page-width));
   min-height: 420px;
   border: 0;
   box-shadow: none;
