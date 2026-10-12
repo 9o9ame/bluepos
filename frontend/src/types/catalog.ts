@@ -36,7 +36,6 @@ export type Supplier = {
   phone_secondary?: string | null
   email: string | null
   backup_email: string | null
-  software_options: Partial<SoftwareOptions> | Record<string, never>
   address: string | null
   billing_address?: string | null
   deals_in?: string | null
@@ -128,6 +127,7 @@ export type BusinessSettings = {
   phone: string | null
   email: string | null
   backup_email: string | null
+  software_options: Partial<SoftwareOptions> | Record<string, never>
   address: string | null
   city: string | null
   country_code: string
