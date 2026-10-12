@@ -36,6 +36,7 @@ export type Supplier = {
   phone_secondary?: string | null
   email: string | null
   backup_email: string | null
+  software_options: Partial<SoftwareOptions> | Record<string, never>
   address: string | null
   billing_address?: string | null
   deals_in?: string | null
@@ -49,6 +50,74 @@ export type PrimarySupplier = {
   code: string
   name: string
   is_active: boolean
+}
+
+export type SoftwareOptions = {
+  sale: {
+    expiry_warning_days: number
+    show_receiving_window: boolean
+    manual_date_change: boolean
+    keep_pending_invoice_date: boolean
+    print_dotted_line: boolean
+    dont_round_off: boolean
+    message: string | null
+    show_remarks: boolean
+    show_discount_percent: boolean
+    show_discount_amount: boolean
+    show_previous_rates: boolean
+    amount_editable: boolean
+    amount_change_updates_qty: boolean
+    disable_txt_id: boolean
+    fbr_message: string | null
+    show_qty_option_discount: boolean
+    invoice_on: boolean
+    default_yes: boolean
+    disallow_duplicate_products: boolean
+  }
+  purchase: {
+    show_expiry_batch: boolean
+    show_bonus: boolean
+    show_sales_tax: boolean
+    show_rate_change_window: boolean
+    show_vehicle_bilty: boolean
+    amount_editable: boolean
+    show_stock_taking: boolean
+    stock_taking_method: 'full' | 'simple' | 'individual'
+    default_vendor_ulid: string | null
+    default_customer_ulid: string | null
+    po_heading: string | null
+  }
+  general: {
+    view_invoices_days: number
+    view_history_days: number
+    show_purchase_qty: boolean
+    weight_in_invoices: boolean
+    single_user_product_ids: boolean
+    use_custom_font_all: boolean
+    font_family: string | null
+    font_size: number
+    apply_custom_font_style: boolean
+    custom_font_family: string | null
+    custom_font_size: number | null
+    use_last_purchase_rate_profit: boolean
+    keep_product_prices: boolean
+    auto_generate_barcodes: boolean
+    recalc_sheet: boolean
+    show_previous_balance: boolean
+    show_salesman_vcs: boolean
+    heading_ulid: string | null
+    direct_print: boolean
+    book_set: boolean
+    sale_modal: boolean
+    purchase_modal: boolean
+    freight: string
+    default_format: string | null
+    description1: string | null
+    description2: string | null
+    disable_search_dates: boolean
+    bill_to_bill: boolean
+    products_group_option: boolean
+  }
 }
 
 export type BusinessSettings = {
