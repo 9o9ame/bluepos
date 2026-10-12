@@ -43,7 +43,7 @@ return new class extends Migration
         DB::table('roles')
             ->whereIn('code', ['owner', 'admin'])
             ->orderBy('id')
-            ->each(function (object $role) use ($permissionId): void {
+            ->eachById(function (object $role) use ($permissionId): void {
                 $exists = DB::table('role_permissions')
                     ->where('role_id', $role->id)
                     ->where('permission_id', $permissionId)
