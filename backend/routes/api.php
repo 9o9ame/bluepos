@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\Inventory\InventoryAdjustmentController;
 use App\Http\Controllers\Api\Inventory\OpeningBalanceController;
+use App\Http\Controllers\Api\Inventory\RecalculateStockController;
 use App\Http\Controllers\Api\Inventory\StockController;
 use App\Http\Controllers\Api\Inventory\StockTakeController;
 use App\Http\Controllers\Api\MembershipController;
@@ -278,6 +279,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::middleware('entitled:inventory')->group(function () {
         Route::get('/inventory/stock', [StockController::class, 'index']);
+        Route::post('/inventory/recalculate-stock', RecalculateStockController::class);
 
         Route::get('/inventory/adjustments/accounts', [InventoryAdjustmentController::class, 'accounts']);
         Route::get('/inventory/adjustments', [InventoryAdjustmentController::class, 'index']);
