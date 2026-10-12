@@ -32,6 +32,7 @@ class MembershipResource extends JsonResource
             ] : null),
             'salesman_start_time' => $this->salesman_start_time,
             'salesman_end_time' => $this->salesman_end_time,
+            'fingerprint_ref' => $this->fingerprint_ref,
         ];
     }
 }
