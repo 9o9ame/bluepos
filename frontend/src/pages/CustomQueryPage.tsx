@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Database, Eye, FileSpreadsheet, FileText, Pencil, Play, Printer, RefreshCw, Save, Search, Trash2, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Archive, Database, Download, Eye, FileSpreadsheet, FileText, Grid3X3, LifeBuoy, MessageSquareText, Pencil, Play, Printer, RefreshCw, Save, Search, ShieldCheck, TableProperties, Trash2, Wrench, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   deleteCustomQuery,
@@ -313,11 +313,11 @@ export function CustomQueryPage() {
           </div>
 
           <div className="custom-query-bottom-tabs" role="tablist" aria-label="Custom query output">
-            <BottomTabButton tab="results" current={bottomTab} onChange={setBottomTab}>Result Pane</BottomTabButton>
-            <BottomTabButton tab="messages" current={bottomTab} onChange={setBottomTab}>Messages</BottomTabButton>
-            <BottomTabButton tab="useful" current={bottomTab} onChange={setBottomTab}>Useful things</BottomTabButton>
-            <BottomTabButton tab="helping" current={bottomTab} onChange={setBottomTab}>Helping</BottomTabButton>
-            <BottomTabButton tab="exports" current={bottomTab} onChange={setBottomTab}>Exports</BottomTabButton>
+            <BottomTabButton tab="results" current={bottomTab} onChange={setBottomTab} icon={<TableProperties size={15} />}>Result Pane</BottomTabButton>
+            <BottomTabButton tab="messages" current={bottomTab} onChange={setBottomTab} icon={<MessageSquareText size={15} />}>Messages</BottomTabButton>
+            <BottomTabButton tab="useful" current={bottomTab} onChange={setBottomTab} icon={<Wrench size={15} />}>Useful things</BottomTabButton>
+            <BottomTabButton tab="helping" current={bottomTab} onChange={setBottomTab} icon={<LifeBuoy size={15} />}>Helping</BottomTabButton>
+            <BottomTabButton tab="exports" current={bottomTab} onChange={setBottomTab} icon={<Download size={15} />}>Exports</BottomTabButton>
           </div>
 
           <div className="custom-query-output">
@@ -331,81 +331,221 @@ export function CustomQueryPage() {
             ) : null}
 
             {bottomTab === 'messages' ? (
-              <div className="custom-query-message-pane">
-                <strong>{result ? 'Last query status' : 'Status'}</strong>
+              <div className="custom-query-message-pane custom-query-workbench-pane">
+                <div className="custom-query-pane-heading">
+                  <MessageSquareText size={18} aria-hidden />
+                  <div>
+                    <strong>{result ? 'Last query status' : 'Messages'}</strong>
+                    <span>Execution and safety diagnostics</span>
+                  </div>
+                </div>
                 <pre>{message}</pre>
+                <div className="custom-query-message-cards">
+                  <div><span>Mode</span><strong>Read-only</strong></div>
+                  <div><span>Scope</span><strong>Server enforced</strong></div>
+                  <div><span>Dataset</span><strong>{result?.dataset ?? '—'}</strong></div>
+                  <div><span>Rows</span><strong>{result?.row_count ?? '—'}</strong></div>
+                </div>
                 {result ? (
                   <div className="custom-query-message-meta">
-                    <span>Dataset: {result.dataset}</span>
-                    <span>Rows: {result.row_count}</span>
                     <span>Limit: {result.limit}</span>
-                    <span>{result.truncated ? 'Result truncated' : 'Complete within limit'}</span>
+                    <span>Elapsed: {result.elapsed_ms} ms</span>
+                    <span>{result.truncated ? 'Result truncated by safe limit' : 'Complete within safe limit'}</span>
                   </div>
                 ) : null}
+                <div className="custom-query-reference-strip">
+                  <ShieldCheck size={14} aria-hidden />
+                  Tenant-safe read-only SELECT commands only
+                </div>
               </div>
             ) : null}
 
             {bottomTab === 'useful' ? (
-              <InfoPane
-                title="Useful things"
-                text="Destructive database utilities from the reference application are intentionally unavailable. BluePOS keeps maintenance, backup, indexing, and data repair outside tenant Custom Query."
-              />
+              <div className="custom-query-workbench-pane">
+                <div className="custom-query-pane-heading">
+                  <Wrench size={18} aria-hidden />
+                  <div>
+                    <strong>Useful things</strong>
+                    <span>Safe query tools and intentionally unavailable database-maintenance actions</span>
+                  </div>
+                </div>
+
+                <div className="custom-query-useful-layout">
+                  <section>
+                    <h4>Safe tools</h4>
+                    <div className="custom-query-tool-grid">
+                      <UiButton variant="info" icon={<Eye size={15} />} label="Preview Result" disabled={!result} onClick={previewNow} />
+                      <UiButton variant="info" icon={<Printer size={15} />} label="Print Result" disabled={!result} onClick={printNow} />
+                      <UiButton
+                        icon={<FileText size={15} />}
+                        label="Export CSV"
+                        disabled={!result || result.row_count === 0}
+                        onClick={() => {
+                          if (!result) return
+                          exportCustomQueryCsv(result)
+                          feedback.success('Custom query results exported as CSV.')
+                        }}
+                      />
+                      <UiButton
+                        icon={<FileSpreadsheet size={15} />}
+                        label="Export Excel"
+                        disabled={!result || result.row_count === 0}
+                        onClick={() => {
+                          if (!result) return
+                          exportCustomQueryExcel(result)
+                          feedback.success('Custom query results exported for Excel.')
+                        }}
+                      />
+                      <UiButton
+                        variant="info"
+                        icon={<RefreshCw size={15} />}
+                        label="Refresh Catalog"
+                        onClick={() => {
+                          void Promise.all([catalogQuery.refetch(), savedQuery.refetch()])
+                        }}
+                      />
+                      <UiButton
+                        icon={<Grid3X3 size={15} />}
+                        label="Clear Result Pane"
+                        disabled={!result}
+                        onClick={() => {
+                          setResult(null)
+                          setResultQueryText('')
+                          setMessage('Result pane cleared. Query text was preserved.')
+                          setBottomTab('results')
+                        }}
+                      />
+                    </div>
+                  </section>
+
+                  <section>
+                    <h4>Database maintenance</h4>
+                    <div className="custom-query-tool-grid custom-query-disabled-tools">
+                      <UiButton variant="warning" icon={<Archive size={15} />} label="Database Backup" disabled title="Managed outside tenant Custom Query" />
+                      <UiButton variant="warning" icon={<Wrench size={15} />} label="Rebuild Indexes" disabled title="Managed outside tenant Custom Query" />
+                      <UiButton variant="danger" icon={<Trash2 size={15} />} label="Delete Data" disabled title="Destructive actions are unavailable" />
+                      <UiButton variant="danger" icon={<Database size={15} />} label="Alter Table" disabled title="Schema administration is unavailable" />
+                    </div>
+                    <p className="custom-query-safety-note">
+                      These reference-app maintenance actions are intentionally disabled in BluePOS. Database backup, repair, indexing, schema changes, and destructive data operations remain outside tenant Custom Query.
+                    </p>
+                  </section>
+                </div>
+
+                <div className="custom-query-reference-strip">
+                  <ShieldCheck size={14} aria-hidden />
+                  Safe tenant tools only — no destructive database commands
+                </div>
+              </div>
             ) : null}
 
             {bottomTab === 'helping' ? (
-              <div className="custom-query-info-pane">
-                <strong>Safe query syntax</strong>
-                <p>{catalogQuery.data?.syntax ?? 'Loading safe query syntax…'}</p>
-                <div className="custom-query-help-grid">
+              <div className="custom-query-workbench-pane">
+                <div className="custom-query-pane-heading">
+                  <LifeBuoy size={18} aria-hidden />
                   <div>
-                    <span>Example</span>
-                    <code>SELECT ulid, code, name FROM party_profiles ORDER BY name LIMIT 50</code>
+                    <strong>Helping</strong>
+                    <span>Safe syntax, examples, shortcuts, and available datasets</span>
                   </div>
-                  <div>
-                    <span>WHERE</span>
-                    <code>WHERE is_active = TRUE AND name ILIKE 'A%'</code>
-                  </div>
-                  <div>
-                    <span>Safety</span>
-                    <p>Only allowlisted datasets and columns are available. Tenant, branch, and warehouse scope is applied by the server.</p>
-                  </div>
+                </div>
+
+                <div className="custom-query-help-workbench">
+                  <section className="custom-query-help-main">
+                    <div className="custom-query-help-card">
+                      <span>Safe query syntax</span>
+                      <code>{catalogQuery.data?.syntax ?? 'Loading safe query syntax…'}</code>
+                    </div>
+
+                    <div className="custom-query-help-card">
+                      <span>Quick examples</span>
+                      <div className="custom-query-example-actions">
+                        <UiButton
+                          label="Products"
+                          onClick={() => setQueryText('SELECT ulid, product_number, name, status FROM products ORDER BY product_number LIMIT 50')}
+                        />
+                        <UiButton
+                          label="Parties"
+                          onClick={() => setQueryText('SELECT ulid, code, name, is_active FROM party_profiles ORDER BY name LIMIT 50')}
+                        />
+                        <UiButton
+                          label="Sales"
+                          onClick={() => setQueryText('SELECT ulid, document_number, status, sale_date, grand_total FROM sales ORDER BY sale_date DESC LIMIT 50')}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="custom-query-help-card custom-query-command-list">
+                      <span>Keyboard / workflow</span>
+                      <p><kbd>F5</kbd> Run current safe query</p>
+                      <p><kbd>F6</kbd> Preview current result</p>
+                      <p>Click a column in the dataset browser to insert its name into the editor.</p>
+                    </div>
+
+                    <div className="custom-query-help-card">
+                      <span>Safety</span>
+                      <p>Only allowlisted datasets and columns are available. Tenant, branch, and warehouse scope is applied by the server. Internal database IDs are never exposed.</p>
+                    </div>
+                  </section>
+
+                  <aside className="custom-query-help-datasets">
+                    <div className="custom-query-help-datasets-title">Available safe datasets</div>
+                    <div className="custom-query-help-datasets-table">
+                      <div className="is-header"><span>Dataset</span><span>Scope</span></div>
+                      {(catalogQuery.data?.datasets ?? []).map((dataset) => (
+                        <div key={dataset.name}>
+                          <span>{dataset.name}</span>
+                          <span>{dataset.scope === 'branch_warehouse' ? 'branch + warehouse' : 'tenant'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </aside>
                 </div>
               </div>
             ) : null}
 
             {bottomTab === 'exports' ? (
-              <div className="custom-query-info-pane">
-                <strong>Exports</strong>
-                <p>Export the current safe query result only. No additional database access is performed.</p>
-                <div className="custom-query-export-actions">
-                  <UiButton
-                    icon={<FileText size={14} />}
-                    label="Export CSV"
-                    disabled={!result || result.row_count === 0}
-                    onClick={() => {
-                      if (!result) return
-                      exportCustomQueryCsv(result)
-                      feedback.success('Custom query results exported as CSV.')
-                    }}
-                  />
-                  <UiButton
-                    icon={<FileSpreadsheet size={14} />}
-                    label="Export Excel (.xls)"
-                    disabled={!result || result.row_count === 0}
-                    onClick={() => {
-                      if (!result) return
-                      exportCustomQueryExcel(result)
-                      feedback.success('Custom query results exported for Excel.')
-                    }}
-                  />
+              <div className="custom-query-workbench-pane">
+                <div className="custom-query-pane-heading">
+                  <Download size={18} aria-hidden />
+                  <div>
+                    <strong>Exports</strong>
+                    <span>Export or print only the current server-approved result set</span>
+                  </div>
                 </div>
-                {!result || result.row_count === 0 ? (
-                  <p className="custom-query-export-empty">Run a query with at least one result row to enable exports.</p>
-                ) : (
-                  <p className="custom-query-export-ready">
-                    Ready to export {result.row_count} row{result.row_count === 1 ? '' : 's'} from {result.dataset}.
-                  </p>
-                )}
+
+                <div className="custom-query-export-workbench">
+                  <div className="custom-query-export-grid">
+                    <UiButton
+                      icon={<FileText size={16} />}
+                      label="Export CSV"
+                      disabled={!result || result.row_count === 0}
+                      onClick={() => {
+                        if (!result) return
+                        exportCustomQueryCsv(result)
+                        feedback.success('Custom query results exported as CSV.')
+                      }}
+                    />
+                    <UiButton
+                      icon={<FileSpreadsheet size={16} />}
+                      label="Export Excel (.xls)"
+                      disabled={!result || result.row_count === 0}
+                      onClick={() => {
+                        if (!result) return
+                        exportCustomQueryExcel(result)
+                        feedback.success('Custom query results exported for Excel.')
+                      }}
+                    />
+                    <UiButton variant="info" icon={<Eye size={16} />} label="Preview Result" disabled={!result} onClick={previewNow} />
+                    <UiButton variant="info" icon={<Printer size={16} />} label="Print Result" disabled={!result} onClick={printNow} />
+                  </div>
+
+                  <div className="custom-query-export-summary">
+                    <FileSpreadsheet size={28} aria-hidden />
+                    <strong>{result ? result.dataset : 'No result ready'}</strong>
+                    <span>{result ? (result.row_count + ' row' + (result.row_count === 1 ? '' : 's') + ' ready') : 'Run a query to enable export actions.'}</span>
+                    <small>No additional database access is performed during export.</small>
+                  </div>
+                </div>
               </div>
             ) : null}
           </div>
@@ -551,11 +691,13 @@ function BottomTabButton({
   tab,
   current,
   onChange,
+  icon,
   children,
 }: {
   tab: BottomTab
   current: BottomTab
   onChange: (tab: BottomTab) => void
+  icon: ReactNode
   children: string
 }) {
   return (
@@ -566,17 +708,9 @@ function BottomTabButton({
       className={current === tab ? 'is-active' : undefined}
       onClick={() => onChange(tab)}
     >
-      {children}
+      <span className="custom-query-tab-icon" aria-hidden>{icon}</span>
+      <span>{children}</span>
     </button>
-  )
-}
-
-function InfoPane({ title, text }: { title: string; text: string }) {
-  return (
-    <div className="custom-query-info-pane">
-      <strong>{title}</strong>
-      <p>{text}</p>
-    </div>
   )
 }
 
