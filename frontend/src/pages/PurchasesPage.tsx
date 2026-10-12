@@ -466,16 +466,20 @@ export function PurchasesPage() {
     const requireExpiry = lines.some((line) => line.track_expiry)
     const showExpiryBatch = purchaseSoftwareOptions?.show_expiry_batch ?? false
     const showSalesTax = purchaseSoftwareOptions?.show_sales_tax ?? true
+    const showBonus = purchaseSoftwareOptions?.show_bonus ?? false
 
-    return columnLayout.visibleColumns.filter((col) => {
+    return columnLayout.columns.filter((col) => {
+      if (col.key === 'free_pcs') return showBonus
+      if (!col.visible) return false
       if (col.key === 'batch' && !showExpiryBatch && !requireBatch) return false
       if (col.key === 'expiry' && !showExpiryBatch && !requireExpiry) return false
       if (['gst', 'further_tax', 'advance_tax'].includes(col.key) && !showSalesTax) return false
       return true
     })
   }, [
-    columnLayout.visibleColumns,
+    columnLayout.columns,
     lines,
+    purchaseSoftwareOptions?.show_bonus,
     purchaseSoftwareOptions?.show_expiry_batch,
     purchaseSoftwareOptions?.show_sales_tax,
   ])
@@ -648,6 +652,12 @@ export function PurchasesPage() {
         return (
           <td className={cls} style={widthStyle}>
             {editableInput(row.quantity, (value) => patchLine(row.key, { quantity: value }))}
+          </td>
+        )
+      case 'free_pcs':
+        return (
+          <td className={cls} style={widthStyle}>
+            {editableInput(row.free_pcs, (value) => patchLine(row.key, { free_pcs: value }))}
           </td>
         )
       case 'uom':
