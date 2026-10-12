@@ -1,7 +1,9 @@
 .report-headings-reference-layout {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-  min-height: calc(100vh - 210px);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  height: calc(100dvh - 210px);
+  min-height: 0;
+  overflow: hidden;
   background: var(--ui-surface-subtle);
 }
 
@@ -44,10 +46,12 @@
 
 .report-headings-editor-ribbon {
   display: flex;
-  min-height: 74px;
+  min-height: 62px;
   align-items: stretch;
   gap: 4px;
-  padding: 4px 6px;
+  padding: 3px 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
   border-bottom: 1px solid var(--ui-border);
   background: var(--ui-surface);
 }
@@ -56,7 +60,7 @@
   display: grid;
   grid-template-rows: 1fr auto;
   min-width: 110px;
-  padding: 3px 6px 2px;
+  padding: 2px 6px 1px;
   border-right: 1px solid var(--ui-border);
 }
 
@@ -110,8 +114,8 @@
 
 .report-headings-editor-group > span {
   align-self: end;
-  padding-top: 4px;
-  text-align: center;
+  padding-top: 2px;
+  text-align: left;
   color: var(--ui-text-muted);
   font-size: var(--ui-font-size-xs, 11px);
 }
@@ -166,18 +170,22 @@
 
 .report-headings-selector-row {
   display: grid;
-  grid-template-columns: minmax(220px, 300px) minmax(320px, 1fr);
-  gap: 10px;
+  flex: 1 1 520px;
+  grid-template-columns: minmax(170px, 220px) minmax(260px, 1fr);
+  gap: 8px;
+  align-self: center;
   align-items: end;
-  padding: 8px;
-  border-bottom: 1px solid var(--ui-border);
+  min-width: 430px;
+  max-width: 620px;
+  margin-left: auto;
+  padding: 2px 4px;
   background: var(--ui-surface);
 }
 
 .report-headings-selector-row label,
 .report-headings-new-form label {
   display: grid;
-  gap: 4px;
+  gap: 2px;
   color: var(--ui-text-muted);
   font-size: var(--ui-font-size-xs, 11px);
   font-weight: 700;
@@ -478,10 +486,6 @@
 }
 
 @media (max-width: 900px) {
-  .report-headings-editor-ribbon {
-    overflow-x: auto;
-  }
-
   .report-headings-editor-layout-fields {
     grid-template-columns: repeat(2, minmax(120px, 1fr));
     min-width: 320px;
@@ -520,7 +524,8 @@
   }
 
   .report-headings-selector-row {
-    grid-template-columns: 1fr;
+    min-width: 360px;
+    grid-template-columns: 140px minmax(220px, 1fr);
   }
 
   .report-headings-document-shell {
