@@ -162,6 +162,25 @@
   min-width: 560px;
 }
 
+.report-headings-editor-group.is-quick-settings-group {
+  min-width: 360px;
+}
+
+.report-headings-editor-group.is-quick-settings-group .report-headings-editor-group-actions {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  gap: 6px;
+  align-items: end;
+}
+
+.report-headings-editor-group.is-quick-settings-group .desktop-field {
+  min-width: 240px;
+}
+
+.report-headings-editor-group.is-quick-settings-group .desktop-input {
+  width: 100%;
+}
+
 .report-headings-zoom-value {
   display: inline-flex;
   min-height: 26px;
@@ -519,6 +538,14 @@
 
   .report-headings-editor-group.is-layout-group {
     min-width: 360px;
+  }
+
+  .report-headings-editor-group.is-quick-settings-group {
+    min-width: 320px;
+  }
+
+  .report-headings-editor-group.is-quick-settings-group .report-headings-editor-group-actions {
+    grid-template-columns: minmax(200px, 1fr) auto;
   }
 
   .report-headings-workarea {
