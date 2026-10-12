@@ -57,6 +57,7 @@ export type BusinessSettings = {
   legal_name: string | null
   phone: string | null
   email: string | null
+  backup_email: string | null
   address: string | null
   city: string | null
   country_code: string
