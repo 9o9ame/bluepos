@@ -618,7 +618,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
         { id: 'custom-query', label: 'Custom Query', icon: FileSpreadsheet, moduleKey: 'custom-query', permission: 'database.query.read', status: 'ready', tone: 'slate' },
         { id: 'report-headings', label: 'Report Headings', icon: List, moduleKey: 'report-headings', permission: 'settings.view', status: 'ready', tone: 'slate' },
         { id: 'options', label: 'Software Options', icon: Settings, permission: 'settings.view', status: 'ready', action: 'software-options', tone: 'navy' },
-        { id: 'recalc-stock', label: 'Recalculate Stock', icon: Boxes, status: 'later', tone: 'orange' },
+        { id: 'recalc-stock', label: 'Recalculate Stock', icon: Boxes, permission: 'inventory.recalculate', entitlement: 'inventory', status: 'ready', action: 'recalculate-stock', tone: 'orange' },
         { id: 'calculator', label: 'Calculator', icon: Calculator, status: 'ready', action: 'calculator', tone: 'gold' },
         { id: 'lock', label: 'Lock this Software', icon: Lock, status: 'ready', action: 'lock', tone: 'red' },
       ],
