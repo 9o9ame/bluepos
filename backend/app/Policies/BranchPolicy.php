@@ -36,4 +36,11 @@ class BranchPolicy
     {
         return $this->permissions->can('branches.manage');
     }
+
+    public function update(User $user, Branch $branch): bool
+    {
+        return $this->permissions->can('branches.manage')
+            && $this->tenantContext->hasTenant()
+            && (int) $branch->tenant_id === $this->tenantContext->tenantId();
+    }
 }
