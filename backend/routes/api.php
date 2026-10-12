@@ -78,6 +78,7 @@ Route::post('/devices/enrollment', [DeviceController::class, 'enroll'])->middlew
 Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function () {
     Route::get('/branches', [BranchController::class, 'index']);
     Route::post('/branches', [BranchController::class, 'store']);
+    Route::patch('/branches/{branchUlid}', [BranchController::class, 'update']);
     Route::post('/branches/{branchUlid}/switch', [BranchController::class, 'switch']);
     Route::get('/warehouses', [WarehouseController::class, 'index']);
     Route::post('/warehouses', [WarehouseController::class, 'store']);
