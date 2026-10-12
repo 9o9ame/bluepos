@@ -165,6 +165,19 @@
   line-height: 1.5;
 }
 
+.custom-query-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.custom-query-info-pane .custom-query-export-empty,
+.custom-query-info-pane .custom-query-export-ready {
+  margin-top: 10px;
+  font-size: var(--ui-font-size-xs, 11px);
+}
+
 .custom-query-status {
   display: flex;
   justify-content: space-between;
