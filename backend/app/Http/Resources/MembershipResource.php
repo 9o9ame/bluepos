@@ -25,6 +25,13 @@ class MembershipResource extends JsonResource
             'user' => new UserResource($this->whenLoaded('user')),
             'roles' => RoleResource::collection($this->whenLoaded('roles')),
             'branches' => BranchResource::collection($this->whenLoaded('branches')),
+            'salesman' => $this->whenLoaded('salesmanProfile', fn (): ?array => $this->salesmanProfile ? [
+                'ulid' => $this->salesmanProfile->ulid,
+                'code' => $this->salesmanProfile->code,
+                'name' => $this->salesmanProfile->name,
+            ] : null),
+            'salesman_start_time' => $this->salesman_start_time,
+            'salesman_end_time' => $this->salesman_end_time,
         ];
     }
 }
