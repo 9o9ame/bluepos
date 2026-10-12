@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Database, FileSpreadsheet, FileText, Play, RefreshCw, Save, X } from 'lucide-react'
+import { Database, Eye, FileSpreadsheet, FileText, Play, Printer, RefreshCw, Save, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchCustomQueryCatalog,
@@ -17,6 +17,7 @@ import { UiSelect } from '../components/ui/UiSelect'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import { exportCustomQueryCsv, exportCustomQueryExcel } from './customQueryExport'
+import { previewCustomQueryResult, printCustomQueryResult } from './customQueryPrint'
 import './CustomQueryPage.css'
 
 type BottomTab = 'results' | 'messages' | 'useful' | 'helping' | 'exports'
@@ -82,6 +83,20 @@ export function CustomQueryPage() {
     runMutation.mutate()
   }, [queryText, runMutation])
 
+  const previewNow = useCallback(() => {
+    if (!result) return
+    if (!previewCustomQueryResult(result, queryText)) {
+      feedback.error('Preview window was blocked by the browser.')
+    }
+  }, [feedback, queryText, result])
+
+  const printNow = useCallback(() => {
+    if (!result) return
+    if (!printCustomQueryResult(result, queryText)) {
+      feedback.error('Print window was blocked by the browser.')
+    }
+  }, [feedback, queryText, result])
+
   useWorkspaceHandlers({
     save: () => setSaveOpen(true),
     refresh: () => {
@@ -95,11 +110,16 @@ export function CustomQueryPage() {
         event.preventDefault()
         runNow()
       }
+
+      if (event.key === 'F6') {
+        event.preventDefault()
+        previewNow()
+      }
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [runNow])
+  }, [previewNow, runNow])
 
   const resultRows = useMemo<ResultRow[]>(
     () =>
@@ -171,6 +191,20 @@ export function CustomQueryPage() {
                 label={runMutation.isPending ? 'Running…' : 'Run Query [F5]'}
                 disabled={runMutation.isPending || !queryText.trim()}
                 onClick={runNow}
+              />
+              <UiButton
+                variant="info"
+                icon={<Eye size={14} />}
+                label="Preview [F6]"
+                disabled={!result}
+                onClick={previewNow}
+              />
+              <UiButton
+                variant="info"
+                icon={<Printer size={14} />}
+                label="Print"
+                disabled={!result}
+                onClick={printNow}
               />
               <UiButton
                 variant="info"
