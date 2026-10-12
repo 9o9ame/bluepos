@@ -225,24 +225,12 @@ export function CustomQueryPage() {
               />
               <UiButton
                 icon={<Pencil size={14} />}
-                label="Update Saved"
-                disabled={!selectedSaved || updateMutation.isPending}
+                label="Manage Saved"
+                disabled={!selectedSaved || updateMutation.isPending || deleteMutation.isPending}
                 onClick={() => {
                   if (!selectedSaved) return
                   setManageTitle(selectedSaved.title)
                   setManageOpen(true)
-                }}
-              />
-              <UiButton
-                variant="danger"
-                icon={<Trash2 size={14} />}
-                label={deleteMutation.isPending ? 'Deleting…' : 'Delete Saved'}
-                disabled={!selectedSaved || deleteMutation.isPending}
-                onClick={async () => {
-                  if (!selectedSaved) return
-                  const confirmed = await feedback.confirm(`Delete saved query "${selectedSaved.title}"?`)
-                  if (!confirmed) return
-                  deleteMutation.mutate(selectedSaved.ulid)
                 }}
               />
               <UiButton
@@ -436,6 +424,18 @@ export function CustomQueryPage() {
         onClose={() => setManageOpen(false)}
         footer={
           <>
+            <UiButton
+              variant="danger"
+              icon={<Trash2 size={14} />}
+              label={deleteMutation.isPending ? 'Deleting…' : 'Delete'}
+              disabled={!selectedSaved || deleteMutation.isPending || updateMutation.isPending}
+              onClick={async () => {
+                if (!selectedSaved) return
+                const confirmed = await feedback.confirm(`Delete saved query "${selectedSaved.title}"?`)
+                if (!confirmed) return
+                deleteMutation.mutate(selectedSaved.ulid)
+              }}
+            />
             <UiButton label="Cancel" onClick={() => setManageOpen(false)} />
             <UiButton
               variant="success"
@@ -443,6 +443,7 @@ export function CustomQueryPage() {
               label={updateMutation.isPending ? 'Updating…' : 'Update'}
               disabled={
                 updateMutation.isPending ||
+                deleteMutation.isPending ||
                 !selectedSavedUlid ||
                 !manageTitle.trim() ||
                 !queryText.trim()
