@@ -160,9 +160,23 @@ class RecalculateStockBalancesAction
             ? null
             : (int) $balance->last_movement_id;
 
+        $averageCost = $balance->average_cost === null
+            ? null
+            : bcadd((string) $balance->average_cost, '0', 4);
+        $expectedStockValue = $averageCost === null
+            ? null
+            : bcmul($quantity, $averageCost, 4);
+        $currentStockValue = $balance->stock_value === null
+            ? null
+            : bcadd((string) $balance->stock_value, '0', 4);
+        $stockValueChanged = $expectedStockValue === null
+            ? $currentStockValue !== null
+            : $currentStockValue === null || bccomp($currentStockValue, $expectedStockValue, 4) !== 0;
+
         $changed = bccomp($normalizedCurrent, $quantity, 6) !== 0
             || (int) $balance->branch_id !== $branchId
-            || $currentLastMovementId !== $lastMovementId;
+            || $currentLastMovementId !== $lastMovementId
+            || $stockValueChanged;
 
         if (! $changed) {
             return false;
@@ -171,14 +185,7 @@ class RecalculateStockBalancesAction
         $balance->branch_id = $branchId;
         $balance->quantity = $quantity;
         $balance->last_movement_id = $lastMovementId;
-
-        $averageCost = $balance->average_cost === null
-            ? null
-            : bcadd((string) $balance->average_cost, '0', 4);
-
-        $balance->stock_value = $averageCost === null
-            ? null
-            : bcmul($quantity, $averageCost, 4);
+        $balance->stock_value = $expectedStockValue;
 
         $balance->save();
 
