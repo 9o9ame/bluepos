@@ -754,7 +754,7 @@ export function ReportHeadingsPage() {
               <>
                 <div className="report-headings-editor-group is-quick-settings-group">
                   <div className="report-headings-editor-group-actions">
-                    <label className="report-headings-quick-email">
+                    <label className="desktop-field">
                       <span>Backup Email</span>
                       <input
                         className="desktop-input"
