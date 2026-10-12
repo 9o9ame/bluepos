@@ -74,6 +74,13 @@ class CustomQueryTest extends TestCase
     {
         $this->signInOwner('custom-query-permission')->assertOk();
 
+        $saved = $this->postJson('/api/custom-query/saved', [
+            'title' => 'Permission check',
+            'query' => 'SELECT ulid FROM party_profiles LIMIT 10',
+        ])->assertCreated();
+
+        $savedUlid = (string) $saved->json('ulid');
+
         $context = app(TenantContext::class);
         $permission = Permission::query()->where('key', 'database.query.read')->firstOrFail();
 
@@ -87,6 +94,16 @@ class CustomQueryTest extends TestCase
         $this->postJson('/api/custom-query/run', [
             'query' => 'SELECT ulid FROM party_profiles',
         ])->assertForbidden();
+        $this->getJson('/api/custom-query/saved')->assertForbidden();
+        $this->postJson('/api/custom-query/saved', [
+            'title' => 'Denied',
+            'query' => 'SELECT ulid FROM party_profiles LIMIT 10',
+        ])->assertForbidden();
+        $this->patchJson('/api/custom-query/saved/'.$savedUlid, [
+            'title' => 'Denied update',
+            'query' => 'SELECT ulid FROM party_profiles LIMIT 10',
+        ])->assertForbidden();
+        $this->deleteJson('/api/custom-query/saved/'.$savedUlid)->assertForbidden();
     }
 
     public function test_saved_queries_are_tenant_scoped(): void
@@ -118,5 +135,48 @@ class CustomQueryTest extends TestCase
             )
         );
         $this->assertNoInternalIds($otherTenant->json());
+
+        $this->patchJson('/api/custom-query/saved/'.$savedUlid, [
+            'title' => 'Cross tenant update',
+            'query' => 'SELECT ulid FROM party_profiles LIMIT 10',
+        ])->assertNotFound();
+
+        $this->deleteJson('/api/custom-query/saved/'.$savedUlid)
+            ->assertNotFound();
+    }
+
+    public function test_saved_queries_can_be_updated_and_deleted(): void
+    {
+        $this->signInOwner('custom-query-manage')->assertOk();
+
+        $saved = $this->postJson('/api/custom-query/saved', [
+            'title' => 'Original title',
+            'query' => 'SELECT ulid, code FROM party_profiles ORDER BY code LIMIT 25',
+        ])->assertCreated();
+
+        $savedUlid = (string) $saved->json('ulid');
+
+        $updated = $this->patchJson('/api/custom-query/saved/'.$savedUlid, [
+            'title' => 'Updated title',
+            'query' => 'SELECT ulid, code, name FROM party_profiles ORDER BY name DESC LIMIT 20',
+        ])->assertOk()
+            ->assertJsonPath('ulid', $savedUlid)
+            ->assertJsonPath('title', 'Updated title')
+            ->assertJsonPath('query', 'SELECT ulid, code, name FROM party_profiles ORDER BY name DESC LIMIT 20');
+
+        $this->assertNoInternalIds($updated->json());
+
+        $this->patchJson('/api/custom-query/saved/'.$savedUlid, [
+            'title' => 'Unsafe update',
+            'query' => 'DELETE FROM party_profiles',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('error.key', 'CUSTOM_QUERY_INVALID');
+
+        $this->deleteJson('/api/custom-query/saved/'.$savedUlid)
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $this->assertDatabaseMissing('custom_queries', ['ulid' => $savedUlid]);
     }
 }
