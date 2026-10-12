@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { ReportHeading } from '../types/reportHeadings'
+import type { ReportHeading, ReportHeadingLayout } from '../types/reportHeadings'
 
 export function fetchReportHeadings(): Promise<ReportHeading[]> {
   return apiFetch<ReportHeading[]>('/api/report-headings')
@@ -9,6 +9,7 @@ export function createReportHeading(payload: {
   head_id: string
   used_for: string
   content_html?: string | null
+  layout_settings?: ReportHeadingLayout
 }): Promise<ReportHeading> {
   return apiFetch<ReportHeading>('/api/report-headings', {
     method: 'POST',
@@ -22,6 +23,7 @@ export function updateReportHeading(
     head_id?: string
     used_for?: string
     content_html?: string | null
+    layout_settings?: ReportHeadingLayout
   },
 ): Promise<ReportHeading> {
   return apiFetch<ReportHeading>(`/api/report-headings/${ulid}`, {
