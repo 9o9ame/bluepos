@@ -35,7 +35,6 @@ class WarehouseController extends Controller
         $data = $request->validate([
             'code' => ['required', 'string', 'max:32'],
             'name' => ['required', 'string', 'max:120'],
-            'branch_ulid' => ['required', 'string', 'size:26'],
         ]);
 
         return (new WarehouseResource($create->execute($data)->load('branch')))
