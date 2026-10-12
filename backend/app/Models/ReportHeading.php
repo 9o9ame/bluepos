@@ -11,8 +11,17 @@ use Illuminate\Database\Eloquent\Model;
     'head_id',
     'used_for',
     'content_html',
+    'layout_settings',
 ])]
+
 class ReportHeading extends Model
 {
     use Concerns\BelongsToTenant, HasPublicUlid;
+
+    protected function casts(): array
+    {
+        return [
+            'layout_settings' => 'array',
+        ];
+    }
 }
