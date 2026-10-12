@@ -24,6 +24,7 @@ import {
   Save,
   Strikethrough,
   Trash2,
+  Underline,
   Undo2,
   X,
 } from 'lucide-react'
