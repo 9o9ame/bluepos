@@ -166,6 +166,53 @@ class ReportHeadingTest extends TestCase
         );
     }
 
+    public function test_report_heading_layout_settings_are_validated_persisted_and_copied(): void
+    {
+        $this->signInOwner('report-heading-layout')->assertOk();
+
+        $index = $this->getJson('/api/report-headings')->assertOk();
+        $head = collect($index->json())->firstWhere('head_id', 'Head');
+        $headGrid = collect($index->json())->firstWhere('head_id', 'HeadGrid');
+
+        $layout = [
+            'margin' => 'narrow',
+            'orientation' => 'landscape',
+            'page_size' => 'letter',
+            'columns' => 2,
+            'line_numbers' => true,
+            'page_color' => '#AABBCC',
+        ];
+
+        $updated = $this->patchJson('/api/report-headings/'.$head['ulid'], [
+            'content_html' => '<p>First page</p><hr><p>Second page</p>',
+            'layout_settings' => $layout,
+        ])->assertOk()
+            ->assertJsonPath('layout_settings.margin', 'narrow')
+            ->assertJsonPath('layout_settings.orientation', 'landscape')
+            ->assertJsonPath('layout_settings.page_size', 'letter')
+            ->assertJsonPath('layout_settings.columns', 2)
+            ->assertJsonPath('layout_settings.line_numbers', true)
+            ->assertJsonPath('layout_settings.page_color', '#aabbcc')
+            ->assertJsonPath('content_html', '<p>First page</p><hr><p>Second page</p>');
+
+        $this->postJson('/api/report-headings/'.$head['ulid'].'/copy-to-others')
+            ->assertOk()
+            ->assertJsonPath('updated', 5);
+
+        $copied = $this->getJson('/api/report-headings')->assertOk()->json();
+        $copiedGrid = collect($copied)->firstWhere('ulid', $headGrid['ulid']);
+        $this->assertSame($updated->json('layout_settings'), $copiedGrid['layout_settings']);
+
+        $this->patchJson('/api/report-headings/'.$head['ulid'], [
+            'layout_settings' => [
+                'orientation' => 'diagonal',
+                'columns' => 4,
+                'page_color' => 'javascript:alert(1)',
+            ],
+        ])->assertUnprocessable()
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+    }
+
     public function test_report_heading_validation_prevents_duplicate_ids_and_unsafe_identifiers(): void
     {
         $this->signInOwner('report-heading-validation')->assertOk();
