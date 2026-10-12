@@ -51,6 +51,7 @@ class UpdateBusinessSettingsRequest extends FormRequest
             'legal_name' => ['nullable', 'string', 'max:160'],
             'phone' => ['nullable', 'string', 'max:32'],
             'email' => ['nullable', 'email', 'max:255'],
+            'backup_email' => ['nullable', 'email', 'max:255'],
             'address' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:120'],
             'country_code' => ['sometimes', 'required', 'string', 'size:2'],
