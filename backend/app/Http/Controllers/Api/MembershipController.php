@@ -20,6 +20,7 @@ use App\Http\Resources\MembershipResource;
 use App\Models\Membership;
 use App\Models\PartyProfile;
 use App\Tenancy\TenantContext;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -238,7 +239,20 @@ class MembershipController extends Controller
             }
         }
 
-        $membership->forceFill(['fingerprint_ref' => $fingerprintRef])->save();
+        try {
+            $membership->forceFill(['fingerprint_ref' => $fingerprintRef])->save();
+        } catch (QueryException $exception) {
+            if ((string) $exception->getCode() === '23505') {
+                throw new ApiException(
+                    'VALIDATION_ERROR',
+                    'This fingerprint reference is already assigned to another user.',
+                    422,
+                    ['fingerprint_ref' => ['This fingerprint reference is already assigned to another user.']],
+                );
+            }
+
+            throw $exception;
+        }
 
         return new MembershipResource(
             $membership->refresh()->load(['user', 'roles', 'branches', 'salesmanProfile'])
