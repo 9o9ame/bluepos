@@ -865,64 +865,7 @@ export function ReportHeadingsPage() {
         }
       >
         <div className="report-headings-symbol-grid">
-          {['©', '®', '™', '°', '±', '×', '÷', '→', '←', '•', '✓', '★', '₹', '
-        title="New Report Heading"
-        size="sm"
-        onClose={() => {
-          if (!createMutation.isPending) setNewOpen(false)
-        }}
-        footer={
-          <>
-            <UiButton
-              variant="info"
-              icon={<X size={14} />}
-              label="Cancel"
-              disabled={createMutation.isPending}
-              onClick={() => setNewOpen(false)}
-            />
-            <UiButton
-              variant="success"
-              icon={<Save size={14} />}
-              label={createMutation.isPending ? 'Creating…' : 'Create'}
-              disabled={!newHeadId.trim() || !newUsedFor.trim() || createMutation.isPending}
-              onClick={() => {
-                const form = document.getElementById('new-report-heading-form') as HTMLFormElement | null
-                form?.requestSubmit()
-              }}
-            />
-          </>
-        }
-      >
-        <form id="new-report-heading-form" className="report-headings-new-form" onSubmit={submitNew}>
-          <label>
-            <span>Head ID</span>
-            <input
-              className="desktop-input"
-              value={newHeadId}
-              maxLength={40}
-              autoComplete="off"
-              placeholder="e.g. HeadCustom"
-              onChange={(event) => setNewHeadId(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            <span>Used For</span>
-            <input
-              className="desktop-input"
-              value={newUsedFor}
-              maxLength={120}
-              autoComplete="off"
-              onChange={(event) => setNewUsedFor(event.target.value)}
-              required
-            />
-          </label>
-        </form>
-      </UiModal>
-    </>
-  )
-}
-, '€', '£', '¥', '₨', 'Ω', 'µ'].map((symbol) => (
+          {['©', '®', '™', '°', '±', '×', '÷', '→', '←', '•', '✓', '★', '₹', '$', '€', '£', '¥', '₨', 'Ω', 'µ'].map((symbol) => (
             <button
               key={symbol}
               type="button"
