@@ -37,7 +37,13 @@ function paymentLabel(sale: Sale): string {
  * Posted invoice history. Read-only: posted financial records are never edited
  * here. Corrections remain separate return/void flows.
  */
-export function SalesInvoiceHistory({ historyDays = 8 }: { historyDays?: number }) {
+export function SalesInvoiceHistory({
+  historyDays = 8,
+  disableSearchDates = false,
+}: {
+  historyDays?: number
+  disableSearchDates?: boolean
+}) {
   const [searchText, setSearchText] = useState('')
   const deferredSearch = useDeferredValue(searchText.trim())
   const [dateFrom, setDateFrom] = useState(() => startDateForDays(historyDays))
@@ -160,6 +166,8 @@ export function SalesInvoiceHistory({ historyDays = 8 }: { historyDays?: number 
           <input
             type="date"
             value={dateFrom}
+            disabled={disableSearchDates}
+            title={disableSearchDates ? 'Date search is disabled in Software Options.' : undefined}
             onChange={(e) => {
               setDateFrom(e.target.value)
             }}
@@ -171,6 +179,8 @@ export function SalesInvoiceHistory({ historyDays = 8 }: { historyDays?: number 
           <input
             type="date"
             value={dateTo}
+            disabled={disableSearchDates}
+            title={disableSearchDates ? 'Date search is disabled in Software Options.' : undefined}
             onChange={(e) => {
               setDateTo(e.target.value)
             }}
