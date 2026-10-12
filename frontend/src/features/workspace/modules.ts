@@ -80,7 +80,7 @@ export type RibbonCommandDef = {
   entitlement?: string
   status: ModuleStatus
   shortcut?: string
-  action?: 'calculator' | 'software-options' | 'lock' | 'logout'
+  action?: 'calculator' | 'software-options' | 'recalculate-stock' | 'lock' | 'logout'
   tone?: RibbonTone
   hasMenu?: boolean
   menu?: RibbonMenuItem[]
