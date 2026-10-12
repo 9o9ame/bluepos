@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'phone',
     'email',
     'backup_email',
+    'software_options',
     'address',
     'city',
     'country_code',
@@ -50,6 +51,7 @@ class BusinessSetting extends Model
             'negative_stock_allowed' => 'boolean',
             'expiry_tracking_enabled' => 'boolean',
             'batch_tracking_enabled' => 'boolean',
+            'software_options' => 'array',
             'next_product_number' => 'integer',
         ];
     }
