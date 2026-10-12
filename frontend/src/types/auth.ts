@@ -68,6 +68,7 @@ export type Membership = {
   } | null
   salesman_start_time?: string | null
   salesman_end_time?: string | null
+  fingerprint_ref?: string | null
 }
 
 export type Device = {
