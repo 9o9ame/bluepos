@@ -1,7 +1,7 @@
 .report-headings-reference-layout {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  height: calc(100dvh - 258px);
+  height: calc(100dvh - 230px);
   min-height: 0;
   overflow: hidden;
   background: var(--ui-surface-subtle);
