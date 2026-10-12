@@ -103,7 +103,9 @@ export function AppRoutes() {
           <Route path="/help/about" element={<HelpAboutPage />} />
           <Route path="/administration/account" element={<AccountPage />} />
           <Route path="/administration/plan" element={<PlanInfoPage />} />
-          <Route path="/administration/security" element={<SecurityStatusPage />} />
+          <Route element={<RequirePermission permission="security.sessions.view" />}>
+            <Route path="/administration/security" element={<SecurityStatusPage />} />
+          </Route>
 
           <Route element={<RequirePermission permission="users.view" />}>
             <Route path="/administration/users" element={<UsersPage />} />
