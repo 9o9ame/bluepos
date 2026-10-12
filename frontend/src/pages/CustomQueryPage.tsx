@@ -99,7 +99,7 @@ export function CustomQueryPage() {
     if (!printCustomQueryResult(result, resultQueryText)) {
       feedback.error('Print window was blocked by the browser.')
     }
-  }, [feedback, queryText, result])
+  }, [feedback, result, resultQueryText])
 
   useWorkspaceHandlers({
     save: () => setSaveOpen(true),
