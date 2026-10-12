@@ -379,7 +379,8 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     title: 'Security',
     path: '/administration/security',
     ribbon: 'administration',
-    status: 'shell',
+    status: 'ready',
+    permission: 'security.sessions.view',
   },
   {
     key: 'plan',
@@ -621,7 +622,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       caption: 'Security',
       commands: [
         { id: 'devices', label: 'Devices', icon: Monitor, moduleKey: 'devices', permission: 'devices.view', status: 'ready', tone: 'navy' },
-        { id: 'security', label: 'Security', icon: Shield, moduleKey: 'security', status: 'shell', tone: 'red' },
+        { id: 'security', label: 'Security', icon: Shield, moduleKey: 'security', permission: 'security.sessions.view', status: 'ready', tone: 'red' },
         { id: 'plan', label: 'Plan / Entitlements', icon: BadgePercent, moduleKey: 'plan', status: 'ready', tone: 'gold' },
       ],
     },
