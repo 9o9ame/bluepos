@@ -40,7 +40,7 @@ function receiptHtml(sale: Sale, options: SaleReceiptOptions = {}): string {
 <title>${escapeHtml(sale.document_number)}</title>
 <style>
   @page { size: 80mm auto; margin: 4mm; }
-  body { font-family: ${escapeCssFont(options.fontFamily?.trim() || '"Courier New"')}, monospace; font-size: ${normalizeFontSize(options.fontSize)}px; margin: 0; }
+  body { font-family: ${escapeCssFont(options.fontFamily?.trim() || 'Courier New')}, monospace; font-size: ${normalizeFontSize(options.fontSize)}px; margin: 0; }
   .center { text-align: center; }
   .r { text-align: right; }
   table { width: 100%; border-collapse: collapse; }
