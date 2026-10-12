@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Eye, Printer, RotateCcw, Search, X } from 'lucide-react'
 import { fetchSale, fetchSales, fetchSalesmen } from '../../api/sales'
@@ -8,6 +8,17 @@ import { UiSelect } from '../../components/ui/UiSelect'
 import { UiButton } from '../../components/ui/UiButton'
 
 type StatusFilter = '' | 'posted' | 'void'
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function startDateForDays(days: number): string {
+  const safeDays = Math.max(1, Math.min(3650, Math.trunc(days) || 1))
+  const date = new Date()
+  date.setDate(date.getDate() - (safeDays - 1))
+  return date.toISOString().slice(0, 10)
+}
 
 function money(value: string | null | undefined): string {
   return (Number.parseFloat(value ?? '0') || 0).toFixed(2)
@@ -26,14 +37,19 @@ function paymentLabel(sale: Sale): string {
  * Posted invoice history. Read-only: posted financial records are never edited
  * here. Corrections remain separate return/void flows.
  */
-export function SalesInvoiceHistory() {
+export function SalesInvoiceHistory({ historyDays = 8 }: { historyDays?: number }) {
   const [searchText, setSearchText] = useState('')
   const deferredSearch = useDeferredValue(searchText.trim())
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [dateFrom, setDateFrom] = useState(() => startDateForDays(historyDays))
+  const [dateTo, setDateTo] = useState(() => todayIso())
   const [salesmanUlid, setSalesmanUlid] = useState('')
   const [status, setStatus] = useState<StatusFilter>('posted')
   const [openUlid, setOpenUlid] = useState<string | null>(null)
+
+  useEffect(() => {
+    setDateFrom(startDateForDays(historyDays))
+    setDateTo(todayIso())
+  }, [historyDays])
 
   const salesmenQuery = useQuery({
     queryKey: ['sales', 'history', 'salesmen'],
@@ -93,8 +109,8 @@ export function SalesInvoiceHistory() {
 
   function resetFilters() {
     setSearchText('')
-    setDateFrom('')
-    setDateTo('')
+    setDateFrom(startDateForDays(historyDays))
+    setDateTo(todayIso())
     setSalesmanUlid('')
     setStatus('posted')
   }
