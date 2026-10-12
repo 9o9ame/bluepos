@@ -61,6 +61,7 @@ export type SoftwareOptions = {
     print_dotted_line: boolean
     dont_round_off: boolean
     message: string | null
+    print_heading: string | null
     show_remarks: boolean
     show_discount_percent: boolean
     show_discount_amount: boolean
