@@ -25,6 +25,14 @@ class AuthSessionRecordResource extends JsonResource
             'last_seen_at' => $this->last_seen_at?->toISOString(),
             'revoked_at' => $this->revoked_at?->toISOString(),
             'is_current' => $this->ulid === $currentUlid,
+            'membership' => $this->whenLoaded('membership', fn () => [
+                'ulid' => $this->membership?->ulid,
+                'username' => $this->membership?->username,
+                'user' => $this->membership?->user ? [
+                    'ulid' => $this->membership->user->ulid,
+                    'name' => $this->membership->user->name,
+                ] : null,
+            ]),
             'device' => new DeviceResource($this->whenLoaded('device')),
         ];
     }
