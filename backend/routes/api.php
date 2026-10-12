@@ -82,6 +82,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::post('/branches/{branchUlid}/switch', [BranchController::class, 'switch']);
     Route::get('/warehouses', [WarehouseController::class, 'index']);
     Route::post('/warehouses', [WarehouseController::class, 'store']);
+    Route::patch('/warehouses/{warehouseUlid}', [WarehouseController::class, 'update']);
 
     Route::get('/permissions', [PermissionController::class, 'index']);
 
