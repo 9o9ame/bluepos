@@ -50,3 +50,19 @@ export function saveCustomQuery(input: { title: string; query: string }): Promis
     body: JSON.stringify(input),
   })
 }
+
+export function updateCustomQuery(
+  ulid: string,
+  input: { title: string; query: string },
+): Promise<SavedCustomQuery> {
+  return apiFetch<SavedCustomQuery>(`/api/custom-query/saved/${encodeURIComponent(ulid)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteCustomQuery(ulid: string): Promise<{ ok: true }> {
+  return apiFetch<{ ok: true }>(`/api/custom-query/saved/${encodeURIComponent(ulid)}`, {
+    method: 'DELETE',
+  })
+}
