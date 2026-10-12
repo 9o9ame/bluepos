@@ -111,6 +111,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'settings.view',
   },
   {
+    key: 'custom-query',
+    title: 'Custom Query',
+    path: '/tools/custom-query',
+    ribbon: 'tools',
+    status: 'ready',
+    permission: 'database.query.read',
+  },
+  {
     key: 'report-headings',
     title: 'Report Headings',
     path: '/tools/report-headings',
@@ -607,7 +615,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       id: 'system',
       caption: 'Others',
       commands: [
-        { id: 'custom-query', label: 'Custom Query', icon: FileSpreadsheet, status: 'later', tone: 'slate' },
+        { id: 'custom-query', label: 'Custom Query', icon: FileSpreadsheet, moduleKey: 'custom-query', permission: 'database.query.read', status: 'ready', tone: 'slate' },
         { id: 'report-headings', label: 'Report Headings', icon: List, moduleKey: 'report-headings', permission: 'settings.view', status: 'ready', tone: 'slate' },
         { id: 'options', label: 'Software Options', icon: Settings, permission: 'settings.view', status: 'ready', action: 'software-options', tone: 'navy' },
         { id: 'recalc-stock', label: 'Recalculate Stock', icon: Boxes, status: 'later', tone: 'orange' },
