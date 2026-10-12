@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ApplicationTitleBar } from '../components/desktop/ApplicationTitleBar'
 import { CalculatorDialog } from '../components/desktop/CalculatorDialog'
+import { SoftwareOptionsDialog } from '../components/desktop/SoftwareOptionsDialog'
 import { Ribbon } from '../components/desktop/Ribbon'
 import { StatusBar } from '../components/desktop/StatusBar'
 import { WorkspaceTabBar } from '../components/desktop/WorkspaceTabBar'
@@ -18,6 +19,7 @@ export function AppShell() {
   const location = useLocation()
   const [loggingOut, setLoggingOut] = useState(false)
   const [calculatorOpen, setCalculatorOpen] = useState(false)
+  const [softwareOptionsOpen, setSoftwareOptionsOpen] = useState(false)
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
 
   useEffect(() => {
@@ -55,6 +57,8 @@ export function AppShell() {
         loggingOut={loggingOut}
         calculatorOpen={calculatorOpen}
         setCalculatorOpen={setCalculatorOpen}
+        softwareOptionsOpen={softwareOptionsOpen}
+        setSoftwareOptionsOpen={setSoftwareOptionsOpen}
         onLogout={() => {
           setLoggingOut(true)
           void logout().finally(() => {
@@ -84,6 +88,8 @@ function AppShellFrame({
   loggingOut,
   calculatorOpen,
   setCalculatorOpen,
+  softwareOptionsOpen,
+  setSoftwareOptionsOpen,
   onLogout,
   onLock,
   onChangePassword,
@@ -96,6 +102,8 @@ function AppShellFrame({
   loggingOut: boolean
   calculatorOpen: boolean
   setCalculatorOpen: (open: boolean) => void
+  softwareOptionsOpen: boolean
+  setSoftwareOptionsOpen: (open: boolean) => void
   onLogout: () => void
   onLock: () => void
   onChangePassword: () => void
@@ -116,7 +124,11 @@ function AppShellFrame({
         onChangePassword={onChangePassword}
         onAccount={onAccount}
       />
-      <Ribbon onCalculator={() => setCalculatorOpen(true)} onLock={onLock} />
+      <Ribbon
+        onCalculator={() => setCalculatorOpen(true)}
+        onSoftwareOptions={() => setSoftwareOptionsOpen(true)}
+        onLock={onLock}
+      />
       <WorkspaceTabBar />
       <div className="workspace-host">
         <div className="workspace-host-inner">
@@ -125,6 +137,10 @@ function AppShellFrame({
       </div>
       {showStatusBar ? <StatusBar session={session} online={online} /> : null}
       <CalculatorDialog open={calculatorOpen} onClose={() => setCalculatorOpen(false)} />
+      <SoftwareOptionsDialog
+        open={softwareOptionsOpen}
+        onClose={() => setSoftwareOptionsOpen(false)}
+      />
     </div>
   )
 }
