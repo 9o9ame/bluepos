@@ -67,6 +67,47 @@
   align-content: start;
 }
 
+.report-headings-editor-group.is-font-group {
+  min-width: 360px;
+}
+
+.report-headings-editor-font-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 82px;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.report-headings-color-control {
+  display: inline-grid;
+  grid-template-columns: auto 18px;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 2px 5px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font-size: var(--ui-font-size-xs, 11px);
+  font-weight: 700;
+}
+
+.report-headings-color-control input[type='color'] {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.report-headings-color-control input[type='color']:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .report-headings-editor-group > span {
   align-self: end;
   padding-top: 4px;
