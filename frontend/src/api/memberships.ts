@@ -82,3 +82,13 @@ export function saveMembershipSalesman(
     body: JSON.stringify(input),
   })
 }
+
+export function saveMembershipFingerprint(
+  ulid: string,
+  fingerprintRef: string | null,
+): Promise<Membership> {
+  return apiFetch<Membership>(`/api/memberships/${ulid}/fingerprint`, {
+    method: 'PUT',
+    body: JSON.stringify({ fingerprint_ref: fingerprintRef }),
+  })
+}
