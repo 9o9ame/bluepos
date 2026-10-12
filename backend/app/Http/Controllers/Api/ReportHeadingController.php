@@ -26,6 +26,15 @@ class ReportHeadingController extends Controller
         ['head_id' => 'ZapSaleFooter', 'used_for' => 'ZapSaleFooter'],
     ];
 
+    private const DEFAULT_LAYOUT = [
+        'margin' => 'normal',
+        'orientation' => 'portrait',
+        'page_size' => 'a4',
+        'columns' => 1,
+        'line_numbers' => false,
+        'page_color' => '#ffffff',
+    ];
+
     public function index(
         PermissionService $permissions,
         TenantContext $tenantContext,
@@ -59,6 +68,13 @@ class ReportHeadingController extends Controller
             ],
             'used_for' => ['required', 'string', 'max:120'],
             'content_html' => ['nullable', 'string', 'max:50000'],
+            'layout_settings' => ['sometimes', 'array'],
+            'layout_settings.margin' => ['sometimes', Rule::in(['normal', 'narrow', 'wide'])],
+            'layout_settings.orientation' => ['sometimes', Rule::in(['portrait', 'landscape'])],
+            'layout_settings.page_size' => ['sometimes', Rule::in(['a4', 'letter', 'legal'])],
+            'layout_settings.columns' => ['sometimes', 'integer', Rule::in([1, 2, 3])],
+            'layout_settings.line_numbers' => ['sometimes', 'boolean'],
+            'layout_settings.page_color' => ['sometimes', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
         $row = ReportHeading::query()->create([
@@ -66,6 +82,7 @@ class ReportHeadingController extends Controller
             'head_id' => trim($data['head_id']),
             'used_for' => trim($data['used_for']),
             'content_html' => $this->sanitizeHtml($data['content_html'] ?? null),
+            'layout_settings' => $this->sanitizeLayout($data['layout_settings'] ?? null),
         ]);
 
         return response()->json($this->resource($row), 201);
@@ -97,6 +114,13 @@ class ReportHeadingController extends Controller
             ],
             'used_for' => ['sometimes', 'required', 'string', 'max:120'],
             'content_html' => ['sometimes', 'nullable', 'string', 'max:50000'],
+            'layout_settings' => ['sometimes', 'array'],
+            'layout_settings.margin' => ['sometimes', Rule::in(['normal', 'narrow', 'wide'])],
+            'layout_settings.orientation' => ['sometimes', Rule::in(['portrait', 'landscape'])],
+            'layout_settings.page_size' => ['sometimes', Rule::in(['a4', 'letter', 'legal'])],
+            'layout_settings.columns' => ['sometimes', 'integer', Rule::in([1, 2, 3])],
+            'layout_settings.line_numbers' => ['sometimes', 'boolean'],
+            'layout_settings.page_color' => ['sometimes', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
         if (array_key_exists('head_id', $data)) {
@@ -107,6 +131,9 @@ class ReportHeadingController extends Controller
         }
         if (array_key_exists('content_html', $data)) {
             $row->content_html = $this->sanitizeHtml($data['content_html']);
+        }
+        if (array_key_exists('layout_settings', $data)) {
+            $row->layout_settings = $this->sanitizeLayout($data['layout_settings']);
         }
         $row->save();
 
@@ -149,6 +176,7 @@ class ReportHeadingController extends Controller
                 ->where('id', '!=', $source->id)
                 ->update([
                     'content_html' => $source->content_html,
+                    'layout_settings' => $source->layout_settings,
                     'updated_at' => now(),
                 ]);
 
@@ -190,10 +218,42 @@ class ReportHeadingController extends Controller
                     [
                         'used_for' => $default['used_for'],
                         'content_html' => $index === 0 ? $defaultContent : null,
+                        'layout_settings' => self::DEFAULT_LAYOUT,
                     ],
                 );
             }
         });
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $layout
+     * @return array{margin:string,orientation:string,page_size:string,columns:int,line_numbers:bool,page_color:string}
+     */
+    private function sanitizeLayout(?array $layout): array
+    {
+        $layout ??= [];
+
+        return [
+            'margin' => in_array($layout['margin'] ?? null, ['normal', 'narrow', 'wide'], true)
+                ? $layout['margin']
+                : self::DEFAULT_LAYOUT['margin'],
+            'orientation' => in_array($layout['orientation'] ?? null, ['portrait', 'landscape'], true)
+                ? $layout['orientation']
+                : self::DEFAULT_LAYOUT['orientation'],
+            'page_size' => in_array($layout['page_size'] ?? null, ['a4', 'letter', 'legal'], true)
+                ? $layout['page_size']
+                : self::DEFAULT_LAYOUT['page_size'],
+            'columns' => in_array($layout['columns'] ?? null, [1, 2, 3], true)
+                ? $layout['columns']
+                : self::DEFAULT_LAYOUT['columns'],
+            'line_numbers' => is_bool($layout['line_numbers'] ?? null)
+                ? $layout['line_numbers']
+                : self::DEFAULT_LAYOUT['line_numbers'],
+            'page_color' => is_string($layout['page_color'] ?? null)
+                && preg_match('/^#[0-9A-Fa-f]{6}$/', $layout['page_color']) === 1
+                ? strtolower($layout['page_color'])
+                : self::DEFAULT_LAYOUT['page_color'],
+        ];
     }
 
     private function sanitizeHtml(?string $html): ?string
@@ -311,7 +371,13 @@ class ReportHeadingController extends Controller
     }
 
     /**
-     * @return array{ulid:string,head_id:string,used_for:string,content_html:?string}
+     * @return array{
+     *   ulid:string,
+     *   head_id:string,
+     *   used_for:string,
+     *   content_html:?string,
+     *   layout_settings:array{margin:string,orientation:string,page_size:string,columns:int,line_numbers:bool,page_color:string}
+     * }
      */
     private function resource(ReportHeading $row): array
     {
@@ -320,6 +386,7 @@ class ReportHeadingController extends Controller
             'head_id' => $row->head_id,
             'used_for' => $row->used_for,
             'content_html' => $row->content_html,
+            'layout_settings' => $this->sanitizeLayout($row->layout_settings),
         ];
     }
 
