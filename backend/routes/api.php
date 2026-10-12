@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\PartyOpeningBalanceController;
 use App\Http\Controllers\Api\PartyProfileController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ReportHeadingController;
 use App\Http\Controllers\Api\Purchases\PurchaseInvoiceController;
 use App\Http\Controllers\Api\Purchases\PurchaseOrderController;
 use App\Http\Controllers\Api\Purchases\PurchaseReturnController;
@@ -115,6 +116,12 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::get('/settings/business', [BusinessSettingController::class, 'show']);
     Route::patch('/settings/business', [BusinessSettingController::class, 'update']);
+
+    Route::get('/report-headings', [ReportHeadingController::class, 'index']);
+    Route::post('/report-headings', [ReportHeadingController::class, 'store']);
+    Route::patch('/report-headings/{reportHeadingUlid}', [ReportHeadingController::class, 'update']);
+    Route::delete('/report-headings/{reportHeadingUlid}', [ReportHeadingController::class, 'destroy']);
+    Route::post('/report-headings/{reportHeadingUlid}/copy-to-others', [ReportHeadingController::class, 'copyToOthers']);
     Route::get('/settings/entitlements', [TenantEntitlementController::class, 'show']);
     Route::get('/cash-sessions/current', [CashierShiftController::class, 'current']);
     Route::post('/cash-sessions/open', [CashierShiftController::class, 'open']);
