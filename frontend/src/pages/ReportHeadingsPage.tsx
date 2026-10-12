@@ -18,8 +18,6 @@ import {
   Rows3,
   Columns3,
   Table2,
-  BetweenHorizontalStart,
-  BetweenVerticalStart,
   List,
   ListOrdered,
   Pilcrow,
@@ -675,7 +673,7 @@ export function ReportHeadingsPage() {
                       onClick={() => editor?.chain().focus().addRowAfter().run()}
                     />
                     <UiButton
-                      icon={<BetweenHorizontalStart size={14} />}
+                      icon={<Trash2 size={14} />}
                       label="Delete Row"
                       disabled={editorDisabled || !editor?.isActive('table')}
                       onClick={() => editor?.chain().focus().deleteRow().run()}
@@ -687,7 +685,7 @@ export function ReportHeadingsPage() {
                       onClick={() => editor?.chain().focus().addColumnAfter().run()}
                     />
                     <UiButton
-                      icon={<BetweenVerticalStart size={14} />}
+                      icon={<Trash2 size={14} />}
                       label="Delete Column"
                       disabled={editorDisabled || !editor?.isActive('table')}
                       onClick={() => editor?.chain().focus().deleteColumn().run()}
