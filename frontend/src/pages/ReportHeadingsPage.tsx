@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TextStyleKit } from '@tiptap/extension-text-style'
-import Underline from '@tiptap/extension-underline'
+import UnderlineExtension from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -92,7 +92,7 @@ export function ReportHeadingsPage() {
       TextStyleKit.configure({
         lineHeight: false,
       }),
-      Underline,
+      UnderlineExtension,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
