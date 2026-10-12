@@ -160,10 +160,6 @@ class ReportHeadingController extends Controller
 
     private function provisionDefaults(TenantContext $tenantContext): void
     {
-        if (ReportHeading::query()->forTenant($tenantContext->tenantId())->exists()) {
-            return;
-        }
-
         $settings = BusinessSetting::query()
             ->forTenant($tenantContext->tenantId())
             ->first();
@@ -185,12 +181,16 @@ class ReportHeadingController extends Controller
 
         DB::transaction(function () use ($tenantContext, $defaultContent): void {
             foreach (self::DEFAULTS as $index => $default) {
-                ReportHeading::query()->create([
-                    'tenant_id' => $tenantContext->tenantId(),
-                    'head_id' => $default['head_id'],
-                    'used_for' => $default['used_for'],
-                    'content_html' => $index === 0 ? $defaultContent : null,
-                ]);
+                ReportHeading::query()->firstOrCreate(
+                    [
+                        'tenant_id' => $tenantContext->tenantId(),
+                        'head_id' => $default['head_id'],
+                    ],
+                    [
+                        'used_for' => $default['used_for'],
+                        'content_html' => $index === 0 ? $defaultContent : null,
+                    ],
+                );
             }
         });
     }
