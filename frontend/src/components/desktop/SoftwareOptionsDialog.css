@@ -1,9 +1,11 @@
 .software-options-modal {
-  width: min(860px, calc(100vw - 32px));
+  width: min(780px, calc(100vw - 32px));
 }
 
 .software-options-body {
+  max-height: min(560px, calc(100vh - 120px));
   padding: 0;
+  overflow: auto;
 }
 
 .software-options-tabs {
@@ -44,22 +46,22 @@
 }
 
 .software-options-panel {
-  padding: 12px;
+  padding: 10px 12px;
   background: var(--ui-surface);
 }
 
 .software-options-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 24px;
-  min-height: 350px;
+  gap: 18px;
+  min-height: 340px;
 }
 
 .software-options-grid > section {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 9px;
+  gap: 7px;
 }
 
 .software-options-check {
@@ -112,7 +114,7 @@
 }
 
 .software-options-field textarea {
-  min-height: 58px;
+  min-height: 50px;
   resize: vertical;
 }
 
@@ -132,15 +134,15 @@
 
 .software-options-purchase-bottom {
   display: grid;
-  gap: 7px;
+  gap: 5px;
   margin-top: auto;
 }
 
 .software-options-font {
   display: grid;
-  gap: 7px;
+  gap: 5px;
   margin: 0;
-  padding: 8px;
+  padding: 6px;
   border: 1px solid var(--ui-border);
   border-radius: var(--panel-radius);
 }
@@ -165,8 +167,8 @@
 }
 
 .software-options-note {
-  margin: 10px 0 0;
-  padding-top: 8px;
+  margin: 8px 0 0;
+  padding-top: 6px;
   border-top: 1px solid var(--ui-border);
   color: var(--ui-text-muted);
   font-size: var(--ui-font-size-xs, 11px);
