@@ -120,8 +120,11 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="settings.view" />}>
             <Route path="/administration/settings" element={<BusinessSettingsPage />} />
-            <Route path="/administration/branches" element={<BranchesPage />} />
             <Route path="/administration/warehouses" element={<WarehousesPage />} />
+          </Route>
+
+          <Route element={<RequirePermission permission="branches.view" />}>
+            <Route path="/administration/branches" element={<BranchesPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="categories.view" />}>
