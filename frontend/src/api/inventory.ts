@@ -17,6 +17,32 @@ export function fetchWarehouses() {
   return apiFetch<Warehouse[]>('/api/warehouses')
 }
 
+export function createWarehouse(payload: {
+  code: string
+  name: string
+  branch_ulid: string
+}) {
+  return apiFetch<Warehouse>('/api/warehouses', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateWarehouse(
+  warehouseUlid: string,
+  payload: {
+    code?: string
+    name?: string
+    status?: 'active' | 'inactive'
+    is_default?: boolean
+  },
+) {
+  return apiFetch<Warehouse>(`/api/warehouses/${warehouseUlid}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function fetchProductStock(productUlid: string) {
   return apiFetch<ProductStock>(`/api/products/${productUlid}/stock`)
 }
