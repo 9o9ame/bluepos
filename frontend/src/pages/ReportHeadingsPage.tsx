@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react'
+import { type ClipboardEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Bold,
@@ -165,7 +165,7 @@ export function ReportHeadingsPage() {
     setContentHtml(editorRef.current?.innerHTML ?? '')
   }
 
-  function onPaste(event: React.ClipboardEvent<HTMLDivElement>) {
+  function onPaste(event: ClipboardEvent<HTMLDivElement>) {
     if (!canManage) return
     event.preventDefault()
     const text = event.clipboardData.getData('text/plain')
