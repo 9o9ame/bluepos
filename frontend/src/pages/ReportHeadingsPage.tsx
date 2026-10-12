@@ -4,6 +4,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { TextStyleKit } from '@tiptap/extension-text-style'
 import UnderlineExtension from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
+import { TableKit } from '@tiptap/extension-table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlignCenter,
@@ -14,6 +15,11 @@ import {
   Copy,
   Heading2,
   Italic,
+  Rows3,
+  Columns3,
+  Table2,
+  BetweenHorizontalStart,
+  BetweenVerticalStart,
   List,
   ListOrdered,
   Pilcrow,
@@ -107,6 +113,7 @@ export function ReportHeadingsPage() {
   const [zoom, setZoom] = useState(100)
   const [showHorizontalRuler, setShowHorizontalRuler] = useState(true)
   const [showVerticalRuler, setShowVerticalRuler] = useState(false)
+  const [symbolOpen, setSymbolOpen] = useState(false)
 
   const selected = useMemo(
     () => query.data?.find((row) => row.ulid === selectedUlid) ?? null,
@@ -123,6 +130,7 @@ export function ReportHeadingsPage() {
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
+      TableKit,
     ],
     content: '',
     editable: false,
@@ -270,6 +278,12 @@ export function ReportHeadingsPage() {
 
   function changeZoom(delta: number) {
     setZoom((current) => Math.min(160, Math.max(60, current + delta)))
+  }
+
+  function insertSymbol(symbol: string) {
+    if (!editor || editorDisabled) return
+    editor.chain().focus().insertContent(symbol).run()
+    setSymbolOpen(false)
   }
 
   return (
@@ -633,6 +647,88 @@ export function ReportHeadingsPage() {
                   <span>Background</span>
                 </div>
               </>
+            ) : editorTab === 'Insert' ? (
+              <>
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton
+                      label="Page"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().setHorizontalRule().run()}
+                    />
+                  </div>
+                  <span>Pages</span>
+                </div>
+
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton
+                      icon={<Table2 size={14} />}
+                      label="Table"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                    />
+                    <UiButton
+                      icon={<Rows3 size={14} />}
+                      label="Add Row"
+                      disabled={editorDisabled || !editor?.isActive('table')}
+                      onClick={() => editor?.chain().focus().addRowAfter().run()}
+                    />
+                    <UiButton
+                      icon={<BetweenHorizontalStart size={14} />}
+                      label="Delete Row"
+                      disabled={editorDisabled || !editor?.isActive('table')}
+                      onClick={() => editor?.chain().focus().deleteRow().run()}
+                    />
+                    <UiButton
+                      icon={<Columns3 size={14} />}
+                      label="Add Column"
+                      disabled={editorDisabled || !editor?.isActive('table')}
+                      onClick={() => editor?.chain().focus().addColumnAfter().run()}
+                    />
+                    <UiButton
+                      icon={<BetweenVerticalStart size={14} />}
+                      label="Delete Column"
+                      disabled={editorDisabled || !editor?.isActive('table')}
+                      onClick={() => editor?.chain().focus().deleteColumn().run()}
+                    />
+                    <UiButton
+                      variant="danger"
+                      label="Delete Table"
+                      disabled={editorDisabled || !editor?.isActive('table')}
+                      onClick={() => editor?.chain().focus().deleteTable().run()}
+                    />
+                  </div>
+                  <span>Tables</span>
+                </div>
+
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton
+                      label="Symbol"
+                      disabled={editorDisabled}
+                      onClick={() => setSymbolOpen(true)}
+                    />
+                  </div>
+                  <span>Symbols</span>
+                </div>
+
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton label="Inline Picture" disabled />
+                    <UiButton label="Picture" disabled />
+                  </div>
+                  <span>Illustrations</span>
+                </div>
+
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton label="Custom Ledger Header" disabled />
+                    <UiButton label="Custom Signature Box" disabled />
+                  </div>
+                  <span>POS Docs</span>
+                </div>
+              </>
             ) : (
               <div className="report-headings-editor-placeholder">
                 {editorTab} options will be enabled in the next Report Headings phase.
@@ -755,6 +851,91 @@ export function ReportHeadingsPage() {
           </div>
         </div>
       </DesktopPanel>
+
+      <UiModal
+        open={symbolOpen}
+        title="Insert Symbol"
+        size="sm"
+        onClose={() => setSymbolOpen(false)}
+        footer={
+          <UiButton
+            variant="info"
+            icon={<X size={14} />}
+            label="Close"
+            onClick={() => setSymbolOpen(false)}
+          />
+        }
+      >
+        <div className="report-headings-symbol-grid">
+          {['©', '®', '™', '°', '±', '×', '÷', '→', '←', '•', '✓', '★', '₹', '
+        title="New Report Heading"
+        size="sm"
+        onClose={() => {
+          if (!createMutation.isPending) setNewOpen(false)
+        }}
+        footer={
+          <>
+            <UiButton
+              variant="info"
+              icon={<X size={14} />}
+              label="Cancel"
+              disabled={createMutation.isPending}
+              onClick={() => setNewOpen(false)}
+            />
+            <UiButton
+              variant="success"
+              icon={<Save size={14} />}
+              label={createMutation.isPending ? 'Creating…' : 'Create'}
+              disabled={!newHeadId.trim() || !newUsedFor.trim() || createMutation.isPending}
+              onClick={() => {
+                const form = document.getElementById('new-report-heading-form') as HTMLFormElement | null
+                form?.requestSubmit()
+              }}
+            />
+          </>
+        }
+      >
+        <form id="new-report-heading-form" className="report-headings-new-form" onSubmit={submitNew}>
+          <label>
+            <span>Head ID</span>
+            <input
+              className="desktop-input"
+              value={newHeadId}
+              maxLength={40}
+              autoComplete="off"
+              placeholder="e.g. HeadCustom"
+              onChange={(event) => setNewHeadId(event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            <span>Used For</span>
+            <input
+              className="desktop-input"
+              value={newUsedFor}
+              maxLength={120}
+              autoComplete="off"
+              onChange={(event) => setNewUsedFor(event.target.value)}
+              required
+            />
+          </label>
+        </form>
+      </UiModal>
+    </>
+  )
+}
+, '€', '£', '¥', '₨', 'Ω', 'µ'].map((symbol) => (
+            <button
+              key={symbol}
+              type="button"
+              className="report-headings-symbol-button"
+              onClick={() => insertSymbol(symbol)}
+            >
+              {symbol}
+            </button>
+          ))}
+        </div>
+      </UiModal>
 
       <UiModal
         open={newOpen}
