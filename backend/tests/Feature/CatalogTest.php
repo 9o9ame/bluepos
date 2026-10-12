@@ -26,13 +26,19 @@ class CatalogTest extends TestCase
 
         $updated = $this->patchJson('/api/settings/business', [
             'business_name' => 'Updated Mart',
+            'backup_email' => 'backup@example.test',
             'default_tax_percent' => '17.50000000',
             'negative_stock_allowed' => true,
         ])->assertOk();
 
         $this->assertSame('Updated Mart', $updated->json('business_name'));
+        $this->assertSame('backup@example.test', $updated->json('backup_email'));
         $this->assertSame('17.50000000', $updated->json('default_tax_percent'));
         $this->assertTrue($updated->json('negative_stock_allowed'));
+
+        $this->patchJson('/api/settings/business', [
+            'backup_email' => 'not-an-email',
+        ])->assertUnprocessable();
     }
 
     public function test_unauthorized_user_cannot_update_settings_and_tenant_id_is_ignored(): void
