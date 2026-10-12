@@ -26,6 +26,7 @@ import { PurchasesPage } from '../pages/PurchasesPage'
 import { PurchaseOrderPage } from '../pages/PurchaseOrderPage'
 import { PurchaseReturnsPage } from '../pages/PurchaseReturnsPage'
 import { ReportsPlaceholderPage } from '../pages/ReportsPlaceholderPage'
+import { ReportHeadingsPage } from '../pages/ReportHeadingsPage'
 import { RoleEditorPage } from '../pages/RoleEditorPage'
 import { RolesPage } from '../pages/RolesPage'
 import { SaleSchemesPage } from '../pages/SaleSchemesPage'
@@ -122,6 +123,7 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="settings.view" />}>
             <Route path="/administration/settings" element={<BusinessSettingsPage />} />
+            <Route path="/tools/report-headings" element={<ReportHeadingsPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="warehouses.manage" />}>
