@@ -123,6 +123,70 @@ class CustomQueryController extends Controller
         return response()->json($this->savedPayload($query), 201);
     }
 
+    public function update(
+        SaveCustomQueryRequest $request,
+        string $customQueryUlid,
+        TenantContext $tenantContext,
+        PermissionService $permissions,
+        SafeCustomQueryRunner $runner,
+        AuditLogger $audit,
+    ): JsonResponse {
+        abort_unless($permissions->can('database.query.read'), 403);
+
+        $query = CustomQuery::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('ulid', $customQueryUlid)
+            ->firstOrFail();
+
+        $data = $request->validated();
+
+        // Revalidate saved SQL on every update so stored queries remain within the safe allowlist.
+        $runner->run((string) $data['query']);
+
+        $query->title = trim((string) $data['title']);
+        $query->query_text = trim((string) $data['query']);
+        $query->updated_by = $tenantContext->userId();
+        $query->save();
+
+        $audit->record('CUSTOM_QUERY_UPDATED', [
+            'resource_type' => 'custom_query',
+            'resource_ulid' => $query->ulid,
+            'query_sha256' => hash('sha256', $query->query_text),
+            'query_length' => strlen($query->query_text),
+        ]);
+
+        return response()->json($this->savedPayload($query->refresh()));
+    }
+
+    public function destroy(
+        string $customQueryUlid,
+        TenantContext $tenantContext,
+        PermissionService $permissions,
+        AuditLogger $audit,
+    ): JsonResponse {
+        abort_unless($permissions->can('database.query.read'), 403);
+
+        $query = CustomQuery::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('ulid', $customQueryUlid)
+            ->firstOrFail();
+
+        $resourceUlid = $query->ulid;
+        $querySha256 = hash('sha256', $query->query_text);
+        $queryLength = strlen($query->query_text);
+
+        $query->delete();
+
+        $audit->record('CUSTOM_QUERY_DELETED', [
+            'resource_type' => 'custom_query',
+            'resource_ulid' => $resourceUlid,
+            'query_sha256' => $querySha256,
+            'query_length' => $queryLength,
+        ]);
+
+        return response()->json(['ok' => true]);
+    }
+
     /**
      * @return array{ulid:string,title:string,query:string,updated_at:?string}
      */
