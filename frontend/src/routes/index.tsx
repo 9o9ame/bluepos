@@ -110,6 +110,7 @@ export function AppRoutes() {
 
           <Route element={<RequirePermission permission="users.view" />}>
             <Route path="/administration/users" element={<UsersPage />} />
+            <Route path="/tools/configure-users" element={<UsersPage />} />
           </Route>
 
           <Route element={<RequirePermission permission="roles.view" />}>
