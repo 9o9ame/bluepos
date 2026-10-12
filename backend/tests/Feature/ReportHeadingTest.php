@@ -213,6 +213,22 @@ class ReportHeadingTest extends TestCase
             ->assertJsonPath('error.key', 'VALIDATION_ERROR');
     }
 
+    public function test_report_heading_preserves_safe_table_markup_and_strips_table_attributes(): void
+    {
+        $this->signInOwner('report-heading-table')->assertOk();
+
+        $created = $this->postJson('/api/report-headings', [
+            'head_id' => 'TableHead',
+            'used_for' => 'Table Report',
+            'content_html' => '<table onclick="bad()"><tbody><tr><th style="width:999px">Head</th><td colspan="2">Value</td></tr></tbody></table>',
+        ])->assertCreated();
+
+        $this->assertSame(
+            '<table><tbody><tr><th>Head</th><td>Value</td></tr></tbody></table>',
+            $created->json('content_html'),
+        );
+    }
+
     public function test_report_heading_validation_prevents_duplicate_ids_and_unsafe_identifiers(): void
     {
         $this->signInOwner('report-heading-validation')->assertOk();
