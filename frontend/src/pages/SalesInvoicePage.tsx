@@ -221,11 +221,18 @@ export function SalesInvoicePage() {
 
   const saleSoftwareOptions = businessSettingsQuery.data?.software_options?.sale
   const generalSoftwareOptions = businessSettingsQuery.data?.software_options?.general
-  const receiptOptions = {
-    heading: saleSoftwareOptions?.print_heading ?? null,
-    message: saleSoftwareOptions?.message ?? null,
-    fbrMessage: saleSoftwareOptions?.fbr_message ?? null,
-  }
+  const receiptOptions = useMemo(
+    () => ({
+      heading: saleSoftwareOptions?.print_heading ?? null,
+      message: saleSoftwareOptions?.message ?? null,
+      fbrMessage: saleSoftwareOptions?.fbr_message ?? null,
+    }),
+    [
+      saleSoftwareOptions?.print_heading,
+      saleSoftwareOptions?.message,
+      saleSoftwareOptions?.fbr_message,
+    ],
+  )
 
   const effectiveSalesColumns = useMemo(
     () =>
@@ -1134,6 +1141,7 @@ export function SalesInvoicePage() {
     stockIssue,
     saveMutation.isPending,
     savedSale,
+    receiptOptions,
   ])
 
   const isBusy = saveMutation.isPending
