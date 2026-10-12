@@ -320,6 +320,59 @@
   padding-left: 24px;
 }
 
+.report-headings-paper .tiptap table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin: 8px 0;
+}
+
+.report-headings-paper .tiptap th,
+.report-headings-paper .tiptap td {
+  min-width: 80px;
+  padding: 6px 8px;
+  border: 1px solid var(--ui-table-border);
+  vertical-align: top;
+}
+
+.report-headings-paper .tiptap th {
+  background: var(--ui-table-header);
+  color: var(--ui-table-header-text);
+  font-weight: 700;
+}
+
+.report-headings-paper .tiptap .selectedCell {
+  background: var(--ui-accent-soft);
+}
+
+.report-headings-symbol-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(44px, 1fr));
+  gap: 6px;
+}
+
+.report-headings-symbol-button {
+  min-height: 42px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.report-headings-symbol-button:hover {
+  border-color: var(--ui-control-hover-border);
+  background: var(--ui-control-hover-bg);
+}
+
+.report-headings-symbol-button:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
+
 .report-headings-paper .tiptap hr {
   margin: 18px 0;
   border: 0;
