@@ -161,6 +161,7 @@ final class PermissionCatalogue
             ['cash_sessions.view', 'View cash sessions', 'cash', null],
             ['database.backup', 'Create backups', 'database', null],
             ['database.restore', 'Restore backups', 'database', null],
+            ['database.query.read', 'Run safe custom queries', 'database', 'Run tenant-scoped read-only custom queries'],
         ];
 
         $platform = [
