@@ -1,0 +1,348 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Database, Play, RefreshCw, Save, X } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  fetchCustomQueryCatalog,
+  fetchSavedCustomQueries,
+  runCustomQuery,
+  saveCustomQuery,
+  type CustomQueryRunResult,
+} from '../api/customQuery'
+import { ApiClientError } from '../api/client'
+import { DesktopPanel } from '../components/desktop/DesktopPanel'
+import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
+import { UiButton } from '../components/ui/UiButton'
+import { UiModal } from '../components/ui/UiModal'
+import { UiSelect } from '../components/ui/UiSelect'
+import { useFeedback } from '../feedback/FeedbackProvider'
+import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
+import './CustomQueryPage.css'
+
+type BottomTab = 'results' | 'messages' | 'useful' | 'helping' | 'exports'
+
+type ResultRow = Record<string, unknown> & {
+  _rowKey: string
+}
+
+const DEFAULT_QUERY = 'SELECT ulid, product_number, name, status FROM products ORDER BY product_number LIMIT 100'
+
+export function CustomQueryPage() {
+  const { closeActiveTab } = useWorkspace()
+  const feedback = useFeedback()
+  const queryClient = useQueryClient()
+
+  const catalogQuery = useQuery({
+    queryKey: ['custom-query', 'catalog'],
+    queryFn: fetchCustomQueryCatalog,
+  })
+  const savedQuery = useQuery({
+    queryKey: ['custom-query', 'saved'],
+    queryFn: fetchSavedCustomQueries,
+  })
+
+  const [queryText, setQueryText] = useState(DEFAULT_QUERY)
+  const [selectedSavedUlid, setSelectedSavedUlid] = useState('')
+  const [result, setResult] = useState<CustomQueryRunResult | null>(null)
+  const [message, setMessage] = useState('Ready. Only tenant-safe read-only SELECT queries are allowed.')
+  const [bottomTab, setBottomTab] = useState<BottomTab>('results')
+  const [saveOpen, setSaveOpen] = useState(false)
+  const [saveTitle, setSaveTitle] = useState('')
+
+  const runMutation = useMutation({
+    mutationFn: () => runCustomQuery(queryText),
+    onSuccess: (data) => {
+      setResult(data)
+      setBottomTab('results')
+      setMessage(
+        `Query completed: ${data.row_count} row${data.row_count === 1 ? '' : 's'} in ${data.elapsed_ms} ms${data.truncated ? ` (limited to ${data.limit})` : ''}.`,
+      )
+    },
+    onError: (error) => {
+      setResult(null)
+      setBottomTab('messages')
+      setMessage(error instanceof ApiClientError || error instanceof Error ? error.message : 'Unable to run query.')
+    },
+  })
+
+  const saveMutation = useMutation({
+    mutationFn: () => saveCustomQuery({ title: saveTitle.trim(), query: queryText }),
+    onSuccess: async (saved) => {
+      setSaveOpen(false)
+      setSaveTitle('')
+      setSelectedSavedUlid(saved.ulid)
+      feedback.success('Custom query saved.')
+      await queryClient.invalidateQueries({ queryKey: ['custom-query', 'saved'] })
+    },
+    onError: (error) => feedback.fromApiError(error, 'Unable to save custom query.'),
+  })
+
+  const runNow = useCallback(() => {
+    if (!queryText.trim() || runMutation.isPending) return
+    runMutation.mutate()
+  }, [queryText, runMutation])
+
+  useWorkspaceHandlers({
+    save: () => setSaveOpen(true),
+    refresh: () => {
+      void Promise.all([catalogQuery.refetch(), savedQuery.refetch()])
+    },
+  })
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'F5') {
+        event.preventDefault()
+        runNow()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [runNow])
+
+  const resultRows = useMemo<ResultRow[]>(
+    () =>
+      (result?.rows ?? []).map((row, index) => ({
+        ...row,
+        _rowKey: `${index}-${String(row.ulid ?? row.document_number ?? row.code ?? '')}`,
+      })),
+    [result],
+  )
+
+  const resultColumns = useMemo<PosGridColumn<ResultRow>[]>(
+    () =>
+      (result?.columns ?? []).map((column) => ({
+        key: column,
+        header: column,
+        width: 180,
+        render: (row) => formatCell(row[column]),
+      })),
+    [result],
+  )
+
+  const savedOptions = [
+    { value: '', label: '— Saved queries —' },
+    ...(savedQuery.data ?? []).map((saved) => ({
+      value: saved.ulid,
+      label: saved.title,
+    })),
+  ]
+
+  return (
+    <DesktopPanel title="Custom Query" className="custom-query-page" flush>
+      <div className="custom-query-layout">
+        <section className="custom-query-main">
+          <div className="custom-query-editor-toolbar">
+            <div className="custom-query-saved-select">
+              <UiSelect
+                value={selectedSavedUlid}
+                options={savedOptions}
+                disabled={savedQuery.isLoading}
+                aria-label="Saved custom queries"
+                onChange={(ulid) => {
+                  setSelectedSavedUlid(ulid)
+                  const saved = savedQuery.data?.find((item) => item.ulid === ulid)
+                  if (saved) {
+                    setQueryText(saved.query)
+                    setMessage(`Loaded saved query: ${saved.title}`)
+                  }
+                }}
+              />
+            </div>
+            <div className="custom-query-toolbar-actions">
+              <UiButton
+                variant="info"
+                icon={<RefreshCw size={14} />}
+                label="Refresh"
+                onClick={() => {
+                  void Promise.all([catalogQuery.refetch(), savedQuery.refetch()])
+                }}
+              />
+              <UiButton
+                variant="success"
+                icon={<Save size={14} />}
+                label="Save"
+                onClick={() => setSaveOpen(true)}
+              />
+              <UiButton
+                variant="primary"
+                icon={<Play size={14} />}
+                label={runMutation.isPending ? 'Running…' : 'Run Query [F5]'}
+                disabled={runMutation.isPending || !queryText.trim()}
+                onClick={runNow}
+              />
+              <UiButton
+                variant="info"
+                icon={<X size={14} />}
+                label="Close"
+                onClick={closeActiveTab}
+              />
+            </div>
+          </div>
+
+          <div className="custom-query-editor-shell">
+            <div className="custom-query-line-number" aria-hidden>1</div>
+            <textarea
+              className="custom-query-editor"
+              spellCheck={false}
+              value={queryText}
+              aria-label="Safe custom query editor"
+              onChange={(event) => setQueryText(event.target.value)}
+            />
+          </div>
+
+          <div className="custom-query-bottom-tabs" role="tablist" aria-label="Custom query output">
+            <BottomTabButton tab="results" current={bottomTab} onChange={setBottomTab}>Result Pane</BottomTabButton>
+            <BottomTabButton tab="messages" current={bottomTab} onChange={setBottomTab}>Messages</BottomTabButton>
+            <BottomTabButton tab="useful" current={bottomTab} onChange={setBottomTab}>Useful things</BottomTabButton>
+            <BottomTabButton tab="helping" current={bottomTab} onChange={setBottomTab}>Helping</BottomTabButton>
+            <BottomTabButton tab="exports" current={bottomTab} onChange={setBottomTab}>Exports</BottomTabButton>
+          </div>
+
+          <div className="custom-query-output">
+            {bottomTab === 'results' ? (
+              <PosDataGrid
+                columns={resultColumns}
+                rows={resultRows}
+                rowKey={(row) => row._rowKey}
+                emptyMessage={runMutation.isPending ? 'Running query…' : 'No query results.'}
+              />
+            ) : null}
+
+            {bottomTab === 'messages' ? (
+              <pre className="custom-query-message-pane">{message}</pre>
+            ) : null}
+
+            {bottomTab === 'useful' ? (
+              <InfoPane
+                title="Useful things"
+                text="Destructive database utilities from the reference application are intentionally unavailable. BluePOS keeps maintenance, backup, indexing, and data repair outside tenant Custom Query."
+              />
+            ) : null}
+
+            {bottomTab === 'helping' ? (
+              <InfoPane
+                title="Safe query syntax"
+                text={catalogQuery.data?.syntax ?? 'Loading safe query syntax…'}
+              />
+            ) : null}
+
+            {bottomTab === 'exports' ? (
+              <InfoPane
+                title="Exports"
+                text="Result export is not enabled in Phase 1. Query execution remains read-only and tenant-scoped."
+              />
+            ) : null}
+          </div>
+
+          <div className="custom-query-status">
+            <span>{message}</span>
+            <span>{result ? `${result.dataset} · ${result.row_count} rows` : 'Safe read-only mode'}</span>
+          </div>
+        </section>
+
+        <aside className="custom-query-browser">
+          <div className="custom-query-browser-title">
+            <Database size={14} aria-hidden />
+            <strong>Safe datasets</strong>
+            <span>Count: {catalogQuery.data?.datasets.length ?? 0}</span>
+          </div>
+          <div className="custom-query-browser-body">
+            {(catalogQuery.data?.datasets ?? []).map((dataset) => (
+              <details key={dataset.name} className="custom-query-dataset" open>
+                <summary>
+                  <span>{dataset.name}</span>
+                  <small>{dataset.scope === 'branch_warehouse' ? 'branch + warehouse' : 'tenant'}</small>
+                </summary>
+                <div className="custom-query-columns">
+                  {dataset.columns.map((column) => (
+                    <button
+                      key={column}
+                      type="button"
+                      title="Insert column name"
+                      onClick={() => {
+                        setQueryText((current) => current.endsWith(' ') || current === '' ? current + column : current + ' ' + column)
+                      }}
+                    >
+                      {column}
+                    </button>
+                  ))}
+                </div>
+              </details>
+            ))}
+            {catalogQuery.isLoading ? <div className="custom-query-browser-empty">Loading datasets…</div> : null}
+            {catalogQuery.isError ? <div className="custom-query-browser-empty">Unable to load datasets.</div> : null}
+          </div>
+        </aside>
+      </div>
+
+      <UiModal
+        open={saveOpen}
+        title="Save Custom Query"
+        size="sm"
+        onClose={() => setSaveOpen(false)}
+        footer={
+          <>
+            <UiButton label="Cancel" onClick={() => setSaveOpen(false)} />
+            <UiButton
+              variant="success"
+              icon={<Save size={14} />}
+              label={saveMutation.isPending ? 'Saving…' : 'Save'}
+              disabled={saveMutation.isPending || !saveTitle.trim() || !queryText.trim()}
+              onClick={() => saveMutation.mutate()}
+            />
+          </>
+        }
+      >
+        <label className="custom-query-save-field">
+          <span>Query Name</span>
+          <input
+            autoFocus
+            maxLength={160}
+            value={saveTitle}
+            onChange={(event) => setSaveTitle(event.target.value)}
+          />
+        </label>
+      </UiModal>
+    </DesktopPanel>
+  )
+}
+
+function BottomTabButton({
+  tab,
+  current,
+  onChange,
+  children,
+}: {
+  tab: BottomTab
+  current: BottomTab
+  onChange: (tab: BottomTab) => void
+  children: string
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={current === tab}
+      className={current === tab ? 'is-active' : undefined}
+      onClick={() => onChange(tab)}
+    >
+      {children}
+    </button>
+  )
+}
+
+function InfoPane({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="custom-query-info-pane">
+      <strong>{title}</strong>
+      <p>{text}</p>
+    </div>
+  )
+}
+
+function formatCell(value: unknown): string {
+  if (value === null || value === undefined) return '—'
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
