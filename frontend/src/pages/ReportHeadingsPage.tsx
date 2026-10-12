@@ -1,8 +1,15 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import { TextStyleKit } from '@tiptap/extension-text-style'
+import Underline from '@tiptap/extension-underline'
+import TextAlign from '@tiptap/extension-text-align'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
   Bold,
   Copy,
   Heading2,
@@ -40,6 +47,21 @@ import './ReportHeadingsPage.css'
 
 const EDITOR_TABS = ['Home', 'View', 'Page Layout', 'Insert', 'Quick Settings'] as const
 
+const FONT_FAMILIES = [
+  { value: 'Inter', label: 'Inter' },
+  { value: 'Arial', label: 'Arial' },
+  { value: 'Calibri', label: 'Calibri' },
+  { value: 'Georgia', label: 'Georgia' },
+  { value: 'Times New Roman', label: 'Times New Roman' },
+  { value: 'Verdana', label: 'Verdana' },
+  { value: 'Courier New', label: 'Courier New' },
+]
+
+const FONT_SIZES = ['8', '9', '10', '11', '12', '14', '16', '18', '20', '24', '28', '32'].map((size) => ({
+  value: `${size}px`,
+  label: size,
+}))
+
 export function ReportHeadingsPage() {
   const { closeActiveTab } = useWorkspace()
   const canManage = useCan('settings.manage')
@@ -65,7 +87,16 @@ export function ReportHeadingsPage() {
   )
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      TextStyleKit.configure({
+        lineHeight: false,
+      }),
+      Underline,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+    ],
     content: '',
     editable: false,
     editorProps: {
@@ -261,7 +292,33 @@ export function ReportHeadingsPage() {
                   <span>Common</span>
                 </div>
 
-                <div className="report-headings-editor-group">
+                <div className="report-headings-editor-group is-font-group">
+                  <div className="report-headings-editor-font-row">
+                    <UiSelect
+                      value={editor?.getAttributes('textStyle').fontFamily ?? ''}
+                      searchable={false}
+                      disabled={editorDisabled}
+                      placeholder="Font"
+                      options={FONT_FAMILIES}
+                      onChange={(value) => {
+                        if (!editor) return
+                        if (value) editor.chain().focus().setFontFamily(value).run()
+                        else editor.chain().focus().unsetFontFamily().run()
+                      }}
+                    />
+                    <UiSelect
+                      value={editor?.getAttributes('textStyle').fontSize ?? ''}
+                      searchable={false}
+                      disabled={editorDisabled}
+                      placeholder="Size"
+                      options={FONT_SIZES}
+                      onChange={(value) => {
+                        if (!editor) return
+                        if (value) editor.chain().focus().setFontSize(value).run()
+                        else editor.chain().focus().unsetFontSize().run()
+                      }}
+                    />
+                  </div>
                   <div className="report-headings-editor-group-actions">
                     <UiButton
                       className={editor?.isActive('bold') ? 'is-editor-active' : undefined}
@@ -278,12 +335,39 @@ export function ReportHeadingsPage() {
                       onClick={() => editor?.chain().focus().toggleItalic().run()}
                     />
                     <UiButton
+                      className={editor?.isActive('underline') ? 'is-editor-active' : undefined}
+                      icon={<Underline size={14} />}
+                      label="Underline"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().toggleUnderline().run()}
+                    />
+                    <UiButton
                       className={editor?.isActive('strike') ? 'is-editor-active' : undefined}
                       icon={<Strikethrough size={14} />}
                       label="Strike"
                       disabled={editorDisabled}
                       onClick={() => editor?.chain().focus().toggleStrike().run()}
                     />
+                    <label className="report-headings-color-control" title="Text color">
+                      <span>A</span>
+                      <input
+                        type="color"
+                        aria-label="Text color"
+                        disabled={editorDisabled}
+                        value={editor?.getAttributes('textStyle').color ?? '#000000'}
+                        onChange={(event) => editor?.chain().focus().setColor(event.target.value).run()}
+                      />
+                    </label>
+                    <label className="report-headings-color-control" title="Highlight color">
+                      <span>ab</span>
+                      <input
+                        type="color"
+                        aria-label="Highlight color"
+                        disabled={editorDisabled}
+                        value={editor?.getAttributes('textStyle').backgroundColor ?? '#ffff00'}
+                        onChange={(event) => editor?.chain().focus().setBackgroundColor(event.target.value).run()}
+                      />
+                    </label>
                     <UiButton
                       icon={<RemoveFormatting size={14} />}
                       label="Clear"
@@ -323,6 +407,34 @@ export function ReportHeadingsPage() {
                       label="Numbering"
                       disabled={editorDisabled}
                       onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+                    />
+                    <UiButton
+                      className={editor?.isActive({ textAlign: 'left' }) ? 'is-editor-active' : undefined}
+                      icon={<AlignLeft size={14} />}
+                      label="Left"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().setTextAlign('left').run()}
+                    />
+                    <UiButton
+                      className={editor?.isActive({ textAlign: 'center' }) ? 'is-editor-active' : undefined}
+                      icon={<AlignCenter size={14} />}
+                      label="Center"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().setTextAlign('center').run()}
+                    />
+                    <UiButton
+                      className={editor?.isActive({ textAlign: 'right' }) ? 'is-editor-active' : undefined}
+                      icon={<AlignRight size={14} />}
+                      label="Right"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().setTextAlign('right').run()}
+                    />
+                    <UiButton
+                      className={editor?.isActive({ textAlign: 'justify' }) ? 'is-editor-active' : undefined}
+                      icon={<AlignJustify size={14} />}
+                      label="Justify"
+                      disabled={editorDisabled}
+                      onClick={() => editor?.chain().focus().setTextAlign('justify').run()}
                     />
                   </div>
                   <span>Paragraph</span>
