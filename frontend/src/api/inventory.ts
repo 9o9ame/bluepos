@@ -42,6 +42,20 @@ export function updateWarehouse(
   })
 }
 
+export type StockRecalculationResult = {
+  checked_balances: number
+  corrected_balances: number
+  corrected_products: number
+  created_balances: number
+  valuation_unavailable: number
+}
+
+export function recalculateStock() {
+  return apiFetch<StockRecalculationResult>('/api/inventory/stock/recalculate', {
+    method: 'POST',
+  })
+}
+
 export function fetchProductStock(productUlid: string) {
   return apiFetch<ProductStock>(`/api/products/${productUlid}/stock`)
 }
