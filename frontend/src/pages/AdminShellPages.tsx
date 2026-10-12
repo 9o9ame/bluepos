@@ -1,8 +1,9 @@
 import { FormEvent, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Edit3, Plus, RefreshCw, Save, X } from 'lucide-react'
+import { Edit3, LogOut, Plus, RefreshCw, Save, ShieldCheck, X } from 'lucide-react'
 import { createBranch, fetchBranches, updateBranch } from '../api/branches'
 import { createWarehouse, fetchWarehouses, updateWarehouse } from '../api/inventory'
+import { fetchSecuritySessions, revokeOtherSecuritySessions, revokeSecuritySession } from '../api/security'
 import { DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
@@ -503,25 +504,177 @@ export function WarehousesPage() {
 
 export function SecurityStatusPage() {
   const { session } = useAuth()
+  const canRevokeAny = useCan('security.sessions.revoke')
+  const { closeActiveTab } = useWorkspace()
+  const feedback = useFeedback()
+  const queryClient = useQueryClient()
+  const [selectedUlid, setSelectedUlid] = useState<string | null>(null)
+
+  const sessionsQuery = useQuery({
+    queryKey: ['security', 'sessions'],
+    queryFn: fetchSecuritySessions,
+  })
+
+  const selected = useMemo(
+    () => sessionsQuery.data?.find((row) => row.ulid === selectedUlid) ?? null,
+    [sessionsQuery.data, selectedUlid],
+  )
+
+  const revokeMutation = useMutation({
+    mutationFn: revokeSecuritySession,
+    onSuccess: async () => {
+      setSelectedUlid(null)
+      feedback.success('Session revoked.')
+      await queryClient.invalidateQueries({ queryKey: ['security', 'sessions'] })
+    },
+    onError: (error) => feedback.fromApiError(error, 'Unable to revoke session.'),
+  })
+
+  const revokeOthersMutation = useMutation({
+    mutationFn: revokeOtherSecuritySessions,
+    onSuccess: async () => {
+      setSelectedUlid(null)
+      feedback.success('Other sessions revoked.')
+      await queryClient.invalidateQueries({ queryKey: ['security', 'sessions'] })
+    },
+    onError: (error) => feedback.fromApiError(error, 'Unable to revoke other sessions.'),
+  })
+
   if (!session) {
     return null
   }
 
+  async function revokeSelected() {
+    if (!selected || selected.is_current || selected.revoked_at) return
+    const username = selected.membership?.username ?? 'this user'
+    if (!(await feedback.confirm(`Revoke the selected session for ${username}?`))) return
+    revokeMutation.mutate(selected.ulid)
+  }
+
+  async function revokeOthers() {
+    if (!(await feedback.confirm('Revoke all of your other active sessions?'))) return
+    revokeOthersMutation.mutate()
+  }
+
+  function formatDate(value: string | null): string {
+    if (!value) return '—'
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
+  }
+
   return (
-    <DesktopPanel title="Security">
-      <dl className="kv-grid max-w-xl">
-        <dt>User status</dt>
-        <dd>{session.user.status}</dd>
-        <dt>Membership</dt>
-        <dd>{session.membership.status}</dd>
-        <dt>Device</dt>
-        <dd>{session.device ? `${session.device.name} (${session.device.status})` : 'Not bound on this browser session'}</dd>
-        <dt>Device type</dt>
-        <dd>{session.device?.device_type ?? '—'}</dd>
-        <dt>Last seen</dt>
-        <dd>{session.device?.last_seen_at ?? '—'}</dd>
-      </dl>
-      <p className="later-banner">Device approval and MFA remain on existing Administration → Devices and account security flows. This page does not change backend policy.</p>
+    <DesktopPanel
+      title="Security"
+      flush
+      toolbar={
+        <>
+          <UiButton
+            variant="info"
+            icon={<RefreshCw size={14} />}
+            label={sessionsQuery.isFetching ? 'Refreshing…' : 'Refresh'}
+            disabled={sessionsQuery.isFetching}
+            onClick={() => void sessionsQuery.refetch()}
+          />
+          <UiButton
+            variant="warning"
+            icon={<LogOut size={14} />}
+            label="Sign out other sessions"
+            disabled={revokeOthersMutation.isPending}
+            onClick={() => void revokeOthers()}
+          />
+          <UiButton
+            variant="danger"
+            icon={<ShieldCheck size={14} />}
+            label="Revoke selected"
+            disabled={
+              !selected ||
+              selected.is_current ||
+              Boolean(selected.revoked_at) ||
+              revokeMutation.isPending
+            }
+            onClick={() => void revokeSelected()}
+          />
+          <UiButton variant="info" icon={<X size={14} />} label="Close" onClick={closeActiveTab} />
+        </>
+      }
+    >
+      <div className="admin-security-summary">
+        <span>
+          User:
+          <strong>{session.user.name}</strong>
+        </span>
+        <span>
+          Membership:
+          <strong>{session.membership.status}</strong>
+        </span>
+        <span>
+          Current device:
+          <strong>{session.device ? `${session.device.name} (${session.device.status})` : 'Not bound'}</strong>
+        </span>
+        <span>
+          Visible sessions:
+          <strong>{sessionsQuery.data?.length ?? 0}</strong>
+        </span>
+        {canRevokeAny ? <span>Tenant session administrator</span> : <span>Own sessions only</span>}
+      </div>
+
+      <div className="admin-security-grid">
+        <PosDataGrid
+          columns={[
+            {
+              key: 'user',
+              header: 'User',
+              width: 150,
+              render: (row) => row.membership?.user?.name ?? row.membership?.username ?? '—',
+            },
+            {
+              key: 'username',
+              header: 'Username',
+              width: 140,
+              render: (row) => row.membership?.username ?? '—',
+            },
+            {
+              key: 'device',
+              header: 'Device',
+              width: 180,
+              render: (row) => row.device?.name ?? 'Browser session',
+            },
+            {
+              key: 'ip',
+              header: 'IP Address',
+              width: 130,
+              render: (row) => row.ip_address ?? '—',
+            },
+            {
+              key: 'seen',
+              header: 'Last Seen',
+              width: 180,
+              render: (row) => formatDate(row.last_seen_at),
+            },
+            {
+              key: 'status',
+              header: 'Status',
+              width: 110,
+              render: (row) => row.revoked_at ? 'Revoked' : row.is_current ? 'Current' : 'Active',
+            },
+            {
+              key: 'agent',
+              header: 'User Agent',
+              render: (row) => row.user_agent ?? '—',
+            },
+          ]}
+          rows={sessionsQuery.data ?? []}
+          rowKey={(row) => row.ulid}
+          selectedKey={selectedUlid}
+          onSelect={(row) => setSelectedUlid(row.ulid)}
+          emptyMessage={sessionsQuery.isLoading ? 'Loading security sessions…' : 'No security sessions found.'}
+        />
+      </div>
+
+      <div className="admin-security-note">
+        Device approval/revocation stays under Administration → Devices. Password changes stay under My Account.
+        This page manages authenticated sessions using the existing backend security policy.
+      </div>
     </DesktopPanel>
   )
 }
