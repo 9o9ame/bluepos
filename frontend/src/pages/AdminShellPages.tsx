@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Edit3, Plus, RefreshCw, Save, X } from 'lucide-react'
 import { createBranch, fetchBranches, updateBranch } from '../api/branches'
+import { createWarehouse, fetchWarehouses, updateWarehouse } from '../api/inventory'
 import { DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
@@ -11,7 +12,7 @@ import { useFeedback } from '../feedback/FeedbackProvider'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
-import type { Branch } from '../types/auth'
+import type { Branch, Warehouse } from '../types/auth'
 import './AdminShellPages.css'
 
 export function BranchesPage() {
@@ -258,24 +259,246 @@ export function BranchesPage() {
 
 export function WarehousesPage() {
   const { session } = useAuth()
-  const warehouse = session?.warehouse
-  const rows = warehouse ? [warehouse] : []
+  const canManage = useCan('warehouses.manage')
+  const { closeActiveTab } = useWorkspace()
+  const feedback = useFeedback()
+  const queryClient = useQueryClient()
+
+  const query = useQuery({
+    queryKey: ['warehouses', session?.branch.ulid],
+    queryFn: fetchWarehouses,
+    enabled: Boolean(session?.branch.ulid),
+  })
+
+  const [selectedUlid, setSelectedUlid] = useState<string | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<Warehouse | null>(null)
+  const [code, setCode] = useState('')
+  const [name, setName] = useState('')
+  const [status, setStatus] = useState<'active' | 'inactive'>('active')
+  const [isDefault, setIsDefault] = useState(false)
+
+  const selected = useMemo(
+    () => query.data?.find((row) => row.ulid === selectedUlid) ?? null,
+    [query.data, selectedUlid],
+  )
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!session) {
+        throw new Error('No active session.')
+      }
+
+      if (editing) {
+        return updateWarehouse(editing.ulid, {
+          code: code.trim(),
+          name: name.trim(),
+          status,
+          is_default: isDefault,
+        })
+      }
+
+      return createWarehouse({
+        code: code.trim(),
+        name: name.trim(),
+        branch_ulid: session.branch.ulid,
+      })
+    },
+    onSuccess: async (warehouse) => {
+      setModalOpen(false)
+      setEditing(null)
+      setSelectedUlid(warehouse.ulid)
+      feedback.success(editing ? 'Warehouse updated.' : 'Warehouse created.')
+      await queryClient.invalidateQueries({ queryKey: ['warehouses'] })
+    },
+    onError: (error) => {
+      feedback.fromApiError(error, editing ? 'Unable to update warehouse.' : 'Unable to create warehouse.')
+    },
+  })
+
+  function openNew() {
+    setEditing(null)
+    setCode('')
+    setName('')
+    setStatus('active')
+    setIsDefault(false)
+    setModalOpen(true)
+  }
+
+  function openEdit(warehouse: Warehouse) {
+    setEditing(warehouse)
+    setCode(warehouse.code)
+    setName(warehouse.name)
+    setStatus(warehouse.status === 'inactive' ? 'inactive' : 'active')
+    setIsDefault(warehouse.is_default)
+    setModalOpen(true)
+  }
+
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!code.trim() || !name.trim() || saveMutation.isPending) return
+    saveMutation.mutate()
+  }
 
   return (
-    <DesktopPanel title="Warehouses" flush>
-      <PosDataGrid
-        columns={[
-          { key: 'code', header: 'Code', width: 90, render: (row) => row.code },
-          { key: 'name', header: 'Name', render: (row) => row.name },
-          { key: 'status', header: 'Status', width: 110, render: (row) => row.status },
-          { key: 'default', header: 'Default', width: 80, align: 'center', render: (row) => (row.is_default ? 'Yes' : '') },
-        ]}
-        rows={rows}
-        rowKey={(row) => row.ulid}
-        emptyMessage="No warehouse in the current session."
-      />
-      <p className="later-banner">Warehouse administration is not implemented. The active session warehouse is shown for context.</p>
-    </DesktopPanel>
+    <>
+      <DesktopPanel
+        title="Warehouses"
+        flush
+        toolbar={
+          <>
+            <UiButton variant="primary" icon={<Plus size={14} />} label="New" disabled={!canManage} onClick={openNew} />
+            <UiButton
+              icon={<Edit3 size={14} />}
+              label="Edit"
+              disabled={!canManage || !selected}
+              onClick={() => {
+                if (selected) openEdit(selected)
+              }}
+            />
+            <UiButton
+              variant="info"
+              icon={<RefreshCw size={14} />}
+              label={query.isFetching ? 'Refreshing…' : 'Refresh'}
+              disabled={query.isFetching}
+              onClick={() => void query.refetch()}
+            />
+            <UiButton variant="info" icon={<X size={14} />} label="Close" onClick={closeActiveTab} />
+          </>
+        }
+      >
+        <div className="admin-branch-summary">
+          <span>
+            Branch:
+            <strong>{session?.branch.code ?? '—'} — {session?.branch.name ?? '—'}</strong>
+          </span>
+          <span>
+            Active warehouse:
+            <strong>{session?.warehouse.code ?? '—'} — {session?.warehouse.name ?? '—'}</strong>
+          </span>
+          <span>
+            Total warehouses:
+            <strong>{query.data?.length ?? 0}</strong>
+          </span>
+        </div>
+
+        <div className="admin-branch-grid">
+          <PosDataGrid
+            columns={[
+              { key: 'code', header: 'Code', width: 120, render: (row) => row.code },
+              { key: 'name', header: 'Name', render: (row) => row.name },
+              { key: 'status', header: 'Status', width: 110, render: (row) => row.status === 'active' ? 'Active' : 'Inactive' },
+              { key: 'default', header: 'Default', width: 90, align: 'center', render: (row) => (row.is_default ? 'Yes' : '') },
+              { key: 'current', header: 'Current', width: 90, align: 'center', render: (row) => (row.ulid === session?.warehouse.ulid ? 'Yes' : '') },
+            ]}
+            rows={query.data ?? []}
+            rowKey={(row) => row.ulid}
+            selectedKey={selectedUlid}
+            onSelect={(row) => setSelectedUlid(row.ulid)}
+            onActivate={(row) => {
+              if (canManage) openEdit(row)
+            }}
+            emptyMessage={query.isLoading ? 'Loading warehouses…' : 'No warehouses available for this branch.'}
+          />
+        </div>
+      </DesktopPanel>
+
+      <UiModal
+        open={modalOpen}
+        title={editing ? 'Edit Warehouse' : 'New Warehouse'}
+        onClose={() => {
+          if (!saveMutation.isPending) setModalOpen(false)
+        }}
+        size="sm"
+        footer={
+          <>
+            <UiButton
+              variant="info"
+              icon={<X size={14} />}
+              label="Cancel"
+              disabled={saveMutation.isPending}
+              onClick={() => setModalOpen(false)}
+            />
+            <UiButton
+              variant="success"
+              icon={<Save size={14} />}
+              label={saveMutation.isPending ? 'Saving…' : 'Save'}
+              disabled={!code.trim() || !name.trim() || saveMutation.isPending}
+              onClick={() => {
+                const form = window.document.getElementById('warehouse-admin-form') as HTMLFormElement | null
+                form?.requestSubmit()
+              }}
+            />
+          </>
+        }
+      >
+        <form id="warehouse-admin-form" className="admin-branch-form" onSubmit={submit}>
+          <label>
+            <span>Branch</span>
+            <input className="desktop-input" value={session ? `${session.branch.code} — ${session.branch.name}` : ''} readOnly />
+          </label>
+
+          <label>
+            <span>Code</span>
+            <input
+              className="desktop-input"
+              value={code}
+              maxLength={32}
+              autoComplete="off"
+              onChange={(event) => setCode(event.target.value)}
+              required
+            />
+          </label>
+
+          <label>
+            <span>Name</span>
+            <input
+              className="desktop-input"
+              value={name}
+              maxLength={120}
+              autoComplete="off"
+              onChange={(event) => setName(event.target.value)}
+              required
+            />
+          </label>
+
+          {editing ? (
+            <>
+              <label>
+                <span>Status</span>
+                <UiSelect
+                  value={status}
+                  searchable={false}
+                  disabled={editing.ulid === session?.warehouse.ulid || editing.is_default}
+                  options={[
+                    { value: 'active', label: 'Active' },
+                    { value: 'inactive', label: 'Inactive' },
+                  ]}
+                  onChange={(value) => setStatus(value as 'active' | 'inactive')}
+                />
+              </label>
+
+              <label className="admin-branch-default">
+                <input
+                  type="checkbox"
+                  checked={isDefault}
+                  disabled={editing.is_default || status === 'inactive'}
+                  onChange={(event) => setIsDefault(event.target.checked)}
+                />
+                <span>Default warehouse for this branch</span>
+              </label>
+
+              {editing.ulid === session?.warehouse.ulid ? (
+                <p className="admin-branch-note">The current session warehouse cannot be deactivated.</p>
+              ) : null}
+              {editing.is_default ? (
+                <p className="admin-branch-note">To change the default, set another active warehouse as default.</p>
+              ) : null}
+            </>
+          ) : null}
+        </form>
+      </UiModal>
+    </>
   )
 }
 
