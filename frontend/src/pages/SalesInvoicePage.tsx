@@ -226,11 +226,29 @@ export function SalesInvoicePage() {
       heading: saleSoftwareOptions?.print_heading ?? null,
       message: saleSoftwareOptions?.message ?? null,
       fbrMessage: saleSoftwareOptions?.fbr_message ?? null,
+      dottedItemLines: saleSoftwareOptions?.print_dotted_line ?? false,
+      fontFamily: generalSoftwareOptions?.use_custom_font_all
+        ? (generalSoftwareOptions.font_family ?? null)
+        : generalSoftwareOptions?.apply_custom_font_style
+          ? (generalSoftwareOptions.custom_font_family ?? null)
+          : null,
+      fontSize: generalSoftwareOptions?.use_custom_font_all
+        ? (generalSoftwareOptions.font_size ?? 11)
+        : generalSoftwareOptions?.apply_custom_font_style
+          ? (generalSoftwareOptions.custom_font_size ?? null)
+          : null,
     }),
     [
       saleSoftwareOptions?.print_heading,
       saleSoftwareOptions?.message,
       saleSoftwareOptions?.fbr_message,
+      saleSoftwareOptions?.print_dotted_line,
+      generalSoftwareOptions?.use_custom_font_all,
+      generalSoftwareOptions?.font_family,
+      generalSoftwareOptions?.font_size,
+      generalSoftwareOptions?.apply_custom_font_style,
+      generalSoftwareOptions?.custom_font_family,
+      generalSoftwareOptions?.custom_font_size,
     ],
   )
 
