@@ -331,6 +331,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     status: 'shell',
   },
   {
+    key: 'configure-users',
+    title: 'Configure Users',
+    path: '/tools/configure-users',
+    ribbon: 'tools',
+    status: 'ready',
+    permission: 'users.view',
+  },
+  {
     key: 'users',
     title: 'Users',
     path: '/administration/users',
@@ -591,7 +599,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       caption: 'Group / User Planning',
       commands: [
         { id: 'roles', label: 'Manage Groups', icon: Shield, moduleKey: 'roles', permission: 'roles.view', status: 'ready', tone: 'green' },
-        { id: 'users', label: 'Configure Users', icon: Users, moduleKey: 'users', permission: 'users.view', status: 'ready', tone: 'blue' },
+        { id: 'users', label: 'Configure Users', icon: Users, moduleKey: 'configure-users', permission: 'users.view', status: 'ready', tone: 'blue' },
         { id: 'devices', label: 'Devices', icon: Monitor, moduleKey: 'devices', permission: 'devices.view', status: 'ready', tone: 'navy' },
       ],
     },
