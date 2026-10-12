@@ -3,7 +3,6 @@
 namespace App\Actions\Warehouses;
 
 use App\Enums\WarehouseStatus;
-use App\Models\Branch;
 use App\Models\Warehouse;
 use App\Security\TenantEntitlementService;
 use App\Tenancy\TenantContext;
@@ -18,7 +17,7 @@ class CreateWarehouseAction
     ) {}
 
     /**
-     * @param  array{code: string, name: string, branch_ulid: string}  $data
+     * @param  array{code: string, name: string}  $data
      */
     public function execute(array $data): Warehouse
     {
@@ -28,20 +27,15 @@ class CreateWarehouseAction
         return DB::transaction(function () use ($tenant, $data, $code): Warehouse {
             $this->entitlements->assertCanCreateWarehouse($tenant);
 
-            $branch = Branch::query()
+            $branch = $this->tenantContext->branch();
+
+            if (Warehouse::query()
                 ->forTenant($tenant->id)
-                ->where('ulid', $data['branch_ulid'])
-                ->first();
-
-            if (! $branch) {
+                ->where('branch_id', $branch->id)
+                ->where('code', $code)
+                ->exists()) {
                 throw ValidationException::withMessages([
-                    'branch_ulid' => 'The selected branch is invalid.',
-                ]);
-            }
-
-            if (Warehouse::query()->forTenant($tenant->id)->where('code', $code)->exists()) {
-                throw ValidationException::withMessages([
-                    'code' => 'This warehouse code is already in use.',
+                    'code' => 'This warehouse code is already in use for this branch.',
                 ]);
             }
 
