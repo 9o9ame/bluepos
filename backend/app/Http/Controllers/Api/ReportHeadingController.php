@@ -201,7 +201,7 @@ class ReportHeadingController extends Controller
             return null;
         }
 
-        $allowed = '<p><div><br><strong><b><em><i><u><ul><ol><li>';
+        $allowed = '<p><div><br><strong><b><em><i><u><s><strike><ul><ol><li><h1><h2><h3>';
         $clean = strip_tags($html, $allowed);
 
         $doc = new DOMDocument('1.0', 'UTF-8');
