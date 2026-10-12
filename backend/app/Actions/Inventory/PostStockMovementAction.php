@@ -16,7 +16,10 @@ use Illuminate\Validation\ValidationException;
 
 class PostStockMovementAction
 {
-    public function __construct(private readonly TenantContext $tenantContext) {}
+    public function __construct(
+        private readonly TenantContext $tenantContext,
+        private readonly StockLedgerLock $ledgerLock,
+    ) {}
 
     /**
      * @param  array{
@@ -74,6 +77,8 @@ class PostStockMovementAction
             $idempotencyKey,
             $data,
         ): StockMovement {
+            $this->ledgerLock->acquire($tenantId);
+
             if (is_string($idempotencyKey) && $idempotencyKey !== '') {
                 $existing = StockMovement::query()
                     ->forTenant($tenantId)
