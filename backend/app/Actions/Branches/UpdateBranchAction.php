@@ -3,6 +3,7 @@
 namespace App\Actions\Branches;
 
 use App\Enums\BranchStatus;
+use App\Exceptions\ApiException;
 use App\Models\Branch;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +24,7 @@ class UpdateBranchAction
     public function execute(Branch $branch, array $data): Branch
     {
         if ((int) $branch->tenant_id !== $this->tenantContext->tenantId()) {
-            abort(404);
+            throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
         }
 
         return DB::transaction(function () use ($branch, $data): Branch {
@@ -34,7 +35,7 @@ class UpdateBranchAction
 
             $locked = $tenantBranches->firstWhere('id', $branch->id);
             if (! $locked) {
-                abort(404);
+                throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
             }
 
             $code = array_key_exists('code', $data)
