@@ -32,6 +32,7 @@ import {
   Undo2,
   X,
 } from 'lucide-react'
+import { fetchBusinessSettings, saveBusinessSettings } from '../api/catalog'
 import {
   copyReportHeadingToOthers,
   createReportHeading,
@@ -99,6 +100,11 @@ export function ReportHeadingsPage() {
     queryFn: fetchReportHeadings,
   })
 
+  const businessSettingsQuery = useQuery({
+    queryKey: ['business-settings'],
+    queryFn: fetchBusinessSettings,
+  })
+
   const [selectedUlid, setSelectedUlid] = useState<string | null>(null)
   const [usedFor, setUsedFor] = useState('')
   const [contentHtml, setContentHtml] = useState('')
@@ -112,6 +118,7 @@ export function ReportHeadingsPage() {
   const [showHorizontalRuler, setShowHorizontalRuler] = useState(true)
   const [showVerticalRuler, setShowVerticalRuler] = useState(false)
   const [symbolOpen, setSymbolOpen] = useState(false)
+  const [backupEmail, setBackupEmail] = useState('')
 
   const selected = useMemo(
     () => query.data?.find((row) => row.ulid === selectedUlid) ?? null,
@@ -155,6 +162,10 @@ export function ReportHeadingsPage() {
   }, [query.data, selectedUlid])
 
   useEffect(() => {
+    setBackupEmail(businessSettingsQuery.data?.backup_email ?? '')
+  }, [businessSettingsQuery.data?.backup_email])
+
+  useEffect(() => {
     if (!editor) return
 
     if (!selected) {
@@ -173,6 +184,18 @@ export function ReportHeadingsPage() {
     editor.commands.setContent(nextHtml, { emitUpdate: false })
     editor.setEditable(canManage)
   }, [canManage, editor, selected])
+
+  const quickSettingsMutation = useMutation({
+    mutationFn: () =>
+      saveBusinessSettings({
+        backup_email: backupEmail.trim() || null,
+      }),
+    onSuccess: async () => {
+      feedback.success('Quick settings saved.')
+      await queryClient.invalidateQueries({ queryKey: ['business-settings'] })
+    },
+    onError: (error) => feedback.fromApiError(error, 'Unable to save quick settings.'),
+  })
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -725,6 +748,42 @@ export function ReportHeadingsPage() {
                     <UiButton label="Custom Signature Box" disabled />
                   </div>
                   <span>POS Docs</span>
+                </div>
+              </>
+            ) : editorTab === 'Quick Settings' ? (
+              <>
+                <div className="report-headings-editor-group is-quick-settings-group">
+                  <div className="report-headings-editor-group-actions">
+                    <label className="report-headings-quick-email">
+                      <span>Backup Email</span>
+                      <input
+                        className="desktop-input"
+                        type="email"
+                        value={backupEmail}
+                        maxLength={255}
+                        disabled={!canManage || businessSettingsQuery.isLoading || quickSettingsMutation.isPending}
+                        onChange={(event) => setBackupEmail(event.target.value)}
+                      />
+                    </label>
+                    <UiButton
+                      variant="success"
+                      label={quickSettingsMutation.isPending ? 'Saving…' : 'Save Settings'}
+                      disabled={!canManage || businessSettingsQuery.isLoading || quickSettingsMutation.isPending}
+                      onClick={() => quickSettingsMutation.mutate()}
+                    />
+                  </div>
+                  <span>Quick Settings</span>
+                </div>
+
+                <div className="report-headings-editor-group">
+                  <div className="report-headings-editor-group-actions">
+                    <UiButton
+                      label="SMS Settings"
+                      disabled
+                      title="SMS settings require the reference dialog fields before implementation."
+                    />
+                  </div>
+                  <span>Common Options</span>
                 </div>
               </>
             ) : (
