@@ -146,7 +146,6 @@ class SafeCustomQueryRunner
             $direction,
             $whereText,
         ): array {
-            DB::statement('SET LOCAL TRANSACTION READ ONLY');
             DB::statement("SET LOCAL statement_timeout = '3000ms'");
 
             $builder = DB::table($definition['table'])
