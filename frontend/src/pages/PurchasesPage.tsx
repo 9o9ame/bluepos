@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { fetchProduct, fetchProducts, fetchSuppliers } from '../api/catalog'
+import { fetchBusinessSettings, fetchProduct, fetchProducts, fetchSuppliers } from '../api/catalog'
 import { ApiClientError } from '../api/client'
 import { askConfirm } from '../feedback/FeedbackProvider'
 import { fetchProductStock, fetchWarehouses } from '../api/inventory'
@@ -402,6 +402,12 @@ export function PurchasesPage() {
     enabled: mode === 'list',
   })
 
+  const businessSettingsQuery = useQuery({
+    queryKey: ['settings', 'business', 'purchase-options'],
+    queryFn: fetchBusinessSettings,
+    retry: false,
+  })
+
   const suppliersQuery = useQuery({
     queryKey: ['suppliers'],
     queryFn: fetchSuppliers,
@@ -425,6 +431,7 @@ export function PurchasesPage() {
   )
   const selectedSupplier = suppliers.find((supplier) => supplier.ulid === supplierUlid)
   const selectedWarehouse = warehouses.find((warehouse) => warehouse.ulid === warehouseUlid)
+  const purchaseSoftwareOptions = businessSettingsQuery.data?.software_options?.purchase
   const warehouseLabel = selectedWarehouse
     ? `${selectedWarehouse.code} — ${selectedWarehouse.name}`
     : ''
@@ -453,6 +460,25 @@ export function PurchasesPage() {
     })
     return map
   }, [lineProductUlids, stockQueries, warehouseUlid])
+
+  const effectivePurchaseColumns = useMemo(() => {
+    const requireBatch = lines.some((line) => line.track_batch)
+    const requireExpiry = lines.some((line) => line.track_expiry)
+    const showExpiryBatch = purchaseSoftwareOptions?.show_expiry_batch ?? false
+    const showSalesTax = purchaseSoftwareOptions?.show_sales_tax ?? true
+
+    return columnLayout.visibleColumns.filter((col) => {
+      if (col.key === 'batch' && !showExpiryBatch && !requireBatch) return false
+      if (col.key === 'expiry' && !showExpiryBatch && !requireExpiry) return false
+      if (['gst', 'further_tax', 'advance_tax'].includes(col.key) && !showSalesTax) return false
+      return true
+    })
+  }, [
+    columnLayout.visibleColumns,
+    lines,
+    purchaseSoftwareOptions?.show_expiry_batch,
+    purchaseSoftwareOptions?.show_sales_tax,
+  ])
 
   function patchLine(key: string, patch: Partial<DraftLine>) {
     setLines((prev) =>
@@ -988,6 +1014,12 @@ export function PurchasesPage() {
 
   function startNew() {
     resetEditor()
+
+    const defaultVendorUlid = purchaseSoftwareOptions?.default_vendor_ulid ?? ''
+    if (defaultVendorUlid && suppliers.some((supplier) => supplier.ulid === defaultVendorUlid)) {
+      setSupplierUlid(defaultVendorUlid)
+    }
+
     setMode('editor')
   }
 
@@ -1900,7 +1932,7 @@ export function PurchasesPage() {
           <table className="purchase-reference-grid">
             <thead>
               <tr>
-                {columnLayout.visibleColumns.map((col) => (
+                {effectivePurchaseColumns.map((col) => (
                   <th
                     key={col.key}
                     className={`col-${col.key}${col.locked ? ' is-locked' : ''}`}
@@ -1973,7 +2005,7 @@ export function PurchasesPage() {
             <tbody>
               {lines.length === 0 ? (
                 <tr className="is-empty">
-                  {columnLayout.visibleColumns.map((col) =>
+                  {effectivePurchaseColumns.map((col) =>
                     renderPurchaseCell(col, null, {
                       readOnly,
                       canEdit,
