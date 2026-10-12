@@ -1,0 +1,71 @@
+.admin-branch-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  align-items: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs, 11px);
+}
+
+.admin-branch-summary strong {
+  margin-left: 4px;
+  color: var(--ui-text);
+}
+
+.admin-branch-grid {
+  height: min(520px, calc(100vh - 250px));
+  min-height: 280px;
+}
+
+.admin-branch-grid .pos-grid-wrap {
+  height: 100%;
+}
+
+.admin-branch-form {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-branch-form > label:not(.admin-branch-default) {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs, 11px);
+  font-weight: 700;
+}
+
+.admin-branch-default {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  width: fit-content;
+  color: var(--ui-text);
+  font-size: var(--ui-font-size-xs, 11px);
+}
+
+.admin-branch-default input {
+  margin: 0;
+  accent-color: var(--ui-accent);
+}
+
+.admin-branch-note {
+  margin: -2px 0 0 100px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs, 11px);
+}
+
+@media (max-width: 620px) {
+  .admin-branch-form > label:not(.admin-branch-default) {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .admin-branch-note {
+    margin-left: 0;
+  }
+}
