@@ -80,7 +80,7 @@ export type RibbonCommandDef = {
   entitlement?: string
   status: ModuleStatus
   shortcut?: string
-  action?: 'calculator' | 'lock' | 'logout'
+  action?: 'calculator' | 'software-options' | 'lock' | 'logout'
   tone?: RibbonTone
   hasMenu?: boolean
   menu?: RibbonMenuItem[]
@@ -601,7 +601,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       commands: [
         { id: 'custom-query', label: 'Custom Query', icon: FileSpreadsheet, status: 'later', tone: 'slate' },
         { id: 'report-headings', label: 'Report Headings', icon: List, moduleKey: 'report-headings', permission: 'settings.view', status: 'ready', tone: 'slate' },
-        { id: 'options', label: 'Software Options', icon: Settings, moduleKey: 'settings', permission: 'settings.view', status: 'ready', tone: 'navy' },
+        { id: 'options', label: 'Software Options', icon: Settings, permission: 'settings.view', status: 'ready', action: 'software-options', tone: 'navy' },
         { id: 'recalc-stock', label: 'Recalculate Stock', icon: Boxes, status: 'later', tone: 'orange' },
         { id: 'calculator', label: 'Calculator', icon: Calculator, status: 'ready', action: 'calculator', tone: 'gold' },
         { id: 'lock', label: 'Lock this Software', icon: Lock, status: 'ready', action: 'lock', tone: 'red' },
