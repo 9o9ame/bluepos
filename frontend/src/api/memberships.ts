@@ -58,3 +58,27 @@ export function forceLogoutMembership(ulid: string): Promise<{ ok: boolean }> {
     method: 'POST',
   })
 }
+
+export type MembershipSalesmanOption = {
+  ulid: string
+  code: string
+  name: string
+}
+
+export function fetchMembershipSalesmen(): Promise<MembershipSalesmanOption[]> {
+  return apiFetch<MembershipSalesmanOption[]>('/api/memberships/salesmen', { busy: 'none' })
+}
+
+export function saveMembershipSalesman(
+  ulid: string,
+  input: {
+    salesman_ulid: string | null
+    start_time: string | null
+    end_time: string | null
+  },
+): Promise<Membership> {
+  return apiFetch<Membership>(`/api/memberships/${ulid}/salesman`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  })
+}
