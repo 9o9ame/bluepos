@@ -219,6 +219,9 @@ export function SalesInvoicePage() {
     retry: false,
   })
 
+  const saleSoftwareOptions = businessSettingsQuery.data?.software_options?.sale
+  const generalSoftwareOptions = businessSettingsQuery.data?.software_options?.general
+
   const customersQuery = useQuery({
     queryKey: ['parties', 'customers', 'pos'],
     queryFn: () => fetchParties('customer'),
@@ -757,6 +760,16 @@ export function SalesInvoicePage() {
               (row) => row.is_active && row.barcode === scannedValue,
             ) ?? null
 
+      if (
+        !replaceLineKey &&
+        saleSoftwareOptions?.disallow_duplicate_products &&
+        cart.lines.some(
+          (line) => line.line_kind === 'sale' && line.product_ulid === product.ulid,
+        )
+      ) {
+        throw new Error(`${product.name} is already on this invoice.`)
+      }
+
       const lineKey = replaceLineKey ?? cart.addProduct(
         product,
         '1.000000',
@@ -920,7 +933,11 @@ export function SalesInvoicePage() {
         ? `${hold.salesman.code ?? ''}${hold.salesman.code ? ' — ' : ''}${hold.salesman.name}`
         : '',
     )
-    setSaleDate(hold.sale_date ?? new Date().toISOString().slice(0, 10))
+    setSaleDate(
+      saleSoftwareOptions?.keep_pending_invoice_date
+        ? (hold.sale_date ?? new Date().toISOString().slice(0, 10))
+        : new Date().toISOString().slice(0, 10),
+    )
     setCopyFromValue('')
     setQuotationValue('')
     setSavedSale(null)
@@ -1102,7 +1119,7 @@ export function SalesInvoicePage() {
 
 
         {view === 'history' ? (
-          <SalesInvoiceHistory />
+          <SalesInvoiceHistory historyDays={generalSoftwareOptions?.view_history_days ?? 8} />
         ) : view === 'pending' ? (
           <SalesPendingInvoices onRecallHeld={recallHeldCart} />
         ) : view === 'expenses' ? (
@@ -1183,6 +1200,12 @@ export function SalesInvoicePage() {
                     type="date"
                     className="is-date"
                     value={saleDate}
+                    disabled={!saleSoftwareOptions?.manual_date_change}
+                    title={
+                      saleSoftwareOptions?.manual_date_change
+                        ? 'Invoice date can be changed manually.'
+                        : 'Enable Manual Change of Date in Software Options to edit this date.'
+                    }
                     onChange={(e) => setSaleDate(e.target.value)}
                   />
 
