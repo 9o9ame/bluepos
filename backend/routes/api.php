@@ -92,6 +92,8 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::post('/custom-query/run', [CustomQueryController::class, 'run']);
     Route::get('/custom-query/saved', [CustomQueryController::class, 'saved']);
     Route::post('/custom-query/saved', [CustomQueryController::class, 'store']);
+    Route::patch('/custom-query/saved/{customQueryUlid}', [CustomQueryController::class, 'update']);
+    Route::delete('/custom-query/saved/{customQueryUlid}', [CustomQueryController::class, 'destroy']);
 
     Route::get('/roles', [RoleController::class, 'index']);
     Route::post('/roles', [RoleController::class, 'store']);
