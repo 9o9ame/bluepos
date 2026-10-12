@@ -176,7 +176,7 @@ class ReportHeadingController extends Controller
                 ->where('id', '!=', $source->id)
                 ->update([
                     'content_html' => $source->content_html,
-                    'layout_settings' => $source->layout_settings,
+                    'layout_settings' => json_encode($source->layout_settings, JSON_THROW_ON_ERROR),
                     'updated_at' => now(),
                 ]);
 
