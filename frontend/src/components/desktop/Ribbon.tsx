@@ -25,9 +25,10 @@ const RIBBON_TAB_ICONS: Record<string, LucideIcon> = {
 
 type RibbonProps = {
   onCalculator: () => void
+  onLock: () => void
 }
 
-export function Ribbon({ onCalculator }: RibbonProps) {
+export function Ribbon({ onCalculator, onLock }: RibbonProps) {
   const { ribbonTab, setRibbonTab, openModule, activeModule } = useWorkspace()
   const { skin } = useAppearance()
 
@@ -77,6 +78,10 @@ export function Ribbon({ onCalculator }: RibbonProps) {
                 onClick={() => {
                   if (command.action === 'calculator') {
                     onCalculator()
+                    return
+                  }
+                  if (command.action === 'lock') {
+                    onLock()
                     return
                   }
                   const path =
