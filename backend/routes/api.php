@@ -95,6 +95,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::put('/roles/{roleUlid}/permissions', [RoleController::class, 'syncPermissions']);
 
     Route::get('/memberships', [MembershipController::class, 'index']);
+    Route::get('/memberships/salesmen', [MembershipController::class, 'salesmen']);
     Route::post('/memberships', [MembershipController::class, 'store']);
     Route::get('/memberships/{membershipUlid}', [MembershipController::class, 'show']);
     Route::post('/memberships/{membershipUlid}/deactivate', [MembershipController::class, 'deactivate']);
@@ -103,6 +104,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::post('/memberships/{membershipUlid}/force-logout', [MembershipController::class, 'forceLogout']);
     Route::put('/memberships/{membershipUlid}/roles', [MembershipController::class, 'syncRoles']);
     Route::put('/memberships/{membershipUlid}/branches', [MembershipController::class, 'syncBranches']);
+    Route::put('/memberships/{membershipUlid}/salesman', [MembershipController::class, 'updateSalesman']);
 
     Route::get('/devices', [DeviceController::class, 'index']);
     Route::post('/devices/{deviceUlid}/approve', [DeviceController::class, 'approve']);
