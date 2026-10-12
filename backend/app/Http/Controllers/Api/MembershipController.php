@@ -14,8 +14,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Memberships\StoreMembershipRequest;
 use App\Http\Requests\Memberships\SyncMembershipBranchesRequest;
 use App\Http\Requests\Memberships\SyncMembershipRolesRequest;
+use App\Http\Requests\Memberships\UpdateMembershipSalesmanRequest;
 use App\Http\Resources\MembershipResource;
 use App\Models\Membership;
+use App\Models\PartyProfile;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,7 +30,7 @@ class MembershipController extends Controller
 
         $memberships = Membership::query()
             ->where('tenant_id', $tenantContext->tenantId())
-            ->with(['user', 'roles', 'branches'])
+            ->with(['user', 'roles', 'branches', 'salesmanProfile'])
             ->orderByDesc('is_owner')
             ->orderBy('id')
             ->get();
@@ -64,7 +66,7 @@ class MembershipController extends Controller
         $membership = $this->findTenantMembership($tenantContext, $membershipUlid);
         $this->authorize('view', $membership);
 
-        return new MembershipResource($membership->load(['user', 'roles', 'branches']));
+        return new MembershipResource($membership->load(['user', 'roles', 'branches', 'salesmanProfile']));
     }
 
     public function deactivate(
@@ -148,6 +150,66 @@ class MembershipController extends Controller
             $membership,
             $request->validated('branches'),
         ));
+    }
+
+    /**
+     * @return array<int, array{ulid:string, code:string, name:string}>
+     */
+    public function salesmen(TenantContext $tenantContext): array
+    {
+        $this->authorize('viewAny', Membership::class);
+
+        return PartyProfile::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('is_active', true)
+            ->whereHas('types', fn ($q) => $q->where('type', 'salesman'))
+            ->orderBy('name')
+            ->get()
+            ->map(fn (PartyProfile $profile): array => [
+                'ulid' => $profile->ulid,
+                'code' => $profile->code,
+                'name' => $profile->name,
+            ])
+            ->all();
+    }
+
+    public function updateSalesman(
+        UpdateMembershipSalesmanRequest $request,
+        string $membershipUlid,
+        TenantContext $tenantContext,
+    ): MembershipResource {
+        $membership = $this->findTenantMembership($tenantContext, $membershipUlid);
+        $this->authorize('update', $membership);
+
+        $data = $request->validated();
+        $salesmanId = null;
+
+        if (! empty($data['salesman_ulid'])) {
+            $salesman = PartyProfile::query()
+                ->forTenant($tenantContext->tenantId())
+                ->where('ulid', $data['salesman_ulid'])
+                ->where('is_active', true)
+                ->whereHas('types', fn ($q) => $q->where('type', 'salesman'))
+                ->first();
+
+            if (! $salesman) {
+                throw new ApiException('VALIDATION_ERROR', 'The selected salesman is invalid.', 422, [
+                    'salesman_ulid' => ['The selected salesman is invalid.'],
+                ]);
+            }
+
+            $salesmanId = $salesman->id;
+        }
+
+        $membership->forceFill([
+            'salesman_party_profile_id' => $salesmanId,
+            'salesman_start_time' => $data['start_time'] ?? null,
+            'salesman_end_time' => $data['end_time'] ?? null,
+        ])->save();
+
+        return new MembershipResource(
+            $membership->refresh()->load(['user', 'roles', 'branches', 'salesmanProfile'])
+        );
     }
 
     private function findTenantMembership(TenantContext $tenantContext, string $membershipUlid): Membership
