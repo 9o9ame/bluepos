@@ -4,6 +4,9 @@ export type SaleReceiptOptions = {
   heading?: string | null
   message?: string | null
   fbrMessage?: string | null
+  dottedItemLines?: boolean
+  fontFamily?: string | null
+  fontSize?: number | null
 }
 
 /**
@@ -17,7 +20,7 @@ function receiptHtml(sale: Sale, options: SaleReceiptOptions = {}): string {
       <tr>
         <td>${escapeHtml(item.product ? `${item.product.product_number} ${item.product.name}` : item.line_kind)}</td>
       </tr>
-      <tr class="sub">
+      <tr class="sub item-separator">
         <td>${escapeHtml(item.quantity)} x ${escapeHtml(item.unit_price)}${item.line_kind !== 'sale' ? ' (FREE)' : ''}</td>
         <td class="r">${escapeHtml(item.line_total)}</td>
       </tr>`,
@@ -37,12 +40,13 @@ function receiptHtml(sale: Sale, options: SaleReceiptOptions = {}): string {
 <title>${escapeHtml(sale.document_number)}</title>
 <style>
   @page { size: 80mm auto; margin: 4mm; }
-  body { font-family: "Courier New", monospace; font-size: 11px; margin: 0; }
+  body { font-family: ${escapeCssFont(options.fontFamily?.trim() || '"Courier New"')}, monospace; font-size: ${normalizeFontSize(options.fontSize)}px; margin: 0; }
   .center { text-align: center; }
   .r { text-align: right; }
   table { width: 100%; border-collapse: collapse; }
   td { padding: 1px 0; vertical-align: top; }
   tr.sub td { color: #333; }
+  tr.item-separator td { border-bottom: ${options.dottedItemLines ? '1px dotted #000' : '0'}; padding-bottom: 3px; }
   .line { border-top: 1px dashed #000; margin: 6px 0; }
   h2 { font-size: 13px; margin: 4px 0; }
 </style>
@@ -79,6 +83,15 @@ function receiptHtml(sale: Sale, options: SaleReceiptOptions = {}): string {
   </script>
 </body>
 </html>`
+}
+
+function normalizeFontSize(value: number | null | undefined): number {
+  if (!Number.isFinite(value)) return 11
+  return Math.max(8, Math.min(48, Math.trunc(value as number)))
+}
+
+function escapeCssFont(value: string): string {
+  return JSON.stringify(value.replace(/[\r\n]/g, ' '))
 }
 
 function escapeHtml(value: string | null | undefined): string {
