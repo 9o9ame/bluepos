@@ -228,7 +228,7 @@ class MembershipController extends Controller
             $duplicate = Membership::query()
                 ->where('tenant_id', $tenantContext->tenantId())
                 ->where('fingerprint_ref', $fingerprintRef)
-                ->whereKeyNot($membership->id)
+                ->where('id', '!=', $membership->id)
                 ->exists();
 
             if ($duplicate) {
