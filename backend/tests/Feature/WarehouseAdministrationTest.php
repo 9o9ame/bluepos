@@ -20,7 +20,6 @@ class WarehouseAdministrationTest extends TestCase
         $north = $this->postJson('/api/warehouses', [
             'code' => 'north',
             'name' => 'North Warehouse',
-            'branch_ulid' => $branchUlid,
         ])->assertCreated()
             ->assertJsonPath('code', 'NORTH')
             ->assertJsonPath('name', 'North Warehouse')
@@ -34,7 +33,6 @@ class WarehouseAdministrationTest extends TestCase
         $south = $this->postJson('/api/warehouses', [
             'code' => 'SOUTH',
             'name' => 'South Warehouse',
-            'branch_ulid' => $branchUlid,
         ])->assertCreated();
         $southUlid = (string) $south->json('ulid');
 
@@ -148,7 +146,6 @@ class WarehouseAdministrationTest extends TestCase
         $this->postJson('/api/warehouses', [
             'code' => 'DENIED',
             'name' => 'Denied Warehouse',
-            'branch_ulid' => $branchUlid,
         ])->assertForbidden();
 
         $this->patchJson('/api/warehouses/'.$warehouseUlid, [
