@@ -248,3 +248,30 @@
   font-size: 12px;
   line-height: 1.45;
 }
+
+
+.configure-users-fingerprint-grid {
+  height: 310px;
+}
+
+.configure-users-fingerprint {
+  width: 100%;
+  min-height: var(--control-height, 30px);
+  padding: 4px 6px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+}
+
+.configure-users-fingerprint:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.configure-users-fingerprint:disabled {
+  opacity: 0.66;
+  background: var(--ui-surface-muted);
+}
