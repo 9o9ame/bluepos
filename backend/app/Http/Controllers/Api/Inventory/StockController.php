@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Api\Inventory;
 
+use App\Actions\Inventory\RecalculateStockBalancesAction;
+use App\Authz\PermissionService;
 use App\Catalog\TenantCatalog;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Inventory\StockBalanceResource;
 use App\Models\StockBalance;
+use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 
@@ -60,6 +63,27 @@ class StockController extends Controller
                 'last_page' => $page->lastPage(),
             ],
         ];
+    }
+
+    public function recalculate(
+        PermissionService $permissions,
+        RecalculateStockBalancesAction $action,
+        AuditLogger $audit,
+    ): array {
+        abort_unless($permissions->can('inventory.recalculate'), 403);
+
+        $result = $action->execute();
+
+        $audit->record('INVENTORY_STOCK_RECALCULATED', [
+            'resource_type' => 'stock_balance',
+            'checked_balances' => $result['checked_balances'],
+            'corrected_balances' => $result['corrected_balances'],
+            'corrected_products' => $result['corrected_products'],
+            'created_balances' => $result['created_balances'],
+            'valuation_unavailable' => $result['valuation_unavailable'],
+        ]);
+
+        return $result;
     }
 
     public function forProduct(string $productUlid, TenantContext $tenantContext): array
