@@ -1,9 +1,18 @@
 .software-options-modal {
-  width: min(780px, calc(100vw - 32px));
+  width: min(820px, calc(100vw - 32px));
+}
+
+.software-options-modal .ui-modal-header {
+  min-height: 32px;
+}
+
+.software-options-modal .ui-modal-footer {
+  min-height: 30px;
+  padding: 3px 6px;
 }
 
 .software-options-body {
-  max-height: min(560px, calc(100vh - 120px));
+  max-height: min(590px, calc(100vh - 118px));
   padding: 0;
   overflow: auto;
 }
@@ -11,14 +20,14 @@
 .software-options-tabs {
   display: flex;
   gap: 3px;
-  padding: 8px 10px 0;
-  border-bottom: 1px solid var(--ui-border);
+  padding: 7px 10px 0;
+  border-bottom: 0;
   background: var(--ui-surface-subtle);
 }
 
 .software-options-tabs button {
   min-height: 30px;
-  padding: 4px 14px;
+  padding: 4px 15px;
   border: 1px solid transparent;
   border-bottom: 0;
   border-radius: var(--control-radius) var(--control-radius) 0 0;
@@ -46,34 +55,44 @@
 }
 
 .software-options-panel {
-  padding: 10px 12px;
+  margin: 0 10px 8px;
+  padding: 11px 12px 10px;
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 56%, var(--ui-border));
+  border-radius: 0 0 var(--panel-radius) var(--panel-radius);
   background: var(--ui-surface);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-surface) 78%, transparent);
 }
 
 .software-options-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 18px;
-  min-height: 340px;
+  gap: 22px;
+  min-height: 360px;
 }
 
 .software-options-grid > section {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 
 .software-options-check {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 7px;
+  min-height: 19px;
   color: var(--ui-text);
   font-size: var(--ui-font-size-sm, 12px);
+  line-height: 1.25;
 }
 
 .software-options-check input {
-  margin-top: 1px;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--ui-accent);
 }
 
 .software-options-check.is-disabled,
@@ -87,14 +106,15 @@
 .software-options-stock-must {
   align-self: flex-end;
   margin-top: auto;
+  padding-top: 4px;
   color: var(--ui-danger);
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .software-options-field {
   display: grid;
   gap: 3px;
-  color: var(--ui-text-muted);
+  color: var(--ui-text);
   font-size: var(--ui-font-size-xs, 11px);
   font-weight: 700;
 }
@@ -104,7 +124,9 @@
 .software-options-inline-number input,
 .software-options-font-row input {
   box-sizing: border-box;
-  min-height: 26px;
+  width: 100%;
+  min-height: 28px;
+  padding: 2px 6px;
   border: 1px solid var(--ui-control-border);
   border-radius: var(--control-radius);
   background: var(--ui-control-face);
@@ -114,7 +136,7 @@
 }
 
 .software-options-field textarea {
-  min-height: 50px;
+  min-height: 58px;
   resize: vertical;
 }
 
@@ -122,35 +144,40 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--ui-text-muted);
+  min-height: 28px;
+  color: var(--ui-text);
   font-size: var(--ui-font-size-xs, 11px);
   font-weight: 700;
 }
 
 .software-options-inline-number input {
   width: 48px;
+  flex: 0 0 48px;
   padding: 0 5px;
+  text-align: center;
 }
 
 .software-options-purchase-bottom {
   display: grid;
-  gap: 5px;
+  gap: 6px;
   margin-top: auto;
+  padding-top: 8px;
 }
 
 .software-options-font {
   display: grid;
-  gap: 5px;
+  gap: 6px;
   margin: 0;
-  padding: 6px;
+  padding: 7px 8px 8px;
   border: 1px solid var(--ui-border);
   border-radius: var(--panel-radius);
+  background: var(--ui-surface-subtle);
 }
 
 .software-options-font legend {
   padding: 0 5px;
-  color: var(--ui-text-muted);
-  font-weight: 700;
+  color: var(--ui-text);
+  font-weight: 800;
 }
 
 .software-options-font-row {
@@ -163,15 +190,8 @@
 .software-options-inline-options {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
-}
-
-.software-options-note {
-  margin: 8px 0 0;
-  padding-top: 6px;
-  border-top: 1px solid var(--ui-border);
-  color: var(--ui-text-muted);
-  font-size: var(--ui-font-size-xs, 11px);
+  gap: 8px 16px;
+  align-items: center;
 }
 
 .software-options-footer {
@@ -182,6 +202,10 @@
 }
 
 @media (max-width: 760px) {
+  .software-options-modal {
+    width: min(700px, calc(100vw - 20px));
+  }
+
   .software-options-grid {
     grid-template-columns: 1fr;
     min-height: 0;
