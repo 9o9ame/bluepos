@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\Branches\CreateBranchAction;
 use App\Actions\Branches\SwitchActiveBranchAction;
+use App\Actions\Branches\UpdateBranchAction;
 use App\Authz\PermissionService;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\AuthSessionResource;
@@ -12,6 +13,7 @@ use App\Models\Branch;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class BranchController extends Controller
 {
@@ -42,6 +44,29 @@ class BranchController extends Controller
         return (new BranchResource($create->execute($data)))
             ->response()
             ->setStatusCode(201);
+    }
+
+    public function update(
+        Request $request,
+        string $branchUlid,
+        TenantContext $tenantContext,
+        UpdateBranchAction $update,
+    ): BranchResource {
+        $branch = Branch::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('ulid', $branchUlid)
+            ->firstOrFail();
+
+        $this->authorize('update', $branch);
+
+        $data = $request->validate([
+            'code' => ['sometimes', 'required', 'string', 'max:32'],
+            'name' => ['sometimes', 'required', 'string', 'max:120'],
+            'status' => ['sometimes', 'required', Rule::enum(\App\Enums\BranchStatus::class)],
+            'is_default' => ['sometimes', 'boolean'],
+        ]);
+
+        return new BranchResource($update->execute($branch, $data));
     }
 
     public function switch(
