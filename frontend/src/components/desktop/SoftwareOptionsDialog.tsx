@@ -23,6 +23,7 @@ const DEFAULT_OPTIONS: SoftwareOptions = {
     print_dotted_line: true,
     dont_round_off: false,
     message: null,
+    print_heading: null,
     show_remarks: true,
     show_discount_percent: true,
     show_discount_amount: true,
@@ -288,7 +289,7 @@ export function SoftwareOptionsDialog({
 
               <label className="software-options-field">
                 <span>Print Heading On Barcode / Sale Invoice Print</span>
-                <input value={options.purchase.po_heading ?? ''} disabled={disabled} onChange={(event) => patchPurchase('po_heading', event.target.value || null)} />
+                <input value={options.sale.print_heading ?? ''} disabled={disabled} onChange={(event) => patchSale('print_heading', event.target.value || null)} />
               </label>
             </section>
 
