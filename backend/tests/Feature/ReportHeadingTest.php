@@ -67,6 +67,34 @@ class ReportHeadingTest extends TestCase
         $this->assertDatabaseMissing('report_headings', ['ulid' => $createdUlid]);
     }
 
+
+    public function test_existing_heading_does_not_block_missing_reference_defaults(): void
+    {
+        $this->signInOwner('report-heading-partial')->assertOk();
+
+        $tenantId = app(\App\Tenancy\TenantContext::class)->tenantId();
+
+        ReportHeading::query()->create([
+            'tenant_id' => $tenantId,
+            'head_id' => 'Head',
+            'used_for' => 'Customized Default Heading',
+            'content_html' => '<p><strong>Keep Me</strong></p>',
+        ]);
+
+        $index = $this->getJson('/api/report-headings')
+            ->assertOk();
+
+        $this->assertCount(6, $index->json());
+        $this->assertSame(
+            ['Head', 'HeadGrid', 'HeadLand', 'POS', 'ProdTemplate', 'ZapSaleFooter'],
+            collect($index->json())->pluck('head_id')->all(),
+        );
+
+        $head = collect($index->json())->firstWhere('head_id', 'Head');
+        $this->assertSame('Customized Default Heading', $head['used_for']);
+        $this->assertSame('<p><strong>Keep Me</strong></p>', $head['content_html']);
+    }
+
     public function test_report_headings_are_tenant_scoped_and_require_settings_permissions(): void
     {
         $this->signInOwner('report-heading-a')->assertOk();
