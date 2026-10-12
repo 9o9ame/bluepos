@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('report_headings', function (Blueprint $table) {
-            $table->jsonb('layout_settings')->nullable()->after('content_html');
+            $table->jsonb('layout_settings')->nullable();
         });
     }
 
