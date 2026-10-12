@@ -61,6 +61,13 @@ export type Membership = {
   user?: User
   roles?: RoleSummary[]
   branches?: Branch[]
+  salesman?: {
+    ulid: string
+    code: string
+    name: string
+  } | null
+  salesman_start_time?: string | null
+  salesman_end_time?: string | null
 }
 
 export type Device = {
