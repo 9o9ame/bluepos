@@ -20,7 +20,6 @@ export function fetchWarehouses() {
 export function createWarehouse(payload: {
   code: string
   name: string
-  branch_ulid: string
 }) {
   return apiFetch<Warehouse>('/api/warehouses', {
     method: 'POST',
