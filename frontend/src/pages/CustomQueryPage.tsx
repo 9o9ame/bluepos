@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Database, Eye, FileSpreadsheet, FileText, Play, Printer, RefreshCw, Save, X } from 'lucide-react'
+import { Database, Eye, FileSpreadsheet, FileText, Pencil, Play, Printer, RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  deleteCustomQuery,
   fetchCustomQueryCatalog,
   fetchSavedCustomQueries,
   runCustomQuery,
   saveCustomQuery,
+  updateCustomQuery,
   type CustomQueryRunResult,
 } from '../api/customQuery'
 import { ApiClientError } from '../api/client'
@@ -50,6 +52,8 @@ export function CustomQueryPage() {
   const [bottomTab, setBottomTab] = useState<BottomTab>('results')
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveTitle, setSaveTitle] = useState('')
+  const [manageOpen, setManageOpen] = useState(false)
+  const [manageTitle, setManageTitle] = useState('')
 
   const runMutation = useMutation({
     mutationFn: (submittedQuery: string) => runCustomQuery(submittedQuery),
@@ -79,6 +83,34 @@ export function CustomQueryPage() {
       await queryClient.invalidateQueries({ queryKey: ['custom-query', 'saved'] })
     },
     onError: (error) => feedback.fromApiError(error, 'Unable to save custom query.'),
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: () =>
+      updateCustomQuery(selectedSavedUlid, {
+        title: manageTitle.trim(),
+        query: queryText,
+      }),
+    onSuccess: async (saved) => {
+      setManageOpen(false)
+      setManageTitle('')
+      setSelectedSavedUlid(saved.ulid)
+      feedback.success('Saved query updated.')
+      await queryClient.invalidateQueries({ queryKey: ['custom-query', 'saved'] })
+    },
+    onError: (error) => feedback.fromApiError(error, 'Unable to update saved query.'),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (ulid: string) => deleteCustomQuery(ulid),
+    onSuccess: async () => {
+      setSelectedSavedUlid('')
+      setManageOpen(false)
+      setManageTitle('')
+      feedback.success('Saved query deleted.')
+      await queryClient.invalidateQueries({ queryKey: ['custom-query', 'saved'] })
+    },
+    onError: (error) => feedback.fromApiError(error, 'Unable to delete saved query.'),
   })
 
   const runNow = useCallback(() => {
@@ -145,6 +177,8 @@ export function CustomQueryPage() {
     [result],
   )
 
+  const selectedSaved = savedQuery.data?.find((item) => item.ulid === selectedSavedUlid) ?? null
+
   const savedOptions = [
     { value: '', label: '— Saved queries —' },
     ...(savedQuery.data ?? []).map((saved) => ({
@@ -188,6 +222,28 @@ export function CustomQueryPage() {
                 icon={<Save size={14} />}
                 label="Save"
                 onClick={() => setSaveOpen(true)}
+              />
+              <UiButton
+                icon={<Pencil size={14} />}
+                label="Update Saved"
+                disabled={!selectedSaved || updateMutation.isPending}
+                onClick={() => {
+                  if (!selectedSaved) return
+                  setManageTitle(selectedSaved.title)
+                  setManageOpen(true)
+                }}
+              />
+              <UiButton
+                variant="danger"
+                icon={<Trash2 size={14} />}
+                label={deleteMutation.isPending ? 'Deleting…' : 'Delete Saved'}
+                disabled={!selectedSaved || deleteMutation.isPending}
+                onClick={async () => {
+                  if (!selectedSaved) return
+                  const confirmed = await feedback.confirm(`Delete saved query "${selectedSaved.title}"?`)
+                  if (!confirmed) return
+                  deleteMutation.mutate(selectedSaved.ulid)
+                }}
               />
               <UiButton
                 variant="primary"
@@ -369,6 +425,40 @@ export function CustomQueryPage() {
             maxLength={160}
             value={saveTitle}
             onChange={(event) => setSaveTitle(event.target.value)}
+          />
+        </label>
+      </UiModal>
+
+      <UiModal
+        open={manageOpen}
+        title="Update Saved Query"
+        size="sm"
+        onClose={() => setManageOpen(false)}
+        footer={
+          <>
+            <UiButton label="Cancel" onClick={() => setManageOpen(false)} />
+            <UiButton
+              variant="success"
+              icon={<Save size={14} />}
+              label={updateMutation.isPending ? 'Updating…' : 'Update'}
+              disabled={
+                updateMutation.isPending ||
+                !selectedSavedUlid ||
+                !manageTitle.trim() ||
+                !queryText.trim()
+              }
+              onClick={() => updateMutation.mutate()}
+            />
+          </>
+        }
+      >
+        <label className="custom-query-save-field">
+          <span>Query Name</span>
+          <input
+            autoFocus
+            maxLength={160}
+            value={manageTitle}
+            onChange={(event) => setManageTitle(event.target.value)}
           />
         </label>
       </UiModal>
