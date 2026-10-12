@@ -9,6 +9,7 @@ use App\Models\BusinessSetting;
 use App\Models\ReportHeading;
 use App\Tenancy\TenantContext;
 use DOMDocument;
+use DOMElement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -201,7 +202,7 @@ class ReportHeadingController extends Controller
             return null;
         }
 
-        $allowed = '<p><div><br><strong><b><em><i><u><s><strike><ul><ol><li><h1><h2><h3>';
+        $allowed = '<p><div><br><strong><b><em><i><u><s><strike><ul><ol><li><h1><h2><h3><span>';
         $clean = strip_tags($html, $allowed);
 
         $doc = new DOMDocument('1.0', 'UTF-8');
@@ -214,8 +215,18 @@ class ReportHeadingController extends Controller
         libxml_use_internal_errors($previous);
 
         foreach ($doc->getElementsByTagName('*') as $element) {
+            if (! $element instanceof DOMElement) {
+                continue;
+            }
+
+            $safeStyle = $this->sanitizeStyle($element);
+
             while ($element->attributes->length > 0) {
                 $element->removeAttributeNode($element->attributes->item(0));
+            }
+
+            if ($safeStyle !== null) {
+                $element->setAttribute('style', $safeStyle);
             }
         }
 
@@ -230,6 +241,73 @@ class ReportHeadingController extends Controller
         }
 
         return trim($output) !== '' ? trim($output) : null;
+    }
+
+    private function sanitizeStyle(DOMElement $element): ?string
+    {
+        $style = (string) $element->getAttribute('style');
+        if ($style === '') {
+            return null;
+        }
+
+        $safe = [];
+        foreach (explode(';', $style) as $declaration) {
+            [$property, $value] = array_pad(explode(':', $declaration, 2), 2, null);
+            if ($property === null || $value === null) {
+                continue;
+            }
+
+            $property = strtolower(trim($property));
+            $value = trim($value);
+
+            if ($element->tagName === 'span') {
+                if (
+                    $property === 'font-family'
+                    && in_array($value, [
+                        'Inter',
+                        'Arial',
+                        'Calibri',
+                        'Georgia',
+                        'Times New Roman',
+                        'Verdana',
+                        'Courier New',
+                    ], true)
+                ) {
+                    $safe[] = 'font-family: '.$value;
+                    continue;
+                }
+
+                if (
+                    $property === 'font-size'
+                    && in_array($value, [
+                        '8px', '9px', '10px', '11px', '12px', '14px', '16px',
+                        '18px', '20px', '24px', '28px', '32px',
+                    ], true)
+                ) {
+                    $safe[] = 'font-size: '.$value;
+                    continue;
+                }
+
+                if (
+                    in_array($property, ['color', 'background-color'], true)
+                    && preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1
+                ) {
+                    $safe[] = $property.': '.strtolower($value);
+                }
+
+                continue;
+            }
+
+            if (
+                in_array($element->tagName, ['p', 'div', 'h1', 'h2', 'h3'], true)
+                && $property === 'text-align'
+                && in_array($value, ['left', 'center', 'right', 'justify'], true)
+            ) {
+                $safe[] = 'text-align: '.$value;
+            }
+        }
+
+        return $safe === [] ? null : implode('; ', $safe);
     }
 
     /**
