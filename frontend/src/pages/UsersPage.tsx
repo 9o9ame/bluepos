@@ -6,11 +6,13 @@ import {
   activateMembership,
   createMembership,
   deactivateMembership,
+  fetchMembershipSalesmen,
   fetchMemberships,
   forceLogoutMembership,
   resetMembershipPassword,
   saveMembershipBranches,
   saveMembershipRoles,
+  saveMembershipSalesman,
 } from '../api/memberships'
 import { fetchRoles } from '../api/roles'
 import { ApiClientError } from '../api/client'
@@ -19,14 +21,22 @@ import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { UiSelect } from '../components/ui/UiSelect'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
+import type { Membership } from '../types/auth'
 import './UsersPage.css'
 
 type ConfigureUsersTab = 'administration' | 'users' | 'others' | 'salesman' | 'fp2'
+
+type SalesmanDraft = {
+  salesmanUlid: string
+  startTime: string
+  endTime: string
+}
 
 export function UsersPage() {
   const queryClient = useQueryClient()
   const { closeActiveTab } = useWorkspace()
   const canCreate = useCan('users.create')
+  const canEdit = useCan('users.edit')
   const canRoles = useCan('users.manage_roles')
   const canBranches = useCan('users.manage_branches')
   const canDeactivate = useCan('users.deactivate')
@@ -37,6 +47,11 @@ export function UsersPage() {
   const membershipsQuery = useQuery({ queryKey: ['memberships'], queryFn: fetchMemberships })
   const rolesQuery = useQuery({ queryKey: ['roles'], queryFn: fetchRoles, enabled: canRoles || canCreate })
   const branchesQuery = useQuery({ queryKey: ['branches'], queryFn: fetchBranches })
+  const salesmenQuery = useQuery({
+    queryKey: ['memberships', 'salesmen'],
+    queryFn: fetchMembershipSalesmen,
+    retry: false,
+  })
 
   const [tab, setTab] = useState<ConfigureUsersTab>('administration')
   const [selectedMembershipUlid, setSelectedMembershipUlid] = useState('')
@@ -48,12 +63,16 @@ export function UsersPage() {
   const [roleUlid, setRoleUlid] = useState('')
   const [branchUlids, setBranchUlids] = useState<string[]>([])
   const [selectedRowUlid, setSelectedRowUlid] = useState<string | null>(null)
+  const [selectedSalesmanRowUlid, setSelectedSalesmanRowUlid] = useState<string | null>(null)
+  const [salesmanDrafts, setSalesmanDrafts] = useState<Record<string, SalesmanDraft>>({})
   const [saving, setSaving] = useState(false)
+  const [savingSalesman, setSavingSalesman] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const roles = rolesQuery.data ?? []
   const branches = branchesQuery.data ?? []
   const rows = membershipsQuery.data ?? []
+  const salesmen = salesmenQuery.data ?? []
   const defaultRole = useMemo(() => roles.find((role) => role.code === 'cashier') ?? roles[0], [roles])
   const selectedMembership = useMemo(
     () => rows.find((row) => row.ulid === selectedMembershipUlid) ?? null,
@@ -84,6 +103,22 @@ export function UsersPage() {
     setRoleUlid(selectedMembership.roles?.[0]?.ulid ?? '')
     setBranchUlids((selectedMembership.branches ?? []).map((branch) => branch.ulid))
   }, [defaultRole?.ulid, selectedMembership])
+
+  useEffect(() => {
+    setSalesmanDrafts((current) => {
+      const next = { ...current }
+      for (const membership of rows) {
+        if (!next[membership.ulid]) {
+          next[membership.ulid] = {
+            salesmanUlid: membership.salesman?.ulid ?? '',
+            startTime: normalizeTime(membership.salesman_start_time),
+            endTime: normalizeTime(membership.salesman_end_time),
+          }
+        }
+      }
+      return next
+    })
+  }, [rows])
 
   async function refreshMemberships() {
     await membershipsQuery.refetch()
@@ -157,6 +192,27 @@ export function UsersPage() {
     }
   }
 
+  async function saveSelectedSalesman() {
+    if (!selectedSalesmanRowUlid || !canEdit) return
+    const draft = salesmanDrafts[selectedSalesmanRowUlid]
+    if (!draft) return
+
+    setSavingSalesman(true)
+    setError(null)
+    try {
+      await saveMembershipSalesman(selectedSalesmanRowUlid, {
+        salesman_ulid: draft.salesmanUlid || null,
+        start_time: draft.startTime || null,
+        end_time: draft.endTime || null,
+      })
+      await queryClient.invalidateQueries({ queryKey: ['memberships'] })
+    } catch (err) {
+      setError(err instanceof ApiClientError || err instanceof Error ? err.message : 'Unable to save salesman assignment.')
+    } finally {
+      setSavingSalesman(false)
+    }
+  }
+
   async function runSelectedAction(action: 'activate' | 'deactivate' | 'logout') {
     if (!selectedRow) return
     setError(null)
@@ -180,6 +236,8 @@ export function UsersPage() {
       if (tab === 'administration') {
         const form = document.getElementById('configure-user-form') as HTMLFormElement | null
         form?.requestSubmit()
+      } else if (tab === 'salesman') {
+        void saveSelectedSalesman()
       }
     },
     refresh: () => {
@@ -219,30 +277,10 @@ export function UsersPage() {
         </div>
 
         <div className="configure-users-tabs" role="tablist" aria-label="Configure users sections">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'administration'}
-            className={tab === 'administration' ? 'is-active' : undefined}
-            onClick={() => setTab('administration')}
-          >
-            User Administration
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'users'}
-            className={tab === 'users' ? 'is-active' : undefined}
-            onClick={() => setTab('users')}
-          >
-            View Users
-          </button>
-          <button type="button" role="tab" aria-selected={false} disabled title="Phase 2">
-            Others
-          </button>
-          <button type="button" role="tab" aria-selected={false} disabled title="Phase 2">
-            User To SO
-          </button>
+          <TabButton tab="administration" current={tab} onChange={setTab}>User Administration</TabButton>
+          <TabButton tab="users" current={tab} onChange={setTab}>View Users</TabButton>
+          <TabButton tab="others" current={tab} onChange={setTab}>Others</TabButton>
+          <TabButton tab="salesman" current={tab} onChange={setTab}>User To SO</TabButton>
           <button type="button" role="tab" aria-selected={false} disabled title="Reference details required">
             FP 2 User
           </button>
@@ -354,61 +392,245 @@ export function UsersPage() {
         ) : null}
 
         {tab === 'users' ? (
+          <UsersList
+            rows={rows}
+            loading={membershipsQuery.isLoading}
+            selectedRowUlid={selectedRowUlid}
+            onSelect={setSelectedRowUlid}
+            selectedRow={selectedRow}
+            canDeactivate={canDeactivate}
+            canActivate={canActivate}
+            canForceLogout={canForceLogout}
+            onAction={runSelectedAction}
+            onRefresh={refreshMemberships}
+          />
+        ) : null}
+
+        {tab === 'others' ? (
           <div className="configure-users-list">
             <div className="configure-users-grid">
               <PosDataGrid
                 columns={[
-                  { key: 'username', header: 'User Name', width: 160, render: (row) => row.username },
-                  { key: 'name', header: 'Name', width: 190, render: (row) => row.user?.name ?? '—' },
+                  { key: 'username', header: 'User Name', width: 145, render: (row) => row.username },
+                  { key: 'group', header: 'Group', width: 170, render: (row) => (row.roles ?? []).map((role) => role.name).join(', ') || '—' },
+                  { key: 'status', header: 'Status', width: 110, render: (row) => row.status },
+                  { key: 'owner', header: 'Owner', width: 80, render: (row) => row.is_owner ? 'Yes' : 'No' },
+                  { key: 'must_change', header: 'Must Change Password', width: 150, render: (row) => row.user?.must_change_password ? 'Yes' : 'No' },
+                  { key: 'last_login', header: 'Last Login', width: 160, render: (row) => formatDateTime(row.user?.last_login_at) },
+                  { key: 'branches', header: 'Branch Access', width: 190, render: (row) => (row.branches ?? []).map((branch) => branch.code).join(', ') || 'All' },
+                ]}
+                rows={rows}
+                rowKey={(row) => row.ulid}
+                emptyMessage={membershipsQuery.isLoading ? 'Loading users…' : 'No users found.'}
+              />
+            </div>
+            <div className="configure-users-note">
+              Legacy database/watermark fields from the reference application are not copied because BluePOS uses tenant, role, branch and session security instead.
+            </div>
+          </div>
+        ) : null}
+
+        {tab === 'salesman' ? (
+          <div className="configure-users-list">
+            <div className="configure-users-grid configure-users-salesman-grid">
+              <PosDataGrid
+                columns={[
+                  { key: 'user', header: 'User', width: 160, render: (row) => row.username },
                   {
-                    key: 'group',
-                    header: 'Group',
-                    width: 180,
-                    render: (row) => (row.roles ?? []).map((role) => role.name).join(', ') || '—',
+                    key: 'salesman',
+                    header: 'Sale Man',
+                    width: 250,
+                    render: (row) => {
+                      const draft = salesmanDrafts[row.ulid] ?? emptyDraft(row)
+                      return (
+                        <UiSelect
+                          value={draft.salesmanUlid}
+                          disabled={!canEdit || salesmenQuery.isLoading}
+                          options={[
+                            { value: '', label: '— Not assigned —' },
+                            ...salesmen.map((salesman) => ({
+                              value: salesman.ulid,
+                              label: `${salesman.code} — ${salesman.name}`,
+                            })),
+                          ]}
+                          onChange={(value) => patchSalesmanDraft(row, { salesmanUlid: value }, setSalesmanDrafts)}
+                        />
+                      )
+                    },
                   },
                   {
-                    key: 'branches',
-                    header: 'Branches',
-                    width: 220,
-                    render: (row) => (row.branches ?? []).map((branch) => branch.code).join(', ') || 'All',
+                    key: 'start',
+                    header: 'Start Time',
+                    width: 130,
+                    render: (row) => {
+                      const draft = salesmanDrafts[row.ulid] ?? emptyDraft(row)
+                      return (
+                        <input
+                          className="configure-users-time"
+                          type="time"
+                          value={draft.startTime}
+                          disabled={!canEdit}
+                          onChange={(event) => patchSalesmanDraft(row, { startTime: event.target.value }, setSalesmanDrafts)}
+                        />
+                      )
+                    },
                   },
                   {
-                    key: 'status',
-                    header: 'Status',
-                    width: 120,
-                    render: (row) => `${row.status}${row.is_owner ? ' / owner' : ''}`,
+                    key: 'end',
+                    header: 'End Time',
+                    width: 130,
+                    render: (row) => {
+                      const draft = salesmanDrafts[row.ulid] ?? emptyDraft(row)
+                      return (
+                        <input
+                          className="configure-users-time"
+                          type="time"
+                          value={draft.endTime}
+                          disabled={!canEdit}
+                          onChange={(event) => patchSalesmanDraft(row, { endTime: event.target.value }, setSalesmanDrafts)}
+                        />
+                      )
+                    },
                   },
                 ]}
                 rows={rows}
                 rowKey={(row) => row.ulid}
-                selectedKey={selectedRowUlid}
-                onSelect={(row) => setSelectedRowUlid(row.ulid)}
+                selectedKey={selectedSalesmanRowUlid}
+                onSelect={(row) => setSelectedSalesmanRowUlid(row.ulid)}
                 emptyMessage={membershipsQuery.isLoading ? 'Loading users…' : 'No users found.'}
               />
             </div>
-
             <div className="configure-users-list-footer">
-              <span>{rows.length} user{rows.length === 1 ? '' : 's'}</span>
-              <div>
-                {selectedRow?.status === 'active' && canDeactivate ? (
-                  <DesktopButton label="Deactivate" onClick={() => void runSelectedAction('deactivate')} />
-                ) : null}
-                {selectedRow?.status !== 'active' && selectedRow && canActivate ? (
-                  <DesktopButton label="Activate" onClick={() => void runSelectedAction('activate')} />
-                ) : null}
-                {selectedRow && canForceLogout ? (
-                  <DesktopButton label="Force logout" onClick={() => void runSelectedAction('logout')} />
-                ) : null}
-                <DesktopButton
-                  icon={<RefreshCw size={13} />}
-                  label="Refresh"
-                  onClick={() => void refreshMemberships()}
-                />
-              </div>
+              <span>Select a user row, assign a salesman and optional working time.</span>
+              <DesktopButton
+                icon={<Save size={13} />}
+                label="Save"
+                shortcut="F9"
+                disabled={!canEdit || !selectedSalesmanRowUlid || savingSalesman}
+                onClick={() => void saveSelectedSalesman()}
+              />
             </div>
           </div>
         ) : null}
       </div>
     </DesktopPanel>
   )
+}
+
+function TabButton({
+  tab,
+  current,
+  onChange,
+  children,
+}: {
+  tab: ConfigureUsersTab
+  current: ConfigureUsersTab
+  onChange: (tab: ConfigureUsersTab) => void
+  children: string
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={current === tab}
+      className={current === tab ? 'is-active' : undefined}
+      onClick={() => onChange(tab)}
+    >
+      {children}
+    </button>
+  )
+}
+
+function UsersList({
+  rows,
+  loading,
+  selectedRowUlid,
+  onSelect,
+  selectedRow,
+  canDeactivate,
+  canActivate,
+  canForceLogout,
+  onAction,
+  onRefresh,
+}: {
+  rows: Membership[]
+  loading: boolean
+  selectedRowUlid: string | null
+  onSelect: (ulid: string) => void
+  selectedRow: Membership | null
+  canDeactivate: boolean
+  canActivate: boolean
+  canForceLogout: boolean
+  onAction: (action: 'activate' | 'deactivate' | 'logout') => Promise<void>
+  onRefresh: () => Promise<void>
+}) {
+  return (
+    <div className="configure-users-list">
+      <div className="configure-users-grid">
+        <PosDataGrid
+          columns={[
+            { key: 'username', header: 'User Name', width: 160, render: (row) => row.username },
+            { key: 'name', header: 'Name', width: 190, render: (row) => row.user?.name ?? '—' },
+            { key: 'group', header: 'Group', width: 180, render: (row) => (row.roles ?? []).map((role) => role.name).join(', ') || '—' },
+            { key: 'branches', header: 'Branches', width: 220, render: (row) => (row.branches ?? []).map((branch) => branch.code).join(', ') || 'All' },
+            { key: 'status', header: 'Status', width: 120, render: (row) => `${row.status}${row.is_owner ? ' / owner' : ''}` },
+          ]}
+          rows={rows}
+          rowKey={(row) => row.ulid}
+          selectedKey={selectedRowUlid}
+          onSelect={(row) => onSelect(row.ulid)}
+          emptyMessage={loading ? 'Loading users…' : 'No users found.'}
+        />
+      </div>
+
+      <div className="configure-users-list-footer">
+        <span>{rows.length} user{rows.length === 1 ? '' : 's'}</span>
+        <div>
+          {selectedRow?.status === 'active' && canDeactivate ? (
+            <DesktopButton label="Deactivate" onClick={() => void onAction('deactivate')} />
+          ) : null}
+          {selectedRow?.status !== 'active' && selectedRow && canActivate ? (
+            <DesktopButton label="Activate" onClick={() => void onAction('activate')} />
+          ) : null}
+          {selectedRow && canForceLogout ? (
+            <DesktopButton label="Force logout" onClick={() => void onAction('logout')} />
+          ) : null}
+          <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" onClick={() => void onRefresh()} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function emptyDraft(row: Membership): SalesmanDraft {
+  return {
+    salesmanUlid: row.salesman?.ulid ?? '',
+    startTime: normalizeTime(row.salesman_start_time),
+    endTime: normalizeTime(row.salesman_end_time),
+  }
+}
+
+function patchSalesmanDraft(
+  row: Membership,
+  patch: Partial<SalesmanDraft>,
+  setDrafts: React.Dispatch<React.SetStateAction<Record<string, SalesmanDraft>>>,
+) {
+  setDrafts((current) => ({
+    ...current,
+    [row.ulid]: {
+      ...(current[row.ulid] ?? emptyDraft(row)),
+      ...patch,
+    },
+  }))
+}
+
+function normalizeTime(value: string | null | undefined): string {
+  if (!value) return ''
+  return value.slice(0, 5)
+}
+
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '—'
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString()
 }
