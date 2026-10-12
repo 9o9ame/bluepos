@@ -596,7 +596,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
         { id: 'options', label: 'Software Options', icon: Settings, moduleKey: 'settings', permission: 'settings.view', status: 'ready', tone: 'navy' },
         { id: 'recalc-stock', label: 'Recalculate Stock', icon: Boxes, status: 'later', tone: 'orange' },
         { id: 'calculator', label: 'Calculator', icon: Calculator, status: 'ready', action: 'calculator', tone: 'gold' },
-        { id: 'lock', label: 'Lock this Software', icon: Lock, status: 'later', action: 'lock', tone: 'red' },
+        { id: 'lock', label: 'Lock this Software', icon: Lock, status: 'ready', action: 'lock', tone: 'red' },
       ],
     },
   ],
