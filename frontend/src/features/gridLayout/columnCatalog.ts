@@ -37,6 +37,7 @@ export const PURCHASE_INVOICE_COLUMNS: GridColumnDef[] = [
   { key: 'batch', label: 'Batch No.', defaultVisible: true, width: 88 },
   { key: 'expiry', label: 'Exp. Date', defaultVisible: true, width: 96 },
   { key: 'quantity', label: 'Qty', defaultVisible: true, width: 72, align: 'right', cellClass: 'cell-yellow' },
+  { key: 'free_pcs', label: 'Bonus / Free Pcs', defaultVisible: false, width: 90, align: 'right' },
   { key: 'uom', label: 'Unit', defaultVisible: true, width: 56 },
   { key: 'mrp_ex_gst', label: 'MRP (Without GST)', defaultVisible: false, width: 108, align: 'right' },
   { key: 'mrp_in_gst', label: 'MRP (Incl. GST)', defaultVisible: false, width: 100, align: 'right' },
