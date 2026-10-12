@@ -221,6 +221,11 @@ export function SalesInvoicePage() {
 
   const saleSoftwareOptions = businessSettingsQuery.data?.software_options?.sale
   const generalSoftwareOptions = businessSettingsQuery.data?.software_options?.general
+  const receiptOptions = {
+    heading: saleSoftwareOptions?.print_heading ?? null,
+    message: saleSoftwareOptions?.message ?? null,
+    fbrMessage: saleSoftwareOptions?.fbr_message ?? null,
+  }
 
   const effectiveSalesColumns = useMemo(
     () =>
@@ -1106,13 +1111,13 @@ export function SalesInvoicePage() {
         event.preventDefault()
 
         if (savedSale) {
-          previewSaleReceipt(savedSale)
+          previewSaleReceipt(savedSale, receiptOptions)
         }
       } else if (event.key === 'F11') {
         event.preventDefault()
 
         if (savedSale) {
-          printSaleReceipt(savedSale)
+          printSaleReceipt(savedSale, receiptOptions)
         }
       } else if (event.key === 'F12') {
         event.preventDefault()
@@ -1300,104 +1305,108 @@ export function SalesInvoicePage() {
                     </button>
                   </div>
 
-                  <label>S.Man:</label>
-
-                  <div className={`sales-reference-input-button sales-reference-salesman sales-reference-inline-caret${salesmanPickerOpen ? ' is-open' : ''}`}>
-                    <input
-                      value={salesmanSearch}
-                      placeholder="Search salesman"
-                      aria-label="Salesman"
-                      autoComplete="off"
-                      onFocus={() => {
-                        setCustomerPickerOpen(false)
-                        setSalesmanPickerOpen(true)
-                        if (!salesmanSearch && selectedSalesman) {
-                          setSalesmanSearch(`${selectedSalesman.code} — ${selectedSalesman.name}`)
-                        }
-                      }}
-                      onChange={(event) => {
-                        setSalesmanSearch(event.target.value)
-                        setCustomerPickerOpen(false)
-                        setSalesmanPickerOpen(true)
-                      }}
-                    />
-
-                    <button
-                      type="button"
-                      className="sales-reference-field-caret"
-                      onClick={() => {
-                        setCustomerPickerOpen(false)
-                        setSalesmanPickerOpen((open) => !open)
-                      }}
-                      title="Choose salesman"
-                      aria-label="Choose salesman"
-                    >
-                      <ChevronDown size={12} strokeWidth={2.75} />
-                    </button>
-
-                    <div
-                      className={`sales-salesman-dropdown-shutter${salesmanPickerOpen ? ' is-open' : ''}`}
-                      aria-hidden={!salesmanPickerOpen}
-                    >
-                      <div className="sales-pos-salesman-grid" role="listbox" aria-label="Choose salesman">
-                        <div className="sales-picker-search">
-                          <input
-                            value={salesmanSearch}
-                            placeholder="Search salesman by code, name, address or mobile"
-                            aria-label="Search salesman"
-                            autoComplete="off"
-                            onChange={(event) => setSalesmanSearch(event.target.value)}
-                          />
-                        </div>
-
-                        <div className="sales-pos-salesman-grid-head" aria-hidden="true">
-                          <span>Code</span>
-                          <span>Name</span>
-                          <span>Address</span>
-                          <span>Mobile</span>
-                        </div>
-
-                        <div className="sales-pos-salesman-grid-body">
-                          <button
-                            type="button"
-                            className={`sales-pos-salesman-grid-row${selectedSalesmanUlid ? '' : ' is-selected'}`}
-                            onClick={() => {
-                              setSelectedSalesmanUlid(null)
-                              setSalesmanSearch('')
-                              setSalesmanPickerOpen(false)
-                            }}
-                          >
-                            <span>—</span>
-                            <strong>NO SALESMAN</strong>
-                            <span>—</span>
-                            <span>—</span>
-                          </button>
-
-                          {filteredSalesmen.map((salesman) => (
+                  {generalSoftwareOptions?.show_salesman_vcs !== false ? (
+                    <>
+                    <label>S.Man:</label>
+  
+                    <div className={`sales-reference-input-button sales-reference-salesman sales-reference-inline-caret${salesmanPickerOpen ? ' is-open' : ''}`}>
+                      <input
+                        value={salesmanSearch}
+                        placeholder="Search salesman"
+                        aria-label="Salesman"
+                        autoComplete="off"
+                        onFocus={() => {
+                          setCustomerPickerOpen(false)
+                          setSalesmanPickerOpen(true)
+                          if (!salesmanSearch && selectedSalesman) {
+                            setSalesmanSearch(`${selectedSalesman.code} — ${selectedSalesman.name}`)
+                          }
+                        }}
+                        onChange={(event) => {
+                          setSalesmanSearch(event.target.value)
+                          setCustomerPickerOpen(false)
+                          setSalesmanPickerOpen(true)
+                        }}
+                      />
+  
+                      <button
+                        type="button"
+                        className="sales-reference-field-caret"
+                        onClick={() => {
+                          setCustomerPickerOpen(false)
+                          setSalesmanPickerOpen((open) => !open)
+                        }}
+                        title="Choose salesman"
+                        aria-label="Choose salesman"
+                      >
+                        <ChevronDown size={12} strokeWidth={2.75} />
+                      </button>
+  
+                      <div
+                        className={`sales-salesman-dropdown-shutter${salesmanPickerOpen ? ' is-open' : ''}`}
+                        aria-hidden={!salesmanPickerOpen}
+                      >
+                        <div className="sales-pos-salesman-grid" role="listbox" aria-label="Choose salesman">
+                          <div className="sales-picker-search">
+                            <input
+                              value={salesmanSearch}
+                              placeholder="Search salesman by code, name, address or mobile"
+                              aria-label="Search salesman"
+                              autoComplete="off"
+                              onChange={(event) => setSalesmanSearch(event.target.value)}
+                            />
+                          </div>
+  
+                          <div className="sales-pos-salesman-grid-head" aria-hidden="true">
+                            <span>Code</span>
+                            <span>Name</span>
+                            <span>Address</span>
+                            <span>Mobile</span>
+                          </div>
+  
+                          <div className="sales-pos-salesman-grid-body">
                             <button
                               type="button"
-                              className={`sales-pos-salesman-grid-row${selectedSalesmanUlid === salesman.ulid ? ' is-selected' : ''}`}
-                              key={salesman.ulid}
+                              className={`sales-pos-salesman-grid-row${selectedSalesmanUlid ? '' : ' is-selected'}`}
                               onClick={() => {
-                                setSelectedSalesmanUlid(salesman.ulid)
-                                setSalesmanSearch(`${salesman.code} — ${salesman.name}`)
+                                setSelectedSalesmanUlid(null)
+                                setSalesmanSearch('')
                                 setSalesmanPickerOpen(false)
                               }}
                             >
-                              <span>{salesman.code || '—'}</span>
-                              <strong>{salesman.name}</strong>
-                              <span>{salesman.address || '—'}</span>
-                              <span>{salesman.mobile || '—'}</span>
+                              <span>—</span>
+                              <strong>NO SALESMAN</strong>
+                              <span>—</span>
+                              <span>—</span>
                             </button>
-                          ))}
-                        </div>
-
-                        <div className="sales-pos-salesman-grid-foot">
-                          {filteredSalesmen.length} of {salesmenQuery.data?.length ?? 0} Salesmen
+  
+                            {filteredSalesmen.map((salesman) => (
+                              <button
+                                type="button"
+                                className={`sales-pos-salesman-grid-row${selectedSalesmanUlid === salesman.ulid ? ' is-selected' : ''}`}
+                                key={salesman.ulid}
+                                onClick={() => {
+                                  setSelectedSalesmanUlid(salesman.ulid)
+                                  setSalesmanSearch(`${salesman.code} — ${salesman.name}`)
+                                  setSalesmanPickerOpen(false)
+                                }}
+                              >
+                                <span>{salesman.code || '—'}</span>
+                                <strong>{salesman.name}</strong>
+                                <span>{salesman.address || '—'}</span>
+                                <span>{salesman.mobile || '—'}</span>
+                              </button>
+                            ))}
+                          </div>
+  
+                          <div className="sales-pos-salesman-grid-foot">
+                            {filteredSalesmen.length} of {salesmenQuery.data?.length ?? 0} Salesmen
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                    </>
+                  ) : null}
 
                   <label>To:</label>
 
@@ -2164,7 +2173,7 @@ export function SalesInvoicePage() {
                     disabled={!savedSale}
                     onClick={() =>
                       savedSale &&
-                      previewSaleReceipt(savedSale)
+                      previewSaleReceipt(savedSale, receiptOptions)
                     }
                   >
                     <span>Preview [F3]</span>
@@ -2179,7 +2188,7 @@ export function SalesInvoicePage() {
                     disabled={!savedSale}
                     onClick={() =>
                       savedSale &&
-                      printSaleReceipt(savedSale)
+                      printSaleReceipt(savedSale, receiptOptions)
                     }
                   >
                     <span>Print [F11]</span>
