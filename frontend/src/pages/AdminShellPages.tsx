@@ -301,7 +301,6 @@ export function WarehousesPage() {
       return createWarehouse({
         code: code.trim(),
         name: name.trim(),
-        branch_ulid: session.branch.ulid,
       })
     },
     onSuccess: async (warehouse) => {
