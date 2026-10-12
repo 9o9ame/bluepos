@@ -10,3 +10,29 @@ export function switchBranch(branchUlid: string): Promise<AuthSession> {
     method: 'POST',
   })
 }
+
+
+export function createBranch(payload: {
+  code: string
+  name: string
+}): Promise<Branch> {
+  return apiFetch<Branch>('/api/branches', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateBranch(
+  branchUlid: string,
+  payload: {
+    code?: string
+    name?: string
+    status?: 'active' | 'inactive'
+    is_default?: boolean
+  },
+): Promise<Branch> {
+  return apiFetch<Branch>(`/api/branches/${branchUlid}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
