@@ -797,7 +797,7 @@ export function SalesInvoicePage() {
       focusLineQuantity(lineKey)
     } catch (err) {
       setSaveError(
-        err instanceof ApiClientError
+        err instanceof ApiClientError || err instanceof Error
           ? err.message
           : 'Unable to load the selected product.',
       )
