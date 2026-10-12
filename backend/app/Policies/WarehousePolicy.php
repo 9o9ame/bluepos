@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Authz\PermissionService;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Tenancy\TenantContext;
 
 class WarehousePolicy
@@ -24,5 +25,13 @@ class WarehousePolicy
     public function create(User $user): bool
     {
         return $this->permissions->can('warehouses.manage');
+    }
+
+    public function update(User $user, Warehouse $warehouse): bool
+    {
+        return $this->permissions->can('warehouses.manage')
+            && $this->tenantContext->hasTenant()
+            && (int) $warehouse->tenant_id === $this->tenantContext->tenantId()
+            && (int) $warehouse->branch_id === $this->tenantContext->branchId();
     }
 }
