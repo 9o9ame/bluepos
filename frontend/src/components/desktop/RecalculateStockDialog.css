@@ -1,6 +1,7 @@
 .recalculate-stock-dialog {
   display: grid;
   gap: 10px;
+  padding: 6px;
   color: var(--ui-text);
 }
 
