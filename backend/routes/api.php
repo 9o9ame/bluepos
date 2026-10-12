@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\ColumnPreferenceController;
+use App\Http\Controllers\Api\CustomQueryController;
 use App\Http\Controllers\Api\CoaChartController;
 use App\Http\Controllers\Api\AccountMainHeadController;
 use App\Http\Controllers\Api\AccountSubHeadController;
@@ -86,6 +87,11 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::patch('/warehouses/{warehouseUlid}', [WarehouseController::class, 'update']);
 
     Route::get('/permissions', [PermissionController::class, 'index']);
+
+    Route::get('/custom-query/catalog', [CustomQueryController::class, 'catalog']);
+    Route::post('/custom-query/run', [CustomQueryController::class, 'run']);
+    Route::get('/custom-query/saved', [CustomQueryController::class, 'saved']);
+    Route::post('/custom-query/saved', [CustomQueryController::class, 'store']);
 
     Route::get('/roles', [RoleController::class, 'index']);
     Route::post('/roles', [RoleController::class, 'store']);
