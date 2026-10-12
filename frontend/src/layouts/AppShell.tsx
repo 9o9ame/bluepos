@@ -62,6 +62,13 @@ export function AppShell() {
             navigate('/login', { replace: true })
           })
         }}
+        onLock={() => {
+          setLoggingOut(true)
+          void logout().finally(() => {
+            setLoggingOut(false)
+            navigate('/login', { replace: true })
+          })
+        }}
         onChangePassword={() => navigate('/change-password')}
         onAccount={() => navigate('/administration/account')}
         onHome={() => navigate('/')}
@@ -78,6 +85,7 @@ function AppShellFrame({
   calculatorOpen,
   setCalculatorOpen,
   onLogout,
+  onLock,
   onChangePassword,
   onAccount,
   onHome,
@@ -89,6 +97,7 @@ function AppShellFrame({
   calculatorOpen: boolean
   setCalculatorOpen: (open: boolean) => void
   onLogout: () => void
+  onLock: () => void
   onChangePassword: () => void
   onAccount: () => void
   onHome: () => void
@@ -107,7 +116,7 @@ function AppShellFrame({
         onChangePassword={onChangePassword}
         onAccount={onAccount}
       />
-      <Ribbon onCalculator={() => setCalculatorOpen(true)} />
+      <Ribbon onCalculator={() => setCalculatorOpen(true)} onLock={onLock} />
       <WorkspaceTabBar />
       <div className="workspace-host">
         <div className="workspace-host-inner">
