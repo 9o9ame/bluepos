@@ -1,0 +1,212 @@
+.configure-users-page .desktop-panel-body.is-flush {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 18px;
+  background: var(--ui-bg);
+}
+
+.configure-users-window {
+  width: min(760px, 100%);
+  min-height: 470px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
+  overflow: hidden;
+}
+
+.configure-users-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text);
+  font-size: 20px;
+}
+
+.configure-users-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 10px 0;
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--ui-surface);
+}
+
+.configure-users-tabs button {
+  min-height: 32px;
+  padding: 5px 12px;
+  border: 1px solid var(--ui-control-border);
+  border-bottom: 0;
+  border-radius: var(--control-radius) var(--control-radius) 0 0;
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background var(--ui-transition-fast),
+    border-color var(--ui-transition-fast);
+}
+
+.configure-users-tabs button:hover:not(:disabled) {
+  background: var(--ui-control-hover-bg);
+  border-color: var(--ui-control-hover-border);
+}
+
+.configure-users-tabs button.is-active {
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-strong);
+  border-color: var(--ui-accent);
+}
+
+.configure-users-tabs button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.configure-users-error {
+  margin: 10px 14px 0;
+  padding: 7px 9px;
+  border: 1px solid var(--ui-danger);
+  border-radius: var(--control-radius);
+  color: var(--ui-danger);
+  background: var(--ui-surface-subtle);
+  font-size: 12px;
+}
+
+.configure-users-form {
+  padding: 22px 24px 18px;
+}
+
+.configure-users-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px 18px;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.configure-users-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--ui-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.configure-users-field-wide {
+  grid-column: 1 / -1;
+}
+
+.configure-users-field > input {
+  width: 100%;
+  min-height: var(--control-height, 30px);
+  padding: 5px 8px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+}
+
+.configure-users-field > input:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.configure-users-field > input:disabled {
+  opacity: 0.66;
+  background: var(--ui-surface-muted);
+}
+
+.configure-users-branches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  min-height: 36px;
+  padding: 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text);
+  font-weight: 400;
+}
+
+.configure-users-branches label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.configure-users-form-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.configure-users-list {
+  padding: 12px;
+}
+
+.configure-users-grid {
+  height: 340px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  overflow: hidden;
+}
+
+.configure-users-list-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 46px;
+  padding: 8px 2px 0;
+  color: var(--ui-text-muted);
+  font-size: 12px;
+}
+
+.configure-users-list-footer > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .configure-users-page .desktop-panel-body.is-flush {
+    padding: 8px;
+  }
+
+  .configure-users-title {
+    font-size: 17px;
+  }
+
+  .configure-users-form {
+    padding: 14px;
+  }
+
+  .configure-users-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .configure-users-field-wide {
+    grid-column: 1;
+  }
+
+  .configure-users-list-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .configure-users-list-footer > div {
+    justify-content: flex-start;
+  }
+}
