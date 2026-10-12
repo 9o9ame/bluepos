@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Boxes, CheckCircle2 } from 'lucide-react'
+import { Boxes, CheckCircle2, Database, LockKeyhole, ShieldCheck } from 'lucide-react'
 import { recalculateStock, type StockRecalculationResult } from '../../api/inventory'
 import { useFeedback } from '../../feedback/FeedbackProvider'
 import { UiButton } from '../ui/UiButton'
@@ -71,49 +71,96 @@ export function RecalculateStockDialog({
         {result ? (
           <>
             <div className="recalculate-stock-result">
-              <CheckCircle2 size={28} aria-hidden />
-              <strong>{result.corrected_products}</strong>
+              <span className="recalculate-stock-result-icon">
+                <CheckCircle2 size={24} aria-hidden />
+              </span>
+              <div className="recalculate-stock-result-count">{result.corrected_products}</div>
+              <strong>
+                {result.corrected_products === 0
+                  ? 'Stock balances are already correct'
+                  : result.corrected_products === 1
+                    ? 'Product stock corrected'
+                    : 'Products stock corrected'}
+              </strong>
               <span>
-                {result.corrected_products === 1 ? 'Product stock was corrected' : 'Products stock were corrected'}
+                {result.corrected_products === 0
+                  ? 'No balance repair was required.'
+                  : 'Cached stock balances were repaired from the movement ledger.'}
               </span>
             </div>
 
             <div className="recalculate-stock-stats">
               <div>
-                <span>Checked balances</span>
+                <span>Checked</span>
                 <strong>{result.checked_balances}</strong>
               </div>
               <div>
-                <span>Corrected balances</span>
+                <span>Corrected</span>
                 <strong>{result.corrected_balances}</strong>
               </div>
               <div>
-                <span>Created balances</span>
+                <span>Created</span>
                 <strong>{result.created_balances}</strong>
               </div>
               <div>
-                <span>Missing valuation basis</span>
+                <span>Valuation pending</span>
                 <strong>{result.valuation_unavailable}</strong>
               </div>
             </div>
 
             {result.valuation_unavailable > 0 ? (
               <p className="recalculate-stock-note">
-                Some missing balance rows had no existing average cost. Their quantity was rebuilt, but valuation was left unavailable rather than invented.
+                {result.valuation_unavailable} balance{result.valuation_unavailable === 1 ? '' : 's'} had no existing average cost. Quantity was rebuilt, but valuation was intentionally left unavailable.
               </p>
-            ) : null}
+            ) : (
+              <div className="recalculate-stock-safe-status">
+                <ShieldCheck size={14} aria-hidden />
+                Recalculation completed without changing stock movements.
+              </div>
+            )}
           </>
         ) : (
-          <div className="recalculate-stock-intro">
-            <Boxes size={32} aria-hidden />
-            <strong>Repair cached stock balances</strong>
-            <p>
-              BluePOS will compare stock balances with the immutable stock movement ledger for this tenant and repair quantity, last-movement pointer, and cached stock value where needed.
+          <>
+            <div className="recalculate-stock-intro">
+              <span className="recalculate-stock-hero-icon">
+                <Boxes size={28} aria-hidden />
+              </span>
+              <div>
+                <strong>Repair cached stock balances</strong>
+                <p>
+                  Compare current balances with the immutable stock movement ledger and correct only the cached stock state.
+                </p>
+              </div>
+            </div>
+
+            <div className="recalculate-stock-assurances">
+              <div>
+                <Database size={15} aria-hidden />
+                <span>
+                  <strong>Ledger based</strong>
+                  Quantity comes from posted stock movements.
+                </span>
+              </div>
+              <div>
+                <LockKeyhole size={15} aria-hidden />
+                <span>
+                  <strong>Movements protected</strong>
+                  Existing movements are never edited or deleted.
+                </span>
+              </div>
+              <div>
+                <ShieldCheck size={15} aria-hidden />
+                <span>
+                  <strong>Safe valuation</strong>
+                  Existing average cost is preserved, never invented.
+                </span>
+              </div>
+            </div>
+
+            <p className="recalculate-stock-caption">
+              This operation is tenant-scoped and runs under an inventory lock to avoid concurrent stock-posting races.
             </p>
-            <p>
-              Stock movements are never changed or deleted. Historical average cost is not recalculated in this phase.
-            </p>
-          </div>
+          </>
         )}
       </div>
     </UiModal>
