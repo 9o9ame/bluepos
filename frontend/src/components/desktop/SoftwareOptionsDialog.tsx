@@ -103,23 +103,30 @@ function mergeOptions(source: Partial<SoftwareOptions> | Record<string, never> |
   }
 }
 
+const NOT_YET_SUPPORTED = 'Saved for compatibility, but BluePOS does not have a safe operational mapping for this option yet.'
+
 function OptionCheck({
   label,
   checked,
   disabled,
+  unavailableReason,
   onChange,
 }: {
   label: string
   checked: boolean
   disabled: boolean
+  unavailableReason?: string
   onChange: (checked: boolean) => void
 }) {
   return (
-    <label className="software-options-check">
+    <label
+      className={`software-options-check${unavailableReason ? ' is-disabled' : ''}`}
+      title={unavailableReason}
+    >
       <input
         type="checkbox"
         checked={checked}
-        disabled={disabled}
+        disabled={disabled || Boolean(unavailableReason)}
         onChange={(event) => onChange(event.target.checked)}
       />
       <span>{label}</span>
@@ -271,16 +278,17 @@ export function SoftwareOptionsDialog({
                   min={0}
                   max={3650}
                   value={options.sale.expiry_warning_days}
-                  disabled={disabled}
+                  disabled
+                  title={NOT_YET_SUPPORTED}
                   onChange={(event) => patchSale('expiry_warning_days', Number(event.target.value) || 0)}
                 />
                 <span>Days Ago…</span>
               </label>
-              <OptionCheck label="Show Receiving Window on Saving Sales Invoice" checked={options.sale.show_receiving_window} disabled={disabled} onChange={(value) => patchSale('show_receiving_window', value)} />
+              <OptionCheck label="Show Receiving Window on Saving Sales Invoice" checked={options.sale.show_receiving_window} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchSale('show_receiving_window', value)} />
               <OptionCheck label="Manual Change of Date in Sale Invoice and Sale Return" checked={options.sale.manual_date_change} disabled={disabled} onChange={(value) => patchSale('manual_date_change', value)} />
               <OptionCheck label="Don't Update Invoice Date To Current Date for Pending Invoices" checked={options.sale.keep_pending_invoice_date} disabled={disabled} onChange={(value) => patchSale('keep_pending_invoice_date', value)} />
               <OptionCheck label="Print Dotted Line between Items on Sales Invoice" checked={options.sale.print_dotted_line} disabled={disabled} onChange={(value) => patchSale('print_dotted_line', value)} />
-              <OptionCheck label="Don't Round Off Amounts" checked={options.sale.dont_round_off} disabled={disabled} onChange={(value) => patchSale('dont_round_off', value)} />
+              <OptionCheck label="Don't Round Off Amounts" checked={options.sale.dont_round_off} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchSale('dont_round_off', value)} />
 
               <label className="software-options-field">
                 <span>Message on Sales Invoice</span>
@@ -297,20 +305,20 @@ export function SoftwareOptionsDialog({
               <OptionCheck label="Show Remarks" checked={options.sale.show_remarks} disabled={disabled} onChange={(value) => patchSale('show_remarks', value)} />
               <OptionCheck label="Show Dis %" checked={options.sale.show_discount_percent} disabled={disabled} onChange={(value) => patchSale('show_discount_percent', value)} />
               <OptionCheck label="Show Dis Rs" checked={options.sale.show_discount_amount} disabled={disabled} onChange={(value) => patchSale('show_discount_amount', value)} />
-              <OptionCheck label="Show Pre Rates in Sales" checked={options.sale.show_previous_rates} disabled={disabled} onChange={(value) => patchSale('show_previous_rates', value)} />
-              <OptionCheck label="Amount Editable" checked={options.sale.amount_editable} disabled={disabled} onChange={(value) => patchSale('amount_editable', value)} />
-              <OptionCheck label="On Amount Change, Change Qty" checked={options.sale.amount_change_updates_qty} disabled={disabled} onChange={(value) => patchSale('amount_change_updates_qty', value)} />
-              <OptionCheck label="Disable txtID In Sales Invoice" checked={options.sale.disable_txt_id} disabled={disabled} onChange={(value) => patchSale('disable_txt_id', value)} />
+              <OptionCheck label="Show Pre Rates in Sales" checked={options.sale.show_previous_rates} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchSale('show_previous_rates', value)} />
+              <OptionCheck label="Amount Editable" checked={options.sale.amount_editable} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchSale('amount_editable', value)} />
+              <OptionCheck label="On Amount Change, Change Qty" checked={options.sale.amount_change_updates_qty} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchSale('amount_change_updates_qty', value)} />
+              <OptionCheck label="Disable txtID In Sales Invoice" checked={options.sale.disable_txt_id} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchSale('disable_txt_id', value)} />
 
               <label className="software-options-field">
                 <span>FBR Message On Invoice</span>
                 <textarea value={options.sale.fbr_message ?? ''} disabled={disabled} onChange={(event) => patchSale('fbr_message', event.target.value || null)} />
               </label>
 
-              <OptionCheck label="Show Qty Option In Products For Discount On" checked={options.sale.show_qty_option_discount} disabled={disabled} onChange={(value) => patchSale('show_qty_option_discount', value)} />
+              <OptionCheck label="Show Qty Option In Products For Discount On" checked={options.sale.show_qty_option_discount} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchSale('show_qty_option_discount', value)} />
               <div className="software-options-inline-options">
-                <OptionCheck label="Invoice ON" checked={options.sale.invoice_on} disabled={disabled} onChange={(value) => patchSale('invoice_on', value)} />
-                <OptionCheck label="Default Yes" checked={options.sale.default_yes} disabled={disabled} onChange={(value) => patchSale('default_yes', value)} />
+                <OptionCheck label="Invoice ON" checked={options.sale.invoice_on} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchSale('invoice_on', value)} />
+                <OptionCheck label="Default Yes" checked={options.sale.default_yes} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchSale('default_yes', value)} />
               </div>
               <OptionCheck label="Duplication Of Products Not ALLOWED (POS + RESTEURANT)" checked={options.sale.disallow_duplicate_products} disabled={disabled} onChange={(value) => patchSale('disallow_duplicate_products', value)} />
 
@@ -333,20 +341,20 @@ export function SoftwareOptionsDialog({
               <OptionCheck label="Show Expiry and Batch Options" checked={options.purchase.show_expiry_batch} disabled={disabled} onChange={(value) => patchPurchase('show_expiry_batch', value)} />
               <OptionCheck label="Show bonus Option" checked={options.purchase.show_bonus} disabled={disabled} onChange={(value) => patchPurchase('show_bonus', value)} />
               <OptionCheck label="Show Sales Tax Option" checked={options.purchase.show_sales_tax} disabled={disabled} onChange={(value) => patchPurchase('show_sales_tax', value)} />
-              <OptionCheck label="Show Rate Change Windows When Rate is Changed" checked={options.purchase.show_rate_change_window} disabled={disabled} onChange={(value) => patchPurchase('show_rate_change_window', value)} />
+              <OptionCheck label="Show Rate Change Windows When Rate is Changed" checked={options.purchase.show_rate_change_window} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchPurchase('show_rate_change_window', value)} />
             </section>
             <section>
-              <OptionCheck label="Show Vehicle,Bilty In Purchase" checked={options.purchase.show_vehicle_bilty} disabled={disabled} onChange={(value) => patchPurchase('show_vehicle_bilty', value)} />
-              <OptionCheck label="Amount is Editable in Purchase" checked={options.purchase.amount_editable} disabled={disabled} onChange={(value) => patchPurchase('amount_editable', value)} />
+              <OptionCheck label="Show Vehicle,Bilty In Purchase" checked={options.purchase.show_vehicle_bilty} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchPurchase('show_vehicle_bilty', value)} />
+              <OptionCheck label="Amount is Editable in Purchase" checked={options.purchase.amount_editable} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchPurchase('amount_editable', value)} />
 
               <div className="software-options-purchase-bottom">
-                <OptionCheck label="Show Stock Taking Option" checked={options.purchase.show_stock_taking} disabled={disabled} onChange={(value) => patchPurchase('show_stock_taking', value)} />
+                <OptionCheck label="Show Stock Taking Option" checked={options.purchase.show_stock_taking} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchPurchase('show_stock_taking', value)} />
 
                 <label className="software-options-field">
                   <span>Stock Taking Method</span>
                   <UiSelect
                     value={options.purchase.stock_taking_method}
-                    disabled={disabled || !options.purchase.show_stock_taking}
+                    disabled
                     searchable={false}
                     options={[
                       { value: 'full', label: '01: Stock Taking In Products Full' },
@@ -374,7 +382,8 @@ export function SoftwareOptionsDialog({
                   <span>Default Customer</span>
                   <UiSelect
                     value={options.purchase.default_customer_ulid ?? ''}
-                    disabled={disabled || customersQuery.isLoading}
+                    disabled
+                    title={NOT_YET_SUPPORTED}
                     options={[
                       { value: '', label: '— Not configured —' },
                       ...activeCustomers.map((row) => ({
@@ -388,7 +397,7 @@ export function SoftwareOptionsDialog({
 
                 <label className="software-options-field">
                   <span>Heading on P.O.</span>
-                  <input value={options.purchase.po_heading ?? ''} disabled={disabled} onChange={(event) => patchPurchase('po_heading', event.target.value || null)} />
+                  <input value={options.purchase.po_heading ?? ''} disabled title={NOT_YET_SUPPORTED} onChange={(event) => patchPurchase('po_heading', event.target.value || null)} />
                 </label>
               </div>
             </section>
@@ -400,7 +409,7 @@ export function SoftwareOptionsDialog({
             <section>
               <label className="software-options-inline-number">
                 <span>View Invoices only for</span>
-                <input type="number" min={1} max={3650} value={options.general.view_invoices_days} disabled={disabled} onChange={(event) => patchGeneral('view_invoices_days', Math.max(1, Number(event.target.value) || 1))} />
+                <input type="number" min={1} max={3650} value={options.general.view_invoices_days} disabled title={NOT_YET_SUPPORTED} onChange={(event) => patchGeneral('view_invoices_days', Math.max(1, Number(event.target.value) || 1))} />
                 <span>Days</span>
               </label>
               <label className="software-options-inline-number">
@@ -410,10 +419,10 @@ export function SoftwareOptionsDialog({
               </label>
 
               <div className="software-options-inline-options">
-                <OptionCheck label="Show Purchase Qty in Products" checked={options.general.show_purchase_qty} disabled={disabled} onChange={(value) => patchGeneral('show_purchase_qty', value)} />
-                <OptionCheck label="Weight in Invoices" checked={options.general.weight_in_invoices} disabled={disabled} onChange={(value) => patchGeneral('weight_in_invoices', value)} />
+                <OptionCheck label="Show Purchase Qty in Products" checked={options.general.show_purchase_qty} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('show_purchase_qty', value)} />
+                <OptionCheck label="Weight in Invoices" checked={options.general.weight_in_invoices} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('weight_in_invoices', value)} />
               </div>
-              <OptionCheck label="Single User Mode for Product IDs (Network Disable)" checked={options.general.single_user_product_ids} disabled={disabled} onChange={(value) => patchGeneral('single_user_product_ids', value)} />
+              <OptionCheck label="Single User Mode for Product IDs (Network Disable)" checked={options.general.single_user_product_ids} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('single_user_product_ids', value)} />
 
               <fieldset className="software-options-font">
                 <legend>Custom Font</legend>
@@ -432,20 +441,21 @@ export function SoftwareOptionsDialog({
                 </div>
               </fieldset>
 
-              <OptionCheck label="Use Last Purchase Rate to Calculate Profit in Invoice" checked={options.general.use_last_purchase_rate_profit} disabled={disabled} onChange={(value) => patchGeneral('use_last_purchase_rate_profit', value)} />
-              <OptionCheck label="Keep Item name , Selling Price ,Purchase Price in Product Definition" checked={options.general.keep_product_prices} disabled={disabled} onChange={(value) => patchGeneral('keep_product_prices', value)} />
+              <OptionCheck label="Use Last Purchase Rate to Calculate Profit in Invoice" checked={options.general.use_last_purchase_rate_profit} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('use_last_purchase_rate_profit', value)} />
+              <OptionCheck label="Keep Item name , Selling Price ,Purchase Price in Product Definition" checked={options.general.keep_product_prices} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('keep_product_prices', value)} />
               <div className="software-options-inline-options">
-                <OptionCheck label="Auto Generate Barcodes" checked={options.general.auto_generate_barcodes} disabled={disabled} onChange={(value) => patchGeneral('auto_generate_barcodes', value)} />
-                <OptionCheck label="Recalc Sheet" checked={options.general.recalc_sheet} disabled={disabled} onChange={(value) => patchGeneral('recalc_sheet', value)} />
+                <OptionCheck label="Auto Generate Barcodes" checked={options.general.auto_generate_barcodes} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('auto_generate_barcodes', value)} />
+                <OptionCheck label="Recalc Sheet" checked={options.general.recalc_sheet} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('recalc_sheet', value)} />
               </div>
-              <OptionCheck label="Show Previous Balance for Regular Customers" checked={options.general.show_previous_balance} disabled={disabled} onChange={(value) => patchGeneral('show_previous_balance', value)} />
+              <OptionCheck label="Show Previous Balance for Regular Customers" checked={options.general.show_previous_balance} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('show_previous_balance', value)} />
               <OptionCheck label="Show Saleman in VCs" checked={options.general.show_salesman_vcs} disabled={disabled} onChange={(value) => patchGeneral('show_salesman_vcs', value)} />
 
               <label className="software-options-field">
                 <span>Select Heading Option</span>
                 <UiSelect
                   value={options.general.heading_ulid ?? ''}
-                  disabled={disabled || headingsQuery.isLoading}
+                  disabled
+                  title={NOT_YET_SUPPORTED}
                   options={[
                     { value: '', label: '— Default heading —' },
                     ...(headingsQuery.data ?? []).map((row) => ({ value: row.ulid, label: row.used_for })),
@@ -455,35 +465,35 @@ export function SoftwareOptionsDialog({
               </label>
 
               <div className="software-options-inline-options">
-                <OptionCheck label="Direct Print" checked={options.general.direct_print} disabled={disabled} onChange={(value) => patchGeneral('direct_print', value)} />
-                <OptionCheck label="Book Set" checked={options.general.book_set} disabled={disabled} onChange={(value) => patchGeneral('book_set', value)} />
+                <OptionCheck label="Direct Print" checked={options.general.direct_print} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('direct_print', value)} />
+                <OptionCheck label="Book Set" checked={options.general.book_set} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('book_set', value)} />
               </div>
             </section>
 
             <section>
-              <OptionCheck label="Sale as MODAL" checked={options.general.sale_modal} disabled={disabled} onChange={(value) => patchGeneral('sale_modal', value)} />
-              <OptionCheck label="Purchase As MODAL" checked={options.general.purchase_modal} disabled={disabled} onChange={(value) => patchGeneral('purchase_modal', value)} />
+              <OptionCheck label="Sale as MODAL" checked={options.general.sale_modal} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('sale_modal', value)} />
+              <OptionCheck label="Purchase As MODAL" checked={options.general.purchase_modal} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('purchase_modal', value)} />
 
               <label className="software-options-field">
                 <span>Freight</span>
-                <input inputMode="decimal" value={options.general.freight} disabled={disabled} onChange={(event) => patchGeneral('freight', event.target.value)} />
+                <input inputMode="decimal" value={options.general.freight} disabled title={NOT_YET_SUPPORTED} onChange={(event) => patchGeneral('freight', event.target.value)} />
               </label>
               <label className="software-options-field">
                 <span>Default Format</span>
-                <input value={options.general.default_format ?? ''} disabled={disabled} onChange={(event) => patchGeneral('default_format', event.target.value || null)} />
+                <input value={options.general.default_format ?? ''} disabled title={NOT_YET_SUPPORTED} onChange={(event) => patchGeneral('default_format', event.target.value || null)} />
               </label>
               <label className="software-options-field">
                 <span>Description 1</span>
-                <input value={options.general.description1 ?? ''} disabled={disabled} onChange={(event) => patchGeneral('description1', event.target.value || null)} />
+                <input value={options.general.description1 ?? ''} disabled title={NOT_YET_SUPPORTED} onChange={(event) => patchGeneral('description1', event.target.value || null)} />
               </label>
               <label className="software-options-field">
                 <span>Description 2</span>
-                <input value={options.general.description2 ?? ''} disabled={disabled} onChange={(event) => patchGeneral('description2', event.target.value || null)} />
+                <input value={options.general.description2 ?? ''} disabled title={NOT_YET_SUPPORTED} onChange={(event) => patchGeneral('description2', event.target.value || null)} />
               </label>
 
               <OptionCheck label="Disable Search Dates" checked={options.general.disable_search_dates} disabled={disabled} onChange={(value) => patchGeneral('disable_search_dates', value)} />
-              <OptionCheck label="Bill To Bill" checked={options.general.bill_to_bill} disabled={disabled} onChange={(value) => patchGeneral('bill_to_bill', value)} />
-              <OptionCheck label="Products Def With Group Option" checked={options.general.products_group_option} disabled={disabled} onChange={(value) => patchGeneral('products_group_option', value)} />
+              <OptionCheck label="Bill To Bill" checked={options.general.bill_to_bill} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('bill_to_bill', value)} />
+              <OptionCheck label="Products Def With Group Option" checked={options.general.products_group_option} disabled={disabled} unavailableReason={NOT_YET_SUPPORTED} onChange={(value) => patchGeneral('products_group_option', value)} />
             </section>
           </div>
         ) : null}
