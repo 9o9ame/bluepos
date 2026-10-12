@@ -27,17 +27,50 @@ class CatalogTest extends TestCase
         $updated = $this->patchJson('/api/settings/business', [
             'business_name' => 'Updated Mart',
             'backup_email' => 'backup@example.test',
+            'software_options' => [
+                'sale' => [
+                    'expiry_warning_days' => 45,
+                    'show_remarks' => false,
+                    'show_discount_percent' => true,
+                ],
+                'purchase' => [
+                    'show_expiry_batch' => true,
+                    'stock_taking_method' => 'simple',
+                ],
+                'general' => [
+                    'view_invoices_days' => 5,
+                    'view_history_days' => 10,
+                    'freight' => '25.5000',
+                ],
+            ],
             'default_tax_percent' => '17.50000000',
             'negative_stock_allowed' => true,
         ])->assertOk();
 
         $this->assertSame('Updated Mart', $updated->json('business_name'));
         $this->assertSame('backup@example.test', $updated->json('backup_email'));
+        $this->assertSame(45, $updated->json('software_options.sale.expiry_warning_days'));
+        $this->assertFalse($updated->json('software_options.sale.show_remarks'));
+        $this->assertSame('simple', $updated->json('software_options.purchase.stock_taking_method'));
+        $this->assertSame(5, $updated->json('software_options.general.view_invoices_days'));
+        $this->assertSame('25.5000', $updated->json('software_options.general.freight'));
         $this->assertSame('17.50000000', $updated->json('default_tax_percent'));
         $this->assertTrue($updated->json('negative_stock_allowed'));
 
         $this->patchJson('/api/settings/business', [
             'backup_email' => 'not-an-email',
+        ])->assertUnprocessable();
+
+        $this->patchJson('/api/settings/business', [
+            'software_options' => [
+                'purchase' => ['stock_taking_method' => 'unsafe-mode'],
+            ],
+        ])->assertUnprocessable();
+
+        $this->patchJson('/api/settings/business', [
+            'software_options' => [
+                'sale' => ['unknown_option' => true],
+            ],
         ])->assertUnprocessable();
     }
 
