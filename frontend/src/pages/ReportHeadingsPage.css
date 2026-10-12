@@ -1,0 +1,113 @@
+.report-headings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.8fr);
+  gap: 10px;
+  padding: 8px;
+}
+
+.report-headings-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-content: start;
+}
+
+.report-headings-section-title {
+  grid-column: 1 / -1;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--ui-border);
+  color: var(--ui-text);
+  font-weight: 700;
+}
+
+.report-headings-form label {
+  display: grid;
+  gap: 4px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs, 11px);
+  font-weight: 700;
+}
+
+.report-headings-form label.is-wide,
+.report-headings-readonly {
+  grid-column: 1 / -1;
+}
+
+.report-headings-readonly {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs, 11px);
+}
+
+.report-headings-preview {
+  align-self: start;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.report-headings-preview-caption {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs, 11px);
+  font-weight: 700;
+}
+
+.report-headings-paper {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 18px;
+  text-align: center;
+  color: var(--ui-text);
+}
+
+.report-headings-paper > strong {
+  font-size: 18px;
+}
+
+.report-headings-paper > span {
+  margin-top: 3px;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs, 11px);
+}
+
+.report-headings-preview-rule {
+  width: 100%;
+  margin: 16px 0 10px;
+  border-top: 1px solid var(--ui-border);
+}
+
+.report-headings-paper > b {
+  font-size: 13px;
+}
+
+.report-headings-paper > small {
+  margin-top: 5px;
+  color: var(--ui-text-muted);
+}
+
+@media (max-width: 850px) {
+  .report-headings-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .report-headings-form {
+    grid-template-columns: 1fr;
+  }
+
+  .report-headings-form label.is-wide,
+  .report-headings-readonly {
+    grid-column: auto;
+  }
+}
