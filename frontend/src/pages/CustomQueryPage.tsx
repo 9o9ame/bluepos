@@ -45,15 +45,17 @@ export function CustomQueryPage() {
   const [queryText, setQueryText] = useState(DEFAULT_QUERY)
   const [selectedSavedUlid, setSelectedSavedUlid] = useState('')
   const [result, setResult] = useState<CustomQueryRunResult | null>(null)
+  const [resultQueryText, setResultQueryText] = useState('')
   const [message, setMessage] = useState('Ready. Only tenant-safe read-only SELECT queries are allowed.')
   const [bottomTab, setBottomTab] = useState<BottomTab>('results')
   const [saveOpen, setSaveOpen] = useState(false)
   const [saveTitle, setSaveTitle] = useState('')
 
   const runMutation = useMutation({
-    mutationFn: () => runCustomQuery(queryText),
-    onSuccess: (data) => {
+    mutationFn: (submittedQuery: string) => runCustomQuery(submittedQuery),
+    onSuccess: (data, submittedQuery) => {
       setResult(data)
+      setResultQueryText(submittedQuery)
       setBottomTab('results')
       setMessage(
         `Query completed: ${data.row_count} row${data.row_count === 1 ? '' : 's'} in ${data.elapsed_ms} ms${data.truncated ? ` (limited to ${data.limit})` : ''}.`,
@@ -61,6 +63,7 @@ export function CustomQueryPage() {
     },
     onError: (error) => {
       setResult(null)
+      setResultQueryText('')
       setBottomTab('messages')
       setMessage(error instanceof ApiClientError || error instanceof Error ? error.message : 'Unable to run query.')
     },
@@ -79,20 +82,21 @@ export function CustomQueryPage() {
   })
 
   const runNow = useCallback(() => {
-    if (!queryText.trim() || runMutation.isPending) return
-    runMutation.mutate()
+    const submittedQuery = queryText.trim()
+    if (!submittedQuery || runMutation.isPending) return
+    runMutation.mutate(submittedQuery)
   }, [queryText, runMutation])
 
   const previewNow = useCallback(() => {
     if (!result) return
-    if (!previewCustomQueryResult(result, queryText)) {
+    if (!previewCustomQueryResult(result, resultQueryText)) {
       feedback.error('Preview window was blocked by the browser.')
     }
-  }, [feedback, queryText, result])
+  }, [feedback, result, resultQueryText])
 
   const printNow = useCallback(() => {
     if (!result) return
-    if (!printCustomQueryResult(result, queryText)) {
+    if (!printCustomQueryResult(result, resultQueryText)) {
       feedback.error('Print window was blocked by the browser.')
     }
   }, [feedback, queryText, result])
