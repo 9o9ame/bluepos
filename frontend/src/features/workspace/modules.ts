@@ -363,8 +363,8 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     title: 'Branches',
     path: '/administration/branches',
     ribbon: 'administration',
-    status: 'shell',
-    permission: 'settings.view',
+    status: 'ready',
+    permission: 'branches.view',
   },
   {
     key: 'warehouses',
@@ -612,7 +612,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
       id: 'locations',
       caption: 'Locations',
       commands: [
-        { id: 'branches', label: 'Branches', icon: Building2, moduleKey: 'branches', permission: 'settings.view', status: 'shell', tone: 'navy' },
+        { id: 'branches', label: 'Branches', icon: Building2, moduleKey: 'branches', permission: 'branches.view', status: 'ready', tone: 'navy' },
         { id: 'warehouses', label: 'Warehouses', icon: Warehouse, moduleKey: 'warehouses', permission: 'settings.view', status: 'shell', tone: 'teal' },
       ],
     },
