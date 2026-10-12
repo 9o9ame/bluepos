@@ -99,31 +99,38 @@
 .custom-query-bottom-tabs {
   display: flex;
   gap: 3px;
-  padding: 4px 6px 0;
+  padding: 5px 6px 0;
   overflow-x: auto;
   border-top: 1px solid var(--ui-border);
   border-bottom: 1px solid var(--ui-border);
-  background: var(--ui-surface);
+  background: var(--ui-surface-muted);
 }
 
 .custom-query-bottom-tabs button {
-  min-height: 30px;
-  padding: 4px 10px;
-  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 5px 11px;
+  border: 1px solid var(--ui-control-border);
   border-bottom: 0;
   border-radius: var(--control-radius) var(--control-radius) 0 0;
-  background: transparent;
+  background: var(--ui-control-face);
   color: var(--ui-text-muted);
+  box-shadow: var(--ui-control-shadow);
   font: inherit;
   cursor: pointer;
 }
 
 .custom-query-bottom-tabs button:hover {
+  border-color: var(--ui-control-hover-border);
   background: var(--ui-control-hover-bg);
   color: var(--ui-text);
 }
 
 .custom-query-bottom-tabs button.is-active {
+  position: relative;
+  bottom: -1px;
   border-color: var(--ui-border);
   background: var(--ui-surface);
   color: var(--ui-accent-strong);
@@ -133,6 +140,12 @@
 .custom-query-bottom-tabs button:focus-visible {
   outline: none;
   box-shadow: var(--ui-focus-shadow);
+}
+
+.custom-query-tab-icon {
+  display: inline-grid;
+  place-items: center;
+  color: var(--ui-accent-strong);
 }
 
 .custom-query-output {
@@ -176,6 +189,80 @@
   font-size: var(--ui-font-size-xs, 11px);
 }
 
+.custom-query-workbench-pane {
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px 0;
+  background: var(--ui-surface-muted);
+  color: var(--ui-text);
+}
+
+.custom-query-pane-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 7px 9px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-control-shadow);
+}
+
+.custom-query-pane-heading > svg {
+  color: var(--ui-accent-strong);
+}
+
+.custom-query-pane-heading > div {
+  display: grid;
+  gap: 1px;
+}
+
+.custom-query-pane-heading strong {
+  margin: 0;
+}
+
+.custom-query-pane-heading span {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs, 11px);
+}
+
+.custom-query-message-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.custom-query-message-cards > div {
+  display: grid;
+  gap: 2px;
+  padding: 8px 9px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-control-shadow);
+}
+
+.custom-query-message-cards span {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs, 11px);
+}
+
+.custom-query-reference-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 12px -12px 0;
+  min-height: 26px;
+  border-top: 1px solid color-mix(in srgb, var(--ui-warning) 55%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-warning) 22%, var(--ui-surface));
+  color: var(--ui-text);
+  font-size: var(--ui-font-size-xs, 11px);
+  font-weight: 700;
+}
+
 .custom-query-info-pane {
   padding: 18px;
   color: var(--ui-text);
@@ -204,6 +291,207 @@
 .custom-query-info-pane .custom-query-export-ready {
   margin-top: 10px;
   font-size: var(--ui-font-size-xs, 11px);
+}
+
+.custom-query-useful-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+  gap: 12px;
+}
+
+.custom-query-useful-layout section,
+.custom-query-help-main,
+.custom-query-help-datasets,
+.custom-query-export-summary {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.custom-query-useful-layout section {
+  padding: 10px;
+}
+
+.custom-query-useful-layout h4 {
+  margin: 0 0 8px;
+  color: var(--ui-text);
+  font-size: 12px;
+}
+
+.custom-query-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.custom-query-tool-grid .ui-button {
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.custom-query-disabled-tools .ui-button:disabled {
+  opacity: 0.72;
+}
+
+.custom-query-safety-note {
+  margin: 10px 0 0;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs, 11px);
+  line-height: 1.45;
+}
+
+.custom-query-help-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 0.42fr);
+  gap: 12px;
+}
+
+.custom-query-help-main {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.custom-query-help-card {
+  display: grid;
+  gap: 6px;
+  padding: 9px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface-subtle);
+}
+
+.custom-query-help-card > span,
+.custom-query-help-datasets-title {
+  color: var(--ui-text);
+  font-weight: 700;
+}
+
+.custom-query-help-card code {
+  overflow-x: auto;
+  color: var(--ui-text);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  white-space: pre;
+}
+
+.custom-query-help-card p {
+  margin: 0;
+  color: var(--ui-text-muted);
+  line-height: 1.45;
+}
+
+.custom-query-example-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.custom-query-command-list kbd {
+  display: inline-block;
+  min-width: 30px;
+  margin-right: 5px;
+  padding: 1px 5px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  text-align: center;
+  font: inherit;
+  font-weight: 700;
+}
+
+.custom-query-help-datasets {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.custom-query-help-datasets-title {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--ui-border);
+  background: var(--ui-surface-subtle);
+}
+
+.custom-query-help-datasets-table {
+  display: grid;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.custom-query-help-datasets-table > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(95px, auto);
+  border-bottom: 1px solid var(--ui-table-border);
+}
+
+.custom-query-help-datasets-table > div:last-child {
+  border-bottom: 0;
+}
+
+.custom-query-help-datasets-table span {
+  padding: 6px 8px;
+  min-width: 0;
+}
+
+.custom-query-help-datasets-table span + span {
+  border-left: 1px solid var(--ui-table-border);
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs, 11px);
+}
+
+.custom-query-help-datasets-table .is-header {
+  position: sticky;
+  top: 0;
+  background: var(--ui-table-header);
+  color: var(--ui-table-header-text);
+  font-weight: 700;
+}
+
+.custom-query-help-datasets-table .is-header span {
+  color: inherit;
+}
+
+.custom-query-export-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.42fr);
+  gap: 12px;
+}
+
+.custom-query-export-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 210px));
+  align-content: start;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.custom-query-export-grid .ui-button {
+  justify-content: flex-start;
+}
+
+.custom-query-export-summary {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 5px;
+  min-height: 150px;
+  padding: 14px;
+  text-align: center;
+}
+
+.custom-query-export-summary > svg {
+  color: var(--ui-accent-strong);
+}
+
+.custom-query-export-summary span,
+.custom-query-export-summary small {
+  color: var(--ui-text-muted);
 }
 
 .custom-query-help-grid {
@@ -447,6 +735,18 @@
 
   .custom-query-browser {
     min-height: 260px;
+  }
+
+  .custom-query-message-cards,
+  .custom-query-useful-layout,
+  .custom-query-help-workbench,
+  .custom-query-export-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .custom-query-tool-grid,
+  .custom-query-export-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .custom-query-status {
