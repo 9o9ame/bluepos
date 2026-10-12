@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'legal_name',
     'phone',
     'email',
+    'backup_email',
     'address',
     'city',
     'country_code',
