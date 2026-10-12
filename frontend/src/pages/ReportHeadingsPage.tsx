@@ -732,32 +732,32 @@ export function ReportHeadingsPage() {
                 {editorTab} options will be enabled in the next Report Headings phase.
               </div>
             )}
-          </div>
 
-          <div className="report-headings-selector-row">
-            <label>
-              <span>Head ID</span>
-              <UiSelect
-                value={selectedUlid ?? ''}
-                searchable
-                options={(query.data ?? []).map((row) => ({
-                  value: row.ulid,
-                  label: row.head_id,
-                }))}
-                onChange={(value) => setSelectedUlid(value || null)}
-              />
-            </label>
+            <div className="report-headings-selector-row">
+              <label>
+                <span>Head ID</span>
+                <UiSelect
+                  value={selectedUlid ?? ''}
+                  searchable
+                  options={(query.data ?? []).map((row) => ({
+                    value: row.ulid,
+                    label: row.head_id,
+                  }))}
+                  onChange={(value) => setSelectedUlid(value || null)}
+                />
+              </label>
 
-            <label className="report-headings-used-for">
-              <span>Used For</span>
-              <input
-                className="desktop-input"
-                value={usedFor}
-                maxLength={120}
-                disabled={!canManage || !selected}
-                onChange={(event) => setUsedFor(event.target.value)}
-              />
-            </label>
+              <label className="report-headings-used-for">
+                <span>Used For</span>
+                <input
+                  className="desktop-input"
+                  value={usedFor}
+                  maxLength={120}
+                  disabled={!canManage || !selected}
+                  onChange={(event) => setUsedFor(event.target.value)}
+                />
+              </label>
+            </div>
           </div>
 
           <div className="report-headings-workarea">
