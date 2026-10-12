@@ -352,3 +352,21 @@ export function postInventoryAdjustment(documentUlid: string) {
     method: 'POST',
   })
 }
+
+
+export type RecalculateStockResult = {
+  warehouse: {
+    ulid: string
+    code: string
+    name: string
+  }
+  processed_products: number
+  changed_balances: number
+  movement_count: number
+}
+
+export function recalculateStockBalances() {
+  return apiFetch<RecalculateStockResult>('/api/inventory/recalculate-stock', {
+    method: 'POST',
+  })
+}
