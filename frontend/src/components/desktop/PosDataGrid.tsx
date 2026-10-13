@@ -1,4 +1,4 @@
-import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { useMemo, useState, type KeyboardEvent, type ReactNode, type UIEvent } from 'react'
 
 export type PosGridColumn<T> = {
   key: string
@@ -16,6 +16,8 @@ type PosDataGridProps<T> = {
   onSelect?: (row: T) => void
   onActivate?: (row: T) => void
   emptyMessage?: string
+  onEndReached?: () => void
+  endReachedOffset?: number
 }
 
 export function PosDataGrid<T>({
@@ -26,6 +28,8 @@ export function PosDataGrid<T>({
   onSelect,
   onActivate,
   emptyMessage = 'No records',
+  onEndReached,
+  endReachedOffset = 120,
 }: PosDataGridProps<T>) {
   const [focusedKey, setFocusedKey] = useState<string | null>(selectedKey ?? null)
   const keys = useMemo(() => rows.map(rowKey), [rows, rowKey])
@@ -39,6 +43,17 @@ export function PosDataGrid<T>({
     const next = rows[nextIndex]
     setFocusedKey(rowKey(next))
     onSelect?.(next)
+  }
+
+  function onScroll(event: UIEvent<HTMLDivElement>) {
+    if (!onEndReached) return
+
+    const element = event.currentTarget
+    const remaining = element.scrollHeight - element.scrollTop - element.clientHeight
+
+    if (remaining <= endReachedOffset) {
+      onEndReached()
+    }
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -59,7 +74,7 @@ export function PosDataGrid<T>({
   }
 
   return (
-    <div className="pos-grid-wrap" tabIndex={0} onKeyDown={onKeyDown} role="grid">
+    <div className="pos-grid-wrap" tabIndex={0} onKeyDown={onKeyDown} onScroll={onScroll} role="grid">
       <table className="pos-grid">
         <thead>
           <tr>
