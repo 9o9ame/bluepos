@@ -4,6 +4,7 @@ import { Download, RefreshCw, Save, X } from 'lucide-react'
 import { bulkUpdateProducts, downloadProductTabularExport, fetchProducts } from '../api/catalog'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
+import { StockValueBadge } from '../components/ui/StockValueBadge'
 import { UiSelect, type UiSelectOption } from '../components/ui/UiSelect'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
@@ -295,9 +296,10 @@ export function ProductTabularViewPage() {
         const quantity = product.sales_lookup?.in_stock ?? '0'
         const numeric = Number.parseFloat(quantity)
         return (
-          <span className={numeric > 0 ? 'product-tabular-stock is-positive' : 'product-tabular-stock is-empty'}>
-            {formatDecimal(quantity, 6)}
-          </span>
+          <StockValueBadge
+            value={numeric}
+            displayValue={formatDecimal(quantity, 6)}
+          />
         )
       },
     },
