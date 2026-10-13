@@ -1754,6 +1754,12 @@ export function ProductsPage() {
               setSelectedKey(row.ulid)
             }}
             emptyMessage="No products found."
+            loading={productsQuery.isLoading || productsQuery.isFetchingNextPage}
+            loadingLabel={
+              productsQuery.isFetchingNextPage
+                ? 'Loading more products…'
+                : 'Loading products…'
+            }
             onEndReached={() => {
               if (productsQuery.hasNextPage && !productsQuery.isFetchingNextPage) {
                 void productsQuery.fetchNextPage()
