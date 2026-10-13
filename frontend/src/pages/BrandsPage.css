@@ -1,0 +1,45 @@
+.brands-page {
+  min-height: 0;
+}
+
+.brands-page .desktop-panel-body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.brands-page form {
+  flex: 0 0 auto;
+}
+
+.brands-page .form-group-body {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--density-gap, 6px);
+}
+
+.brands-page .desktop-field {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.brands-page .desktop-field > span {
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.brands-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: var(--density-gap, 6px);
+  overflow: hidden;
+}
+
+.brands-grid .pos-grid-wrap {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
