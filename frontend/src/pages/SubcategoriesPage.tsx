@@ -34,6 +34,7 @@ import {
   useWorkspaceHandlers,
 } from '../features/workspace/WorkspaceProvider'
 import type { Subcategory } from '../types/catalog'
+import './SubcategoriesPage.css'
 
 export function SubcategoriesPage() {
   const queryClient = useQueryClient()
@@ -261,6 +262,7 @@ export function SubcategoriesPage() {
 
   return (
     <DesktopPanel
+      className="subcategories-page"
       title="Subcategories"
       toolbar={
         <>
@@ -415,12 +417,7 @@ export function SubcategoriesPage() {
         </form>
       ) : null}
 
-      <div
-        style={{
-          height: 380,
-          marginTop: 6,
-        }}
-      >
+      <div className="subcategories-grid">
         <PosDataGrid
           columns={[
             {
