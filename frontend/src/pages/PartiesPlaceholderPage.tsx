@@ -1980,6 +1980,9 @@ export function PartiesPlaceholderPage({
             </div>
 
             <div className="parties-vca-grid-footer">
+              <span className="parties-vca-record-count">
+                {rows.length} {rows.length === 1 ? 'record' : 'records'}
+              </span>
               <div className="parties-vca-drcr">
                 <span>Dr</span>
                 <strong>0</strong>
