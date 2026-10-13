@@ -143,7 +143,7 @@ export function ProductTabularViewPage() {
 
   const rows = productsQuery.data?.pages.flatMap((pageResult) => pageResult.data) ?? []
   const meta = productsQuery.data?.pages[0]?.meta as
-    | (NonNullable<(typeof productsQuery.data)['pages'][number]>['meta'] & { stock_total?: string | null })
+    | (NonNullable<typeof productsQuery.data>['pages'][number]['meta'] & { stock_total?: string | null })
     | undefined
 
   const stagedCount = Object.keys(drafts).length
