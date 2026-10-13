@@ -33,6 +33,7 @@ class ProductResource extends JsonResource
             'is_packaging' => $this->is_packaging,
             'max_free_qty_per_sale' => $this->max_free_qty_per_sale,
             'reorder_level' => $this->reorder_level,
+            'purchase_rate' => $this->purchase_rate,
             'minimum_stock' => $this->minimum_stock,
             'maximum_stock' => $this->maximum_stock,
             'rack_location' => $this->rack_location,
