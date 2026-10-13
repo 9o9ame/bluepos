@@ -72,6 +72,7 @@ class CreateProductAction
                 'is_packaging' => $data['is_packaging'] ?? false,
                 'max_free_qty_per_sale' => $data['max_free_qty_per_sale'] ?? null,
                 'reorder_level' => $data['reorder_level'] ?? null,
+                'purchase_rate' => $data['purchase_rate'] ?? null,
                 'minimum_stock' => $data['minimum_stock'] ?? null,
                 'maximum_stock' => $data['maximum_stock'] ?? null,
                 'rack_location' => $data['rack_location'] ?? null,
