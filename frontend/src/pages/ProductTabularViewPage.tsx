@@ -4,6 +4,7 @@ import { Download, RefreshCw, Save, X } from 'lucide-react'
 import { bulkUpdateProducts, downloadProductTabularExport, fetchProducts } from '../api/catalog'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
+import { UiEditableCombo, type UiEditableComboOption } from '../components/ui/UiEditableCombo'
 import { StockValueBadge } from '../components/ui/StockValueBadge'
 import { UiSelect, type UiSelectOption } from '../components/ui/UiSelect'
 import { useCan } from '../features/auth/useCan'
@@ -50,36 +51,18 @@ const BULK_FIELD_OPTIONS: UiSelectOption[] = [
   },
 ]
 
-const SET_TEXT_PRESETS: UiSelectOption[] = [
+const SET_TEXT_PRESETS: UiEditableComboOption[] = [
   {
-    value: 'trade_price_plus_5',
+    value: '=TradePrice + (TradePrice * 5.0 / 100)',
     label: '=TradePrice + (TradePrice * 5.0 / 100)',
     title: 'For Sale Price: set retail price to Trade Price plus 5%.',
   },
   {
-    value: 'trade_price_plus_10',
+    value: '=TradePrice + (TradePrice * 10.0 / 100)',
     label: '=TradePrice + (TradePrice * 10.0 / 100)',
     title: 'For Sale Price: set retail price to Trade Price plus 10%.',
   },
-  {
-    value: 'trade_price_plus_15',
-    label: '=TradePrice + (TradePrice * 15.0 / 100)',
-    title: 'For Sale Price: set retail price to Trade Price plus 15%.',
-  },
-  {
-    value: 'trade_price_plus_20',
-    label: '=TradePrice + (TradePrice * 20.0 / 100)',
-    title: 'For Sale Price: set retail price to Trade Price plus 20%.',
-  },
 ]
-
-const SET_TEXT_PRESET_FORMULAS: Record<string, string> = {
-  trade_price_plus_5: '=TradePrice + (TradePrice * 5.0 / 100)',
-  trade_price_plus_10: '=TradePrice + (TradePrice * 10.0 / 100)',
-  trade_price_plus_15: '=TradePrice + (TradePrice * 15.0 / 100)',
-  trade_price_plus_20: '=TradePrice + (TradePrice * 20.0 / 100)',
-}
-
 
 const DECIMAL_6 = /^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/
 const MONEY_4 = /^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/
@@ -123,7 +106,6 @@ export function ProductTabularViewPage() {
   const [purchaseRateGeSaleRate, setPurchaseRateGeSaleRate] = useState(false)
   const [fieldToUpdate, setFieldToUpdate] = useState<BulkField>('reorder_level')
   const [setText, setSetText] = useState('')
-  const [setTextPreset, setSetTextPreset] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, ProductDraft>>({})
@@ -477,7 +459,6 @@ export function ProductTabularViewPage() {
               onChange={(value) => {
                 setFieldToUpdate(value as BulkField)
                 setSetText('')
-                setSetTextPreset('')
               }}
               aria-label="Field to update"
               searchable={false}
@@ -488,43 +469,18 @@ export function ProductTabularViewPage() {
 
           <div className="product-tabular-set-text">
             <span>Set Text</span>
-            <div className="product-tabular-set-combo">
-              <input
-                value={setText}
-                onChange={(event) => {
-                  setSetText(event.target.value)
-                  setSetTextPreset('')
-                }}
-                disabled={!canEdit}
-                placeholder={fieldToUpdate === 'reorder_level' ? 'Enter value…' : 'Enter price or formula…'}
-                aria-label="Set Text"
-              />
-              <UiSelect
-                value={setTextPreset}
-                options={SET_TEXT_PRESETS.map((option) => ({
-                  ...option,
-                  disabled:
-                    option.disabled ||
-                    (option.value.startsWith('trade_price_plus_') && fieldToUpdate !== 'retail_price'),
-                }))}
-                onChange={(value) => {
-                  const formula = SET_TEXT_PRESET_FORMULAS[value]
-                  if (formula) {
-                    setSetText((current) => {
-                      const existing = current.trimEnd()
-                      return existing ? `${existing} ${formula}` : formula
-                    })
-                  }
-                  setSetTextPreset('')
-                }}
-                placeholder=""
-                aria-label="Choose Set Text formula"
-                searchable={false}
-                disabled={!canEdit}
-                className="product-tabular-formula-select"
-                triggerClassName="product-tabular-formula-trigger"
-              />
-            </div>
+            <UiEditableCombo
+              value={setText}
+              onChange={setSetText}
+              options={SET_TEXT_PRESETS.map((option) => ({
+                ...option,
+                disabled: fieldToUpdate !== 'retail_price',
+              }))}
+              disabled={!canEdit}
+              placeholder={fieldToUpdate === 'reorder_level' ? 'Enter value…' : 'Enter price or formula…'}
+              ariaLabel="Set Text"
+              className="product-tabular-set-combo"
+            />
           </div>
 
           <div className="product-tabular-update-actions">
