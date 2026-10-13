@@ -22,7 +22,7 @@
   display: grid;
   grid-template-columns:
     minmax(210px, 290px)
-    minmax(150px, 165px)
+    minmax(190px, 230px)
     minmax(300px, 390px)
     auto
     minmax(235px, 1fr)
@@ -255,7 +255,7 @@
   .product-tabular-primary-row {
     grid-template-columns:
       minmax(190px, 1fr)
-      minmax(145px, 165px)
+      minmax(180px, 220px)
       minmax(260px, 1.2fr)
       auto;
   }
