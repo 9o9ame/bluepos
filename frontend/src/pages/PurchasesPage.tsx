@@ -341,6 +341,8 @@ export function PurchasesPage() {
   const [status, setStatus] = useState<'draft' | 'posted' | 'cancelled'>('draft')
   const [lines, setLines] = useState<DraftLine[]>([])
   const [productQuery, setProductQuery] = useState('')
+  const [productEditRowKey, setProductEditRowKey] = useState<string | 'new' | null>(null)
+  const [productMenuOpen, setProductMenuOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [customizationOpen, setCustomizationOpen] = useState(false)
   const [supplierModalOpen, setSupplierModalOpen] = useState(false)
@@ -427,8 +429,12 @@ export function PurchasesPage() {
 
   const productLookup = useQuery({
     queryKey: ['purchase-product-lookup', productQuery],
-    queryFn: () => fetchProducts({ q: productQuery, per_page: 15 }),
-    enabled: mode === 'editor' && !readOnly && productQuery.trim().length >= 1,
+    queryFn: () => fetchProducts({ q: productQuery || undefined, per_page: 15 }),
+    enabled:
+      mode === 'editor' &&
+      !readOnly &&
+      productMenuOpen &&
+      productEditRowKey !== null,
   })
 
   const listRows = listQuery.data?.pages.flatMap((page) => page.data) ?? []
@@ -526,10 +532,19 @@ export function PurchasesPage() {
   }
 
   function focusNewProductSearch() {
+    setProductEditRowKey('new')
+    setProductQuery('')
+    setProductMenuOpen(true)
     requestAnimationFrame(() => {
       productSearchRef.current?.focus()
       productSearchRef.current?.select()
     })
+  }
+
+  function beginProductEdit(row: DraftLine | null) {
+    setProductEditRowKey(row?.key ?? 'new')
+    setProductQuery(row?.product_label ?? '')
+    setProductMenuOpen(true)
   }
 
   function focusFirstEditableInRow(rowKey: string) {
@@ -646,15 +661,22 @@ export function PurchasesPage() {
           )
         }
 
+        const isActive = productEditRowKey === 'new'
+
         return (
           <td className={cls} style={widthStyle}>
-            <div className="pie-search pie-grid-product-search">
-              <span className="pie-search-icon"><Search /></span>
+            <div className="pie-product-combo">
               <input
                 ref={productSearchRef}
-                value={productQuery}
+                className="pie-product-combo-input"
+                value={isActive ? productQuery : ''}
                 disabled={!ctx.canEdit}
-                onChange={(event) => setProductQuery(event.target.value)}
+                onFocus={() => beginProductEdit(null)}
+                onChange={(event) => {
+                  setProductEditRowKey('new')
+                  setProductQuery(event.target.value)
+                  setProductMenuOpen(true)
+                }}
                 onKeyDown={(event) => {
                   if (event.key !== 'Enter') return
                   const first = productLookup.data?.data?.[0]
@@ -664,14 +686,29 @@ export function PurchasesPage() {
                 }}
                 placeholder="Search item / SKU / barcode..."
                 aria-label="Search product for new purchase line"
+                autoComplete="off"
               />
-              {productLookup.data?.data?.length ? (
+              <button
+                type="button"
+                className="pie-product-combo-toggle"
+                aria-label="Open product dropdown"
+                aria-expanded={isActive && productMenuOpen}
+                onClick={() => {
+                  if (!isActive) beginProductEdit(null)
+                  else setProductMenuOpen((open) => !open)
+                  requestAnimationFrame(() => productSearchRef.current?.focus())
+                }}
+              >
+                <span aria-hidden>⌄</span>
+              </button>
+              {isActive && productMenuOpen && productLookup.data?.data?.length ? (
                 <div className="pie-lookup">
                   {productLookup.data.data.map((product) => (
                     <button
                       key={product.ulid}
                       type="button"
                       className="pie-lookup-option"
+                      onMouseDown={(event) => event.preventDefault()}
                       onClick={() => void addProduct(product)}
                     >
                       <span className="pie-lookup-option-main">{product.name}</span>
@@ -742,8 +779,75 @@ export function PurchasesPage() {
         return <td className={cls} style={widthStyle}>{(ctx.rowIndex ?? 0) + 1}</td>
       case 'item_code':
         return <td className={cls} style={widthStyle}>{row.item_code || '—'}</td>
-      case 'product':
-        return <td className={cls} style={widthStyle}>{row.product_label}</td>
+      case 'product': {
+        const isActive = productEditRowKey === row.key
+        return (
+          <td className={cls} style={widthStyle}>
+            {ctx.readOnly ? (
+              row.product_label
+            ) : (
+              <div className="pie-product-combo">
+                <input
+                  className="pie-product-combo-input"
+                  value={isActive ? productQuery : row.product_label}
+                  data-purchase-edit="true"
+                  onFocus={() => beginProductEdit(row)}
+                  onChange={(event) => {
+                    setProductEditRowKey(row.key)
+                    setProductQuery(event.target.value)
+                    setProductMenuOpen(true)
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && productMenuOpen) {
+                      const first = productLookup.data?.data?.[0]
+                      if (first) {
+                        event.preventDefault()
+                        void addProduct(first, row.key)
+                        return
+                      }
+                    }
+                    handleLineEnter(event)
+                  }}
+                  aria-label="Edit purchase product"
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  className="pie-product-combo-toggle"
+                  aria-label="Open product dropdown"
+                  aria-expanded={isActive && productMenuOpen}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    if (!isActive) beginProductEdit(row)
+                    else setProductMenuOpen((open) => !open)
+                  }}
+                >
+                  <span aria-hidden>⌄</span>
+                </button>
+                {isActive && productMenuOpen && productLookup.data?.data?.length ? (
+                  <div className="pie-lookup">
+                    {productLookup.data.data.map((product) => (
+                      <button
+                        key={product.ulid}
+                        type="button"
+                        className="pie-lookup-option"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => void addProduct(product, row.key)}
+                      >
+                        <span className="pie-lookup-option-main">{product.name}</span>
+                        <span className="pie-lookup-option-meta">
+                          {product.product_number}
+                          {product.sku ? ` · ${product.sku}` : ''}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </td>
+        )
+      }
       case 'quantity':
       case 'qty':
         return (
@@ -1078,6 +1182,8 @@ export function PurchasesPage() {
     setNotes('')
     setLines([])
     setProductQuery('')
+    setProductEditRowKey(null)
+    setProductMenuOpen(false)
     setError(null)
     setPaidAmount('0.0000')
     setServerBalancePayable('0.0000')
@@ -1420,7 +1526,7 @@ export function PurchasesPage() {
     }
   }
 
-  async function addProduct(product: Product) {
+  async function addProduct(product: Product, replaceRowKey?: string) {
     const unit = preferPcsUnit(product, productQuery)
     if (!unit.unit_ulid) {
       setError('Selected product has no base unit.')
@@ -1445,7 +1551,7 @@ export function PurchasesPage() {
         ? product.tax_percent
         : shellDefaultSalesTax || '0'
     const furtherTaxPct = shellDefaultFurtherTax || '0'
-    const key = `new-${Date.now()}-${lines.length}`
+    const key = replaceRowKey ?? `new-${Date.now()}-${lines.length}`
 
     const draft = applyCalcToLine(
       {
@@ -1487,10 +1593,27 @@ export function PurchasesPage() {
       calcSettings,
     )
 
-    setLines((prev) => [...prev, draft])
+    setLines((prev) =>
+      replaceRowKey
+        ? prev.map((line) => (line.key === replaceRowKey ? { ...draft, key: replaceRowKey, ulid: line.ulid } : line))
+        : [...prev, draft],
+    )
     setSelectedLineKey(key)
-    setProductQuery('')
-    focusFirstEditableInRow(key)
+    setProductEditRowKey(key)
+    setProductQuery(draft.product_label)
+    setProductMenuOpen(false)
+
+    if (!replaceRowKey) {
+      focusFirstEditableInRow(key)
+    } else {
+      requestAnimationFrame(() => {
+        const input = document.querySelector<HTMLInputElement>(
+          `tr[data-purchase-row-key="${key}"] .pie-product-combo-input`,
+        )
+        input?.focus()
+        input?.select()
+      })
+    }
   }
 
   function openPurchaseReturn() {
