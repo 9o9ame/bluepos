@@ -699,7 +699,11 @@ export function PurchasesPage() {
                   requestAnimationFrame(() => productSearchRef.current?.focus())
                 }}
               >
-                <span aria-hidden>⌄</span>
+                <span className="pie-product-combo-arrow" aria-hidden>
+                  <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                    <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                  </svg>
+                </span>
               </button>
               {isActive && productMenuOpen && productLookup.data?.data?.length ? (
                 <div className="pie-lookup">
@@ -822,7 +826,11 @@ export function PurchasesPage() {
                     else setProductMenuOpen((open) => !open)
                   }}
                 >
-                  <span aria-hidden>⌄</span>
+                  <span className="pie-product-combo-arrow" aria-hidden>
+                    <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                      <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                    </svg>
+                  </span>
                 </button>
                 {isActive && productMenuOpen && productLookup.data?.data?.length ? (
                   <div className="pie-lookup">
@@ -1527,6 +1535,40 @@ export function PurchasesPage() {
   }
 
   async function addProduct(product: Product, replaceRowKey?: string) {
+    const existingLine = replaceRowKey
+      ? lines.find((line) => line.key === replaceRowKey) ?? null
+      : null
+
+    if (existingLine?.product_ulid === product.ulid) {
+      setLines((prev) =>
+        prev.map((line) =>
+          line.key === replaceRowKey
+            ? {
+                ...line,
+                product_label: `${product.product_number} · ${product.name}`,
+                item_code: product.product_number,
+                brand_label: product.brand?.name ?? line.brand_label,
+                supplier_product_code: product.supplier_product_code ?? line.supplier_product_code,
+                track_batch: product.track_batch,
+                track_expiry: product.track_expiry,
+              }
+            : line,
+        ),
+      )
+      setSelectedLineKey(replaceRowKey ?? null)
+      setProductEditRowKey(replaceRowKey ?? null)
+      setProductQuery(`${product.product_number} · ${product.name}`)
+      setProductMenuOpen(false)
+      requestAnimationFrame(() => {
+        const input = document.querySelector<HTMLInputElement>(
+          `tr[data-purchase-row-key="${replaceRowKey}"] .pie-product-combo-input`,
+        )
+        input?.focus()
+        input?.select()
+      })
+      return
+    }
+
     const unit = preferPcsUnit(product, productQuery)
     if (!unit.unit_ulid) {
       setError('Selected product has no base unit.')
@@ -1595,7 +1637,7 @@ export function PurchasesPage() {
 
     setLines((prev) =>
       replaceRowKey
-        ? prev.map((line) => (line.key === replaceRowKey ? { ...draft, key: replaceRowKey, ulid: line.ulid } : line))
+        ? prev.map((line) => (line.key === replaceRowKey ? { ...draft, key: replaceRowKey } : line))
         : [...prev, draft],
     )
     setSelectedLineKey(key)
