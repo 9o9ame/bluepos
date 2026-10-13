@@ -192,22 +192,6 @@
   top: 0;
 }
 
-.product-tabular-stock {
-  display: block;
-  margin: -2px -4px;
-  padding: 2px 4px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-}
-
-.product-tabular-stock.is-positive {
-  background: color-mix(in srgb, var(--ui-success) 18%, var(--ui-surface));
-}
-
-.product-tabular-stock.is-empty {
-  background: color-mix(in srgb, var(--ui-danger) 14%, var(--ui-surface));
-}
-
 .product-tabular-staged::after {
   content: ' •';
   color: var(--ui-warning);
