@@ -495,7 +495,6 @@ export function ProductTabularViewPage() {
                   setSetText(event.target.value)
                   setSetTextPreset('')
                 }}
-                onFocus={(event) => event.currentTarget.select()}
                 disabled={!canEdit}
                 placeholder={fieldToUpdate === 'reorder_level' ? 'Enter value…' : 'Enter price or formula…'}
                 aria-label="Set Text"
@@ -506,14 +505,17 @@ export function ProductTabularViewPage() {
                   ...option,
                   disabled:
                     option.disabled ||
-                    (option.value === 'trade_price_plus_10' && fieldToUpdate !== 'retail_price'),
+                    (option.value.startsWith('trade_price_plus_') && fieldToUpdate !== 'retail_price'),
                 }))}
                 onChange={(value) => {
-                  setSetTextPreset(value)
                   const formula = SET_TEXT_PRESET_FORMULAS[value]
                   if (formula) {
-                    setSetText(formula)
+                    setSetText((current) => {
+                      const existing = current.trimEnd()
+                      return existing ? `${existing} ${formula}` : formula
+                    })
                   }
+                  setSetTextPreset('')
                 }}
                 placeholder=""
                 aria-label="Choose Set Text formula"
