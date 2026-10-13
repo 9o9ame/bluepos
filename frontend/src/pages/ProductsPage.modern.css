@@ -1218,3 +1218,12 @@ html[data-animations='off'] .product-reference-screen .bp-fancy-select-arrow {
   animation: none !important;
   transition: none !important;
 }
+
+
+/* Active editor emphasis: use :focus (not only :focus-visible) so mouse-clicked
+   text fields with a blinking caret get a clearly different themed background. */
+.product-reference-screen :where(.pdf-input, .pdf-barcode-input, textarea):not(:read-only):not(:disabled):focus {
+  background: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-surface)) !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
