@@ -1,4 +1,5 @@
 import { useMemo, useState, type KeyboardEvent, type ReactNode, type UIEvent } from 'react'
+import { ListLoadingIndicator } from '../ui/ListLoadingIndicator'
 
 export type PosGridColumn<T> = {
   key: string
@@ -18,6 +19,8 @@ type PosDataGridProps<T> = {
   emptyMessage?: string
   onEndReached?: () => void
   endReachedOffset?: number
+  loading?: boolean
+  loadingLabel?: string
 }
 
 export function PosDataGrid<T>({
@@ -30,6 +33,8 @@ export function PosDataGrid<T>({
   emptyMessage = 'No records',
   onEndReached,
   endReachedOffset = 120,
+  loading = false,
+  loadingLabel = 'Loading more records…',
 }: PosDataGridProps<T>) {
   const [focusedKey, setFocusedKey] = useState<string | null>(selectedKey ?? null)
   const keys = useMemo(() => rows.map(rowKey), [rows, rowKey])
@@ -116,7 +121,8 @@ export function PosDataGrid<T>({
           })}
         </tbody>
       </table>
-      {rows.length === 0 ? <div className="pos-grid-empty">{emptyMessage}</div> : null}
+      {rows.length === 0 && !loading ? <div className="pos-grid-empty">{emptyMessage}</div> : null}
+      <ListLoadingIndicator visible={loading} label={loadingLabel} />
     </div>
   )
 }
