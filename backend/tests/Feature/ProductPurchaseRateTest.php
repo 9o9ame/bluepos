@@ -2,13 +2,15 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ProductPurchaseRateTest extends TestCase
 {
     public function test_purchase_rate_is_stored_with_money_precision_and_can_be_updated(): void
     {
-        $this->signInOwner('product-purchase-rate')->assertOk();
+        $suffix = 'product-purchase-rate-'.Str::lower((string) Str::ulid());
+        $this->signInOwner($suffix)->assertOk();
 
         $unit = collect($this->getJson('/api/units')->assertOk()->json())
             ->firstWhere('code', 'PCS');
