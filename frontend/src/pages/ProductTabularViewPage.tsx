@@ -73,6 +73,14 @@ const SET_TEXT_PRESETS: UiSelectOption[] = [
   },
 ]
 
+const SET_TEXT_PRESET_FORMULAS: Record<string, string> = {
+  trade_price_plus_5: '=TradePrice + (TradePrice * 5.0 / 100)',
+  trade_price_plus_10: '=TradePrice + (TradePrice * 10.0 / 100)',
+  trade_price_plus_15: '=TradePrice + (TradePrice * 15.0 / 100)',
+  trade_price_plus_20: '=TradePrice + (TradePrice * 20.0 / 100)',
+}
+
+
 const DECIMAL_6 = /^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/
 const MONEY_4 = /^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/
 
@@ -487,6 +495,7 @@ export function ProductTabularViewPage() {
                   setSetText(event.target.value)
                   setSetTextPreset('')
                 }}
+                onFocus={(event) => event.currentTarget.select()}
                 disabled={!canEdit}
                 placeholder={fieldToUpdate === 'reorder_level' ? 'Enter value…' : 'Enter price or formula…'}
                 aria-label="Set Text"
@@ -501,9 +510,9 @@ export function ProductTabularViewPage() {
                 }))}
                 onChange={(value) => {
                   setSetTextPreset(value)
-                  const percent = value.match(/^trade_price_plus_(\d+)$/)?.[1]
-                  if (percent) {
-                    setSetText(`=TradePrice + (TradePrice * ${percent}.0 / 100)`)
+                  const formula = SET_TEXT_PRESET_FORMULAS[value]
+                  if (formula) {
+                    setSetText(formula)
                   }
                 }}
                 placeholder=""
