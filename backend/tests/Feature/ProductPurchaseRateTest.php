@@ -9,7 +9,7 @@ class ProductPurchaseRateTest extends TestCase
 {
     public function test_purchase_rate_is_stored_with_money_precision_and_can_be_updated(): void
     {
-        $suffix = 'product-purchase-rate-'.Str::lower((string) Str::ulid());
+        $suffix = 'ppr'.Str::lower(substr((string) Str::ulid(), -20));
         $this->signInOwner($suffix)->assertOk();
 
         $unit = collect($this->getJson('/api/units')->assertOk()->json())
