@@ -29,6 +29,8 @@ use App\Http\Controllers\Api\PartyOpeningBalanceController;
 use App\Http\Controllers\Api\PartyProfileController;
 use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\Reports\ProductLedgerController;
+use App\Http\Controllers\Api\Reports\ProductStockStatusController;
 use App\Http\Controllers\Api\ReportHeadingController;
 use App\Http\Controllers\Api\Purchases\PurchaseInvoiceController;
 use App\Http\Controllers\Api\Purchases\PurchaseOrderController;
@@ -295,6 +297,8 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     });
 
     Route::middleware('entitled:inventory')->group(function () {
+        Route::get('/reports/products/stock-status', ProductStockStatusController::class);
+        Route::get('/reports/products/ledger', ProductLedgerController::class);
         Route::get('/inventory/stock', [StockController::class, 'index']);
         Route::post('/inventory/stock/recalculate', [StockController::class, 'recalculate']);
 
