@@ -518,7 +518,8 @@ export function ProductTabularViewPage() {
               disabled={productsQuery.isFetching}
             />
             <UiButton
-              variant="default"
+              variant="primary"
+              className="product-tabular-set-button"
               label="Set"
               onClick={applySetText}
               disabled={!canEdit || (fieldToUpdate !== 'reorder_level' && !canPrices)}
