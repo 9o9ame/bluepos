@@ -9,7 +9,6 @@ import {
   Building2,
   Calculator,
   ClipboardList,
-  Database,
   FileSpreadsheet,
   FileText,
   FolderTree,
@@ -106,7 +105,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     key: 'settings',
     title: 'Business Settings',
     path: '/administration/settings',
-    ribbon: 'definition',
+    ribbon: 'administration',
     status: 'ready',
     permission: 'settings.view',
   },
@@ -452,14 +451,6 @@ const LATER = { status: 'later' as const }
 export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
   definition: [
     {
-      id: 'application',
-      caption: 'Application',
-      commands: [
-        { id: 'backup', label: 'Backup & Restore', icon: Database, status: 'later', tone: 'slate' },
-        { id: 'settings', label: 'Business Settings', icon: Settings, moduleKey: 'settings', permission: 'settings.view', status: 'ready', tone: 'navy' },
-      ],
-    },
-    {
       id: 'products',
       caption: 'Definitions',
       commands: [
@@ -645,6 +636,13 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
     },
   ],
   administration: [
+    {
+      id: 'business',
+      caption: 'Business',
+      commands: [
+        { id: 'settings', label: 'Business Settings', icon: Settings, moduleKey: 'settings', permission: 'settings.view', status: 'ready', tone: 'navy' },
+      ],
+    },
     {
       id: 'people',
       caption: 'People',
