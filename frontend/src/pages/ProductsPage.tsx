@@ -82,7 +82,7 @@ function compactDecimal(value: string, fallback = '0'): string {
 
 function createBarcodeDraft(
   unitUlid = '',
-  conversionFactor = '1.00000000',
+  conversionFactor = '1',
   isPrimary = false,
 ): ProductBarcodeDraft {
   barcodeDraftSequence += 1
@@ -251,7 +251,7 @@ export function ProductsPage() {
   const [openingBusy, setOpeningBusy] = useState(false)
 
   const canSave = creating ? canCreate : canEdit && Boolean(selectedKey)
-  const inStockDisplay = productStock.data?.active_warehouse.quantity ?? '0.000000'
+  const inStockDisplay = compactDecimal(productStock.data?.active_warehouse.quantity ?? '0')
   const marginDisplay = useMemo(() => {
     const purchase = Number(purchaseRate)
     const sale = Number(retail)
@@ -530,7 +530,7 @@ export function ProductsPage() {
     setBaseUnitUlid(selected.base_unit?.ulid ?? '')
     setReorderLevel(selected.reorder_level ?? '')
     setRackLocation(selected.rack_location ?? '')
-    setTaxPercent(selected.tax_percent ?? '0')
+    setTaxPercent(compactDecimal(selected.tax_percent ?? '0'))
     setIsPackaging(selected.is_packaging ?? false)
     setMaxFreeQtyPerSale(selected.max_free_qty_per_sale ?? '')
     setPurchaseRate(compactDecimal(selected.purchase_rate ?? '0'))
@@ -547,7 +547,7 @@ export function ProductsPage() {
         id: `saved-${row.ulid}`,
         barcode: row.barcode,
         unit_ulid: row.unit?.ulid ?? selected.base_unit?.ulid ?? '',
-        conversion_factor: row.conversion_factor || '1.00000000',
+        conversion_factor: compactDecimal(row.conversion_factor || '1'),
         is_primary: index === 0,
       }))
 
@@ -1478,7 +1478,13 @@ export function ProductsPage() {
                 Discontinued
               </label>
               <label className="pdf-right-label">Tax %</label>
-              <input className="pdf-input pdf-num" value={taxPercent} readOnly={!canSave} onChange={(e) => setTaxPercent(e.target.value)} />
+              <input
+                className="pdf-input pdf-num"
+                value={taxPercent}
+                readOnly={!canSave}
+                onChange={(e) => setTaxPercent(e.target.value)}
+                onBlur={() => setTaxPercent((value) => compactDecimal(value))}
+              />
             </div>
 
             <div className="pdf-row pdf-row-check">
@@ -1583,6 +1589,11 @@ export function ProductsPage() {
                             onChange={(e) =>
                               updateBarcodeRow(row.id, {
                                 conversion_factor: e.target.value,
+                              })
+                            }
+                            onBlur={() =>
+                              updateBarcodeRow(row.id, {
+                                conversion_factor: compactDecimal(row.conversion_factor, '1'),
                               })
                             }
                           />
