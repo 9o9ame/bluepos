@@ -551,7 +551,9 @@ export function PurchasesPage() {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const row = document.querySelector<HTMLElement>(`tr[data-purchase-row-key="${rowKey}"]`)
-        const first = row?.querySelector<HTMLElement>('[data-purchase-edit="true"]:not(:disabled)')
+        const first = row?.querySelector<HTMLElement>(
+          '[data-purchase-edit="true"]:not([data-purchase-product="true"]):not(:disabled)',
+        )
         first?.focus()
         if (first instanceof HTMLInputElement) first.select()
       })
@@ -795,6 +797,7 @@ export function PurchasesPage() {
                   className="pie-product-combo-input"
                   value={isActive ? productQuery : row.product_label}
                   data-purchase-edit="true"
+                  data-purchase-product="true"
                   onFocus={() => beginProductEdit(row)}
                   onChange={(event) => {
                     setProductEditRowKey(row.key)
@@ -1559,13 +1562,7 @@ export function PurchasesPage() {
       setProductEditRowKey(replaceRowKey ?? null)
       setProductQuery(`${product.product_number} · ${product.name}`)
       setProductMenuOpen(false)
-      requestAnimationFrame(() => {
-        const input = document.querySelector<HTMLInputElement>(
-          `tr[data-purchase-row-key="${replaceRowKey}"] .pie-product-combo-input`,
-        )
-        input?.focus()
-        input?.select()
-      })
+      focusFirstEditableInRow(replaceRowKey ?? '')
       return
     }
 
@@ -1637,7 +1634,11 @@ export function PurchasesPage() {
 
     setLines((prev) =>
       replaceRowKey
-        ? prev.map((line) => (line.key === replaceRowKey ? { ...draft, key: replaceRowKey } : line))
+        ? prev.map((line) =>
+            line.key === replaceRowKey
+              ? { ...draft, key: replaceRowKey, ulid: line.ulid }
+              : line,
+          )
         : [...prev, draft],
     )
     setSelectedLineKey(key)
@@ -1648,13 +1649,7 @@ export function PurchasesPage() {
     if (!replaceRowKey) {
       focusFirstEditableInRow(key)
     } else {
-      requestAnimationFrame(() => {
-        const input = document.querySelector<HTMLInputElement>(
-          `tr[data-purchase-row-key="${key}"] .pie-product-combo-input`,
-        )
-        input?.focus()
-        input?.select()
-      })
+      focusFirstEditableInRow(key)
     }
   }
 
