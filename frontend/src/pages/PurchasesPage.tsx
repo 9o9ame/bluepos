@@ -2064,7 +2064,7 @@ export function PurchasesPage() {
                     className={selectedLineKey === row.key ? 'is-selected' : undefined}
                     onClick={() => setSelectedLineKey(row.key)}
                   >
-                    {columnLayout.visibleColumns.map((col) =>
+                    {effectivePurchaseColumns.map((col) =>
                       renderPurchaseCell(col, row, {
                         readOnly,
                         canEdit,
