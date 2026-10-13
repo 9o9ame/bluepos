@@ -201,6 +201,7 @@ export type Product = {
   is_packaging: boolean
   max_free_qty_per_sale: string | null
   reorder_level: string | null
+  purchase_rate: string | null
   minimum_stock: string | null
   maximum_stock: string | null
   rack_location: string | null
