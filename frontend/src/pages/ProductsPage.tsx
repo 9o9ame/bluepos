@@ -68,6 +68,18 @@ type ProductBarcodeDraft = {
 
 let barcodeDraftSequence = 0
 
+function compactDecimal(value: string, fallback = '0'): string {
+  const trimmed = value.trim()
+  if (trimmed === '') return fallback
+  if (!/^-?\d+(?:\.\d+)?$/.test(trimmed)) return value
+
+  const compacted = trimmed
+    .replace(/(\.\d*?[1-9])0+$/, '$1')
+    .replace(/\.0+$/, '')
+
+  return compacted === '-0' ? '0' : compacted
+}
+
 function createBarcodeDraft(
   unitUlid = '',
   conversionFactor = '1.00000000',
@@ -219,10 +231,10 @@ export function ProductsPage() {
   const [taxPercent, setTaxPercent] = useState('0')
   const [isPackaging, setIsPackaging] = useState(false)
   const [maxFreeQtyPerSale, setMaxFreeQtyPerSale] = useState('')
-  const [purchaseRate, setPurchaseRate] = useState('0.0000')
-  const [retail, setRetail] = useState('0.0000')
-  const [wholesale, setWholesale] = useState('0.0000')
-  const [minimumSale, setMinimumSale] = useState('0.0000')
+  const [purchaseRate, setPurchaseRate] = useState('0')
+  const [retail, setRetail] = useState('0')
+  const [wholesale, setWholesale] = useState('0')
+  const [minimumSale, setMinimumSale] = useState('0')
   const [barcodeRows, setBarcodeRows] = useState<ProductBarcodeDraft[]>([])
   const [selectedBarcodeId, setSelectedBarcodeId] = useState<string | null>(null)
 
@@ -243,21 +255,21 @@ export function ProductsPage() {
   const marginDisplay = useMemo(() => {
     const purchase = Number(purchaseRate)
     const sale = Number(retail)
-    if (!Number.isFinite(purchase) || !Number.isFinite(sale) || sale <= 0) return '0.00'
-    return (((sale - purchase) / sale) * 100).toFixed(2)
+    if (!Number.isFinite(purchase) || !Number.isFinite(sale) || sale <= 0) return '0'
+    return compactDecimal((((sale - purchase) / sale) * 100).toFixed(2))
   }, [purchaseRate, retail])
 
   function applySaleDerivedPrices(saleRaw: string, purchaseRaw: string) {
     const sale = Number(saleRaw)
     const purchase = Number(purchaseRaw)
     if (!Number.isFinite(sale) || !Number.isFinite(purchase)) {
-      setWholesale('0.0000')
-      setMinimumSale('0.0000')
+      setWholesale('0')
+      setMinimumSale('0')
       return
     }
     const markup = sale - purchase
-    setWholesale((sale - markup * 0.25).toFixed(4))
-    setMinimumSale((sale - markup * 0.5).toFixed(4))
+    setWholesale(compactDecimal((sale - markup * 0.25).toFixed(4)))
+    setMinimumSale(compactDecimal((sale - markup * 0.5).toFixed(4)))
   }
 
   function onPurchaseRateChange(value: string) {
@@ -411,10 +423,10 @@ export function ProductsPage() {
     setTaxPercent('0')
     setIsPackaging(false)
     setMaxFreeQtyPerSale('')
-    setPurchaseRate('0.0000')
-    setRetail('0.0000')
-    setWholesale('0.0000')
-    setMinimumSale('0.0000')
+    setPurchaseRate('0')
+    setRetail('0')
+    setWholesale('0')
+    setMinimumSale('0')
     setBarcodeRows([])
     setSelectedBarcodeId(null)
     clearPendingImageState()
@@ -521,10 +533,10 @@ export function ProductsPage() {
     setTaxPercent(selected.tax_percent ?? '0')
     setIsPackaging(selected.is_packaging ?? false)
     setMaxFreeQtyPerSale(selected.max_free_qty_per_sale ?? '')
-    setPurchaseRate(selected.purchase_rate ?? '0.0000')
-    setRetail(selected.prices?.find((row) => row.price_type === 'retail')?.amount ?? '0.0000')
-    setWholesale(selected.prices?.find((row) => row.price_type === 'wholesale')?.amount ?? '0.0000')
-    setMinimumSale(selected.prices?.find((row) => row.price_type === 'minimum_sale')?.amount ?? '0.0000')
+    setPurchaseRate(compactDecimal(selected.purchase_rate ?? '0'))
+    setRetail(compactDecimal(selected.prices?.find((row) => row.price_type === 'retail')?.amount ?? '0'))
+    setWholesale(compactDecimal(selected.prices?.find((row) => row.price_type === 'wholesale')?.amount ?? '0'))
+    setMinimumSale(compactDecimal(selected.prices?.find((row) => row.price_type === 'minimum_sale')?.amount ?? '0'))
 
     clearPendingImageState()
 
@@ -1401,6 +1413,7 @@ export function ProductsPage() {
                 value={purchaseRate}
                 readOnly={!canSave || !canPrices}
                 onChange={(e) => onPurchaseRateChange(e.target.value)}
+                onBlur={() => setPurchaseRate((value) => compactDecimal(value))}
                 title="Reference purchase rate. Stock average cost remains inventory-controlled."
               />
               <label>Margin %</label>
@@ -1419,6 +1432,7 @@ export function ProductsPage() {
                 value={retail}
                 readOnly={!canSave || !canPrices}
                 onChange={(e) => onSaleRateChange(e.target.value)}
+                onBlur={() => setRetail((value) => compactDecimal(value))}
               />
               <label>Whole Sale</label>
               <input
@@ -1426,6 +1440,7 @@ export function ProductsPage() {
                 value={wholesale}
                 readOnly={!canSave || !canPrices}
                 onChange={(e) => setWholesale(e.target.value)}
+                onBlur={() => setWholesale((value) => compactDecimal(value))}
                 title="Auto: Sale − 25% of (Sale − Purchase). Editable."
               />
               <label>Min Sale</label>
@@ -1434,6 +1449,7 @@ export function ProductsPage() {
                 value={minimumSale}
                 readOnly={!canSave || !canPrices}
                 onChange={(e) => setMinimumSale(e.target.value)}
+                onBlur={() => setMinimumSale((value) => compactDecimal(value))}
                 title="Auto: Sale − 50% of (Sale − Purchase). Editable."
               />
             </div>
