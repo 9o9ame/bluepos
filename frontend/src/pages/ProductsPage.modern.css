@@ -590,23 +590,17 @@
 
 .product-reference-screen .pdf-barcode-table th:nth-child(1),
 .product-reference-screen .pdf-barcode-table td:nth-child(1) {
-  width: 36%;
+  width: 42%;
 }
 
 .product-reference-screen .pdf-barcode-table th:nth-child(2),
 .product-reference-screen .pdf-barcode-table td:nth-child(2) {
-  width: 34%;
+  width: 38%;
 }
 
 .product-reference-screen .pdf-barcode-table th:nth-child(3),
 .product-reference-screen .pdf-barcode-table td:nth-child(3) {
-  width: 18%;
-}
-
-.product-reference-screen .pdf-barcode-table th:nth-child(4),
-.product-reference-screen .pdf-barcode-table td:nth-child(4) {
-  width: 12%;
-  text-align: center;
+  width: 20%;
 }
 
 .product-reference-screen .pdf-barcode-table th {
