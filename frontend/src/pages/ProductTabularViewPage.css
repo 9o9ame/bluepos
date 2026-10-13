@@ -36,21 +36,22 @@
 .product-tabular-field,
 .product-tabular-set-text {
   display: grid;
-  gap: 4px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px;
   min-width: 0;
-  align-content: end;
+  align-items: center;
 }
 
 .product-tabular-search > span,
 .product-tabular-field > span,
 .product-tabular-set-text > span {
   justify-self: start;
-  width: 100%;
   color: var(--ui-text);
   font-size: calc(var(--density-font-small, 11px) + 1px);
   font-weight: 800;
   line-height: 1.15;
   text-align: left;
+  white-space: nowrap;
 }
 
 .product-tabular-search input,
@@ -84,6 +85,7 @@
 .product-tabular-set-combo {
   position: relative;
   min-width: 0;
+  width: 100%;
 }
 
 .product-tabular-set-combo > input {
@@ -154,6 +156,12 @@
   justify-self: end;
   padding-left: 4px;
   border-left: 1px solid var(--ui-border);
+}
+
+.product-tabular-field .ui-select,
+.product-tabular-field-trigger {
+  width: 100%;
+  min-width: 0;
 }
 
 .product-tabular-field-trigger {
