@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import {
   Plus,
   Printer,
@@ -375,6 +375,7 @@ export function PurchasesPage() {
   const [withholdingIsPct, setWithholdingIsPct] = useState(false)
   const [dualModes, setDualModes] = useState<Record<string, DualMode>>({ ...DEFAULT_DUAL_MODES })
   const autoPurchaseOrderAttemptedRef = useRef('')
+  const productSearchRef = useRef<HTMLInputElement | null>(null)
 
   const calcSettings: PurchaseCalcSettings = useMemo(
     () => ({ calcMethod, discountApplyOn, dualModes }),
@@ -524,6 +525,46 @@ export function PurchasesPage() {
     recalculateAllLines({ ...calcSettings, dualModes: nextModes })
   }
 
+  function focusNewProductSearch() {
+    requestAnimationFrame(() => {
+      productSearchRef.current?.focus()
+      productSearchRef.current?.select()
+    })
+  }
+
+  function focusFirstEditableInRow(rowKey: string) {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const row = document.querySelector<HTMLElement>(`tr[data-purchase-row-key="${rowKey}"]`)
+        const first = row?.querySelector<HTMLElement>('[data-purchase-edit="true"]:not(:disabled)')
+        first?.focus()
+        if (first instanceof HTMLInputElement) first.select()
+      })
+    })
+  }
+
+  function handleLineEnter(event: ReactKeyboardEvent<HTMLElement>) {
+    if (event.key !== 'Enter' || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return
+
+    const row = event.currentTarget.closest('tr')
+    if (!row) return
+
+    const editable = [...row.querySelectorAll<HTMLElement>('[data-purchase-edit="true"]')]
+      .filter((element) => !element.hasAttribute('disabled'))
+    const currentIndex = editable.indexOf(event.currentTarget)
+    if (currentIndex < 0) return
+
+    event.preventDefault()
+    const next = editable[currentIndex + 1]
+    if (next) {
+      next.focus()
+      if (next instanceof HTMLInputElement) next.select()
+      return
+    }
+
+    focusNewProductSearch()
+  }
+
   function renderDualCell(
     colKey: string,
     cls: string,
@@ -547,6 +588,8 @@ export function PurchasesPage() {
             value={pctValue}
             disabled={!pctEnabled}
             title="%"
+            data-purchase-edit="true"
+            onKeyDown={handleLineEnter}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => {
               const pct = e.target.value
@@ -559,6 +602,8 @@ export function PurchasesPage() {
             value={rsValue}
             disabled={!rsEnabled}
             title="Rs"
+            data-purchase-edit="true"
+            onKeyDown={handleLineEnter}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => {
               const rs = e.target.value
@@ -593,9 +638,52 @@ export function PurchasesPage() {
     if (!row) {
       if (col.key === 'line_no') return <td className={cls} style={widthStyle}>*</td>
       if (col.key === 'product') {
+        if (ctx.readOnly || !ctx.canEdit) {
+          return (
+            <td className={cls} style={widthStyle}>
+              <span className="purchase-reference-empty-dots">....</span>
+            </td>
+          )
+        }
+
         return (
           <td className={cls} style={widthStyle}>
-            <span className="purchase-reference-empty-dots">....</span>
+            <div className="pie-search pie-grid-product-search">
+              <span className="pie-search-icon"><Search /></span>
+              <input
+                ref={productSearchRef}
+                value={productQuery}
+                disabled={!ctx.canEdit}
+                onChange={(event) => setProductQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter') return
+                  const first = productLookup.data?.data?.[0]
+                  if (!first) return
+                  event.preventDefault()
+                  void addProduct(first)
+                }}
+                placeholder="Search item / SKU / barcode..."
+                aria-label="Search product for new purchase line"
+              />
+              {productLookup.data?.data?.length ? (
+                <div className="pie-lookup">
+                  {productLookup.data.data.map((product) => (
+                    <button
+                      key={product.ulid}
+                      type="button"
+                      className="pie-lookup-option"
+                      onClick={() => void addProduct(product)}
+                    >
+                      <span className="pie-lookup-option-main">{product.name}</span>
+                      <span className="pie-lookup-option-meta">
+                        {product.product_number}
+                        {product.sku ? ` · ${product.sku}` : ''}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </td>
         )
       }
@@ -642,6 +730,8 @@ export function PurchasesPage() {
           type={opts?.type ?? 'text'}
           value={value}
           placeholder={opts?.placeholder}
+          data-purchase-edit="true"
+          onKeyDown={handleLineEnter}
           onChange={(e) => onChange(e.target.value)}
           onClick={(e) => e.stopPropagation()}
         />
@@ -678,6 +768,8 @@ export function PurchasesPage() {
                   className="pie-line-select"
                   aria-label="Unit"
                   value={row.unit_ulid}
+                  triggerProps={{ 'data-purchase-edit': 'true' }}
+                  onKeyDown={handleLineEnter}
                   options={(row.unit_options.length > 0
                     ? row.unit_options
                     : row.unit_ulid
@@ -1398,6 +1490,7 @@ export function PurchasesPage() {
     setLines((prev) => [...prev, draft])
     setSelectedLineKey(key)
     setProductQuery('')
+    focusFirstEditableInRow(key)
   }
 
   function openPurchaseReturn() {
@@ -1871,12 +1964,9 @@ export function PurchasesPage() {
           <button
             type="button"
             className="pie-btn is-new"
-            disabled={!editable || !productQuery.trim()}
-            onClick={() => {
-              const first = productLookup.data?.data?.[0]
-              if (first) addProduct(first)
-            }}
-            title="Add first match from search"
+            disabled={!editable}
+            onClick={focusNewProductSearch}
+            title="Focus new item row"
           >
             <Plus /> Add Item
           </button>
@@ -1888,34 +1978,6 @@ export function PurchasesPage() {
           >
             <Trash2 /> Delete
           </button>
-          <div className="pie-search">
-            <span className="pie-search-icon"><Search /></span>
-            <input
-              value={productQuery}
-              disabled={!editable}
-              onChange={(e) => setProductQuery(e.target.value)}
-              placeholder="Search item / SKU / barcode..."
-              aria-label="Search item"
-            />
-            {productLookup.data?.data?.length ? (
-              <div className="pie-lookup">
-                {productLookup.data.data.map((product) => (
-                  <button
-                    key={product.ulid}
-                    type="button"
-                    className="pie-lookup-option"
-                    onClick={() => void addProduct(product)}
-                  >
-                    <span className="pie-lookup-option-main">{product.name}</span>
-                    <span className="pie-lookup-option-meta">
-                      {product.product_number}
-                      {product.sku ? ` · ${product.sku}` : ''}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
           <div className="pie-toolbar-actions">
             <button type="button" className="pie-btn is-new" disabled={!canCreate} onClick={startNew}>
               <Plus /> New
@@ -2044,12 +2106,34 @@ export function PurchasesPage() {
               </tr>
             </thead>
             <tbody>
-              {lines.length === 0 ? (
-                <tr className="is-empty">
+              {lines.map((row, rowIndex) => (
+                <tr
+                  key={row.key}
+                  data-purchase-row-key={row.key}
+                  className={selectedLineKey === row.key ? 'is-selected' : undefined}
+                  onClick={() => setSelectedLineKey(row.key)}
+                >
+                  {effectivePurchaseColumns.map((col) =>
+                    renderPurchaseCell(col, row, {
+                      readOnly,
+                      canEdit,
+                      supplierName: selectedSupplier?.name ?? '',
+                      warehouseLabel,
+                      stockQty: stockByProduct.get(row.product_ulid),
+                      rowIndex,
+                      onRemove: () => void removeLine(row),
+                      openCustomization: () => setCustomizationOpen((open) => !open),
+                      customizationOpen,
+                    }),
+                  )}
+                </tr>
+              ))}
+              {editable ? (
+                <tr className="is-empty is-new-line">
                   {effectivePurchaseColumns.map((col) =>
                     renderPurchaseCell(col, null, {
                       readOnly,
-                      canEdit,
+                      canEdit: editable,
                       supplierName: selectedSupplier?.name ?? '',
                       warehouseLabel,
                       openCustomization: () => setCustomizationOpen((open) => !open),
@@ -2057,29 +2141,20 @@ export function PurchasesPage() {
                     }),
                   )}
                 </tr>
-              ) : (
-                lines.map((row, rowIndex) => (
-                  <tr
-                    key={row.key}
-                    className={selectedLineKey === row.key ? 'is-selected' : undefined}
-                    onClick={() => setSelectedLineKey(row.key)}
-                  >
-                    {effectivePurchaseColumns.map((col) =>
-                      renderPurchaseCell(col, row, {
-                        readOnly,
-                        canEdit,
-                        supplierName: selectedSupplier?.name ?? '',
-                        warehouseLabel,
-                        stockQty: stockByProduct.get(row.product_ulid),
-                        rowIndex,
-                        onRemove: () => void removeLine(row),
-                        openCustomization: () => setCustomizationOpen((open) => !open),
-                        customizationOpen,
-                      }),
-                    )}
-                  </tr>
-                ))
-              )}
+              ) : lines.length === 0 ? (
+                <tr className="is-empty">
+                  {effectivePurchaseColumns.map((col) =>
+                    renderPurchaseCell(col, null, {
+                      readOnly,
+                      canEdit: false,
+                      supplierName: selectedSupplier?.name ?? '',
+                      warehouseLabel,
+                      openCustomization: () => setCustomizationOpen((open) => !open),
+                      customizationOpen,
+                    }),
+                  )}
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
