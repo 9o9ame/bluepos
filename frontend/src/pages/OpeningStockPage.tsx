@@ -352,7 +352,9 @@ export function OpeningStockPage() {
               setDocumentUlid(row.ulid)
               setMode('editor')
             }}
-            emptyMessage={listQuery.isLoading ? 'Loading Opening Stock…' : 'No Opening Stock documents found.'}
+            emptyMessage="No Opening Stock documents found."
+            loading={listQuery.isFetching}
+            loadingLabel="Loading Opening Stock…"
           />
         </div>
       </section>
@@ -554,7 +556,9 @@ export function OpeningStockPage() {
           selectedKey={selectedLineUlid}
           onSelect={fillLineForm}
           onActivate={fillLineForm}
-          emptyMessage={documentQuery.isLoading ? 'Loading lines…' : 'No Opening Stock lines yet.'}
+          emptyMessage="No Opening Stock lines yet."
+          loading={documentQuery.isFetching}
+          loadingLabel="Loading Opening Stock lines…"
         />
       </div>
 
