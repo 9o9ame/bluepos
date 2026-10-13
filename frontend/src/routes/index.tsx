@@ -27,6 +27,8 @@ import { PurchasesPage } from '../pages/PurchasesPage'
 import { PurchaseOrderPage } from '../pages/PurchaseOrderPage'
 import { PurchaseReturnsPage } from '../pages/PurchaseReturnsPage'
 import { ReportsPlaceholderPage } from '../pages/ReportsPlaceholderPage'
+import { ProductStockStatusReportPage } from '../pages/ProductStockStatusReportPage'
+import { ProductLedgerReportPage } from '../pages/ProductLedgerReportPage'
 import { ReportHeadingsPage } from '../pages/ReportHeadingsPage'
 import { RoleEditorPage } from '../pages/RoleEditorPage'
 import { RolesPage } from '../pages/RolesPage'
@@ -102,6 +104,10 @@ export function AppRoutes() {
             <Route path="/daily/cash" element={<DailyCashPositionPage />} />
           </Route>
           <Route path="/reports" element={<ReportsPlaceholderPage />} />
+          <Route element={<RequirePermission permission="reports.inventory" />}>
+            <Route path="/reports/products/stock-status" element={<ProductStockStatusReportPage />} />
+            <Route path="/reports/products/ledger" element={<ProductLedgerReportPage />} />
+          </Route>
           <Route path="/help/about" element={<HelpAboutPage />} />
           <Route path="/administration/account" element={<AccountPage />} />
           <Route path="/administration/plan" element={<PlanInfoPage />} />
