@@ -1,0 +1,60 @@
+.subcategories-page {
+  min-height: 0;
+}
+
+.subcategories-page .desktop-panel-body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.subcategories-page form {
+  flex: 0 0 auto;
+}
+
+.subcategories-page .form-group-body {
+  grid-template-columns:
+    minmax(0, 1.2fr)
+    minmax(0, .8fr)
+    minmax(0, 1.2fr);
+  gap: var(--density-gap, 6px);
+}
+
+.subcategories-page .desktop-field {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.subcategories-page .desktop-field > span {
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+.subcategories-page .desktop-field .ui-select,
+.subcategories-page .desktop-field .desktop-input {
+  width: 100%;
+  min-width: 0;
+}
+
+.subcategories-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: var(--density-gap, 6px);
+  overflow: hidden;
+}
+
+.subcategories-grid .pos-grid-wrap {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+@media (max-width: 900px) {
+  .subcategories-page .form-group-body {
+    grid-template-columns: 1fr;
+  }
+}
