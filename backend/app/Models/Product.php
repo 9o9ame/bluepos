@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'is_packaging',
     'max_free_qty_per_sale',
     'reorder_level',
+    'purchase_rate',
     'minimum_stock',
     'maximum_stock',
     'rack_location',
@@ -58,6 +59,7 @@ class Product extends Model
             'tax_percent' => 'decimal:8',
             'secondary_conversion_factor' => 'decimal:8',
             'reorder_level' => 'decimal:6',
+            'purchase_rate' => 'decimal:4',
             'minimum_stock' => 'decimal:6',
             'maximum_stock' => 'decimal:6',
         ];
