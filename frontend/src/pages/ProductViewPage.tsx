@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Eye, RefreshCw } from 'lucide-react'
+import { useInfiniteQuery } from '@tanstack/react-query'
+import { Eye, RefreshCw } from 'lucide-react'
 import { fetchProducts } from '../api/catalog'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
@@ -88,28 +88,27 @@ export function ProductViewPage() {
   const canViewInventory = useCan('inventory.view')
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search)
-  const [page, setPage] = useState(1)
   const [withBalance, setWithBalance] = useState(false)
   const [activeOnly, setActiveOnly] = useState(false)
   const [lessThanReorder, setLessThanReorder] = useState(false)
   const [singleProductRow, setSingleProductRow] = useState(true)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
 
-  const productsQuery = useQuery({
+  const productsQuery = useInfiniteQuery({
     queryKey: [
       'products',
       'daily-product-view',
       deferredSearch,
-      page,
       withBalance,
       activeOnly,
       lessThanReorder,
     ],
-    queryFn: () =>
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
       fetchProducts(
         {
           q: deferredSearch.trim() || undefined,
-          page,
+          page: pageParam,
           per_page: 100,
           sales_lookup: true,
           with_balance: withBalance,
@@ -118,14 +117,18 @@ export function ProductViewPage() {
         },
         { busy: 'none' },
       ),
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.current_page < lastPage.meta.last_page
+        ? lastPage.meta.current_page + 1
+        : undefined,
   })
 
-  const products = productsQuery.data?.data ?? []
+  const products = productsQuery.data?.pages.flatMap((pageResult) => pageResult.data) ?? []
   const rows = useMemo(
     () => expandedRows(products, singleProductRow),
     [products, singleProductRow],
   )
-  const meta = productsQuery.data?.meta as ProductViewMeta | undefined
+  const meta = productsQuery.data?.pages[0]?.meta as ProductViewMeta | undefined
 
   useEffect(() => {
     if (rows.length === 0) {
@@ -256,8 +259,7 @@ export function ProductViewPage() {
 
   const saleRates = (selectedProduct?.prices ?? []).filter((price) => price.is_active)
 
-  function resetPage() {
-    setPage(1)
+  function resetView() {
     setSelectedKey(null)
   }
 
@@ -319,7 +321,7 @@ export function ProductViewPage() {
             checked={withBalance}
             onChange={(event) => {
               setWithBalance(event.target.checked)
-              resetPage()
+              resetView()
             }}
           />
           <span>Having Balance</span>
@@ -331,7 +333,7 @@ export function ProductViewPage() {
             checked={activeOnly}
             onChange={(event) => {
               setActiveOnly(event.target.checked)
-              resetPage()
+              resetView()
             }}
           />
           <span>Active Only</span>
@@ -343,7 +345,7 @@ export function ProductViewPage() {
             checked={lessThanReorder}
             onChange={(event) => {
               setLessThanReorder(event.target.checked)
-              resetPage()
+              resetView()
             }}
           />
           <span>Less than Reorder</span>
@@ -367,7 +369,7 @@ export function ProductViewPage() {
             value={search}
             onChange={(event) => {
               setSearch(event.target.value)
-              resetPage()
+              resetView()
             }}
             placeholder="Search product, barcode, SKU…"
             autoComplete="off"
@@ -390,7 +392,18 @@ export function ProductViewPage() {
             rowKey={(row) => row.key}
             selectedKey={selectedKey}
             onSelect={(row) => setSelectedKey(row.key)}
-            emptyMessage={productsQuery.isLoading ? 'Loading products…' : 'No products found'}
+            emptyMessage="No products found"
+            loading={productsQuery.isLoading || productsQuery.isFetchingNextPage}
+            loadingLabel={
+              productsQuery.isFetchingNextPage
+                ? 'Loading more products…'
+                : 'Loading products…'
+            }
+            onEndReached={() => {
+              if (productsQuery.hasNextPage && !productsQuery.isFetchingNextPage) {
+                void productsQuery.fetchNextPage()
+              }
+            }}
           />
         </div>
 
@@ -452,27 +465,13 @@ export function ProductViewPage() {
         </div>
 
         <div className="product-view-pager">
-          <UiButton
-            variant="default"
-            icon={<ChevronLeft size={14} />}
-            label="Previous"
-            disabled={(meta?.current_page ?? 1) <= 1 || productsQuery.isFetching}
-            onClick={() => {
-              setPage((current) => Math.max(1, current - 1))
-              setSelectedKey(null)
-            }}
-          />
-          <span>Page {meta?.current_page ?? 1} / {meta?.last_page ?? 1}</span>
-          <UiButton
-            variant="default"
-            icon={<ChevronRight size={14} />}
-            label="Next"
-            disabled={(meta?.current_page ?? 1) >= (meta?.last_page ?? 1) || productsQuery.isFetching}
-            onClick={() => {
-              setPage((current) => current + 1)
-              setSelectedKey(null)
-            }}
-          />
+          <span>
+            {productsQuery.isFetchingNextPage
+              ? 'Loading more products…'
+              : productsQuery.hasNextPage
+                ? `Loaded ${products.length} of ${meta?.total ?? products.length}`
+                : 'All products loaded'}
+          </span>
         </div>
       </footer>
     </section>
