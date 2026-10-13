@@ -61,29 +61,27 @@ export function UiEditableCombo({
 
   function toggleMenu() {
     if (disabled || options.length === 0) return
-    if (!open) updatePosition()
+
+    if (!open) {
+      updatePosition()
+      requestAnimationFrame(() => {
+        inputRef.current?.focus()
+        inputRef.current?.select()
+      })
+    }
+
     setOpen((current) => !current)
   }
 
   function pick(option: UiEditableComboOption) {
     if (option.disabled) return
 
-    const input = inputRef.current
-    const start = input?.selectionStart ?? value.length
-    const end = input?.selectionEnd ?? value.length
-    const before = value.slice(0, start)
-    const after = value.slice(end)
-    const needsSpace = before.length > 0 && !/\s$/.test(before)
-    const inserted = `${needsSpace ? ' ' : ''}${option.value}`
-    const next = `${before}${inserted}${after}`
-
-    onChange(next)
+    onChange(option.value)
     setOpen(false)
 
     requestAnimationFrame(() => {
-      const caret = before.length + inserted.length
       inputRef.current?.focus()
-      inputRef.current?.setSelectionRange(caret, caret)
+      inputRef.current?.select()
     })
   }
 
