@@ -21,11 +21,11 @@
 .product-tabular-primary-row {
   display: grid;
   grid-template-columns:
-    minmax(210px, 290px)
-    minmax(235px, 285px)
-    minmax(360px, 480px)
+    minmax(210px, 250px)
+    minmax(260px, 315px)
+    minmax(460px, 1fr)
     auto
-    minmax(235px, 1fr)
+    minmax(220px, max-content)
     auto;
   gap: 7px;
   align-items: end;
@@ -86,13 +86,15 @@
   position: relative;
   min-width: 0;
   width: 100%;
+  min-width: 420px;
 }
 
 .product-tabular-set-combo > input {
   position: relative;
   z-index: 1;
-  padding-right: 42px;
+  padding-right: 46px;
   cursor: text;
+  font-weight: 600;
 }
 
 .product-tabular-formula-select {
@@ -107,8 +109,8 @@
   position: absolute;
   top: 0;
   right: 0;
-  width: 38px;
-  min-width: 38px;
+  width: 42px;
+  min-width: 42px;
   height: 100%;
   padding: 0;
   border-left: 1px solid var(--ui-border);
@@ -128,7 +130,13 @@
 }
 
 .product-tabular-set-combo:focus-within > input {
+  border-color: var(--ui-accent);
+  background: var(--ui-accent-soft);
   box-shadow: var(--ui-focus-shadow);
+}
+
+.product-tabular-set-combo > input:focus {
+  outline: none;
 }
 
 .product-tabular-update-actions,
@@ -256,8 +264,8 @@
   .product-tabular-primary-row {
     grid-template-columns:
       minmax(190px, 1fr)
-      minmax(220px, 270px)
-      minmax(320px, 1.35fr)
+      minmax(235px, 285px)
+      minmax(380px, 1.5fr)
       auto;
   }
 
