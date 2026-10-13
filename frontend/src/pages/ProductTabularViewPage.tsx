@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Download, RefreshCw, Save, X } from 'lucide-react'
 import { bulkUpdateProducts, downloadProductTabularExport, fetchProducts } from '../api/catalog'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
@@ -99,7 +99,6 @@ export function ProductTabularViewPage() {
 
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search)
-  const [page, setPage] = useState(1)
   const [activeOnly, setActiveOnly] = useState(false)
   const [withBalance, setWithBalance] = useState(false)
   const [stockLeReorder, setStockLeReorder] = useState(false)
@@ -111,22 +110,22 @@ export function ProductTabularViewPage() {
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, ProductDraft>>({})
 
-  const productsQuery = useQuery({
+  const productsQuery = useInfiniteQuery({
     queryKey: [
       'products',
       'tabular-view',
       deferredSearch,
-      page,
       activeOnly,
       withBalance,
       stockLeReorder,
       purchaseRateGeSaleRate,
     ],
-    queryFn: () =>
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
       fetchProducts(
         {
           q: deferredSearch.trim() || undefined,
-          page,
+          page: Number(pageParam),
           per_page: 50,
           sales_lookup: true,
           active_only: activeOnly,
@@ -136,11 +135,15 @@ export function ProductTabularViewPage() {
         },
         { busy: 'none' },
       ),
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.current_page < lastPage.meta.last_page
+        ? lastPage.meta.current_page + 1
+        : undefined,
   })
 
-  const rows = productsQuery.data?.data ?? []
-  const meta = productsQuery.data?.meta as
-    | (NonNullable<typeof productsQuery.data>['meta'] & { stock_total?: string | null })
+  const rows = productsQuery.data?.pages.flatMap((pageResult) => pageResult.data) ?? []
+  const meta = productsQuery.data?.pages[0]?.meta as
+    | (NonNullable<(typeof productsQuery.data)['pages'][number]>['meta'] & { stock_total?: string | null })
     | undefined
 
   const stagedCount = Object.keys(drafts).length
@@ -300,10 +303,6 @@ export function ProductTabularViewPage() {
     },
   ], [allVisibleSelected, canViewStock, drafts, rows, selected, someVisibleSelected])
 
-  function resetToFirstPage() {
-    setPage(1)
-  }
-
   function applySetText() {
     const targets = selected.size > 0
       ? [...selected]
@@ -440,7 +439,6 @@ export function ProductTabularViewPage() {
                 const next = event.target.value
                 void changeView(() => {
                   setSearch(next)
-                  resetToFirstPage()
                 })
               }}
               placeholder="Product, barcode, SKU…"
@@ -534,7 +532,6 @@ export function ProductTabularViewPage() {
                   const checked = event.target.checked
                   void changeView(() => {
                     setWithBalance(checked)
-                    resetToFirstPage()
                   })
                 }}
               />
@@ -548,7 +545,6 @@ export function ProductTabularViewPage() {
                   const checked = event.target.checked
                   void changeView(() => {
                     setActiveOnly(checked)
-                    resetToFirstPage()
                   })
                 }}
               />
@@ -562,7 +558,6 @@ export function ProductTabularViewPage() {
                   const checked = event.target.checked
                   void changeView(() => {
                     setStockLeReorder(checked)
-                    resetToFirstPage()
                   })
                 }}
               />
@@ -577,7 +572,6 @@ export function ProductTabularViewPage() {
                   const checked = event.target.checked
                   void changeView(() => {
                     setPurchaseRateGeSaleRate(checked)
-                    resetToFirstPage()
                   })
                 }}
               />
@@ -621,38 +615,31 @@ export function ProductTabularViewPage() {
           rowKey={(product) => product.ulid}
           selectedKey={activeKey}
           onSelect={(product) => setActiveKey(product.ulid)}
-          emptyMessage={productsQuery.isPending ? 'Loading products…' : 'No products match the selected filters.'}
+          emptyMessage="No products match the selected filters."
+          loading={productsQuery.isPending || productsQuery.isFetchingNextPage}
+          loadingLabel={
+            productsQuery.isFetchingNextPage
+              ? 'Loading more products…'
+              : 'Loading products…'
+          }
+          onEndReached={() => {
+            if (productsQuery.hasNextPage && !productsQuery.isFetchingNextPage) {
+              void productsQuery.fetchNextPage()
+            }
+          }}
         />
       </div>
 
       <footer className="product-tabular-footer">
-        <div className="product-tabular-pager">
-          <UiButton
-            label="First"
-            onClick={() => void changeView(() => setPage(1))}
-            disabled={!meta || page <= 1}
-          />
-          <UiButton
-            label="Previous"
-            onClick={() => void changeView(() => setPage((current) => Math.max(1, current - 1)))}
-            disabled={!meta || page <= 1}
-          />
-          <span>
-            Page {meta?.current_page ?? page} of {meta?.last_page ?? 1}
-          </span>
-          <UiButton
-            label="Next"
-            onClick={() => void changeView(() => setPage((current) => current + 1))}
-            disabled={!meta || page >= meta.last_page}
-          />
-          <UiButton
-            label="Last"
-            onClick={() => meta && void changeView(() => setPage(meta.last_page))}
-            disabled={!meta || page >= meta.last_page}
-          />
-        </div>
+        <span className="product-tabular-pager">
+          {productsQuery.isFetchingNextPage
+            ? 'Loading more…'
+            : productsQuery.hasNextPage
+              ? `Loaded ${rows.length}`
+              : 'All products loaded'}
+        </span>
 
-        <strong>{meta?.total ?? 0} Items</strong>
+        <strong>{meta?.total ?? rows.length} Items</strong>
 
         <span className="product-tabular-summary">
           {selected.size} selected · {stagedCount} staged ·
