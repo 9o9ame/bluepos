@@ -46,6 +46,7 @@ import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { CatalogQuickEditorModal, type QuickEditorKind } from '../components/catalog/CatalogQuickEditorModal'
 import { loadBarcodePrintSettings, printBarcodeLabels } from '../components/products/barcodePrint'
 import { UiSelect } from '../components/ui/UiSelect'
+import { StockValueBadge } from '../components/ui/StockValueBadge'
 import { PartyModal } from '../components/parties/PartyModal'
 import type { Party } from '../api/parties'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -1726,18 +1727,10 @@ export function ProductsPage() {
                   const numericStock = Number(row.sales_lookup?.in_stock ?? '0')
 
                   return (
-                    <span
-                      className={[
-                        'product-stock-value',
-                        numericStock > 0
-                          ? 'is-positive'
-                          : numericStock < 0
-                            ? 'is-negative'
-                            : 'is-zero',
-                      ].join(' ')}
-                    >
-                      {stock}
-                    </span>
+                    <StockValueBadge
+                      value={numericStock}
+                      displayValue={stock}
+                    />
                   )
                 },
               },
