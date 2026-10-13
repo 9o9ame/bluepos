@@ -25,3 +25,22 @@
   min-height: 0;
   overflow: auto;
 }
+
+
+.categories-page .form-group-body {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--density-gap, 6px);
+}
+
+.categories-page .desktop-field {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.categories-page .desktop-field > span {
+  white-space: nowrap;
+  font-weight: 700;
+}
