@@ -2631,3 +2631,36 @@ html[data-density] #root :where(
   --ui-weight-strong: 700;
   --app-letter-spacing: 0.008em;
 }
+
+
+/* ---------- GLOBAL THEMED SCROLLBARS ---------- */
+/* Match application scrollbars to the selected Primary Theme. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color:
+    color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border))
+    var(--ui-surface-subtle);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--ui-surface-subtle);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border));
+  border: 2px solid var(--ui-surface-subtle);
+  border-radius: var(--control-radius);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-accent);
+}
+
+*::-webkit-scrollbar-corner {
+  background: var(--ui-surface-subtle);
+}
