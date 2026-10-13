@@ -472,10 +472,7 @@ export function ProductTabularViewPage() {
             <UiEditableCombo
               value={setText}
               onChange={setSetText}
-              options={SET_TEXT_PRESETS.map((option) => ({
-                ...option,
-                disabled: fieldToUpdate !== 'retail_price',
-              }))}
+              options={SET_TEXT_PRESETS}
               disabled={!canEdit}
               placeholder={fieldToUpdate === 'reorder_level' ? 'Enter value…' : 'Enter price or formula…'}
               ariaLabel="Set Text"
