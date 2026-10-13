@@ -68,7 +68,7 @@ type ProductBarcodeDraft = {
 
 let barcodeDraftSequence = 0
 
-function compactDecimal(value: string, fallback = '0'): string {
+function compactDecimal(value: string, fallback = '0.0'): string {
   const trimmed = value.trim()
   if (trimmed === '') return fallback
   if (!/^-?\d+(?:\.\d+)?$/.test(trimmed)) return value
@@ -77,12 +77,13 @@ function compactDecimal(value: string, fallback = '0'): string {
     .replace(/(\.\d*?[1-9])0+$/, '$1')
     .replace(/\.0+$/, '')
 
-  return compacted === '-0' ? '0' : compacted
+  const normalized = compacted === '-0' ? '0' : compacted
+  return normalized.includes('.') ? normalized : `${normalized}.0`
 }
 
 function createBarcodeDraft(
   unitUlid = '',
-  conversionFactor = '1',
+  conversionFactor = '1.0',
   isPrimary = false,
 ): ProductBarcodeDraft {
   barcodeDraftSequence += 1
@@ -228,13 +229,13 @@ export function ProductsPage() {
   const [baseUnitUlid, setBaseUnitUlid] = useState('')
   const [reorderLevel, setReorderLevel] = useState('')
   const [rackLocation, setRackLocation] = useState('')
-  const [taxPercent, setTaxPercent] = useState('0')
+  const [taxPercent, setTaxPercent] = useState('0.0')
   const [isPackaging, setIsPackaging] = useState(false)
   const [maxFreeQtyPerSale, setMaxFreeQtyPerSale] = useState('')
-  const [purchaseRate, setPurchaseRate] = useState('0')
-  const [retail, setRetail] = useState('0')
-  const [wholesale, setWholesale] = useState('0')
-  const [minimumSale, setMinimumSale] = useState('0')
+  const [purchaseRate, setPurchaseRate] = useState('0.0')
+  const [retail, setRetail] = useState('0.0')
+  const [wholesale, setWholesale] = useState('0.0')
+  const [minimumSale, setMinimumSale] = useState('0.0')
   const [barcodeRows, setBarcodeRows] = useState<ProductBarcodeDraft[]>([])
   const [selectedBarcodeId, setSelectedBarcodeId] = useState<string | null>(null)
 
@@ -251,11 +252,11 @@ export function ProductsPage() {
   const [openingBusy, setOpeningBusy] = useState(false)
 
   const canSave = creating ? canCreate : canEdit && Boolean(selectedKey)
-  const inStockDisplay = compactDecimal(productStock.data?.active_warehouse.quantity ?? '0')
+  const inStockDisplay = compactDecimal(productStock.data?.active_warehouse.quantity ?? '0.0')
   const marginDisplay = useMemo(() => {
     const purchase = Number(purchaseRate)
     const sale = Number(retail)
-    if (!Number.isFinite(purchase) || !Number.isFinite(sale) || sale <= 0) return '0'
+    if (!Number.isFinite(purchase) || !Number.isFinite(sale) || sale <= 0) return '0.0'
     return compactDecimal((((sale - purchase) / sale) * 100).toFixed(2))
   }, [purchaseRate, retail])
 
@@ -263,8 +264,8 @@ export function ProductsPage() {
     const sale = Number(saleRaw)
     const purchase = Number(purchaseRaw)
     if (!Number.isFinite(sale) || !Number.isFinite(purchase)) {
-      setWholesale('0')
-      setMinimumSale('0')
+      setWholesale('0.0')
+      setMinimumSale('0.0')
       return
     }
     const markup = sale - purchase
@@ -420,13 +421,13 @@ export function ProductsPage() {
     setBaseUnitUlid(units.data?.[0]?.ulid ?? '')
     setReorderLevel('')
     setRackLocation('')
-    setTaxPercent('0')
+    setTaxPercent('0.0')
     setIsPackaging(false)
     setMaxFreeQtyPerSale('')
-    setPurchaseRate('0')
-    setRetail('0')
-    setWholesale('0')
-    setMinimumSale('0')
+    setPurchaseRate('0.0')
+    setRetail('0.0')
+    setWholesale('0.0')
+    setMinimumSale('0.0')
     setBarcodeRows([])
     setSelectedBarcodeId(null)
     clearPendingImageState()
@@ -530,11 +531,11 @@ export function ProductsPage() {
     setBaseUnitUlid(selected.base_unit?.ulid ?? '')
     setReorderLevel(selected.reorder_level ?? '')
     setRackLocation(selected.rack_location ?? '')
-    setTaxPercent(compactDecimal(selected.tax_percent ?? '0'))
+    setTaxPercent(compactDecimal(selected.tax_percent ?? '0.0'))
     setIsPackaging(selected.is_packaging ?? false)
     setMaxFreeQtyPerSale(selected.max_free_qty_per_sale ?? '')
-    setPurchaseRate(compactDecimal(selected.purchase_rate ?? '0'))
-    setRetail(compactDecimal(selected.prices?.find((row) => row.price_type === 'retail')?.amount ?? '0'))
+    setPurchaseRate(compactDecimal(selected.purchase_rate ?? '0.0'))
+    setRetail(compactDecimal(selected.prices?.find((row) => row.price_type === 'retail')?.amount ?? '0.0'))
     setWholesale(compactDecimal(selected.prices?.find((row) => row.price_type === 'wholesale')?.amount ?? '0'))
     setMinimumSale(compactDecimal(selected.prices?.find((row) => row.price_type === 'minimum_sale')?.amount ?? '0'))
 
@@ -547,7 +548,7 @@ export function ProductsPage() {
         id: `saved-${row.ulid}`,
         barcode: row.barcode,
         unit_ulid: row.unit?.ulid ?? selected.base_unit?.ulid ?? '',
-        conversion_factor: compactDecimal(row.conversion_factor || '1'),
+        conversion_factor: compactDecimal(row.conversion_factor || '1.0'),
         is_primary: index === 0,
       }))
 
@@ -1593,7 +1594,7 @@ export function ProductsPage() {
                             }
                             onBlur={() =>
                               updateBarcodeRow(row.id, {
-                                conversion_factor: compactDecimal(row.conversion_factor, '1'),
+                                conversion_factor: compactDecimal(row.conversion_factor, '1.0'),
                               })
                             }
                           />
