@@ -10,6 +10,8 @@ import type {
   InventoryAdjustment,
   InventoryAdjustmentAccount,
   InventoryAdjustmentLine,
+  ProductLedgerReport,
+  ProductStockStatusReport,
 } from '../types/inventory'
 import type { Warehouse } from '../types/auth'
 
@@ -367,3 +369,47 @@ export function postInventoryAdjustment(documentUlid: string) {
   })
 }
 
+
+
+export function fetchProductStockStatusReport(params?: {
+  q?: string
+  active_only?: boolean
+  with_balance?: boolean
+  low_stock?: boolean
+  page?: number
+  per_page?: number
+}) {
+  const search = new URLSearchParams()
+  if (params?.q) search.set('q', params.q)
+  if (params?.active_only) search.set('active_only', '1')
+  if (params?.with_balance) search.set('with_balance', '1')
+  if (params?.low_stock) search.set('low_stock', '1')
+  if (params?.page) search.set('page', String(params.page))
+  search.set('per_page', String(params?.per_page ?? 100))
+
+  return apiFetch<ProductStockStatusReport>(
+    `/api/reports/products/stock-status?${search.toString()}`,
+    { busy: 'none' },
+  )
+}
+
+export function fetchProductLedgerReport(params: {
+  product_ulid: string
+  from_date: string
+  to_date: string
+  page?: number
+  per_page?: number
+}) {
+  const search = new URLSearchParams({
+    product_ulid: params.product_ulid,
+    from_date: params.from_date,
+    to_date: params.to_date,
+    page: String(params.page ?? 1),
+    per_page: String(params.per_page ?? 100),
+  })
+
+  return apiFetch<ProductLedgerReport>(
+    `/api/reports/products/ledger?${search.toString()}`,
+    { busy: 'none' },
+  )
+}
