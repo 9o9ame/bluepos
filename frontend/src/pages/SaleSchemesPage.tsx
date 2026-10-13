@@ -16,6 +16,7 @@ import { useCan } from '../features/auth/useCan'
 import { askConfirm } from '../feedback/FeedbackProvider'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { SaleSchemeApplyMode } from '../types/saleSchemes'
+import './SaleSchemesPage.css'
 
 export function SaleSchemesPage() {
   const queryClient = useQueryClient()
@@ -145,6 +146,7 @@ export function SaleSchemesPage() {
 
   return (
     <DesktopPanel
+      className="sale-schemes-page"
       title="Customer Sale Schemes"
       toolbar={
         <>
@@ -271,7 +273,7 @@ export function SaleSchemesPage() {
         </form>
       ) : null}
 
-      <div style={{ height: 360, marginTop: 6 }}>
+      <div className="sale-schemes-grid">
         <PosDataGrid
           columns={[
             {
