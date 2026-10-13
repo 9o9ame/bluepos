@@ -1717,12 +1717,29 @@ export function ProductsPage() {
                 header: 'In Stock',
                 width: 88,
                 align: 'right',
-                render: (row: Product) =>
-                  canViewStock ? (
-                    compactDecimal(row.sales_lookup?.in_stock ?? '0.0')
-                  ) : (
-                    <span className="stock-na" title="Inventory view permission required">—</span>
-                  ),
+                render: (row: Product) => {
+                  if (!canViewStock) {
+                    return <span className="stock-na" title="Inventory view permission required">—</span>
+                  }
+
+                  const stock = compactDecimal(row.sales_lookup?.in_stock ?? '0.0')
+                  const numericStock = Number(row.sales_lookup?.in_stock ?? '0')
+
+                  return (
+                    <span
+                      className={[
+                        'product-stock-value',
+                        numericStock > 0
+                          ? 'is-positive'
+                          : numericStock < 0
+                            ? 'is-negative'
+                            : 'is-zero',
+                      ].join(' ')}
+                    >
+                      {stock}
+                    </span>
+                  )
+                },
               },
             ]}
             rows={gridRows}
