@@ -1762,7 +1762,7 @@ export function ProductsPage() {
           } else if (kind === 'brand') {
             setBrandUlid(item.ulid)
           } else if (kind === 'unit') {
-            setBaseUnitUlid(item.ulid)
+            onBaseUnitChange(item.ulid)
           } else if (kind === 'barcode_group') {
             setBarcodeGroupUlid(item.ulid)
           }
