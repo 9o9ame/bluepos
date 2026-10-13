@@ -625,6 +625,23 @@
   box-shadow: var(--ui-focus-shadow);
 }
 
+.pie-product-combo-arrow {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--ui-select-selected-text, #fff);
+  transition: transform var(--ui-transition-normal);
+}
+
+.pie-product-combo-toggle[aria-expanded='true'] .pie-product-combo-arrow {
+  transform: rotate(180deg);
+}
+
+html[data-animations='off'] .pie-product-combo-arrow {
+  transition: none;
+}
+
 .purchase-reference-grid tr.is-new-line td {
   background: var(--ui-surface-subtle) !important;
 }
