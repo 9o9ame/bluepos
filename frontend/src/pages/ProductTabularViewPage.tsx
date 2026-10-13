@@ -52,15 +52,24 @@ const BULK_FIELD_OPTIONS: UiSelectOption[] = [
 
 const SET_TEXT_PRESETS: UiSelectOption[] = [
   {
-    value: 'last_price_plus_10',
-    label: '=LastPrice + (LastPrice * 10.0 / 100)',
-    disabled: true,
-    title: 'BluePOS does not currently store a LastPrice product field.',
+    value: 'trade_price_plus_5',
+    label: '=TradePrice + (TradePrice * 5.0 / 100)',
+    title: 'For Sale Price: set retail price to Trade Price plus 5%.',
   },
   {
     value: 'trade_price_plus_10',
     label: '=TradePrice + (TradePrice * 10.0 / 100)',
     title: 'For Sale Price: set retail price to Trade Price plus 10%.',
+  },
+  {
+    value: 'trade_price_plus_15',
+    label: '=TradePrice + (TradePrice * 15.0 / 100)',
+    title: 'For Sale Price: set retail price to Trade Price plus 15%.',
+  },
+  {
+    value: 'trade_price_plus_20',
+    label: '=TradePrice + (TradePrice * 20.0 / 100)',
+    title: 'For Sale Price: set retail price to Trade Price plus 20%.',
   },
 ]
 
@@ -323,7 +332,11 @@ export function ProductTabularViewPage() {
     }
 
     const rawValue = setText.trim()
-    const isTradeFormula = rawValue === '=TradePrice + (TradePrice * 10.0 / 100)'
+    const tradeFormulaMatch = rawValue.match(
+      /^=TradePrice\s*\+\s*\(TradePrice\s*\*\s*(\d+(?:\.\d+)?)\s*\/\s*100\)$/,
+    )
+    const tradeFormulaPercent = tradeFormulaMatch?.[1] ?? null
+    const isTradeFormula = tradeFormulaPercent !== null
 
     if (isTradeFormula && fieldToUpdate !== 'retail_price') {
       feedback.error('The TradePrice formula can only be used when Field To Update is Sale Price.', 'Tabular View')
@@ -358,7 +371,7 @@ export function ProductTabularViewPage() {
         const change: PriceDraft = isTradeFormula
           ? {
               formula: 'trade_price_plus_percent',
-              percent: '10.00000000',
+              percent: tradeFormulaPercent ?? '0',
             }
           : { amount: rawValue }
 
@@ -488,8 +501,9 @@ export function ProductTabularViewPage() {
                 }))}
                 onChange={(value) => {
                   setSetTextPreset(value)
-                  if (value === 'trade_price_plus_10') {
-                    setSetText('=TradePrice + (TradePrice * 10.0 / 100)')
+                  const percent = value.match(/^trade_price_plus_(\d+)$/)?.[1]
+                  if (percent) {
+                    setSetText(`=TradePrice + (TradePrice * ${percent}.0 / 100)`)
                   }
                 }}
                 placeholder=""
