@@ -12,7 +12,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react'
-import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { fetchBusinessSettings, fetchProduct, fetchProducts, fetchSuppliers } from '../api/catalog'
 import { ApiClientError } from '../api/client'
@@ -388,17 +388,23 @@ export function PurchasesPage() {
 
   const readOnly = status === 'posted' || status === 'cancelled'
 
-  const listQuery = useQuery({
+  const listQuery = useInfiniteQuery({
     queryKey: ['purchases', q, statusFilter, supplierFilter, dateFrom, dateTo],
-    queryFn: () =>
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
       fetchPurchases({
         q: q || undefined,
         status: statusFilter || undefined,
         supplier_ulid: supplierFilter || undefined,
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined,
+        page: pageParam,
         per_page: 50,
       }),
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.current_page < lastPage.meta.last_page
+        ? lastPage.meta.current_page + 1
+        : undefined,
     enabled: mode === 'list',
   })
 
@@ -424,7 +430,8 @@ export function PurchasesPage() {
     enabled: mode === 'editor' && !readOnly && productQuery.trim().length >= 1,
   })
 
-  const listRows = listQuery.data?.data ?? []
+  const listRows = listQuery.data?.pages.flatMap((page) => page.data) ?? []
+  const listTotal = listQuery.data?.pages[0]?.meta.total ?? 0
   const suppliers = (suppliersQuery.data ?? []).filter((s) => s.is_active)
   const warehouses = (warehousesQuery.data ?? []).filter(
     (w) => w.status === 'active' && w.ulid === session?.warehouse.ulid,
@@ -1452,6 +1459,7 @@ export function PurchasesPage() {
   if (mode === 'list') {
     return (
       <DesktopPanel
+        className="purchase-list-page"
         title="Purchase Invoices"
         toolbar={
           <>
@@ -1514,48 +1522,71 @@ export function PurchasesPage() {
           />
         </div>
         {error ? <div className="text-[12px] text-[var(--ui-danger)] mb-2">{error}</div> : null}
-        <PosDataGrid
-          columns={[
-            { key: 'document_number', header: 'Document #', width: 110 },
-            { key: 'invoice_date', header: 'Date', width: 100 },
-            {
-              key: 'supplier',
-              header: 'Supplier',
-              render: (row) => row.supplier?.name ?? '—',
-            },
-            {
-              key: 'supplier_invoice_number',
-              header: 'Supplier Invoice #',
-              width: 130,
-              render: (row) => row.supplier_invoice_number ?? '—',
-            },
-            {
-              key: 'warehouse',
-              header: 'Warehouse',
-              width: 120,
-              render: (row) => row.warehouse?.name ?? '—',
-            },
-            {
-              key: 'grand_total',
-              header: 'Total',
-              align: 'right',
-              width: 100,
-              render: (row) => money(row.grand_total),
-            },
-            {
-              key: 'status',
-              header: 'Status',
-              width: 90,
-              render: (row) => row.status.toUpperCase(),
-            },
-          ]}
-          rows={listRows}
-          rowKey={(row) => row.ulid}
-          selectedKey={selectedListKey}
-          onSelect={(row) => setSelectedListKey(row.ulid)}
-          onActivate={(row) => void openInvoice(row.ulid)}
-          emptyMessage={listQuery.isLoading ? 'Loading…' : 'No purchase invoices'}
-        />
+        <div className="purchase-list-grid">
+          <PosDataGrid
+            columns={[
+              { key: 'document_number', header: 'Document #', width: 110 },
+              { key: 'invoice_date', header: 'Date', width: 100 },
+              {
+                key: 'supplier',
+                header: 'Supplier',
+                render: (row) => row.supplier?.name ?? '—',
+              },
+              {
+                key: 'supplier_invoice_number',
+                header: 'Supplier Invoice #',
+                width: 130,
+                render: (row) => row.supplier_invoice_number ?? '—',
+              },
+              {
+                key: 'warehouse',
+                header: 'Warehouse',
+                width: 120,
+                render: (row) => row.warehouse?.name ?? '—',
+              },
+              {
+                key: 'grand_total',
+                header: 'Total',
+                align: 'right',
+                width: 100,
+                render: (row) => money(row.grand_total),
+              },
+              {
+                key: 'status',
+                header: 'Status',
+                width: 90,
+                render: (row) => row.status.toUpperCase(),
+              },
+            ]}
+            rows={listRows}
+            rowKey={(row) => row.ulid}
+            selectedKey={selectedListKey}
+            onSelect={(row) => setSelectedListKey(row.ulid)}
+            onActivate={(row) => void openInvoice(row.ulid)}
+            emptyMessage="No purchase invoices"
+            loading={listQuery.isLoading || listQuery.isFetchingNextPage}
+            loadingLabel={
+              listQuery.isFetchingNextPage
+                ? 'Loading more purchase invoices…'
+                : 'Loading purchase invoices…'
+            }
+            onEndReached={() => {
+              if (listQuery.hasNextPage && !listQuery.isFetchingNextPage) {
+                void listQuery.fetchNextPage()
+              }
+            }}
+          />
+        </div>
+        <div className="purchase-list-foot">
+          <span>{listTotal} {listTotal === 1 ? 'record' : 'records'}</span>
+          <span>
+            {listQuery.isFetchingNextPage
+              ? 'Loading more…'
+              : listQuery.hasNextPage
+                ? `Loaded ${listRows.length}`
+                : 'All records loaded'}
+          </span>
+        </div>
       </DesktopPanel>
     )
   }
