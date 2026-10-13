@@ -1,0 +1,128 @@
+.ui-editable-combo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  width: 100%;
+  min-width: 0;
+  height: var(--ui-control-h-md, 24px);
+  border: 1px solid var(--ui-control-border, var(--ui-border));
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face, var(--ui-surface));
+  box-shadow: var(--ui-control-shadow);
+  overflow: hidden;
+}
+
+.ui-editable-combo:focus-within,
+.ui-editable-combo.is-open {
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.ui-editable-combo-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--density-control-padding-x, 8px);
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-font-md, 12px);
+  font-weight: var(--ui-weight-medium, 600);
+}
+
+.ui-editable-combo-input::placeholder {
+  color: var(--ui-text-muted);
+}
+
+.ui-editable-combo-toggle {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  min-width: 30px;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--ui-control-border, var(--ui-border));
+  background: transparent;
+  color: var(--ui-text);
+  cursor: pointer;
+}
+
+.ui-editable-combo-toggle:hover:not(:disabled) {
+  background: var(--ui-control-hover-bg, var(--ui-accent-soft));
+}
+
+.ui-editable-combo-arrow {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 18px;
+  border: 1px solid var(--ui-select-arrow-border, var(--ui-accent));
+  border-radius: var(--control-radius);
+  background: var(--ui-select-arrow-face);
+  color: #fff;
+  transition: transform var(--ui-transition-normal);
+}
+
+.ui-editable-combo.is-open .ui-editable-combo-arrow {
+  transform: rotate(180deg);
+}
+
+.ui-editable-combo.is-disabled {
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  box-shadow: none;
+}
+
+.ui-editable-combo-menu {
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 4px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-select-menu-bg, var(--ui-surface));
+  color: var(--ui-text);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.ui-editable-combo-option {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: max(28px, var(--ui-control-h-md, 24px));
+  margin: 0 0 2px;
+  padding: 5px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  font-size: var(--ui-font-md, 12px);
+  font-weight: var(--ui-weight-medium, 600);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui-editable-combo-option:last-child {
+  margin-bottom: 0;
+}
+
+.ui-editable-combo-option:hover:not(:disabled),
+.ui-editable-combo-option:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--ui-accent) 38%, transparent);
+  background: var(--ui-select-hover-bg, var(--ui-accent-soft));
+  color: var(--ui-select-hover-text, var(--ui-accent-strong));
+}
+
+.ui-editable-combo-option:disabled {
+  cursor: not-allowed;
+  color: var(--ui-text-muted);
+  opacity: .55;
+}
+
+html[data-animations='off'] .ui-editable-combo-arrow {
+  transition: none !important;
+}
