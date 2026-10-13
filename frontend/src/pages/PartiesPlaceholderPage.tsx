@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   BookOpen,
-  ChevronFirst,
-  ChevronLast,
-  ChevronLeft,
-  ChevronRight,
   FileSpreadsheet,
   FolderPlus,
   ImagePlus,
@@ -66,6 +62,7 @@ import { AnimatedSelect } from '../components/ui/AnimatedSelect'
 import { UiSelect } from '../components/ui/UiSelect'
 import { UI_LAYER } from '../components/ui/uiLayers'
 import { ToggleSwitch } from '../components/ui/ToggleSwitch'
+import { ListLoadingIndicator } from '../components/ui/ListLoadingIndicator'
 import { askConfirm, formatApiError, useFeedback } from '../feedback/FeedbackProvider'
 import './PartiesPlaceholderPage.css'
 import './PartiesPlaceholderPage.modern.css'
@@ -414,10 +411,6 @@ export function PartiesPlaceholderPage({
   )
 
   const selectedIndex = rows.findIndex((row) => row.key === selectedKey)
-  const recordLabel =
-    rows.length === 0
-      ? 'Record 0 of 0'
-      : `Record ${Math.max(selectedIndex, 0) + 1} of ${rows.length}`
   const dirty =
     formSnapshot(form) !== baselineRef.current ||
     bankRows.some((r) => r.dirty) ||
@@ -1958,10 +1951,10 @@ export function PartiesPlaceholderPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.length === 0 ? (
+                  {rows.length === 0 && !loading ? (
                     <tr>
                       <td colSpan={4} className="parties-vca-empty">
-                        {loading ? 'Loading…' : 'No party records yet'}
+                        No party records yet
                       </td>
                     </tr>
                   ) : (
@@ -1980,28 +1973,13 @@ export function PartiesPlaceholderPage({
                   )}
                 </tbody>
               </table>
+              <ListLoadingIndicator
+                visible={loading}
+                label="Loading parties…"
+              />
             </div>
 
             <div className="parties-vca-grid-footer">
-              <div className="parties-vca-record-nav">
-                <button type="button" disabled={rows.length === 0} onClick={() => moveSelection(0)}>
-                  <ChevronFirst size={13} />
-                </button>
-                <button type="button" disabled={rows.length === 0 || selectedIndex <= 0} onClick={() => moveSelection(selectedIndex - 1)}>
-                  <ChevronLeft size={13} />
-                </button>
-                <span>{recordLabel}</span>
-                <button
-                  type="button"
-                  disabled={rows.length === 0 || selectedIndex < 0 || selectedIndex >= rows.length - 1}
-                  onClick={() => moveSelection(selectedIndex + 1)}
-                >
-                  <ChevronRight size={13} />
-                </button>
-                <button type="button" disabled={rows.length === 0} onClick={() => moveSelection(rows.length - 1)}>
-                  <ChevronLast size={13} />
-                </button>
-              </div>
               <div className="parties-vca-drcr">
                 <span>Dr</span>
                 <strong>0</strong>
