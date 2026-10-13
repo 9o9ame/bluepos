@@ -6,6 +6,7 @@ import { DesktopButton, DesktopPanel, Field, FormGroup } from '../components/des
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { askConfirm } from '../feedback/FeedbackProvider'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
+import './UnitsPage.css'
 
 export function UnitsPage() {
   const { closeActiveTab } = useWorkspace()
@@ -28,6 +29,7 @@ export function UnitsPage() {
 
   return (
     <DesktopPanel
+      className="units-page"
       title="Units"
       toolbar={
         <>
@@ -76,7 +78,7 @@ export function UnitsPage() {
           </FormGroup>
         </form>
       ) : null}
-      <div style={{ height: 380, marginTop: 6 }}>
+      <div className="units-grid">
         <PosDataGrid
           columns={[
             { key: 'code', header: 'Code', width: 90, render: (row) => row.code },
