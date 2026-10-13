@@ -13,7 +13,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createProduct,
   deactivateProduct,
@@ -150,7 +150,6 @@ export function ProductsPage() {
   const canOpeningPost = useCan('inventory.opening_balance.post')
 
   const [q, setQ] = useState('')
-  const [page, setPage] = useState(1)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [listCategoryUlid, setListCategoryUlid] = useState('')
   const [creating, setCreating] = useState(false)
@@ -163,18 +162,23 @@ export function ProductsPage() {
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
   const [imageRemoveRequested, setImageRemoveRequested] = useState(false)
 
-  const productsQuery = useQuery({
-    queryKey: ['products', q, page, listCategoryUlid],
-    queryFn: () =>
+  const productsQuery = useInfiniteQuery({
+    queryKey: ['products', q, listCategoryUlid],
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
       fetchProducts({
         q,
-        page,
+        page: pageParam,
         per_page: 50,
         category_ulid: listCategoryUlid || undefined,
       }),
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.current_page < lastPage.meta.last_page
+        ? lastPage.meta.current_page + 1
+        : undefined,
   })
 
-  const products = productsQuery.data?.data ?? []
+  const products = productsQuery.data?.pages.flatMap((pageResult) => pageResult.data) ?? []
 
   const productQuery = useQuery({
     queryKey: ['product', selectedKey],
@@ -203,7 +207,6 @@ export function ProductsPage() {
 
   const [name, setName] = useState('')
   const [alternateName, setAlternateName] = useState('')
-  const [sku, setSku] = useState('')
   const [categoryUlid, setCategoryUlid] = useState('')
   const [subcategoryUlid, setSubcategoryUlid] = useState('')
   const [brandUlid, setBrandUlid] = useState('')
@@ -216,6 +219,7 @@ export function ProductsPage() {
   const [taxPercent, setTaxPercent] = useState('0')
   const [isPackaging, setIsPackaging] = useState(false)
   const [maxFreeQtyPerSale, setMaxFreeQtyPerSale] = useState('')
+  const [purchaseRate, setPurchaseRate] = useState('0.0000')
   const [retail, setRetail] = useState('0.0000')
   const [wholesale, setWholesale] = useState('0.0000')
   const [minimumSale, setMinimumSale] = useState('0.0000')
@@ -236,23 +240,12 @@ export function ProductsPage() {
 
   const canSave = creating ? canCreate : canEdit && Boolean(selectedKey)
   const inStockDisplay = productStock.data?.active_warehouse.quantity ?? '0.000000'
-  const purchaseRateDisplay = useMemo(() => {
-    const stock = productStock.data
-    if (!stock) return '0.0000'
-    const activeUlid = stock.active_warehouse.ulid
-    const match = stock.warehouses.find((row) => row.warehouse.ulid === activeUlid)
-    const avg = match?.average_cost
-    if (avg == null || avg === '') return '0.0000'
-    const n = Number(avg)
-    return Number.isFinite(n) ? n.toFixed(4) : '0.0000'
-  }, [productStock.data])
-
   const marginDisplay = useMemo(() => {
-    const purchase = Number(purchaseRateDisplay)
+    const purchase = Number(purchaseRate)
     const sale = Number(retail)
     if (!Number.isFinite(purchase) || !Number.isFinite(sale) || sale <= 0) return '0.00'
     return (((sale - purchase) / sale) * 100).toFixed(2)
-  }, [purchaseRateDisplay, retail])
+  }, [purchaseRate, retail])
 
   function applySaleDerivedPrices(saleRaw: string, purchaseRaw: string) {
     const sale = Number(saleRaw)
@@ -267,9 +260,50 @@ export function ProductsPage() {
     setMinimumSale((sale - markup * 0.5).toFixed(4))
   }
 
+  function onPurchaseRateChange(value: string) {
+    setPurchaseRate(value)
+    applySaleDerivedPrices(retail, value)
+  }
+
   function onSaleRateChange(value: string) {
     setRetail(value)
-    applySaleDerivedPrices(value, purchaseRateDisplay)
+    applySaleDerivedPrices(value, purchaseRate)
+  }
+
+  function onPrimaryBarcodeChange(value: string) {
+    if (!canBarcodes) return
+
+    if (barcodeRows.length === 0) {
+      const defaultUnitUlid =
+        baseUnitUlid ||
+        units.data?.find((unit) => unit.is_active)?.ulid ||
+        units.data?.[0]?.ulid ||
+        ''
+      const row = createBarcodeDraft(defaultUnitUlid, '1.00000000', true)
+      row.barcode = value
+      setBarcodeRows([row])
+      setSelectedBarcodeId(row.id)
+      return
+    }
+
+    setBarcodeRows((current) =>
+      current.map((row, index) => ({
+        ...row,
+        barcode: index === 0 ? value : row.barcode,
+        is_primary: index === 0,
+      })),
+    )
+  }
+
+  function onBaseUnitChange(value: string) {
+    setBaseUnitUlid(value)
+    setBarcodeRows((current) =>
+      current.map((row, index) =>
+        index === 0
+          ? { ...row, unit_ulid: value, is_primary: true }
+          : row,
+      ),
+    )
   }
 
   const openingTotal = useMemo(() => {
@@ -365,7 +399,6 @@ export function ProductsPage() {
   function resetForm() {
     setName('')
     setAlternateName('')
-    setSku('')
     setCategoryUlid('')
     setSubcategoryUlid('')
     setBrandUlid('')
@@ -378,6 +411,7 @@ export function ProductsPage() {
     setTaxPercent('0')
     setIsPackaging(false)
     setMaxFreeQtyPerSale('')
+    setPurchaseRate('0.0000')
     setRetail('0.0000')
     setWholesale('0.0000')
     setMinimumSale('0.0000')
@@ -424,16 +458,6 @@ export function ProductsPage() {
     setBarcodeRows((current) =>
       current.map((row) => (row.id === id ? { ...row, ...patch } : row)),
     )
-  }
-
-  function makePrimaryBarcode(id: string) {
-    setBarcodeRows((current) =>
-      current.map((row) => ({
-        ...row,
-        is_primary: row.id === id,
-      })),
-    )
-    setSelectedBarcodeId(id)
   }
 
   function deleteSelectedBarcode() {
@@ -485,7 +509,6 @@ export function ProductsPage() {
 
     setName(selected.name ?? '')
     setAlternateName(selected.alternate_name ?? '')
-    setSku(selected.sku ?? '')
     setCategoryUlid(selected.category?.ulid ?? '')
     setSubcategoryUlid(selected.subcategory?.ulid ?? '')
     setBrandUlid(selected.brand?.ulid ?? '')
@@ -498,20 +521,22 @@ export function ProductsPage() {
     setTaxPercent(selected.tax_percent ?? '0')
     setIsPackaging(selected.is_packaging ?? false)
     setMaxFreeQtyPerSale(selected.max_free_qty_per_sale ?? '')
+    setPurchaseRate(selected.purchase_rate ?? '0.0000')
     setRetail(selected.prices?.find((row) => row.price_type === 'retail')?.amount ?? '0.0000')
     setWholesale(selected.prices?.find((row) => row.price_type === 'wholesale')?.amount ?? '0.0000')
     setMinimumSale(selected.prices?.find((row) => row.price_type === 'minimum_sale')?.amount ?? '0.0000')
 
     clearPendingImageState()
 
-    const loadedBarcodes: ProductBarcodeDraft[] = (selected.barcodes ?? [])
+    const loadedBarcodes: ProductBarcodeDraft[] = [...(selected.barcodes ?? [])]
       .filter((row) => row.is_active)
-      .map((row) => ({
+      .sort((left, right) => Number(right.is_primary) - Number(left.is_primary))
+      .map((row, index) => ({
         id: `saved-${row.ulid}`,
         barcode: row.barcode,
         unit_ulid: row.unit?.ulid ?? selected.base_unit?.ulid ?? '',
         conversion_factor: row.conversion_factor || '1.00000000',
-        is_primary: row.is_primary,
+        is_primary: index === 0,
       }))
 
     setBarcodeRows(loadedBarcodes)
@@ -641,7 +666,6 @@ export function ProductsPage() {
       const payload = {
         name: trimmedName,
         alternate_name: alternateName || null,
-        sku: sku || null,
         category_ulid: categoryUlid || null,
         subcategory_ulid: subcategoryUlid || null,
         brand_ulid: brandUlid || null,
@@ -657,6 +681,7 @@ export function ProductsPage() {
         is_packaging: isPackaging,
         max_free_qty_per_sale: isPackaging && maxFreeQtyPerSale ? maxFreeQtyPerSale : null,
         reorder_level: reorderLevel || null,
+        purchase_rate: purchaseRate || null,
         minimum_stock: current?.minimum_stock ?? null,
         maximum_stock: current?.maximum_stock ?? null,
         rack_location: rackLocation || null,
@@ -676,11 +701,11 @@ export function ProductsPage() {
 
       if (canBarcodes) {
         const barcodes = barcodeRows
-          .map((row) => ({
+          .map((row, index) => ({
             barcode: row.barcode.trim(),
             unit_ulid: row.unit_ulid,
             conversion_factor: row.conversion_factor.trim() || '1.00000000',
-            is_primary: row.is_primary,
+            is_primary: index === 0,
           }))
           .filter((row) => row.barcode !== '')
 
@@ -774,9 +799,7 @@ export function ProductsPage() {
   })
 
   const gridRows = useMemo(() => products, [products])
-  const total = productsQuery.data?.meta.total ?? products.length
-  const currentPage = productsQuery.data?.meta.current_page ?? 1
-  const lastPage = productsQuery.data?.meta.last_page ?? 1
+  const total = productsQuery.data?.pages[0]?.meta.total ?? products.length
   const productNumber = creating ? 'NEW' : selected?.product_number ?? ''
   const selectedBarcodeIndex = barcodeRows.findIndex(
     (row) => row.id === selectedBarcodeId,
@@ -1171,8 +1194,13 @@ export function ProductsPage() {
             <div className="pdf-row pdf-row-split">
               <label>Product #</label>
               <input className="pdf-input pdf-short" readOnly value={productNumber} />
-              <label className="pdf-right-label">CODE:</label>
-              <input className="pdf-input" value={sku} readOnly={!canSave} onChange={(e) => setSku(e.target.value)} />
+              <label className="pdf-right-label">Barcode</label>
+              <input
+                className="pdf-input"
+                value={barcodeRows[0]?.barcode ?? ''}
+                readOnly={!canSave || !canBarcodes}
+                onChange={(e) => onPrimaryBarcodeChange(e.target.value)}
+              />
             </div>
 
             <div className="pdf-row">
@@ -1346,7 +1374,7 @@ export function ProductsPage() {
                 <PdfSelect
                   value={baseUnitUlid || units.data?.[0]?.ulid || ''}
                   disabled={!canSave}
-                  onChange={(e) => setBaseUnitUlid(e.target.value)}
+                  onChange={(e) => onBaseUnitChange(e.target.value)}
                 >
                   {(units.data ?? []).filter((unit) => unit.is_active || unit.ulid === baseUnitUlid).map((unit) => (
                     <option key={unit.ulid} value={unit.ulid}>{unit.code} — {unit.name}</option>
@@ -1369,10 +1397,11 @@ export function ProductsPage() {
               <input className="pdf-input pdf-num" value={reorderLevel} readOnly={!canSave} onChange={(e) => setReorderLevel(e.target.value)} />
               <label>Purchase Rate</label>
               <input
-                className="pdf-input pdf-num pdf-readonly"
-                readOnly
-                value={creating || !selectedKey || !canViewStock ? '0.0000' : purchaseRateDisplay}
-                title={canViewStock ? 'Active warehouse average cost (read-only)' : 'Inventory view permission required'}
+                className="pdf-input pdf-num"
+                value={purchaseRate}
+                readOnly={!canSave || !canPrices}
+                onChange={(e) => onPurchaseRateChange(e.target.value)}
+                title="Reference purchase rate. Stock average cost remains inventory-controlled."
               />
               <label>Margin %</label>
               <input
@@ -1466,13 +1495,12 @@ export function ProductsPage() {
                     <th>Barcode</th>
                     <th>Unit</th>
                     <th>Factor</th>
-                    <th>Primary</th>
                   </tr>
                 </thead>
                 <tbody>
                   {barcodeRows.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="pdf-barcode-empty">
+                      <td colSpan={3} className="pdf-barcode-empty">
                         {canSave && canBarcodes
                           ? 'Click + to add a barcode'
                           : 'No barcode entries'}
@@ -1541,16 +1569,6 @@ export function ProductsPage() {
                                 conversion_factor: e.target.value,
                               })
                             }
-                          />
-                        </td>
-                        <td className="is-center">
-                          <input
-                            type="radio"
-                            name="product-primary-barcode"
-                            checked={row.is_primary}
-                            disabled={!canSave || !canBarcodes}
-                            aria-label={`Set ${row.barcode || 'barcode'} as primary`}
-                            onChange={() => makePrimaryBarcode(row.id)}
                           />
                         </td>
                       </tr>
@@ -1635,7 +1653,6 @@ export function ProductsPage() {
                 value={q}
                 onChange={(e) => {
                   setQ(e.target.value)
-                  setPage(1)
                 }}
               />
             </div>
@@ -1649,7 +1666,6 @@ export function ProductsPage() {
               aria-label="Filter products by category"
               onChange={(e) => {
                 setListCategoryUlid(e.target.value)
-                setPage(1)
               }}
             >
               <option value="">All Products</option>
@@ -1692,14 +1708,21 @@ export function ProductsPage() {
               setSelectedKey(row.ulid)
             }}
             emptyMessage="No products found."
+            onEndReached={() => {
+              if (productsQuery.hasNextPage && !productsQuery.isFetchingNextPage) {
+                void productsQuery.fetchNextPage()
+              }
+            }}
           />
 
           <div className="product-def-grid-foot">
             <span>{total} Products</span>
             <span className="product-def-pager">
-              <button type="button" disabled={currentPage <= 1} onClick={() => setPage((n) => n - 1)}>&lt;</button>
-              <span>{currentPage}/{lastPage}</span>
-              <button type="button" disabled={currentPage >= lastPage} onClick={() => setPage((n) => n + 1)}>&gt;</button>
+              {productsQuery.isFetchingNextPage
+                ? 'Loading more…'
+                : productsQuery.hasNextPage
+                  ? `Loaded ${products.length}`
+                  : 'All products loaded'}
             </span>
           </div>
         </section>
