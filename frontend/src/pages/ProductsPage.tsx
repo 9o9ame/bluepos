@@ -176,7 +176,7 @@ export function ProductsPage() {
   const [imageRemoveRequested, setImageRemoveRequested] = useState(false)
 
   const productsQuery = useInfiniteQuery({
-    queryKey: ['products', q, listCategoryUlid],
+    queryKey: ['products', q, listCategoryUlid, canViewStock],
     initialPageParam: 1,
     queryFn: ({ pageParam }) =>
       fetchProducts({
@@ -184,6 +184,7 @@ export function ProductsPage() {
         page: pageParam,
         per_page: 50,
         category_ulid: listCategoryUlid || undefined,
+        sales_lookup: canViewStock,
       }),
     getNextPageParam: (lastPage) =>
       lastPage.meta.current_page < lastPage.meta.last_page
@@ -1717,10 +1718,10 @@ export function ProductsPage() {
                 width: 88,
                 align: 'right',
                 render: (row: Product) =>
-                  row.ulid === selectedKey && canViewStock && !creating ? (
-                    inStockDisplay
+                  canViewStock ? (
+                    compactDecimal(row.sales_lookup?.in_stock ?? '0.0')
                   ) : (
-                    <span className="stock-na" title="Select product to view active warehouse stock">—</span>
+                    <span className="stock-na" title="Inventory view permission required">—</span>
                   ),
               },
             ]}
