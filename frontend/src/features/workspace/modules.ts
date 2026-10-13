@@ -586,6 +586,8 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
           id: 'product-reports',
           label: 'Product Reports',
           icon: LayoutGrid,
+          permission: 'reports.inventory',
+          entitlement: 'inventory',
           status: 'ready',
           tone: 'green',
           hasMenu: true,
