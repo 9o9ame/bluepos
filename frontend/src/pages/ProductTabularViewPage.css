@@ -83,53 +83,8 @@
 }
 
 .product-tabular-set-combo {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 42px;
   min-width: 420px;
-  width: 100%;
-  align-items: stretch;
-}
-
-.product-tabular-set-combo > input {
-  min-width: 0;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  cursor: text;
-  font-weight: 600;
-}
-
-.product-tabular-formula-select {
-  width: 42px;
-  min-width: 42px;
-}
-
-.product-tabular-formula-trigger {
-  width: 42px;
-  min-width: 42px;
-  height: 100%;
-  padding: 0;
-  border-left: 0;
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  box-shadow: var(--ui-control-shadow);
-}
-
-.product-tabular-formula-trigger .ui-select-value {
-  display: none;
-}
-
-.product-tabular-formula-trigger .ui-select-arrow {
-  margin: auto;
-}
-
-.product-tabular-set-combo:focus-within > input {
-  border-color: var(--ui-accent);
-  background: var(--ui-accent-soft);
-  box-shadow: var(--ui-focus-shadow);
-}
-
-.product-tabular-set-combo > input:focus {
-  outline: none;
+  height: calc(var(--ui-control-h-md, 24px) + 4px);
 }
 
 .product-tabular-update-actions,
