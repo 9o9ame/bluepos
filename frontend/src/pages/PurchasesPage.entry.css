@@ -1347,6 +1347,49 @@ html[data-animations='off'] .purchase-entry-screen * {
   min-width: 0;
 }
 
+.purchase-list-page {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.purchase-list-page .desktop-panel-body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.purchase-list-page .purchase-list-filters,
+.purchase-list-page .purchase-list-foot {
+  flex: 0 0 auto;
+}
+
+.purchase-list-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.purchase-list-grid .pos-grid-wrap {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+.purchase-list-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-gap-sm, 6px);
+  min-height: 26px;
+  padding: 4px 6px 0;
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-sm, 10px);
+  font-weight: var(--ui-weight-medium, 600);
+}
+
 @media (max-width: 1180px) {
   .purchase-list-filters {
     grid-template-columns:
