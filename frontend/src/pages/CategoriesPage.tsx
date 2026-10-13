@@ -6,6 +6,7 @@ import { DesktopButton, DesktopPanel, Field, FormGroup } from '../components/des
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { askConfirm } from '../feedback/FeedbackProvider'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
+import './CategoriesPage.css'
 
 export function CategoriesPage() {
   const { closeActiveTab } = useWorkspace()
@@ -28,6 +29,7 @@ export function CategoriesPage() {
 
   return (
     <DesktopPanel
+      className="categories-page"
       title="Categories"
       toolbar={
         <>
@@ -74,7 +76,7 @@ export function CategoriesPage() {
           </FormGroup>
         </form>
       ) : null}
-      <div style={{ height: 380, marginTop: 6 }}>
+      <div className="categories-grid">
         <PosDataGrid
           columns={[
             { key: 'code', header: 'Code', width: 120, render: (row) => row.code },
