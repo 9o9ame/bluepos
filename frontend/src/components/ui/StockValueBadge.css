@@ -1,0 +1,29 @@
+.ui-stock-value-badge {
+  display: inline-flex;
+  min-width: 54px;
+  justify-content: flex-end;
+  padding: 1px 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.ui-stock-value-badge.is-positive {
+  color: var(--ui-success);
+  background: color-mix(in srgb, var(--ui-success) 14%, var(--ui-surface));
+  border-color: color-mix(in srgb, var(--ui-success) 36%, var(--ui-border));
+}
+
+.ui-stock-value-badge.is-zero {
+  color: var(--ui-warning);
+  background: color-mix(in srgb, var(--ui-warning) 13%, var(--ui-surface));
+  border-color: color-mix(in srgb, var(--ui-warning) 34%, var(--ui-border));
+}
+
+.ui-stock-value-badge.is-negative {
+  color: var(--ui-danger);
+  background: color-mix(in srgb, var(--ui-danger) 13%, var(--ui-surface));
+  border-color: color-mix(in srgb, var(--ui-danger) 34%, var(--ui-border));
+}
