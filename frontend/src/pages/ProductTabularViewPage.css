@@ -22,8 +22,8 @@
   display: grid;
   grid-template-columns:
     minmax(210px, 290px)
-    minmax(190px, 230px)
-    minmax(300px, 390px)
+    minmax(235px, 285px)
+    minmax(360px, 480px)
     auto
     minmax(235px, 1fr)
     auto;
@@ -91,7 +91,8 @@
 .product-tabular-set-combo > input {
   position: relative;
   z-index: 1;
-  padding-right: 38px;
+  padding-right: 42px;
+  cursor: text;
 }
 
 .product-tabular-formula-select {
@@ -106,8 +107,8 @@
   position: absolute;
   top: 0;
   right: 0;
-  width: 34px;
-  min-width: 34px;
+  width: 38px;
+  min-width: 38px;
   height: 100%;
   padding: 0;
   border-left: 1px solid var(--ui-border);
@@ -255,8 +256,8 @@
   .product-tabular-primary-row {
     grid-template-columns:
       minmax(190px, 1fr)
-      minmax(180px, 220px)
-      minmax(260px, 1.2fr)
+      minmax(220px, 270px)
+      minmax(320px, 1.35fr)
       auto;
   }
 
