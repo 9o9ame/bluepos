@@ -86,6 +86,21 @@ export function AppShell() {
   )
 }
 
+function launchWindowsCalculator(): boolean {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return false
+  }
+
+  const isWindows = navigator.userAgent.includes('Windows') || navigator.platform.startsWith('Win')
+
+  if (!isWindows) {
+    return false
+  }
+
+  window.location.href = 'ms-calculator:'
+  return true
+}
+
 function AppShellFrame({
   session,
   online,
@@ -133,7 +148,11 @@ function AppShellFrame({
         onAccount={onAccount}
       />
       <Ribbon
-        onCalculator={() => setCalculatorOpen(true)}
+        onCalculator={() => {
+          if (!launchWindowsCalculator()) {
+            setCalculatorOpen(true)
+          }
+        }}
         onSoftwareOptions={() => setSoftwareOptionsOpen(true)}
         onRecalculateStock={() => setRecalculateStockOpen(true)}
         onLock={onLock}
