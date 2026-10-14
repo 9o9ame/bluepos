@@ -52,6 +52,7 @@ import type { Party } from '../api/parties'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useLocalProducts, useLocalSuppliers } from '../features/catalog/useLocalCatalog'
+import { useBarcodeScannerTarget } from '../features/scanner/useBarcodeScanner'
 import { refreshProducts, refreshSuppliers } from '../data/catalogCache'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
@@ -182,6 +183,7 @@ export function ProductsPage({
   const [quickEditor, setQuickEditor] = useState<QuickEditorKind | null>(null)
   const [supplierModalOpen, setSupplierModalOpen] = useState(false)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
+  const barcodeTableScrollRef = useRef<HTMLDivElement | null>(null)
   const [pendingImage, setPendingImage] = useState<File | null>(null)
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
   const [imageRemoveRequested, setImageRemoveRequested] = useState(false)
@@ -490,6 +492,85 @@ export function ProductsPage({
     setBarcodeRows((current) => [...current, row])
     setSelectedBarcodeId(row.id)
   }
+
+  function handleScannedBarcode(rawBarcode: string) {
+    const barcode = rawBarcode.trim()
+    if (!barcode || !canSave || !canBarcodes || section !== 'definition') return
+
+    const duplicate = barcodeRows.find((row) => row.barcode.trim() === barcode)
+    if (duplicate) {
+      setSelectedBarcodeId(duplicate.id)
+      setError(null)
+      requestAnimationFrame(() => {
+        barcodeTableScrollRef.current
+          ?.querySelector<HTMLElement>(`tr[data-barcode-row-id="${duplicate.id}"]`)
+          ?.scrollIntoView({ block: 'nearest' })
+      })
+      return
+    }
+
+    const defaultUnitUlid =
+      baseUnitUlid ||
+      units.data?.find((unit) => unit.is_active)?.ulid ||
+      units.data?.[0]?.ulid ||
+      ''
+
+    if (barcodeRows.length === 0) {
+      const row = createBarcodeDraft(defaultUnitUlid, '1.00000000', true)
+      row.barcode = barcode
+      setBarcodeRows([row])
+      setSelectedBarcodeId(row.id)
+      setError(null)
+      return
+    }
+
+    const emptyIndex = barcodeRows.findIndex((row) => row.barcode.trim() === '')
+    if (emptyIndex >= 0) {
+      const rowId = barcodeRows[emptyIndex].id
+      setBarcodeRows((current) =>
+        current.map((row) =>
+          row.id === rowId
+            ? {
+                ...row,
+                barcode,
+                unit_ulid: row.unit_ulid || defaultUnitUlid,
+                conversion_factor: row.conversion_factor || '1.00000000',
+              }
+            : row,
+        ),
+      )
+      setSelectedBarcodeId(rowId)
+      setError(null)
+      requestAnimationFrame(() => {
+        barcodeTableScrollRef.current
+          ?.querySelector<HTMLElement>(`tr[data-barcode-row-id="${rowId}"]`)
+          ?.scrollIntoView({ block: 'nearest' })
+      })
+      return
+    }
+
+    const row = createBarcodeDraft(defaultUnitUlid, '1.00000000', false)
+    row.barcode = barcode
+    setBarcodeRows((current) => [...current, row])
+    setSelectedBarcodeId(row.id)
+    setError(null)
+    requestAnimationFrame(() => {
+      const scroller = barcodeTableScrollRef.current
+      if (scroller) scroller.scrollTop = scroller.scrollHeight
+    })
+  }
+
+  useBarcodeScannerTarget({
+    id: embedded ? 'product-definition-modal-barcodes' : 'product-definition-barcodes',
+    priority: embedded ? 100 : 50,
+    enabled:
+      canSave &&
+      canBarcodes &&
+      section === 'definition' &&
+      !supplierModalOpen &&
+      quickEditor === null,
+    onScan: handleScannedBarcode,
+  })
 
   function updateBarcodeRow(
     id: string,
@@ -1559,7 +1640,7 @@ export function ProductsPage({
 
             <div className="pdf-barcode-box">
               <div className="pdf-barcode-title">Multi Barcode Entry</div>
-              <div className="pdf-barcode-table-scroll">
+              <div ref={barcodeTableScrollRef} className="pdf-barcode-table-scroll">
                 <table className="pdf-barcode-table">
                   <thead>
                   <tr>
@@ -1581,6 +1662,7 @@ export function ProductsPage({
                     barcodeRows.map((row) => (
                       <tr
                         key={row.id}
+                        data-barcode-row-id={row.id}
                         className={
                           row.id === selectedBarcodeId
                             ? 'is-selected'
