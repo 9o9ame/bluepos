@@ -38,9 +38,17 @@ class RecalculatePurchaseTotalsAction
             4,
         );
         $reductions = bcadd((string) ($invoice->other_discount ?? '0'), (string) ($invoice->trade_offer ?? '0'), 4);
-        $extras = bcadd((string) ($invoice->advance_tax_amount ?? '0'), (string) ($invoice->round_off ?? '0'), 4);
+        $withholdingBase = bcsub(bcadd($netLines, $charges, 4), $reductions, 4);
 
-        $invoice->grand_total = bcadd(bcsub(bcadd($netLines, $charges, 4), $reductions, 4), $extras, 4);
+        if ((bool) ($invoice->withholding_is_pct ?? false)) {
+            $invoice->advance_tax_amount = $this->pctAmount(
+                $withholdingBase,
+                (string) ($invoice->withholding_pct ?? '0'),
+            );
+        }
+
+        $extras = bcadd((string) ($invoice->advance_tax_amount ?? '0'), (string) ($invoice->round_off ?? '0'), 4);
+        $invoice->grand_total = bcadd($withholdingBase, $extras, 4);
 
         if (bccomp((string) $invoice->grand_total, '0', 4) === -1) {
             throw ValidationException::withMessages([
@@ -59,7 +67,10 @@ class RecalculatePurchaseTotalsAction
      *     discount_amount: string,
      *     tax_amount: string,
      *     further_tax_amount: string,
-     *     line_total: string
+     *     line_total: string,
+     *     regular_disc_amount: string,
+     *     special_disc_amount: string,
+     *     disc_after_gst_amount: string
      * }
      */
     public function resolveLineMoney(
@@ -75,6 +86,17 @@ class RecalculatePurchaseTotalsAction
         ?string $explicitTax = null,
         string $calculationMethod = 'trade_after_disc',
         string $mrp = '0',
+        string $discountApplyOn = 'trade',
+        string $regularDiscAmount = '0',
+        string $specialDiscAmount = '0',
+        string $regularDiscMode = 'pct',
+        string $specialDiscMode = 'pct',
+        string $gstMode = 'pct',
+        string $discAfterGstPct = '0',
+        string $discAfterGstAmount = '0',
+        string $discAfterGstMode = 'rs',
+        string $furtherTaxAmount = '0',
+        string $furtherTaxMode = 'pct',
     ): array {
         $this->assertPositiveQuantity($quantity, $conversionFactor, $unitCost);
         $this->assertPct($tradeDiscPct, 'trade_disc_pct');
@@ -82,34 +104,9 @@ class RecalculatePurchaseTotalsAction
         $this->assertPct($specialDiscPct, 'special_disc_pct');
         $this->assertPct($taxPct, 'tax_pct');
         $this->assertPct($furtherTaxPct, 'further_tax_pct');
+        $this->assertPct($discAfterGstPct, 'disc_after_gst_pct');
 
         $gross = bcmul($quantity, $unitCost, 4);
-        $usesPctDiscount = bccomp($tradeDiscPct, '0', 8) === 1
-            || bccomp($regularDiscPct, '0', 8) === 1
-            || bccomp($specialDiscPct, '0', 8) === 1;
-
-        if ($usesPctDiscount) {
-            $after = $this->applyPct($gross, $tradeDiscPct);
-            $after = $this->applyPct($after, $regularDiscPct);
-            $after = $this->applyPct($after, $specialDiscPct);
-            $discount = bcsub($gross, $after, 4);
-            $taxable = $after;
-        } else {
-            $discount = bcadd($explicitDiscount ?? '0', '0', 4);
-            if (bccomp($discount, '0', 4) === -1) {
-                throw ValidationException::withMessages([
-                    'discount_amount' => 'Discount cannot be negative.',
-                ]);
-            }
-            $taxable = bcsub($gross, $discount, 4);
-        }
-
-        if (bccomp($taxable, '0', 4) === -1) {
-            throw ValidationException::withMessages([
-                'discount_amount' => 'Discount cannot exceed line gross amount.',
-            ]);
-        }
-
         $method = $this->normalizeCalculationMethod($calculationMethod);
         $mrpAmount = bcadd($mrp, '0', 4);
         if (bccomp($mrpAmount, '0', 4) === -1) {
@@ -118,21 +115,93 @@ class RecalculatePurchaseTotalsAction
             ]);
         }
 
+        [$mrpEx, $mrpIncl] = $this->mrpPair($mrpAmount, $taxPct, $method);
+        $discountBase = match ($discountApplyOn) {
+            'mrp_ex_gst' => bcmul($quantity, $mrpEx, 4),
+            'mrp_incl_gst' => bcmul($quantity, $mrpIncl, 4),
+            default => $gross,
+        };
+
+        $regular = $this->resolveDualAmount(
+            $regularDiscMode,
+            $discountBase,
+            $regularDiscPct,
+            $regularDiscAmount,
+            'regular_disc_amount',
+        );
+        $special = $this->resolveDualAmount(
+            $specialDiscMode,
+            $discountBase,
+            $specialDiscPct,
+            $specialDiscAmount,
+            'special_disc_amount',
+        );
+        $tradeDiscount = $this->pctAmount($gross, $tradeDiscPct);
+        $discount = bcadd(bcadd($tradeDiscount, $regular, 4), $special, 4);
+
+        // Backwards compatibility for API clients that only send aggregate fixed discount.
+        $hasComponentDiscount =
+            bccomp($tradeDiscPct, '0', 8) === 1
+            || bccomp($regularDiscPct, '0', 8) === 1
+            || bccomp($specialDiscPct, '0', 8) === 1
+            || bccomp($regularDiscAmount, '0', 4) === 1
+            || bccomp($specialDiscAmount, '0', 4) === 1;
+        if (! $hasComponentDiscount && $explicitDiscount !== null) {
+            $discount = bcadd($explicitDiscount, '0', 4);
+        }
+
+        if (bccomp($discount, '0', 4) === -1) {
+            throw ValidationException::withMessages([
+                'discount_amount' => 'Discount cannot be negative.',
+            ]);
+        }
+
+        $afterDiscount = bcsub($gross, $discount, 4);
+        if (bccomp($afterDiscount, '0', 4) === -1) {
+            throw ValidationException::withMessages([
+                'discount_amount' => 'Discount cannot exceed line gross amount.',
+            ]);
+        }
+
+        $gstBase = match ($method) {
+            'mrp_ex_gst' => bcmul($quantity, $mrpEx, 4),
+            'mrp_incl_gst' => bcmul($quantity, $mrpIncl, 4),
+            'trade_before_disc' => $gross,
+            default => $afterDiscount,
+        };
+
         $tax = $this->resolveTaxAmount(
             $method,
-            $quantity,
-            $gross,
-            $taxable,
-            $mrpAmount,
+            $gstMode,
+            $gstBase,
             $taxPct,
             $explicitTax,
         );
 
-        $furtherTax = bccomp($furtherTaxPct, '0', 8) === 1
-            ? bcmul($taxable, bcdiv($furtherTaxPct, '100', 12), 4)
-            : '0.0000';
+        $afterGst = bcadd($afterDiscount, $tax, 4);
+        $discAfterGst = $this->resolveDualAmount(
+            $discAfterGstMode,
+            $afterGst,
+            $discAfterGstPct,
+            $discAfterGstAmount,
+            'disc_after_gst_amount',
+        );
+        $furtherBase = bcsub($afterGst, $discAfterGst, 4);
+        if (bccomp($furtherBase, '0', 4) === -1) {
+            throw ValidationException::withMessages([
+                'disc_after_gst_amount' => 'Discount after GST cannot exceed the amount after GST.',
+            ]);
+        }
 
-        $lineTotal = bcadd(bcadd($taxable, $tax, 4), $furtherTax, 4);
+        $furtherTax = $this->resolveDualAmount(
+            $furtherTaxMode,
+            $furtherBase,
+            $furtherTaxPct,
+            $furtherTaxAmount,
+            'further_tax_amount',
+        );
+
+        $lineTotal = bcadd(bcsub($afterGst, $discAfterGst, 4), $furtherTax, 4);
         if (bccomp($lineTotal, '0', 4) === -1) {
             throw ValidationException::withMessages([
                 'line_total' => 'Line total cannot be negative.',
@@ -145,6 +214,9 @@ class RecalculatePurchaseTotalsAction
             'tax_amount' => $tax,
             'further_tax_amount' => $furtherTax,
             'line_total' => $lineTotal,
+            'regular_disc_amount' => $regular,
+            'special_disc_amount' => $special,
+            'disc_after_gst_amount' => $discAfterGst,
         ];
     }
 
@@ -152,23 +224,35 @@ class RecalculatePurchaseTotalsAction
     {
         return match ($method) {
             'gst_on_retail', 'gst_inclusive' => 'mrp_incl_gst',
-            'gst_on_trade' => 'trade_after_disc',
-            'disc_then_gst' => 'trade_after_disc',
+            'gst_on_trade', 'disc_then_gst' => 'trade_after_disc',
             'no_gst' => 'mrp_ex_gst',
             default => $method,
         };
     }
 
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function mrpPair(string $mrp, string $taxPct, string $method): array
+    {
+        if ($method !== 'mrp_incl_gst' || bccomp($taxPct, '0', 8) !== 1) {
+            return [$mrp, $this->addPct($mrp, $taxPct)];
+        }
+
+        $denominator = bcadd('100', $taxPct, 12);
+        $exclusive = bcmul($mrp, bcdiv('100', $denominator, 12), 4);
+
+        return [$exclusive, $mrp];
+    }
+
     private function resolveTaxAmount(
         string $method,
-        string $quantity,
-        string $gross,
-        string $taxable,
-        string $mrp,
+        string $mode,
+        string $base,
         string $taxPct,
         ?string $explicitTax,
     ): string {
-        if ($method === 'manual') {
+        if ($mode === 'rs') {
             $tax = bcadd($explicitTax ?? '0', '0', 4);
             if (bccomp($tax, '0', 4) === -1) {
                 throw ValidationException::withMessages([
@@ -178,35 +262,53 @@ class RecalculatePurchaseTotalsAction
 
             return $tax;
         }
-
-        if (bccomp($taxPct, '0', 8) !== 1) {
-            $tax = bcadd($explicitTax ?? '0', '0', 4);
-            if (bccomp($tax, '0', 4) === -1) {
-                throw ValidationException::withMessages([
-                    'tax_amount' => 'Tax cannot be negative.',
-                ]);
-            }
-
-            return $tax;
-        }
-
-        $mrpTotal = bcmul($quantity, $mrp, 4);
-
-        $base = match ($method) {
-            'mrp_ex_gst' => $mrpTotal,
-            'mrp_incl_gst' => $mrpTotal,
-            'trade_before_disc' => $gross,
-            default => $taxable, // trade_after_disc
-        };
 
         if ($method === 'mrp_incl_gst') {
-            // MRP stored as inclusive: tax = incl * rate / (100 + rate)
+            if (bccomp($taxPct, '0', 8) !== 1) {
+                return '0.0000';
+            }
+
             $denom = bcadd('100', $taxPct, 12);
 
             return bcmul($base, bcdiv($taxPct, $denom, 12), 4);
         }
 
-        return bcmul($base, bcdiv($taxPct, '100', 12), 4);
+        return $this->pctAmount($base, $taxPct);
+    }
+
+    private function resolveDualAmount(
+        string $mode,
+        string $base,
+        string $pct,
+        string $amount,
+        string $field,
+    ): string {
+        if ($mode === 'pct') {
+            return $this->pctAmount($base, $pct);
+        }
+
+        $resolved = bcadd($amount, '0', 4);
+        if (bccomp($resolved, '0', 4) === -1) {
+            throw ValidationException::withMessages([
+                $field => 'Amount cannot be negative.',
+            ]);
+        }
+
+        return $resolved;
+    }
+
+    private function pctAmount(string $amount, string $pct): string
+    {
+        if (bccomp($pct, '0', 8) !== 1) {
+            return '0.0000';
+        }
+
+        return bcmul($amount, bcdiv($pct, '100', 12), 4);
+    }
+
+    private function addPct(string $amount, string $pct): string
+    {
+        return bcadd($amount, $this->pctAmount($amount, $pct), 4);
     }
 
     /**
@@ -225,6 +327,14 @@ class RecalculatePurchaseTotalsAction
             '0',
             $discount,
             $tax,
+            'trade_after_disc',
+            '0',
+            'trade',
+            '0',
+            '0',
+            'rs',
+            'rs',
+            'rs',
         );
 
         return [
@@ -236,17 +346,6 @@ class RecalculatePurchaseTotalsAction
     public function inventoryUnitCost(string $unitCost, string $conversionFactor): string
     {
         return bcdiv($unitCost, $conversionFactor, 4);
-    }
-
-    private function applyPct(string $amount, string $pct): string
-    {
-        if (bccomp($pct, '0', 8) !== 1) {
-            return $amount;
-        }
-
-        $factor = bcsub('1', bcdiv($pct, '100', 12), 12);
-
-        return bcmul($amount, $factor, 4);
     }
 
     private function assertPositiveQuantity(string $quantity, string $conversionFactor, string $unitCost): void
