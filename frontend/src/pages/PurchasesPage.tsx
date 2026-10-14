@@ -44,7 +44,7 @@ import {
 } from '../features/gridLayout/columnCatalog'
 import { useColumnLayout } from '../features/gridLayout/useColumnLayout'
 import { useLocalProducts, useLocalSuppliers } from '../features/catalog/useLocalCatalog'
-import { useBarcodeScanner } from '../features/scanner/useBarcodeScanner'
+import { useBarcodeScannerTarget } from '../features/scanner/useBarcodeScanner'
 import { refreshSuppliers, upsertCachedProduct } from '../data/catalogCache'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
@@ -1868,7 +1868,9 @@ export function PurchasesPage() {
     await addProduct(product, undefined, barcode)
   }
 
-  useBarcodeScanner({
+  useBarcodeScannerTarget({
+    id: 'purchase-invoice-product',
+    priority: 10,
     enabled:
       mode === 'editor' &&
       !readOnly &&
@@ -1877,7 +1879,6 @@ export function PurchasesPage() {
       !supplierModalOpen &&
       !paymentModalOpen &&
       !customizationOpen,
-    ignoreTarget: (target) => target === productSearchRef.current,
     onScan: (rawBarcode) => {
       const barcode = rawBarcode.trim()
       if (!barcode) return
