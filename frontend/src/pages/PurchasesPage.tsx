@@ -349,7 +349,6 @@ export function PurchasesPage() {
   const [productQuery, setProductQuery] = useState('')
   const [productEditRowKey, setProductEditRowKey] = useState<string | 'new' | null>(null)
   const [productMenuOpen, setProductMenuOpen] = useState(false)
-  const [productBrowseAnchorUlid, setProductBrowseAnchorUlid] = useState('')
   const [productLookupMode, setProductLookupMode] = useState<'browse' | 'search'>('search')
   const [productModalOpen, setProductModalOpen] = useState(false)
   const [productModalTargetRowKey, setProductModalTargetRowKey] = useState<string | 'new'>('new')
@@ -430,7 +429,7 @@ export function PurchasesPage() {
 
   const suppliersQuery = useLocalSuppliers(
     session,
-    mode === 'editor',
+    true,
   )
 
   const warehousesQuery = useQuery({
@@ -448,10 +447,7 @@ export function PurchasesPage() {
   const productLookup = useLocalProducts(
     session,
     productLookupQuery,
-    mode === 'editor' &&
-      !readOnly &&
-      productMenuOpen &&
-      productEditRowKey !== null,
+    mode === 'editor' && !readOnly,
   )
 
   const productLookupRows = productLookup.rows
@@ -553,7 +549,6 @@ export function PurchasesPage() {
 
   function focusNewProductSearch() {
     setProductEditRowKey('new')
-    setProductBrowseAnchorUlid('')
     setProductLookupMode('search')
     setProductQuery('')
     setProductMenuOpen(true)
@@ -568,13 +563,11 @@ export function PurchasesPage() {
     setProductQuery(row?.product_label ?? '')
 
     if (!row) {
-      setProductBrowseAnchorUlid('')
-      setProductLookupMode('search')
+        setProductLookupMode('search')
       setProductMenuOpen(true)
       return
     }
 
-    setProductBrowseAnchorUlid(row.product_ulid)
     setProductLookupMode('browse')
     setProductMenuOpen(true)
   }
@@ -714,8 +707,7 @@ export function PurchasesPage() {
                 onChange={(event) => {
                   setProductEditRowKey('new')
                   setProductLookupMode('search')
-                  setProductBrowseAnchorUlid('')
-                  setProductQuery(event.target.value)
+                                setProductQuery(event.target.value)
                   setProductMenuOpen(true)
                 }}
                 onKeyDown={(event) => {
@@ -857,8 +849,7 @@ export function PurchasesPage() {
                   onChange={(event) => {
                     setProductEditRowKey(row.key)
                     setProductLookupMode('search')
-                    setProductBrowseAnchorUlid('')
-                    setProductQuery(event.target.value)
+                                    setProductQuery(event.target.value)
                     setProductMenuOpen(true)
                   }}
                   onKeyDown={(event) => {
