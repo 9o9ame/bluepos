@@ -32,6 +32,26 @@
   align-items: center;
 }
 
+.sales-pos-product-results-grid.is-purchase {
+  width: min(1180px, calc(100vw - 32px)) !important;
+  max-width: calc(100vw - 32px);
+}
+
+.sales-pos-product-results-grid.is-purchase .sales-pos-product-grid-head,
+.sales-pos-product-results-grid.is-purchase .sales-pos-product-grid-row {
+  grid-template-columns:
+    72px
+    minmax(300px, 2.3fr)
+    78px
+    72px
+    90px
+    92px
+    92px
+    110px
+    100px
+    100px !important;
+}
+
 .sales-pos-product-grid-head {
   min-height: 25px;
   border-bottom: 1px solid #8fa6b7;
