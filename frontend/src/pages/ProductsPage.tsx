@@ -988,6 +988,15 @@ export function ProductsPage({
           'product-reference-screen',
           embedded ? 'is-embedded' : '',
         ].filter(Boolean).join(' ')}
+        onKeyDownCapture={(event) => {
+          if (!embedded || event.key !== 'Enter') return
+          if (event.target instanceof HTMLButtonElement) return
+
+          // Embedded Product Definition is frequently used with keyboard-wedge
+          // scanners. Never let a scanner suffix (or Enter inside a field)
+          // implicitly submit/create the product.
+          event.preventDefault()
+        }}
         onSubmit={onSubmit}
       >
         <aside className="product-def-rail" aria-label="Product actions">
