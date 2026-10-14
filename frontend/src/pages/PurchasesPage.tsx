@@ -1936,13 +1936,27 @@ export function PurchasesPage() {
                   value={supplierUlid}
                   disabled={!editable}
                   placeholder="Select supplier..."
-                  searchPlaceholder="Search supplier by name or code..."
+                  searchPlaceholder="Search supplier by code, name, address or mobile..."
+                  menuMinWidth={820}
+                  maxMenuHeight={320}
+                  menuColumns={[
+                    { header: 'Code', width: '110px' },
+                    { header: 'Name', width: 'minmax(220px, 1.4fr)' },
+                    { header: 'Address', width: 'minmax(280px, 2fr)' },
+                    { header: 'Mobile', width: '140px' },
+                  ]}
                   options={suppliers.map((supplier) => ({
                     value: supplier.ulid,
                     label: supplier.code
-                      ? `${supplier.name} — ${supplier.code}`
+                      ? `${supplier.code} — ${supplier.name}`
                       : supplier.name,
-                    title: supplier.code || supplier.name,
+                    title: supplier.name,
+                    columns: [
+                      supplier.code || '—',
+                      supplier.name,
+                      supplier.address || supplier.billing_address || '—',
+                      supplier.mobile || supplier.phone || '—',
+                    ],
                   }))}
                   onChange={setSupplierUlid}
                 />
