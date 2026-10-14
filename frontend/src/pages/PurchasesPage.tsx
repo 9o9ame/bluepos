@@ -292,12 +292,12 @@ function lineFromServer(line: PurchaseInvoiceLine): DraftLine {
     line_total: line.line_total,
     base_quantity: line.base_quantity,
     further_tax_amount: line.further_tax_amount ?? '0.0000',
-    disc_after_gst_pct: '0',
-    disc_after_gst_rs: '0',
+    disc_after_gst_pct: line.disc_after_gst_pct ?? '0',
+    disc_after_gst_rs: line.disc_after_gst_amount ?? '0.0000',
     advance_tax_pct: '0',
     advance_tax_amount: '0',
-    regular_disc_rs: '0.0000',
-    special_disc_rs: '0.0000',
+    regular_disc_rs: line.regular_disc_amount ?? '0.0000',
+    special_disc_rs: line.special_disc_amount ?? '0.0000',
     sale_price: line.mrp ?? '0.0000',
   }
 }
@@ -1202,7 +1202,22 @@ export function PurchasesPage() {
     setShellLoading(invoice.loading_amount ?? '0.0000')
     setShellOtherDiscount(invoice.other_discount ?? '0.0000')
     setShellTradeOffer(invoice.trade_offer ?? '0.0000')
-    setShellAdvanceTax(invoice.advance_tax_amount ?? '0.0000')
+    const nextDiscountApplyOn = invoice.discount_apply_on ?? 'trade'
+    const nextModes = {
+      ...DEFAULT_DUAL_MODES,
+      ...(invoice.calculation_modes ?? {}),
+    }
+    const nextWithholdingIsPct = Boolean(invoice.withholding_is_pct)
+    setDiscountApplyOn(nextDiscountApplyOn)
+    setDualModes(nextModes)
+    setDiscInputType(nextModes.regular_disc ?? 'rs')
+    setAutoCalcMrp(invoice.auto_calc_mrp ?? true)
+    setWithholdingIsPct(nextWithholdingIsPct)
+    setShellAdvanceTax(
+      nextWithholdingIsPct
+        ? invoice.withholding_pct ?? '0'
+        : invoice.advance_tax_amount ?? '0.0000',
+    )
     setShellRoundOff(invoice.round_off ?? '0.0000')
     setShellTaxType(invoice.tax_type ?? 'standard')
     setShellPaymentTerms(invoice.payment_terms ?? 'credit')
@@ -1213,8 +1228,8 @@ export function PurchasesPage() {
     setCalcMethod(method)
     setLines(mapped.map((line) => applyCalcToLine(line, {
       calcMethod: method,
-      discountApplyOn,
-      dualModes,
+      discountApplyOn: nextDiscountApplyOn,
+      dualModes: nextModes,
     })))
     void enrichLineUnits(mapped)
   }
@@ -1450,6 +1465,19 @@ export function PurchasesPage() {
       if (!supplierUlid || !warehouseUlid) {
         throw new Error('Supplier and warehouse are required.')
       }
+      const authoritativePreview = sumHeaderCharges({
+        lines,
+        settings: calcSettings,
+        freight: freightAmount,
+        loading: shellLoading,
+        otherCharges,
+        otherDiscount: shellOtherDiscount,
+        tradeOffer: shellTradeOffer,
+        advanceTax: shellAdvanceTax,
+        withholdingIsPct,
+        roundOff: shellRoundOff,
+      })
+
       const header = {
         supplier_ulid: supplierUlid,
         warehouse_ulid: warehouseUlid,
@@ -1461,6 +1489,11 @@ export function PurchasesPage() {
         invoice_type: shellInvoiceType,
         currency_code: shellCurrency,
         calculation_method: calcMethod,
+        discount_apply_on: discountApplyOn,
+        calculation_modes: dualModes,
+        auto_calc_mrp: autoCalcMrp,
+        withholding_is_pct: withholdingIsPct,
+        withholding_pct: withholdingIsPct ? shellAdvanceTax || '0' : '0',
         default_sales_tax_pct: shellDefaultSalesTax || '0',
         default_further_tax_pct: shellDefaultFurtherTax || '0',
         default_advance_tax_pct: shellDefaultAdvanceTax || '0',
@@ -1471,7 +1504,7 @@ export function PurchasesPage() {
         other_charges: otherCharges || '0',
         other_discount: shellOtherDiscount || '0',
         trade_offer: shellTradeOffer || '0',
-        advance_tax_amount: shellAdvanceTax || '0',
+        advance_tax_amount: authoritativePreview.advance_tax_amount,
         round_off: shellRoundOff || '0',
         notes: notes || null,
         tax_type: shellTaxType,
@@ -1485,9 +1518,6 @@ export function PurchasesPage() {
       for (const line of lines) {
         if (!line.product_ulid || !line.unit_ulid) continue
         const calc = computeLine(line, calcSettings)
-        const usePctDiscount =
-          discountApplyOn === 'trade' &&
-          (dualModes.regular_disc === 'pct' || dualModes.special_disc === 'pct')
         const payload = {
           purchase_order_line_ulid: line.purchase_order_line_ulid ?? null,
           product_ulid: line.product_ulid,
@@ -1508,14 +1538,16 @@ export function PurchasesPage() {
           free_pcs: line.free_pcs || '0',
           price_type: line.price_type || 'trade',
           mrp: line.mrp || '0',
-          trade_disc_pct: usePctDiscount ? line.trade_disc_pct || '0' : '0',
-          regular_disc_pct: usePctDiscount ? calc.regular_disc_pct || '0' : '0',
-          special_disc_pct: usePctDiscount ? calc.special_disc_pct || '0' : '0',
-          tax_pct:
-            calcMethod === 'manual' && dualModes.gst === 'rs'
-              ? '0'
-              : calc.tax_pct || '0',
+          trade_disc_pct: line.trade_disc_pct || '0',
+          regular_disc_pct: calc.regular_disc_pct || '0',
+          regular_disc_amount: calc.regular_disc_rs || '0',
+          special_disc_pct: calc.special_disc_pct || '0',
+          special_disc_amount: calc.special_disc_rs || '0',
+          disc_after_gst_pct: calc.disc_after_gst_pct || '0',
+          disc_after_gst_amount: calc.disc_after_gst_rs || '0',
+          tax_pct: calc.tax_pct || '0',
           further_tax_pct: calc.further_tax_pct || '0',
+          further_tax_amount: calc.further_tax_amount || '0',
         }
         if (line.ulid) {
           await updatePurchaseLine(invoice.ulid, line.ulid, payload)
