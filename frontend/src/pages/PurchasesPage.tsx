@@ -1553,7 +1553,10 @@ export function PurchasesPage() {
           special_disc_amount: calc.special_disc_rs || '0',
           disc_after_gst_pct: calc.disc_after_gst_pct || '0',
           disc_after_gst_amount: calc.disc_after_gst_rs || '0',
-          tax_pct: calc.tax_pct || '0',
+          tax_pct:
+            dualModes.gst === 'rs'
+              ? line.tax_pct || '0'
+              : calc.tax_pct || '0',
           further_tax_pct: calc.further_tax_pct || '0',
           further_tax_amount: calc.further_tax_amount || '0',
         }
