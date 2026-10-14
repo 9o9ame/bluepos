@@ -177,7 +177,11 @@ class PurchaseInvoiceController extends Controller
             'mrp' => $data['mrp'] ?? (string) $line->mrp,
             'trade_disc_pct' => $data['trade_disc_pct'] ?? (string) $line->trade_disc_pct,
             'regular_disc_pct' => $data['regular_disc_pct'] ?? (string) $line->regular_disc_pct,
+            'regular_disc_amount' => $data['regular_disc_amount'] ?? (string) $line->regular_disc_amount,
             'special_disc_pct' => $data['special_disc_pct'] ?? (string) $line->special_disc_pct,
+            'special_disc_amount' => $data['special_disc_amount'] ?? (string) $line->special_disc_amount,
+            'disc_after_gst_pct' => $data['disc_after_gst_pct'] ?? (string) $line->disc_after_gst_pct,
+            'disc_after_gst_amount' => $data['disc_after_gst_amount'] ?? (string) $line->disc_after_gst_amount,
             'tax_pct' => $data['tax_pct'] ?? (string) $line->tax_pct,
             'further_tax_pct' => $data['further_tax_pct'] ?? (string) $line->further_tax_pct,
         ];
