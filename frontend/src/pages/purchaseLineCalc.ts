@@ -154,9 +154,24 @@ export function computeLine(line: PurchaseCalcLine, settings: PurchaseCalcSettin
   else if (settings.discountApplyOn === 'mrp_incl_gst') discountBase = qty * mrpIn
 
   const modes = settings.dualModes
-  const regular = dualAmount(modes.regular_disc ?? 'rs', discountBase, line.regular_disc_pct, line.regular_disc_rs)
-  const special = dualAmount(modes.special_disc ?? 'rs', discountBase, line.special_disc_pct, line.special_disc_rs)
   const tradeDiscRs = (tradeGross * n(line.trade_disc_pct)) / 100
+  const regularBase =
+    settings.discountApplyOn === 'trade'
+      ? Math.max(0, tradeGross - tradeDiscRs)
+      : discountBase
+  const regular = dualAmount(
+    modes.regular_disc ?? 'rs',
+    regularBase,
+    line.regular_disc_pct,
+    line.regular_disc_rs,
+  )
+  const specialBase = Math.max(0, regularBase - regular.rs)
+  const special = dualAmount(
+    modes.special_disc ?? 'rs',
+    specialBase,
+    line.special_disc_pct,
+    line.special_disc_rs,
+  )
   const discountAmount = regular.rs + special.rs + tradeDiscRs
   const afterDisc = Math.max(0, tradeGross - discountAmount)
 
@@ -198,7 +213,7 @@ export function computeLine(line: PurchaseCalcLine, settings: PurchaseCalcSettin
     line.disc_after_gst_pct,
     line.disc_after_gst_rs,
   )
-  const furtherBase = Math.max(0, afterGst - discAfter.rs)
+  const furtherBase = afterDisc
   const further = dualAmount(
     modes.further_tax ?? 'rs',
     furtherBase,
