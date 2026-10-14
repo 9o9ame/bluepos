@@ -62,9 +62,12 @@ class BarcodeScannerRouter {
   private rapidCharacterCount = 0
 
   private readonly minLength = 6
+  private readonly slowNumericMinLength = 8
   private readonly confirmAfterCharacters = 2
   private readonly maxGapMs = 140
+  private readonly slowNumericMaxGapMs = 750
   private readonly maxDurationMs = 3000
+  private readonly slowNumericMaxDurationMs = 10000
 
   register(target: ScannerTarget): () => void {
     this.targets.set(target.id, target)
@@ -144,7 +147,7 @@ class BarcodeScannerRouter {
 
     const now = performance.now()
 
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' || event.key === 'Tab') {
       const target = this.activeTargetId
         ? this.targets.get(this.activeTargetId) ?? null
         : null
@@ -153,13 +156,20 @@ class BarcodeScannerRouter {
       const trailingGap =
         this.lastAt > 0 ? now - this.lastAt : Number.POSITIVE_INFINITY
       const barcode = this.buffer
-      const isScanner =
+      const isFastScanner =
         Boolean(target) &&
         barcode.length >= this.minLength &&
         duration <= this.maxDurationMs &&
         trailingGap <= this.maxGapMs * 2 &&
         (this.scannerConfirmed ||
           this.rapidCharacterCount >= this.confirmAfterCharacters)
+      const isSlowNumericScanner =
+        Boolean(target) &&
+        /^\d+$/.test(barcode) &&
+        barcode.length >= this.slowNumericMinLength &&
+        duration <= this.slowNumericMaxDurationMs &&
+        trailingGap <= this.slowNumericMaxGapMs
+      const isScanner = isFastScanner || isSlowNumericScanner
 
       if (!isScanner || !target) {
         this.reset()
@@ -167,7 +177,7 @@ class BarcodeScannerRouter {
       }
 
       this.consume(event)
-      if (!this.scannerConfirmed) restoreSnapshot(this.snapshot)
+      restoreSnapshot(this.snapshot)
 
       const completedBarcode = barcode
       this.reset()
@@ -185,13 +195,15 @@ class BarcodeScannerRouter {
     }
 
     const gap = this.lastAt > 0 ? now - this.lastAt : 0
+    const currentCandidateIsNumeric = /^\d*$/.test(this.buffer)
+    const nextCandidateIsNumeric = currentCandidateIsNumeric && /^\d$/.test(event.key)
+    const allowedCandidateGap =
+      nextCandidateIsNumeric
+        ? this.slowNumericMaxGapMs
+        : this.maxGapMs
 
-    if (this.lastAt > 0 && gap > this.maxGapMs) {
-      if (this.scannerConfirmed) {
-        this.reset()
-      } else {
-        this.reset()
-      }
+    if (this.lastAt > 0 && gap > allowedCandidateGap) {
+      this.reset()
     }
 
     if (this.buffer.length === 0) {
