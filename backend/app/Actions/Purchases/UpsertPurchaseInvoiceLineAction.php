@@ -111,6 +111,8 @@ class UpsertPurchaseInvoiceLineAction
 
             $quantity = (string) $data['quantity'];
             $unitCost = (string) $data['unit_cost'];
+            $modes = is_array($invoice->calculation_modes) ? $invoice->calculation_modes : [];
+
             $amounts = $this->recalculate->resolveLineMoney(
                 $quantity,
                 $conversion,
@@ -124,6 +126,17 @@ class UpsertPurchaseInvoiceLineAction
                 isset($data['tax_amount']) ? (string) $data['tax_amount'] : '0',
                 (string) ($invoice->calculation_method ?? 'trade_after_disc'),
                 (string) ($data['mrp'] ?? '0'),
+                (string) ($invoice->discount_apply_on ?? 'trade'),
+                (string) ($data['regular_disc_amount'] ?? '0'),
+                (string) ($data['special_disc_amount'] ?? '0'),
+                (string) ($modes['regular_disc'] ?? 'rs'),
+                (string) ($modes['special_disc'] ?? 'rs'),
+                (string) ($modes['gst'] ?? 'rs'),
+                (string) ($data['disc_after_gst_pct'] ?? '0'),
+                (string) ($data['disc_after_gst_amount'] ?? '0'),
+                (string) ($modes['disc_after_gst'] ?? 'rs'),
+                (string) ($data['further_tax_amount'] ?? '0'),
+                (string) ($modes['further_tax'] ?? 'rs'),
             );
 
             $batch = $data['batch_number'] ?? null;
@@ -168,7 +181,11 @@ class UpsertPurchaseInvoiceLineAction
                 'mrp' => $mrp,
                 'trade_disc_pct' => bcadd((string) ($data['trade_disc_pct'] ?? '0'), '0', 8),
                 'regular_disc_pct' => bcadd((string) ($data['regular_disc_pct'] ?? '0'), '0', 8),
+                'regular_disc_amount' => $amounts['regular_disc_amount'],
                 'special_disc_pct' => bcadd((string) ($data['special_disc_pct'] ?? '0'), '0', 8),
+                'special_disc_amount' => $amounts['special_disc_amount'],
+                'disc_after_gst_pct' => bcadd((string) ($data['disc_after_gst_pct'] ?? '0'), '0', 8),
+                'disc_after_gst_amount' => $amounts['disc_after_gst_amount'],
                 'tax_pct' => bcadd((string) ($data['tax_pct'] ?? '0'), '0', 8),
                 'further_tax_pct' => bcadd((string) ($data['further_tax_pct'] ?? '0'), '0', 8),
             ];
