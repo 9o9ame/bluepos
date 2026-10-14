@@ -35,6 +35,7 @@ import { useSaleCart } from '../features/sales/useSaleCart'
 import { useCan } from '../features/auth/useCan'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useLocalProducts } from '../features/catalog/useLocalCatalog'
+import { useBarcodeScannerTarget } from '../features/scanner/useBarcodeScanner'
 import type { SaleOfferEvaluation } from '../types/saleSchemes'
 import type { Sale, SaleHold, SalePaymentMethod } from '../types/sales'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
@@ -841,16 +842,37 @@ export function SalesInvoicePage() {
     }
   }
 
-  async function addProductFromBarcode() {
-    const barcode = barcodeQuery.trim()
+  async function addProductFromBarcode(barcodeOverride?: string) {
+    const barcode = (barcodeOverride ?? barcodeQuery).trim()
     if (!barcode) return
 
+    setBarcodeQuery(barcode)
+
     try {
+      const cachedProducts = localProductLookup.data ?? []
+      const localMatches = cachedProducts.filter((product) => {
+        if (!product.is_active || product.status !== 'active') return false
+
+        if (product.primary_barcode === barcode) return true
+
+        return Boolean(
+          product.barcodes?.some(
+            (row) => row.is_active && row.barcode === barcode,
+          ),
+        )
+      })
+
+      if (localMatches.length === 1) {
+        await addProductFromEntry(localMatches[0].ulid, barcode)
+        return
+      }
+
       const page = await fetchProducts(
         { q: barcode, per_page: 20, page: 1 },
         { busy: 'none' },
       )
       const match = page.data.find((product) =>
+        product.primary_barcode === barcode ||
         product.barcodes?.some(
           (row) => row.is_active && row.barcode === barcode,
         ),
@@ -870,6 +892,26 @@ export function SalesInvoicePage() {
       )
     }
   }
+
+  useBarcodeScannerTarget({
+    id: 'sales-invoice-barcode',
+    priority: 20,
+    enabled:
+      view === 'pos' &&
+      canCreateSale &&
+      !savedSale &&
+      !partyModalOpen &&
+      !paymentModalOpen &&
+      !customizationOpen,
+    onScan: (rawBarcode) => {
+      const barcode = rawBarcode.trim()
+      if (!barcode) return
+
+      setBarcodeQuery(barcode)
+      setActiveProductPickerOpen(false)
+      void addProductFromBarcode(barcode)
+    },
+  })
 
   function finishActiveLine(lineKey: string) {
     if (activeLineKey !== lineKey) return
