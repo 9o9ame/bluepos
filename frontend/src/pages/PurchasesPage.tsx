@@ -347,7 +347,7 @@ export function PurchasesPage() {
   const [productQuery, setProductQuery] = useState('')
   const [productEditRowKey, setProductEditRowKey] = useState<string | 'new' | null>(null)
   const [productMenuOpen, setProductMenuOpen] = useState(false)
-  const [productBrowseCategoryUlid, setProductBrowseCategoryUlid] = useState('')
+  const [productBrowseAnchorUlid, setProductBrowseAnchorUlid] = useState('')
   const [productLookupMode, setProductLookupMode] = useState<'browse' | 'search'>('search')
   const [productModalOpen, setProductModalOpen] = useState(false)
   const [productModalTargetRowKey, setProductModalTargetRowKey] = useState<string | 'new'>('new')
@@ -436,14 +436,15 @@ export function PurchasesPage() {
     queryFn: fetchWarehouses,
   })
 
-  const productLookup = useQuery({
+  const productLookup = useInfiniteQuery({
     queryKey: [
       'purchase-product-lookup',
       productLookupMode,
       productQuery,
-      productBrowseCategoryUlid,
+      productBrowseAnchorUlid,
     ],
-    queryFn: () => {
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => {
       const lookupQuery =
         productLookupMode === 'search'
           ? productQuery.includes(' · ')
@@ -454,22 +455,34 @@ export function PurchasesPage() {
       return fetchProducts(
         {
           q: lookupQuery || undefined,
-          category_ulid:
-            productLookupMode === 'browse' && productBrowseCategoryUlid
-              ? productBrowseCategoryUlid
+          page: pageParam > 0 ? pageParam : undefined,
+          anchor_ulid:
+            pageParam === 0 && productLookupMode === 'browse' && productBrowseAnchorUlid
+              ? productBrowseAnchorUlid
               : undefined,
-          per_page: 20,
+          per_page: 100,
           sales_lookup: true,
         },
         { busy: 'none' },
       )
     },
+    getNextPageParam: (lastPage) =>
+      lastPage.meta.current_page < lastPage.meta.last_page
+        ? lastPage.meta.current_page + 1
+        : undefined,
+    getPreviousPageParam: (firstPage) =>
+      firstPage.meta.current_page > 1
+        ? firstPage.meta.current_page - 1
+        : undefined,
     enabled:
       mode === 'editor' &&
       !readOnly &&
       productMenuOpen &&
       productEditRowKey !== null,
   })
+
+  const productLookupRows = productLookup.data?.pages.flatMap((page) => page.data) ?? []
+  const productLookupTotal = productLookup.data?.pages[0]?.meta.total ?? 0
 
   const listRows = listQuery.data?.pages.flatMap((page) => page.data) ?? []
   const listTotal = listQuery.data?.pages[0]?.meta.total ?? 0
@@ -567,7 +580,7 @@ export function PurchasesPage() {
 
   function focusNewProductSearch() {
     setProductEditRowKey('new')
-    setProductBrowseCategoryUlid('')
+    setProductBrowseAnchorUlid('')
     setProductLookupMode('search')
     setProductQuery('')
     setProductMenuOpen(true)
@@ -577,35 +590,20 @@ export function PurchasesPage() {
     })
   }
 
-  async function beginProductEdit(row: DraftLine | null) {
+  function beginProductEdit(row: DraftLine | null) {
     setProductEditRowKey(row?.key ?? 'new')
     setProductQuery(row?.product_label ?? '')
 
     if (!row) {
-      setProductBrowseCategoryUlid('')
+      setProductBrowseAnchorUlid('')
       setProductLookupMode('search')
       setProductMenuOpen(true)
       return
     }
 
+    setProductBrowseAnchorUlid(row.product_ulid)
     setProductLookupMode('browse')
-    setProductBrowseCategoryUlid(row.category_ulid ?? '')
     setProductMenuOpen(true)
-
-    if (!row.category_ulid && row.product_ulid) {
-      try {
-        const product = await fetchProduct(row.product_ulid)
-        const categoryUlid = product.category?.ulid ?? ''
-        setProductBrowseCategoryUlid(categoryUlid)
-        setLines((prev) =>
-          prev.map((line) =>
-            line.key === row.key ? { ...line, category_ulid: categoryUlid } : line,
-          ),
-        )
-      } catch {
-        setProductBrowseCategoryUlid('')
-      }
-    }
   }
 
   function focusFirstEditableInRow(rowKey: string) {
@@ -738,18 +736,18 @@ export function PurchasesPage() {
                 value={isActive ? productQuery : ''}
                 disabled={!ctx.canEdit}
                 onFocus={() => {
-                  if (!isActive) void beginProductEdit(null)
+                  if (!isActive) beginProductEdit(null)
                 }}
                 onChange={(event) => {
                   setProductEditRowKey('new')
                   setProductLookupMode('search')
-                  setProductBrowseCategoryUlid('')
+                  setProductBrowseAnchorUlid('')
                   setProductQuery(event.target.value)
                   setProductMenuOpen(true)
                 }}
                 onKeyDown={(event) => {
                   if (event.key !== 'Enter') return
-                  const first = productLookup.data?.data?.[0]
+                  const first = productLookupRows[0]
                   if (!first) return
                   event.preventDefault()
                   void addProduct(first)
@@ -766,7 +764,7 @@ export function PurchasesPage() {
                   aria-expanded={isActive && productMenuOpen}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
-                    if (!isActive) void beginProductEdit(null)
+                    if (!isActive) beginProductEdit(null)
                     else setProductMenuOpen((open) => !open)
                     requestAnimationFrame(() => productSearchRef.current?.focus())
                   }}
@@ -795,13 +793,25 @@ export function PurchasesPage() {
               </div>
               {isActive && productMenuOpen ? (
                 <ProductLookupGrid
-                  rows={productLookup.data?.data ?? []}
-                  total={productLookup.data?.meta.total ?? 0}
+                  rows={productLookupRows}
+                  total={productLookupTotal}
                   priceType="retail"
                   mode="purchase"
                   themed
                   portalAnchorRef={productPickerAnchorRef}
                   onRequestClose={() => setProductMenuOpen(false)}
+                  onLoadPrevious={
+                    productLookup.hasPreviousPage && !productLookup.isFetchingPreviousPage
+                      ? () => void productLookup.fetchPreviousPage()
+                      : undefined
+                  }
+                  onLoadNext={
+                    productLookup.hasNextPage && !productLookup.isFetchingNextPage
+                      ? () => void productLookup.fetchNextPage()
+                      : undefined
+                  }
+                  loadingPrevious={productLookup.isFetchingPreviousPage}
+                  loadingNext={productLookup.isFetchingNextPage}
                   onSelect={(product) => void addProduct(product)}
                 />
               ) : null}
@@ -881,18 +891,18 @@ export function PurchasesPage() {
                   data-purchase-edit="true"
                   data-purchase-product="true"
                   onFocus={() => {
-                    if (!isActive) void beginProductEdit(row)
+                    if (!isActive) beginProductEdit(row)
                   }}
                   onChange={(event) => {
                     setProductEditRowKey(row.key)
                     setProductLookupMode('search')
-                    setProductBrowseCategoryUlid('')
+                    setProductBrowseAnchorUlid('')
                     setProductQuery(event.target.value)
                     setProductMenuOpen(true)
                   }}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' && productMenuOpen) {
-                      const first = productLookup.data?.data?.[0]
+                      const first = productLookupRows[0]
                       if (first) {
                         event.preventDefault()
                         void addProduct(first, row.key)
@@ -912,9 +922,9 @@ export function PurchasesPage() {
                     aria-expanded={isActive && productMenuOpen}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
-                      if (!isActive) void beginProductEdit(row)
+                      if (!isActive) beginProductEdit(row)
                       else if (productMenuOpen) setProductMenuOpen(false)
-                      else void beginProductEdit(row)
+                      else beginProductEdit(row)
                     }}
                   >
                     <span className="pie-product-combo-arrow" aria-hidden>
@@ -941,8 +951,8 @@ export function PurchasesPage() {
                 </div>
                 {isActive && productMenuOpen ? (
                   <ProductLookupGrid
-                    rows={productLookup.data?.data ?? []}
-                    total={productLookup.data?.meta.total ?? 0}
+                    rows={productLookupRows}
+                    total={productLookupTotal}
                     priceType="retail"
                     mode="purchase"
                     themed
