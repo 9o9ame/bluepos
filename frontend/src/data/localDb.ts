@@ -97,33 +97,28 @@ export async function replaceLocalEntity<T extends { ulid: string }>(
   values: T[],
 ): Promise<void> {
   const db = await openDb()
+  const scopeEntity = scopeEntityKey(scopeKey, entity)
+
+  const readTransaction = db.transaction(RECORDS_STORE, 'readonly')
+  const existingKeys = await requestResult(
+    readTransaction
+      .objectStore(RECORDS_STORE)
+      .index('scopeEntity')
+      .getAllKeys(IDBKeyRange.only(scopeEntity)),
+  )
+
   const transaction = db.transaction(RECORDS_STORE, 'readwrite')
   const done = transactionDone(transaction)
   const store = transaction.objectStore(RECORDS_STORE)
-  const index = store.index('scopeEntity')
-  const range = IDBKeyRange.only(scopeEntityKey(scopeKey, entity))
 
-  await new Promise<void>((resolve, reject) => {
-    const cursorRequest = index.openKeyCursor(range)
-
-    cursorRequest.onerror = () =>
-      reject(cursorRequest.error ?? new Error('Unable to replace local cache.'))
-
-    cursorRequest.onsuccess = () => {
-      const cursor = cursorRequest.result
-      if (!cursor) {
-        resolve()
-        return
-      }
-      store.delete(cursor.primaryKey)
-      cursor.continue()
-    }
-  })
+  for (const key of existingKeys) {
+    store.delete(key)
+  }
 
   for (const value of values) {
     const row: LocalRecord<T> = {
       key: compositeKey(scopeKey, entity, value.ulid),
-      scopeEntity: scopeEntityKey(scopeKey, entity),
+      scopeEntity,
       scopeKey,
       entity,
       ulid: value.ulid,
