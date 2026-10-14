@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { UI_LAYER } from '../../components/ui/uiLayers'
 import type { Product } from '../../types/catalog'
@@ -38,6 +38,8 @@ export function ProductLookupGrid({
   portalAnchorRef,
   themed = false,
   selectedUlid,
+  mode = 'sale',
+  onRequestClose,
 }: {
   rows: Product[]
   total: number
@@ -46,7 +48,10 @@ export function ProductLookupGrid({
   portalAnchorRef?: RefObject<HTMLElement | null>
   themed?: boolean
   selectedUlid?: string | null
+  mode?: 'sale' | 'purchase'
+  onRequestClose?: () => void
 }) {
+  const gridRef = useRef<HTMLDivElement | null>(null)
   const [portalStyle, setPortalStyle] = useState<{
     top: number
     left: number
@@ -83,10 +88,26 @@ export function ProductLookupGrid({
     }
   }, [portalAnchorRef])
 
+  useEffect(() => {
+    if (!onRequestClose) return
+
+    function onPointerDown(event: MouseEvent) {
+      const target = event.target as Node
+      if (gridRef.current?.contains(target)) return
+      if (portalAnchorRef?.current?.contains(target)) return
+      onRequestClose()
+    }
+
+    window.addEventListener('mousedown', onPointerDown)
+    return () => window.removeEventListener('mousedown', onPointerDown)
+  }, [onRequestClose, portalAnchorRef])
+
   const grid = (
     <div
+      ref={gridRef}
       className={[
         'sales-pos-product-results-grid',
+        mode === 'purchase' ? 'is-purchase' : '',
         portalStyle ? 'is-portal' : '',
         themed ? 'is-themed' : '',
       ].filter(Boolean).join(' ')}
@@ -106,14 +127,31 @@ export function ProductLookupGrid({
       aria-label="Choose product"
     >
       <div className="sales-pos-product-grid-head" aria-hidden="true">
-        <span>ID</span>
-        <span>Description</span>
-        <span>In Stock</span>
-        <span>Unit Price</span>
-        <span>Base Rate</span>
-        <span>Cost</span>
-        <span>Unit</span>
-        <span>Location</span>
+        {mode === 'purchase' ? (
+          <>
+            <span>ID</span>
+            <span>Description</span>
+            <span>In Stock</span>
+            <span>UOM</span>
+            <span>Packing</span>
+            <span>Cost Price</span>
+            <span>Selling</span>
+            <span>Category</span>
+            <span>Company</span>
+            <span>Location</span>
+          </>
+        ) : (
+          <>
+            <span>ID</span>
+            <span>Description</span>
+            <span>In Stock</span>
+            <span>Unit Price</span>
+            <span>Base Rate</span>
+            <span>Cost</span>
+            <span>Unit</span>
+            <span>Location</span>
+          </>
+        )}
       </div>
 
       <div className="sales-pos-product-grid-body">
@@ -128,18 +166,43 @@ export function ProductLookupGrid({
             aria-selected={selectedUlid === row.ulid}
             onClick={() => onSelect(row)}
           >
-            <span>{row.product_number}</span>
-            <strong>{productLookupDescription(row)}</strong>
-            <span>
-              {row.sales_lookup
-                ? Number.parseFloat(row.sales_lookup.in_stock).toFixed(3)
-                : '—'}
-            </span>
-            <span>{productLookupPrice(row, priceType)}</span>
-            <span>{productBaseRate(row)}</span>
-            <span>{row.sales_lookup?.average_cost ?? '—'}</span>
-            <span>{row.base_unit?.symbol ?? row.base_unit?.code ?? '—'}</span>
-            <span>{row.rack_location || '—'}</span>
+            {mode === 'purchase' ? (
+              <>
+                <span>{row.product_number}</span>
+                <strong>{productLookupDescription(row)}</strong>
+                <span>
+                  {row.sales_lookup
+                    ? Number.parseFloat(row.sales_lookup.in_stock).toFixed(3)
+                    : '—'}
+                </span>
+                <span>{row.base_unit?.symbol ?? row.base_unit?.code ?? '—'}</span>
+                <span>
+                  {row.secondary_unit
+                    ? `${row.secondary_conversion_factor ?? '1'} ${row.secondary_unit.symbol ?? row.secondary_unit.code}`
+                    : '—'}
+                </span>
+                <span>{row.purchase_rate ?? row.sales_lookup?.average_cost ?? '—'}</span>
+                <span>{productLookupPrice(row, 'retail')}</span>
+                <span>{row.category?.name ?? '—'}</span>
+                <span>{row.brand?.name ?? '—'}</span>
+                <span>{row.rack_location || '—'}</span>
+              </>
+            ) : (
+              <>
+                <span>{row.product_number}</span>
+                <strong>{productLookupDescription(row)}</strong>
+                <span>
+                  {row.sales_lookup
+                    ? Number.parseFloat(row.sales_lookup.in_stock).toFixed(3)
+                    : '—'}
+                </span>
+                <span>{productLookupPrice(row, priceType)}</span>
+                <span>{productBaseRate(row)}</span>
+                <span>{row.sales_lookup?.average_cost ?? '—'}</span>
+                <span>{row.base_unit?.symbol ?? row.base_unit?.code ?? '—'}</span>
+                <span>{row.rack_location || '—'}</span>
+              </>
+            )}
           </button>
         ))}
       </div>
