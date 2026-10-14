@@ -52,6 +52,8 @@ import type {
   PurchasePaymentMethod,
 } from '../types/purchases'
 import { PartyModal } from '../components/parties/PartyModal'
+import { ProductModal } from '../components/products/ProductModal'
+import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import {
   applyCalcToLine,
   computeLine,
@@ -319,6 +321,7 @@ export function PurchasesPage() {
   const canPost = useCan('purchases.post')
   const canCreatePayment = useCan('payments.create')
   const canCreateReturn = useCan('purchase_returns.create')
+  const canCreateProduct = useCan('products.create')
 
   const [mode, setMode] = useState<'list' | 'editor'>('list')
   const [q, setQ] = useState('')
@@ -343,6 +346,8 @@ export function PurchasesPage() {
   const [productQuery, setProductQuery] = useState('')
   const [productEditRowKey, setProductEditRowKey] = useState<string | 'new' | null>(null)
   const [productMenuOpen, setProductMenuOpen] = useState(false)
+  const [productModalOpen, setProductModalOpen] = useState(false)
+  const [productModalTargetRowKey, setProductModalTargetRowKey] = useState<string | 'new'>('new')
   const [error, setError] = useState<string | null>(null)
   const [customizationOpen, setCustomizationOpen] = useState(false)
   const [supplierModalOpen, setSupplierModalOpen] = useState(false)
@@ -378,6 +383,7 @@ export function PurchasesPage() {
   const [dualModes, setDualModes] = useState<Record<string, DualMode>>({ ...DEFAULT_DUAL_MODES })
   const autoPurchaseOrderAttemptedRef = useRef('')
   const productSearchRef = useRef<HTMLInputElement | null>(null)
+  const productPickerAnchorRef = useRef<HTMLDivElement | null>(null)
 
   const calcSettings: PurchaseCalcSettings = useMemo(
     () => ({ calcMethod, discountApplyOn, dualModes }),
@@ -429,7 +435,15 @@ export function PurchasesPage() {
 
   const productLookup = useQuery({
     queryKey: ['purchase-product-lookup', productQuery],
-    queryFn: () => fetchProducts({ q: productQuery || undefined, per_page: 15 }),
+    queryFn: () =>
+      fetchProducts(
+        {
+          q: productQuery || undefined,
+          per_page: 20,
+          sales_lookup: true,
+        },
+        { busy: 'none' },
+      ),
     enabled:
       mode === 'editor' &&
       !readOnly &&
@@ -667,7 +681,10 @@ export function PurchasesPage() {
 
         return (
           <td className={cls} style={widthStyle}>
-            <div className="pie-product-combo">
+            <div
+              ref={isActive ? productPickerAnchorRef : undefined}
+              className="pie-product-combo"
+            >
               <input
                 ref={productSearchRef}
                 className="pie-product-combo-input"
@@ -690,41 +707,52 @@ export function PurchasesPage() {
                 aria-label="Search product for new purchase line"
                 autoComplete="off"
               />
-              <button
-                type="button"
-                className="pie-product-combo-toggle"
-                aria-label="Open product dropdown"
-                aria-expanded={isActive && productMenuOpen}
-                onClick={() => {
-                  if (!isActive) beginProductEdit(null)
-                  else setProductMenuOpen((open) => !open)
-                  requestAnimationFrame(() => productSearchRef.current?.focus())
-                }}
-              >
-                <span className="pie-product-combo-arrow" aria-hidden>
-                  <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
-                    <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
-                  </svg>
-                </span>
-              </button>
-              {isActive && productMenuOpen && productLookup.data?.data?.length ? (
-                <div className="pie-lookup">
-                  {productLookup.data.data.map((product) => (
-                    <button
-                      key={product.ulid}
-                      type="button"
-                      className="pie-lookup-option"
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => void addProduct(product)}
-                    >
-                      <span className="pie-lookup-option-main">{product.name}</span>
-                      <span className="pie-lookup-option-meta">
-                        {product.product_number}
-                        {product.sku ? ` · ${product.sku}` : ''}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+              <div className="pie-product-combo-actions">
+                <button
+                  type="button"
+                  className="pie-product-combo-toggle"
+                  aria-label="Open product dropdown"
+                  aria-expanded={isActive && productMenuOpen}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    if (!isActive) beginProductEdit(null)
+                    else setProductMenuOpen((open) => !open)
+                    requestAnimationFrame(() => productSearchRef.current?.focus())
+                  }}
+                >
+                  <span className="pie-product-combo-arrow" aria-hidden>
+                    <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                      <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                    </svg>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="pie-product-combo-add"
+                  aria-label="Add new product"
+                  title="Add new product"
+                  disabled={!canCreateProduct}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    setProductModalTargetRowKey('new')
+                    setProductModalOpen(true)
+                    setProductMenuOpen(false)
+                  }}
+                >
+                  +
+                </button>
+              </div>
+              {isActive && productMenuOpen ? (
+                <ProductLookupGrid
+                  rows={productLookup.data?.data ?? []}
+                  total={productLookup.data?.meta.total ?? 0}
+                  priceType="retail"
+                  mode="purchase"
+                  themed
+                  portalAnchorRef={productPickerAnchorRef}
+                  onRequestClose={() => setProductMenuOpen(false)}
+                  onSelect={(product) => void addProduct(product)}
+                />
               ) : null}
             </div>
           </td>
@@ -792,7 +820,10 @@ export function PurchasesPage() {
             {ctx.readOnly ? (
               row.product_label
             ) : (
-              <div className="pie-product-combo">
+              <div
+                ref={isActive ? productPickerAnchorRef : undefined}
+                className="pie-product-combo"
+              >
                 <input
                   className="pie-product-combo-input"
                   value={isActive ? productQuery : row.product_label}
@@ -818,41 +849,52 @@ export function PurchasesPage() {
                   aria-label="Edit purchase product"
                   autoComplete="off"
                 />
-                <button
-                  type="button"
-                  className="pie-product-combo-toggle"
-                  aria-label="Open product dropdown"
-                  aria-expanded={isActive && productMenuOpen}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    if (!isActive) beginProductEdit(row)
-                    else setProductMenuOpen((open) => !open)
-                  }}
-                >
-                  <span className="pie-product-combo-arrow" aria-hidden>
-                    <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
-                      <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
-                    </svg>
-                  </span>
-                </button>
-                {isActive && productMenuOpen && productLookup.data?.data?.length ? (
-                  <div className="pie-lookup">
-                    {productLookup.data.data.map((product) => (
-                      <button
-                        key={product.ulid}
-                        type="button"
-                        className="pie-lookup-option"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => void addProduct(product, row.key)}
-                      >
-                        <span className="pie-lookup-option-main">{product.name}</span>
-                        <span className="pie-lookup-option-meta">
-                          {product.product_number}
-                          {product.sku ? ` · ${product.sku}` : ''}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                <div className="pie-product-combo-actions">
+                  <button
+                    type="button"
+                    className="pie-product-combo-toggle"
+                    aria-label="Open product dropdown"
+                    aria-expanded={isActive && productMenuOpen}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      if (!isActive) beginProductEdit(row)
+                      else setProductMenuOpen((open) => !open)
+                    }}
+                  >
+                    <span className="pie-product-combo-arrow" aria-hidden>
+                      <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                        <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                      </svg>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="pie-product-combo-add"
+                    aria-label="Add new product"
+                    title="Add new product"
+                    disabled={!canCreateProduct}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      setProductModalTargetRowKey(row.key)
+                      setProductModalOpen(true)
+                      setProductMenuOpen(false)
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+                {isActive && productMenuOpen ? (
+                  <ProductLookupGrid
+                    rows={productLookup.data?.data ?? []}
+                    total={productLookup.data?.meta.total ?? 0}
+                    priceType="retail"
+                    mode="purchase"
+                    themed
+                    selectedUlid={row.product_ulid}
+                    portalAnchorRef={productPickerAnchorRef}
+                    onRequestClose={() => setProductMenuOpen(false)}
+                    onSelect={(product) => void addProduct(product, row.key)}
+                  />
                 ) : null}
               </div>
             )}
@@ -2498,6 +2540,21 @@ export function PurchasesPage() {
               if (savedSupplier) setSupplierUlid(savedSupplier.ulid)
               setSupplierModalOpen(false)
             })
+          }}
+        />
+      ) : null}
+
+      {productModalOpen ? (
+        <ProductModal
+          onClose={() => setProductModalOpen(false)}
+          onSaved={(product) => {
+            setProductModalOpen(false)
+            void queryClient.invalidateQueries({ queryKey: ['purchase-product-lookup'] })
+            if (productModalTargetRowKey === 'new') {
+              void addProduct(product)
+            } else {
+              void addProduct(product, productModalTargetRowKey)
+            }
           }}
         />
       ) : null}
