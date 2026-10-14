@@ -56,7 +56,11 @@ export type PurchaseInvoiceLine = {
   mrp?: string
   trade_disc_pct?: string
   regular_disc_pct?: string
+  regular_disc_amount?: string
   special_disc_pct?: string
+  special_disc_amount?: string
+  disc_after_gst_pct?: string
+  disc_after_gst_amount?: string
   tax_pct?: string
   further_tax_pct?: string
   product?: PurchaseProductRef | null
@@ -72,6 +76,11 @@ export type PurchaseInvoice = {
   invoice_type?: string
   currency_code?: string
   calculation_method?: string
+  discount_apply_on?: string
+  calculation_modes?: Record<string, 'pct' | 'rs'> | null
+  auto_calc_mrp?: boolean
+  withholding_is_pct?: boolean
+  withholding_pct?: string
   default_sales_tax_pct?: string
   default_further_tax_pct?: string
   default_advance_tax_pct?: string
@@ -116,6 +125,11 @@ export type PurchaseHeaderPayload = {
   invoice_type?: string
   currency_code?: string
   calculation_method?: string
+  discount_apply_on?: string
+  calculation_modes?: Record<string, 'pct' | 'rs'>
+  auto_calc_mrp?: boolean
+  withholding_is_pct?: boolean
+  withholding_pct?: string
   default_sales_tax_pct?: string
   default_further_tax_pct?: string
   default_advance_tax_pct?: string
@@ -155,7 +169,11 @@ export type PurchaseLinePayload = {
   mrp?: string
   trade_disc_pct?: string
   regular_disc_pct?: string
+  regular_disc_amount?: string
   special_disc_pct?: string
+  special_disc_amount?: string
+  disc_after_gst_pct?: string
+  disc_after_gst_amount?: string
   tax_pct?: string
   further_tax_pct?: string
 }
