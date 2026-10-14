@@ -619,13 +619,13 @@
 
 .pie-product-combo-actions {
   position: absolute;
-  top: 50%;
+  top: 1px;
   right: 2px;
+  bottom: 1px;
   z-index: 2;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 2px;
-  transform: translateY(-50%);
   pointer-events: auto;
 }
 
@@ -635,7 +635,8 @@
   place-items: center;
   width: 20px;
   min-width: 20px;
-  height: 17px;
+  height: 100%;
+  min-height: 0;
   padding: 0;
   border: 1px solid var(--ui-select-arrow-border, var(--ui-accent));
   border-radius: var(--control-radius);
