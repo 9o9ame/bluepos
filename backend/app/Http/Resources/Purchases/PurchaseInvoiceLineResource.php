@@ -43,7 +43,11 @@ class PurchaseInvoiceLineResource extends JsonResource
             'mrp' => $this->mrp,
             'trade_disc_pct' => $this->trade_disc_pct,
             'regular_disc_pct' => $this->regular_disc_pct,
+            'regular_disc_amount' => $this->regular_disc_amount,
             'special_disc_pct' => $this->special_disc_pct,
+            'special_disc_amount' => $this->special_disc_amount,
+            'disc_after_gst_pct' => $this->disc_after_gst_pct,
+            'disc_after_gst_amount' => $this->disc_after_gst_amount,
             'tax_pct' => $this->tax_pct,
             'further_tax_pct' => $this->further_tax_pct,
             'product' => $this->whenLoaded('product', function () {
