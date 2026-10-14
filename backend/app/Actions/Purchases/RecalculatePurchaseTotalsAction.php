@@ -19,7 +19,45 @@ class RecalculatePurchaseTotalsAction
         $tax = '0.0000';
         $furtherTax = '0.0000';
 
+        $modes = is_array($invoice->calculation_modes) ? $invoice->calculation_modes : [];
+
         foreach ($lines as $line) {
+            $amounts = $this->resolveLineMoney(
+                (string) $line->quantity,
+                (string) $line->conversion_factor,
+                (string) $line->unit_cost,
+                (string) ($line->trade_disc_pct ?? '0'),
+                (string) ($line->regular_disc_pct ?? '0'),
+                (string) ($line->special_disc_pct ?? '0'),
+                (string) ($line->tax_pct ?? '0'),
+                (string) ($line->further_tax_pct ?? '0'),
+                (string) ($line->discount_amount ?? '0'),
+                (string) ($line->tax_amount ?? '0'),
+                (string) ($invoice->calculation_method ?? 'trade_after_disc'),
+                (string) ($line->mrp ?? '0'),
+                (string) ($invoice->discount_apply_on ?? 'trade'),
+                (string) ($line->regular_disc_amount ?? '0'),
+                (string) ($line->special_disc_amount ?? '0'),
+                (string) ($modes['regular_disc'] ?? 'pct'),
+                (string) ($modes['special_disc'] ?? 'pct'),
+                (string) ($modes['gst'] ?? 'pct'),
+                (string) ($line->disc_after_gst_pct ?? '0'),
+                (string) ($line->disc_after_gst_amount ?? '0'),
+                (string) ($modes['disc_after_gst'] ?? 'rs'),
+                (string) ($line->further_tax_amount ?? '0'),
+                (string) ($modes['further_tax'] ?? 'pct'),
+            );
+
+            $line->base_quantity = $amounts['base_quantity'];
+            $line->discount_amount = $amounts['discount_amount'];
+            $line->tax_amount = $amounts['tax_amount'];
+            $line->further_tax_amount = $amounts['further_tax_amount'];
+            $line->line_total = $amounts['line_total'];
+            $line->regular_disc_amount = $amounts['regular_disc_amount'];
+            $line->special_disc_amount = $amounts['special_disc_amount'];
+            $line->disc_after_gst_amount = $amounts['disc_after_gst_amount'];
+            $line->save();
+
             $subtotal = bcadd($subtotal, bcmul((string) $line->quantity, (string) $line->unit_cost, 4), 4);
             $discount = bcadd(
                 $discount,
