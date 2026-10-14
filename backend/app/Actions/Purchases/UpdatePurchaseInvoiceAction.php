@@ -77,6 +77,7 @@ class UpdatePurchaseInvoiceAction
                 'invoice_type',
                 'currency_code',
                 'calculation_method',
+                'discount_apply_on',
                 'default_price_type',
                 'brand_label',
                 'invoice_date',
@@ -97,7 +98,18 @@ class UpdatePurchaseInvoiceAction
                 $invoice->po_number = $data['po_number'];
             }
 
+            if (array_key_exists('calculation_modes', $data)) {
+                $invoice->calculation_modes = $data['calculation_modes'];
+            }
+            if (array_key_exists('auto_calc_mrp', $data)) {
+                $invoice->auto_calc_mrp = (bool) $data['auto_calc_mrp'];
+            }
+            if (array_key_exists('withholding_is_pct', $data)) {
+                $invoice->withholding_is_pct = (bool) $data['withholding_is_pct'];
+            }
+
             foreach ([
+                'withholding_pct',
                 'default_sales_tax_pct',
                 'default_further_tax_pct',
                 'default_advance_tax_pct',
