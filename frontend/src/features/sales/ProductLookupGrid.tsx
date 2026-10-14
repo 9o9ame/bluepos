@@ -19,6 +19,7 @@ function productBaseRate(product: Product): string {
 }
 
 const PRODUCT_LOOKUP_ROW_HEIGHT = 24
+const PRODUCT_LOOKUP_VIEWPORT_HEIGHT = 250
 const PRODUCT_LOOKUP_OVERSCAN = 8
 
 function productLookupDescription(product: Product): string {
@@ -66,7 +67,17 @@ export function ProductLookupGrid({
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const selectedScrolledRef = useRef(false)
   const prependSnapshotRef = useRef<{ height: number; top: number } | null>(null)
-  const [scrollTop, setScrollTop] = useState(0)
+  const selectedIndex = selectedUlid
+    ? rows.findIndex((row) => row.ulid === selectedUlid)
+    : -1
+  const selectedScrollTop = selectedIndex >= 0
+    ? Math.max(
+        0,
+        selectedIndex * PRODUCT_LOOKUP_ROW_HEIGHT -
+          (PRODUCT_LOOKUP_VIEWPORT_HEIGHT - PRODUCT_LOOKUP_ROW_HEIGHT) / 2,
+      )
+    : 0
+  const [scrollTop, setScrollTop] = useState(selectedScrollTop)
   const [portalStyle, setPortalStyle] = useState<{
     top: number
     left: number
@@ -132,29 +143,22 @@ export function ProductLookupGrid({
   }, [selectedUlid])
 
   useLayoutEffect(() => {
-    if (!selectedUlid || selectedScrolledRef.current) return
+    if (!selectedUlid || selectedScrolledRef.current || selectedIndex < 0) return
     const body = bodyRef.current
     if (!body) return
 
-    const selectedIndex = rows.findIndex((row) => row.ulid === selectedUlid)
-    if (selectedIndex < 0) return
-
-    const nextTop = Math.max(
-      0,
-      selectedIndex * PRODUCT_LOOKUP_ROW_HEIGHT -
-        Math.max(0, body.clientHeight - PRODUCT_LOOKUP_ROW_HEIGHT) / 2,
-    )
-    body.scrollTop = nextTop
-    setScrollTop(nextTop)
+    setScrollTop(selectedScrollTop)
+    body.scrollTop = selectedScrollTop
     selectedScrolledRef.current = true
-  }, [rows, selectedUlid])
+  }, [rows, selectedIndex, selectedScrollTop, selectedUlid])
 
   const visibleStart = Math.max(
     0,
     Math.floor(scrollTop / PRODUCT_LOOKUP_ROW_HEIGHT) - PRODUCT_LOOKUP_OVERSCAN,
   )
   const visibleCount =
-    Math.ceil(250 / PRODUCT_LOOKUP_ROW_HEIGHT) + PRODUCT_LOOKUP_OVERSCAN * 2
+    Math.ceil(PRODUCT_LOOKUP_VIEWPORT_HEIGHT / PRODUCT_LOOKUP_ROW_HEIGHT) +
+    PRODUCT_LOOKUP_OVERSCAN * 2
   const visibleEnd = Math.min(rows.length, visibleStart + visibleCount)
   const visibleRows = rows.slice(visibleStart, visibleEnd)
 
