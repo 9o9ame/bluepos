@@ -338,6 +338,7 @@ export function PurchasesPage() {
   const [supplierUlid, setSupplierUlid] = useState('')
   const [supplierQuery, setSupplierQuery] = useState('')
   const [supplierMenuOpen, setSupplierMenuOpen] = useState(false)
+  const [supplierLookupMode, setSupplierLookupMode] = useState<'browse' | 'search'>('browse')
   const [warehouseUlid, setWarehouseUlid] = useState(session?.warehouse.ulid ?? '')
   const [invoiceDate, setInvoiceDate] = useState(todayIso())
   const [dueDate, setDueDate] = useState('')
@@ -464,7 +465,10 @@ export function PurchasesPage() {
   )
   const selectedSupplier = suppliers.find((supplier) => supplier.ulid === supplierUlid)
   const supplierLookupRows = useMemo(() => {
-    const query = supplierQuery.trim().toLocaleLowerCase()
+    const query =
+      supplierLookupMode === 'search'
+        ? supplierQuery.trim().toLocaleLowerCase()
+        : ''
     if (!query) return suppliers
 
     return suppliers.filter((supplier) =>
@@ -481,7 +485,7 @@ export function PurchasesPage() {
         .toLocaleLowerCase()
         .includes(query),
     )
-  }, [supplierQuery, suppliers])
+  }, [supplierLookupMode, supplierQuery, suppliers])
   const selectedWarehouse = warehouses.find((warehouse) => warehouse.ulid === warehouseUlid)
   const purchaseSoftwareOptions = businessSettingsQuery.data?.software_options?.purchase
   const warehouseLabel = selectedWarehouse
@@ -1967,10 +1971,12 @@ export function PurchasesPage() {
                     autoComplete="off"
                     onFocus={() => {
                       if (!editable) return
-                      setSupplierQuery('')
+                      setSupplierLookupMode('browse')
+                      setSupplierQuery(selectedSupplier?.name ?? '')
                       setSupplierMenuOpen(true)
                     }}
                     onChange={(event) => {
+                      setSupplierLookupMode('search')
                       setSupplierQuery(event.target.value)
                       setSupplierMenuOpen(true)
                     }}
@@ -1980,6 +1986,7 @@ export function PurchasesPage() {
                         if (first) {
                           event.preventDefault()
                           setSupplierUlid(first.ulid)
+                          setSupplierLookupMode('browse')
                           setSupplierQuery(first.name)
                           setSupplierMenuOpen(false)
                         }
@@ -1995,7 +2002,8 @@ export function PurchasesPage() {
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
                       if (!editable) return
-                      setSupplierQuery('')
+                      setSupplierLookupMode('browse')
+                      setSupplierQuery(selectedSupplier?.name ?? '')
                       setSupplierMenuOpen((open) => !open)
                     }}
                   >
@@ -2017,6 +2025,7 @@ export function PurchasesPage() {
                       }}
                       onSelect={(supplier) => {
                         setSupplierUlid(supplier.ulid)
+                        setSupplierLookupMode('browse')
                         setSupplierQuery(supplier.name)
                         setSupplierMenuOpen(false)
                       }}
