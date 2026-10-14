@@ -5,7 +5,6 @@ import {
   RefreshCw,
   RotateCcw,
   Save,
-  Search,
   Send,
   Settings2,
   Trash2,
