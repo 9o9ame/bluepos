@@ -73,7 +73,23 @@ class ProductController extends Controller
                 ->value('total');
         }
 
-        $page = $query->paginate($perPage);
+        $pageNumber = $request->integer('page', 0);
+
+        if ($pageNumber < 1 && $request->filled('anchor_ulid') && ! $request->filled('q')) {
+            $anchor = $this->catalog->product((string) $request->string('anchor_ulid'));
+            $beforeCount = (clone $query)
+                ->where('products.product_number', '<', $anchor->product_number)
+                ->count();
+
+            $pageNumber = intdiv($beforeCount, $perPage) + 1;
+        }
+
+        $page = $query->paginate(
+            $perPage,
+            ['*'],
+            'page',
+            $pageNumber > 0 ? $pageNumber : null,
+        );
 
         return [
             'data' => ProductResource::collection($page->items()),
