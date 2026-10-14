@@ -55,6 +55,7 @@ import type {
 import { PartyModal } from '../components/parties/PartyModal'
 import { ProductModal } from '../components/products/ProductModal'
 import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
+import { SupplierLookupGrid } from '../features/catalog/SupplierLookupGrid'
 import {
   applyCalcToLine,
   computeLine,
@@ -335,6 +336,8 @@ export function PurchasesPage() {
 
   const [invoiceUlid, setInvoiceUlid] = useState<string | null>(null)
   const [supplierUlid, setSupplierUlid] = useState('')
+  const [supplierQuery, setSupplierQuery] = useState('')
+  const [supplierMenuOpen, setSupplierMenuOpen] = useState(false)
   const [warehouseUlid, setWarehouseUlid] = useState(session?.warehouse.ulid ?? '')
   const [invoiceDate, setInvoiceDate] = useState(todayIso())
   const [dueDate, setDueDate] = useState('')
@@ -387,6 +390,7 @@ export function PurchasesPage() {
   const autoPurchaseOrderAttemptedRef = useRef('')
   const productSearchRef = useRef<HTMLInputElement | null>(null)
   const productPickerAnchorRef = useRef<HTMLDivElement | null>(null)
+  const supplierPickerAnchorRef = useRef<HTMLDivElement | null>(null)
 
   const calcSettings: PurchaseCalcSettings = useMemo(
     () => ({ calcMethod, discountApplyOn, dualModes }),
@@ -459,6 +463,25 @@ export function PurchasesPage() {
     (w) => w.status === 'active' && w.ulid === session?.warehouse.ulid,
   )
   const selectedSupplier = suppliers.find((supplier) => supplier.ulid === supplierUlid)
+  const supplierLookupRows = useMemo(() => {
+    const query = supplierQuery.trim().toLocaleLowerCase()
+    if (!query) return suppliers
+
+    return suppliers.filter((supplier) =>
+      [
+        supplier.code,
+        supplier.name,
+        supplier.address,
+        supplier.billing_address,
+        supplier.mobile,
+        supplier.phone,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLocaleLowerCase()
+        .includes(query),
+    )
+  }, [supplierQuery, suppliers])
   const selectedWarehouse = warehouses.find((warehouse) => warehouse.ulid === warehouseUlid)
   const purchaseSoftwareOptions = businessSettingsQuery.data?.software_options?.purchase
   const warehouseLabel = selectedWarehouse
@@ -1914,6 +1937,11 @@ export function PurchasesPage() {
   const displayGrand = liveTotals.grand_total
   const balancePayable = status === 'posted' ? serverBalancePayable : displayGrand
 
+  useEffect(() => {
+    if (supplierMenuOpen) return
+    setSupplierQuery(selectedSupplier?.name ?? '')
+  }, [selectedSupplier?.name, supplierMenuOpen])
+
   async function removeSelectedLine() {
     if (!selectedLine) return
     await removeLine(selectedLine)
@@ -1931,34 +1959,76 @@ export function PurchasesPage() {
             <label className="pie-field pie-field-span-2">
               <span>Supplier</span>
               <div className="pie-field-row">
-                <UiSelect menuMotion="reveal"
-                  aria-label="Supplier"
-                  value={supplierUlid}
-                  disabled={!editable}
-                  placeholder="Select supplier..."
-                  searchPlaceholder="Search supplier by code, name, address or mobile..."
-                  searchInTrigger
-                  menuMinWidth={820}
-                  maxMenuHeight={320}
-                  menuColumns={[
-                    { header: 'Code', width: '110px' },
-                    { header: 'Name', width: 'minmax(220px, 1.4fr)' },
-                    { header: 'Address', width: 'minmax(280px, 2fr)' },
-                    { header: 'Mobile', width: '140px' },
-                  ]}
-                  options={suppliers.map((supplier) => ({
-                    value: supplier.ulid,
-                    label: supplier.name,
-                    title: supplier.name,
-                    columns: [
-                      supplier.code || '—',
-                      supplier.name,
-                      supplier.address || supplier.billing_address || '—',
-                      supplier.mobile || supplier.phone || '—',
-                    ],
-                  }))}
-                  onChange={setSupplierUlid}
-                />
+                <div
+                  ref={supplierPickerAnchorRef}
+                  className="pie-supplier-combo"
+                >
+                  <input
+                    className="pie-supplier-combo-input"
+                    value={supplierQuery}
+                    disabled={!editable}
+                    placeholder="Select supplier..."
+                    aria-label="Search supplier"
+                    autoComplete="off"
+                    onFocus={() => {
+                      if (!editable) return
+                      setSupplierQuery('')
+                      setSupplierMenuOpen(true)
+                    }}
+                    onChange={(event) => {
+                      setSupplierQuery(event.target.value)
+                      setSupplierMenuOpen(true)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && supplierMenuOpen) {
+                        const first = supplierLookupRows[0]
+                        if (first) {
+                          event.preventDefault()
+                          setSupplierUlid(first.ulid)
+                          setSupplierQuery(first.name)
+                          setSupplierMenuOpen(false)
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="pie-supplier-combo-toggle"
+                    aria-label="Open supplier dropdown"
+                    aria-expanded={supplierMenuOpen}
+                    disabled={!editable}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      if (!editable) return
+                      setSupplierQuery('')
+                      setSupplierMenuOpen((open) => !open)
+                    }}
+                  >
+                    <span className="pie-supplier-combo-arrow" aria-hidden>
+                      <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                        <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                      </svg>
+                    </span>
+                  </button>
+
+                  {supplierMenuOpen ? (
+                    <SupplierLookupGrid
+                      rows={supplierLookupRows}
+                      total={suppliers.length}
+                      selectedUlid={supplierUlid}
+                      portalAnchorRef={supplierPickerAnchorRef}
+                      onRequestClose={() => {
+                        setSupplierMenuOpen(false)
+                        setSupplierQuery(selectedSupplier?.name ?? '')
+                      }}
+                      onSelect={(supplier) => {
+                        setSupplierUlid(supplier.ulid)
+                        setSupplierQuery(supplier.name)
+                        setSupplierMenuOpen(false)
+                      }}
+                    />
+                  ) : null}
+                </div>
                 <div className="pie-supplier-actions">
                   <button
                     type="button"
