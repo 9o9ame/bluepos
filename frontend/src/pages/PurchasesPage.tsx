@@ -114,6 +114,7 @@ type DraftLine = {
   regular_disc_rs?: string
   special_disc_rs?: string
   sale_price?: string
+  category_ulid?: string
 }
 
 function emptyShellFields(): Pick<
@@ -346,6 +347,8 @@ export function PurchasesPage() {
   const [productQuery, setProductQuery] = useState('')
   const [productEditRowKey, setProductEditRowKey] = useState<string | 'new' | null>(null)
   const [productMenuOpen, setProductMenuOpen] = useState(false)
+  const [productBrowseCategoryUlid, setProductBrowseCategoryUlid] = useState('')
+  const [productLookupMode, setProductLookupMode] = useState<'browse' | 'search'>('search')
   const [productModalOpen, setProductModalOpen] = useState(false)
   const [productModalTargetRowKey, setProductModalTargetRowKey] = useState<string | 'new'>('new')
   const [error, setError] = useState<string | null>(null)
@@ -434,15 +437,27 @@ export function PurchasesPage() {
   })
 
   const productLookup = useQuery({
-    queryKey: ['purchase-product-lookup', productQuery],
+    queryKey: [
+      'purchase-product-lookup',
+      productLookupMode,
+      productQuery,
+      productBrowseCategoryUlid,
+    ],
     queryFn: () => {
-      const lookupQuery = productQuery.includes(' · ')
-        ? productQuery.split(' · ').slice(1).join(' · ')
-        : productQuery
+      const lookupQuery =
+        productLookupMode === 'search'
+          ? productQuery.includes(' · ')
+            ? productQuery.split(' · ').slice(1).join(' · ')
+            : productQuery
+          : ''
 
       return fetchProducts(
         {
           q: lookupQuery || undefined,
+          category_ulid:
+            productLookupMode === 'browse' && productBrowseCategoryUlid
+              ? productBrowseCategoryUlid
+              : undefined,
           per_page: 20,
           sales_lookup: true,
         },
@@ -552,6 +567,8 @@ export function PurchasesPage() {
 
   function focusNewProductSearch() {
     setProductEditRowKey('new')
+    setProductBrowseCategoryUlid('')
+    setProductLookupMode('search')
     setProductQuery('')
     setProductMenuOpen(true)
     requestAnimationFrame(() => {
@@ -560,10 +577,35 @@ export function PurchasesPage() {
     })
   }
 
-  function beginProductEdit(row: DraftLine | null) {
+  async function beginProductEdit(row: DraftLine | null) {
     setProductEditRowKey(row?.key ?? 'new')
     setProductQuery(row?.product_label ?? '')
+
+    if (!row) {
+      setProductBrowseCategoryUlid('')
+      setProductLookupMode('search')
+      setProductMenuOpen(true)
+      return
+    }
+
+    setProductLookupMode('browse')
+    setProductBrowseCategoryUlid(row.category_ulid ?? '')
     setProductMenuOpen(true)
+
+    if (!row.category_ulid && row.product_ulid) {
+      try {
+        const product = await fetchProduct(row.product_ulid)
+        const categoryUlid = product.category?.ulid ?? ''
+        setProductBrowseCategoryUlid(categoryUlid)
+        setLines((prev) =>
+          prev.map((line) =>
+            line.key === row.key ? { ...line, category_ulid: categoryUlid } : line,
+          ),
+        )
+      } catch {
+        setProductBrowseCategoryUlid('')
+      }
+    }
   }
 
   function focusFirstEditableInRow(rowKey: string) {
@@ -695,9 +737,13 @@ export function PurchasesPage() {
                 className="pie-product-combo-input"
                 value={isActive ? productQuery : ''}
                 disabled={!ctx.canEdit}
-                onFocus={() => beginProductEdit(null)}
+                onFocus={() => {
+                  if (!isActive) void beginProductEdit(null)
+                }}
                 onChange={(event) => {
                   setProductEditRowKey('new')
+                  setProductLookupMode('search')
+                  setProductBrowseCategoryUlid('')
                   setProductQuery(event.target.value)
                   setProductMenuOpen(true)
                 }}
@@ -720,7 +766,7 @@ export function PurchasesPage() {
                   aria-expanded={isActive && productMenuOpen}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => {
-                    if (!isActive) beginProductEdit(null)
+                    if (!isActive) void beginProductEdit(null)
                     else setProductMenuOpen((open) => !open)
                     requestAnimationFrame(() => productSearchRef.current?.focus())
                   }}
@@ -834,9 +880,13 @@ export function PurchasesPage() {
                   value={isActive ? productQuery : row.product_label}
                   data-purchase-edit="true"
                   data-purchase-product="true"
-                  onFocus={() => beginProductEdit(row)}
+                  onFocus={() => {
+                    if (!isActive) void beginProductEdit(row)
+                  }}
                   onChange={(event) => {
                     setProductEditRowKey(row.key)
+                    setProductLookupMode('search')
+                    setProductBrowseCategoryUlid('')
                     setProductQuery(event.target.value)
                     setProductMenuOpen(true)
                   }}
@@ -862,8 +912,9 @@ export function PurchasesPage() {
                     aria-expanded={isActive && productMenuOpen}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
-                      if (!isActive) beginProductEdit(row)
-                      else setProductMenuOpen((open) => !open)
+                      if (!isActive) void beginProductEdit(row)
+                      else if (productMenuOpen) setProductMenuOpen(false)
+                      else void beginProductEdit(row)
                     }}
                   >
                     <span className="pie-product-combo-arrow" aria-hidden>
@@ -1601,6 +1652,7 @@ export function PurchasesPage() {
                 supplier_product_code: product.supplier_product_code ?? line.supplier_product_code,
                 track_batch: product.track_batch,
                 track_expiry: product.track_expiry,
+                category_ulid: product.category?.ulid ?? line.category_ulid,
               }
             : line,
         ),
@@ -1675,6 +1727,7 @@ export function PurchasesPage() {
         special_disc_rs: '0.0000',
         mrp: retail,
         sale_price: retail,
+        category_ulid: product.category?.ulid ?? '',
       },
       calcSettings,
     )
