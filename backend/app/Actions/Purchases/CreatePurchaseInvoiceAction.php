@@ -18,6 +18,7 @@ class CreatePurchaseInvoiceAction
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly TenantCatalog $catalog,
+        private readonly RecalculatePurchaseTotalsAction $recalculate,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -140,6 +141,7 @@ class CreatePurchaseInvoiceAction
                 4,
             );
             $invoice->save();
+            $this->recalculate->execute($invoice);
 
             $this->audit->record('PURCHASE_CREATED', [
                 'resource_type' => 'purchase_invoice',
