@@ -153,10 +153,7 @@ export function SalesInvoicePage() {
   const productLookupRows = localProductLookup.rows.filter(
     (product) => product.is_active && product.status === 'active',
   )
-  const productLookupTotal =
-    productLookupMode === 'search'
-      ? productLookupRows.length
-      : localProductLookup.total
+  const productLookupTotal = productLookupRows.length
 
   const [selectedSalesmanUlid, setSelectedSalesmanUlid] = useState<string | null>(
     null,
