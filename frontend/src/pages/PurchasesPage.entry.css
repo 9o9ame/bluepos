@@ -655,7 +655,9 @@
 }
 
 .pie-product-combo-add {
-  background: var(--ui-button-primary-face, var(--ui-select-arrow-face));
+  background: var(--ui-select-arrow-face);
+  border-color: var(--ui-select-arrow-border, var(--ui-accent));
+  color: var(--ui-select-selected-text, #fff);
   font-size: 13px;
 }
 
