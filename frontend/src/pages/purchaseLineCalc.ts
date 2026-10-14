@@ -121,14 +121,11 @@ function resolveGst(
 ): { taxAmount: number; tax_pct: string; tax_amount: string } {
   const taxPct = n(taxPctRaw)
 
-  if (calcMethod === 'manual') {
-    const dual = dualAmount(mode, gstBase, taxPctRaw, taxAmountRaw)
-    return { taxAmount: dual.rs, tax_pct: dual.pctOut, tax_amount: dual.rsOut }
-  }
-
-  // Non-manual: tax rate drives the amount so qty / MRP / apply-on changes stay in sync.
-  // Editing the Rs field updates the rate via the dual input handler first.
-  if (mode === 'rs' && taxPct === 0) {
+  // Rs mode means the user-entered money amount is authoritative regardless
+  // of which GST base is selected. Only the displayed percentage is derived.
+  // This prevents Manual <-> MRP mode switches from feeding a derived rate
+  // back into the next calculation and causing cumulative tax drift.
+  if (mode === 'rs') {
     const dual = dualAmount('rs', gstBase, taxPctRaw, taxAmountRaw)
     return { taxAmount: dual.rs, tax_pct: dual.pctOut, tax_amount: dual.rsOut }
   }
@@ -275,8 +272,11 @@ export function applyCalcToLine<T extends PurchaseCalcLine>(line: T, settings: P
     regular_disc_rs: calc.regular_disc_rs,
     special_disc_pct: calc.special_disc_pct,
     special_disc_rs: calc.special_disc_rs,
-    tax_pct: calc.tax_pct,
-    tax_amount: calc.tax_amount,
+    // Keep the raw/source GST inputs on the draft line. Calculated GST
+    // values are returned by computeLine for display/save, but must not become
+    // the next toggle's source inputs.
+    tax_pct: line.tax_pct,
+    tax_amount: line.tax_amount,
     further_tax_pct: calc.further_tax_pct,
     further_tax_amount: calc.further_tax_amount,
     disc_after_gst_pct: calc.disc_after_gst_pct,
