@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { fetchBusinessSettings, fetchProduct, fetchProducts, fetchSuppliers } from '../api/catalog'
+import { fetchBusinessSettings, fetchProduct } from '../api/catalog'
 import { ApiClientError } from '../api/client'
 import { askConfirm } from '../feedback/FeedbackProvider'
 import { fetchProductStock, fetchWarehouses } from '../api/inventory'
@@ -44,6 +44,8 @@ import {
   type ResolvedGridColumn,
 } from '../features/gridLayout/columnCatalog'
 import { useColumnLayout } from '../features/gridLayout/useColumnLayout'
+import { useLocalProducts, useLocalSuppliers } from '../features/catalog/useLocalCatalog'
+import { refreshSuppliers, upsertCachedProduct } from '../data/catalogCache'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
 import type {
@@ -426,53 +428,38 @@ export function PurchasesPage() {
     retry: false,
   })
 
-  const suppliersQuery = useQuery({
-    queryKey: ['suppliers'],
-    queryFn: fetchSuppliers,
-  })
+  const suppliersQuery = useLocalSuppliers(
+    session,
+    mode === 'editor',
+  )
 
   const warehousesQuery = useQuery({
     queryKey: ['warehouses'],
     queryFn: fetchWarehouses,
   })
 
-  const productLookup = useQuery({
-    queryKey: [
-      'purchase-product-lookup',
-      productLookupMode,
-      productQuery,
-      productBrowseAnchorUlid,
-    ],
-    queryFn: () => {
-      const lookupQuery =
-        productLookupMode === 'search'
-          ? productQuery.includes(' · ')
-            ? productQuery.split(' · ').slice(1).join(' · ')
-            : productQuery
-          : ''
+  const productLookupQuery =
+    productLookupMode === 'search'
+      ? productQuery.includes(' · ')
+        ? productQuery.split(' · ').slice(1).join(' · ')
+        : productQuery
+      : ''
 
-      return fetchProducts(
-        {
-          q: lookupQuery || undefined,
-          lookup_all: true,
-          sales_lookup: true,
-        },
-        { busy: 'none' },
-      )
-    },
-    enabled:
-      mode === 'editor' &&
+  const productLookup = useLocalProducts(
+    session,
+    productLookupQuery,
+    mode === 'editor' &&
       !readOnly &&
       productMenuOpen &&
       productEditRowKey !== null,
-  })
+  )
 
-  const productLookupRows = productLookup.data?.data ?? []
-  const productLookupTotal = productLookup.data?.meta.total ?? 0
+  const productLookupRows = productLookup.rows
+  const productLookupTotal = productLookup.total
 
   const listRows = listQuery.data?.pages.flatMap((page) => page.data) ?? []
   const listTotal = listQuery.data?.pages[0]?.meta.total ?? 0
-  const suppliers = (suppliersQuery.data ?? []).filter((s) => s.is_active)
+  const suppliers = suppliersQuery.rows.filter((s) => s.is_active)
   const warehouses = (warehousesQuery.data ?? []).filter(
     (w) => w.status === 'active' && w.ulid === session?.warehouse.ulid,
   )
@@ -2575,7 +2562,14 @@ export function PurchasesPage() {
           onSaved={(party) => {
             const vendorUlid =
               party.vendor_ulid ?? (party.party_type === 'vendor' ? party.ulid : '')
-            void suppliersQuery.refetch().then(({ data }) => {
+            const scope = suppliersQuery.scope
+            if (!scope) {
+              setSupplierModalOpen(false)
+              return
+            }
+
+            void refreshSuppliers(scope, { force: true }).then(async () => {
+              const { data } = await suppliersQuery.refetch()
               const savedSupplier =
                 data?.find((supplier) => supplier.ulid === vendorUlid) ??
                 data?.find((supplier) => supplier.code === party.code)
@@ -2591,7 +2585,10 @@ export function PurchasesPage() {
           onClose={() => setProductModalOpen(false)}
           onSaved={(product) => {
             setProductModalOpen(false)
-            void queryClient.invalidateQueries({ queryKey: ['purchase-product-lookup'] })
+            const scope = productLookup.scope
+            if (scope) {
+              void upsertCachedProduct(scope, product).then(() => productLookup.refetch())
+            }
             if (productModalTargetRowKey === 'new') {
               void addProduct(product)
             } else {
