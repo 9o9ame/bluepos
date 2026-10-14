@@ -938,7 +938,7 @@ export function PurchasesPage() {
               row.unit_label
             ) : (
               <div onClick={(event) => event.stopPropagation()}>
-                <UiSelect
+                <UiSelect menuMotion="reveal"
                   className="pie-line-select"
                   aria-label="Unit"
                   value={row.unit_ulid}
@@ -1815,7 +1815,7 @@ export function PurchasesPage() {
             onChange={(e) => setDateTo(e.target.value)}
             title="To"
           />
-          <UiSelect
+          <UiSelect menuMotion="reveal"
             aria-label="Supplier filter"
             value={supplierFilter}
             options={[
@@ -1824,7 +1824,7 @@ export function PurchasesPage() {
             ]}
             onChange={setSupplierFilter}
           />
-          <UiSelect
+          <UiSelect menuMotion="reveal"
             aria-label="Purchase status"
             value={statusFilter}
             options={[
@@ -1931,7 +1931,7 @@ export function PurchasesPage() {
             <label className="pie-field pie-field-span-2">
               <span>Supplier</span>
               <div className="pie-field-row">
-                <UiSelect
+                <UiSelect menuMotion="reveal"
                   aria-label="Supplier"
                   value={supplierUlid}
                   disabled={!editable}
@@ -1982,7 +1982,7 @@ export function PurchasesPage() {
             </label>
             <label className="pie-field">
               <span>Warehouse</span>
-              <UiSelect
+              <UiSelect menuMotion="reveal"
                 aria-label="Warehouse"
                 value={warehouseUlid}
                 disabled
@@ -1998,7 +1998,7 @@ export function PurchasesPage() {
             </label>
             <label className="pie-field">
               <span>Invoice Type</span>
-              <UiSelect
+              <UiSelect menuMotion="reveal"
                 aria-label="Invoice Type"
                 value={shellInvoiceType}
                 disabled={!editable}
@@ -2012,7 +2012,7 @@ export function PurchasesPage() {
             </label>
             <label className="pie-field">
               <span>Currency</span>
-              <UiSelect
+              <UiSelect menuMotion="reveal"
                 aria-label="Currency"
                 value={shellCurrency}
                 disabled={!editable}
@@ -2408,7 +2408,7 @@ export function PurchasesPage() {
           <div className="pie-payment-grid">
             <label className="pie-field">
               <span>Terms</span>
-              <UiSelect
+              <UiSelect menuMotion="reveal"
                 aria-label="Payment Terms"
                 value={shellPaymentTerms}
                 disabled={!editable}
@@ -2496,7 +2496,7 @@ export function PurchasesPage() {
             </label>
             <label className="pie-field">
               <span>Method</span>
-              <UiSelect
+              <UiSelect menuMotion="reveal"
                 aria-label="Purchase payment method"
                 value={paymentMethod}
                 disabled={paymentMutation.isPending}
