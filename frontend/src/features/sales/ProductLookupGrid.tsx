@@ -77,7 +77,7 @@ export function ProductLookupGrid({
           (PRODUCT_LOOKUP_VIEWPORT_HEIGHT - PRODUCT_LOOKUP_ROW_HEIGHT) / 2,
       )
     : 0
-  const [scrollTop, setScrollTop] = useState(selectedScrollTop)
+  const [scrollTop, setScrollTop] = useState(0)
   const [portalStyle, setPortalStyle] = useState<{
     top: number
     left: number
@@ -143,14 +143,26 @@ export function ProductLookupGrid({
   }, [selectedUlid])
 
   useLayoutEffect(() => {
-    if (!selectedUlid || selectedScrolledRef.current || selectedIndex < 0) return
-    const body = bodyRef.current
-    if (!body) return
+    if (
+      !portalStyle ||
+      !selectedUlid ||
+      selectedScrolledRef.current ||
+      selectedIndex < 0
+    ) {
+      return
+    }
 
-    setScrollTop(selectedScrollTop)
-    body.scrollTop = selectedScrollTop
-    selectedScrolledRef.current = true
-  }, [rows, selectedIndex, selectedScrollTop, selectedUlid])
+    const frame = window.requestAnimationFrame(() => {
+      const body = bodyRef.current
+      if (!body) return
+
+      body.scrollTop = selectedScrollTop
+      setScrollTop(body.scrollTop)
+      selectedScrolledRef.current = true
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [portalStyle, rows, selectedIndex, selectedScrollTop, selectedUlid])
 
   const visibleStart = Math.max(
     0,
