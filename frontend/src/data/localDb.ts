@@ -88,7 +88,6 @@ export async function readLocalEntity<T>(
   const rows = await requestResult(
     index.getAll(IDBKeyRange.only(scopeEntityKey(scopeKey, entity))),
   ) as LocalRecord<T>[]
-  await transactionDone(transaction)
   return rows.map((row) => row.value)
 }
 
@@ -99,6 +98,7 @@ export async function replaceLocalEntity<T extends { ulid: string }>(
 ): Promise<void> {
   const db = await openDb()
   const transaction = db.transaction(RECORDS_STORE, 'readwrite')
+  const done = transactionDone(transaction)
   const store = transaction.objectStore(RECORDS_STORE)
   const index = store.index('scopeEntity')
   const range = IDBKeyRange.only(scopeEntityKey(scopeKey, entity))
@@ -132,7 +132,7 @@ export async function replaceLocalEntity<T extends { ulid: string }>(
     store.put(row)
   }
 
-  await transactionDone(transaction)
+  await done
 }
 
 export async function upsertLocalEntity<T extends { ulid: string }>(
@@ -142,6 +142,7 @@ export async function upsertLocalEntity<T extends { ulid: string }>(
 ): Promise<void> {
   const db = await openDb()
   const transaction = db.transaction(RECORDS_STORE, 'readwrite')
+  const done = transactionDone(transaction)
   const store = transaction.objectStore(RECORDS_STORE)
   const row: LocalRecord<T> = {
     key: compositeKey(scopeKey, entity, value.ulid),
@@ -152,7 +153,7 @@ export async function upsertLocalEntity<T extends { ulid: string }>(
     value,
   }
   store.put(row)
-  await transactionDone(transaction)
+  await done
 }
 
 export async function readLocalMeta<T>(key: string): Promise<T | null> {
@@ -161,13 +162,13 @@ export async function readLocalMeta<T>(key: string): Promise<T | null> {
   const row = await requestResult(transaction.objectStore(META_STORE).get(key)) as
     | LocalMeta
     | undefined
-  await transactionDone(transaction)
   return (row?.value as T | undefined) ?? null
 }
 
 export async function writeLocalMeta<T>(key: string, value: T): Promise<void> {
   const db = await openDb()
   const transaction = db.transaction(META_STORE, 'readwrite')
+  const done = transactionDone(transaction)
   transaction.objectStore(META_STORE).put({ key, value } satisfies LocalMeta)
-  await transactionDone(transaction)
+  await done
 }
