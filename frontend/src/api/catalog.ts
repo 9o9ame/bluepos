@@ -356,6 +356,7 @@ export type ProductListParams = {
     q?: string
     page?: number
     per_page?: number
+    anchor_ulid?: string
     category_ulid?: string
     brand_ulid?: string
     status?: string
@@ -371,6 +372,7 @@ function buildProductSearch(params: ProductListParams): URLSearchParams {
 
   if (params.q) search.set('q', params.q)
   if (params.page) search.set('page', String(params.page))
+  if (params.anchor_ulid) search.set('anchor_ulid', params.anchor_ulid)
   if (params.category_ulid) search.set('category_ulid', params.category_ulid)
   if (params.brand_ulid) search.set('brand_ulid', params.brand_ulid)
   if (params.status) search.set('status', params.status)
