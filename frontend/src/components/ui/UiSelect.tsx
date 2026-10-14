@@ -56,6 +56,7 @@ export type UiSelectProps = {
   menuColumns?: UiSelectMenuColumn[]
   menuMinWidth?: number
   menuPlacement?: 'auto' | 'down' | 'up'
+  menuMotion?: 'default' | 'reveal'
   'aria-label'?: string
 }
 
@@ -91,6 +92,7 @@ export function UiSelect({
   menuColumns,
   menuMinWidth,
   menuPlacement = 'auto',
+  menuMotion = 'default',
   'aria-label': ariaLabel,
 }: UiSelectProps) {
   const listId = useId()
@@ -390,7 +392,8 @@ export function UiSelect({
                 'ui-select-menu',
                 'bp-fancy-select-menu',
                 pos.openUp ? 'is-up' : 'is-down',
-              ].join(' ')}
+                menuMotion === 'reveal' ? 'is-reveal-motion' : '',
+              ].filter(Boolean).join(' ')}
               role="listbox"
               aria-label={ariaLabel}
               style={{
