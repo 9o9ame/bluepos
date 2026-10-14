@@ -130,21 +130,30 @@ class RecalculatePurchaseTotalsAction
             default => $gross,
         };
 
+        $tradeDiscount = $this->pctAmount($gross, $tradeDiscPct);
+        $regularBase = $discountApplyOn === 'trade'
+            ? bcsub($gross, $tradeDiscount, 4)
+            : $discountBase;
         $regular = $this->resolveDualAmount(
             $regularDiscMode,
-            $discountBase,
+            $regularBase,
             $regularDiscPct,
             $regularDiscAmount,
             'regular_disc_amount',
         );
+        $specialBase = bcsub($regularBase, $regular, 4);
+        if (bccomp($specialBase, '0', 4) === -1) {
+            throw ValidationException::withMessages([
+                'regular_disc_amount' => 'Regular discount cannot exceed its calculation base.',
+            ]);
+        }
         $special = $this->resolveDualAmount(
             $specialDiscMode,
-            $discountBase,
+            $specialBase,
             $specialDiscPct,
             $specialDiscAmount,
             'special_disc_amount',
         );
-        $tradeDiscount = $this->pctAmount($gross, $tradeDiscPct);
         $discount = bcadd(bcadd($tradeDiscount, $regular, 4), $special, 4);
 
         // Backwards compatibility for API clients that only send aggregate fixed discount.
@@ -194,13 +203,15 @@ class RecalculatePurchaseTotalsAction
             $discAfterGstAmount,
             'disc_after_gst_amount',
         );
-        $furtherBase = bcsub($afterGst, $discAfterGst, 4);
-        if (bccomp($furtherBase, '0', 4) === -1) {
+        if (bccomp(bcsub($afterGst, $discAfterGst, 4), '0', 4) === -1) {
             throw ValidationException::withMessages([
                 'disc_after_gst_amount' => 'Discount after GST cannot exceed the amount after GST.',
             ]);
         }
 
+        // Further tax remains based on taxable value before GST, matching the
+        // established server-side purchase tax rule.
+        $furtherBase = $afterDiscount;
         $furtherTax = $this->resolveDualAmount(
             $furtherTaxMode,
             $furtherBase,
