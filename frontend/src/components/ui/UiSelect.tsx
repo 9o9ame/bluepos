@@ -41,6 +41,7 @@ export type UiSelectProps = {
   placeholder?: string
   searchable?: boolean
   searchPlaceholder?: string
+  searchInTrigger?: boolean
   onFocus?: FocusEventHandler<HTMLButtonElement>
   onBlur?: FocusEventHandler<HTMLButtonElement>
   onKeyDown?: KeyboardEventHandler<HTMLButtonElement>
@@ -82,6 +83,7 @@ export function UiSelect({
   placeholder = '—',
   searchable = true,
   searchPlaceholder = 'Search…',
+  searchInTrigger = false,
   onFocus,
   onBlur,
   onKeyDown,
@@ -99,6 +101,7 @@ export function UiSelect({
   const rootRef = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+  const triggerSearchRef = useRef<HTMLInputElement>(null)
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
 
   const [open, setOpen] = useState(false)
@@ -123,6 +126,7 @@ export function UiSelect({
 
   const selected =
     options.find((option) => option.value === currentValue) ?? null
+  const [triggerSearchText, setTriggerSearchText] = useState(selected?.label ?? '')
 
   const selectedFilteredIndex = Math.max(
     0,
@@ -187,6 +191,7 @@ export function UiSelect({
     if (disabled || options.length === 0) return
 
     setSearch('')
+    setTriggerSearchText(selected?.label ?? '')
     const selectedIndex = Math.max(
       0,
       options.findIndex((option) => option.value === currentValue),
@@ -199,6 +204,7 @@ export function UiSelect({
   function closeMenu() {
     setOpen(false)
     setSearch('')
+    setTriggerSearchText(selected?.label ?? '')
   }
 
   function pick(next: string) {
@@ -248,9 +254,21 @@ export function UiSelect({
     if (!open) return
 
     if (searchable) {
-      requestAnimationFrame(() => searchRef.current?.focus())
+      requestAnimationFrame(() => {
+        if (searchInTrigger) {
+          triggerSearchRef.current?.focus()
+          triggerSearchRef.current?.select()
+        } else {
+          searchRef.current?.focus()
+        }
+      })
     }
-  }, [open, searchable])
+  }, [open, searchable, searchInTrigger])
+
+  useEffect(() => {
+    if (open) return
+    setTriggerSearchText(selected?.label ?? '')
+  }, [open, selected?.label])
 
   useEffect(() => {
     if (!open || activeIndex < 0) return
@@ -314,74 +332,175 @@ export function UiSelect({
         <input type="hidden" name={name} value={currentValue} />
       ) : null}
 
-      <button
-        {...triggerProps}
-        id={id}
-        type="button"
-        className={[
-          'ui-select-trigger',
-          'bp-fancy-select-trigger',
-          'vca-select',
-          triggerClassName ?? '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
-        disabled={disabled}
-        title={title}
-        aria-label={ariaLabel}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={open ? listId : undefined}
-        aria-activedescendant={
-          open && activeIndex >= 0
-            ? `${listId}-option-${activeIndex}`
-            : undefined
-        }
-        onFocus={onFocus}
-        onBlur={onBlur}
-        onMouseDown={onMouseDown}
-        onClick={() => {
-          if (open) closeMenu()
-          else openMenu()
-        }}
-        onKeyDown={(event) => {
-          onKeyDown?.(event)
-          if (event.defaultPrevented || disabled) return
+      {searchInTrigger ? (
+        <div
+          className={[
+            'ui-select-trigger',
+            'ui-select-combobox-trigger',
+            'bp-fancy-select-trigger',
+            'vca-select',
+            triggerClassName ?? '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <input
+            ref={triggerSearchRef}
+            id={id}
+            type="text"
+            className="ui-select-trigger-search"
+            value={triggerSearchText}
+            disabled={disabled}
+            title={title}
+            placeholder={placeholder}
+            role="combobox"
+            aria-label={ariaLabel}
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            aria-controls={open ? listId : undefined}
+            aria-activedescendant={
+              open && activeIndex >= 0
+                ? `${listId}-option-${activeIndex}`
+                : undefined
+            }
+            onFocus={() => {
+              if (!open) openMenu()
+            }}
+            onClick={() => {
+              if (!open) openMenu()
+            }}
+            onChange={(event) => {
+              const next = event.target.value
+              setTriggerSearchText(next)
+              setSearch(next)
+              if (!open) setOpen(true)
+            }}
+            onKeyDown={(event) => {
+              if (disabled) return
 
-          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-            event.preventDefault()
+              if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault()
+                if (!open) {
+                  openMenu()
+                  return
+                }
+                moveActive(event.key === 'ArrowDown' ? 1 : -1)
+                return
+              }
 
-            if (!open) {
-              openMenu()
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                if (!open) {
+                  openMenu()
+                  return
+                }
+                const option = filteredOptions[activeIndex]
+                if (option && !option.disabled) pick(option.value)
+                return
+              }
+
+              if (event.key === 'Escape' && open) {
+                event.preventDefault()
+                closeMenu()
+              }
+            }}
+          />
+
+          <button
+            type="button"
+            className="ui-select-combobox-toggle"
+            disabled={disabled}
+            aria-label={open ? 'Close options' : 'Open options'}
+            tabIndex={-1}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              if (open) closeMenu()
+              else openMenu()
+            }}
+          >
+            <span
+              className="ui-select-arrow bp-fancy-select-arrow vca-select-caret"
+              aria-hidden
+            >
+              <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                <path
+                  d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z"
+                  fill="currentColor"
+                />
+              </svg>
+            </span>
+          </button>
+        </div>
+      ) : (
+        <button
+          {...triggerProps}
+          id={id}
+          type="button"
+          className={[
+            'ui-select-trigger',
+            'bp-fancy-select-trigger',
+            'vca-select',
+            triggerClassName ?? '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          disabled={disabled}
+          title={title}
+          aria-label={ariaLabel}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-controls={open ? listId : undefined}
+          aria-activedescendant={
+            open && activeIndex >= 0
+              ? `${listId}-option-${activeIndex}`
+              : undefined
+          }
+          onFocus={onFocus}
+          onBlur={onBlur}
+          onMouseDown={onMouseDown}
+          onClick={() => {
+            if (open) closeMenu()
+            else openMenu()
+          }}
+          onKeyDown={(event) => {
+            onKeyDown?.(event)
+            if (event.defaultPrevented || disabled) return
+
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+              event.preventDefault()
+
+              if (!open) {
+                openMenu()
+                return
+              }
+
+              moveActive(event.key === 'ArrowDown' ? 1 : -1)
               return
             }
 
-            moveActive(event.key === 'ArrowDown' ? 1 : -1)
-            return
-          }
-
-          if ((event.key === 'Enter' || event.key === ' ') && !open) {
-            event.preventDefault()
-            openMenu()
-          }
-        }}
-      >
-        <span className="ui-select-value bp-fancy-select-value">
-          {selected?.label ?? placeholder}
-        </span>
-
-        <span
-          className="ui-select-arrow bp-fancy-select-arrow vca-select-caret"
-          aria-hidden
+            if ((event.key === 'Enter' || event.key === ' ') && !open) {
+              event.preventDefault()
+              openMenu()
+            }
+          }}
         >
-          <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
-            <path
-              d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z"
-              fill="currentColor"
-            />
-          </svg>
-        </span>
-      </button>
+          <span className="ui-select-value bp-fancy-select-value">
+            {selected?.label ?? placeholder}
+          </span>
+
+          <span
+            className="ui-select-arrow bp-fancy-select-arrow vca-select-caret"
+            aria-hidden
+          >
+            <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+              <path
+                d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z"
+                fill="currentColor"
+              />
+            </svg>
+          </span>
+        </button>
+      )}
 
       {open && pos
         ? createPortal(
@@ -414,7 +533,7 @@ export function UiSelect({
                 zIndex: menuZIndex,
               }}
             >
-              {searchable ? (
+              {searchable && !searchInTrigger ? (
                 <div className="ui-select-search-wrap">
                   <input
                     ref={searchRef}
@@ -464,7 +583,7 @@ export function UiSelect({
                 style={{
                   maxHeight: Math.max(
                     80,
-                    pos.maxHeight - (searchable ? 40 : 8),
+                    pos.maxHeight - (searchable && !searchInTrigger ? 40 : 8),
                   ),
                 }}
               >
