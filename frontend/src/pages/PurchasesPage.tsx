@@ -314,6 +314,20 @@ function moneyOrZero(value: string | null | undefined): string {
   return Number.isFinite(n) && n > 0 ? n.toFixed(4) : '0.0000'
 }
 
+function incrementQuantityByOne(value: string): string {
+  const normalized = value.trim()
+  const match = normalized.match(/^(\d+)(?:\.(\d{0,6}))?$/)
+  if (!match) return '1.000000'
+
+  const whole = BigInt(match[1])
+  const fraction = BigInt((match[2] ?? '').padEnd(6, '0').slice(0, 6) || '0')
+  const next = whole * 1_000_000n + fraction + 1_000_000n
+  const nextWhole = next / 1_000_000n
+  const nextFraction = (next % 1_000_000n).toString().padStart(6, '0')
+
+  return `${nextWhole}.${nextFraction}`
+}
+
 export function PurchasesPage() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -350,6 +364,7 @@ export function PurchasesPage() {
   const [documentNumber, setDocumentNumber] = useState('')
   const [status, setStatus] = useState<'draft' | 'posted' | 'cancelled'>('draft')
   const [lines, setLines] = useState<DraftLine[]>([])
+  const linesRef = useRef<DraftLine[]>([])
   const [productQuery, setProductQuery] = useState('')
   const [productEditRowKey, setProductEditRowKey] = useState<string | 'new' | null>(null)
   const [productMenuOpen, setProductMenuOpen] = useState(false)
@@ -398,6 +413,10 @@ export function PurchasesPage() {
     () => ({ calcMethod, discountApplyOn, dualModes }),
     [calcMethod, discountApplyOn, dualModes],
   )
+
+  useEffect(() => {
+    linesRef.current = lines
+  }, [lines])
   const canSaveRoleDefault = useCan('roles.edit')
   const columnLayout = useColumnLayout({
     screenKey: PURCHASE_INVOICE_SCREEN,
@@ -1788,15 +1807,17 @@ export function PurchasesPage() {
       calcSettings,
     )
 
-    setLines((prev) =>
-      replaceRowKey
+    setLines((prev) => {
+      const next = replaceRowKey
         ? prev.map((line) =>
             line.key === replaceRowKey
               ? { ...draft, key: replaceRowKey, ulid: line.ulid }
               : line,
           )
-        : [...prev, draft],
-    )
+        : [...prev, draft]
+      linesRef.current = next
+      return next
+    })
     setSelectedLineKey(key)
     setProductEditRowKey(key)
     setProductQuery(draft.product_label)
@@ -1807,6 +1828,44 @@ export function PurchasesPage() {
     } else {
       focusFirstEditableInRow(key)
     }
+  }
+
+  async function addScannedProduct(product: Product, barcode: string) {
+    const scannedUnit = preferPcsUnit(product, barcode)
+    const matchingLines = linesRef.current.filter(
+      (line) =>
+        line.product_ulid === product.ulid &&
+        line.unit_ulid === scannedUnit.unit_ulid &&
+        line.conversion_factor === scannedUnit.conversion_factor,
+    )
+
+    if (matchingLines.length === 1) {
+      const existing = matchingLines[0]
+
+      setLines((prev) => {
+        const next = prev.map((line) =>
+          line.key === existing.key
+            ? applyCalcToLine(
+                {
+                  ...line,
+                  quantity: incrementQuantityByOne(line.quantity),
+                },
+                calcSettings,
+              )
+            : line,
+        )
+        linesRef.current = next
+        return next
+      })
+
+      setSelectedLineKey(existing.key)
+      setProductEditRowKey(existing.key)
+      setProductQuery(existing.product_label)
+      setProductMenuOpen(false)
+      return
+    }
+
+    await addProduct(product, undefined, barcode)
   }
 
   useBarcodeScanner({
@@ -1840,7 +1899,7 @@ export function PurchasesPage() {
       setProductMenuOpen(true)
 
       if (exactMatches.length === 1) {
-        void addProduct(exactMatches[0], undefined, barcode)
+        void addScannedProduct(exactMatches[0], barcode)
         return
       }
 
