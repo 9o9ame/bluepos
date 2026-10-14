@@ -51,6 +51,8 @@ import { PartyModal } from '../components/parties/PartyModal'
 import type { Party } from '../api/parties'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
+import { useLocalProducts, useLocalSuppliers } from '../features/catalog/useLocalCatalog'
+import { refreshProducts, refreshSuppliers } from '../data/catalogCache'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
 import type { OpeningBalance } from '../types/inventory'
@@ -199,9 +201,19 @@ export function ProductsPage({
       lastPage.meta.current_page < lastPage.meta.last_page
         ? lastPage.meta.current_page + 1
         : undefined,
+    enabled: !embedded,
   })
 
-  const products = productsQuery.data?.pages.flatMap((pageResult) => pageResult.data) ?? []
+  const localProducts = useLocalProducts(session, q, embedded)
+  const localSuppliers = useLocalSuppliers(session, embedded)
+
+  const serverProducts =
+    productsQuery.data?.pages.flatMap((pageResult) => pageResult.data) ?? []
+  const products = embedded
+    ? localProducts.rows.filter((product) =>
+        listCategoryUlid ? product.category?.ulid === listCategoryUlid : true,
+      )
+    : serverProducts
 
   const productQuery = useQuery({
     queryKey: ['product', selectedKey],
@@ -213,7 +225,12 @@ export function ProductsPage({
   const brands = useQuery({ queryKey: ['brands'], queryFn: fetchBrands })
   const units = useQuery({ queryKey: ['units'], queryFn: fetchUnits })
   const barcodeGroups = useQuery({ queryKey: ['barcode-groups'], queryFn: fetchBarcodeGroups })
-  const suppliers = useQuery({ queryKey: ['suppliers'], queryFn: fetchSuppliers })
+  const suppliers = useQuery({
+    queryKey: ['suppliers'],
+    queryFn: fetchSuppliers,
+    enabled: !embedded,
+  })
+  const supplierRows = embedded ? localSuppliers.rows : (suppliers.data ?? [])
   const warehouses = useQuery({
     queryKey: ['warehouses', session?.branch.ulid],
     queryFn: fetchWarehouses,
@@ -823,7 +840,9 @@ export function ProductsPage({
   }, !embedded)
 
   const gridRows = useMemo(() => products, [products])
-  const total = productsQuery.data?.pages[0]?.meta.total ?? products.length
+  const total = embedded
+    ? products.length
+    : productsQuery.data?.pages[0]?.meta.total ?? products.length
   const productNumber = creating ? 'NEW' : selected?.product_number ?? ''
   const selectedBarcodeIndex = barcodeRows.findIndex(
     (row) => row.id === selectedBarcodeId,
@@ -1011,7 +1030,13 @@ export function ProductsPage({
             className="product-def-cmd is-refresh"
             title={canCreate ? 'Refresh list and start a new product' : 'Refresh product list'}
             onClick={() => {
-              void productsQuery.refetch()
+              if (embedded && localProducts.scope) {
+                void refreshProducts(localProducts.scope, { force: true })
+                  .then(() => localProducts.refetch())
+              } else {
+                void productsQuery.refetch()
+              }
+
               if (canCreate) {
                 startNewProduct()
               } else if (selectedKey) {
@@ -1327,7 +1352,7 @@ export function ProductsPage({
                   onChange={(e) => setPrimarySupplierUlid(e.target.value)}
                 >
                   <option value="">—</option>
-                  {(suppliers.data ?? [])
+                  {supplierRows
                     .filter((row) => {
                       if (creating) return row.is_active
                       return row.is_active || row.ulid === primarySupplierUlid
@@ -1768,27 +1793,39 @@ export function ProductsPage({
               setSelectedKey(row.ulid)
             }}
             emptyMessage="No products found."
-            loading={productsQuery.isLoading || productsQuery.isFetchingNextPage}
-            loadingLabel={
-              productsQuery.isFetchingNextPage
-                ? 'Loading more products…'
-                : 'Loading products…'
+            loading={
+              embedded
+                ? localProducts.isLoading
+                : productsQuery.isLoading || productsQuery.isFetchingNextPage
             }
-            onEndReached={() => {
-              if (productsQuery.hasNextPage && !productsQuery.isFetchingNextPage) {
-                void productsQuery.fetchNextPage()
-              }
-            }}
+            loadingLabel={
+              embedded
+                ? 'Loading cached products…'
+                : productsQuery.isFetchingNextPage
+                  ? 'Loading more products…'
+                  : 'Loading products…'
+            }
+            onEndReached={
+              embedded
+                ? undefined
+                : () => {
+                    if (productsQuery.hasNextPage && !productsQuery.isFetchingNextPage) {
+                      void productsQuery.fetchNextPage()
+                    }
+                  }
+            }
           />
 
           <div className="product-def-grid-foot">
             <span>{total} Products</span>
             <span className="product-def-pager">
-              {productsQuery.isFetchingNextPage
-                ? 'Loading more…'
-                : productsQuery.hasNextPage
-                  ? `Loaded ${products.length}`
-                  : 'All products loaded'}
+              {embedded
+                ? 'Local catalogue'
+                : productsQuery.isFetchingNextPage
+                  ? 'Loading more…'
+                  : productsQuery.hasNextPage
+                    ? `Loaded ${products.length}`
+                    : 'All products loaded'}
             </span>
           </div>
         </section>
@@ -1806,7 +1843,13 @@ export function ProductsPage({
 
             setPrimarySupplierUlid(supplierUlid)
             setSupplierModalOpen(false)
-            void suppliers.refetch()
+
+            if (embedded && localSuppliers.scope) {
+              void refreshSuppliers(localSuppliers.scope, { force: true })
+                .then(() => localSuppliers.refetch())
+            } else {
+              void suppliers.refetch()
+            }
           }}
         />
       ) : null}
