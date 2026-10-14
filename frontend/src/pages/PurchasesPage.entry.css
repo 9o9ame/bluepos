@@ -588,7 +588,7 @@
 .pie-product-combo {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 38px;
+  grid-template-columns: minmax(0, 1fr) 46px;
   width: 100%;
   min-width: 0;
 }
@@ -597,29 +597,40 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  padding: 0 4px !important;
+  height: 18px !important;
+  padding: 0 5px !important;
+  border: 1px solid var(--ui-control-border) !important;
   border-right: 0 !important;
   border-radius: var(--control-radius) 0 0 var(--control-radius) !important;
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ui-surface) 70%, transparent);
 }
 
 .pie-product-combo-actions {
   display: grid;
-  grid-template-columns: 19px 19px;
-  min-width: 38px;
-  height: 16px;
+  grid-template-columns: 23px 23px;
+  min-width: 46px;
+  height: 18px;
+  overflow: hidden;
+  border: 1px solid var(--ui-control-border);
+  border-left: 0;
+  border-radius: 0 var(--control-radius) var(--control-radius) 0;
+  background: var(--ui-control-face);
 }
 
 .pie-product-combo-toggle,
 .pie-product-combo-add {
   display: grid;
   place-items: center;
-  min-width: 19px;
+  min-width: 23px;
   height: 16px;
   padding: 0;
-  border: 1px solid var(--ui-select-arrow-border, var(--ui-accent));
+  border: 0;
+  border-left: 1px solid var(--ui-border);
   border-radius: 0;
-  background: var(--ui-select-arrow-face);
-  color: var(--ui-select-selected-text, var(--ui-text));
+  background: transparent;
+  color: var(--ui-text);
   cursor: pointer;
   box-shadow: none;
   font: inherit;
@@ -628,28 +639,28 @@
 }
 
 .pie-product-combo-toggle {
-  border-right-width: 0;
+  border-left: 0;
 }
 
 .pie-product-combo-add {
-  border-radius: 0 var(--control-radius) var(--control-radius) 0;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .pie-product-combo-toggle:hover:not(:disabled),
 .pie-product-combo-add:hover:not(:disabled) {
-  filter: brightness(1.04);
+  background: var(--ui-control-hover-bg);
+  color: var(--ui-accent-strong);
 }
 
 .pie-product-combo-toggle:focus-visible,
 .pie-product-combo-add:focus-visible {
   outline: none;
-  box-shadow: var(--ui-focus-shadow);
+  background: var(--ui-accent-soft);
+  box-shadow: inset 0 0 0 1px var(--ui-accent);
 }
 
 .pie-product-combo-toggle:disabled,
 .pie-product-combo-add:disabled {
-  border-color: var(--ui-border);
   background: var(--ui-surface-muted);
   color: var(--ui-text-muted);
   cursor: not-allowed;
