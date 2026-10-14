@@ -62,9 +62,9 @@ class BarcodeScannerRouter {
   private rapidCharacterCount = 0
 
   private readonly minLength = 6
-  private readonly confirmAfterCharacters = 3
-  private readonly maxGapMs = 45
-  private readonly maxDurationMs = 1500
+  private readonly confirmAfterCharacters = 2
+  private readonly maxGapMs = 140
+  private readonly maxDurationMs = 3000
 
   register(target: ScannerTarget): () => void {
     this.targets.set(target.id, target)
@@ -157,7 +157,7 @@ class BarcodeScannerRouter {
         Boolean(target) &&
         barcode.length >= this.minLength &&
         duration <= this.maxDurationMs &&
-        trailingGap <= this.maxGapMs * 3 &&
+        trailingGap <= this.maxGapMs * 2 &&
         (this.scannerConfirmed ||
           this.rapidCharacterCount >= this.confirmAfterCharacters)
 
