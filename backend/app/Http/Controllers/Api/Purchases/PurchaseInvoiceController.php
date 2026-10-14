@@ -367,6 +367,7 @@ class PurchaseInvoiceController extends Controller
             'disc_after_gst_amount' => $money,
             'tax_pct' => $pct,
             'further_tax_pct' => $pct,
+            'further_tax_amount' => $money,
         ];
     }
 }
