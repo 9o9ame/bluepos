@@ -105,12 +105,13 @@ export function ProductLookupGrid({
 
   useEffect(() => {
     if (!onRequestClose) return
+    const requestClose = onRequestClose
 
     function onPointerDown(event: MouseEvent) {
       const target = event.target as Node
       if (gridRef.current?.contains(target)) return
       if (portalAnchorRef?.current?.contains(target)) return
-      onRequestClose()
+      requestClose()
     }
 
     window.addEventListener('mousedown', onPointerDown)
