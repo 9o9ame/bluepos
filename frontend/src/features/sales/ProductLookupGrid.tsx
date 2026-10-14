@@ -40,6 +40,10 @@ export function ProductLookupGrid({
   selectedUlid,
   mode = 'sale',
   onRequestClose,
+  onLoadNext,
+  onLoadPrevious,
+  loadingNext = false,
+  loadingPrevious = false,
 }: {
   rows: Product[]
   total: number
@@ -50,8 +54,15 @@ export function ProductLookupGrid({
   selectedUlid?: string | null
   mode?: 'sale' | 'purchase'
   onRequestClose?: () => void
+  onLoadNext?: () => void
+  onLoadPrevious?: () => void
+  loadingNext?: boolean
+  loadingPrevious?: boolean
 }) {
   const gridRef = useRef<HTMLDivElement | null>(null)
+  const bodyRef = useRef<HTMLDivElement | null>(null)
+  const selectedScrolledRef = useRef(false)
+  const prependSnapshotRef = useRef<{ height: number; top: number } | null>(null)
   const [portalStyle, setPortalStyle] = useState<{
     top: number
     left: number
@@ -101,6 +112,27 @@ export function ProductLookupGrid({
     window.addEventListener('mousedown', onPointerDown)
     return () => window.removeEventListener('mousedown', onPointerDown)
   }, [onRequestClose, portalAnchorRef])
+
+  useLayoutEffect(() => {
+    const body = bodyRef.current
+    const snapshot = prependSnapshotRef.current
+    if (!body || !snapshot) return
+
+    body.scrollTop = snapshot.top + (body.scrollHeight - snapshot.height)
+    prependSnapshotRef.current = null
+  }, [rows.length])
+
+  useLayoutEffect(() => {
+    if (!selectedUlid || selectedScrolledRef.current) return
+    const body = bodyRef.current
+    const selected = body?.querySelector<HTMLElement>(
+      `[data-product-ulid="${selectedUlid}"]`,
+    )
+    if (!body || !selected) return
+
+    selected.scrollIntoView({ block: 'center' })
+    selectedScrolledRef.current = true
+  }, [rows, selectedUlid])
 
   const grid = (
     <div
@@ -154,8 +186,34 @@ export function ProductLookupGrid({
         )}
       </div>
 
-      <div className="sales-pos-product-grid-body">
-        {rows.slice(0, 12).map((row) => (
+      <div
+        ref={bodyRef}
+        className="sales-pos-product-grid-body"
+        onScroll={(event) => {
+          const element = event.currentTarget
+
+          if (
+            element.scrollTop <= 28 &&
+            onLoadPrevious &&
+            !loadingPrevious
+          ) {
+            prependSnapshotRef.current = {
+              height: element.scrollHeight,
+              top: element.scrollTop,
+            }
+            onLoadPrevious()
+          }
+
+          if (
+            element.scrollHeight - element.scrollTop - element.clientHeight <= 28 &&
+            onLoadNext &&
+            !loadingNext
+          ) {
+            onLoadNext()
+          }
+        }}
+      >
+        {rows.map((row) => (
           <button
             type="button"
             className={[
@@ -163,6 +221,7 @@ export function ProductLookupGrid({
               selectedUlid === row.ulid ? 'is-selected' : '',
             ].filter(Boolean).join(' ')}
             key={row.ulid}
+            data-product-ulid={row.ulid}
             aria-selected={selectedUlid === row.ulid}
             onClick={() => onSelect(row)}
           >
@@ -208,7 +267,9 @@ export function ProductLookupGrid({
       </div>
 
       <div className="sales-pos-product-grid-foot">
-        Showing {Math.min(rows.length, 12)} of {total} Products
+        {loadingPrevious || loadingNext
+          ? `Loading… ${rows.length} of ${total} Products`
+          : `Showing ${rows.length} of ${total} Products`}
       </div>
     </div>
   )
