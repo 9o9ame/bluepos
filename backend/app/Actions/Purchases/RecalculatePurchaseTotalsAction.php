@@ -21,7 +21,15 @@ class RecalculatePurchaseTotalsAction
 
         foreach ($lines as $line) {
             $subtotal = bcadd($subtotal, bcmul((string) $line->quantity, (string) $line->unit_cost, 4), 4);
-            $discount = bcadd($discount, (string) $line->discount_amount, 4);
+            $discount = bcadd(
+                $discount,
+                bcadd(
+                    (string) $line->discount_amount,
+                    (string) ($line->disc_after_gst_amount ?? '0'),
+                    4,
+                ),
+                4,
+            );
             $tax = bcadd($tax, (string) $line->tax_amount, 4);
             $furtherTax = bcadd($furtherTax, (string) ($line->further_tax_amount ?? '0'), 4);
         }
@@ -252,7 +260,13 @@ class RecalculatePurchaseTotalsAction
         string $taxPct,
         ?string $explicitTax,
     ): string {
-        if ($mode === 'rs') {
+        if (
+            $mode === 'rs'
+            || (
+                bccomp($taxPct, '0', 8) !== 1
+                && bccomp((string) ($explicitTax ?? '0'), '0', 4) === 1
+            )
+        ) {
             $tax = bcadd($explicitTax ?? '0', '0', 4);
             if (bccomp($tax, '0', 4) === -1) {
                 throw ValidationException::withMessages([
