@@ -436,15 +436,14 @@ export function PurchasesPage() {
     queryFn: fetchWarehouses,
   })
 
-  const productLookup = useInfiniteQuery({
+  const productLookup = useQuery({
     queryKey: [
       'purchase-product-lookup',
       productLookupMode,
       productQuery,
       productBrowseAnchorUlid,
     ],
-    initialPageParam: 0,
-    queryFn: ({ pageParam }) => {
+    queryFn: () => {
       const lookupQuery =
         productLookupMode === 'search'
           ? productQuery.includes(' · ')
@@ -455,25 +454,12 @@ export function PurchasesPage() {
       return fetchProducts(
         {
           q: lookupQuery || undefined,
-          page: pageParam > 0 ? pageParam : undefined,
-          anchor_ulid:
-            pageParam === 0 && productLookupMode === 'browse' && productBrowseAnchorUlid
-              ? productBrowseAnchorUlid
-              : undefined,
-          per_page: 100,
+          lookup_all: true,
           sales_lookup: true,
         },
         { busy: 'none' },
       )
     },
-    getNextPageParam: (lastPage) =>
-      lastPage.meta.current_page < lastPage.meta.last_page
-        ? lastPage.meta.current_page + 1
-        : undefined,
-    getPreviousPageParam: (firstPage) =>
-      firstPage.meta.current_page > 1
-        ? firstPage.meta.current_page - 1
-        : undefined,
     enabled:
       mode === 'editor' &&
       !readOnly &&
@@ -481,8 +467,8 @@ export function PurchasesPage() {
       productEditRowKey !== null,
   })
 
-  const productLookupRows = productLookup.data?.pages.flatMap((page) => page.data) ?? []
-  const productLookupTotal = productLookup.data?.pages[0]?.meta.total ?? 0
+  const productLookupRows = productLookup.data?.data ?? []
+  const productLookupTotal = productLookup.data?.meta.total ?? 0
 
   const listRows = listQuery.data?.pages.flatMap((page) => page.data) ?? []
   const listTotal = listQuery.data?.pages[0]?.meta.total ?? 0
@@ -800,18 +786,6 @@ export function PurchasesPage() {
                   themed
                   portalAnchorRef={productPickerAnchorRef}
                   onRequestClose={() => setProductMenuOpen(false)}
-                  onLoadPrevious={
-                    productLookup.hasPreviousPage && !productLookup.isFetchingPreviousPage
-                      ? () => void productLookup.fetchPreviousPage()
-                      : undefined
-                  }
-                  onLoadNext={
-                    productLookup.hasNextPage && !productLookup.isFetchingNextPage
-                      ? () => void productLookup.fetchNextPage()
-                      : undefined
-                  }
-                  loadingPrevious={productLookup.isFetchingPreviousPage}
-                  loadingNext={productLookup.isFetchingNextPage}
                   onSelect={(product) => void addProduct(product)}
                 />
               ) : null}
