@@ -587,62 +587,55 @@
 
 .pie-product-combo {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 48px;
-  align-items: center;
   width: 100%;
   min-width: 0;
-  height: 28px;
+  height: 20px;
   overflow: visible;
-  border: 1px solid var(--ui-control-border);
-  border-radius: var(--control-radius);
-  background: var(--ui-control-face);
-  box-shadow: var(--ui-control-shadow);
-}
-
-.pie-product-combo:focus-within {
-  border-color: var(--ui-accent);
-  box-shadow: var(--ui-focus-shadow);
 }
 
 .pie-product-combo-input {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: 18px !important;
-  padding: 0 5px !important;
-  border: 0 !important;
-  border-radius: var(--control-radius) 0 0 var(--control-radius) !important;
-  background: transparent !important;
+  height: 20px !important;
+  padding: 0 48px 0 5px !important;
+  border: 1px solid var(--ui-control-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-control-face) !important;
   color: var(--ui-text);
-  box-shadow: none !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.pie-product-combo-input:hover:not(:disabled) {
+  border-color: var(--ui-control-hover-border, var(--ui-accent)) !important;
+  background: var(--ui-control-hover-bg, var(--ui-accent-soft)) !important;
 }
 
 .pie-product-combo-input:focus {
   outline: none;
-  box-shadow: none !important;
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
 }
 
 .pie-product-combo-actions {
-  display: grid;
-  grid-template-columns: 22px 22px;
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  z-index: 2;
+  display: flex;
   align-items: center;
-  justify-content: end;
   gap: 2px;
-  width: 48px;
-  height: 18px;
-  padding-right: 1px;
-  border-left: 1px solid var(--ui-border);
-  background: transparent;
+  transform: translateY(-50%);
+  pointer-events: auto;
 }
 
 .pie-product-combo-toggle,
 .pie-product-combo-add {
   display: grid;
   place-items: center;
-  width: 22px;
-  min-width: 22px;
-  height: 21px;
+  width: 20px;
+  min-width: 20px;
+  height: 17px;
   padding: 0;
   border: 1px solid var(--ui-select-arrow-border, var(--ui-accent));
   border-radius: var(--control-radius);
@@ -662,7 +655,7 @@
 
 .pie-product-combo-add {
   background: var(--ui-button-primary-face, var(--ui-select-arrow-face));
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .pie-product-combo-toggle:hover:not(:disabled),
