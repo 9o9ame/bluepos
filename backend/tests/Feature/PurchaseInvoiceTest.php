@@ -965,6 +965,112 @@ class PurchaseInvoiceTest extends TestCase
             );
     }
 
+    public function test_purchase_calculation_controls_persist_and_server_recompute_exact_totals(): void
+    {
+        $this->signInOwner('pur-calc-controls')->assertOk();
+        $this->configurePurchaseClearing();
+        $warehouseUlid = $this->sessionWarehouseUlid();
+        $pcs = $this->unitUlid('PCS');
+
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-CALC',
+            'name' => 'Calculation Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Calculation Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $invoice = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'calculation_method' => 'trade_after_disc',
+            'discount_apply_on' => 'mrp_ex_gst',
+            'calculation_modes' => [
+                'regular_disc' => 'pct',
+                'special_disc' => 'rs',
+                'gst' => 'pct',
+                'disc_after_gst' => 'rs',
+                'further_tax' => 'pct',
+                'advance_tax' => 'rs',
+            ],
+            'auto_calc_mrp' => false,
+            'withholding_is_pct' => true,
+            'withholding_pct' => '5',
+            'freight_amount' => '100.0000',
+            'other_discount' => '20.0000',
+            // Deliberately wrong client amount: server must recompute percentage withholding.
+            'advance_tax_amount' => '999.0000',
+        ])->assertCreated();
+
+        $invoiceUlid = $invoice->json('ulid');
+        $invoice
+            ->assertJsonPath('discount_apply_on', 'mrp_ex_gst')
+            ->assertJsonPath('calculation_modes.regular_disc', 'pct')
+            ->assertJsonPath('calculation_modes.special_disc', 'rs')
+            ->assertJsonPath('auto_calc_mrp', false)
+            ->assertJsonPath('withholding_is_pct', true)
+            ->assertJsonPath('withholding_pct', '5.00000000');
+
+        // No lines yet: (freight 100 - other discount 20) * 5% = 4 withholding.
+        $invoice->assertJsonPath('advance_tax_amount', '4.0000')
+            ->assertJsonPath('grand_total', '84.0000');
+
+        $line = $this->postJson('/api/purchases/'.$invoiceUlid.'/lines', [
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '10.000000',
+            'unit_cost' => '100.0000',
+            'mrp' => '120.0000',
+            'trade_disc_pct' => '5',
+            'regular_disc_pct' => '10',
+            'regular_disc_amount' => '999.0000',
+            'special_disc_pct' => '50',
+            'special_disc_amount' => '20.0000',
+            'tax_pct' => '10',
+            'tax_amount' => '999.0000',
+            'disc_after_gst_pct' => '99',
+            'disc_after_gst_amount' => '11.0000',
+            'further_tax_pct' => '10',
+            'further_tax_amount' => '999.0000',
+        ])->assertCreated();
+
+        // gross 1000
+        // discount base MRP ex = 1200
+        // trade 5%=50 + regular 10%=120 + special Rs20 => 190
+        // after discount=810; GST 10%=81; after GST=891
+        // after-GST discount Rs11 => 880; further tax 10%=88; line total=968.
+        $line
+            ->assertJsonPath('regular_disc_amount', '120.0000')
+            ->assertJsonPath('special_disc_amount', '20.0000')
+            ->assertJsonPath('disc_after_gst_amount', '11.0000')
+            ->assertJsonPath('discount_amount', '190.0000')
+            ->assertJsonPath('tax_amount', '81.0000')
+            ->assertJsonPath('further_tax_amount', '88.0000')
+            ->assertJsonPath('line_total', '968.0000');
+
+        $show = $this->getJson('/api/purchases/'.$invoiceUlid)->assertOk();
+        // Invoice discount summary includes discount-after-GST: 190 + 11 = 201.
+        // net lines = 1000 - 201 + 81 + 88 = 968.
+        // +100 freight -20 other discount = 1048; withholding 5%=52.4; grand=1100.4.
+        $show
+            ->assertJsonPath('discount_apply_on', 'mrp_ex_gst')
+            ->assertJsonPath('discount_amount', '201.0000')
+            ->assertJsonPath('tax_amount', '81.0000')
+            ->assertJsonPath('further_tax_amount', '88.0000')
+            ->assertJsonPath('advance_tax_amount', '52.4000')
+            ->assertJsonPath('grand_total', '1100.4000')
+            ->assertJsonPath('lines.0.disc_after_gst_pct', '99.00000000')
+            ->assertJsonPath('lines.0.disc_after_gst_amount', '11.0000');
+
+        $posted = $this->postJson('/api/purchases/'.$invoiceUlid.'/post')->assertOk();
+        $posted
+            ->assertJsonPath('status', 'posted')
+            ->assertJsonPath('advance_tax_amount', '52.4000')
+            ->assertJsonPath('grand_total', '1100.4000');
+    }
+
     private function configurePurchaseClearing(): void
     {
         $tenantContext = app(TenantContext::class);
