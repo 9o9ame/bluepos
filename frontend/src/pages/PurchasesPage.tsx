@@ -569,6 +569,26 @@ export function PurchasesPage() {
 
   function setDualMode(key: string, mode: DualMode) {
     const nextModes = { ...dualModes, [key]: mode }
+
+    if (key === 'gst' && dualModes.gst !== mode) {
+      const currentSettings = calcSettings
+      const nextSettings = { ...calcSettings, dualModes: nextModes }
+
+      setLines((prev) =>
+        prev.map((line) => {
+          const current = computeLine(line, currentSettings)
+          const withStableSource =
+            mode === 'rs'
+              ? { ...line, tax_amount: current.tax_amount }
+              : { ...line, tax_pct: current.tax_pct }
+
+          return applyCalcToLine(withStableSource, nextSettings)
+        }),
+      )
+      setDualModes(nextModes)
+      return
+    }
+
     setDualModes(nextModes)
     recalculateAllLines({ ...calcSettings, dualModes: nextModes })
   }
