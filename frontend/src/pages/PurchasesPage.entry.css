@@ -592,7 +592,7 @@
   align-items: center;
   width: 100%;
   min-width: 0;
-  height: 20px;
+  height: 28px;
   overflow: visible;
   border: 1px solid var(--ui-control-border);
   border-radius: var(--control-radius);
@@ -642,7 +642,7 @@
   place-items: center;
   width: 22px;
   min-width: 22px;
-  height: 17px;
+  height: 21px;
   padding: 0;
   border: 1px solid var(--ui-select-arrow-border, var(--ui-accent));
   border-radius: var(--control-radius);
