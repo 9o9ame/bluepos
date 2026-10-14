@@ -37,6 +37,23 @@
   max-width: calc(100vw - 32px);
 }
 
+.sales-pos-product-results-grid.is-purchase.is-themed {
+  transform-origin: top center;
+  animation: purchase-product-lookup-open var(--ui-transition-normal);
+}
+
+@keyframes purchase-product-lookup-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scaleY(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
 .sales-pos-product-results-grid.is-purchase .sales-pos-product-grid-head,
 .sales-pos-product-results-grid.is-purchase .sales-pos-product-grid-row {
   grid-template-columns:
@@ -224,6 +241,10 @@
   border-top-color: var(--ui-border);
   background: var(--ui-surface-subtle);
   color: var(--ui-text-muted);
+}
+
+html[data-animations='off'] .sales-pos-product-results-grid.is-themed {
+  animation: none !important;
 }
 
 html[data-animations='off'] .sales-pos-product-results-grid.is-themed,
