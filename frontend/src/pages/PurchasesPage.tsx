@@ -1937,6 +1937,7 @@ export function PurchasesPage() {
                   disabled={!editable}
                   placeholder="Select supplier..."
                   searchPlaceholder="Search supplier by code, name, address or mobile..."
+                  searchInTrigger
                   menuMinWidth={820}
                   maxMenuHeight={320}
                   menuColumns={[
@@ -1947,9 +1948,7 @@ export function PurchasesPage() {
                   ]}
                   options={suppliers.map((supplier) => ({
                     value: supplier.ulid,
-                    label: supplier.code
-                      ? `${supplier.code} — ${supplier.name}`
-                      : supplier.name,
+                    label: supplier.name,
                     title: supplier.name,
                     columns: [
                       supplier.code || '—',
