@@ -1203,10 +1203,18 @@ export function PurchasesPage() {
     setShellOtherDiscount(invoice.other_discount ?? '0.0000')
     setShellTradeOffer(invoice.trade_offer ?? '0.0000')
     const nextDiscountApplyOn = invoice.discount_apply_on ?? 'trade'
-    const nextModes = {
-      ...DEFAULT_DUAL_MODES,
-      ...(invoice.calculation_modes ?? {}),
-    }
+    const nextModes = invoice.calculation_modes
+      ? {
+          ...DEFAULT_DUAL_MODES,
+          ...invoice.calculation_modes,
+        }
+      : {
+          ...DEFAULT_DUAL_MODES,
+          regular_disc: 'pct' as DualMode,
+          special_disc: 'pct' as DualMode,
+          gst: 'pct' as DualMode,
+          further_tax: 'pct' as DualMode,
+        }
     const nextWithholdingIsPct = Boolean(invoice.withholding_is_pct)
     setDiscountApplyOn(nextDiscountApplyOn)
     setDualModes(nextModes)
