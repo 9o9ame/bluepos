@@ -38,6 +38,51 @@
   background: var(--ui-control-hover-bg, var(--ui-accent-soft));
 }
 
+.ui-select-combobox-trigger {
+  padding-left: 0;
+}
+
+.ui-select-trigger-search {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0 0 0 7px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-overflow: ellipsis;
+}
+
+.ui-select-trigger-search::placeholder {
+  color: var(--ui-text-muted);
+}
+
+.ui-select-trigger-search:disabled {
+  color: var(--ui-text-muted);
+  cursor: not-allowed;
+}
+
+.ui-select-combobox-toggle {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 100%;
+  min-width: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ui-select-combobox-toggle:disabled {
+  cursor: not-allowed;
+}
+
 .ui-select.is-open .ui-select-trigger,
 .ui-select-trigger:focus-visible {
   outline: none;
@@ -222,6 +267,7 @@
 }
 
 html[data-animations='off'] .ui-select-trigger,
+html[data-animations='off'] .ui-select-trigger-search,
 html[data-animations='off'] .ui-select-arrow,
 html[data-animations='off'] .ui-select-menu,
 html[data-animations='off'] .ui-select-option {
