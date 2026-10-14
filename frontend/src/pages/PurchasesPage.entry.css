@@ -588,9 +588,21 @@
 .pie-product-combo {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 46px;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  align-items: center;
   width: 100%;
   min-width: 0;
+  height: 20px;
+  overflow: visible;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  box-shadow: var(--ui-control-shadow);
+}
+
+.pie-product-combo:focus-within {
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
 }
 
 .pie-product-combo-input {
@@ -599,70 +611,77 @@
   min-width: 0;
   height: 18px !important;
   padding: 0 5px !important;
-  border: 1px solid var(--ui-control-border) !important;
-  border-right: 0 !important;
+  border: 0 !important;
   border-radius: var(--control-radius) 0 0 var(--control-radius) !important;
-  background: var(--ui-control-face);
+  background: transparent !important;
   color: var(--ui-text);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ui-surface) 70%, transparent);
+  box-shadow: none !important;
+}
+
+.pie-product-combo-input:focus {
+  outline: none;
+  box-shadow: none !important;
 }
 
 .pie-product-combo-actions {
   display: grid;
-  grid-template-columns: 23px 23px;
-  min-width: 46px;
+  grid-template-columns: 22px 22px;
+  align-items: center;
+  justify-content: end;
+  gap: 2px;
+  width: 48px;
   height: 18px;
-  overflow: hidden;
-  border: 1px solid var(--ui-control-border);
-  border-left: 0;
-  border-radius: 0 var(--control-radius) var(--control-radius) 0;
-  background: var(--ui-control-face);
+  padding-right: 1px;
+  border-left: 1px solid var(--ui-border);
+  background: transparent;
 }
 
 .pie-product-combo-toggle,
 .pie-product-combo-add {
   display: grid;
   place-items: center;
-  min-width: 23px;
-  height: 16px;
+  width: 22px;
+  min-width: 22px;
+  height: 17px;
   padding: 0;
-  border: 0;
-  border-left: 1px solid var(--ui-border);
-  border-radius: 0;
-  background: transparent;
-  color: var(--ui-text);
+  border: 1px solid var(--ui-select-arrow-border, var(--ui-accent));
+  border-radius: var(--control-radius);
+  color: var(--ui-select-selected-text, #fff);
   cursor: pointer;
-  box-shadow: none;
   font: inherit;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 28%, transparent),
+    var(--ui-control-shadow);
 }
 
 .pie-product-combo-toggle {
-  border-left: 0;
+  background: var(--ui-select-arrow-face);
 }
 
 .pie-product-combo-add {
+  background: var(--ui-button-primary-face, var(--ui-select-arrow-face));
   font-size: 14px;
 }
 
 .pie-product-combo-toggle:hover:not(:disabled),
 .pie-product-combo-add:hover:not(:disabled) {
-  background: var(--ui-control-hover-bg);
-  color: var(--ui-accent-strong);
+  filter: brightness(1.06);
 }
 
 .pie-product-combo-toggle:focus-visible,
 .pie-product-combo-add:focus-visible {
   outline: none;
-  background: var(--ui-accent-soft);
-  box-shadow: inset 0 0 0 1px var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
 }
 
 .pie-product-combo-toggle:disabled,
 .pie-product-combo-add:disabled {
+  border-color: var(--ui-border);
   background: var(--ui-surface-muted);
   color: var(--ui-text-muted);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
