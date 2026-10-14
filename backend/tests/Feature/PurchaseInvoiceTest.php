@@ -1040,35 +1040,36 @@ class PurchaseInvoiceTest extends TestCase
         // discount base MRP ex = 1200
         // trade 5%=50 + regular 10%=120 + special Rs20 => 190
         // after discount=810; GST 10%=81; after GST=891
-        // after-GST discount Rs11 => 880; further tax 10%=88; line total=968.
+        // after-GST discount Rs11; further tax remains on taxable 810 => 81.
+        // line total = 810 + 81 - 11 + 81 = 961.
         $line
             ->assertJsonPath('regular_disc_amount', '120.0000')
             ->assertJsonPath('special_disc_amount', '20.0000')
             ->assertJsonPath('disc_after_gst_amount', '11.0000')
             ->assertJsonPath('discount_amount', '190.0000')
             ->assertJsonPath('tax_amount', '81.0000')
-            ->assertJsonPath('further_tax_amount', '88.0000')
-            ->assertJsonPath('line_total', '968.0000');
+            ->assertJsonPath('further_tax_amount', '81.0000')
+            ->assertJsonPath('line_total', '961.0000');
 
         $show = $this->getJson('/api/purchases/'.$invoiceUlid)->assertOk();
         // Invoice discount summary includes discount-after-GST: 190 + 11 = 201.
-        // net lines = 1000 - 201 + 81 + 88 = 968.
-        // +100 freight -20 other discount = 1048; withholding 5%=52.4; grand=1100.4.
+        // net lines = 1000 - 201 + 81 + 81 = 961.
+        // +100 freight -20 other discount = 1041; withholding 5%=52.05; grand=1093.05.
         $show
             ->assertJsonPath('discount_apply_on', 'mrp_ex_gst')
             ->assertJsonPath('discount_amount', '201.0000')
             ->assertJsonPath('tax_amount', '81.0000')
-            ->assertJsonPath('further_tax_amount', '88.0000')
-            ->assertJsonPath('advance_tax_amount', '52.4000')
-            ->assertJsonPath('grand_total', '1100.4000')
+            ->assertJsonPath('further_tax_amount', '81.0000')
+            ->assertJsonPath('advance_tax_amount', '52.0500')
+            ->assertJsonPath('grand_total', '1093.0500')
             ->assertJsonPath('lines.0.disc_after_gst_pct', '99.00000000')
             ->assertJsonPath('lines.0.disc_after_gst_amount', '11.0000');
 
         $posted = $this->postJson('/api/purchases/'.$invoiceUlid.'/post')->assertOk();
         $posted
             ->assertJsonPath('status', 'posted')
-            ->assertJsonPath('advance_tax_amount', '52.4000')
-            ->assertJsonPath('grand_total', '1100.4000');
+            ->assertJsonPath('advance_tax_amount', '52.0500')
+            ->assertJsonPath('grand_total', '1093.0500');
     }
 
     private function configurePurchaseClearing(): void
