@@ -129,14 +129,14 @@ class UpsertPurchaseInvoiceLineAction
                 (string) ($invoice->discount_apply_on ?? 'trade'),
                 (string) ($data['regular_disc_amount'] ?? '0'),
                 (string) ($data['special_disc_amount'] ?? '0'),
-                (string) ($modes['regular_disc'] ?? 'rs'),
-                (string) ($modes['special_disc'] ?? 'rs'),
-                (string) ($modes['gst'] ?? 'rs'),
+                (string) ($modes['regular_disc'] ?? 'pct'),
+                (string) ($modes['special_disc'] ?? 'pct'),
+                (string) ($modes['gst'] ?? 'pct'),
                 (string) ($data['disc_after_gst_pct'] ?? '0'),
                 (string) ($data['disc_after_gst_amount'] ?? '0'),
                 (string) ($modes['disc_after_gst'] ?? 'rs'),
                 (string) ($data['further_tax_amount'] ?? '0'),
-                (string) ($modes['further_tax'] ?? 'rs'),
+                (string) ($modes['further_tax'] ?? 'pct'),
             );
 
             $batch = $data['batch_number'] ?? null;
