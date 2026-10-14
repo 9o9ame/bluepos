@@ -1937,11 +1937,6 @@ export function PurchasesPage() {
   const displayGrand = liveTotals.grand_total
   const balancePayable = status === 'posted' ? serverBalancePayable : displayGrand
 
-  useEffect(() => {
-    if (supplierMenuOpen) return
-    setSupplierQuery(selectedSupplier?.name ?? '')
-  }, [selectedSupplier?.name, supplierMenuOpen])
-
   async function removeSelectedLine() {
     if (!selectedLine) return
     await removeLine(selectedLine)
@@ -1965,7 +1960,7 @@ export function PurchasesPage() {
                 >
                   <input
                     className="pie-supplier-combo-input"
-                    value={supplierQuery}
+                    value={supplierMenuOpen ? supplierQuery : (selectedSupplier?.name ?? supplierQuery)}
                     disabled={!editable}
                     placeholder="Select supplier..."
                     aria-label="Search supplier"
@@ -2019,7 +2014,6 @@ export function PurchasesPage() {
                       portalAnchorRef={supplierPickerAnchorRef}
                       onRequestClose={() => {
                         setSupplierMenuOpen(false)
-                        setSupplierQuery(selectedSupplier?.name ?? '')
                       }}
                       onSelect={(supplier) => {
                         setSupplierUlid(supplier.ulid)
