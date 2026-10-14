@@ -30,12 +30,14 @@ function snapshotTarget(target: EventTarget | null): InputSnapshot {
 
 function restoreSnapshot(snapshot: InputSnapshot) {
   if (!snapshot) return
+
   const { element, value, selectionStart, selectionEnd } = snapshot
   const prototype =
     element instanceof HTMLTextAreaElement
       ? HTMLTextAreaElement.prototype
       : HTMLInputElement.prototype
   const setter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set
+
   setter?.call(element, value)
   element.dispatchEvent(new Event('input', { bubbles: true }))
 
@@ -56,10 +58,13 @@ class BarcodeScannerRouter {
   private snapshot: InputSnapshot = null
   private activeTargetId: string | null = null
   private listening = false
+  private scannerConfirmed = false
+  private rapidCharacterCount = 0
 
   private readonly minLength = 6
+  private readonly confirmAfterCharacters = 3
   private readonly maxGapMs = 45
-  private readonly maxDurationMs = 500
+  private readonly maxDurationMs = 1500
 
   register(target: ScannerTarget): () => void {
     this.targets.set(target.id, target)
@@ -110,6 +115,25 @@ class BarcodeScannerRouter {
     this.lastAt = 0
     this.snapshot = null
     this.activeTargetId = null
+    this.scannerConfirmed = false
+    this.rapidCharacterCount = 0
+  }
+
+  private consume(event: KeyboardEvent) {
+    event.preventDefault()
+    event.stopPropagation()
+    event.stopImmediatePropagation()
+  }
+
+  private confirmScanner(event: KeyboardEvent) {
+    if (this.scannerConfirmed) return
+    this.scannerConfirmed = true
+
+    // The first couple of characters may already have reached the focused
+    // controlled input before the burst was distinguishable from human typing.
+    // Restore that field once, then suppress every remaining scanner key.
+    restoreSnapshot(this.snapshot)
+    this.consume(event)
   }
 
   private readonly onKeyDown = (event: KeyboardEvent) => {
@@ -133,28 +157,41 @@ class BarcodeScannerRouter {
         Boolean(target) &&
         barcode.length >= this.minLength &&
         duration <= this.maxDurationMs &&
-        trailingGap <= this.maxGapMs * 2
+        trailingGap <= this.maxGapMs * 3 &&
+        (this.scannerConfirmed ||
+          this.rapidCharacterCount >= this.confirmAfterCharacters)
 
       if (!isScanner || !target) {
         this.reset()
         return
       }
 
-      event.preventDefault()
-      event.stopPropagation()
-      restoreSnapshot(this.snapshot)
+      this.consume(event)
+      if (!this.scannerConfirmed) restoreSnapshot(this.snapshot)
+
+      const completedBarcode = barcode
       this.reset()
-      target.onScan(barcode)
+      target.onScan(completedBarcode)
       return
     }
 
     if (event.key.length !== 1) {
-      if (event.key !== 'Shift') this.reset()
+      if (this.scannerConfirmed) {
+        this.consume(event)
+      } else if (event.key !== 'Shift') {
+        this.reset()
+      }
       return
     }
 
-    if (this.lastAt > 0 && now - this.lastAt > this.maxGapMs) {
-      this.reset()
+    const gap = this.lastAt > 0 ? now - this.lastAt : 0
+
+    if (this.lastAt > 0 && gap > this.maxGapMs) {
+      if (this.scannerConfirmed) {
+        this.reset()
+      } else {
+        this.reset()
+      }
     }
 
     if (this.buffer.length === 0) {
@@ -164,10 +201,27 @@ class BarcodeScannerRouter {
       this.startedAt = now
       this.snapshot = snapshotTarget(event.target)
       this.activeTargetId = target.id
+      this.rapidCharacterCount = 1
+    } else if (gap <= this.maxGapMs) {
+      this.rapidCharacterCount += 1
+    } else {
+      this.rapidCharacterCount = 1
     }
 
     this.buffer += event.key
     this.lastAt = now
+
+    if (
+      !this.scannerConfirmed &&
+      this.rapidCharacterCount >= this.confirmAfterCharacters
+    ) {
+      this.confirmScanner(event)
+      return
+    }
+
+    if (this.scannerConfirmed) {
+      this.consume(event)
+    }
   }
 }
 
