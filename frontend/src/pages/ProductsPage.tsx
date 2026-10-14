@@ -147,7 +147,15 @@ function PdfSelect({
   )
 }
 
-export function ProductsPage() {
+export function ProductsPage({
+  embedded = false,
+  onClose,
+  onSaved,
+}: {
+  embedded?: boolean
+  onClose?: () => void
+  onSaved?: (product: Product) => void
+} = {}) {
   const queryClient = useQueryClient()
   const { closeActiveTab, openModule } = useWorkspace()
   const { session } = useAuth()
@@ -166,7 +174,7 @@ export function ProductsPage() {
   const [q, setQ] = useState('')
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [listCategoryUlid, setListCategoryUlid] = useState('')
-  const [creating, setCreating] = useState(false)
+  const [creating, setCreating] = useState(embedded)
   const [section, setSection] = useState<'definition' | 'opening' | 'related'>('definition')
   const [error, setError] = useState<string | null>(null)
   const [quickEditor, setQuickEditor] = useState<QuickEditorKind | null>(null)
@@ -777,6 +785,7 @@ export function ProductsPage() {
       queryClient.setQueryData(['product', saved.ulid], saved)
       await queryClient.invalidateQueries({ queryKey: ['products'] })
       await queryClient.invalidateQueries({ queryKey: ['product', saved.ulid] })
+      onSaved?.(await fetchProduct(saved.ulid))
     },
   })
 
@@ -811,7 +820,7 @@ export function ProductsPage() {
         void productQuery.refetch()
       }
     },
-  })
+  }, !embedded)
 
   const gridRows = useMemo(() => products, [products])
   const total = productsQuery.data?.pages[0]?.meta.total ?? products.length
@@ -872,7 +881,15 @@ export function ProductsPage() {
 
   return (
     <>
-      <form id="inline-product-form" className="product-def product-reference-screen" onSubmit={onSubmit}>
+      <form
+        id="inline-product-form"
+        className={[
+          'product-def',
+          'product-reference-screen',
+          embedded ? 'is-embedded' : '',
+        ].filter(Boolean).join(' ')}
+        onSubmit={onSubmit}
+      >
         <aside className="product-def-rail" aria-label="Product actions">
           <div
             className={`product-def-photo product-def-image-loader${productImagePreview ? ' has-image' : ''}`}
@@ -1101,7 +1118,11 @@ export function ProductsPage() {
             </span>
           </button>
 
-          <button type="button" className="product-def-cmd is-close" onClick={closeActiveTab}>
+          <button
+            type="button"
+            className="product-def-cmd is-close"
+            onClick={embedded ? onClose : closeActiveTab}
+          >
             <span className="product-def-cmd-icon is-red-circle"><X size={15} strokeWidth={3.2} /></span>
             <span className="product-def-cmd-text">
               <span className="product-def-cmd-label">Close</span>
