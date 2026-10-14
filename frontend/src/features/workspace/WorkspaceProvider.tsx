@@ -186,9 +186,16 @@ export function useWorkspace(): WorkspaceContextValue {
   return value
 }
 
-export function useWorkspaceHandlers(handlers: WorkspaceHandlers): void {
+export function useWorkspaceHandlers(
+  handlers: WorkspaceHandlers,
+  enabled = true,
+): void {
   const { registerHandlers } = useWorkspace()
   const save = handlers.save
   const refresh = handlers.refresh
-  useEffect(() => registerHandlers({ save, refresh }), [registerHandlers, save, refresh])
+
+  useEffect(() => {
+    if (!enabled) return
+    return registerHandlers({ save, refresh })
+  }, [enabled, registerHandlers, save, refresh])
 }
