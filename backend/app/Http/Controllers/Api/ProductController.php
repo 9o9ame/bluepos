@@ -73,6 +73,23 @@ class ProductController extends Controller
                 ->value('total');
         }
 
+        if ($request->boolean('lookup_all')) {
+            $items = $query->get();
+
+            return [
+                'data' => ProductResource::collection($items),
+                'meta' => [
+                    'current_page' => 1,
+                    'per_page' => $items->count(),
+                    'total' => $items->count(),
+                    'last_page' => 1,
+                    'stock_total' => $stockTotal,
+                    'stock_value_total' => $stockValueTotal,
+                    'retail_stock_value_total' => $retailStockValueTotal,
+                ],
+            ];
+        }
+
         $pageNumber = $request->integer('page', 0);
 
         if ($pageNumber < 1 && $request->filled('anchor_ulid') && ! $request->filled('q')) {
