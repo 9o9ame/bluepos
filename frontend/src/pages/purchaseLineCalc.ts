@@ -287,7 +287,7 @@ export function sumHeaderCharges(input: {
 }) {
   const calcs = input.lines.map((line) => computeLine(line, input.settings))
   const subtotal = calcs.reduce((s, c) => s + c.tradeGross, 0)
-  const discount = calcs.reduce((s, c) => s + c.discountAmount, 0)
+  const discount = calcs.reduce((s, c) => s + c.discountAmount + c.discAfterGstRs, 0)
   const tax = calcs.reduce((s, c) => s + c.taxAmount, 0)
   const further = calcs.reduce((s, c) => s + c.furtherTaxAmount, 0)
   const netLines = subtotal - discount + tax + further
