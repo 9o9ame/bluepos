@@ -414,18 +414,6 @@ export function UiSelect({
                 zIndex: menuZIndex,
               }}
             >
-              {menuColumns?.length ? (
-                <div
-                  className="ui-select-columns-header"
-                  style={{ gridTemplateColumns: columnTemplate }}
-                  aria-hidden
-                >
-                  {menuColumns.map((column, index) => (
-                    <span key={`${column.header}-${index}`}>{column.header}</span>
-                  ))}
-                </div>
-              ) : null}
-
               {searchable ? (
                 <div className="ui-select-search-wrap">
                   <input
@@ -456,6 +444,18 @@ export function UiSelect({
                       }
                     }}
                   />
+                </div>
+              ) : null}
+
+              {menuColumns?.length ? (
+                <div
+                  className="ui-select-columns-header"
+                  style={{ gridTemplateColumns: columnTemplate }}
+                  aria-hidden
+                >
+                  {menuColumns.map((column, index) => (
+                    <span key={`${column.header}-${index}`}>{column.header}</span>
+                  ))}
                 </div>
               ) : null}
 
