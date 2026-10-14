@@ -1,6 +1,6 @@
 # BluePOS Performance & Local Data Plan
 
-> Status: Planned / foundation not yet implemented  
+> Status: In progress / shared local-data foundation started  
 > Current owning branch: `feature/daily-entries`  
 > Current implementation focus: Daily Entries → Purchase Invoice
 
@@ -500,23 +500,26 @@ For future offline transactions, separate focused tests will be required for ide
 
 ### Planned
 
-- [ ] shared IndexedDB/local-data foundation
-- [ ] tenant/branch/warehouse cache namespace
-- [ ] shared Product repository/cache
-- [ ] local Product lookup
-- [ ] Product lookup virtualization/windowing if required
-- [ ] background Product refresh
-- [ ] shared Supplier repository/cache
-- [ ] Purchase Invoice migration to shared Product cache
-- [ ] Purchase Invoice migration to shared Supplier cache
+- [x] shared IndexedDB/local-data foundation
+- [x] tenant/branch/warehouse cache namespace
+- [x] shared Product repository/cache
+- [x] local Product lookup
+- [x] Product lookup virtualization/windowing
+- [x] basic background Product refresh with freshness window
+- [x] shared Supplier repository/cache
+- [x] Purchase Invoice migration to shared Product cache
+- [x] Purchase Invoice migration to shared Supplier cache
+- [ ] focused validation / typecheck / build
 - [ ] performance measurements with large catalogue
+- [ ] incremental/delta server refresh (later scalable phase)
 
 ### Temporary current behavior
 
 - [x] Purchase Invoice can request complete Product catalogue using `lookup_all=true`
 - [x] Purchase Product search behavior exists
 - [x] selected Product can reopen/highlight in the lookup UI
-- [ ] replace repeated full-catalogue server lookup with shared IndexedDB repository
+- [x] replace repeated dropdown-time full-catalogue lookup with shared IndexedDB repository
+- [ ] replace initial full-catalogue cache refresh with incremental/delta sync when backend contract is designed
 
 ### Deferred
 
