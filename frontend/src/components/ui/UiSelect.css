@@ -119,6 +119,38 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+.ui-select-menu.is-reveal-motion.is-down {
+  animation-name: ui-select-menu-reveal-down;
+}
+
+.ui-select-menu.is-reveal-motion.is-up {
+  animation-name: ui-select-menu-reveal-up;
+}
+
+@keyframes ui-select-menu-reveal-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scaleY(.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes ui-select-menu-reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scaleY(.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
 .ui-select-menu-inner {
   max-height: inherit;
   overflow: auto;
