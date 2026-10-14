@@ -126,7 +126,7 @@ export function ProductLookupGrid({
     prependSnapshotRef.current = null
   }, [rows.length])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     selectedScrolledRef.current = false
   }, [selectedUlid])
 
