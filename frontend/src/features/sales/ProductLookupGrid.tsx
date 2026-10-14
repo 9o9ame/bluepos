@@ -18,6 +18,9 @@ function productBaseRate(product: Product): string {
   )?.amount ?? '—'
 }
 
+const PRODUCT_LOOKUP_ROW_HEIGHT = 24
+const PRODUCT_LOOKUP_OVERSCAN = 8
+
 function productLookupDescription(product: Product): string {
   const barcode =
     product.primary_barcode ??
@@ -63,6 +66,7 @@ export function ProductLookupGrid({
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const selectedScrolledRef = useRef(false)
   const prependSnapshotRef = useRef<{ height: number; top: number } | null>(null)
+  const [scrollTop, setScrollTop] = useState(0)
   const [portalStyle, setPortalStyle] = useState<{
     top: number
     left: number
@@ -122,17 +126,36 @@ export function ProductLookupGrid({
     prependSnapshotRef.current = null
   }, [rows.length])
 
+  useEffect(() => {
+    selectedScrolledRef.current = false
+  }, [selectedUlid])
+
   useLayoutEffect(() => {
     if (!selectedUlid || selectedScrolledRef.current) return
     const body = bodyRef.current
-    const selected = body?.querySelector<HTMLElement>(
-      `[data-product-ulid="${selectedUlid}"]`,
-    )
-    if (!body || !selected) return
+    if (!body) return
 
-    selected.scrollIntoView({ block: 'center' })
+    const selectedIndex = rows.findIndex((row) => row.ulid === selectedUlid)
+    if (selectedIndex < 0) return
+
+    const nextTop = Math.max(
+      0,
+      selectedIndex * PRODUCT_LOOKUP_ROW_HEIGHT -
+        Math.max(0, body.clientHeight - PRODUCT_LOOKUP_ROW_HEIGHT) / 2,
+    )
+    body.scrollTop = nextTop
+    setScrollTop(nextTop)
     selectedScrolledRef.current = true
   }, [rows, selectedUlid])
+
+  const visibleStart = Math.max(
+    0,
+    Math.floor(scrollTop / PRODUCT_LOOKUP_ROW_HEIGHT) - PRODUCT_LOOKUP_OVERSCAN,
+  )
+  const visibleCount =
+    Math.ceil(250 / PRODUCT_LOOKUP_ROW_HEIGHT) + PRODUCT_LOOKUP_OVERSCAN * 2
+  const visibleEnd = Math.min(rows.length, visibleStart + visibleCount)
+  const visibleRows = rows.slice(visibleStart, visibleEnd)
 
   const grid = (
     <div
@@ -191,6 +214,7 @@ export function ProductLookupGrid({
         className="sales-pos-product-grid-body"
         onScroll={(event) => {
           const element = event.currentTarget
+          setScrollTop(element.scrollTop)
 
           if (
             element.scrollTop <= 28 &&
@@ -213,7 +237,15 @@ export function ProductLookupGrid({
           }
         }}
       >
-        {rows.map((row) => (
+        <div
+          style={{
+            position: 'relative',
+            height: rows.length * PRODUCT_LOOKUP_ROW_HEIGHT,
+          }}
+        >
+        {visibleRows.map((row, visibleIndex) => {
+          const rowIndex = visibleStart + visibleIndex
+          return (
           <button
             type="button"
             className={[
@@ -223,6 +255,13 @@ export function ProductLookupGrid({
             key={row.ulid}
             data-product-ulid={row.ulid}
             aria-selected={selectedUlid === row.ulid}
+            style={{
+              position: 'absolute',
+              top: rowIndex * PRODUCT_LOOKUP_ROW_HEIGHT,
+              left: 0,
+              right: 0,
+              height: PRODUCT_LOOKUP_ROW_HEIGHT,
+            }}
             onClick={() => onSelect(row)}
           >
             {mode === 'purchase' ? (
@@ -263,7 +302,9 @@ export function ProductLookupGrid({
               </>
             )}
           </button>
-        ))}
+          )
+        })}
+        </div>
       </div>
 
       <div className="sales-pos-product-grid-foot">
