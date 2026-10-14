@@ -74,7 +74,7 @@
 }
 
 .product-reference-screen.is-embedded .product-def-grid .pos-grid-wrap {
-  overflow: hidden;
+  overflow: auto;
   border: 1px solid var(--ui-border);
   border-radius: var(--panel-radius);
   background: var(--ui-surface);
