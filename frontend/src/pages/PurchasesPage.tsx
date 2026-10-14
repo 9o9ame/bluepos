@@ -44,6 +44,7 @@ import {
 } from '../features/gridLayout/columnCatalog'
 import { useColumnLayout } from '../features/gridLayout/useColumnLayout'
 import { useLocalProducts, useLocalSuppliers } from '../features/catalog/useLocalCatalog'
+import { useBarcodeScanner } from '../features/scanner/useBarcodeScanner'
 import { refreshSuppliers, upsertCachedProduct } from '../data/catalogCache'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
@@ -1686,7 +1687,11 @@ export function PurchasesPage() {
     }
   }
 
-  async function addProduct(product: Product, replaceRowKey?: string) {
+  async function addProduct(
+    product: Product,
+    replaceRowKey?: string,
+    lookupQueryOverride?: string,
+  ) {
     const existingLine = replaceRowKey
       ? lines.find((line) => line.key === replaceRowKey) ?? null
       : null
@@ -1716,7 +1721,7 @@ export function PurchasesPage() {
       return
     }
 
-    const unit = preferPcsUnit(product, productQuery)
+    const unit = preferPcsUnit(product, lookupQueryOverride ?? productQuery)
     if (!unit.unit_ulid) {
       setError('Selected product has no base unit.')
       return
@@ -1803,6 +1808,48 @@ export function PurchasesPage() {
       focusFirstEditableInRow(key)
     }
   }
+
+  useBarcodeScanner({
+    enabled:
+      mode === 'editor' &&
+      !readOnly &&
+      (invoiceUlid ? canEdit : canCreate) &&
+      !productModalOpen &&
+      !supplierModalOpen &&
+      !paymentModalOpen &&
+      !customizationOpen,
+    ignoreTarget: (target) => target === productSearchRef.current,
+    onScan: (rawBarcode) => {
+      const barcode = rawBarcode.trim()
+      if (!barcode) return
+
+      const catalogue = productLookup.data ?? []
+      const exactMatches = catalogue.filter((product) => {
+        if (!product.is_active || product.status !== 'active') return false
+        if (product.primary_barcode === barcode) return true
+        return Boolean(
+          product.barcodes?.some(
+            (row) => row.is_active && row.barcode === barcode,
+          ),
+        )
+      })
+
+      setProductEditRowKey('new')
+      setProductLookupMode('search')
+      setProductQuery(barcode)
+      setProductMenuOpen(true)
+
+      if (exactMatches.length === 1) {
+        void addProduct(exactMatches[0], undefined, barcode)
+        return
+      }
+
+      requestAnimationFrame(() => {
+        productSearchRef.current?.focus()
+        productSearchRef.current?.select()
+      })
+    },
+  })
 
   function openPurchaseReturn() {
     if (!invoiceUlid || status !== 'posted') return
