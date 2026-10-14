@@ -1,0 +1,74 @@
+.product-modal-body {
+  overflow: visible;
+}
+
+.product-modal-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ui-gap-sm, 8px);
+  min-width: 0;
+}
+
+.product-modal-field {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--ui-gap-sm, 8px);
+  min-width: 0;
+}
+
+.product-modal-field.is-wide,
+.product-modal-error {
+  grid-column: 1 / -1;
+}
+
+.product-modal-field > span {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-sm, 11px);
+  font-weight: var(--ui-weight-strong, 700);
+  white-space: nowrap;
+}
+
+.product-modal-field > input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--ui-control-h-md, 24px);
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+}
+
+.product-modal-field > input:focus-visible {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.product-modal-field > input:disabled {
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+}
+
+.product-modal-error {
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 45%, var(--ui-border));
+  border-radius: var(--control-radius);
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
+  font-size: var(--ui-font-sm, 11px);
+}
+
+@media (max-width: 760px) {
+  .product-modal-form {
+    grid-template-columns: 1fr;
+  }
+
+  .product-modal-field.is-wide,
+  .product-modal-error {
+    grid-column: auto;
+  }
+}
