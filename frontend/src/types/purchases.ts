@@ -176,6 +176,7 @@ export type PurchaseLinePayload = {
   disc_after_gst_amount?: string
   tax_pct?: string
   further_tax_pct?: string
+  further_tax_amount?: string
 }
 
 
