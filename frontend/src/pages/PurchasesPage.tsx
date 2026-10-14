@@ -435,15 +435,20 @@ export function PurchasesPage() {
 
   const productLookup = useQuery({
     queryKey: ['purchase-product-lookup', productQuery],
-    queryFn: () =>
-      fetchProducts(
+    queryFn: () => {
+      const lookupQuery = productQuery.includes(' · ')
+        ? productQuery.split(' · ').slice(1).join(' · ')
+        : productQuery
+
+      return fetchProducts(
         {
-          q: productQuery || undefined,
+          q: lookupQuery || undefined,
           per_page: 20,
           sales_lookup: true,
         },
         { busy: 'none' },
-      ),
+      )
+    },
     enabled:
       mode === 'editor' &&
       !readOnly &&
