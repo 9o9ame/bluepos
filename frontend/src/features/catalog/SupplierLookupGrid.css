@@ -1,0 +1,111 @@
+.supplier-lookup-grid {
+  overflow: hidden;
+  max-width: calc(100vw - 16px);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-select-menu-bg, var(--ui-surface));
+  color: var(--ui-text);
+  box-shadow: var(--ui-card-shadow);
+  font-family: var(--app-font-family);
+  font-size: 11px;
+  transform-origin: top center;
+  animation: supplier-lookup-open var(--ui-transition-normal);
+}
+
+.supplier-lookup-grid-head,
+.supplier-lookup-grid-row {
+  display: grid;
+  grid-template-columns:
+    120px
+    minmax(220px, 1.2fr)
+    minmax(280px, 1.7fr)
+    150px;
+  align-items: center;
+}
+
+.supplier-lookup-grid-head {
+  min-height: 25px;
+  border-bottom: 1px solid var(--ui-table-border);
+  background: var(--ui-table-header);
+  color: var(--ui-table-header-text);
+  font-weight: 800;
+}
+
+.supplier-lookup-grid-head > span,
+.supplier-lookup-grid-row > span,
+.supplier-lookup-grid-row > strong {
+  min-width: 0;
+  padding: 4px 7px;
+  overflow: hidden;
+  border-right: 1px solid var(--ui-table-border);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.supplier-lookup-grid-head > span:last-child,
+.supplier-lookup-grid-row > span:last-child {
+  border-right: 0;
+}
+
+.supplier-lookup-grid-body {
+  max-height: 250px;
+  overflow-y: auto;
+  background: var(--ui-surface);
+}
+
+.supplier-lookup-grid-row {
+  width: 100%;
+  min-height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--ui-table-border);
+  border-radius: 0;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.supplier-lookup-grid-row:nth-child(even) {
+  background: var(--ui-row-alt);
+}
+
+.supplier-lookup-grid-row:hover,
+.supplier-lookup-grid-row:focus-visible {
+  outline: none;
+  background: var(--ui-row-hover);
+}
+
+.supplier-lookup-grid-row.is-selected {
+  background: var(--ui-selected-row);
+  color: var(--ui-selected-row-text);
+  font-weight: 800;
+}
+
+.supplier-lookup-grid-foot {
+  min-height: 23px;
+  padding: 4px 8px;
+  border-top: 1px solid var(--ui-border);
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text-muted);
+  font-weight: 700;
+  text-align: center;
+}
+
+@keyframes supplier-lookup-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scaleY(.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+html[data-animations='off'] .supplier-lookup-grid {
+  animation: none !important;
+}
