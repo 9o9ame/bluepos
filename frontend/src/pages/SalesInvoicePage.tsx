@@ -64,8 +64,15 @@ const SALES_COL_CLASS: Record<string, string> = {
   disc_pct: 'col-disc',
   disc_rs: 'col-discrs',
   net_amt: 'col-net',
+  cost_rate: 'col-cost-rate',
+  cost_amt: 'col-cost-amt',
+  com_rs: 'col-com-rs',
+  com_pct: 'col-com-pct',
   delete: 'col-delete',
 }
+
+const COST_VIEW_COLUMN_KEYS = ['cost_rate', 'cost_amt', 'com_rs', 'com_pct'] as const
+
 
 function salesColClass(col: ResolvedGridColumn): string {
   return SALES_COL_CLASS[col.key] ?? `col-${col.key}`
@@ -147,6 +154,8 @@ export function SalesInvoicePage({
     useState<SalePaymentMethod>('cash')
   const [paymentReference, setPaymentReference] = useState('')
   const [paymentDue, setPaymentDue] = useState(false)
+  const [costViewEnabled, setCostViewEnabled] = useState(false)
+  const belowCostLinesRef = useRef<Set<string>>(new Set())
 
   const [saleDate, setSaleDate] = useState(
     () => new Date().toISOString().slice(0, 10),
@@ -297,27 +306,64 @@ export function SalesInvoicePage({
     ],
   )
 
-  const effectiveSalesColumns = useMemo(
-    () =>
-      columnLayout.visibleColumns.filter((col) => {
-        if (col.key === 'disc_pct' && saleSoftwareOptions?.show_discount_percent === false) {
-          return false
-        }
-        if (col.key === 'disc_rs' && saleSoftwareOptions?.show_discount_amount === false) {
-          return false
-        }
-        if (col.key === 'remarks' && saleSoftwareOptions?.show_remarks === false) {
-          return false
-        }
-        return true
-      }),
-    [
-      columnLayout.visibleColumns,
-      saleSoftwareOptions?.show_discount_percent,
-      saleSoftwareOptions?.show_discount_amount,
-      saleSoftwareOptions?.show_remarks,
-    ],
-  )
+  const effectiveSalesColumns = useMemo(() => {
+    const costKeys = new Set<string>(COST_VIEW_COLUMN_KEYS)
+    const base = columnLayout.visibleColumns.filter((col) => {
+      if (costKeys.has(col.key)) return false
+      if (col.key === 'disc_pct' && saleSoftwareOptions?.show_discount_percent === false) {
+        return false
+      }
+      if (col.key === 'disc_rs' && saleSoftwareOptions?.show_discount_amount === false) {
+        return false
+      }
+      if (col.key === 'remarks' && saleSoftwareOptions?.show_remarks === false) {
+        return false
+      }
+      return true
+    })
+
+    if (!costViewEnabled) return base
+
+    const costColumns = COST_VIEW_COLUMN_KEYS
+      .map((key) => columnLayout.columns.find((col) => col.key === key))
+      .filter((col): col is ResolvedGridColumn => Boolean(col))
+
+    const netIndex = base.findIndex((col) => col.key === 'net_amt')
+    const insertAt = netIndex >= 0 ? netIndex + 1 : Math.max(base.length - 1, 0)
+
+    return [
+      ...base.slice(0, insertAt),
+      ...costColumns,
+      ...base.slice(insertAt),
+    ]
+  }, [
+    columnLayout.columns,
+    columnLayout.visibleColumns,
+    costViewEnabled,
+    saleSoftwareOptions?.show_discount_percent,
+    saleSoftwareOptions?.show_discount_amount,
+    saleSoftwareOptions?.show_remarks,
+  ])
+
+  useEffect(() => {
+    const nextBelowCost = new Set<string>()
+
+    for (const line of cart.paidLines) {
+      const costPreview = cart.lineCostPreview(line)
+      if (!costPreview.belowCost) continue
+
+      nextBelowCost.add(line.line_key)
+
+      if (!belowCostLinesRef.current.has(line.line_key)) {
+        feedback.error(
+          `${line.product_number} — ${line.product_name}: discounted sale price is below the current average cost.`,
+          'Below Cost Sale',
+        )
+      }
+    }
+
+    belowCostLinesRef.current = nextBelowCost
+  }, [cart.paidLines, feedback])
 
   const customersQuery = useQuery({
     queryKey: ['parties', 'customers', 'pos'],
@@ -1766,7 +1812,7 @@ export function SalesInvoicePage({
             </div>
 
             <div className="sales-reference-grid-wrap">
-              <table className="sales-reference-grid">
+              <table className={`sales-reference-grid${costViewEnabled ? ' is-cost-view' : ''}`}>
                 <colgroup>
                   {effectiveSalesColumns.map((col) => (
                     <col
@@ -2028,6 +2074,24 @@ export function SalesInvoicePage({
                                 return <td key={col.key} className="sales-pos-line-pending">{linePreview.netAmount}</td>
                               }
 
+                              if (COST_VIEW_COLUMN_KEYS.includes(col.key as (typeof COST_VIEW_COLUMN_KEYS)[number])) {
+                                const costPreview = cart.lineCostPreview(line)
+                                const value =
+                                  col.key === 'cost_rate' ? costPreview.costRate
+                                    : col.key === 'cost_amt' ? costPreview.costAmount
+                                      : col.key === 'com_rs' ? costPreview.comRs
+                                        : costPreview.comPct
+
+                                return (
+                                  <td
+                                    key={col.key}
+                                    className={`sales-pos-line-pending${costPreview.belowCost ? ' is-below-cost' : ''}`}
+                                  >
+                                    {value === null ? '—' : displayEditableNumber(value)}
+                                  </td>
+                                )
+                              }
+
                               if (col.key === 'barcode') return <td key={col.key}>{line.barcode ?? ''}</td>
 
                               if (col.key === 'uom') {
@@ -2263,6 +2327,29 @@ export function SalesInvoicePage({
                         }
 
                         if (col.key === 'net_amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.netAmount}</td>
+
+                        if (COST_VIEW_COLUMN_KEYS.includes(col.key as (typeof COST_VIEW_COLUMN_KEYS)[number])) {
+                          if (line.line_kind !== 'sale') {
+                            return <td key={col.key} className="sales-pos-line-pending">—</td>
+                          }
+
+                          const costPreview = cart.lineCostPreview(line)
+                          const value =
+                            col.key === 'cost_rate' ? costPreview.costRate
+                              : col.key === 'cost_amt' ? costPreview.costAmount
+                                : col.key === 'com_rs' ? costPreview.comRs
+                                  : costPreview.comPct
+
+                          return (
+                            <td
+                              key={col.key}
+                              className={`sales-pos-line-pending${costPreview.belowCost ? ' is-below-cost' : ''}`}
+                            >
+                              {value === null ? '—' : displayEditableNumber(value)}
+                            </td>
+                          )
+                        }
+
                         if (col.key === 'barcode') return <td key={col.key}>{line.barcode ?? ''}</td>
 
                         if (col.key === 'uom') {
@@ -2648,11 +2735,8 @@ export function SalesInvoicePage({
               <label>
                 <input
                   type="checkbox"
-                  onChange={() => {
-                    setSaveError(
-                      'Cost-based discount is not currently supported.',
-                    )
-                  }}
+                  checked={costViewEnabled}
+                  onChange={(e) => setCostViewEnabled(e.target.checked)}
                 />{' '}
                 Cost
               </label>
@@ -2717,17 +2801,6 @@ export function SalesInvoicePage({
               </>
             ) : null}
 
-            <label className="sales-reference-remarks-label">
-              Payment Reference:
-            </label>
-
-            <input
-              value={paymentReference}
-              onChange={(e) =>
-                setPaymentReference(e.target.value)
-              }
-              placeholder="Optional reference"
-            />
           </fieldset>
 
           <div className="sales-reference-total-block">
