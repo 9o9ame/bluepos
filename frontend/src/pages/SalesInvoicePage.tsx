@@ -116,6 +116,8 @@ export function SalesInvoicePage() {
   const [barcodeQuery, setBarcodeQuery] = useState('')
   const [activeLineKey, setActiveLineKey] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [barcodeLookupError, setBarcodeLookupError] = useState<string | null>(null)
+  const barcodeLookupErrorSequenceRef = useRef(0)
   const [savedSale, setSavedSale] = useState<Sale | null>(null)
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
   const [recalledHoldUlid, setRecalledHoldUlid] = useState<string | null>(null)
@@ -842,11 +844,35 @@ export function SalesInvoicePage() {
     }
   }
 
+  function clearBarcodeLookupError() {
+    barcodeLookupErrorSequenceRef.current += 1
+    setBarcodeLookupError(null)
+  }
+
+  function showBarcodeNotAssigned() {
+    const sequence = ++barcodeLookupErrorSequenceRef.current
+
+    setBarcodeLookupError(null)
+
+    window.setTimeout(() => {
+      if (sequence !== barcodeLookupErrorSequenceRef.current) return
+
+      setBarcodeLookupError('Barcode not assigned yet.')
+
+      window.setTimeout(() => {
+        if (sequence === barcodeLookupErrorSequenceRef.current) {
+          setBarcodeLookupError(null)
+        }
+      }, 1500)
+    }, 0)
+  }
+
   async function addProductFromBarcode(barcodeOverride?: string) {
     const barcode = (barcodeOverride ?? barcodeQuery).trim()
     if (!barcode) return
 
     setBarcodeQuery(barcode)
+    clearBarcodeLookupError()
 
     try {
       const cachedProducts = localProductLookup.data ?? []
@@ -878,7 +904,7 @@ export function SalesInvoicePage() {
         ),
       )
       if (!match) {
-        setSaveError(`No product found for barcode ${barcode}.`)
+        showBarcodeNotAssigned()
         return
       }
 
@@ -1141,6 +1167,13 @@ export function SalesInvoicePage() {
       feedback.error(saveError, 'Sales Invoice')
     }
   }, [feedback, saveError])
+
+  useEffect(() => {
+    if (barcodeLookupError) {
+      feedback.error(barcodeLookupError, 'Sales Invoice')
+    }
+  }, [barcodeLookupError, feedback])
+
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -1651,10 +1684,10 @@ export function SalesInvoicePage() {
               </button>
 
               <div
-                className={`sales-reference-entry-status${stockIssue || saveError ? ' is-error' : cart.hasPaidLines ? ' is-ready' : ''}`}
-                role={stockIssue || saveError ? 'alert' : 'status'}
+                className={`sales-reference-entry-status${stockIssue || barcodeLookupError || saveError ? ' is-error' : cart.hasPaidLines ? ' is-ready' : ''}`}
+                role={stockIssue || barcodeLookupError || saveError ? 'alert' : 'status'}
               >
-                {stockIssue ?? saveError ?? (cart.hasPaidLines
+                {stockIssue ?? barcodeLookupError ?? saveError ?? (cart.hasPaidLines
                   ? `${cart.paidLines.length} line(s) ready to save`
                   : '')}
               </div>
