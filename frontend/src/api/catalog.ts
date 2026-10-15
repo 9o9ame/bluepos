@@ -402,6 +402,21 @@ export function fetchProducts(
   )
 }
 
+export function validateProductIdentity(payload: {
+  name?: string | null
+  barcodes?: string[]
+  exclude_product_ulid?: string | null
+}) {
+  return apiFetch<{
+    name_conflict: boolean
+    barcode_conflicts: string[]
+  }>('/api/products/validate-identity', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    busy: 'none',
+  })
+}
+
 export function fetchProduct(
   ulid: string,
 ) {
