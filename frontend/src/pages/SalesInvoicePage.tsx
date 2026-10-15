@@ -2149,6 +2149,20 @@ export function SalesInvoicePage({
                         }
 
                         if (col.key === 'sales_qty') {
+                          if (line.line_kind === 'sale') {
+                            return (
+                              <td key={col.key}>
+                                <input
+                                  className="sales-pos-line-qty"
+                                  data-sale-editable="true"
+                                  data-sale-field="sales_qty"
+                                  value={line.quantity}
+                                  onChange={(e) => cart.setQuantity(line.line_key, e.target.value)}
+                                />
+                              </td>
+                            )
+                          }
+
                           return (
                             <td key={col.key} className="sales-pos-line-value">
                               {Number.parseFloat(line.quantity || '0').toFixed(
@@ -2173,6 +2187,20 @@ export function SalesInvoicePage({
                         if (col.key === 'amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.grossAmount}</td>
 
                         if (col.key === 'disc_pct') {
+                          if (line.line_kind === 'sale') {
+                            return (
+                              <td key={col.key}>
+                                <input
+                                  className="sales-pos-line-qty"
+                                  data-sale-editable="true"
+                                  value={line.discount_percent ?? '0'}
+                                  inputMode="decimal"
+                                  onChange={(e) => cart.setDiscountPercent(line.line_key, e.target.value)}
+                                />
+                              </td>
+                            )
+                          }
+
                           return (
                             <td key={col.key} className="sales-pos-line-value">
                               {Number.parseFloat(line.discount_percent ?? '0').toFixed(2)}
@@ -2181,6 +2209,20 @@ export function SalesInvoicePage({
                         }
 
                         if (col.key === 'disc_rs') {
+                          if (line.line_kind === 'sale') {
+                            return (
+                              <td key={col.key}>
+                                <input
+                                  className="sales-pos-line-qty"
+                                  data-sale-editable="true"
+                                  value={line.discount_amount ?? '0'}
+                                  inputMode="decimal"
+                                  onChange={(e) => cart.setDiscountAmount(line.line_key, e.target.value)}
+                                />
+                              </td>
+                            )
+                          }
+
                           return (
                             <td key={col.key} className="sales-pos-line-value">
                               {Number.parseFloat(line.discount_amount ?? '0').toFixed(2)}
@@ -2192,6 +2234,25 @@ export function SalesInvoicePage({
                         if (col.key === 'barcode') return <td key={col.key}>{line.barcode ?? ''}</td>
 
                         if (col.key === 'uom') {
+                          if (line.line_kind === 'sale' && (line.available_units?.length ?? 0) > 0) {
+                            return (
+                              <td key={col.key}>
+                                <UiSelect
+                                  value={line.unit_ulid ?? ''}
+                                  className="sales-pos-line-uom-select"
+                                  triggerClassName="sales-pos-line-uom-trigger"
+                                  aria-label={`Unit for ${line.product_name}`}
+                                  triggerProps={{ 'data-sale-editable': 'true' }}
+                                  options={(line.available_units ?? []).map((unit) => ({
+                                    value: unit.unit_ulid,
+                                    label: unit.code,
+                                  }))}
+                                  onChange={(value) => cart.setLineUnit(line.line_key, value)}
+                                />
+                              </td>
+                            )
+                          }
+
                           return (
                             <td key={col.key} className="sales-pos-line-value">
                               {line.unit_code ?? line.unit_symbol ?? ''}
