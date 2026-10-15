@@ -15,7 +15,11 @@ type Packaging = SaleOfferEvaluation['packaging'][number]
 type CartPreview = {
   subtotal: string
   discount: string
+  invoiceDiscountAmount: string
+  invoiceDiscountPercent: string
+  totalDiscount: string
   tax: string
+  beforeInvoiceDiscount: string
   grandTotal: string
   qualifyingSubtotal: string
   quantity: string
@@ -186,6 +190,43 @@ function calculateLinePreview(line: SaleDraftLine): LinePreview {
   }
 }
 
+function syncLineDiscount(
+  line: SaleDraftLine,
+  source: 'percent' | 'amount' | null = line.discount_source ?? null,
+): SaleDraftLine {
+  if (line.line_kind !== 'sale') return line
+
+  const gross = toNumber(line.quantity) * toNumber(line.unit_price)
+
+  if (source === 'percent') {
+    const percent = Math.min(Math.max(toNumber(line.discount_percent), 0), 100)
+    return {
+      ...line,
+      discount_source: percent > 0 ? 'percent' : null,
+      discount_percent: line.discount_percent ?? '0',
+      discount_amount: money4(gross * (percent / 100)),
+    }
+  }
+
+  if (source === 'amount') {
+    const amount = Math.max(toNumber(line.discount_amount), 0)
+    return {
+      ...line,
+      discount_source: amount > 0 ? 'amount' : null,
+      discount_amount: line.discount_amount ?? '0',
+      discount_percent:
+        gross > 0 ? ((amount / gross) * 100).toFixed(8) : '0.00000000',
+    }
+  }
+
+  return {
+    ...line,
+    discount_source: null,
+    discount_percent: '0',
+    discount_amount: '0',
+  }
+}
+
 export function useSaleCart() {
   const [lines, setLines] = useState<SaleDraftLine[]>([])
   const [priceType, setPriceTypeState] = useState<SalePriceType>('default')
@@ -198,15 +239,19 @@ export function useSaleCart() {
   const [skippedSchemes, setSkippedSchemes] = useState<string[]>([])
   const [notes, setNotes] = useState('')
   const [customerUlid, setCustomerUlid] = useState<string | null>(null)
+  const [invoiceDiscountSource, setInvoiceDiscountSource] = useState<
+    'percent' | 'amount' | null
+  >(null)
+  const [invoiceDiscountInput, setInvoiceDiscountInput] = useState('')
 
   function setPriceType(next: SalePriceType) {
     setPriceTypeState(next)
     setLines((current) =>
-      current.map((line) =>
-        line.line_kind === 'sale'
-          ? { ...line, unit_price: priceForLine(line, next) }
-          : line,
-      ),
+      current.map((line) => {
+        if (line.line_kind !== 'sale') return line
+        const updated = { ...line, unit_price: priceForLine(line, next) }
+        return syncLineDiscount(updated)
+      }),
     )
   }
 
@@ -254,6 +299,7 @@ export function useSaleCart() {
       unit_price: '0.0000',
       discount_percent: '0',
       discount_amount: '0',
+      discount_source: null,
       tax_percent: product.is_taxable ? product.tax_percent : '0',
       notes: null,
     }
@@ -298,12 +344,12 @@ export function useSaleCart() {
 
       return current.map((currentLine) =>
         currentLine.line_key === existing.line_key
-          ? {
+          ? syncLineDiscount({
               ...currentLine,
               quantity: newQuantity.toFixed(6),
               available_base_stock:
                 availableBaseStock ?? currentLine.available_base_stock ?? null,
-            }
+            })
           : currentLine,
       )
     })
@@ -349,7 +395,7 @@ export function useSaleCart() {
           return line
         }
 
-        return { ...line, quantity }
+        return syncLineDiscount({ ...line, quantity })
       }),
     )
   }
@@ -376,7 +422,7 @@ export function useSaleCart() {
           conversion_factor: option.conversion_factor,
         }
         next.unit_price = priceForLine(next, priceType)
-        return next
+        return syncLineDiscount(next)
       }),
     )
   }
@@ -385,15 +431,13 @@ export function useSaleCart() {
     if (!isValidPercentInput(value)) return
 
     setLines((current) =>
-      current.map((line) =>
-        line.line_key === lineKey && line.line_kind === 'sale'
-          ? {
-              ...line,
-              discount_percent: value,
-              discount_amount: toNumber(value) > 0 ? '0' : line.discount_amount,
-            }
-          : line,
-      ),
+      current.map((line) => {
+        if (line.line_key !== lineKey || line.line_kind !== 'sale') return line
+        return syncLineDiscount(
+          { ...line, discount_percent: value },
+          toNumber(value) > 0 ? 'percent' : null,
+        )
+      }),
     )
   }
 
@@ -401,16 +445,26 @@ export function useSaleCart() {
     if (!isValidMoneyInput(value)) return
 
     setLines((current) =>
-      current.map((line) =>
-        line.line_key === lineKey && line.line_kind === 'sale'
-          ? {
-              ...line,
-              discount_amount: value,
-              discount_percent: toNumber(value) > 0 ? '0' : line.discount_percent,
-            }
-          : line,
-      ),
+      current.map((line) => {
+        if (line.line_key !== lineKey || line.line_kind !== 'sale') return line
+        return syncLineDiscount(
+          { ...line, discount_amount: value },
+          toNumber(value) > 0 ? 'amount' : null,
+        )
+      }),
     )
+  }
+
+  function setInvoiceDiscountPercent(value: string) {
+    if (!isValidPercentInput(value)) return
+    setInvoiceDiscountSource(toNumber(value) > 0 ? 'percent' : null)
+    setInvoiceDiscountInput(value)
+  }
+
+  function setInvoiceDiscountAmount(value: string) {
+    if (!isValidMoneyInput(value)) return
+    setInvoiceDiscountSource(toNumber(value) > 0 ? 'amount' : null)
+    setInvoiceDiscountInput(value)
   }
 
   function availableStock(line: SaleDraftLine): string | null {
@@ -573,6 +627,8 @@ export function useSaleCart() {
     setSkippedSchemes([])
     setNotes('')
     setCustomerUlid(null)
+    setInvoiceDiscountSource(null)
+    setInvoiceDiscountInput('')
   }
 
   function restore(
@@ -669,6 +725,7 @@ export function useSaleCart() {
         unit_price: item.line_kind === 'sale' ? item.unit_price : '0.0000',
         discount_percent: item.discount_percent,
         discount_amount: item.discount_amount,
+        discount_source: toNumber(item.discount_percent) > 0 ? 'percent' : null,
         tax_percent: product.is_taxable ? product.tax_percent : '0',
         notes: item.notes,
       }]
@@ -680,6 +737,19 @@ export function useSaleCart() {
       source.customer?.ulid ?? null,
       source.price_type ?? 'default',
     )
+
+    if ('invoice_discount_percent' in source) {
+      const percent = source.invoice_discount_percent ?? '0'
+      const amount = source.invoice_discount_amount ?? '0'
+
+      if (toNumber(percent) > 0) {
+        setInvoiceDiscountSource('percent')
+        setInvoiceDiscountInput(percent)
+      } else if (toNumber(amount) > 0) {
+        setInvoiceDiscountSource('amount')
+        setInvoiceDiscountInput(amount)
+      }
+    }
   }
 
   const paidLines = useMemo(
@@ -722,17 +792,42 @@ export function useSaleCart() {
     }
 
     const qualifyingSubtotal = Math.max(subtotal - discount, 0)
-    const grandTotal = qualifyingSubtotal + tax
+    const beforeInvoiceDiscount = qualifyingSubtotal + tax
+
+    let invoiceDiscountAmount = 0
+    let invoiceDiscountPercent = 0
+    const enteredInvoiceDiscount = Math.max(toNumber(invoiceDiscountInput), 0)
+
+    if (invoiceDiscountSource === 'percent') {
+      invoiceDiscountPercent = Math.min(enteredInvoiceDiscount, 100)
+      invoiceDiscountAmount =
+        beforeInvoiceDiscount * (invoiceDiscountPercent / 100)
+    } else if (invoiceDiscountSource === 'amount') {
+      invoiceDiscountAmount = enteredInvoiceDiscount
+      invoiceDiscountPercent =
+        beforeInvoiceDiscount > 0
+          ? (invoiceDiscountAmount / beforeInvoiceDiscount) * 100
+          : 0
+    }
+
+    const grandTotal = Math.max(
+      beforeInvoiceDiscount - invoiceDiscountAmount,
+      0,
+    )
 
     return {
       subtotal: money(subtotal),
       discount: money(discount),
+      invoiceDiscountAmount: money4(invoiceDiscountAmount),
+      invoiceDiscountPercent: invoiceDiscountPercent.toFixed(8),
+      totalDiscount: money4(discount + invoiceDiscountAmount),
       tax: money(tax),
+      beforeInvoiceDiscount: money4(beforeInvoiceDiscount),
       grandTotal: money(grandTotal),
       qualifyingSubtotal: money(qualifyingSubtotal),
       quantity: quantity.toFixed(3),
     }
-  }, [paidLines])
+  }, [invoiceDiscountInput, invoiceDiscountSource, paidLines])
 
   const hasPaidLines = paidLines.length > 0
 
@@ -745,9 +840,13 @@ export function useSaleCart() {
         unit_ulid: line.unit_ulid || undefined,
         quantity: line.quantity,
         discount_percent:
-          toNumber(line.discount_percent) > 0 ? line.discount_percent : undefined,
+          line.discount_source === 'percent' && toNumber(line.discount_percent) > 0
+            ? line.discount_percent
+            : undefined,
         discount_amount:
-          toNumber(line.discount_amount) > 0 ? line.discount_amount : undefined,
+          line.discount_source === 'amount' && toNumber(line.discount_amount) > 0
+            ? line.discount_amount
+            : undefined,
         notes: line.notes || undefined,
       }))
 
@@ -775,6 +874,12 @@ export function useSaleCart() {
 
     return {
       ...payload,
+      ...(invoiceDiscountSource === 'percent' && toNumber(invoiceDiscountInput) > 0
+        ? { invoice_discount_percent: invoiceDiscountInput }
+        : {}),
+      ...(invoiceDiscountSource === 'amount' && toNumber(invoiceDiscountInput) > 0
+        ? { invoice_discount_amount: invoiceDiscountInput }
+        : {}),
       ...(freePackagingLines.length > 0
         ? { free_lines: freePackagingLines }
         : {}),
@@ -814,6 +919,10 @@ export function useSaleCart() {
     setLineUnit,
     setDiscountPercent,
     setDiscountAmount,
+    invoiceDiscountSource,
+    invoiceDiscountInput,
+    setInvoiceDiscountPercent,
+    setInvoiceDiscountAmount,
     removeLine,
 
     addSchemeReward,
