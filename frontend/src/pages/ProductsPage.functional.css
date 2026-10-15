@@ -225,6 +225,11 @@
 .product-reference-screen .product-inline-error {
   color: var(--ui-danger) !important;
 }
+
+.product-reference-screen :where(.pdf-input, .pdf-barcode-input).is-duplicate {
+  border-color: var(--ui-danger) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-danger) 35%, transparent) !important;
+}
 .product-reference-screen :where(.is-selected, .is-active) {
   border-color: var(--ui-accent) !important;
 }
