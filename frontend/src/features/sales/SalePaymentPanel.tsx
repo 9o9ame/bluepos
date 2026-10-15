@@ -66,8 +66,8 @@ export function SalePaymentPanel({
   const collected = cashNumber + bankNumber
   const balance = Math.max(totalNumber - collected, 0)
   const overpaid = collected > totalNumber + 0.00005
-  const cashUnavailable = cashNumber > 0 && !defaultCash
-  const bankUnavailable = bankNumber > 0 && !bankSelected
+  const cashUnavailable = paymentsEnabled && cashNumber > 0 && !defaultCash
+  const bankUnavailable = paymentsEnabled && bankNumber > 0 && !bankSelected
 
   useEffect(() => {
     if (!bankSelected && bankReceived !== '') {
