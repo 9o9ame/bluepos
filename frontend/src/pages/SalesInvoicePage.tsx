@@ -89,10 +89,23 @@ function newHoldKey(): string {
   return `pos-hold-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
-export function SalesInvoicePage() {
+export function SalesInvoicePage({
+  active = true,
+  workspaceSearch,
+}: {
+  active?: boolean
+  workspaceSearch?: string
+} = {}) {
   const { closeActiveTab } = useWorkspace()
   const feedback = useFeedback()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [routeSearchParams, setSearchParams] = useSearchParams()
+  const searchParams = useMemo(
+    () =>
+      workspaceSearch === undefined
+        ? routeSearchParams
+        : new URLSearchParams(workspaceSearch),
+    [routeSearchParams, workspaceSearch],
+  )
 
   const [view, setView] = useState<'pos' | 'history' | 'pending' | 'expenses' | 'product'>('pos')
   const [customizationOpen, setCustomizationOpen] = useState(false)
@@ -152,7 +165,7 @@ export function SalesInvoicePage() {
   const localProductLookup = useLocalProducts(
     session,
     salesProductLookupQuery,
-    view === 'pos' && !savedSale,
+    active && view === 'pos' && !savedSale,
   )
   const localProductLookupRows = localProductLookup.rows.filter(
     (product) => product.is_active && product.status === 'active',
@@ -171,6 +184,7 @@ export function SalesInvoicePage() {
         { busy: 'none' },
       ),
     enabled:
+      active &&
       view === 'pos' &&
       !savedSale &&
       productLookupMode === 'search' &&
@@ -623,7 +637,7 @@ export function SalesInvoicePage() {
         'Quotation',
       )
 
-      if (searchParams.has('quotation')) {
+      if (workspaceSearch === undefined && searchParams.has('quotation')) {
         const nextParams = new URLSearchParams(searchParams)
         nextParams.delete('quotation')
         setSearchParams(nextParams, { replace: true })
@@ -643,6 +657,7 @@ export function SalesInvoicePage() {
   const autoQuotationAttemptedRef = useRef('')
 
   useEffect(() => {
+    if (!active) return
     if (!autoQuotationNumber) return
     if (autoQuotationAttemptedRef.current === autoQuotationNumber) return
     if (quotationLookupMutation.isPending) return
@@ -962,6 +977,7 @@ export function SalesInvoicePage() {
     id: 'sales-invoice-barcode',
     priority: 20,
     enabled:
+      active &&
       view === 'pos' &&
       canCreateSale &&
       !savedSale &&
@@ -1201,18 +1217,21 @@ export function SalesInvoicePage() {
   }, [businessSettingsQuery.data?.negative_stock_allowed, cart.paidLines])
 
   useEffect(() => {
+    if (!active) return
     if (stockIssue) {
       feedback.error(stockIssue, 'Stock warning')
     }
   }, [feedback, stockIssue])
 
   useEffect(() => {
+    if (!active) return
     if (saveError) {
       feedback.error(saveError, 'Sales Invoice')
     }
   }, [feedback, saveError])
 
   useEffect(() => {
+    if (!active) return
     if (barcodeLookupError) {
       feedback.errorAt(
         barcodeLookupError,
@@ -1224,6 +1243,8 @@ export function SalesInvoicePage() {
 
 
   useEffect(() => {
+    if (!active) return
+
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === 'F9') {
         event.preventDefault()

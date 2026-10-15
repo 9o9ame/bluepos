@@ -35,7 +35,7 @@ type WorkspaceContextValue = {
   activeModule: WorkspaceModule
   ribbonTab: RibbonTabId
   setRibbonTab: (tab: RibbonTabId) => void
-  openModule: (path: string) => void
+  openModule: (path: string, options?: { newInstance?: boolean }) => void
   closeTab: (key: string) => void
   closeActiveTab: () => void
   markDirty: (key: string, dirty: boolean) => void
@@ -91,7 +91,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [activeModule, identity])
 
   const openModule = useCallback(
-    (path: string) => {
+    (path: string, options?: { newInstance?: boolean }) => {
+      if (options?.newInstance && path === '/daily/sales') {
+        const highestInstance = tabsRef.current.reduce((highest, tab) => {
+          const match = /^sales-invoice:(\d+)$/.exec(tab.key)
+          return match ? Math.max(highest, Number.parseInt(match[1], 10)) : highest
+        }, 0)
+        const instance = highestInstance + 1
+        navigate(`/daily/sales?instance=${instance}`)
+        return
+      }
+
       navigate(path)
     },
     [navigate],

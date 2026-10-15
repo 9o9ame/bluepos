@@ -98,7 +98,9 @@ export function Ribbon({ onCalculator, onSoftwareOptions, onRecalculateStock, on
                     command.path ??
                     WORKSPACE_MODULES.find((module) => module.key === command.moduleKey)?.path
                   if (path) {
-                    openModule(path)
+                    openModule(path, {
+                      newInstance: command.moduleKey === 'sales-invoice',
+                    })
                   }
                 }}
               />

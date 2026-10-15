@@ -7,10 +7,11 @@ import { SoftwareOptionsDialog } from '../components/desktop/SoftwareOptionsDial
 import { Ribbon } from '../components/desktop/Ribbon'
 import { StatusBar } from '../components/desktop/StatusBar'
 import { WorkspaceTabBar } from '../components/desktop/WorkspaceTabBar'
+import { SalesInvoicePage } from '../pages/SalesInvoicePage'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useAppearance } from '../features/appearance/AppearanceProvider'
 import { useAppMode } from '../features/desktop/useAppMode'
-import { WorkspaceProvider } from '../features/workspace/WorkspaceProvider'
+import { WorkspaceProvider, useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useWorkspaceShortcuts } from '../features/workspace/useWorkspaceShortcuts'
 
 export function AppShell() {
@@ -137,6 +138,13 @@ function AppShellFrame({
   useWorkspaceShortcuts()
   useAppMode()
 
+  const location = useLocation()
+  const { tabs, activeKey } = useWorkspace()
+  const salesTabs = tabs.filter(
+    (tab) => tab.key === 'sales-invoice' || tab.key.startsWith('sales-invoice:'),
+  )
+  const salesRouteActive = location.pathname === '/daily/sales'
+
   return (
     <div className="app-shell">
       <ApplicationTitleBar
@@ -160,7 +168,25 @@ function AppShellFrame({
       <WorkspaceTabBar />
       <div className="workspace-host">
         <div className="workspace-host-inner">
-          <Outlet />
+          {salesTabs.map((tab) => {
+            const queryIndex = tab.path.indexOf('?')
+            const workspaceSearch = queryIndex >= 0 ? tab.path.slice(queryIndex) : ''
+            const active = salesRouteActive && tab.key === activeKey
+
+            return (
+              <div
+                key={tab.key}
+                style={{ display: active ? 'contents' : 'none' }}
+                aria-hidden={!active}
+              >
+                <SalesInvoicePage
+                  active={active}
+                  workspaceSearch={workspaceSearch}
+                />
+              </div>
+            )
+          })}
+          {!salesRouteActive ? <Outlet /> : null}
         </div>
       </div>
       {showStatusBar ? <StatusBar session={session} online={online} /> : null}

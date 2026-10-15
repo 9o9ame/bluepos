@@ -692,6 +692,17 @@ export function moduleTabIdentity(
   pathname: string,
   search = '',
 ): { key: string; title: string; path: string } {
+  if (module.key === 'sales-invoice') {
+    const instance = new URLSearchParams(search).get('instance')
+    if (instance && /^\d+$/.test(instance)) {
+      return {
+        key: `sales-invoice:${instance}`,
+        title: `Sales Invoice ${instance}`,
+        path: pathname + search,
+      }
+    }
+  }
+
   if (module.key === 'vouchers') {
     const type = new URLSearchParams(search).get('type')
 
