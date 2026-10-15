@@ -67,6 +67,111 @@ class SaleDiscountTaxTest extends TestCase
         $response->assertJsonPath('items.0.net_amount', '175.0000');
     }
 
+    public function test_invoice_percentage_discount_is_applied_after_tax(): void
+    {
+        $this->signInOwner('sale-invoice-discount-percent')->assertOk();
+
+        $product = $this->createProduct(
+            'Invoice Percent Discount Item',
+            '100.0000',
+            true,
+            '10.00000000',
+        );
+        $this->giveStock($product, '10');
+
+        $response = $this->postJson('/api/sales', [
+            'invoice_discount_percent' => '10',
+            'items' => [[
+                'product_ulid' => $product->ulid,
+                'quantity' => '1',
+            ]],
+        ], ['Idempotency-Key' => 'sale-invoice-discount-percent-a'])
+            ->assertCreated();
+
+        // Gross 100 + tax 10 = 110; overall 10% is applied after tax = 11.
+        $response->assertJsonPath('subtotal', '100.0000');
+        $response->assertJsonPath('discount_amount', '0.0000');
+        $response->assertJsonPath('tax_amount', '10.0000');
+        $response->assertJsonPath('invoice_discount_percent', '10.00000000');
+        $response->assertJsonPath('invoice_discount_amount', '11.0000');
+        $response->assertJsonPath('total_discount_amount', '11.0000');
+        $response->assertJsonPath('grand_total', '99.0000');
+    }
+
+    public function test_invoice_fixed_discount_derives_percent_after_line_discount_and_tax(): void
+    {
+        $this->signInOwner('sale-invoice-discount-amount')->assertOk();
+
+        $product = $this->createProduct(
+            'Invoice Fixed Discount Item',
+            '100.0000',
+            true,
+            '15.00000000',
+        );
+        $this->giveStock($product, '10');
+
+        $response = $this->postJson('/api/sales', [
+            'invoice_discount_amount' => '20.0000',
+            'items' => [[
+                'product_ulid' => $product->ulid,
+                'quantity' => '2',
+                'discount_percent' => '10',
+            ]],
+        ], ['Idempotency-Key' => 'sale-invoice-discount-amount-a'])
+            ->assertCreated();
+
+        // Gross 200 - line discount 20 + tax 27 = 207; invoice discount 20 => 187.
+        $response->assertJsonPath('subtotal', '200.0000');
+        $response->assertJsonPath('discount_amount', '20.0000');
+        $response->assertJsonPath('tax_amount', '27.0000');
+        $response->assertJsonPath('invoice_discount_amount', '20.0000');
+        $response->assertJsonPath('invoice_discount_percent', '9.66183574');
+        $response->assertJsonPath('total_discount_amount', '40.0000');
+        $response->assertJsonPath('grand_total', '187.0000');
+    }
+
+    public function test_invoice_discount_percent_and_amount_cannot_both_be_positive(): void
+    {
+        $this->signInOwner('sale-invoice-discount-dual')->assertOk();
+
+        $product = $this->createProduct('Invoice Dual Discount Item', '100.0000');
+        $this->giveStock($product, '10');
+
+        $this->postJson('/api/sales', [
+            'invoice_discount_percent' => '5',
+            'invoice_discount_amount' => '5.0000',
+            'items' => [[
+                'product_ulid' => $product->ulid,
+                'quantity' => '1',
+            ]],
+        ], ['Idempotency-Key' => 'sale-invoice-discount-dual-a'])
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+    }
+
+    public function test_invoice_discount_cannot_consume_tax_payable(): void
+    {
+        $this->signInOwner('sale-invoice-discount-tax-boundary')->assertOk();
+
+        $product = $this->createProduct(
+            'Invoice Discount Tax Boundary',
+            '100.0000',
+            true,
+            '10.00000000',
+        );
+        $this->giveStock($product, '10');
+
+        $this->postJson('/api/sales', [
+            'invoice_discount_amount' => '105.0000',
+            'items' => [[
+                'product_ulid' => $product->ulid,
+                'quantity' => '1',
+            ]],
+        ], ['Idempotency-Key' => 'sale-invoice-discount-tax-boundary-a'])
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+    }
+
     public function test_discount_percent_and_amount_cannot_both_be_positive(): void
     {
         $this->signInOwner('sale-discount-tax-3')->assertOk();
