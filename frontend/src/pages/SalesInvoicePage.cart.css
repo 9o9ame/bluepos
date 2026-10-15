@@ -2869,3 +2869,57 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Sales Invoice cost toggle: keep the approved grid geometry, only rebalance it while cost columns are visible. */
+.sales-reference-grid.is-cost-view .col-selector { width: 2.2% !important; }
+.sales-reference-grid.is-cost-view .col-product { width: 31% !important; }
+.sales-reference-grid.is-cost-view .col-stock { width: 5.5% !important; }
+.sales-reference-grid.is-cost-view .col-qty { width: 5.5% !important; }
+.sales-reference-grid.is-cost-view .col-price { width: 5.5% !important; }
+.sales-reference-grid.is-cost-view .col-amt { width: 6% !important; }
+.sales-reference-grid.is-cost-view .col-disc { width: 5% !important; }
+.sales-reference-grid.is-cost-view .col-discrs { width: 5.5% !important; }
+.sales-reference-grid.is-cost-view .col-net { width: 7% !important; }
+.sales-reference-grid.is-cost-view .col-cost-rate { width: 6% !important; }
+.sales-reference-grid.is-cost-view .col-cost-amt { width: 6% !important; }
+.sales-reference-grid.is-cost-view .col-com-rs { width: 6% !important; }
+.sales-reference-grid.is-cost-view .col-com-pct { width: 5% !important; }
+.sales-reference-grid.is-cost-view .col-delete { width: 3.3% !important; }
+
+.sales-reference-grid .is-below-cost {
+  color: var(--ui-danger);
+  font-weight: 700;
+}
+
+/* Payment Reference moved to finalize flow; use the freed sidebar height for readable overall discount inputs. */
+.sales-reference-disc-values {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
+  gap: 6px;
+  align-items: stretch;
+  margin: 3px 0 8px;
+}
+
+.sales-reference-disc-values input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 4px 8px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
+  box-shadow: var(--ui-control-shadow);
+}
+
+.sales-reference-disc-values input:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
