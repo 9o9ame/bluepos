@@ -23,7 +23,7 @@ import { evaluateSaleOffers } from '../api/saleSchemes'
 import { createSale, createSaleHold, createSaleQuotation, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSalePaymentAccounts, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
-import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
+import { SaleFinalizePaymentPanel } from '../features/sales/SaleFinalizePaymentPanel'
 import { PartyModal } from '../components/parties/PartyModal'
 import { SchemeOfferPrompt } from '../features/sales/SchemeOfferPrompt'
 import { SalesExpenses } from '../features/sales/SalesExpenses'
@@ -2694,7 +2694,7 @@ export function SalesInvoicePage({
           }}
           bodyClassName="sales-payment-modal-body"
         >
-          <SalePaymentPanel
+          <SaleFinalizePaymentPanel
             total={cart.preview.grandTotal}
             accounts={paymentAccountsQuery.data ?? []}
             initialCash={received}

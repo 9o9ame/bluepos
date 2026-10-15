@@ -221,14 +221,7 @@ export type SaleHoldPayload = {
     amount: string
     method: SalePaymentMethod
     reference?: string | null
-    account_ulid?: string | null
   }
-  initial_payments?: Array<{
-    amount: string
-    method: SalePaymentMethod
-    reference?: string | null
-    account_ulid?: string | null
-  }>
   notes?: string | null
   price_type: SalePriceType
   lines: Array<{
@@ -281,7 +274,14 @@ export type SalePayload = {
     amount: string
     method: SalePaymentMethod
     reference?: string | null
+    account_ulid?: string | null
   }
+  initial_payments?: Array<{
+    amount: string
+    method: SalePaymentMethod
+    reference?: string | null
+    account_ulid?: string | null
+  }>
   notes?: string | null
   sale_date?: string | null
 }
