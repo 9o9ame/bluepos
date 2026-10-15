@@ -63,7 +63,8 @@ class BarcodeScannerRouter {
 
   private readonly minLength = 6
   private readonly slowNumericMinLength = 8
-  private readonly confirmAfterCharacters = 2
+  private readonly confirmAfterCharacters = 4
+  private readonly confirmGapMs = 45
   private readonly maxGapMs = 140
   private readonly slowNumericMaxGapMs = 750
   private readonly maxDurationMs = 3000
@@ -156,15 +157,19 @@ class BarcodeScannerRouter {
       const trailingGap =
         this.lastAt > 0 ? now - this.lastAt : Number.POSITIVE_INFINITY
       const barcode = this.buffer
+      const averageGap =
+        barcode.length > 1
+          ? duration / (barcode.length - 1)
+          : Number.POSITIVE_INFINITY
       const isFastScanner =
         Boolean(target) &&
         barcode.length >= this.minLength &&
         duration <= this.maxDurationMs &&
         trailingGap <= this.maxGapMs * 2 &&
-        (this.scannerConfirmed ||
-          this.rapidCharacterCount >= this.confirmAfterCharacters)
+        (this.scannerConfirmed || averageGap <= 80)
       const isSlowNumericScanner =
         Boolean(target) &&
+        this.snapshot === null &&
         /^\d+$/.test(barcode) &&
         barcode.length >= this.slowNumericMinLength &&
         duration <= this.slowNumericMaxDurationMs &&
@@ -214,7 +219,7 @@ class BarcodeScannerRouter {
       this.snapshot = snapshotTarget(event.target)
       this.activeTargetId = target.id
       this.rapidCharacterCount = 1
-    } else if (gap <= this.maxGapMs) {
+    } else if (gap <= this.confirmGapMs) {
       this.rapidCharacterCount += 1
     } else {
       this.rapidCharacterCount = 1
