@@ -71,6 +71,12 @@ function salesColClass(col: ResolvedGridColumn): string {
   return SALES_COL_CLASS[col.key] ?? `col-${col.key}`
 }
 
+function displayEditableNumber(value: string | null | undefined): string {
+  if (value === '' || value == null) return value ?? ''
+  const parsed = Number.parseFloat(value)
+  return Number.isFinite(parsed) && parsed === 0 ? '0.0' : value
+}
+
 function newSaleKey(): string {
   return `pos-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
@@ -1941,7 +1947,7 @@ export function SalesInvoicePage({
                                       className="sales-pos-line-qty"
                                       data-sale-editable="true"
                                       data-sale-field="sales_qty"
-                                      value={line.quantity}
+                                      value={displayEditableNumber(line.quantity)}
                                       onChange={(e) => cart.setQuantity(line.line_key, e.target.value)}
                                       onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)}
                                     />
@@ -1983,7 +1989,7 @@ export function SalesInvoicePage({
                               if (col.key === 'disc_pct') {
                                 return (
                                   <td key={col.key}>
-                                    <input className="sales-pos-line-qty" data-sale-editable="true" value={line.discount_percent ?? '0'} inputMode="decimal"
+                                    <input className="sales-pos-line-qty" data-sale-editable="true" value={displayEditableNumber(line.discount_percent ?? '0')} inputMode="decimal"
                                       onChange={(e) => cart.setDiscountPercent(line.line_key, e.target.value)}
                                       onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)} />
                                   </td>
@@ -1993,7 +1999,7 @@ export function SalesInvoicePage({
                               if (col.key === 'disc_rs') {
                                 return (
                                   <td key={col.key}>
-                                    <input className="sales-pos-line-qty" data-sale-editable="true" value={line.discount_amount ?? '0'} inputMode="decimal"
+                                    <input className="sales-pos-line-qty" data-sale-editable="true" value={displayEditableNumber(line.discount_amount ?? '0')} inputMode="decimal"
                                       onChange={(e) => cart.setDiscountAmount(line.line_key, e.target.value)}
                                       onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)} />
                                   </td>
@@ -2156,7 +2162,7 @@ export function SalesInvoicePage({
                                   className="sales-pos-line-qty"
                                   data-sale-editable="true"
                                   data-sale-field="sales_qty"
-                                  value={line.quantity}
+                                  value={displayEditableNumber(line.quantity)}
                                   onChange={(e) => cart.setQuantity(line.line_key, e.target.value)}
                                 />
                               </td>
@@ -2193,7 +2199,7 @@ export function SalesInvoicePage({
                                 <input
                                   className="sales-pos-line-qty"
                                   data-sale-editable="true"
-                                  value={line.discount_percent ?? '0'}
+                                  value={displayEditableNumber(line.discount_percent ?? '0')}
                                   inputMode="decimal"
                                   onChange={(e) => cart.setDiscountPercent(line.line_key, e.target.value)}
                                 />
@@ -2215,7 +2221,7 @@ export function SalesInvoicePage({
                                 <input
                                   className="sales-pos-line-qty"
                                   data-sale-editable="true"
-                                  value={line.discount_amount ?? '0'}
+                                  value={displayEditableNumber(line.discount_amount ?? '0')}
                                   inputMode="decimal"
                                   onChange={(e) => cart.setDiscountAmount(line.line_key, e.target.value)}
                                 />
