@@ -346,7 +346,7 @@ export function SalesInvoiceHistory({
 
                   <div className="sales-history-detail-totals">
                     <div><span>Subtotal</span><strong>{money(detailQuery.data.subtotal)}</strong></div>
-                    <div><span>Discount</span><strong>{money(detailQuery.data.discount_amount)}</strong></div>
+                    <div><span>Discount</span><strong>{money(detailQuery.data.total_discount_amount)}</strong></div>
                     <div><span>Tax</span><strong>{money(detailQuery.data.tax_amount)}</strong></div>
                     <div><span>Total</span><strong>{money(detailQuery.data.grand_total)}</strong></div>
                     <div className="is-paid"><span>Paid</span><strong>{money(detailQuery.data.paid_amount)}</strong></div>
