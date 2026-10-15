@@ -59,6 +59,18 @@ class StoreSaleRequest extends FormRequest
             'customer_ulid' => ['nullable', 'string', 'size:26'],
             'salesman_ulid' => ['nullable', 'string', 'size:26'],
             'payment_due' => ['sometimes', 'boolean'],
+            'invoice_discount_percent' => [
+                'nullable',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/',
+                'numeric',
+                'between:0,100',
+            ],
+            'invoice_discount_amount' => [
+                'nullable',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/',
+                'numeric',
+                'gte:0',
+            ],
             'initial_payment' => ['sometimes', 'array'],
             'initial_payment.amount' => [
                 'required_with:initial_payment',
