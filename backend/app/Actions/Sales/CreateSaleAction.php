@@ -364,6 +364,8 @@ class CreateSaleAction
             'price_type' => $priceType->value,
             'subtotal' => '0.0000',
             'discount_amount' => '0.0000',
+            'invoice_discount_percent' => '0.00000000',
+            'invoice_discount_amount' => '0.0000',
             'tax_amount' => '0.0000',
             'grand_total' => '0.0000',
             'notes' => $data['notes'] ?? null,
@@ -459,10 +461,24 @@ class CreateSaleAction
         $sale->discount_amount = $discountTotal;
         $sale->tax_amount = $taxTotal;
 
-        $sale->grand_total = bcadd(
-            bcsub($subtotal, $discountTotal, 4),
-            $taxTotal,
-            4
+        $netBeforeTax = bcsub($subtotal, $discountTotal, 4);
+        $beforeInvoiceDiscount = bcadd($netBeforeTax, $taxTotal, 4);
+
+        [
+            'percent' => $invoiceDiscountPercent,
+            'amount' => $invoiceDiscountAmount,
+        ] = $this->resolveInvoiceDiscount(
+            $data,
+            $beforeInvoiceDiscount,
+            $netBeforeTax,
+        );
+
+        $sale->invoice_discount_percent = $invoiceDiscountPercent;
+        $sale->invoice_discount_amount = $invoiceDiscountAmount;
+        $sale->grand_total = bcsub(
+            $beforeInvoiceDiscount,
+            $invoiceDiscountAmount,
+            4,
         );
 
         $sale->save();
@@ -690,6 +706,84 @@ class CreateSaleAction
      * @param array<string, mixed> $item
      * @return array{percent: string, amount: string}
      */
+    /**
+     * Resolve the invoice-level discount after tax.
+     *
+     * Tax is intentionally left unchanged (Option B). To keep posted sales
+     * accounting valid without allowing the discount to consume tax payable,
+     * the invoice discount may not exceed net revenue before tax.
+     *
+     * @param array<string, mixed> $data
+     * @return array{percent: string, amount: string}
+     */
+    private function resolveInvoiceDiscount(
+        array $data,
+        string $beforeInvoiceDiscount,
+        string $netBeforeTax,
+    ): array {
+        $percentRaw = trim((string) ($data['invoice_discount_percent'] ?? ''));
+        $amountRaw = trim((string) ($data['invoice_discount_amount'] ?? ''));
+
+        $percent = $percentRaw === ''
+            ? '0.00000000'
+            : $this->normalizePercent(
+                $percentRaw,
+                'invoice_discount_percent',
+            );
+
+        $amount = $amountRaw === ''
+            ? '0.0000'
+            : $this->normalizeMoney(
+                $amountRaw,
+                'invoice_discount_amount',
+            );
+
+        if (
+            bccomp($percent, '0', 8) === 1 &&
+            bccomp($amount, '0', 4) === 1
+        ) {
+            throw ValidationException::withMessages([
+                'invoice_discount_amount' =>
+                    'Enter either invoice Disc % or invoice Disc Rs, not both.',
+            ]);
+        }
+
+        if (bccomp($percent, '0', 8) === 1) {
+            $amount = bcdiv(
+                bcmul($beforeInvoiceDiscount, $percent, 8),
+                '100',
+                4,
+            );
+        } elseif (bccomp($amount, '0', 4) === 1) {
+            if (bccomp($amount, $beforeInvoiceDiscount, 4) === 1) {
+                throw ValidationException::withMessages([
+                    'invoice_discount_amount' =>
+                        'Invoice discount cannot exceed the invoice total.',
+                ]);
+            }
+
+            if (bccomp($beforeInvoiceDiscount, '0', 4) === 1) {
+                $percent = bcdiv(
+                    bcmul($amount, '100', 8),
+                    $beforeInvoiceDiscount,
+                    8,
+                );
+            }
+        }
+
+        if (bccomp($amount, $netBeforeTax, 4) === 1) {
+            throw ValidationException::withMessages([
+                'invoice_discount_amount' =>
+                    'Invoice discount cannot reduce the tax portion of the sale.',
+            ]);
+        }
+
+        return [
+            'percent' => $percent,
+            'amount' => $amount,
+        ];
+    }
+
     private function resolveLineDiscount(
         array $item,
         string $grossAmount,
