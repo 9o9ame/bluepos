@@ -42,38 +42,16 @@ const FeedbackContext = createContext<FeedbackApi | null>(null)
 
 let toastSeq = 0
 
-let errorAudioContext: AudioContext | null = null
+let errorAudio: HTMLAudioElement | null = null
 
 function playErrorSound() {
-  if (typeof window === 'undefined' || typeof AudioContext === 'undefined') return
+  if (typeof window === 'undefined') return
 
   try {
-    const context = errorAudioContext ?? new AudioContext()
-    errorAudioContext = context
-
-    const play = () => {
-      const now = context.currentTime
-      const oscillator = context.createOscillator()
-      const gain = context.createGain()
-
-      oscillator.type = 'triangle'
-      oscillator.frequency.setValueAtTime(520, now)
-      oscillator.frequency.exponentialRampToValueAtTime(220, now + 0.18)
-      gain.gain.setValueAtTime(0.075, now)
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22)
-
-      oscillator.connect(gain)
-      gain.connect(context.destination)
-      oscillator.start(now)
-      oscillator.stop(now + 0.22)
-    }
-
-    if (context.state === 'suspended') {
-      void context.resume().then(play).catch(() => undefined)
-      return
-    }
-
-    play()
+    const audio = errorAudio ?? new Audio('/sounds/error-notification.mp3')
+    errorAudio = audio
+    audio.currentTime = 0
+    void audio.play().catch(() => undefined)
   } catch {
     // Audio feedback is optional and must never block POS workflow.
   }
