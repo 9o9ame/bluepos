@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { AuthSession } from '../../types/auth'
 import {
@@ -54,6 +54,20 @@ export function useLocalProducts(
     }
   }, [enabled, queryClient, scopeKey, scope?.branchUlid, scope?.tenantUlid, scope?.warehouseUlid])
 
+  const refreshFromServer = useCallback(async () => {
+    if (!scope) return []
+
+    const fresh = await refreshProducts(scope, { force: true })
+    queryClient.setQueryData(['local-catalog', 'products', scopeKey], fresh)
+    return fresh
+  }, [
+    queryClient,
+    scopeKey,
+    scope?.branchUlid,
+    scope?.tenantUlid,
+    scope?.warehouseUlid,
+  ])
+
   const rows = useMemo(
     () => filterCachedProducts(productsQuery.data ?? [], query),
     [productsQuery.data, query],
@@ -64,6 +78,7 @@ export function useLocalProducts(
     rows,
     total: productsQuery.data?.length ?? 0,
     scope,
+    refreshFromServer,
   }
 }
 

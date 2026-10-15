@@ -1100,6 +1100,10 @@ export function SalesInvoicePage() {
   function refreshScreen() {
     setSaveError(null)
 
+    void localProductLookup.refreshFromServer().catch(() => {
+      feedback.error('Unable to refresh product catalog.', 'Sales Invoice')
+    })
+
     if (savedSale) {
       void refreshSavedSale(savedSale.ulid)
       return
