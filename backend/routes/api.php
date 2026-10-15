@@ -275,6 +275,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::get('/sales/expenses/accounts', [ExpenseController::class, 'accounts']);
         Route::post('/sales/expenses', [ExpenseController::class, 'store']);
         Route::get('/sales/salesmen', [SaleController::class, 'salesmen']);
+        Route::get('/sales/payment-accounts', [SaleController::class, 'paymentAccounts']);
         Route::get('/sales/holds', [SaleHoldController::class, 'index']);
         Route::post('/sales/holds', [SaleHoldController::class, 'store']);
         Route::get('/sales/holds/{holdUlid}', [SaleHoldController::class, 'show']);

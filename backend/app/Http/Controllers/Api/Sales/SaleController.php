@@ -11,6 +11,8 @@ use App\Http\Requests\Sales\StoreSalePaymentRequest;
 use App\Http\Requests\Sales\StoreSaleRequest;
 use App\Http\Resources\Sales\SalePaymentResource;
 use App\Http\Resources\Sales\SaleResource;
+use App\Models\Account;
+use App\Models\BusinessSetting;
 use App\Models\PartyProfile;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -253,6 +255,43 @@ class SaleController extends Controller
             ->all();
     }
 
+    public function paymentAccounts(
+        TenantContext $tenantContext,
+        PermissionService $permissions,
+    ): array {
+        abort_unless(
+            $permissions->can('sales.create') || $permissions->can('payments.create'),
+            403,
+        );
+
+        $settings = BusinessSetting::query()
+            ->forTenant($tenantContext->tenantId())
+            ->first();
+
+        $defaultCashId = $settings?->default_cash_account_id;
+
+        return Account::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('is_active', true)
+            ->whereHas('accountType', fn ($type) => $type
+                ->where('is_cash', true)
+                ->orWhere('is_bank', true)
+                ->orWhereIn('code', ['0010', '0012']))
+            ->with('accountType')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Account $account): array => [
+                'ulid' => $account->ulid,
+                'code' => $account->code,
+                'name' => $account->name,
+                'is_cash' => (bool) ($account->accountType?->is_cash || $account->accountType?->code === '0010'),
+                'is_bank' => (bool) ($account->accountType?->is_bank || $account->accountType?->code === '0012'),
+                'is_default_cash' => $defaultCashId !== null && (int) $defaultCashId === (int) $account->id,
+            ])
+            ->values()
+            ->all();
+    }
+
     public function store(
         StoreSaleRequest $request,
         CreateSaleAction $create,
@@ -260,7 +299,11 @@ class SaleController extends Controller
     ): JsonResponse {
         $this->authorize('create', Sale::class);
 
-        if ($request->has('initial_payment')) {
+        $hasInitialPayments =
+            $request->has('initial_payment') ||
+            (is_array($request->input('initial_payments')) && count($request->input('initial_payments')) > 0);
+
+        if ($hasInitialPayments) {
             abort_unless($permissions->can('payments.create'), 403);
         }
 

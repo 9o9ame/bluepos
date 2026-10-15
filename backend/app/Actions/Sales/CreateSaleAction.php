@@ -189,12 +189,24 @@ class CreateSaleAction
 
             $this->postAccounting->execute($sale);
 
-            $initialPayment = $data['initial_payment'] ?? null;
-            if (is_array($initialPayment)) {
+            $initialPayments = $data['initial_payments'] ?? [];
+            if (! is_array($initialPayments)) {
+                $initialPayments = [];
+            }
+
+            if ($initialPayments === [] && is_array($data['initial_payment'] ?? null)) {
+                $initialPayments = [$data['initial_payment']];
+            }
+
+            foreach (array_values($initialPayments) as $paymentIndex => $initialPayment) {
+                if (! is_array($initialPayment)) {
+                    continue;
+                }
+
                 $this->collectPayment->execute(
                     $sale,
                     $initialPayment,
-                    $this->initialPaymentIdempotencyKey($idempotencyKey),
+                    $this->initialPaymentIdempotencyKey($idempotencyKey, $paymentIndex),
                 );
             }
 
@@ -312,9 +324,14 @@ class CreateSaleAction
         ];
     }
 
-    private function initialPaymentIdempotencyKey(string $saleIdempotencyKey): string
-    {
-        return 'sale-initial-payment:'.hash('sha256', $saleIdempotencyKey);
+    private function initialPaymentIdempotencyKey(
+        string $saleIdempotencyKey,
+        int $paymentIndex = 0,
+    ): string {
+        return 'sale-initial-payment:'.hash(
+            'sha256',
+            $saleIdempotencyKey.':'.$paymentIndex,
+        );
     }
 
     /**

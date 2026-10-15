@@ -22,6 +22,7 @@ class StoreSalePaymentRequest extends FormRequest
             'amount' => ['required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/', 'numeric', 'gt:0'],
             'method' => ['required', Rule::enum(SalePaymentMethod::class)],
             'reference' => ['nullable', 'string', 'max:100'],
+            'account_ulid' => ['nullable', 'string', 'size:26'],
         ];
     }
 }

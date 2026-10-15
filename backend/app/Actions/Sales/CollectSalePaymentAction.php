@@ -132,7 +132,11 @@ class CollectSalePaymentAction
                 return $payment;
             }
 
-            [$debitAccount, $creditAccount] = $this->resolveAccounts($sale);
+            [$debitAccount, $creditAccount] = $this->resolveAccounts(
+                $sale,
+                $method,
+                isset($data['account_ulid']) ? (string) $data['account_ulid'] : null,
+            );
 
             $journal = JournalEntry::query()->create([
                 'tenant_id' => $tenantId,
@@ -226,14 +230,38 @@ class CollectSalePaymentAction
     /**
      * @return array{0: Account, 1: Account}
      */
-    private function resolveAccounts(Sale $sale): array
-    {
+    private function resolveAccounts(
+        Sale $sale,
+        SalePaymentMethod $method,
+        ?string $accountUlid,
+    ): array {
         $tenantId = $this->tenantContext->tenantId();
 
         $settings = BusinessSetting::query()
             ->forTenant($tenantId)
             ->first();
 
+        $receivingAccount = match ($method) {
+            SalePaymentMethod::Cash => $this->cashAccount($settings, $tenantId),
+            SalePaymentMethod::Card,
+            SalePaymentMethod::Bank => $this->bankAccount($accountUlid, $tenantId),
+            SalePaymentMethod::Credit => throw new ApiException(
+                'INVALID_PAYMENT_METHOD',
+                'Credit settlement is handled through the customer receivable account.',
+                422,
+            ),
+        };
+
+        return [
+            $receivingAccount,
+            $sale->customer_id !== null
+                ? $this->receivableAccount($sale)
+                : $this->clearingAccount($settings, $tenantId),
+        ];
+    }
+
+    private function cashAccount(?BusinessSetting $settings, int $tenantId): Account
+    {
         $accountId = $settings?->default_cash_account_id;
 
         if (! $accountId) {
@@ -247,22 +275,49 @@ class CollectSalePaymentAction
         $cash = Account::query()
             ->forTenant($tenantId)
             ->whereKey($accountId)
+            ->where('is_active', true)
+            ->whereHas('accountType', fn ($type) => $type
+                ->where('is_cash', true)
+                ->orWhere('code', '0010'))
             ->first();
 
-        if (! $cash || ! $cash->is_active) {
+        if (! $cash) {
             throw new ApiException(
                 'CASH_ACCOUNT_REQUIRED',
-                'Configured cash account is missing or inactive.',
+                'Configured cash account is missing, inactive, or is not a cash account.',
                 422,
             );
         }
 
-        return [
-            $cash,
-            $sale->customer_id !== null
-                ? $this->receivableAccount($sale)
-                : $this->clearingAccount($settings, $tenantId),
-        ];
+        return $cash;
+    }
+
+    private function bankAccount(?string $accountUlid, int $tenantId): Account
+    {
+        $accountUlid = trim((string) $accountUlid);
+
+        if ($accountUlid === '') {
+            throw ValidationException::withMessages([
+                'account_ulid' => 'Select the bank account receiving this payment.',
+            ]);
+        }
+
+        $bank = Account::query()
+            ->forTenant($tenantId)
+            ->where('ulid', $accountUlid)
+            ->where('is_active', true)
+            ->whereHas('accountType', fn ($type) => $type
+                ->where('is_bank', true)
+                ->orWhere('code', '0012'))
+            ->first();
+
+        if (! $bank) {
+            throw ValidationException::withMessages([
+                'account_ulid' => 'The selected bank account is not available.',
+            ]);
+        }
+
+        return $bank;
     }
 
     private function receivableAccount(Sale $sale): Account

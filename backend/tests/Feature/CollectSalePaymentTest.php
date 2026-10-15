@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Accounting\CashierTransactionLock;
 use App\Accounting\PartyLeafAccountSync;
 use App\Models\Account;
+use App\Models\AccountType;
 use App\Models\BusinessSetting;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
@@ -73,6 +74,58 @@ class CollectSalePaymentTest extends TestCase
                 ->count(),
         );
         $this->assertSame('9.000000', $this->stock($product));
+    }
+
+    public function test_initial_cash_and_bank_split_posts_to_the_correct_accounts(): void
+    {
+        $this->signInOwner('pay-initial-split')->assertOk();
+        $accounts = $this->configureAccounts();
+
+        $product = $this->createProduct('Split Payment Item', '100.0000');
+        $this->giveStock($product, '10');
+
+        $response = $this->postJson('/api/sales', [
+            'items' => [['product_ulid' => $product, 'quantity' => '1']],
+            'initial_payments' => [
+                ['amount' => '30.0000', 'method' => 'cash'],
+                [
+                    'amount' => '70.0000',
+                    'method' => 'bank',
+                    'account_ulid' => $accounts['bank']->ulid,
+                    'reference' => 'ONLINE-1',
+                ],
+            ],
+        ], $this->idem('sale-initial-split'))
+            ->assertCreated()
+            ->assertJsonPath('paid_amount', '100.0000')
+            ->assertJsonPath('balance_due', '0.0000');
+
+        $saleId = $this->saleId((string) $response->json('ulid'));
+        $cashPayment = SalePayment::query()->where('sale_id', $saleId)->where('method', 'cash')->firstOrFail();
+        $bankPayment = SalePayment::query()->where('sale_id', $saleId)->where('method', 'bank')->firstOrFail();
+
+        $this->assertSame($accounts['cash']->id, (int) $cashPayment->account_id);
+        $this->assertSame($accounts['bank']->id, (int) $bankPayment->account_id);
+        $this->assertSame('30.0000', (string) $cashPayment->amount);
+        $this->assertSame('70.0000', (string) $bankPayment->amount);
+        $this->assertSame('ONLINE-1', $bankPayment->reference);
+    }
+
+    public function test_bank_payment_rejects_a_cash_account(): void
+    {
+        $this->signInOwner('pay-bank-type')->assertOk();
+        $accounts = $this->configureAccounts();
+        $sale = $this->createSale('pay-bank-type', '100.0000');
+
+        $this->postJson('/api/sales/'.$sale.'/payments', [
+            'amount' => '100.0000',
+            'method' => 'bank',
+            'account_ulid' => $accounts['cash']->ulid,
+        ], $this->idem('pay-bank-type'))
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR');
+
+        $this->assertSame('100.0000', $this->outstanding($sale));
     }
 
     public function test_initial_overpayment_rolls_back_sale_and_stock(): void
@@ -190,7 +243,7 @@ class CollectSalePaymentTest extends TestCase
     public function test_partial_payments_are_allowed_and_reduce_the_due(): void
     {
         $this->signInOwner('pay-2')->assertOk();
-        $this->configureAccounts();
+        $accounts = $this->configureAccounts();
         $sale = $this->createSale('pay-2', '100.0000');
 
         $this->postJson('/api/sales/'.$sale.'/payments', [
@@ -203,6 +256,7 @@ class CollectSalePaymentTest extends TestCase
         $this->postJson('/api/sales/'.$sale.'/payments', [
             'amount' => '60.0000',
             'method' => 'card',
+            'account_ulid' => $accounts['bank']->ulid,
         ], $this->idem('pay-2-b'))->assertCreated();
 
         $this->assertSame('0.0000', $this->outstanding($sale));
@@ -448,35 +502,66 @@ class CollectSalePaymentTest extends TestCase
     }
 
     /**
-     * Point business settings at a cash account and a clearing account.
+     * Configure real cash/bank account types for payment tests.
      *
-     * @return array{cash: Account, clearing: Account}
+     * @return array{cash: Account, bank: Account, clearing: Account}
      */
     private function configureAccounts(): array
     {
-        $cash = $this->leafAccount('TEST CASH', '9101');
-        $clearing = $this->leafAccount('TEST CLEARING', '9102');
+        $tenantContext = app(\App\Tenancy\TenantContext::class);
+        $baseType = AccountType::query()
+            ->forTenant($tenantContext->tenantId())
+            ->orderBy('id')
+            ->firstOrFail();
+
+        $cashType = AccountType::query()->create([
+            'tenant_id' => $tenantContext->tenantId(),
+            'sub_head_id' => $baseType->sub_head_id,
+            'code' => 'TEST-CASH',
+            'name' => 'Test Cash',
+            'is_cash' => true,
+            'is_bank' => false,
+            'is_receivable' => false,
+            'is_payable' => false,
+            'sort_order' => 9001,
+            'is_active' => true,
+        ]);
+
+        $bankType = AccountType::query()->create([
+            'tenant_id' => $tenantContext->tenantId(),
+            'sub_head_id' => $baseType->sub_head_id,
+            'code' => 'TEST-BANK',
+            'name' => 'Test Cash In Bank',
+            'is_cash' => false,
+            'is_bank' => true,
+            'is_receivable' => false,
+            'is_payable' => false,
+            'sort_order' => 9002,
+            'is_active' => true,
+        ]);
+
+        $cash = $this->leafAccount('TEST CASH', '9101', $cashType);
+        $bank = $this->leafAccount('TEST BANK', '9103', $bankType);
+        $clearing = $this->leafAccount('TEST CLEARING', '9102', $baseType);
 
         BusinessSetting::query()
-            ->forTenant(app(\App\Tenancy\TenantContext::class)->tenantId())
+            ->forTenant($tenantContext->tenantId())
             ->update([
                 'default_cash_account_id' => $cash->id,
                 'sales_clearing_account_id' => $clearing->id,
             ]);
 
-        return ['cash' => $cash, 'clearing' => $clearing];
+        return ['cash' => $cash, 'bank' => $bank, 'clearing' => $clearing];
     }
 
-    /**
-     * `accounts` is the ledger leaf table. It has no create endpoint yet
-     * (accounts are provisioned by PartyLeafAccountSync), so seed it the same
-     * way production does.
-     */
-    private function leafAccount(string $name, string $code): Account
-    {
+    private function leafAccount(
+        string $name,
+        string $code,
+        ?AccountType $accountType = null,
+    ): Account {
         $tenantContext = app(\App\Tenancy\TenantContext::class);
 
-        $accountType = \App\Models\AccountType::query()
+        $accountType ??= AccountType::query()
             ->forTenant($tenantContext->tenantId())
             ->orderBy('id')
             ->firstOrFail();

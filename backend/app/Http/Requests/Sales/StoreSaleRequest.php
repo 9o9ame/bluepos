@@ -71,6 +71,20 @@ class StoreSaleRequest extends FormRequest
                 Rule::enum(SalePaymentMethod::class),
             ],
             'initial_payment.reference' => ['nullable', 'string', 'max:100'],
+            'initial_payment.account_ulid' => ['nullable', 'string', 'size:26'],
+            'initial_payments' => ['sometimes', 'array', 'max:2'],
+            'initial_payments.*.amount' => [
+                'required',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/',
+                'numeric',
+                'gt:0',
+            ],
+            'initial_payments.*.method' => [
+                'required',
+                Rule::enum(SalePaymentMethod::class),
+            ],
+            'initial_payments.*.reference' => ['nullable', 'string', 'max:100'],
+            'initial_payments.*.account_ulid' => ['nullable', 'string', 'size:26'],
             'warehouse_ulid' => ['nullable', 'string', 'size:26'],
             'notes' => ['nullable', 'string', 'max:2000'],
 
