@@ -484,9 +484,20 @@ export function SalesInvoicePage({
             fetchProductStock(productUlid),
           ])
 
+          const activeWarehouseCost =
+            stock.warehouses.find(
+              (row) => row.warehouse.ulid === stock.active_warehouse.ulid,
+            )?.average_cost ?? null
+
           return {
             productUlid,
-            product,
+            product: {
+              ...product,
+              sales_lookup: {
+                in_stock: stock.active_warehouse.quantity,
+                average_cost: activeWarehouseCost,
+              },
+            },
             stock: stock.active_warehouse.quantity,
           }
         }),
@@ -893,7 +904,18 @@ export function SalesInvoicePage({
           fetchProduct(productUlid),
           fetchProductStock(productUlid),
         ])
-        product = freshProduct
+        const activeWarehouseCost =
+          stock.warehouses.find(
+            (row) => row.warehouse.ulid === stock.active_warehouse.ulid,
+          )?.average_cost ?? null
+
+        product = {
+          ...freshProduct,
+          sales_lookup: {
+            in_stock: stock.active_warehouse.quantity,
+            average_cost: activeWarehouseCost,
+          },
+        }
         availableBaseStock = stock.active_warehouse.quantity
       }
 
