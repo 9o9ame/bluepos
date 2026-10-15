@@ -168,8 +168,9 @@ export type SaleDraftLine = {
   conversion_factor?: string
   available_units?: SaleDraftUnitOption[]
 
-  /** Current active-warehouse stock in BASE units when this line was added. */
+  /** Current active-warehouse stock/cost snapshots in BASE units. */
   available_base_stock?: string | null
+  average_cost?: string | null
 
   /** Base-unit price snapshots used only for the client preview. */
   retail_price?: string | null
