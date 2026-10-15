@@ -218,9 +218,6 @@ export type SaleHold = {
 
 export type SaleHoldPayload = {
   sale_date?: string | null
-  invoice_discount_percent?: string | null
-  invoice_discount_amount?: string | null
-
   customer_ulid?: string | null
   salesman_ulid?: string | null
   payment_due?: boolean
@@ -273,6 +270,9 @@ export type SalePayload = {
    * The server validates eligibility and maximum quantity.
    */
   applied_schemes?: AppliedSaleScheme[]
+
+  invoice_discount_percent?: string | null
+  invoice_discount_amount?: string | null
 
   customer_ulid?: string | null
   salesman_ulid?: string | null
