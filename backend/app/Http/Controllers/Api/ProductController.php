@@ -230,6 +230,45 @@ class ProductController extends Controller
         return (new ProductResource($product))->response()->setStatusCode(201);
     }
 
+    public function lookupExisting(Request $request, TenantContext $tenantContext): mixed
+    {
+        $this->authorize('viewAny', Product::class);
+
+        $barcode = trim((string) $request->string('barcode'));
+        $name = trim((string) $request->string('name'));
+
+        if ($barcode === '' && $name === '') {
+            return response()->json(null);
+        }
+
+        $baseQuery = Product::query()
+            ->forTenant($tenantContext->tenantId())
+            ->with(CreateProductAction::with());
+
+        $product = null;
+
+        if ($barcode !== '') {
+            $product = (clone $baseQuery)
+                ->whereHas(
+                    'barcodes',
+                    fn (Builder $barcodes) => $barcodes
+                        ->where('barcode', $barcode)
+                        ->where('is_active', true),
+                )
+                ->first();
+        }
+
+        if (! $product && $name !== '') {
+            $product = (clone $baseQuery)
+                ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+                ->first();
+        }
+
+        return $product
+            ? new ProductResource($product)
+            : response()->json(null);
+    }
+
     public function show(string $productUlid): ProductResource
     {
         $product = $this->catalog->product($productUlid);
