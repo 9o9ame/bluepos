@@ -243,6 +243,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::delete('/suppliers/{supplierUlid}', [SupplierController::class, 'destroy']);
 
         Route::get('/products', [ProductController::class, 'index']);
+        Route::post('/products/validate-identity', [ProductController::class, 'validateIdentity']);
         Route::post('/products', [ProductController::class, 'store']);
         Route::patch('/products/bulk', [ProductController::class, 'bulkUpdate']);
         Route::get('/products/tabular-export', [ProductController::class, 'tabularExport']);
