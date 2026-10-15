@@ -63,8 +63,12 @@ class PostSaleAccountingAction
         }
 
         $netRevenue = bcsub(
-            bcadd((string) $sale->subtotal, '0', 4),
-            bcadd((string) $sale->discount_amount, '0', 4),
+            bcsub(
+                bcadd((string) $sale->subtotal, '0', 4),
+                bcadd((string) $sale->discount_amount, '0', 4),
+                4,
+            ),
+            bcadd((string) $sale->invoice_discount_amount, '0', 4),
             4,
         );
         $tax = bcadd((string) $sale->tax_amount, '0', 4);
