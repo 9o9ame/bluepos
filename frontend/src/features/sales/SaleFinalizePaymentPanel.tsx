@@ -51,14 +51,9 @@ export function SaleFinalizePaymentPanel({
   const [bankReceived, setBankReceived] = useState('')
   const [reference, setReference] = useState(initialReference)
 
-  useEffect(() => {
-    if (!accountUlid && defaultCash) {
-      setAccountUlid(defaultCash.ulid)
-    }
-  }, [accountUlid, defaultCash])
-
   const selectedAccount =
-    accounts.find((account) => account.ulid === accountUlid) ?? null
+    accounts.find((account) => account.ulid === accountUlid)
+    ?? defaultCash
   const bankSelected = Boolean(selectedAccount?.is_bank)
   const totalNumber = moneyValue(total)
   const cashNumber = moneyValue(cashReceived)
@@ -113,7 +108,7 @@ export function SaleFinalizePaymentPanel({
       </div>
 
       <UiSelect
-        value={accountUlid}
+        value={selectedAccount?.ulid ?? ''}
         aria-label="Receiving account"
         options={accounts.map((account) => ({
           value: account.ulid,
