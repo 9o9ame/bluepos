@@ -88,10 +88,6 @@ function newHoldKey(): string {
   return `pos-hold-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
-function normalizeProductIdentity(value: string | null | undefined): string {
-  return (value ?? '').trim().replace(/\s+/g, ' ').toLocaleLowerCase()
-}
-
 export function SalesInvoicePage() {
   const { closeActiveTab } = useWorkspace()
   const feedback = useFeedback()
@@ -802,42 +798,14 @@ export function SalesInvoicePage() {
               (row) => row.is_active && row.barcode === scannedValue,
             ) ?? null
 
-      if (!replaceLineKey) {
-        const normalizedName = normalizeProductIdentity(product.name)
-        const conflictingNameLine = cart.lines.find(
-          (line) =>
-            line.line_kind === 'sale' &&
-            line.product_ulid !== product.ulid &&
-            normalizeProductIdentity(line.product_name) === normalizedName,
+      if (
+        !replaceLineKey &&
+        saleSoftwareOptions?.disallow_duplicate_products &&
+        cart.lines.some(
+          (line) => line.line_kind === 'sale' && line.product_ulid === product.ulid,
         )
-        if (conflictingNameLine) {
-          throw new Error(
-            `Another product with the same name "${product.name}" is already on this invoice.`,
-          )
-        }
-
-        if (scannedBarcode) {
-          const conflictingBarcodeLine = cart.lines.find(
-            (line) =>
-              line.line_kind === 'sale' &&
-              line.product_ulid !== product.ulid &&
-              line.barcode === scannedBarcode.barcode,
-          )
-          if (conflictingBarcodeLine) {
-            throw new Error(
-              `Barcode ${scannedBarcode.barcode} is already used by another product on this invoice.`,
-            )
-          }
-        }
-
-        if (
-          saleSoftwareOptions?.disallow_duplicate_products &&
-          cart.lines.some(
-            (line) => line.line_kind === 'sale' && line.product_ulid === product.ulid,
-          )
-        ) {
-          throw new Error(`${product.name} is already on this invoice.`)
-        }
+      ) {
+        throw new Error(`${product.name} is already on this invoice.`)
       }
 
       const lineKey = replaceLineKey ?? cart.addProduct(
@@ -894,13 +862,6 @@ export function SalesInvoicePage() {
         )
       })
 
-      if (localMatches.length > 1) {
-        setSaveError(
-          `Barcode ${barcode} is assigned to more than one product. Fix the duplicate barcode before selling.`,
-        )
-        return
-      }
-
       if (localMatches.length === 1) {
         await addProductFromEntry(localMatches[0].ulid, barcode)
         return
@@ -910,21 +871,12 @@ export function SalesInvoicePage() {
         { q: barcode, per_page: 20, page: 1 },
         { busy: 'none' },
       )
-      const exactMatches = page.data.filter((product) =>
+      const match = page.data.find((product) =>
         product.primary_barcode === barcode ||
         product.barcodes?.some(
           (row) => row.is_active && row.barcode === barcode,
         ),
       )
-
-      if (exactMatches.length > 1) {
-        setSaveError(
-          `Barcode ${barcode} is assigned to more than one product. Fix the duplicate barcode before selling.`,
-        )
-        return
-      }
-
-      const match = exactMatches[0]
       if (!match) {
         setSaveError(`No product found for barcode ${barcode}.`)
         return
