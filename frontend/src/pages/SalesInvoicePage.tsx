@@ -73,8 +73,18 @@ function salesColClass(col: ResolvedGridColumn): string {
 
 function displayEditableNumber(value: string | null | undefined): string {
   if (value === '' || value == null) return value ?? ''
+
   const parsed = Number.parseFloat(value)
-  return Number.isFinite(parsed) && parsed === 0 ? '0.0' : value
+  if (!Number.isFinite(parsed)) return value
+  if (parsed === 0) return '0.00'
+
+  const [integerPart, fractionPart = ''] = value.split('.')
+  const meaningfulFraction = fractionPart.replace(/0+$/, '')
+  const normalizedFraction = meaningfulFraction.padEnd(2, '0')
+
+  return normalizedFraction
+    ? `${integerPart}.${normalizedFraction}`
+    : `${integerPart}.00`
 }
 
 function newSaleKey(): string {
