@@ -167,7 +167,10 @@ function calculateLinePreview(line: SaleDraftLine): LinePreview {
   let discount = 0
   let discountPercent = 0
 
-  if (enteredPercent > 0) {
+  if (line.discount_source === 'amount' && enteredAmount > 0) {
+    discount = Math.min(enteredAmount, Math.max(gross, 0))
+    discountPercent = gross > 0 ? (discount / gross) * 100 : 0
+  } else if (enteredPercent > 0) {
     discountPercent = Math.min(enteredPercent, 100)
     discount = gross * (discountPercent / 100)
   } else if (enteredAmount > 0) {
