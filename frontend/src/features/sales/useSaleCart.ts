@@ -643,14 +643,28 @@ export function useSaleCart() {
     const nextPriceType = restoredPriceType ?? priceType
     setPriceTypeState(nextPriceType)
     setLines(
-      restoredLines.map((line) =>
-        line.line_kind === 'sale'
-          ? { ...line, unit_price: priceForLine(line, nextPriceType) }
-          : line,
-      ),
+      restoredLines.map((line) => {
+        if (line.line_kind !== 'sale') return line
+
+        const updated = {
+          ...line,
+          unit_price: priceForLine(line, nextPriceType),
+        }
+        const source =
+          line.discount_source
+          ?? (toNumber(line.discount_amount) > 0
+            ? 'amount'
+            : toNumber(line.discount_percent) > 0
+              ? 'percent'
+              : null)
+
+        return syncLineDiscount(updated, source)
+      }),
     )
     setNotes(restoredNotes)
     setCustomerUlid(restoredCustomerUlid)
+    setInvoiceDiscountSource(null)
+    setInvoiceDiscountInput('')
 
     const schemes = restoredLines
       .filter(
@@ -728,7 +742,7 @@ export function useSaleCart() {
         unit_price: item.line_kind === 'sale' ? item.unit_price : '0.0000',
         discount_percent: item.discount_percent,
         discount_amount: item.discount_amount,
-        discount_source: toNumber(item.discount_percent) > 0 ? 'percent' : null,
+        discount_source: toNumber(item.discount_amount) > 0 ? 'amount' : null,
         tax_percent: product.is_taxable ? product.tax_percent : '0',
         notes: item.notes,
       }]
@@ -745,12 +759,12 @@ export function useSaleCart() {
       const percent = source.invoice_discount_percent ?? '0'
       const amount = source.invoice_discount_amount ?? '0'
 
-      if (toNumber(percent) > 0) {
-        setInvoiceDiscountSource('percent')
-        setInvoiceDiscountInput(percent)
-      } else if (toNumber(amount) > 0) {
+      if (toNumber(amount) > 0) {
         setInvoiceDiscountSource('amount')
         setInvoiceDiscountInput(amount)
+      } else if (toNumber(percent) > 0) {
+        setInvoiceDiscountSource('percent')
+        setInvoiceDiscountInput(percent)
       }
     }
   }
