@@ -1734,7 +1734,7 @@ export function SalesInvoicePage({
                   Boolean(stockIssue) ||
                   isBusy
                 }
-                onClick={() => saveMutation.mutate()}
+                onClick={() => setPaymentModalOpen(true)}
               >
                 {isBusy ? 'Saving...' : 'Sale'}
               </button>
