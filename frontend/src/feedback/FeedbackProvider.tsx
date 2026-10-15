@@ -3,8 +3,10 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
@@ -14,7 +16,13 @@ import { apiBusy } from './apiBusy'
 import './feedback.css'
 
 type ToastTone = 'success' | 'error' | 'info'
-type ToastItem = { id: number; tone: ToastTone; title: string; message: string }
+type ToastItem = {
+  id: number
+  tone: ToastTone
+  title: string
+  message: string
+  anchor?: HTMLElement | null
+}
 
 type ConfirmState = {
   message: string
@@ -24,6 +32,7 @@ type ConfirmState = {
 type FeedbackApi = {
   success: (message: string, title?: string) => void
   error: (message: string, title?: string) => void
+  errorAt: (message: string, title: string | undefined, anchor: HTMLElement | null) => void
   info: (message: string, title?: string) => void
   fromApiError: (err: unknown, fallback?: string) => void
   confirm: (message: string) => Promise<boolean>
@@ -32,6 +41,118 @@ type FeedbackApi = {
 const FeedbackContext = createContext<FeedbackApi | null>(null)
 
 let toastSeq = 0
+
+let errorAudioContext: AudioContext | null = null
+
+function playErrorSound() {
+  if (typeof window === 'undefined' || typeof AudioContext === 'undefined') return
+
+  try {
+    const context = errorAudioContext ?? new AudioContext()
+    errorAudioContext = context
+
+    const play = () => {
+      const now = context.currentTime
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+
+      oscillator.type = 'triangle'
+      oscillator.frequency.setValueAtTime(520, now)
+      oscillator.frequency.exponentialRampToValueAtTime(220, now + 0.18)
+      gain.gain.setValueAtTime(0.075, now)
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22)
+
+      oscillator.connect(gain)
+      gain.connect(context.destination)
+      oscillator.start(now)
+      oscillator.stop(now + 0.22)
+    }
+
+    if (context.state === 'suspended') {
+      void context.resume().then(play).catch(() => undefined)
+      return
+    }
+
+    play()
+  } catch {
+    // Audio feedback is optional and must never block POS workflow.
+  }
+}
+
+function ToastCard({
+  toast,
+  onDismiss,
+}: {
+  toast: ToastItem
+  onDismiss: () => void
+}) {
+  const [anchorStyle, setAnchorStyle] = useState<CSSProperties | undefined>()
+
+  useLayoutEffect(() => {
+    if (!toast.anchor) {
+      setAnchorStyle(undefined)
+      return
+    }
+
+    const anchor = toast.anchor
+    const update = () => {
+      if (!anchor.isConnected) {
+        setAnchorStyle(undefined)
+        return
+      }
+
+      const rect = anchor.getBoundingClientRect()
+      const width = Math.min(Math.max(rect.width, 360), window.innerWidth - 24)
+      const left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12))
+
+      setAnchorStyle({
+        position: 'fixed',
+        left,
+        top: Math.max(12, rect.top - 8),
+        width,
+        transform: 'translateY(-100%)',
+      })
+    }
+
+    update()
+    window.addEventListener('resize', update)
+    window.addEventListener('scroll', update, true)
+
+    return () => {
+      window.removeEventListener('resize', update)
+      window.removeEventListener('scroll', update, true)
+    }
+  }, [toast.anchor])
+
+  return (
+    <div
+      className={`bp-toast bp-toast-${toast.tone}${toast.anchor ? ' is-anchored' : ''}`}
+      style={anchorStyle}
+    >
+      <span className="bp-toast-icon" aria-hidden="true">
+        {toast.tone === 'success' ? (
+          <CheckCircle2 size={18} />
+        ) : toast.tone === 'error' ? (
+          <XCircle size={22} />
+        ) : (
+          <Info size={18} />
+        )}
+      </span>
+      <div className="bp-toast-body">
+        <strong>{toast.title}</strong>
+        <span>{toast.message}</span>
+      </div>
+      <button
+        type="button"
+        className="bp-toast-close"
+        aria-label="Dismiss"
+        onClick={onDismiss}
+      >
+        <X size={toast.tone === 'error' ? 16 : 14} />
+      </button>
+    </div>
+  )
+}
 
 export function formatApiError(err: unknown, fallback = 'Request failed.'): string {
   if (err instanceof ApiClientError) {
@@ -52,14 +173,25 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => apiBusy.subscribe(setBusy), [])
 
-  const push = useCallback((tone: ToastTone, message: string, title?: string) => {
+  const push = useCallback((
+    tone: ToastTone,
+    message: string,
+    title?: string,
+    anchor?: HTMLElement | null,
+  ) => {
     const id = ++toastSeq
     const item: ToastItem = {
       id,
       tone,
       title: title ?? (tone === 'success' ? 'Success' : tone === 'error' ? 'Error' : 'Notice'),
       message,
+      anchor,
     }
+
+    if (tone === 'error') {
+      playErrorSound()
+    }
+
     setToasts((current) => [...current.slice(-4), item])
     window.setTimeout(() => {
       setToasts((current) => current.filter((row) => row.id !== id))
@@ -70,6 +202,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     () => ({
       success: (message, title) => push('success', message, title),
       error: (message, title) => push('error', message, title),
+      errorAt: (message, title, anchor) => push('error', message, title, anchor),
       info: (message, title) => push('info', message, title),
       fromApiError: (err, fallback) => push('error', formatApiError(err, fallback), 'Request failed'),
       confirm: (message) =>
@@ -114,10 +247,23 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
                 </div>
               ) : null}
 
+              {toasts
+                .filter((toast) => toast.anchor)
+                .map((toast) => (
+                  <ToastCard
+                    key={toast.id}
+                    toast={toast}
+                    onDismiss={() =>
+                      setToasts((current) => current.filter((row) => row.id !== toast.id))
+                    }
+                  />
+                ))}
+
               {(['error', 'default'] as const).map((stack) => {
-                const stackToasts = toasts.filter((toast) =>
-                  stack === 'error' ? toast.tone === 'error' : toast.tone !== 'error',
-                )
+                const stackToasts = toasts.filter((toast) => {
+                  if (toast.anchor) return false
+                  return stack === 'error' ? toast.tone === 'error' : toast.tone !== 'error'
+                })
 
                 if (stackToasts.length === 0) return null
 
@@ -128,29 +274,13 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
                     aria-live={stack === 'error' ? 'assertive' : 'polite'}
                   >
                     {stackToasts.map((toast) => (
-                      <div key={toast.id} className={`bp-toast bp-toast-${toast.tone}`}>
-                        <span className="bp-toast-icon" aria-hidden="true">
-                          {toast.tone === 'success' ? (
-                            <CheckCircle2 size={18} />
-                          ) : toast.tone === 'error' ? (
-                            <XCircle size={22} />
-                          ) : (
-                            <Info size={18} />
-                          )}
-                        </span>
-                        <div className="bp-toast-body">
-                          <strong>{toast.title}</strong>
-                          <span>{toast.message}</span>
-                        </div>
-                        <button
-                          type="button"
-                          className="bp-toast-close"
-                          aria-label="Dismiss"
-                          onClick={() => setToasts((current) => current.filter((row) => row.id !== toast.id))}
-                        >
-                          <X size={toast.tone === 'error' ? 16 : 14} />
-                        </button>
-                      </div>
+                      <ToastCard
+                        key={toast.id}
+                        toast={toast}
+                        onDismiss={() =>
+                          setToasts((current) => current.filter((row) => row.id !== toast.id))
+                        }
+                      />
                     ))}
                   </div>
                 )

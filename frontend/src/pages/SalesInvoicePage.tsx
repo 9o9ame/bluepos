@@ -1210,7 +1210,11 @@ export function SalesInvoicePage() {
 
   useEffect(() => {
     if (barcodeLookupError) {
-      feedback.error(barcodeLookupError, 'Sales Invoice')
+      feedback.errorAt(
+        barcodeLookupError,
+        'Sales Invoice',
+        productPickerAnchorRef.current,
+      )
     }
   }, [barcodeLookupError, feedback])
 

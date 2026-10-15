@@ -161,6 +161,11 @@
   font-size: 12px;
 }
 
+.bp-toast.is-anchored {
+  z-index: 10060;
+  margin: 0;
+}
+
 .bp-toast-success {
   border-color: #9fd4b3;
   background: linear-gradient(180deg, #f5fff8, #e2f8ea);
