@@ -23,7 +23,6 @@ import {
   fetchCategories,
   fetchProduct,
   fetchProducts,
-  lookupExistingProduct,
   fetchSubcategories,
   fetchSuppliers,
   fetchUnits,
@@ -31,6 +30,7 @@ import {
   saveProductPrices,
   updateProduct,
   uploadProductImage,
+  lookupExistingProduct,
 } from '../api/catalog'
 import { ApiClientError } from '../api/client'
 import { askConfirm } from '../feedback/FeedbackProvider'
@@ -292,29 +292,6 @@ export function ProductsPage({
     return compactDecimal((((sale - purchase) / sale) * 100).toFixed(2))
   }, [purchaseRate, retail])
 
-  function applySaleDerivedPrices(saleRaw: string, purchaseRaw: string) {
-    const sale = Number(saleRaw)
-    const purchase = Number(purchaseRaw)
-    if (!Number.isFinite(sale) || !Number.isFinite(purchase)) {
-      setWholesale('0.0')
-      setMinimumSale('0.0')
-      return
-    }
-    const markup = sale - purchase
-    setWholesale(compactDecimal((sale - markup * 0.25).toFixed(4)))
-    setMinimumSale(compactDecimal((sale - markup * 0.5).toFixed(4)))
-  }
-
-  function onPurchaseRateChange(value: string) {
-    setPurchaseRate(value)
-    applySaleDerivedPrices(retail, value)
-  }
-
-  function onSaleRateChange(value: string) {
-    setRetail(value)
-    applySaleDerivedPrices(value, purchaseRate)
-  }
-
   useEffect(() => {
     if (!creating || section !== 'definition') {
       return
@@ -361,6 +338,29 @@ export function ProductsPage({
       window.clearTimeout(timer)
     }
   }, [creating, section, primaryBarcode, name, queryClient])
+
+  function applySaleDerivedPrices(saleRaw: string, purchaseRaw: string) {
+    const sale = Number(saleRaw)
+    const purchase = Number(purchaseRaw)
+    if (!Number.isFinite(sale) || !Number.isFinite(purchase)) {
+      setWholesale('0.0')
+      setMinimumSale('0.0')
+      return
+    }
+    const markup = sale - purchase
+    setWholesale(compactDecimal((sale - markup * 0.25).toFixed(4)))
+    setMinimumSale(compactDecimal((sale - markup * 0.5).toFixed(4)))
+  }
+
+  function onPurchaseRateChange(value: string) {
+    setPurchaseRate(value)
+    applySaleDerivedPrices(retail, value)
+  }
+
+  function onSaleRateChange(value: string) {
+    setRetail(value)
+    applySaleDerivedPrices(value, purchaseRate)
+  }
 
   function onPrimaryBarcodeChange(value: string) {
     if (!canBarcodes) return
@@ -1042,6 +1042,15 @@ export function ProductsPage({
           'product-reference-screen',
           embedded ? 'is-embedded' : '',
         ].filter(Boolean).join(' ')}
+        onKeyDownCapture={(event) => {
+          if (!embedded || event.key !== 'Enter') return
+          if (event.target instanceof HTMLButtonElement) return
+
+          // Embedded Product Definition is frequently used with keyboard-wedge
+          // scanners. Never let a scanner suffix (or Enter inside a field)
+          // implicitly submit/create the product.
+          event.preventDefault()
+        }}
         onSubmit={onSubmit}
       >
         <aside className="product-def-rail" aria-label="Product actions">

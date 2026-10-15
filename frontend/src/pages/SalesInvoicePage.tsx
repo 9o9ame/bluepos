@@ -34,6 +34,8 @@ import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { useSaleCart } from '../features/sales/useSaleCart'
 import { useCan } from '../features/auth/useCan'
 import { useAuth } from '../features/auth/AuthProvider'
+import { useLocalProducts } from '../features/catalog/useLocalCatalog'
+import { useBarcodeScannerTarget } from '../features/scanner/useBarcodeScanner'
 import type { SaleOfferEvaluation } from '../types/saleSchemes'
 import type { Sale, SaleHold, SalePaymentMethod } from '../types/sales'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
@@ -110,6 +112,7 @@ export function SalesInvoicePage() {
   const [productQuery, setProductQuery] = useState('')
   const [activeProductQuery, setActiveProductQuery] = useState('')
   const [activeProductPickerOpen, setActiveProductPickerOpen] = useState(false)
+  const [productLookupMode, setProductLookupMode] = useState<'browse' | 'search'>('browse')
   const [barcodeQuery, setBarcodeQuery] = useState('')
   const [activeLineKey, setActiveLineKey] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -139,6 +142,20 @@ export function SalesInvoicePage() {
   const [partyModalOpen, setPartyModalOpen] = useState(false)
 
   const { session } = useAuth()
+  const salesProductLookupQuery =
+    productLookupMode === 'search'
+      ? (activeLineKey ? activeProductQuery : productQuery)
+      : ''
+  const localProductLookup = useLocalProducts(
+    session,
+    salesProductLookupQuery,
+    view === 'pos' && !savedSale,
+  )
+  const productLookupRows = localProductLookup.rows.filter(
+    (product) => product.is_active && product.status === 'active',
+  )
+  const productLookupTotal = productLookupRows.length
+
   const [selectedSalesmanUlid, setSelectedSalesmanUlid] = useState<string | null>(
     null,
   )
@@ -180,38 +197,6 @@ export function SalesInvoicePage() {
     return Math.max(total - paid, 0).toFixed(2)
   }, [cart.preview.grandTotal, received])
 
-  const productsQuery = useQuery({
-    queryKey: ['products', 'pos-entry', productQuery],
-    queryFn: () =>
-      fetchProducts(
-        {
-          q: productQuery || undefined,
-          per_page: 20,
-          page: 1,
-          sales_lookup: true,
-        },
-        { busy: 'none' },
-      ),
-    enabled: productQuery.trim().length > 0,
-  })
-
-  const activeProductsQuery = useQuery({
-    queryKey: ['products', 'pos-active-entry', activeProductQuery],
-    queryFn: () =>
-      fetchProducts(
-        {
-          q: activeProductQuery || undefined,
-          per_page: 20,
-          page: 1,
-          sales_lookup: true,
-        },
-        { busy: 'none' },
-      ),
-    enabled:
-      Boolean(activeLineKey) &&
-      activeProductPickerOpen &&
-      activeProductQuery.trim().length > 0,
-  })
 
   const businessSettingsQuery = useQuery({
     queryKey: ['settings', 'business', 'sales-stock'],
@@ -347,6 +332,7 @@ export function SalesInvoicePage() {
   const quotationIdempotencyKeyRef = useRef(newSaleKey())
   const receivedRef = useRef<HTMLInputElement | null>(null)
   const productSearchRef = useRef<HTMLInputElement | null>(null)
+  const productPickerAnchorRef = useRef<HTMLDivElement | null>(null)
 
   const copyFromMutation = useMutation({
     mutationFn: async () => {
@@ -856,21 +842,41 @@ export function SalesInvoicePage() {
     }
   }
 
-  async function addProductFromBarcode() {
-    const barcode = barcodeQuery.trim()
+  async function addProductFromBarcode(barcodeOverride?: string) {
+    const barcode = (barcodeOverride ?? barcodeQuery).trim()
     if (!barcode) return
 
+    setBarcodeQuery(barcode)
+
     try {
+      const cachedProducts = localProductLookup.data ?? []
+      const localMatches = cachedProducts.filter((product) => {
+        if (!product.is_active || product.status !== 'active') return false
+
+        if (product.primary_barcode === barcode) return true
+
+        return Boolean(
+          product.barcodes?.some(
+            (row) => row.is_active && row.barcode === barcode,
+          ),
+        )
+      })
+
+      if (localMatches.length === 1) {
+        await addProductFromEntry(localMatches[0].ulid, barcode)
+        return
+      }
+
       const page = await fetchProducts(
         { q: barcode, per_page: 20, page: 1 },
         { busy: 'none' },
       )
       const match = page.data.find((product) =>
+        product.primary_barcode === barcode ||
         product.barcodes?.some(
           (row) => row.is_active && row.barcode === barcode,
         ),
       )
-
       if (!match) {
         setSaveError(`No product found for barcode ${barcode}.`)
         return
@@ -885,6 +891,26 @@ export function SalesInvoicePage() {
       )
     }
   }
+
+  useBarcodeScannerTarget({
+    id: 'sales-invoice-barcode',
+    priority: 20,
+    enabled:
+      view === 'pos' &&
+      canCreateSale &&
+      !savedSale &&
+      !partyModalOpen &&
+      !paymentModalOpen &&
+      !customizationOpen,
+    onScan: (rawBarcode) => {
+      const barcode = rawBarcode.trim()
+      if (!barcode) return
+
+      setBarcodeQuery(barcode)
+      setActiveProductPickerOpen(false)
+      void addProductFromBarcode(barcode)
+    },
+  })
 
   function finishActiveLine(lineKey: string) {
     if (activeLineKey !== lineKey) return
@@ -1744,49 +1770,77 @@ export function SalesInvoicePage() {
                               if (col.key === 'product') {
                                 return (
                                   <td key={col.key} className="sales-reference-yellow sales-product-search-cell">
-                                    <input
-                                      className="sales-pos-product-entry is-active-product"
-                                      value={activeProductQuery}
-                                      aria-label="Change product"
-                                      autoComplete="off"
-                                      onFocus={() => {
-                                        if (!activeProductQuery) {
-                                          setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
-                                        }
-                                        setActiveProductPickerOpen(true)
-                                      }}
-                                      onClick={() => setActiveProductPickerOpen(true)}
-                                      onChange={(e) => {
-                                        setActiveProductQuery(e.target.value)
-                                        setActiveProductPickerOpen(true)
-                                      }}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Escape') {
-                                          setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
-                                          setActiveProductPickerOpen(false)
-                                          return
-                                        }
-                                        if (e.key !== 'Enter') return
-                                        const first = activeProductsQuery.data?.data?.[0]
-                                        if (first) {
-                                          e.preventDefault()
-                                          void addProductFromEntry(first.ulid, '', line.line_key)
-                                        }
-                                      }}
-                                    />
-
-                                    {activeProductPickerOpen &&
-                                    activeProductQuery.trim().length > 0 &&
-                                    activeProductsQuery.data?.data?.length ? (
-                                      <ProductLookupGrid
-                                        rows={activeProductsQuery.data.data}
-                                        total={activeProductsQuery.data.meta.total}
-                                        priceType={cart.priceType}
-                                        onSelect={(product) =>
-                                          void addProductFromEntry(product.ulid, '', line.line_key)
-                                        }
+                                    <div
+                                      ref={productPickerAnchorRef}
+                                      className="sales-product-combo"
+                                    >
+                                      <input
+                                        className="sales-pos-product-entry is-active-product"
+                                        value={activeProductQuery}
+                                        aria-label="Change product"
+                                        autoComplete="off"
+                                        onFocus={() => {
+                                          if (!activeProductQuery) {
+                                            setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
+                                          }
+                                          setProductLookupMode('browse')
+                                          setActiveProductPickerOpen(true)
+                                        }}
+                                        onClick={() => {
+                                          setProductLookupMode('browse')
+                                          setActiveProductPickerOpen(true)
+                                        }}
+                                        onChange={(e) => {
+                                          setActiveProductQuery(e.target.value)
+                                          setProductLookupMode('search')
+                                          setActiveProductPickerOpen(true)
+                                        }}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Escape') {
+                                            setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
+                                            setActiveProductPickerOpen(false)
+                                            return
+                                          }
+                                          if (e.key !== 'Enter') return
+                                          const first = productLookupRows[0]
+                                          if (first) {
+                                            e.preventDefault()
+                                            void addProductFromEntry(first.ulid, '', line.line_key)
+                                          }
+                                        }}
                                       />
-                                    ) : null}
+                                      <button
+                                        type="button"
+                                        className="sales-product-combo-toggle"
+                                        aria-label="Open product dropdown"
+                                        aria-expanded={activeProductPickerOpen}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={() => {
+                                          setProductLookupMode('browse')
+                                          setActiveProductPickerOpen((open) => !open)
+                                        }}
+                                      >
+                                        <span aria-hidden>
+                                          <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                            <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                          </svg>
+                                        </span>
+                                      </button>
+
+                                      {activeProductPickerOpen ? (
+                                        <ProductLookupGrid
+                                          rows={productLookupRows}
+                                          total={productLookupTotal}
+                                          priceType={cart.priceType}
+                                          selectedUlid={line.product_ulid}
+                                          portalAnchorRef={productPickerAnchorRef}
+                                          onRequestClose={() => setActiveProductPickerOpen(false)}
+                                          onSelect={(product) =>
+                                            void addProductFromEntry(product.ulid, '', line.line_key)
+                                          }
+                                        />
+                                      ) : null}
+                                    </div>
                                   </td>
                                 )
                               }
@@ -1903,30 +1957,68 @@ export function SalesInvoicePage() {
                           if (col.key === 'product') {
                             return (
                               <td key={col.key} className="sales-reference-yellow sales-product-search-cell">
-                                <input
-                                  ref={productSearchRef}
-                                  className="sales-pos-product-entry"
-                                  value={productQuery}
-                                  placeholder="Search product name or number"
-                                  autoComplete="off"
-                                  onChange={(e) => setProductQuery(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key !== 'Enter') return
-                                    const first = productsQuery.data?.data?.[0]
-                                    if (first) {
-                                      e.preventDefault()
-                                      void addProductFromEntry(first.ulid)
-                                    }
-                                  }}
-                                />
-                                {productQuery.trim().length > 0 && productsQuery.data?.data?.length ? (
-                                  <ProductLookupGrid
-                                    rows={productsQuery.data.data}
-                                    total={productsQuery.data.meta.total}
-                                    priceType={cart.priceType}
-                                    onSelect={(product) => void addProductFromEntry(product.ulid)}
+                                <div
+                                  ref={productPickerAnchorRef}
+                                  className="sales-product-combo"
+                                >
+                                  <input
+                                    ref={productSearchRef}
+                                    className="sales-pos-product-entry"
+                                    value={productQuery}
+                                    placeholder="Search product name or number"
+                                    autoComplete="off"
+                                    onFocus={() => {
+                                      setProductLookupMode('browse')
+                                      setActiveProductPickerOpen(true)
+                                    }}
+                                    onChange={(e) => {
+                                      setProductQuery(e.target.value)
+                                      setProductLookupMode('search')
+                                      setActiveProductPickerOpen(true)
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Escape') {
+                                        setActiveProductPickerOpen(false)
+                                        return
+                                      }
+                                      if (e.key !== 'Enter') return
+                                      const first = productLookupRows[0]
+                                      if (first) {
+                                        e.preventDefault()
+                                        void addProductFromEntry(first.ulid)
+                                      }
+                                    }}
                                   />
-                                ) : null}
+                                  <button
+                                    type="button"
+                                    className="sales-product-combo-toggle"
+                                    aria-label="Open product dropdown"
+                                    aria-expanded={activeProductPickerOpen}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => {
+                                      setProductLookupMode('browse')
+                                      setActiveProductPickerOpen((open) => !open)
+                                      requestAnimationFrame(() => productSearchRef.current?.focus())
+                                    }}
+                                  >
+                                    <span aria-hidden>
+                                      <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                        <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                      </svg>
+                                    </span>
+                                  </button>
+
+                                  {activeProductPickerOpen ? (
+                                    <ProductLookupGrid
+                                      rows={productLookupRows}
+                                      total={productLookupTotal}
+                                      priceType={cart.priceType}
+                                      portalAnchorRef={productPickerAnchorRef}
+                                      onRequestClose={() => setActiveProductPickerOpen(false)}
+                                      onSelect={(product) => void addProductFromEntry(product.ulid)}
+                                    />
+                                  ) : null}
+                                </div>
                               </td>
                             )
                           }

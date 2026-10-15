@@ -225,6 +225,7 @@
 .product-reference-screen .product-inline-error {
   color: var(--ui-danger) !important;
 }
+
 .product-reference-screen :where(.is-selected, .is-active) {
   border-color: var(--ui-accent) !important;
 }
