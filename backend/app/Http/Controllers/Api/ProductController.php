@@ -17,6 +17,7 @@ use App\Http\Requests\Products\SyncProductPricesRequest;
 use App\Http\Requests\Products\UpdateProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Models\ProductBarcode;
 use App\Models\StockBalance;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Builder;
@@ -219,6 +220,61 @@ class ProductController extends Controller
         }
 
         return response()->json($bulkUpdateProducts->execute($rows));
+    }
+
+    public function validateIdentity(Request $request, TenantContext $tenantContext): JsonResponse
+    {
+        $this->authorize('viewAny', Product::class);
+
+        $data = $request->validate([
+            'name' => ['nullable', 'string', 'max:180'],
+            'barcodes' => ['sometimes', 'array', 'max:100'],
+            'barcodes.*' => ['string', 'max:64'],
+            'exclude_product_ulid' => ['nullable', 'string', 'size:26'],
+        ]);
+
+        $tenantId = $tenantContext->tenantId();
+        $excludeProductId = null;
+
+        if (! empty($data['exclude_product_ulid'])) {
+            $excludeProductId = Product::query()
+                ->forTenant($tenantId)
+                ->where('ulid', $data['exclude_product_ulid'])
+                ->value('id');
+        }
+
+        $name = trim((string) ($data['name'] ?? ''));
+        $nameConflict = false;
+
+        if ($name !== '') {
+            $nameConflict = Product::query()
+                ->forTenant($tenantId)
+                ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+                ->when($excludeProductId, fn ($query) => $query->where('id', '!=', $excludeProductId))
+                ->exists();
+        }
+
+        $requestedBarcodes = collect($data['barcodes'] ?? [])
+            ->map(fn ($barcode) => trim((string) $barcode))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $barcodeConflicts = $requestedBarcodes->isEmpty()
+            ? []
+            : ProductBarcode::query()
+                ->forTenant($tenantId)
+                ->whereIn('barcode', $requestedBarcodes->all())
+                ->when($excludeProductId, fn ($query) => $query->where('product_id', '!=', $excludeProductId))
+                ->pluck('barcode')
+                ->unique()
+                ->values()
+                ->all();
+
+        return response()->json([
+            'name_conflict' => $nameConflict,
+            'barcode_conflicts' => $barcodeConflicts,
+        ]);
     }
 
     public function store(StoreProductRequest $request, CreateProductAction $createProduct): JsonResponse
