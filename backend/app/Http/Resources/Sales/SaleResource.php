@@ -62,6 +62,13 @@ class SaleResource extends JsonResource
             'price_type' => $this->price_type?->value,
             'subtotal' => $this->subtotal,
             'discount_amount' => $this->discount_amount,
+            'invoice_discount_percent' => $this->invoice_discount_percent,
+            'invoice_discount_amount' => $this->invoice_discount_amount,
+            'total_discount_amount' => bcadd(
+                (string) $this->discount_amount,
+                (string) $this->invoice_discount_amount,
+                4,
+            ),
             'tax_amount' => $this->tax_amount,
             'grand_total' => $this->grand_total,
             'returned_amount' => $returnedAmount,
