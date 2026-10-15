@@ -23,6 +23,7 @@ import {
   fetchCategories,
   fetchProduct,
   fetchProducts,
+  lookupExistingProduct,
   fetchSubcategories,
   fetchSuppliers,
   fetchUnits,
@@ -184,6 +185,7 @@ export function ProductsPage({
   const [supplierModalOpen, setSupplierModalOpen] = useState(false)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
   const barcodeTableScrollRef = useRef<HTMLDivElement | null>(null)
+  const existingLookupSequenceRef = useRef(0)
   const [pendingImage, setPendingImage] = useState<File | null>(null)
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
   const [imageRemoveRequested, setImageRemoveRequested] = useState(false)
@@ -267,6 +269,7 @@ export function ProductsPage({
   const [minimumSale, setMinimumSale] = useState('0.0')
   const [barcodeRows, setBarcodeRows] = useState<ProductBarcodeDraft[]>([])
   const [selectedBarcodeId, setSelectedBarcodeId] = useState<string | null>(null)
+  const primaryBarcode = barcodeRows[0]?.barcode ?? ''
 
   const subcategories = useQuery({
     queryKey: ['subcategories', categoryUlid],
@@ -311,6 +314,53 @@ export function ProductsPage({
     setRetail(value)
     applySaleDerivedPrices(value, purchaseRate)
   }
+
+  useEffect(() => {
+    if (!creating || section !== 'definition') {
+      return
+    }
+
+    const lookupBarcode = primaryBarcode.trim()
+    const lookupName = name.trim()
+
+    if (!lookupBarcode && !lookupName) {
+      return
+    }
+
+    const sequence = ++existingLookupSequenceRef.current
+    const delay = lookupBarcode ? 150 : 300
+    const timer = window.setTimeout(() => {
+      void lookupExistingProduct(
+        lookupBarcode ? { barcode: lookupBarcode } : { name: lookupName },
+      )
+        .then((existing) => {
+          if (!existing || sequence !== existingLookupSequenceRef.current) {
+            return
+          }
+
+          queryClient.setQueryData(['product', existing.ulid], existing)
+          setCreating(false)
+          setSelectedKey(existing.ulid)
+          setQ(existing.name)
+          setError(null)
+        })
+        .catch((err) => {
+          if (sequence !== existingLookupSequenceRef.current) {
+            return
+          }
+
+          setError(
+            err instanceof ApiClientError
+              ? err.message
+              : 'Unable to check for an existing product.',
+          )
+        })
+    }, delay)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [creating, section, primaryBarcode, name, queryClient])
 
   function onPrimaryBarcodeChange(value: string) {
     if (!canBarcodes) return
@@ -620,10 +670,14 @@ export function ProductsPage({
       return
     }
 
-    if (!selectedKey || !products.some((product) => product.ulid === selectedKey)) {
+    const selectedIsLoaded =
+      productQuery.data?.ulid === selectedKey ||
+      products.some((product) => product.ulid === selectedKey)
+
+    if (!selectedKey || !selectedIsLoaded) {
       setSelectedKey(products[0].ulid)
     }
-  }, [creating, products, selectedKey])
+  }, [creating, products, selectedKey, productQuery.data?.ulid])
 
   useEffect(() => {
     if (creating || !selected) return
