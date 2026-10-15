@@ -74,6 +74,9 @@ export type Sale = {
   price_type: 'retail' | 'wholesale' | null
   subtotal: string
   discount_amount: string
+  invoice_discount_percent: string
+  invoice_discount_amount: string
+  total_discount_amount: string
   tax_amount: string
   grand_total: string
   returned_amount: string
@@ -175,9 +178,10 @@ export type SaleDraftLine = {
   /** Client-side PREVIEW price; the server price wins on save. */
   unit_price?: string
 
-  /** Only one of these should be positive. The server validates again. */
+  /** UI keeps both derived values visible; payload sends only the source field. */
   discount_percent?: string
   discount_amount?: string
+  discount_source?: 'percent' | 'amount' | null
 
   /** Client-side PREVIEW product tax percentage. Server product tax wins. */
   tax_percent?: string
@@ -214,6 +218,9 @@ export type SaleHold = {
 
 export type SaleHoldPayload = {
   sale_date?: string | null
+  invoice_discount_percent?: string | null
+  invoice_discount_amount?: string | null
+
   customer_ulid?: string | null
   salesman_ulid?: string | null
   payment_due?: boolean
