@@ -34,6 +34,14 @@ type LinePreview = {
   netAmount: string
 }
 
+type LineCostPreview = {
+  costRate: string | null
+  costAmount: string | null
+  comRs: string | null
+  comPct: string | null
+  belowCost: boolean
+}
+
 function toNumber(value: string | number | null | undefined): number {
   const number = Number(value ?? 0)
   return Number.isFinite(number) ? number : 0
@@ -193,6 +201,40 @@ function calculateLinePreview(line: SaleDraftLine): LinePreview {
   }
 }
 
+function calculateLineCostPreview(line: SaleDraftLine): LineCostPreview {
+  if (line.line_kind !== 'sale' || line.average_cost == null) {
+    return {
+      costRate: null,
+      costAmount: null,
+      comRs: null,
+      comPct: null,
+      belowCost: false,
+    }
+  }
+
+  const baseAverageCost = Math.max(toNumber(line.average_cost), 0)
+  const factor = Math.max(toNumber(line.conversion_factor ?? '1'), 0)
+  const quantity = Math.max(toNumber(line.quantity), 0)
+  const costRate = baseAverageCost * factor
+  const costAmount = costRate * quantity
+  const linePreview = calculateLinePreview(line)
+  const saleBeforeTax =
+    Math.max(
+      toNumber(linePreview.grossAmount) - toNumber(linePreview.discountAmount),
+      0,
+    )
+  const comRs = saleBeforeTax - costAmount
+  const comPct = costAmount > 0 ? (comRs / costAmount) * 100 : 0
+
+  return {
+    costRate: money4(costRate),
+    costAmount: money4(costAmount),
+    comRs: money4(comRs),
+    comPct: comPct.toFixed(4),
+    belowCost: costAmount > 0 && saleBeforeTax < costAmount,
+  }
+}
+
 function syncLineDiscount(
   line: SaleDraftLine,
   source: 'percent' | 'amount' | null = line.discount_source ?? null,
@@ -297,6 +339,7 @@ export function useSaleCart() {
       conversion_factor: conversionFactor,
       available_units: availableUnits,
       available_base_stock: availableBaseStock,
+      average_cost: product.sales_lookup?.average_cost ?? null,
       retail_price: retailPrice,
       wholesale_price: wholesalePrice,
       unit_price: '0.0000',
@@ -737,6 +780,7 @@ export function useSaleCart() {
         conversion_factor: item.conversion_factor,
         available_units: availableUnits,
         available_base_stock: stockByProduct[product.ulid] ?? null,
+        average_cost: product.sales_lookup?.average_cost ?? null,
         retail_price: retailPrice,
         wholesale_price: wholesalePrice,
         unit_price: item.line_kind === 'sale' ? item.unit_price : '0.0000',
@@ -921,6 +965,7 @@ export function useSaleCart() {
 
     preview,
     linePreview: calculateLinePreview,
+    lineCostPreview: calculateLineCostPreview,
     availableStock,
     hasPaidLines,
 
