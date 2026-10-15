@@ -104,7 +104,7 @@ class RecalculateSaleReturnTotalsAction
             ->where('status', SaleReturnStatus::Posted->value)
             ->when(
                 $document->exists,
-                fn ($query) => $query->whereKeyNot($document->id),
+                fn ($query) => $query->where('id', '!=', $document->id),
             )
             ->get();
 
