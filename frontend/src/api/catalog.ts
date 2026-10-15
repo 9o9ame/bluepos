@@ -402,6 +402,20 @@ export function fetchProducts(
   )
 }
 
+export function lookupExistingProduct(params: {
+  name?: string
+  barcode?: string
+}) {
+  const search = new URLSearchParams()
+  if (params.name?.trim()) search.set('name', params.name.trim())
+  if (params.barcode?.trim()) search.set('barcode', params.barcode.trim())
+
+  return apiFetch<Product | null>(
+    `/api/products/lookup-existing?${search.toString()}`,
+    { busy: 'none' },
+  )
+}
+
 export function fetchProduct(
   ulid: string,
 ) {
