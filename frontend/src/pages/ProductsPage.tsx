@@ -30,6 +30,7 @@ import {
   saveProductPrices,
   updateProduct,
   uploadProductImage,
+  validateProductIdentity,
 } from '../api/catalog'
 import { ApiClientError } from '../api/client'
 import { askConfirm } from '../feedback/FeedbackProvider'
@@ -180,6 +181,14 @@ export function ProductsPage({
   const [creating, setCreating] = useState(embedded)
   const [section, setSection] = useState<'definition' | 'opening' | 'related'>('definition')
   const [error, setError] = useState<string | null>(null)
+  const [identityValidation, setIdentityValidation] = useState<{
+    name_conflict: boolean
+    barcode_conflicts: string[]
+  }>({
+    name_conflict: false,
+    barcode_conflicts: [],
+  })
+  const identityCheckSequenceRef = useRef(0)
   const [quickEditor, setQuickEditor] = useState<QuickEditorKind | null>(null)
   const [supplierModalOpen, setSupplierModalOpen] = useState(false)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
@@ -281,6 +290,15 @@ export function ProductsPage({
   const [openingBusy, setOpeningBusy] = useState(false)
 
   const canSave = creating ? canCreate : canEdit && Boolean(selectedKey)
+  const conflictingBarcodes = useMemo(
+    () => new Set(identityValidation.barcode_conflicts),
+    [identityValidation.barcode_conflicts],
+  )
+  const identityError = identityValidation.name_conflict
+    ? 'Description: A product with this name already exists.'
+    : identityValidation.barcode_conflicts.length > 0
+      ? `Barcode ${identityValidation.barcode_conflicts[0]} is already assigned to another product.`
+      : null
   const inStockDisplay = compactDecimal(productStock.data?.active_warehouse.quantity ?? '0.0')
   const marginDisplay = useMemo(() => {
     const purchase = Number(purchaseRate)
@@ -288,6 +306,48 @@ export function ProductsPage({
     if (!Number.isFinite(purchase) || !Number.isFinite(sale) || sale <= 0) return '0.0'
     return compactDecimal((((sale - purchase) / sale) * 100).toFixed(2))
   }, [purchaseRate, retail])
+
+  useEffect(() => {
+    if (!canSave || section !== 'definition') {
+      setIdentityValidation({
+        name_conflict: false,
+        barcode_conflicts: [],
+      })
+      return
+    }
+
+    const trimmedName = name.trim()
+    const barcodes = barcodeRows
+      .map((row) => row.barcode.trim())
+      .filter((barcode) => barcode !== '')
+
+    if (!trimmedName && barcodes.length === 0) {
+      setIdentityValidation({
+        name_conflict: false,
+        barcode_conflicts: [],
+      })
+      return
+    }
+
+    const sequence = ++identityCheckSequenceRef.current
+    const timer = window.setTimeout(() => {
+      void validateProductIdentity({
+        name: trimmedName || null,
+        barcodes,
+        exclude_product_ulid: creating ? null : selectedKey,
+      })
+        .then((result) => {
+          if (identityCheckSequenceRef.current !== sequence) return
+          setIdentityValidation(result)
+        })
+        .catch(() => {
+          if (identityCheckSequenceRef.current !== sequence) return
+          // Final create/update + barcode sync validation remains authoritative.
+        })
+    }, 300)
+
+    return () => window.clearTimeout(timer)
+  }, [barcodeRows, canSave, creating, name, section, selectedKey])
 
   function applySaleDerivedPrices(saleRaw: string, purchaseRaw: string) {
     const sale = Number(saleRaw)
@@ -439,6 +499,10 @@ export function ProductsPage({
   }
 
   function resetForm() {
+    setIdentityValidation({
+      name_conflict: false,
+      barcode_conflicts: [],
+    })
     setName('')
     setAlternateName('')
     setCategoryUlid('')
@@ -780,6 +844,14 @@ export function ProductsPage({
     mutationFn: async () => {
       const current = selected
       const trimmedName = name.trim()
+      if (identityValidation.name_conflict) {
+        throw new Error('A product with this name already exists.')
+      }
+      if (identityValidation.barcode_conflicts.length > 0) {
+        throw new Error(
+          `Barcode ${identityValidation.barcode_conflicts[0]} is already assigned to another product.`,
+        )
+      }
       if (!trimmedName) {
         throw new Error('Product name is required.')
       }
@@ -1270,6 +1342,9 @@ export function ProductsPage({
           </div>
 
           {error ? <div className="product-inline-error">{error}</div> : null}
+          {!error && identityError ? (
+            <div className="product-inline-error">{identityError}</div>
+          ) : null}
 
           {section === 'opening' ? (
             <div className="product-def-fields">
@@ -1347,16 +1422,34 @@ export function ProductsPage({
               <input className="pdf-input pdf-short" readOnly value={productNumber} />
               <label className="pdf-right-label">Barcode</label>
               <input
-                className="pdf-input"
+                className={`pdf-input${conflictingBarcodes.has(barcodeRows[0]?.barcode?.trim() ?? '') ? ' is-duplicate' : ''}`}
                 value={barcodeRows[0]?.barcode ?? ''}
                 readOnly={!canSave || !canBarcodes}
+                aria-invalid={conflictingBarcodes.has(barcodeRows[0]?.barcode?.trim() ?? '')}
+                title={
+                  conflictingBarcodes.has(barcodeRows[0]?.barcode?.trim() ?? '')
+                    ? 'This barcode is already assigned to another product.'
+                    : undefined
+                }
                 onChange={(e) => onPrimaryBarcodeChange(e.target.value)}
               />
             </div>
 
             <div className="pdf-row">
               <label>Description</label>
-              <input className="pdf-input" value={name} readOnly={!canSave} required onChange={(e) => setName(e.target.value)} />
+              <input
+                className={`pdf-input${identityValidation.name_conflict ? ' is-duplicate' : ''}`}
+                value={name}
+                readOnly={!canSave}
+                required
+                aria-invalid={identityValidation.name_conflict}
+                title={
+                  identityValidation.name_conflict
+                    ? 'A product with this name already exists.'
+                    : undefined
+                }
+                onChange={(e) => setName(e.target.value)}
+              />
             </div>
 
             <div className="pdf-row">
@@ -1681,8 +1774,14 @@ export function ProductsPage({
                       >
                         <td>
                           <input
-                            className="pdf-barcode-input"
+                            className={`pdf-barcode-input${conflictingBarcodes.has(row.barcode.trim()) ? ' is-duplicate' : ''}`}
                             value={row.barcode}
+                            aria-invalid={conflictingBarcodes.has(row.barcode.trim())}
+                            title={
+                              conflictingBarcodes.has(row.barcode.trim())
+                                ? 'This barcode is already assigned to another product.'
+                                : undefined
+                            }
                             readOnly={!canSave || !canBarcodes}
                             placeholder="Barcode"
                             onFocus={() => setSelectedBarcodeId(row.id)}
