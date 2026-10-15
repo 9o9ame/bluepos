@@ -166,7 +166,8 @@
 :root[data-theme='dark'] .sales-reference-side-label,
 :root[data-theme='dark'] .sales-reference-disc-line { color:#dce4eb; }
 :root[data-theme='dark'] .sales-reference-pay-head-values strong,
-:root[data-theme='dark'] .sales-reference-disc-values strong {
+:root[data-theme='dark'] .sales-reference-disc-values strong,
+:root[data-theme='dark'] .sales-reference-disc-values input {
   border-color:#56616c;
   background:#222a30;
   color:#e7edf2;
@@ -732,7 +733,8 @@
 }
 
 :root[data-theme='light'] .sales-reference-pay-head-values strong,
-:root[data-theme='light'] .sales-reference-disc-values strong {
+:root[data-theme='light'] .sales-reference-disc-values strong,
+:root[data-theme='light'] .sales-reference-disc-values input {
   border-color: #c0ccd7;
   border-radius: 5px;
   background: #ffffff;
