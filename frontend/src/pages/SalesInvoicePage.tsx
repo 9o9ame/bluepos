@@ -1999,7 +1999,11 @@ export function SalesInvoicePage({
                               if (col.key === 'disc_pct') {
                                 return (
                                   <td key={col.key}>
-                                    <input className="sales-pos-line-qty" data-sale-editable="true" value={displayEditableNumber(line.discount_percent ?? '0')} inputMode="decimal"
+                                    <input className="sales-pos-line-qty" data-sale-editable="true" value={
+                                      line.discount_source === 'percent'
+                                        ? line.discount_percent ?? ''
+                                        : displayEditableNumber(line.discount_percent ?? '0')
+                                    } inputMode="decimal"
                                       onChange={(e) => cart.setDiscountPercent(line.line_key, e.target.value)}
                                       onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)} />
                                   </td>
@@ -2009,7 +2013,11 @@ export function SalesInvoicePage({
                               if (col.key === 'disc_rs') {
                                 return (
                                   <td key={col.key}>
-                                    <input className="sales-pos-line-qty" data-sale-editable="true" value={displayEditableNumber(line.discount_amount ?? '0')} inputMode="decimal"
+                                    <input className="sales-pos-line-qty" data-sale-editable="true" value={
+                                      line.discount_source === 'amount'
+                                        ? line.discount_amount ?? ''
+                                        : displayEditableNumber(line.discount_amount ?? '0')
+                                    } inputMode="decimal"
                                       onChange={(e) => cart.setDiscountAmount(line.line_key, e.target.value)}
                                       onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)} />
                                   </td>
@@ -2209,7 +2217,11 @@ export function SalesInvoicePage({
                                 <input
                                   className="sales-pos-line-qty"
                                   data-sale-editable="true"
-                                  value={displayEditableNumber(line.discount_percent ?? '0')}
+                                  value={
+                                      line.discount_source === 'percent'
+                                        ? line.discount_percent ?? ''
+                                        : displayEditableNumber(line.discount_percent ?? '0')
+                                    }
                                   inputMode="decimal"
                                   onChange={(e) => cart.setDiscountPercent(line.line_key, e.target.value)}
                                 />
@@ -2231,7 +2243,11 @@ export function SalesInvoicePage({
                                 <input
                                   className="sales-pos-line-qty"
                                   data-sale-editable="true"
-                                  value={displayEditableNumber(line.discount_amount ?? '0')}
+                                  value={
+                                      line.discount_source === 'amount'
+                                        ? line.discount_amount ?? ''
+                                        : displayEditableNumber(line.discount_amount ?? '0')
+                                    }
                                   inputMode="decimal"
                                   onChange={(e) => cart.setDiscountAmount(line.line_key, e.target.value)}
                                 />
@@ -2561,16 +2577,14 @@ export function SalesInvoicePage({
 
               <input
                 value={
-                  Number.parseFloat(cart.preview.subtotal) > 0
-                    ? (
-                        (Number.parseFloat(cart.preview.discount) /
-                          Number.parseFloat(cart.preview.subtotal)) *
-                        100
-                      ).toFixed(2)
-                    : '0.00'
+                  cart.invoiceDiscountSource === 'percent'
+                    ? cart.invoiceDiscountInput
+                    : displayEditableNumber(cart.preview.invoiceDiscountPercent)
                 }
-                readOnly
-                title="Effective discount from sale lines"
+                onChange={(e) => cart.setInvoiceDiscountPercent(e.target.value)}
+                inputMode="decimal"
+                aria-label="Invoice discount percent"
+                title="Overall invoice discount percentage"
               />
 
               <input
@@ -2636,7 +2650,7 @@ export function SalesInvoicePage({
                   type="checkbox"
                   onChange={() => {
                     setSaveError(
-                      'Sale-level discount is not currently supported by the sales API.',
+                      'Cost-based discount is not currently supported.',
                     )
                   }}
                 />{' '}
@@ -2645,17 +2659,26 @@ export function SalesInvoicePage({
             </div>
 
             <div className="sales-reference-disc-values">
-              <strong>{cart.preview.discount}</strong>
-              <strong>
-                {Number.parseFloat(cart.preview.subtotal) > 0
-                  ? (
-                      (Number.parseFloat(cart.preview.discount) /
-                        Number.parseFloat(cart.preview.subtotal)) *
-                      100
-                    ).toFixed(2)
-                  : '0.00'}{' '}
-                %
-              </strong>
+              <input
+                value={
+                  cart.invoiceDiscountSource === 'amount'
+                    ? cart.invoiceDiscountInput
+                    : displayEditableNumber(cart.preview.invoiceDiscountAmount)
+                }
+                onChange={(e) => cart.setInvoiceDiscountAmount(e.target.value)}
+                inputMode="decimal"
+                aria-label="Invoice discount amount"
+              />
+              <input
+                value={
+                  cart.invoiceDiscountSource === 'percent'
+                    ? cart.invoiceDiscountInput
+                    : displayEditableNumber(cart.preview.invoiceDiscountPercent)
+                }
+                onChange={(e) => cart.setInvoiceDiscountPercent(e.target.value)}
+                inputMode="decimal"
+                aria-label="Invoice discount percent"
+              />
             </div>
 
             <label className="sales-reference-payment-label">
