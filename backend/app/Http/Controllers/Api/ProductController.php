@@ -238,7 +238,7 @@ class ProductController extends Controller
         $name = trim((string) $request->string('name'));
 
         if ($barcode === '' && $name === '') {
-            return response()->json(null);
+            return response('null', 200, ['Content-Type' => 'application/json']);
         }
 
         $baseQuery = Product::query()
@@ -266,7 +266,7 @@ class ProductController extends Controller
 
         return $product
             ? new ProductResource($product)
-            : response()->json(null);
+            : response('null', 200, ['Content-Type' => 'application/json']);
     }
 
     public function show(string $productUlid): ProductResource
