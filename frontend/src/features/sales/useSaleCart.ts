@@ -273,31 +273,6 @@ export function useSaleCart() {
     const barcodeUnit = scannedBarcode?.unit ?? null
     const selectedUnit = barcodeUnit ?? product.base_unit ?? null
     const barcode = scannedBarcode?.barcode ?? null
-    const existing = lines.find(
-      (line) =>
-        line.line_kind === 'sale' &&
-        line.product_ulid === product.ulid &&
-        (line.unit_ulid ?? null) === (selectedUnit?.ulid ?? null) &&
-        (line.barcode ?? null) === barcode,
-    )
-
-    if (existing) {
-      const newQuantity = toNumber(existing.quantity) + toNumber(quantity)
-      setLines((current) =>
-        current.map((line) =>
-          line.line_key === existing.line_key
-            ? {
-                ...line,
-                quantity: newQuantity.toFixed(6),
-                available_base_stock:
-                  availableBaseStock ?? line.available_base_stock ?? null,
-              }
-            : line,
-        ),
-      )
-      return existing.line_key
-    }
-
     const line = productLine(
       newLineKey(`sale:${product.ulid}`),
       product,
@@ -306,7 +281,33 @@ export function useSaleCart() {
       availableBaseStock,
     )
 
-    setLines((current) => [...current, line])
+    setLines((current) => {
+      const existing = current.find(
+        (currentLine) =>
+          currentLine.line_kind === 'sale' &&
+          currentLine.product_ulid === product.ulid &&
+          (currentLine.unit_ulid ?? null) === (selectedUnit?.ulid ?? null) &&
+          (currentLine.barcode ?? null) === barcode,
+      )
+
+      if (!existing) {
+        return [...current, line]
+      }
+
+      const newQuantity = toNumber(existing.quantity) + toNumber(quantity)
+
+      return current.map((currentLine) =>
+        currentLine.line_key === existing.line_key
+          ? {
+              ...currentLine,
+              quantity: newQuantity.toFixed(6),
+              available_base_stock:
+                availableBaseStock ?? currentLine.available_base_stock ?? null,
+            }
+          : currentLine,
+      )
+    })
+
     return line.line_key
   }
 
