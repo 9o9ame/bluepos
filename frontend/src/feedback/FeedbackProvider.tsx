@@ -114,33 +114,47 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
                 </div>
               ) : null}
 
-              <div className="bp-toast-stack" aria-live="polite">
-                {toasts.map((toast) => (
-                  <div key={toast.id} className={`bp-toast bp-toast-${toast.tone}`}>
-                    <span className="bp-toast-icon" aria-hidden="true">
-                      {toast.tone === 'success' ? (
-                        <CheckCircle2 size={18} />
-                      ) : toast.tone === 'error' ? (
-                        <XCircle size={18} />
-                      ) : (
-                        <Info size={18} />
-                      )}
-                    </span>
-                    <div className="bp-toast-body">
-                      <strong>{toast.title}</strong>
-                      <span>{toast.message}</span>
-                    </div>
-                    <button
-                      type="button"
-                      className="bp-toast-close"
-                      aria-label="Dismiss"
-                      onClick={() => setToasts((current) => current.filter((row) => row.id !== toast.id))}
-                    >
-                      <X size={14} />
-                    </button>
+              {(['error', 'default'] as const).map((stack) => {
+                const stackToasts = toasts.filter((toast) =>
+                  stack === 'error' ? toast.tone === 'error' : toast.tone !== 'error',
+                )
+
+                if (stackToasts.length === 0) return null
+
+                return (
+                  <div
+                    key={stack}
+                    className={`bp-toast-stack${stack === 'error' ? ' is-error-stack' : ''}`}
+                    aria-live={stack === 'error' ? 'assertive' : 'polite'}
+                  >
+                    {stackToasts.map((toast) => (
+                      <div key={toast.id} className={`bp-toast bp-toast-${toast.tone}`}>
+                        <span className="bp-toast-icon" aria-hidden="true">
+                          {toast.tone === 'success' ? (
+                            <CheckCircle2 size={18} />
+                          ) : toast.tone === 'error' ? (
+                            <XCircle size={22} />
+                          ) : (
+                            <Info size={18} />
+                          )}
+                        </span>
+                        <div className="bp-toast-body">
+                          <strong>{toast.title}</strong>
+                          <span>{toast.message}</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="bp-toast-close"
+                          aria-label="Dismiss"
+                          onClick={() => setToasts((current) => current.filter((row) => row.id !== toast.id))}
+                        >
+                          <X size={toast.tone === 'error' ? 16 : 14} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )
+              })}
 
               {confirmState ? (
                 <div className="bp-confirm-backdrop" role="presentation">

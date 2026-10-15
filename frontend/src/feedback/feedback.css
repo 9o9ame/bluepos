@@ -140,6 +140,12 @@
   pointer-events: none;
 }
 
+.bp-toast-stack.is-error-stack {
+  top: 16px;
+  bottom: auto;
+  width: min(440px, calc(100vw - 24px));
+}
+
 .bp-toast {
   pointer-events: auto;
   display: grid;
@@ -165,6 +171,24 @@
   border-color: #e7a8a8;
   background: linear-gradient(180deg, #fff7f7, #ffe3e3);
   color: #b42323;
+  min-height: 64px;
+  padding: 14px 16px;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.bp-toast-error .bp-toast-body {
+  gap: 4px;
+}
+
+.bp-toast-error .bp-toast-body strong {
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.bp-toast-error .bp-toast-body span {
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .bp-toast-info {
