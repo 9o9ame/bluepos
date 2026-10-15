@@ -102,6 +102,96 @@ class SalesReturnAccountingTest extends TestCase
         $this->assertSame('9.000000', $this->stock($product));
     }
 
+    public function test_return_from_invoice_discount_sale_reverses_proportional_discount(): void
+    {
+        $this->signInOwner('sales-return-invoice-discount')->assertOk();
+        $accounts = $this->configureAccounts();
+
+        $product = $this->createProduct(
+            'Return Invoice Discount Item',
+            '100.0000',
+            true,
+            '10.00000000',
+        );
+        $this->giveStock($product, '10.000000', '25.0000');
+
+        $saleUlid = $this->postJson('/api/sales', [
+            'invoice_discount_amount' => '20.0000',
+            'items' => [[
+                'product_ulid' => $product->ulid,
+                'quantity' => '2.000000',
+            ]],
+        ], $this->idem('sales-return-invoice-discount-sale'))
+            ->assertCreated()
+            ->assertJsonPath('subtotal', '200.0000')
+            ->assertJsonPath('tax_amount', '20.0000')
+            ->assertJsonPath('invoice_discount_amount', '20.0000')
+            ->assertJsonPath('grand_total', '200.0000')
+            ->json('ulid');
+
+        $saleItemUlid = $this->getJson('/api/sales/'.$saleUlid.'/returnable-lines')
+            ->assertOk()
+            ->json('data.0.sale_item_ulid');
+
+        $returnUlid = $this->postJson('/api/sales-returns', [
+            'sale_ulid' => $saleUlid,
+        ], $this->idem('sales-return-invoice-discount-return'))
+            ->assertCreated()
+            ->json('ulid');
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/lines', [
+            'sale_item_ulid' => $saleItemUlid,
+            'quantity' => '1.000000',
+        ])->assertCreated()
+            ->assertJsonPath('gross_amount', '100.0000')
+            ->assertJsonPath('tax_amount', '10.0000')
+            ->assertJsonPath('line_total', '110.0000');
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/post')
+            ->assertOk()
+            ->assertJsonPath('status', 'posted')
+            ->assertJsonPath('discount_amount', '10.0000')
+            ->assertJsonPath('tax_amount', '10.0000')
+            ->assertJsonPath('grand_total', '100.0000');
+
+        $returnJournal = JournalEntry::query()
+            ->where('document_type', JournalEntry::DOCUMENT_SALE_RETURN)
+            ->where('idempotency_key', 'sale-return-accounting:'.$returnUlid)
+            ->with('lines')
+            ->firstOrFail();
+
+        $this->assertLine(
+            $returnJournal->id,
+            $accounts['revenue']->id,
+            '90.0000',
+            '0.0000',
+        );
+        $this->assertLine(
+            $returnJournal->id,
+            $accounts['tax']->id,
+            '10.0000',
+            '0.0000',
+        );
+        $this->assertLine(
+            $returnJournal->id,
+            $accounts['clearing']->id,
+            '0.0000',
+            '100.0000',
+        );
+        $this->assertLine(
+            $returnJournal->id,
+            $accounts['inventory']->id,
+            '25.0000',
+            '0.0000',
+        );
+        $this->assertLine(
+            $returnJournal->id,
+            $accounts['cogs']->id,
+            '0.0000',
+            '25.0000',
+        );
+    }
+
     public function test_return_accounting_requires_original_sale_journal_and_rolls_back_stock(): void
     {
         $this->signInOwner('sales-return-missing-sale-journal')->assertOk();
