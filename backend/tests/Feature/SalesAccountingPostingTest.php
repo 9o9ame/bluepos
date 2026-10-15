@@ -83,6 +83,84 @@ class SalesAccountingPostingTest extends TestCase
         $this->assertSame('8.000000', $this->stock($product));
     }
 
+    public function test_invoice_discount_after_tax_reduces_revenue_and_keeps_tax_payable_balanced(): void
+    {
+        $this->signInOwner('sales-accounting-invoice-discount')->assertOk();
+        $accounts = $this->configureAccounts(true);
+
+        $product = $this->createProduct(
+            'Accounting Invoice Discount Item',
+            '100.0000',
+            true,
+            '10.00000000',
+        );
+        $this->giveStock($product, '10.000000', '25.0000');
+
+        $response = $this->postJson('/api/sales', [
+            'invoice_discount_amount' => '10.0000',
+            'items' => [[
+                'product_ulid' => $product->ulid,
+                'quantity' => '1.000000',
+            ]],
+        ], $this->idem('sales-accounting-invoice-discount'))
+            ->assertCreated()
+            ->assertJsonPath('subtotal', '100.0000')
+            ->assertJsonPath('tax_amount', '10.0000')
+            ->assertJsonPath('invoice_discount_amount', '10.0000')
+            ->assertJsonPath('grand_total', '100.0000');
+
+        $sale = Sale::query()
+            ->where('ulid', $response->json('ulid'))
+            ->firstOrFail();
+
+        $journal = JournalEntry::query()
+            ->where('document_type', JournalEntry::DOCUMENT_SALE_INVOICE)
+            ->where('document_id', $sale->id)
+            ->with('lines')
+            ->firstOrFail();
+
+        $this->assertLine(
+            $journal->id,
+            $accounts['clearing']->id,
+            '100.0000',
+            '0.0000',
+        );
+        $this->assertLine(
+            $journal->id,
+            $accounts['revenue']->id,
+            '0.0000',
+            '90.0000',
+        );
+        $this->assertLine(
+            $journal->id,
+            $accounts['tax']->id,
+            '0.0000',
+            '10.0000',
+        );
+        $this->assertLine(
+            $journal->id,
+            $accounts['cogs']->id,
+            '25.0000',
+            '0.0000',
+        );
+        $this->assertLine(
+            $journal->id,
+            $accounts['inventory']->id,
+            '0.0000',
+            '25.0000',
+        );
+
+        $debit = '0.0000';
+        $credit = '0.0000';
+        foreach ($journal->lines as $line) {
+            $debit = bcadd($debit, (string) $line->debit, 4);
+            $credit = bcadd($credit, (string) $line->credit, 4);
+        }
+
+        $this->assertSame('125.0000', $debit);
+        $this->assertSame('125.0000', $credit);
+    }
+
     public function test_partial_sales_accounting_configuration_rolls_back_sale_and_stock(): void
     {
         $this->signInOwner('sales-accounting-partial')->assertOk();
