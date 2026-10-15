@@ -50,6 +50,7 @@ import { useColumnLayout } from '../features/gridLayout/useColumnLayout'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import type { SaleDraftLine } from '../types/sales'
+import type { Product } from '../types/catalog'
 import './SalesInvoicePage.theme.css'
 import './SalesInvoicePage.cart.css'
 
@@ -787,12 +788,21 @@ export function SalesInvoicePage() {
     productUlid: string,
     scannedValue = '',
     replaceLineKey: string | null = null,
+    cachedProduct: Product | null = null,
   ) {
     try {
-      const [product, stock] = await Promise.all([
-        fetchProduct(productUlid),
-        fetchProductStock(productUlid),
-      ])
+      let product = cachedProduct
+      let availableBaseStock = cachedProduct?.sales_lookup?.in_stock ?? null
+
+      if (!product || availableBaseStock === null) {
+        const [freshProduct, stock] = await Promise.all([
+          fetchProduct(productUlid),
+          fetchProductStock(productUlid),
+        ])
+        product = freshProduct
+        availableBaseStock = stock.active_warehouse.quantity
+      }
+
       const scannedBarcode =
         scannedValue === ''
           ? null
@@ -814,7 +824,7 @@ export function SalesInvoicePage() {
         product,
         '1.000000',
         scannedBarcode,
-        stock.active_warehouse.quantity,
+        availableBaseStock,
       )
 
       if (!lineKey) return
@@ -824,7 +834,7 @@ export function SalesInvoicePage() {
           replaceLineKey,
           product,
           scannedBarcode,
-          stock.active_warehouse.quantity,
+          availableBaseStock,
         )
       }
 
@@ -889,12 +899,12 @@ export function SalesInvoicePage() {
       })
 
       if (localMatches.length === 1) {
-        await addProductFromEntry(localMatches[0].ulid, barcode)
+        await addProductFromEntry(localMatches[0].ulid, barcode, null, localMatches[0])
         return
       }
 
       const page = await fetchProducts(
-        { q: barcode, per_page: 20, page: 1 },
+        { q: barcode, per_page: 20, page: 1, sales_lookup: true },
         { busy: 'none' },
       )
       const match = page.data.find((product) =>
@@ -908,7 +918,7 @@ export function SalesInvoicePage() {
         return
       }
 
-      await addProductFromEntry(match.ulid, barcode)
+      await addProductFromEntry(match.ulid, barcode, null, match)
     } catch (err) {
       setSaveError(
         err instanceof ApiClientError
@@ -1838,7 +1848,7 @@ export function SalesInvoicePage() {
                                           const first = productLookupRows[0]
                                           if (first) {
                                             e.preventDefault()
-                                            void addProductFromEntry(first.ulid, '', line.line_key)
+                                            void addProductFromEntry(first.ulid, '', line.line_key, first)
                                           }
                                         }}
                                       />
@@ -1869,7 +1879,7 @@ export function SalesInvoicePage() {
                                           portalAnchorRef={productPickerAnchorRef}
                                           onRequestClose={() => setActiveProductPickerOpen(false)}
                                           onSelect={(product) =>
-                                            void addProductFromEntry(product.ulid, '', line.line_key)
+                                            void addProductFromEntry(product.ulid, '', line.line_key, product)
                                           }
                                         />
                                       ) : null}
@@ -2018,7 +2028,7 @@ export function SalesInvoicePage() {
                                       const first = productLookupRows[0]
                                       if (first) {
                                         e.preventDefault()
-                                        void addProductFromEntry(first.ulid)
+                                        void addProductFromEntry(first.ulid, '', null, first)
                                       }
                                     }}
                                   />
@@ -2048,7 +2058,7 @@ export function SalesInvoicePage() {
                                       priceType={cart.priceType}
                                       portalAnchorRef={productPickerAnchorRef}
                                       onRequestClose={() => setActiveProductPickerOpen(false)}
-                                      onSelect={(product) => void addProductFromEntry(product.ulid)}
+                                      onSelect={(product) => void addProductFromEntry(product.ulid, '', null, product)}
                                     />
                                   ) : null}
                                 </div>
