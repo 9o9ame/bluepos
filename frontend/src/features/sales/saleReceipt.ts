@@ -64,7 +64,7 @@ function receiptHtml(sale: Sale, options: SaleReceiptOptions = {}): string {
   <div class="line"></div>
   <table>
     <tr><td>Subtotal</td><td class="r">${escapeHtml(sale.subtotal)}</td></tr>
-    <tr><td>Discount</td><td class="r">${escapeHtml(sale.discount_amount)}</td></tr>
+    <tr><td>Discount</td><td class="r">${escapeHtml(sale.total_discount_amount)}</td></tr>
     <tr><td>Tax</td><td class="r">${escapeHtml(sale.tax_amount)}</td></tr>
     <tr><td><strong>TOTAL</strong></td><td class="r"><strong>${escapeHtml(sale.grand_total)}</strong></td></tr>
   </table>
