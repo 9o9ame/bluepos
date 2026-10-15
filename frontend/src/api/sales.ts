@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { Expense, ExpenseAccountOption, ExpensePayload, Sale, SaleHold, SaleHoldPayload, SalePayment, SalePaymentMethod, SalePayload, SaleProductWiseRow, SaleQuotation, SalesmanOption } from '../types/sales'
+import type { Expense, ExpenseAccountOption, ExpensePayload, Sale, SaleHold, SaleHoldPayload, SalePayment, SalePaymentAccountOption, SalePaymentMethod, SalePayload, SaleProductWiseRow, SaleQuotation, SalesmanOption } from '../types/sales'
 
 /**
  * Post a sale. The server recalculates every money figure and revalidates
@@ -128,13 +128,19 @@ export function fetchSalesmen() {
   return apiFetch<SalesmanOption[]>('/api/sales/salesmen', { busy: 'none' })
 }
 
+export function fetchSalePaymentAccounts() {
+  return apiFetch<SalePaymentAccountOption[]>('/api/sales/payment-accounts', {
+    busy: 'none',
+  })
+}
+
 /**
  * Collect a payment against a saved sale. Partial amounts are allowed; the
  * server recomputes what is due and rejects anything over it.
  */
 export function createSalePayment(
   saleUlid: string,
-  payload: { amount: string; method: SalePaymentMethod; reference?: string | null },
+  payload: { amount: string; method: SalePaymentMethod; reference?: string | null; account_ulid?: string | null },
   idempotencyKey: string,
 ) {
   return apiFetch<SalePayment>(`/api/sales/${saleUlid}/payments`, {

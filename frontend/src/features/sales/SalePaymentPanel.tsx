@@ -1,216 +1,213 @@
-import { useEffect, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import {
-  Banknote,
-  CreditCard,
-  Landmark,
-  Wallet,
-} from 'lucide-react'
-import { ApiClientError } from '../../api/client'
-import { createSalePayment } from '../../api/sales'
+import { useEffect, useMemo, useState } from 'react'
+import { UiButton } from '../../components/ui/UiButton'
+import { UiSelect } from '../../components/ui/UiSelect'
+import { UI_LAYER } from '../../components/ui/uiLayers'
 import type {
-  Sale,
-  SalePaymentMethod,
+  SalePaymentAccountOption,
+  SalePayload,
 } from '../../types/sales'
 
-const METHODS: Array<{
-  value: SalePaymentMethod
-  label: string
-  icon: typeof Banknote
-}> = [
-  { value: 'cash', label: 'Cash', icon: Banknote },
-  { value: 'card', label: 'Card', icon: CreditCard },
-  { value: 'bank', label: 'Bank', icon: Landmark },
-  { value: 'credit', label: 'On account', icon: Wallet },
-]
+type FinalizePayment = NonNullable<SalePayload['initial_payments']>[number]
 
 type Props = {
-  sale: Sale
-  /** Remaining amount the server considers due. */
-  outstanding: string
-  onCollected: (payment: {
-    amount: string
-    method: string
-  }) => void
+  total: string
+  accounts: SalePaymentAccountOption[]
+  initialCash?: string
+  initialReference?: string
+  pending?: boolean
+  paymentsEnabled?: boolean
+  onConfirm: (payments: FinalizePayment[]) => void
+  onCancel: () => void
 }
 
-function isValidAmount(value: string): boolean {
-  return /^(?:0|[1-9]\d*)(?:\.\d{0,4})?$/.test(value)
+function validMoney(value: string): boolean {
+  return value === '' || /^(?:0|[1-9]\d*)(?:\.\d{0,4})?$/.test(value)
 }
 
-function isPositiveAmount(value: string): boolean {
-  return isValidAmount(value) && Number(value) > 0
+function moneyValue(value: string): number {
+  const parsed = Number.parseFloat(value)
+  return Number.isFinite(parsed) ? parsed : 0
 }
 
-/**
- * Collect payment against a saved sale.
- *
- * Partial payments are allowed. The server remains the source of truth for
- * the final due amount and rejects invalid or excessive payments.
- */
 export function SalePaymentPanel({
-  sale,
-  outstanding,
-  onCollected,
+  total,
+  accounts,
+  initialCash = '',
+  initialReference = '',
+  pending = false,
+  paymentsEnabled = true,
+  onConfirm,
+  onCancel,
 }: Props) {
-  const [amount, setAmount] = useState(outstanding)
-  const [method, setMethod] =
-    useState<SalePaymentMethod>('cash')
-  const [error, setError] = useState<string | null>(null)
-  const [idemKey, setIdemKey] = useState(() => newKey())
+  const defaultCash = useMemo(
+    () =>
+      accounts.find((account) => account.is_default_cash && account.is_cash)
+      ?? accounts.find((account) => account.is_cash)
+      ?? null,
+    [accounts],
+  )
+  const [accountUlid, setAccountUlid] = useState('')
+  const [cashReceived, setCashReceived] = useState(initialCash)
+  const [bankReceived, setBankReceived] = useState('')
+  const [reference, setReference] = useState(initialReference)
 
-  const outstandingNumber = Number(outstanding) || 0
-
-  const mutation = useMutation({
-    mutationFn: async () => {
-      return createSalePayment(
-        sale.ulid,
-        {
-          amount,
-          method,
-        },
-        idemKey,
-      )
-    },
-
-    onSuccess: (payment) => {
-      setError(null)
-
-      onCollected({
-        amount: payment.amount,
-        method: payment.method,
-      })
-
-      // A new key is generated only after a successful collection.
-      // Retries of the same failed attempt keep the existing key.
-      setIdemKey(newKey())
-    },
-
-    onError: (err) => {
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : 'Unable to collect payment.',
-      )
-    },
-  })
-
-  // Keep the payment field synchronized with the latest server-side due.
   useEffect(() => {
-    setAmount(outstanding)
-    setError(null)
-  }, [outstanding, sale.ulid])
-
-  const isSettled = outstandingNumber <= 0
-
-  const invalidAmount =
-    !isPositiveAmount(amount) ||
-    Number(amount) > outstandingNumber
-
-  function handleAmountChange(value: string) {
-    if (value === '' || isValidAmount(value)) {
-      setAmount(value)
-      setError(null)
+    if (!accountUlid && defaultCash) {
+      setAccountUlid(defaultCash.ulid)
     }
+  }, [accountUlid, defaultCash])
+
+  const selectedAccount =
+    accounts.find((account) => account.ulid === accountUlid) ?? null
+  const bankSelected = Boolean(selectedAccount?.is_bank)
+  const totalNumber = moneyValue(total)
+  const cashNumber = moneyValue(cashReceived)
+  const bankNumber = bankSelected ? moneyValue(bankReceived) : 0
+  const collected = cashNumber + bankNumber
+  const balance = Math.max(totalNumber - collected, 0)
+  const overpaid = collected > totalNumber + 0.00005
+  const cashUnavailable = cashNumber > 0 && !defaultCash
+  const bankUnavailable = bankNumber > 0 && !bankSelected
+
+  useEffect(() => {
+    if (!bankSelected && bankReceived !== '') {
+      setBankReceived('')
+    }
+  }, [bankReceived, bankSelected])
+
+  function setMoney(
+    setter: (value: string) => void,
+    value: string,
+  ) {
+    if (validMoney(value)) setter(value)
   }
 
-  function collect() {
-    if (invalidAmount || mutation.isPending) {
-      return
+  function confirm() {
+    if (pending || overpaid || cashUnavailable || bankUnavailable) return
+
+    const payments: FinalizePayment[] = []
+
+    if (paymentsEnabled && cashNumber > 0) {
+      payments.push({
+        amount: cashNumber.toFixed(4),
+        method: 'cash',
+      })
     }
 
-    mutation.mutate()
+    if (paymentsEnabled && bankNumber > 0 && selectedAccount?.is_bank) {
+      payments.push({
+        amount: bankNumber.toFixed(4),
+        method: 'bank',
+        account_ulid: selectedAccount.ulid,
+        reference: reference.trim() || null,
+      })
+    }
+
+    onConfirm(payments)
   }
 
   return (
-    <div className="sales-payment-panel">
-      <div className="sales-payment-due">
-        <span>Due</span>
-        <strong>{outstanding}</strong>
+    <div className="sales-finalize-payment">
+      <div className="sales-finalize-payment-heading">
+        PAYMENT METHOD
       </div>
 
-      {isSettled ? (
-        <p className="sales-payment-settled">
-          This sale is fully paid.
-        </p>
-      ) : (
-        <>
-          <div className="sales-payment-methods">
-            {METHODS.map(
-              ({ value, label, icon: Icon }) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={
-                    method === value
-                      ? 'sales-payment-method is-active'
-                      : 'sales-payment-method'
-                  }
-                  onClick={() => {
-                    setMethod(value)
-                    setError(null)
-                  }}
-                  disabled={mutation.isPending}
-                >
-                  <Icon size={13} />
-                  {label}
-                </button>
-              ),
-            )}
-          </div>
+      <UiSelect
+        value={accountUlid}
+        aria-label="Receiving account"
+        options={accounts.map((account) => ({
+          value: account.ulid,
+          label: account.name,
+        }))}
+        onChange={setAccountUlid}
+        disabled={pending || !paymentsEnabled || accounts.length === 0}
+        menuZIndex={UI_LAYER.modalDropdown}
+      />
 
+      <div className="sales-finalize-total">
+        <span>TOTAL:</span>
+        <strong>{totalNumber.toFixed(2)}</strong>
+      </div>
+
+      <div className="sales-finalize-payment-grid">
+        <label>
+          <span>CASH RECEIVED:</span>
           <input
-            className="desktop-input sales-payment-amount"
-            value={amount}
+            value={cashReceived}
             inputMode="decimal"
-            aria-label="Payment amount"
-            placeholder="Payment amount"
+            disabled={pending || !paymentsEnabled}
             onChange={(event) =>
-              handleAmountChange(event.target.value)
+              setMoney(setCashReceived, event.target.value)
             }
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                collect()
-              }
-            }}
-            disabled={mutation.isPending}
+            aria-label="Cash received"
           />
+        </label>
 
-          {amount !== '' &&
-          Number(amount) > outstandingNumber ? (
-            <p className="sales-payment-error">
-              Payment cannot exceed the outstanding amount.
-            </p>
-          ) : null}
-
-          <button
-            type="button"
-            className="sales-payment-collect"
-            disabled={
-              mutation.isPending ||
-              invalidAmount
+        <label>
+          <span>
+            {selectedAccount?.is_bank
+              ? selectedAccount.name
+              : 'CREDIT CARD / ONLINE'}:
+          </span>
+          <input
+            value={bankReceived}
+            inputMode="decimal"
+            disabled={pending || !paymentsEnabled || !bankSelected}
+            onChange={(event) =>
+              setMoney(setBankReceived, event.target.value)
             }
-            onClick={collect}
-          >
-            {mutation.isPending
-              ? 'Collecting…'
-              : 'Collect'}
-          </button>
+            aria-label="Bank or card amount"
+          />
+        </label>
+      </div>
 
-          {error ? (
-            <p className="sales-payment-error">
-              {error}
-            </p>
-          ) : null}
-        </>
-      )}
+      {bankSelected ? (
+        <label className="sales-finalize-reference">
+          <span>REFERENCE:</span>
+          <input
+            value={reference}
+            disabled={pending || !paymentsEnabled}
+            onChange={(event) => setReference(event.target.value)}
+            maxLength={100}
+            placeholder="Optional transaction reference"
+          />
+        </label>
+      ) : null}
+
+      <div className="sales-finalize-balance">
+        <span>CHANGE / BALANCE:</span>
+        <strong>{balance.toFixed(2)}</strong>
+      </div>
+
+      {overpaid ? (
+        <p className="sales-payment-error">
+          Cash plus bank/card amount cannot exceed the invoice total.
+        </p>
+      ) : null}
+
+      {cashUnavailable ? (
+        <p className="sales-payment-error">
+          Configure an active Cash in Hand account before receiving cash.
+        </p>
+      ) : null}
+
+      <div className="sales-finalize-actions">
+        <UiButton
+          variant="success"
+          onClick={confirm}
+          disabled={pending || overpaid || cashUnavailable || bankUnavailable}
+        >
+          {pending ? 'Saving…' : 'Save'}
+        </UiButton>
+
+        <UiButton
+          variant="info"
+          onClick={onCancel}
+          disabled={pending}
+        >
+          Close
+        </UiButton>
+      </div>
     </div>
   )
-}
-
-function newKey(): string {
-  return `pay-${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2, 10)}`
 }

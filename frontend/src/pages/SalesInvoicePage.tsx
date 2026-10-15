@@ -20,7 +20,7 @@ import { ApiClientError } from '../api/client'
 import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
 import { fetchParties, fetchParty, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { createSale, createSaleHold, createSaleQuotation, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen } from '../api/sales'
+import { createSale, createSaleHold, createSaleQuotation, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSalePaymentAccounts, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SalePaymentPanel } from '../features/sales/SalePaymentPanel'
@@ -37,7 +37,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 import { useLocalProducts } from '../features/catalog/useLocalCatalog'
 import { useBarcodeScannerTarget } from '../features/scanner/useBarcodeScanner'
 import type { SaleOfferEvaluation } from '../types/saleSchemes'
-import type { Sale, SaleHold, SalePaymentMethod } from '../types/sales'
+import type { Sale, SaleHold, SalePaymentMethod, SalePayload } from '../types/sales'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
 import { UiModal } from '../components/ui/UiModal'
 import { UiSelect } from '../components/ui/UiSelect'
@@ -69,16 +69,6 @@ const SALES_COL_CLASS: Record<string, string> = {
 
 function salesColClass(col: ResolvedGridColumn): string {
   return SALES_COL_CLASS[col.key] ?? `col-${col.key}`
-}
-
-function outstandingAfterPayments(sale: Sale): string {
-  const total = Number.parseFloat(sale.grand_total) || 0
-  const paid = (sale.payments ?? []).reduce(
-    (sum, payment) => sum + (Number.parseFloat(payment.amount) || 0),
-    0,
-  )
-
-  return Math.max(total - paid, 0).toFixed(4)
 }
 
 function newSaleKey(): string {
@@ -211,6 +201,13 @@ export function SalesInvoicePage({
     queryKey: ['sales', 'salesmen', session?.branch.ulid],
     queryFn: fetchSalesmen,
     enabled: canCreateSale,
+    retry: false,
+  })
+
+  const paymentAccountsQuery = useQuery({
+    queryKey: ['sales', 'payment-accounts'],
+    queryFn: fetchSalePaymentAccounts,
+    enabled: paymentModalOpen && canCreateSale,
     retry: false,
   })
 
@@ -668,10 +665,9 @@ export function SalesInvoicePage({
   }, [autoQuotationNumber, quotationLookupMutation.isPending])
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
-      const requestedPayment = Number.parseFloat(received) || 0
-      const paymentReferenceValue = paymentReference.trim() || null
-
+    mutationFn: async (
+      initialPayments: NonNullable<SalePayload['initial_payments']>,
+    ) => {
       return createSale(
         {
           ...cart.buildPayload(),
@@ -680,14 +676,8 @@ export function SalesInvoicePage({
           customer_ulid: cart.customerUlid,
           salesman_ulid: selectedSalesmanUlid,
           payment_due: paymentDue,
-          initial_payment:
-            requestedPayment > 0
-              ? {
-                  amount: requestedPayment.toFixed(4),
-                  method: paymentMethod,
-                  reference: paymentReferenceValue,
-                }
-              : undefined,
+          initial_payments:
+            initialPayments.length > 0 ? initialPayments : undefined,
         },
         idempotencyKeyRef.current,
       )
@@ -695,10 +685,7 @@ export function SalesInvoicePage({
 
     onSuccess: (sale) => {
       setSavedSale(sale)
-      setPaymentModalOpen(
-        canCollectPayment &&
-        Number.parseFloat(outstandingAfterPayments(sale)) > 0,
-      )
+      setPaymentModalOpen(false)
       setSaveError(null)
 
       cart.clear()
@@ -1255,7 +1242,7 @@ export function SalesInvoicePage({
           !stockIssue &&
           !saveMutation.isPending
         ) {
-          saveMutation.mutate()
+          setPaymentModalOpen(true)
         }
       } else if (event.key === 'F8') {
         event.preventDefault()
@@ -2368,7 +2355,7 @@ export function SalesInvoicePage({
                       !cart.hasPaidLines ||
                       isBusy
                     }
-                    onClick={() => saveMutation.mutate()}
+                    onClick={() => setPaymentModalOpen(true)}
                   >
                     <span>Save [F9]</span>
   
@@ -2694,22 +2681,28 @@ export function SalesInvoicePage({
         </aside>
       ) : null}
 
-      {savedSale && canCollectPayment ? (
+      {paymentModalOpen && cart.hasPaidLines ? (
         <UiModal
-          open={paymentModalOpen}
-          title={`Collect Payment — ${savedSale.document_number}`}
-          ariaLabel="Collect sale payment"
+          open
+          title="Invoice / Order Finalize Options"
+          ariaLabel="Finalize sale invoice"
           size="sm"
-          onClose={() => setPaymentModalOpen(false)}
+          onClose={() => {
+            if (!saveMutation.isPending) {
+              setPaymentModalOpen(false)
+            }
+          }}
           bodyClassName="sales-payment-modal-body"
         >
           <SalePaymentPanel
-            sale={savedSale}
-            outstanding={outstandingAfterPayments(savedSale)}
-            onCollected={() => {
-              setPaymentModalOpen(false)
-              void refreshSavedSale(savedSale.ulid)
-            }}
+            total={cart.preview.grandTotal}
+            accounts={paymentAccountsQuery.data ?? []}
+            initialCash={received}
+            initialReference={paymentReference}
+            pending={saveMutation.isPending}
+            paymentsEnabled={canCollectPayment}
+            onCancel={() => setPaymentModalOpen(false)}
+            onConfirm={(payments) => saveMutation.mutate(payments)}
           />
         </UiModal>
       ) : null}

@@ -2770,3 +2770,102 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
   font-weight: var(--ui-weight-medium) !important;
   line-height: var(--ui-line-normal) !important;
 }
+
+
+/* Sales finalize/payment modal. Frozen Sales Invoice page geometry is untouched. */
+.sales-finalize-payment {
+  display: grid;
+  gap: 9px;
+  color: var(--ui-text);
+}
+
+.sales-finalize-payment-heading {
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.sales-finalize-total,
+.sales-finalize-balance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 9px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface-subtle);
+}
+
+.sales-finalize-total strong {
+  min-width: 120px;
+  padding: 4px 8px;
+  background: var(--ui-text);
+  color: var(--ui-surface);
+  font-size: 24px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-finalize-payment-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.sales-finalize-payment-grid label,
+.sales-finalize-reference {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.sales-finalize-payment-grid input,
+.sales-finalize-reference input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.sales-finalize-payment-grid input:focus-visible,
+.sales-finalize-reference input:focus-visible {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.sales-finalize-payment-grid input:disabled,
+.sales-finalize-reference input:disabled {
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+}
+
+.sales-finalize-balance strong {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sales-finalize-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 3px;
+}
+
+@media (max-width: 560px) {
+  .sales-finalize-payment-grid {
+    grid-template-columns: 1fr;
+  }
+}

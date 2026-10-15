@@ -13,6 +13,15 @@ export type SalesmanOption = {
   mobile: string | null
 }
 
+export type SalePaymentAccountOption = {
+  ulid: string
+  code: string
+  name: string
+  is_cash: boolean
+  is_bank: boolean
+  is_default_cash: boolean
+}
+
 export type SalePayment = {
   ulid: string
   method: SalePaymentMethod
@@ -212,7 +221,14 @@ export type SaleHoldPayload = {
     amount: string
     method: SalePaymentMethod
     reference?: string | null
+    account_ulid?: string | null
   }
+  initial_payments?: Array<{
+    amount: string
+    method: SalePaymentMethod
+    reference?: string | null
+    account_ulid?: string | null
+  }>
   notes?: string | null
   price_type: SalePriceType
   lines: Array<{
