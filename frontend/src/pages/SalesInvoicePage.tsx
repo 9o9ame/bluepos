@@ -154,10 +154,40 @@ export function SalesInvoicePage() {
     salesProductLookupQuery,
     view === 'pos' && !savedSale,
   )
-  const productLookupRows = localProductLookup.rows.filter(
+  const localProductLookupRows = localProductLookup.rows.filter(
     (product) => product.is_active && product.status === 'active',
   )
-  const productLookupTotal = productLookupRows.length
+  const serverProductLookupFallback = useQuery({
+    queryKey: ['sales', 'product-lookup-fallback', salesProductLookupQuery],
+    queryFn: () =>
+      fetchProducts(
+        {
+          q: salesProductLookupQuery,
+          page: 1,
+          per_page: 50,
+          sales_lookup: true,
+          active_only: true,
+        },
+        { busy: 'none' },
+      ),
+    enabled:
+      view === 'pos' &&
+      !savedSale &&
+      productLookupMode === 'search' &&
+      salesProductLookupQuery.trim() !== '' &&
+      !localProductLookup.isFetching &&
+      localProductLookupRows.length === 0,
+  })
+  const productLookupRows =
+    localProductLookupRows.length > 0
+      ? localProductLookupRows
+      : (serverProductLookupFallback.data?.data ?? []).filter(
+          (product) => product.is_active && product.status === 'active',
+        )
+  const productLookupTotal =
+    localProductLookupRows.length > 0
+      ? localProductLookupRows.length
+      : (serverProductLookupFallback.data?.meta.total ?? productLookupRows.length)
 
   const [selectedSalesmanUlid, setSelectedSalesmanUlid] = useState<string | null>(
     null,
