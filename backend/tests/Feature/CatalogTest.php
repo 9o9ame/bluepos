@@ -465,6 +465,51 @@ class CatalogTest extends TestCase
         }
     }
 
+    public function test_existing_product_lookup_resolves_by_name_or_barcode_with_tenant_isolation(): void
+    {
+        $this->signInOwner('prd-lookup-a')->assertOk();
+        $masters = $this->seedMasters();
+
+        $created = $this->postJson('/api/products', [
+            'name' => 'Lookup Existing Cola',
+            'base_unit_ulid' => $masters['pcs'],
+            'barcodes' => [[
+                'barcode' => 'LOOKUP-12345',
+                'unit_ulid' => $masters['pcs'],
+                'conversion_factor' => '1.00000000',
+                'is_primary' => true,
+            ]],
+        ])->assertCreated();
+
+        $productUlid = $created->json('ulid');
+
+        $byName = $this->getJson('/api/products/lookup-existing?name=lookup%20existing%20cola')
+            ->assertOk()
+            ->assertJsonPath('ulid', $productUlid)
+            ->assertJsonPath('name', 'Lookup Existing Cola');
+        $this->assertNoInternalIds($byName->json());
+
+        $byBarcode = $this->getJson('/api/products/lookup-existing?barcode=LOOKUP-12345')
+            ->assertOk()
+            ->assertJsonPath('ulid', $productUlid);
+        $this->assertNoInternalIds($byBarcode->json());
+
+        $this->getJson('/api/products/lookup-existing?barcode=DOES-NOT-EXIST')
+            ->assertOk()
+            ->assertContent('null');
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('prd-lookup-b')->assertOk();
+
+        $this->getJson('/api/products/lookup-existing?barcode=LOOKUP-12345')
+            ->assertOk()
+            ->assertContent('null');
+
+        $this->getJson('/api/products/lookup-existing?name=Lookup%20Existing%20Cola')
+            ->assertOk()
+            ->assertContent('null');
+    }
+
     public function test_product_lifecycle_barcodes_and_prices(): void
     {
         $this->signInOwner('prd-a')->assertOk();
