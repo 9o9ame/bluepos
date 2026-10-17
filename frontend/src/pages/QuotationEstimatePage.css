@@ -390,3 +390,96 @@
 html[data-animations='off'] .quotation-product-search-input {
   transition: none !important;
 }
+
+
+/* Sales-aligned quotation entry flow. */
+.quotation-product-combo {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.quotation-product-combo .quotation-product-search-input {
+  padding-right: 28px;
+}
+
+.quotation-product-combo-toggle {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  min-width: 20px;
+  height: calc(100% - 4px);
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--ui-select-arrow-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-select-arrow-face);
+  color: var(--ui-select-selected-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+  cursor: pointer;
+}
+
+.quotation-product-combo-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.quotation-completed-product-trigger {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--ui-control-h-md, 24px);
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 3px 28px 3px 7px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+  font-size: var(--ui-font-md, 12px);
+  font-weight: var(--ui-weight-medium, 600);
+  text-align: left;
+  cursor: text;
+}
+
+.quotation-completed-product-trigger > span:first-child {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quotation-completed-product-trigger > .quotation-product-combo-toggle {
+  pointer-events: none;
+}
+
+.quotation-completed-product-trigger:focus-visible {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.quotation-active-row td {
+  background: var(--ui-surface-subtle);
+}
+
+.quotation-active-row .quotation-product-search-cell,
+.quotation-entry-row .quotation-product-search-cell {
+  overflow: visible;
+}
+
+.quotation-header-grid .ui-select-combobox-trigger {
+  width: 100%;
+  min-width: 0;
+}
+
+.quotation-header-grid .ui-select-trigger-search {
+  min-width: 0;
+}
