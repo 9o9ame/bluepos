@@ -310,62 +310,51 @@ export function QuotationEstimatePage() {
     }, 0)
   }
 
-  async function addSelectedProduct(
-    value: string,
+  function addSelectedProduct(
+    product: Product,
     replaceLineKey: string | null = null,
   ) {
-    if (!value || readOnly) return
+    if (!product.ulid || readOnly) return
 
-    try {
-      const [product, stock] = await Promise.all([
-        fetchProduct(value),
-        fetchProductStock(value),
-      ])
+    const expectedPriceType = cart.priceType === 'wholesale' ? 'wholesale' : 'retail'
+    const activePrice = product.prices?.find(
+      (price) => price.is_active && price.price_type === expectedPriceType,
+    )
+    const availableBaseStock = product.sales_lookup?.in_stock ?? null
 
-      const expectedPriceType = cart.priceType === 'wholesale' ? 'wholesale' : 'retail'
-      const activePrice = product.prices?.find(
-        (price) => price.is_active && price.price_type === expectedPriceType,
+    let lineKey = replaceLineKey
+
+    if (replaceLineKey) {
+      cart.replaceProduct(
+        replaceLineKey,
+        product,
+        null,
+        availableBaseStock,
       )
-
-      let lineKey = replaceLineKey
-
-      if (replaceLineKey) {
-        cart.replaceProduct(
-          replaceLineKey,
-          product as Product,
-          null,
-          stock.active_warehouse.quantity,
-        )
-      } else {
-        lineKey = cart.addProduct(
-          product as Product,
-          '1.000000',
-          null,
-          stock.active_warehouse.quantity,
-        )
-      }
-
-      if (!lineKey) return
-
-      if (!activePrice) {
-        feedback.info(
-          `No active ${expectedPriceType} price is configured for ${product.product_number} — ${product.name}. The preview rate will remain 0 until the product price is configured; the server remains final authority on save.`,
-          'Quotation / Estimate',
-        )
-      }
-
-      setProductQuery('')
-      setActiveProductQuery(`${product.product_number} — ${product.name}`)
-      setProductPickerOpen(false)
-      setProductLookupMode('browse')
-      setActiveLineKey(lineKey)
-      focusLineQuantity(lineKey)
-    } catch (error) {
-      setProductQuery('')
-      setProductPickerOpen(false)
-      setProductLookupMode('browse')
-      feedback.error(errorMessage(error), 'Unable to add product')
+    } else {
+      lineKey = cart.addProduct(
+        product,
+        '1.000000',
+        null,
+        availableBaseStock,
+      )
     }
+
+    if (!lineKey) return
+
+    if (!activePrice) {
+      feedback.info(
+        `No active ${expectedPriceType} price is configured for ${product.product_number} — ${product.name}. The preview rate will remain 0 until the product price is configured; the server remains final authority on save.`,
+        'Quotation / Estimate',
+      )
+    }
+
+    setProductQuery('')
+    setActiveProductQuery(`${product.product_number} — ${product.name}`)
+    setProductPickerOpen(false)
+    setProductLookupMode('browse')
+    setActiveLineKey(lineKey)
+    focusLineQuantity(lineKey)
   }
 
   return (
@@ -686,7 +675,7 @@ export function QuotationEstimatePage() {
                                     const first = productLookupRows[0]
                                     if (!first) return
                                     event.preventDefault()
-                                    void addSelectedProduct(first.ulid, line.line_key)
+                                    addSelectedProduct(first, line.line_key)
                                   }}
                                 />
                                 <button
@@ -715,7 +704,7 @@ export function QuotationEstimatePage() {
                                     portalAnchorRef={activeProductPickerAnchorRef}
                                     themed
                                     onRequestClose={() => setProductPickerOpen(false)}
-                                    onSelect={(product) => void addSelectedProduct(product.ulid, line.line_key)}
+                                    onSelect={(product) => addSelectedProduct(product, line.line_key)}
                                   />
                                 ) : null}
                               </div>
@@ -824,7 +813,7 @@ export function QuotationEstimatePage() {
                             const first = productLookupRows[0]
                             if (!first) return
                             event.preventDefault()
-                            void addSelectedProduct(first.ulid)
+                            addSelectedProduct(first)
                           }}
                         />
                         <button
@@ -854,7 +843,7 @@ export function QuotationEstimatePage() {
                             portalAnchorRef={productPickerAnchorRef}
                             themed
                             onRequestClose={() => setProductPickerOpen(false)}
-                            onSelect={(product) => void addSelectedProduct(product.ulid)}
+                            onSelect={(product) => addSelectedProduct(product)}
                           />
                         ) : null}
                       </div>
