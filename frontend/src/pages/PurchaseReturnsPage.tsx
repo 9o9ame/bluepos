@@ -37,11 +37,24 @@ function qty(value: string): string {
   return Number.isFinite(n) ? n.toFixed(6) : '0.000000'
 }
 
-export function PurchaseReturnsPage() {
+export function PurchaseReturnsPage({
+  active = true,
+  workspaceSearch,
+}: {
+  active?: boolean
+  workspaceSearch?: string
+} = {}) {
   const queryClient = useQueryClient()
   const { session } = useAuth()
   const { closeActiveTab } = useWorkspace()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [routeSearchParams, setSearchParams] = useSearchParams()
+  const searchParams = useMemo(
+    () =>
+      workspaceSearch === undefined
+        ? routeSearchParams
+        : new URLSearchParams(workspaceSearch),
+    [routeSearchParams, workspaceSearch],
+  )
   const deepLinkHandled = useRef<string | null>(null)
   const canView = useCan('purchase_returns.view')
   const canCreate = useCan('purchase_returns.create')
@@ -162,6 +175,7 @@ export function PurchaseReturnsPage() {
   }
 
   useEffect(() => {
+    if (!active) return
     const purchaseParam = searchParams.get('purchase')?.trim() ?? ''
     if (!purchaseParam || !canCreate || deepLinkHandled.current === purchaseParam) return
 
@@ -289,7 +303,7 @@ export function PurchaseReturnsPage() {
       if (mode === 'list') void listQuery.refetch()
       else if (document?.ulid) void openMutation.mutateAsync(document.ulid).catch(handleError)
     },
-  })
+  }, active)
 
   function remainingPurchaseQty(row: ReturnablePurchaseLine): string {
     const factor = Number(row.conversion_factor) || 1
