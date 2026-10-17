@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchSales, fetchSalesmen } from '../api/sales'
 import { fetchProducts } from '../api/catalog'
-import { fetchParties } from '../api/parties'
 import {
   createSaleReturn,
   createSaleReturnLine,
@@ -12,6 +11,7 @@ import {
   deleteSaleReturnLine,
   fetchReturnableSaleLines,
   fetchSaleReturn,
+  fetchSaleReturnSourceParties,
   fetchSaleReturnProductWise,
   fetchSaleReturns,
   postSaleReturn,
@@ -143,7 +143,7 @@ export function SalesReturnsPage() {
 
   const customersQuery = useQuery({
     queryKey: ['sales-return', 'from-parties'],
-    queryFn: () => fetchParties('all'),
+    queryFn: fetchSaleReturnSourceParties,
     enabled: view === 'entry' && canReturn,
     retry: false,
   })
@@ -195,17 +195,17 @@ export function SalesReturnsPage() {
     if (saleUlid || document?.ulid || fromPartyUlid) return
 
     const candidates = (customersQuery.data ?? []).filter(
-      (row) => row.is_active && (row.party_type === 'account' || row.party_type === 'customer'),
+      (row) => row.type === 'account' || row.type === 'customer',
     )
     const cash = candidates.find(
-      (row) => row.party_type === 'account' && row.name.trim().toLocaleUpperCase() === 'CASH IN HAND',
+      (row) => row.type === 'account' && row.name.trim().toLocaleUpperCase() === 'CASH IN HAND',
     ) ?? candidates.find(
-      (row) => row.party_type === 'customer' && row.name.trim().toLocaleUpperCase() === 'CASH IN HAND',
+      (row) => row.type === 'customer' && row.name.trim().toLocaleUpperCase() === 'CASH IN HAND',
     )
 
     if (cash) {
       setFromPartyUlid(cash.ulid)
-      setFromPartyType(cash.party_type as 'customer' | 'account')
+      setFromPartyType(cash.type)
     }
   }, [customersQuery.data, document?.ulid, fromPartyUlid, saleUlid])
 
@@ -868,11 +868,11 @@ export function SalesReturnsPage() {
                       </div>
                       <div className="sales-return-detail-body">
                         {(customersQuery.data ?? [])
-                          .filter((party) => party.is_active && (party.party_type === 'customer' || party.party_type === 'account'))
+                          .filter((party) => (party.type === 'customer' || party.type === 'account'))
                           .filter((party) => {
                             const query = customerDropdownSearch.trim().toLocaleLowerCase()
                             if (!query) return true
-                            return [party.code, party.name, party.address, party.mobile, party.phone]
+                            return [party.code, party.name]
                               .filter(Boolean)
                               .some((value) => String(value).toLocaleLowerCase().includes(query))
                           })
@@ -880,10 +880,10 @@ export function SalesReturnsPage() {
                           <button
                             type="button"
                             className={`sales-return-detail-row${fromPartyUlid === party.ulid ? ' is-selected' : ''}`}
-                            key={`${party.party_type}:${party.ulid}`}
+                            key={`${party.type}:${party.ulid}`}
                             onClick={() => {
                               setFromPartyUlid(party.ulid)
-                              setFromPartyType(party.party_type as 'customer' | 'account')
+                              setFromPartyType(party.type as 'customer' | 'account')
                               setSaleUlid('')
                               setSaleLabel('')
                               setLineQty({})
@@ -893,14 +893,14 @@ export function SalesReturnsPage() {
                           >
                             <span>{party.code || '—'}</span>
                             <strong>{party.name}</strong>
-                            <span>{party.party_type === 'account' ? 'Account' : 'Customer'}</span>
-                            <span>{party.mobile || party.phone || '—'}</span>
+                            <span>{party.type === 'account' ? 'Account' : 'Customer'}</span>
+                            <span>—</span>
                           </button>
                         ))}
                       </div>
                       <div className="sales-return-detail-foot">
                         {(customersQuery.data ?? []).filter(
-                          (party) => party.is_active && (party.party_type === 'customer' || party.party_type === 'account'),
+                          (party) => (party.type === 'customer' || party.type === 'account'),
                         ).length} customer/account option(s)
                       </div>
                     </div>
