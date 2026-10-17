@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { CheckCircle2, ChevronDown, FileText, RefreshCw, RotateCcw, Save, Search, Trash2, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
@@ -21,15 +21,32 @@ import { ApiClientError } from '../api/client'
 import { askConfirm } from '../feedback/FeedbackProvider'
 import { DesktopButton } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
+import { useLocalProducts } from '../features/catalog/useLocalCatalog'
+import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
+import type { Product } from '../types/catalog'
 import type { PurchaseInvoice } from '../types/purchases'
 import type { PurchaseReturn, ReturnablePurchaseLine } from '../types/purchaseReturns'
 import './PurchaseReturnsPage.css'
 
 type ViewMode = 'entry' | 'search' | 'product'
+
+type GeneralReturnRow = {
+  key: string
+  line_ulid?: string
+  product_ulid: string
+  product_number: string
+  product_name: string
+  unit_code: string
+  quantity: string
+  unit_cost: string
+  discount_amount: string
+  tax_amount: string
+}
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
@@ -40,9 +57,36 @@ function qty(value: string): string {
   return Number.isFinite(n) ? n.toFixed(6) : '0.000000'
 }
 
+function money4(value: string | number | null | undefined): string {
+  const n = typeof value === 'number' ? value : Number.parseFloat(value ?? '0')
+  return Number.isFinite(n) ? n.toFixed(4) : '0.0000'
+}
+
 function money(value: string | number | null | undefined): string {
   const n = typeof value === 'number' ? value : Number.parseFloat(value ?? '0')
   return Number.isFinite(n) ? n.toFixed(2) : '0.00'
+}
+
+function generalRowKey(): string {
+  return `purchase-return-general-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+}
+
+function generalAmounts(row: GeneralReturnRow) {
+  const quantity = Math.max(Number(row.quantity) || 0, 0)
+  const unitCost = Math.max(Number(row.unit_cost) || 0, 0)
+  const discount = Math.max(Number(row.discount_amount) || 0, 0)
+  const tax = Math.max(Number(row.tax_amount) || 0, 0)
+  const subtotal = quantity * unitCost
+  return {
+    subtotal,
+    discount,
+    tax,
+    total: Math.max(subtotal - discount + tax, 0),
+  }
+}
+
+function defaultProductCost(product: Product): string {
+  return money4(product.purchase_rate ?? product.sales_lookup?.average_cost ?? '0')
 }
 
 export function PurchaseReturnsPage({
@@ -63,8 +107,11 @@ export function PurchaseReturnsPage({
         : new URLSearchParams(workspaceSearch),
     [routeSearchParams, workspaceSearch],
   )
+
   const deepLinkHandled = useRef<string | null>(null)
   const purchasePickerRef = useRef<HTMLDivElement | null>(null)
+  const generalProductAnchorRef = useRef<HTMLDivElement | null>(null)
+  const generalProductEntryRef = useRef<HTMLInputElement | null>(null)
 
   const canView = useCan('purchase_returns.view')
   const canCreate = useCan('purchase_returns.create')
@@ -82,6 +129,7 @@ export function PurchaseReturnsPage({
   const [document, setDocument] = useState<PurchaseReturn | null>(null)
   const [purchaseUlid, setPurchaseUlid] = useState('')
   const [purchaseLabel, setPurchaseLabel] = useState('')
+  const [supplierUlid, setSupplierUlid] = useState('')
   const [warehouseUlid, setWarehouseUlid] = useState(session?.warehouse.ulid ?? '')
   const [returnDate, setReturnDate] = useState(today())
   const [supplierReference, setSupplierReference] = useState('')
@@ -92,7 +140,12 @@ export function PurchaseReturnsPage({
   const [purchasePickerOpen, setPurchasePickerOpen] = useState(false)
   const [lineQty, setLineQty] = useState<Record<string, string>>({})
 
+  const [generalRows, setGeneralRows] = useState<GeneralReturnRow[]>([])
+  const [generalProductSearch, setGeneralProductSearch] = useState('')
+  const [generalProductPickerOpen, setGeneralProductPickerOpen] = useState(false)
+
   const readOnly = document?.status === 'posted'
+  const invoiceMode = Boolean(purchaseUlid || document?.return_mode === 'invoice')
 
   const listQuery = useQuery({
     queryKey: ['purchase-returns', q, statusFilter, supplierFilter, dateFrom, dateTo],
@@ -137,6 +190,16 @@ export function PurchaseReturnsPage({
     retry: false,
   })
 
+  const localGeneralProducts = useLocalProducts(
+    session,
+    generalProductSearch,
+    view === 'entry' && !invoiceMode && !readOnly && generalProductPickerOpen,
+  )
+
+  const generalProducts = localGeneralProducts.rows.filter(
+    (product) => product.is_active && product.status === 'active',
+  )
+
   const rows = listQuery.data?.data ?? []
   const suppliers = useMemo(
     () => (suppliersQuery.data ?? []).filter((row) => row.is_active),
@@ -145,10 +208,41 @@ export function PurchaseReturnsPage({
   const warehouses = warehousesQuery.data ?? []
   const returnable = returnableQuery.data?.data ?? []
 
-  const selectedLineCount = useMemo(
-    () => returnable.filter((row) => Number(lineQty[row.purchase_line_ulid] ?? 0) > 0).length,
-    [returnable, lineQty],
-  )
+  const liveTotals = useMemo(() => {
+    if (!invoiceMode) {
+      return generalRows.reduce(
+        (acc, row) => {
+          const amounts = generalAmounts(row)
+          acc.subtotal += amounts.subtotal
+          acc.discount += amounts.discount
+          acc.tax += amounts.tax
+          acc.total += amounts.total
+          return acc
+        },
+        { subtotal: 0, discount: 0, tax: 0, total: 0 },
+      )
+    }
+
+    if (document) {
+      return {
+        subtotal: Number(document.subtotal) || 0,
+        discount: Number(document.discount_amount) || 0,
+        tax: Number(document.tax_amount) || 0,
+        total: Number(document.grand_total) || 0,
+      }
+    }
+
+    return { subtotal: 0, discount: 0, tax: 0, total: 0 }
+  }, [document, generalRows, invoiceMode])
+
+  const selectedLineCount = invoiceMode
+    ? returnable.filter((row) => Number(lineQty[row.purchase_line_ulid] ?? 0) > 0).length
+    : generalRows.length
+
+  const selectedSupplierName =
+    document?.supplier?.name ??
+    suppliers.find((supplier) => supplier.ulid === supplierUlid)?.name ??
+    'From purchase'
 
   function handleError(err: unknown) {
     setError(
@@ -162,13 +256,17 @@ export function PurchaseReturnsPage({
     setDocument(null)
     setPurchaseUlid('')
     setPurchaseLabel('')
+    setPurchaseSearch('')
+    setSupplierUlid('')
     setWarehouseUlid(session?.warehouse.ulid ?? '')
     setReturnDate(today())
     setSupplierReference('')
     setReason('')
     setNotes('')
     setLineQty({})
-    setPurchaseSearch('')
+    setGeneralRows([])
+    setGeneralProductSearch('')
+    setGeneralProductPickerOpen(false)
     setPurchasePickerOpen(false)
     setError(null)
   }
@@ -185,19 +283,40 @@ export function PurchaseReturnsPage({
           }`
         : '',
     )
+    setPurchaseSearch(invoice.original_purchase?.document_number ?? '')
+    setSupplierUlid(invoice.supplier?.ulid ?? '')
     setWarehouseUlid(invoice.warehouse?.ulid ?? session?.warehouse.ulid ?? '')
     setReturnDate(invoice.return_date)
     setSupplierReference(invoice.supplier_reference ?? '')
     setReason(invoice.reason ?? '')
     setNotes(invoice.notes ?? '')
+
     const qtyMap: Record<string, string> = {}
+    const nextGeneral: GeneralReturnRow[] = []
+
     for (const line of invoice.lines ?? []) {
       if (line.original_purchase_line_ulid) {
         qtyMap[line.original_purchase_line_ulid] = line.quantity
+      } else if (line.product) {
+        nextGeneral.push({
+          key: line.ulid,
+          line_ulid: line.ulid,
+          product_ulid: line.product.ulid,
+          product_number: line.product.product_number,
+          product_name: line.product.name,
+          unit_code: line.unit?.code ?? '—',
+          quantity: line.quantity,
+          unit_cost: line.unit_cost,
+          discount_amount: line.discount_amount,
+          tax_amount: line.tax_amount,
+        })
       }
     }
+
     setLineQty(qtyMap)
+    setGeneralRows(nextGeneral)
     setPurchasePickerOpen(false)
+    setGeneralProductPickerOpen(false)
     setError(null)
   }
 
@@ -209,10 +328,78 @@ export function PurchaseReturnsPage({
       }`,
     )
     setPurchaseSearch(purchase.document_number)
+    setSupplierUlid(purchase.supplier?.ulid ?? '')
     if (purchase.warehouse?.ulid) setWarehouseUlid(purchase.warehouse.ulid)
     setLineQty({})
+    setGeneralRows([])
+    setGeneralProductSearch('')
+    setGeneralProductPickerOpen(false)
     setPurchasePickerOpen(false)
     setError(null)
+  }
+
+  function addGeneralProduct(product: Product) {
+    if (product.track_batch || product.track_expiry) {
+      setError('Batch/expiry tracked products must be returned by selecting their posted Purchase #.')
+      setGeneralProductPickerOpen(false)
+      return
+    }
+
+    const existing = generalRows.find((row) => row.product_ulid === product.ulid)
+    if (existing) {
+      setGeneralRows((current) =>
+        current.map((row) =>
+          row.key === existing.key
+            ? { ...row, quantity: qty((Number(row.quantity) || 0) + 1) }
+            : row,
+        ),
+      )
+    } else {
+      setGeneralRows((current) => [
+        ...current,
+        {
+          key: generalRowKey(),
+          product_ulid: product.ulid,
+          product_number: product.product_number,
+          product_name: product.name,
+          unit_code: product.base_unit?.code ?? '—',
+          quantity: '1.000000',
+          unit_cost: defaultProductCost(product),
+          discount_amount: '0.0000',
+          tax_amount: '0.0000',
+        },
+      ])
+    }
+
+    setGeneralProductSearch('')
+    setGeneralProductPickerOpen(false)
+    setError(null)
+
+    window.setTimeout(() => {
+      generalProductEntryRef.current?.focus()
+      generalProductEntryRef.current?.select()
+    }, 0)
+  }
+
+  function handleGeneralEnter(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter') return
+    event.preventDefault()
+    const row = event.currentTarget.closest('tr')
+    if (!row) return
+
+    const inputs = Array.from(
+      row.querySelectorAll<HTMLInputElement>('[data-general-editable="true"]:not(:disabled)'),
+    )
+    const index = inputs.indexOf(event.currentTarget)
+    const next = inputs[index + 1]
+    if (next) {
+      next.focus()
+      next.select()
+      return
+    }
+
+    generalProductEntryRef.current?.focus()
+    generalProductEntryRef.current?.select()
   }
 
   useEffect(() => {
@@ -241,16 +428,10 @@ export function PurchaseReturnsPage({
           setSearchParams({}, { replace: true })
           return
         }
+
         deepLinkHandled.current = purchaseParam
         resetEditor()
-        setPurchaseUlid(purchase.ulid)
-        setPurchaseLabel(
-          `${purchase.document_number}${
-            purchase.supplier_invoice_number ? ` · ${purchase.supplier_invoice_number}` : ''
-          }`,
-        )
-        setPurchaseSearch(purchase.document_number)
-        setWarehouseUlid(purchase.warehouse?.ulid ?? session?.warehouse.ulid ?? '')
+        selectPurchase(purchase)
         setView('entry')
         setSearchParams({}, { replace: true })
       } catch (err) {
@@ -258,7 +439,7 @@ export function PurchaseReturnsPage({
         setSearchParams({}, { replace: true })
       }
     })()
-  }, [searchParams, canCreate, session?.warehouse.ulid, setSearchParams])
+  }, [searchParams, canCreate, setSearchParams])
 
   const openMutation = useMutation({
     mutationFn: async (ulid: string) => fetchPurchaseReturn(ulid),
@@ -270,13 +451,17 @@ export function PurchaseReturnsPage({
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!purchaseUlid) throw new Error('Select a posted purchase invoice.')
       if (!warehouseUlid) throw new Error('Select a warehouse.')
+      if (!purchaseUlid && !supplierUlid) {
+        throw new Error('Select a supplier for a general purchase return, or select a posted Purchase #.')
+      }
 
       let current = document
+
       if (!current?.ulid) {
         current = await createPurchaseReturn({
-          purchase_ulid: purchaseUlid,
+          purchase_ulid: purchaseUlid || null,
+          supplier_ulid: purchaseUlid ? null : supplierUlid,
           warehouse_ulid: warehouseUlid,
           return_date: returnDate,
           supplier_reference: supplierReference || null,
@@ -286,6 +471,7 @@ export function PurchaseReturnsPage({
       } else {
         current = await updatePurchaseReturn(current.ulid, {
           warehouse_ulid: warehouseUlid,
+          ...(current.return_mode === 'general' && supplierUlid ? { supplier_ulid: supplierUlid } : {}),
           return_date: returnDate,
           supplier_reference: supplierReference || null,
           reason: reason || null,
@@ -294,35 +480,78 @@ export function PurchaseReturnsPage({
       }
 
       const refreshed = await fetchPurchaseReturn(current.ulid)
-      const existingByPurchaseLine = new Map(
-        (refreshed.lines ?? [])
-          .filter((line) => line.original_purchase_line_ulid)
-          .map((line) => [line.original_purchase_line_ulid as string, line]),
-      )
 
-      for (const [purchaseLineUlid, quantity] of Object.entries(lineQty)) {
-        const amount = Number(quantity)
-        if (!Number.isFinite(amount) || amount <= 0) {
+      if (purchaseUlid) {
+        const existingByPurchaseLine = new Map(
+          (refreshed.lines ?? [])
+            .filter((line) => line.original_purchase_line_ulid)
+            .map((line) => [line.original_purchase_line_ulid as string, line]),
+        )
+
+        for (const [purchaseLineUlid, quantity] of Object.entries(lineQty)) {
+          const amount = Number(quantity)
+          if (!Number.isFinite(amount) || amount <= 0) {
+            const existing = existingByPurchaseLine.get(purchaseLineUlid)
+            if (existing) await deletePurchaseReturnLine(current.ulid, existing.ulid)
+            continue
+          }
+
+          const payload = {
+            purchase_line_ulid: purchaseLineUlid,
+            quantity: qty(quantity),
+          }
           const existing = existingByPurchaseLine.get(purchaseLineUlid)
-          if (existing) await deletePurchaseReturnLine(current.ulid, existing.ulid)
-          continue
+          if (existing) {
+            await updatePurchaseReturnLine(current.ulid, existing.ulid, payload)
+          } else {
+            await createPurchaseReturnLine(current.ulid, payload)
+          }
         }
 
-        const payload = {
-          purchase_line_ulid: purchaseLineUlid,
-          quantity: qty(quantity),
+        for (const [purchaseLineUlid, existing] of existingByPurchaseLine) {
+          if (!(purchaseLineUlid in lineQty) || Number(lineQty[purchaseLineUlid]) <= 0) {
+            await deletePurchaseReturnLine(current.ulid, existing.ulid)
+          }
         }
-        const existing = existingByPurchaseLine.get(purchaseLineUlid)
-        if (existing) {
-          await updatePurchaseReturnLine(current.ulid, existing.ulid, payload)
-        } else {
-          await createPurchaseReturnLine(current.ulid, payload)
-        }
-      }
+      } else {
+        const persistedGeneral = (refreshed.lines ?? []).filter(
+          (line) => !line.original_purchase_line_ulid,
+        )
+        const activeLineUlids = new Set(generalRows.map((row) => row.line_ulid).filter(Boolean))
 
-      for (const [purchaseLineUlid, existing] of existingByPurchaseLine) {
-        if (!(purchaseLineUlid in lineQty) || Number(lineQty[purchaseLineUlid]) <= 0) {
-          await deletePurchaseReturnLine(current.ulid, existing.ulid)
+        for (const row of generalRows) {
+          if (!/^\d+(?:\.\d{0,6})?$/.test(row.quantity) || Number(row.quantity) <= 0) {
+            throw new Error(`Return quantity for ${row.product_name} must be greater than zero and use up to 6 decimals.`)
+          }
+          if (!/^\d+(?:\.\d{0,4})?$/.test(row.unit_cost) || Number(row.unit_cost) < 0) {
+            throw new Error(`Unit cost for ${row.product_name} must use up to 4 decimals.`)
+          }
+          if (!/^\d+(?:\.\d{0,4})?$/.test(row.discount_amount) || Number(row.discount_amount) < 0) {
+            throw new Error(`Discount for ${row.product_name} must use up to 4 decimals.`)
+          }
+          if (!/^\d+(?:\.\d{0,4})?$/.test(row.tax_amount) || Number(row.tax_amount) < 0) {
+            throw new Error(`Tax for ${row.product_name} must use up to 4 decimals.`)
+          }
+
+          const payload = {
+            product_ulid: row.product_ulid,
+            quantity: qty(row.quantity),
+            unit_cost: money4(row.unit_cost),
+            discount_amount: money4(row.discount_amount),
+            tax_amount: money4(row.tax_amount),
+          }
+
+          if (row.line_ulid) {
+            await updatePurchaseReturnLine(current.ulid, row.line_ulid, payload)
+          } else {
+            await createPurchaseReturnLine(current.ulid, payload)
+          }
+        }
+
+        for (const existing of persistedGeneral) {
+          if (!activeLineUlids.has(existing.ulid)) {
+            await deletePurchaseReturnLine(current.ulid, existing.ulid)
+          }
         }
       }
 
@@ -331,7 +560,9 @@ export function PurchaseReturnsPage({
     onSuccess: async (saved) => {
       loadDocument(saved)
       await queryClient.invalidateQueries({ queryKey: ['purchase-returns'] })
-      await queryClient.invalidateQueries({ queryKey: ['returnable-lines', purchaseUlid] })
+      if (purchaseUlid) {
+        await queryClient.invalidateQueries({ queryKey: ['returnable-lines', purchaseUlid] })
+      }
       setError(null)
     },
   })
@@ -344,7 +575,9 @@ export function PurchaseReturnsPage({
     onSuccess: async (saved) => {
       loadDocument(saved)
       await queryClient.invalidateQueries({ queryKey: ['purchase-returns'] })
-      await queryClient.invalidateQueries({ queryKey: ['returnable-lines', purchaseUlid] })
+      if (purchaseUlid) {
+        await queryClient.invalidateQueries({ queryKey: ['returnable-lines', purchaseUlid] })
+      }
       setError(null)
     },
   })
@@ -365,7 +598,7 @@ export function PurchaseReturnsPage({
           } else if (purchaseUlid) {
             void returnableQuery.refetch()
           } else {
-            void purchaseLookup.refetch()
+            void localGeneralProducts.refreshFromServer()
           }
         }
       },
@@ -456,7 +689,7 @@ export function PurchaseReturnsPage({
                       <input
                         value={purchaseLabel || purchaseSearch}
                         disabled={Boolean(document?.ulid) || readOnly}
-                        placeholder="Search posted purchase #"
+                        placeholder="Optional: select posted purchase #"
                         onFocus={() => {
                           if (!document?.ulid && !readOnly) setPurchasePickerOpen(true)
                         }}
@@ -464,7 +697,9 @@ export function PurchaseReturnsPage({
                           setPurchaseSearch(event.target.value)
                           setPurchaseLabel('')
                           setPurchaseUlid('')
+                          setSupplierUlid('')
                           setLineQty({})
+                          setGeneralRows([])
                           setPurchasePickerOpen(true)
                         }}
                         onKeyDown={(event) => {
@@ -549,7 +784,26 @@ export function PurchaseReturnsPage({
 
                 <div className="purchase-return-option-group is-supplier">
                   <label>Supplier:</label>
-                  <input value={document?.supplier?.name ?? 'From purchase'} readOnly />
+                  {invoiceMode ? (
+                    <input value={selectedSupplierName} readOnly />
+                  ) : (
+                    <UiSelect
+                      aria-label="Supplier"
+                      value={supplierUlid}
+                      disabled={readOnly || Boolean(document?.ulid && document.return_mode === 'invoice')}
+                      className="purchase-return-canonical-select"
+                      triggerClassName="purchase-return-canonical-trigger"
+                      placeholder="Select supplier"
+                      options={[
+                        { value: '', label: 'Select supplier' },
+                        ...suppliers.map((supplier) => ({
+                          value: supplier.ulid,
+                          label: `${supplier.code} · ${supplier.name}`,
+                        })),
+                      ]}
+                      onChange={setSupplierUlid}
+                    />
+                  )}
                 </div>
 
                 <div className="purchase-return-option-group is-warehouse">
@@ -604,124 +858,301 @@ export function PurchaseReturnsPage({
               <legend>Amount Options</legend>
               <div>
                 <span>Amount:</span>
-                <strong>{money(document?.subtotal)}</strong>
+                <strong>{money(readOnly ? document?.subtotal : liveTotals.subtotal)}</strong>
               </div>
               <div>
                 <span>Disc (Rs):</span>
-                <strong>{money(document?.discount_amount)}</strong>
+                <strong>{money(readOnly ? document?.discount_amount : liveTotals.discount)}</strong>
               </div>
               <div>
                 <span>Tax:</span>
-                <strong>{money(document?.tax_amount)}</strong>
+                <strong>{money(readOnly ? document?.tax_amount : liveTotals.tax)}</strong>
               </div>
               <div className="is-total">
                 <span>Total:</span>
-                <strong>{money(document?.grand_total)}</strong>
+                <strong>{money(readOnly ? document?.grand_total : liveTotals.total)}</strong>
               </div>
               <div className="is-net">
                 <span>Net:</span>
-                <strong>{money(document?.grand_total)}</strong>
+                <strong>{money(readOnly ? document?.grand_total : liveTotals.total)}</strong>
               </div>
             </fieldset>
           </section>
 
-          <div className="purchase-return-grid-wrap">
-            <table className="purchase-return-grid">
-              <thead>
-                <tr>
-                  <th>Item / Product Description</th>
-                  <th>Purchased Qty</th>
-                  <th>Already Returned</th>
-                  <th>Remaining</th>
-                  <th>Return Qty</th>
-                  <th>Unit</th>
-                  <th>Factor</th>
-                  <th>Unit Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {returnable.map((row) => (
-                  <tr key={row.purchase_line_ulid}>
-                    <td>
-                      <strong>{row.product.product_number}</strong> — {row.product.name}
-                    </td>
-                    <td className="num">{row.original_quantity}</td>
-                    <td className="num">{alreadyReturnedQty(row)}</td>
-                    <td className="num">{remainingPurchaseQty(row)}</td>
-                    <td className="num is-edit">
-                      {readOnly ? (
-                        lineQty[row.purchase_line_ulid] ?? '0'
-                      ) : (
-                        <input
-                          inputMode="decimal"
-                          value={lineQty[row.purchase_line_ulid] ?? ''}
-                          placeholder="0"
-                          aria-label={`Return quantity for ${row.product.name}`}
-                          aria-invalid={
-                            Number(lineQty[row.purchase_line_ulid] ?? 0) >
-                            Number(remainingPurchaseQty(row))
-                          }
-                          title={`Maximum returnable: ${remainingPurchaseQty(row)}`}
-                          onChange={(event) => {
-                            const value = event.target.value
-                            if (value !== '' && !/^\d+(?:\.\d{0,6})?$/.test(value)) return
-                            setLineQty((prev) => ({
-                              ...prev,
-                              [row.purchase_line_ulid]: value,
-                            }))
-                          }}
-                          onBlur={() => {
-                            const value = lineQty[row.purchase_line_ulid]
-                            if (!value || Number(value) === 0) return
-                            setLineQty((prev) => ({
-                              ...prev,
-                              [row.purchase_line_ulid]: qty(value),
-                            }))
-                          }}
-                        />
-                      )}
-                    </td>
-                    <td>{row.unit?.code ?? '—'}</td>
-                    <td className="num">{row.conversion_factor}</td>
-                    <td className="num">{money(row.unit_cost)}</td>
-                  </tr>
-                ))}
-
-                {returnableQuery.isFetching ? (
+          {invoiceMode ? (
+            <div className="purchase-return-grid-wrap">
+              <table className="purchase-return-grid">
+                <thead>
                   <tr>
-                    <td colSpan={8} className="purchase-return-empty">
-                      Loading returnable purchase lines…
-                    </td>
+                    <th>Item / Product Description</th>
+                    <th>Purchased Qty</th>
+                    <th>Already Returned</th>
+                    <th>Remaining</th>
+                    <th>Return Qty</th>
+                    <th>Unit</th>
+                    <th>Factor</th>
+                    <th>Unit Cost</th>
                   </tr>
-                ) : null}
+                </thead>
+                <tbody>
+                  {returnable.map((row) => (
+                    <tr key={row.purchase_line_ulid}>
+                      <td>
+                        <strong>{row.product.product_number}</strong> — {row.product.name}
+                      </td>
+                      <td className="num">{row.original_quantity}</td>
+                      <td className="num">{alreadyReturnedQty(row)}</td>
+                      <td className="num">{remainingPurchaseQty(row)}</td>
+                      <td className="num is-edit">
+                        {readOnly ? (
+                          lineQty[row.purchase_line_ulid] ?? '0'
+                        ) : (
+                          <input
+                            inputMode="decimal"
+                            value={lineQty[row.purchase_line_ulid] ?? ''}
+                            placeholder="0"
+                            aria-label={`Return quantity for ${row.product.name}`}
+                            aria-invalid={
+                              Number(lineQty[row.purchase_line_ulid] ?? 0) >
+                              Number(remainingPurchaseQty(row))
+                            }
+                            title={`Maximum returnable: ${remainingPurchaseQty(row)}`}
+                            onChange={(event) => {
+                              const value = event.target.value
+                              if (value !== '' && !/^\d+(?:\.\d{0,6})?$/.test(value)) return
+                              setLineQty((prev) => ({
+                                ...prev,
+                                [row.purchase_line_ulid]: value,
+                              }))
+                            }}
+                            onBlur={() => {
+                              const value = lineQty[row.purchase_line_ulid]
+                              if (!value || Number(value) === 0) return
+                              setLineQty((prev) => ({
+                                ...prev,
+                                [row.purchase_line_ulid]: qty(value),
+                              }))
+                            }}
+                          />
+                        )}
+                      </td>
+                      <td>{row.unit?.code ?? '—'}</td>
+                      <td className="num">{row.conversion_factor}</td>
+                      <td className="num">{money(row.unit_cost)}</td>
+                    </tr>
+                  ))}
 
-                {returnableQuery.isError ? (
-                  <tr>
-                    <td colSpan={8} className="purchase-return-empty">
-                      Could not load returnable purchase lines. Use Refresh and try again.
-                    </td>
-                  </tr>
-                ) : null}
+                  {returnableQuery.isFetching ? (
+                    <tr>
+                      <td colSpan={8} className="purchase-return-empty">
+                        Loading returnable purchase lines…
+                      </td>
+                    </tr>
+                  ) : null}
 
-                {!returnableQuery.isFetching &&
-                !returnableQuery.isError &&
-                returnable.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="purchase-return-empty">
-                      {purchaseUlid
-                        ? 'This purchase has no remaining returnable quantity.'
-                        : 'Select a posted purchase first.'}
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+                  {returnableQuery.isError ? (
+                    <tr>
+                      <td colSpan={8} className="purchase-return-empty">
+                        Could not load returnable purchase lines. Use Refresh and try again.
+                      </td>
+                    </tr>
+                  ) : null}
+
+                  {!returnableQuery.isFetching &&
+                  !returnableQuery.isError &&
+                  returnable.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="purchase-return-empty">
+                        {purchaseUlid
+                          ? 'This purchase has no remaining returnable quantity.'
+                          : 'Select a posted purchase first.'}
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="purchase-return-general">
+              {!readOnly ? (
+                <div
+                  ref={generalProductAnchorRef}
+                  className="purchase-return-general-entry"
+                >
+                  <Search size={13} aria-hidden="true" />
+                  <input
+                    ref={generalProductEntryRef}
+                    value={generalProductSearch}
+                    placeholder="Search product / barcode / ID — add items directly"
+                    autoComplete="off"
+                    onFocus={() => setGeneralProductPickerOpen(true)}
+                    onChange={(event) => {
+                      setGeneralProductSearch(event.target.value)
+                      setGeneralProductPickerOpen(true)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        setGeneralProductPickerOpen(false)
+                        return
+                      }
+                      if (event.key === 'Enter' && generalProductPickerOpen) {
+                        const first = generalProducts[0]
+                        if (first) {
+                          event.preventDefault()
+                          addGeneralProduct(first)
+                        }
+                      }
+                    }}
+                  />
+                  <strong>F1 to Add New</strong>
+
+                  {generalProductPickerOpen ? (
+                    <ProductLookupGrid
+                      rows={generalProducts}
+                      total={localGeneralProducts.total}
+                      priceType="retail"
+                      mode="purchase"
+                      themed
+                      portalAnchorRef={generalProductAnchorRef}
+                      onSelect={addGeneralProduct}
+                      onRequestClose={() => setGeneralProductPickerOpen(false)}
+                    />
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className="purchase-return-grid-wrap">
+                <table className="purchase-return-grid is-general">
+                  <thead>
+                    <tr>
+                      <th>Item / Product Description</th>
+                      <th>Quantity</th>
+                      <th>Unit Cost</th>
+                      <th>AMT</th>
+                      <th>Disc (Rs)</th>
+                      <th>Tax</th>
+                      <th>Amount (Rs)</th>
+                      <th aria-label="Actions" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {generalRows.map((row) => {
+                      const amounts = generalAmounts(row)
+                      return (
+                        <tr key={row.key}>
+                          <td>
+                            <strong>{row.product_number}</strong> — {row.product_name}
+                            <span className="purchase-return-unit-hint"> · {row.unit_code}</span>
+                          </td>
+                          <td className="num is-edit">
+                            {readOnly ? row.quantity : (
+                              <input
+                                data-general-editable="true"
+                                inputMode="decimal"
+                                value={row.quantity}
+                                onKeyDown={handleGeneralEnter}
+                                onChange={(event) => {
+                                  const value = event.target.value
+                                  if (value !== '' && !/^\d+(?:\.\d{0,6})?$/.test(value)) return
+                                  setGeneralRows((current) => current.map((item) =>
+                                    item.key === row.key ? { ...item, quantity: value } : item,
+                                  ))
+                                }}
+                                onBlur={() => setGeneralRows((current) => current.map((item) =>
+                                  item.key === row.key ? { ...item, quantity: qty(item.quantity) } : item,
+                                ))}
+                              />
+                            )}
+                          </td>
+                          <td className="num is-edit">
+                            {readOnly ? money(row.unit_cost) : (
+                              <input
+                                data-general-editable="true"
+                                inputMode="decimal"
+                                value={row.unit_cost}
+                                onKeyDown={handleGeneralEnter}
+                                onChange={(event) => {
+                                  const value = event.target.value
+                                  if (value !== '' && !/^\d+(?:\.\d{0,4})?$/.test(value)) return
+                                  setGeneralRows((current) => current.map((item) =>
+                                    item.key === row.key ? { ...item, unit_cost: value } : item,
+                                  ))
+                                }}
+                              />
+                            )}
+                          </td>
+                          <td className="num">{money(amounts.subtotal)}</td>
+                          <td className="num is-edit">
+                            {readOnly ? money(row.discount_amount) : (
+                              <input
+                                data-general-editable="true"
+                                inputMode="decimal"
+                                value={row.discount_amount}
+                                onKeyDown={handleGeneralEnter}
+                                onChange={(event) => {
+                                  const value = event.target.value
+                                  if (value !== '' && !/^\d+(?:\.\d{0,4})?$/.test(value)) return
+                                  setGeneralRows((current) => current.map((item) =>
+                                    item.key === row.key ? { ...item, discount_amount: value } : item,
+                                  ))
+                                }}
+                              />
+                            )}
+                          </td>
+                          <td className="num is-edit">
+                            {readOnly ? money(row.tax_amount) : (
+                              <input
+                                data-general-editable="true"
+                                inputMode="decimal"
+                                value={row.tax_amount}
+                                onKeyDown={handleGeneralEnter}
+                                onChange={(event) => {
+                                  const value = event.target.value
+                                  if (value !== '' && !/^\d+(?:\.\d{0,4})?$/.test(value)) return
+                                  setGeneralRows((current) => current.map((item) =>
+                                    item.key === row.key ? { ...item, tax_amount: value } : item,
+                                  ))
+                                }}
+                              />
+                            )}
+                          </td>
+                          <td className="num">{money(amounts.total)}</td>
+                          <td className="purchase-return-row-action">
+                            {!readOnly ? (
+                              <UiButton
+                                variant="danger"
+                                title={`Remove ${row.product_name}`}
+                                onClick={() => {
+                                  setGeneralRows((current) => current.filter((item) => item.key !== row.key))
+                                }}
+                              >
+                                <X size={12} />
+                              </UiButton>
+                            ) : null}
+                          </td>
+                        </tr>
+                      )
+                    })}
+
+                    {generalRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="purchase-return-empty">
+                          Add products directly above, or select a posted Purchase # for invoice-linked return.
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {error ? <div className="purchase-return-error">{error}</div> : null}
 
           <footer className="purchase-return-footer">
-            <span>{selectedLineCount} return line(s)</span>
+            <span>
+              {selectedLineCount} return line(s) · {invoiceMode ? 'Invoice return' : 'General return'}
+            </span>
             <div className="purchase-return-actions">
               <DesktopButton
                 icon={<Save size={13} />}
@@ -755,7 +1186,7 @@ export function PurchaseReturnsPage({
                   } else if (purchaseUlid) {
                     void returnableQuery.refetch()
                   } else {
-                    void purchaseLookup.refetch()
+                    void localGeneralProducts.refreshFromServer()
                   }
                 }}
               />
@@ -763,7 +1194,10 @@ export function PurchaseReturnsPage({
                 <DesktopButton
                   icon={<Trash2 size={13} />}
                   label="Clear qty"
-                  onClick={() => setLineQty({})}
+                  onClick={() => {
+                    setLineQty({})
+                    setGeneralRows([])
+                  }}
                 />
               ) : null}
               <DesktopButton
@@ -839,7 +1273,7 @@ export function PurchaseReturnsPage({
                   key: 'original_purchase',
                   header: 'Purchase #',
                   width: 130,
-                  render: (row) => row.original_purchase?.document_number ?? '—',
+                  render: (row) => row.original_purchase?.document_number ?? 'GENERAL',
                 },
                 {
                   key: 'supplier',
@@ -910,7 +1344,7 @@ export function PurchaseReturnsPage({
             <strong>Product Wise Purchase Return</strong>
             <span>
               Product-wise server aggregation is not available in the current Purchase Return API yet.
-              This tab is reserved so the reference workflow stays intact without fabricating totals.
+              This tab remains reserved without fabricating financial totals.
             </span>
           </div>
         </div>
