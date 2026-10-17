@@ -21,8 +21,12 @@ import {
 import { DesktopButton } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
+import { UiSelect } from '../components/ui/UiSelect'
 import { askConfirm, useFeedback } from '../feedback/FeedbackProvider'
 import { useCan } from '../features/auth/useCan'
+import { useAuth } from '../features/auth/AuthProvider'
+import { useLocalProducts } from '../features/catalog/useLocalCatalog'
+import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Sale, SalePaymentMethod } from '../types/sales'
 import type { Product } from '../types/catalog'
@@ -100,6 +104,7 @@ function retailPrice(product: Product): string {
 export function SalesReturnsPage() {
   const queryClient = useQueryClient()
   const feedback = useFeedback()
+  const { session } = useAuth()
   const { closeActiveTab } = useWorkspace()
   const canReturn = useCan('sales.return')
   const canRefund = useCan('payments.create')
@@ -109,14 +114,9 @@ export function SalesReturnsPage() {
   const [saleUlid, setSaleUlid] = useState('')
   const [saleLabel, setSaleLabel] = useState('')
   const [saleSearch, setSaleSearch] = useState('')
-  const [salePickerOpen, setSalePickerOpen] = useState(false)
   const [fromPartyUlid, setFromPartyUlid] = useState('')
   const [fromPartyType, setFromPartyType] = useState<'customer' | 'account'>('account')
   const [salesmanFilterUlid, setSalesmanFilterUlid] = useState('')
-  const [customerSelectOpen, setCustomerSelectOpen] = useState(false)
-  const [salesmanSelectOpen, setSalesmanSelectOpen] = useState(false)
-  const [customerDropdownSearch, setCustomerDropdownSearch] = useState('')
-  const [salesmanDropdownSearch, setSalesmanDropdownSearch] = useState('')
   const [returnDate, setReturnDate] = useState(today())
   const [reason, setReason] = useState('')
   const [notes, setNotes] = useState('')
@@ -124,6 +124,7 @@ export function SalesReturnsPage() {
   const [generalRows, setGeneralRows] = useState<GeneralReturnRow[]>([])
   const [generalProductSearch, setGeneralProductSearch] = useState('')
   const [generalProductPickerOpen, setGeneralProductPickerOpen] = useState(false)
+  const [generalProductLookupMode, setGeneralProductLookupMode] = useState<'browse' | 'search'>('browse')
   const [generalProductTargetKey, setGeneralProductTargetKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refundAmount, setRefundAmount] = useState('')
@@ -139,6 +140,7 @@ export function SalesReturnsPage() {
   const [productDateTo, setProductDateTo] = useState(today())
 
   const createKeyRef = useRef(newReturnKey())
+  const generalProductAnchorRef = useRef<HTMLDivElement | null>(null)
   const refundKeyRef = useRef(newRefundKey())
   const readOnly = document?.status === 'posted'
 
@@ -166,7 +168,7 @@ export function SalesReturnsPage() {
         status: 'posted',
         per_page: 20,
       }),
-    enabled: view === 'entry' && !document?.ulid && salePickerOpen,
+    enabled: view === 'entry' && !document?.ulid && canReturn,
     retry: false,
   })
 
@@ -177,20 +179,52 @@ export function SalesReturnsPage() {
     retry: false,
   })
 
+  const generalProductLookupQuery =
+    generalProductLookupMode === 'search' ? generalProductSearch : ''
+
+  const localGeneralProducts = useLocalProducts(
+    session,
+    generalProductLookupQuery,
+    view === 'entry' && !saleUlid && !readOnly && generalProductPickerOpen,
+  )
+
+  const localGeneralProductRows = localGeneralProducts.rows.filter(
+    (product) => product.is_active && product.status === 'active',
+  )
+
   const generalProductQuery = useQuery({
-    queryKey: ['sales-return', 'general-products', generalProductSearch],
+    queryKey: ['sales-return', 'general-products-fallback', generalProductLookupQuery],
     queryFn: () => fetchProducts(
       {
-        q: generalProductSearch || undefined,
+        q: generalProductLookupQuery || undefined,
         page: 1,
-        per_page: 40,
+        per_page: 50,
         sales_lookup: true,
+        active_only: true,
       },
       { busy: 'none' },
     ),
-    enabled: view === 'entry' && !saleUlid && !readOnly && generalProductPickerOpen,
+    enabled:
+      view === 'entry' &&
+      !saleUlid &&
+      !readOnly &&
+      generalProductPickerOpen &&
+      !localGeneralProducts.isFetching &&
+      localGeneralProductRows.length === 0,
     retry: false,
   })
+
+  const generalProductRows =
+    localGeneralProductRows.length > 0
+      ? localGeneralProductRows
+      : (generalProductQuery.data?.data ?? []).filter(
+          (product) => product.is_active && product.status === 'active',
+        )
+
+  const generalProductTotal =
+    localGeneralProductRows.length > 0
+      ? localGeneralProductRows.length
+      : (generalProductQuery.data?.meta.total ?? generalProductRows.length)
 
   useEffect(() => {
     if (saleUlid || document?.ulid || fromPartyUlid) return
@@ -365,7 +399,6 @@ export function SalesReturnsPage() {
     setSaleUlid('')
     setSaleLabel('')
     setSaleSearch('')
-    setSalePickerOpen(false)
     setFromPartyUlid('')
     setFromPartyType('account')
     setSalesmanFilterUlid('')
@@ -376,6 +409,7 @@ export function SalesReturnsPage() {
     setGeneralRows([])
     setGeneralProductSearch('')
     setGeneralProductPickerOpen(false)
+    setGeneralProductLookupMode('browse')
     setGeneralProductTargetKey(null)
     setError(null)
     setRefundAmount('')
@@ -433,7 +467,6 @@ export function SalesReturnsPage() {
     setSaleUlid(sale.ulid)
     setSaleLabel(sale.document_number)
     setSaleSearch('')
-    setSalePickerOpen(false)
     if (sale.customer) {
       setFromPartyUlid(sale.customer.ulid)
       setFromPartyType('customer')
@@ -487,6 +520,7 @@ export function SalesReturnsPage() {
 
     setGeneralProductSearch('')
     setGeneralProductPickerOpen(false)
+    setGeneralProductLookupMode('browse')
     setGeneralProductTargetKey(null)
   }
 
