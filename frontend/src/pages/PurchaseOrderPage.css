@@ -310,11 +310,26 @@
 .purchase-order-lines {
   width: 100%;
   min-width: 1420px;
+  table-layout: fixed;
   border-collapse: collapse;
   background: var(--ui-surface);
   color: var(--ui-text);
   font-size: 12px;
 }
+
+.purchase-order-lines col.po-col-selector { width: 2.5%; }
+.purchase-order-lines col.po-col-product { width: 43%; }
+.purchase-order-lines col.po-col-stock { width: 6%; }
+.purchase-order-lines col.po-col-stock-value { width: 6%; }
+.purchase-order-lines col.po-col-consumption { width: 6.5%; }
+.purchase-order-lines col.po-col-difference { width: 6.5%; }
+.purchase-order-lines col.po-col-quantity { width: 6%; }
+.purchase-order-lines col.po-col-price { width: 6%; }
+.purchase-order-lines col.po-col-amt { width: 6%; }
+.purchase-order-lines col.po-col-disc-pct { width: 5.5%; }
+.purchase-order-lines col.po-col-disc-rs { width: 6%; }
+.purchase-order-lines col.po-col-amount { width: 7%; }
+.purchase-order-lines col.po-col-delete { width: 3%; }
 
 .purchase-order-load-more {
   position: sticky;
@@ -346,18 +361,39 @@
 
 .purchase-order-lines th,
 .purchase-order-lines td {
+  height: 27px;
+  border-right: 1px solid var(--ui-table-border);
   border-bottom: 1px solid var(--ui-table-border);
-  padding: 5px 7px;
+  padding: 2px 5px;
   text-align: left;
   white-space: nowrap;
+  vertical-align: middle;
+}
+
+.purchase-order-lines th:last-child,
+.purchase-order-lines td:last-child {
+  border-right: 0;
 }
 
 .purchase-order-lines th {
   position: sticky;
   top: 0;
+  height: 30px;
   background: var(--ui-table-header);
   color: var(--ui-table-header-text);
-  font-weight: 600;
+  font-weight: 700;
+  text-align: center;
+}
+
+.purchase-order-product-heading {
+  text-align: center !important;
+}
+
+.purchase-order-row-selector {
+  padding: 0 !important;
+  text-align: center !important;
+  font-weight: 700;
+  color: var(--ui-text-muted);
 }
 
 .purchase-order-lines tbody tr:nth-child(even) {
@@ -372,26 +408,29 @@
   text-align: right;
 }
 
-.purchase-order-lines th:first-child,
-.purchase-order-lines td:first-child {
-  min-width: 330px;
-}
-
-.purchase-order-lines th:nth-child(n + 2):nth-child(-n + 11),
-.purchase-order-lines td:nth-child(n + 2):nth-child(-n + 11) {
-  width: 96px;
-}
-
 .purchase-order-lines input {
-  width: 78px;
-  padding: 4px 5px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 23px;
+  padding: 1px 4px;
   text-align: right;
+}
+
+.purchase-order-lines td.is-num > input {
+  border-radius: 0;
+}
+
+.purchase-order-lines .ui-button {
+  min-width: 22px;
+  min-height: 22px;
+  padding: 0;
 }
 
 .purchase-order-product-name {
   display: grid;
-  grid-template-columns: minmax(210px, 1fr) 88px;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  gap: 4px;
   align-items: center;
 }
 
@@ -428,11 +467,16 @@
 }
 
 .purchase-order-unit {
-  min-width: 82px;
+  min-width: 0;
+  width: 72px;
 }
 
 .purchase-order-entry-row td {
-  background: var(--ui-surface-subtle);
+  background: var(--ui-surface);
+}
+
+.purchase-order-entry-row .purchase-order-product-cell {
+  background: var(--ui-surface);
 }
 
 .purchase-order-product-cell {
@@ -442,8 +486,9 @@
 
 .purchase-order-product-input {
   width: 100% !important;
-  min-width: 300px;
-  padding-right: 30px !important;
+  min-width: 0;
+  height: 23px;
+  padding: 1px 28px 1px 5px !important;
   text-align: left !important;
 }
 
