@@ -1551,8 +1551,18 @@ export function PurchaseReturnsPage({
           <div className="purchase-return-product-grid">
             <PosDataGrid
               columns={[
-                { key: 'return_number', header: 'Return #', width: 110 },
-                { key: 'return_date', header: 'Date', width: 100 },
+                {
+                  key: 'return_number',
+                  header: 'Return #',
+                  width: 110,
+                  render: (row) => row.return_number,
+                },
+                {
+                  key: 'return_date',
+                  header: 'Date',
+                  width: 100,
+                  render: (row) => row.return_date,
+                },
                 {
                   key: 'supplier',
                   header: 'Supplier',
@@ -1581,8 +1591,20 @@ export function PurchaseReturnsPage({
                   width: 80,
                   render: (row) => row.unit?.code ?? '—',
                 },
-                { key: 'quantity_out', header: 'Qty (-)', width: 100, align: 'right' },
-                { key: 'amount', header: 'Amount', width: 115, align: 'right' },
+                {
+                  key: 'quantity_out',
+                  header: 'Qty (-)',
+                  width: 100,
+                  align: 'right',
+                  render: (row) => row.quantity_out,
+                },
+                {
+                  key: 'amount',
+                  header: 'Amount',
+                  width: 115,
+                  align: 'right',
+                  render: (row) => money(row.amount),
+                },
               ]}
               rows={productWiseQuery.data?.data ?? []}
               rowKey={(row) => row.ulid}
