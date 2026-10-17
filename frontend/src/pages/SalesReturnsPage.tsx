@@ -492,7 +492,7 @@ export function SalesReturnsPage() {
 
   function focusGeneralField(rowKey: string, field: 'quantity' | 'price' | 'discount') {
     window.setTimeout(() => {
-      const input = document.querySelector<HTMLInputElement>(
+      const input = globalThis.document.querySelector<HTMLInputElement>(
         `[data-return-row="${rowKey}"] [data-return-field="${field}"]`,
       )
       input?.focus()
@@ -515,7 +515,6 @@ export function SalesReturnsPage() {
 
   function handleGeneralFieldEnter(
     event: ReactKeyboardEvent<HTMLInputElement>,
-    rowKey: string,
   ) {
     if (event.key !== 'Enter') return
 
@@ -1268,7 +1267,7 @@ export function SalesReturnsPage() {
                               value={row.quantity}
                               aria-label={`Return quantity for ${row.product_name}`}
                               onFocus={() => setGeneralActiveRowKey(row.key)}
-                              onKeyDown={(e) => handleGeneralFieldEnter(e, row.key)}
+                              onKeyDown={(e) => handleGeneralFieldEnter(e)}
                               onChange={(e) => {
                                 const value = e.target.value
                                 if (value !== '' && !/^\d+(?:\.\d{0,6})?$/.test(value)) return
@@ -1286,7 +1285,7 @@ export function SalesReturnsPage() {
                               value={row.unit_price}
                               aria-label={`Return price for ${row.product_name}`}
                               onFocus={() => setGeneralActiveRowKey(row.key)}
-                              onKeyDown={(e) => handleGeneralFieldEnter(e, row.key)}
+                              onKeyDown={(e) => handleGeneralFieldEnter(e)}
                               onChange={(e) => {
                                 const value = e.target.value
                                 if (value !== '' && !/^\d+(?:\.\d{0,4})?$/.test(value)) return
@@ -1305,7 +1304,7 @@ export function SalesReturnsPage() {
                               value={row.discount_percent}
                               aria-label={`Discount percent for ${row.product_name}`}
                               onFocus={() => setGeneralActiveRowKey(row.key)}
-                              onKeyDown={(e) => handleGeneralFieldEnter(e, row.key)}
+                              onKeyDown={(e) => handleGeneralFieldEnter(e)}
                               onChange={(e) => {
                                 const value = e.target.value
                                 if (value !== '' && !/^\d+(?:\.\d{0,8})?$/.test(value)) return
