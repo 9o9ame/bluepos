@@ -8,7 +8,13 @@ import { Ribbon } from '../components/desktop/Ribbon'
 import { StatusBar } from '../components/desktop/StatusBar'
 import { WorkspaceTabBar } from '../components/desktop/WorkspaceTabBar'
 import { SalesInvoicePage } from '../pages/SalesInvoicePage'
+import { QuotationEstimatePage } from '../pages/QuotationEstimatePage'
+import { SalesReturnsPage } from '../pages/SalesReturnsPage'
+import { PurchasesPage } from '../pages/PurchasesPage'
+import { PurchaseOrderPage } from '../pages/PurchaseOrderPage'
+import { PurchaseReturnsPage } from '../pages/PurchaseReturnsPage'
 import { useAuth } from '../features/auth/AuthProvider'
+import { useCan } from '../features/auth/useCan'
 import { useAppearance } from '../features/appearance/AppearanceProvider'
 import { useAppMode } from '../features/desktop/useAppMode'
 import { WorkspaceProvider, useWorkspace } from '../features/workspace/WorkspaceProvider'
@@ -140,10 +146,47 @@ function AppShellFrame({
 
   const location = useLocation()
   const { tabs, activeKey } = useWorkspace()
-  const salesTabs = tabs.filter(
-    (tab) => tab.key === 'sales-invoice' || tab.key.startsWith('sales-invoice:'),
-  )
-  const salesRouteActive = location.pathname === '/daily/sales'
+  const canViewSales = useCan('sales.view')
+  const canReturnSales = useCan('sales.return')
+  const canViewPurchases = useCan('purchases.view')
+  const canViewPurchaseReturns = useCan('purchase_returns.view')
+
+  const persistentModuleKeys = new Set([
+    'sales-invoice',
+    'quotation-estimate',
+    'sales-return',
+    'purchase-invoice',
+    'purchase-order',
+    'purchase-return',
+  ])
+
+  const persistentTabs = tabs.filter((tab) => {
+    const baseKey = tab.key.split(':', 1)[0]
+    return persistentModuleKeys.has(baseKey)
+  })
+
+  const persistentPathKey: Record<string, string> = {
+    '/daily/sales': 'sales-invoice',
+    '/daily/quotation-estimate': 'quotation-estimate',
+    '/daily/sales-return': 'sales-return',
+    '/daily/purchases': 'purchase-invoice',
+    '/daily/purchase-orders': 'purchase-order',
+    '/daily/purchase-return': 'purchase-return',
+  }
+
+  const activePersistentKey = persistentPathKey[location.pathname] ?? null
+  const persistentRouteAllowed =
+    activePersistentKey === 'sales-invoice'
+      ? true
+      : activePersistentKey === 'quotation-estimate'
+        ? canViewSales
+        : activePersistentKey === 'sales-return'
+          ? canReturnSales
+          : activePersistentKey === 'purchase-invoice' || activePersistentKey === 'purchase-order'
+            ? canViewPurchases
+            : activePersistentKey === 'purchase-return'
+              ? canViewPurchaseReturns
+              : false
 
   return (
     <div className="app-shell">
@@ -168,10 +211,26 @@ function AppShellFrame({
       <WorkspaceTabBar />
       <div className="workspace-host">
         <div className="workspace-host-inner">
-          {salesTabs.map((tab) => {
+          {persistentTabs.map((tab) => {
+            const baseKey = tab.key.split(':', 1)[0]
             const queryIndex = tab.path.indexOf('?')
             const workspaceSearch = queryIndex >= 0 ? tab.path.slice(queryIndex) : ''
-            const active = salesRouteActive && tab.key === activeKey
+            const active = activePersistentKey === baseKey && tab.key === activeKey
+
+            const content =
+              baseKey === 'sales-invoice' ? (
+                <SalesInvoicePage active={active} workspaceSearch={workspaceSearch} />
+              ) : baseKey === 'quotation-estimate' ? (
+                <QuotationEstimatePage active={active} />
+              ) : baseKey === 'sales-return' ? (
+                <SalesReturnsPage active={active} />
+              ) : baseKey === 'purchase-invoice' ? (
+                <PurchasesPage active={active} workspaceSearch={workspaceSearch} />
+              ) : baseKey === 'purchase-order' ? (
+                <PurchaseOrderPage />
+              ) : baseKey === 'purchase-return' ? (
+                <PurchaseReturnsPage active={active} workspaceSearch={workspaceSearch} />
+              ) : null
 
             return (
               <div
@@ -179,14 +238,11 @@ function AppShellFrame({
                 style={{ display: active ? 'contents' : 'none' }}
                 aria-hidden={!active}
               >
-                <SalesInvoicePage
-                  active={active}
-                  workspaceSearch={workspaceSearch}
-                />
+                {content}
               </div>
             )
           })}
-          {!salesRouteActive ? <Outlet /> : null}
+          {!activePersistentKey || !persistentRouteAllowed ? <Outlet /> : null}
         </div>
       </div>
       {showStatusBar ? <StatusBar session={session} online={online} /> : null}
