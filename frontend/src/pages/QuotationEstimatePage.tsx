@@ -34,7 +34,7 @@ function errorMessage(error: unknown): string {
   return 'Unable to complete the quotation request.'
 }
 
-export function QuotationEstimatePage() {
+export function QuotationEstimatePage({ active = true }: { active?: boolean } = {}) {
   const { closeActiveTab, openModule } = useWorkspace()
   const { session } = useAuth()
   const feedback = useFeedback()
@@ -412,6 +412,11 @@ export function QuotationEstimatePage() {
     window.addEventListener('mousedown', handleOutsideActiveRow)
     return () => window.removeEventListener('mousedown', handleOutsideActiveRow)
   }, [activeLineKey, cart.paidLines, readOnly, tab])
+
+  useEffect(() => {
+    if (active) return
+    setProductPickerOpen(false)
+  }, [active])
 
   return (
     <DesktopPanel
