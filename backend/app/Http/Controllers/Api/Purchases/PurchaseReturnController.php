@@ -9,6 +9,7 @@ use App\Actions\Purchases\RecalculatePurchaseReturnTotalsAction;
 use App\Actions\Purchases\UpdatePurchaseReturnAction;
 use App\Actions\Purchases\UpsertPurchaseReturnLineAction;
 use App\Enums\PurchaseInvoiceStatus;
+use App\Enums\PurchaseReturnStatus;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Purchases\PurchaseReturnLineResource;
@@ -287,6 +288,95 @@ class PurchaseReturnController extends Controller
         }
 
         return response()->json(['data' => $rows]);
+    }
+
+    public function productWise(
+        Request $request,
+        TenantContext $tenantContext,
+    ): array {
+        $this->authorize('viewAny', PurchaseReturn::class);
+
+        $data = $request->validate([
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        $perPage = min(max((int) ($data['per_page'] ?? 50), 1), 100);
+
+        $query = PurchaseReturnLine::query()
+            ->where('tenant_id', $tenantContext->tenantId())
+            ->whereHas('purchaseReturn', function ($return) use ($data, $tenantContext): void {
+                $return
+                    ->where('branch_id', $tenantContext->branchId())
+                    ->where('warehouse_id', $tenantContext->warehouseId())
+                    ->where('status', PurchaseReturnStatus::Posted->value);
+
+                if (! empty($data['date_from'])) {
+                    $return->whereDate('return_date', '>=', (string) $data['date_from']);
+                }
+
+                if (! empty($data['date_to'])) {
+                    $return->whereDate('return_date', '<=', (string) $data['date_to']);
+                }
+            })
+            ->with([
+                'product.category',
+                'unit',
+                'purchaseReturn.supplier',
+                'purchaseReturn.purchaseInvoice',
+            ])
+            ->orderByDesc('id');
+
+        $page = $query->paginate($perPage);
+
+        $rows = collect($page->items())->map(function (PurchaseReturnLine $line): array {
+            $document = $line->purchaseReturn;
+
+            return [
+                'ulid' => $line->ulid,
+                'return_ulid' => $document->ulid,
+                'return_number' => $document->document_number,
+                'return_date' => $document->return_date?->toDateString(),
+                'return_mode' => $document->purchase_invoice_id === null ? 'general' : 'invoice',
+                'supplier' => $document->supplier ? [
+                    'ulid' => $document->supplier->ulid,
+                    'name' => $document->supplier->name,
+                ] : null,
+                'purchase' => $document->purchaseInvoice ? [
+                    'ulid' => $document->purchaseInvoice->ulid,
+                    'document_number' => $document->purchaseInvoice->document_number,
+                    'supplier_invoice_number' => $document->purchaseInvoice->supplier_invoice_number,
+                ] : null,
+                'product' => [
+                    'ulid' => $line->product->ulid,
+                    'product_number' => $line->product->product_number,
+                    'name' => $line->product->name,
+                ],
+                'category' => $line->product->category ? [
+                    'ulid' => $line->product->category->ulid,
+                    'name' => $line->product->category->name,
+                ] : null,
+                'unit' => $line->unit ? [
+                    'ulid' => $line->unit->ulid,
+                    'code' => $line->unit->code,
+                    'name' => $line->unit->name,
+                ] : null,
+                'quantity_out' => $line->quantity,
+                'base_quantity_out' => $line->base_quantity,
+                'amount' => $line->line_total,
+            ];
+        })->values();
+
+        return [
+            'data' => $rows,
+            'meta' => [
+                'current_page' => $page->currentPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
+                'last_page' => $page->lastPage(),
+            ],
+        ];
     }
 
     private function findDocument(string $ulid, TenantContext $tenantContext): PurchaseReturn
