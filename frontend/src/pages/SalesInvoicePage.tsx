@@ -1211,13 +1211,14 @@ export function SalesInvoicePage({
   }, [activeLineKey])
   useEffect(() => {
     if (!activeLineKey || savedSale || view !== 'pos') return
+    const lineKey = activeLineKey
 
     function handleOutsideActiveRow(event: MouseEvent) {
       const target = event.target
       if (!(target instanceof Node)) return
 
       const row = globalThis.document.querySelector<HTMLElement>(
-        `[data-sale-line="${activeLineKey}"]`,
+        `[data-sale-line="${lineKey}"]`,
       )
       if (row?.contains(target)) return
 
@@ -1228,12 +1229,12 @@ export function SalesInvoicePage({
         return
       }
 
-      const line = cart.lines.find((item) => item.line_key === activeLineKey)
+      const line = cart.lines.find((item) => item.line_key === lineKey)
       const quantity = Number.parseFloat(line?.quantity ?? '')
       if (!line || !Number.isFinite(quantity) || quantity <= 0) return
 
       setSaveError(null)
-      finishActiveLine(activeLineKey, false)
+      finishActiveLine(lineKey, false)
     }
 
     window.addEventListener('mousedown', handleOutsideActiveRow)
