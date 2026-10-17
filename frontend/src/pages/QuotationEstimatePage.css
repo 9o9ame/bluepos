@@ -698,3 +698,95 @@ html[data-animations='off'] .quotation-product-search-input {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Final quotation header geometry: compact left entry card, reference title, right amount card. */
+.quotation-entry-head {
+  grid-template-columns: 650px minmax(180px, 1fr) 220px;
+  gap: 10px;
+  align-items: start;
+}
+
+.quotation-header-grid {
+  width: 650px;
+  max-width: 650px;
+  grid-template-columns: 150px 190px 278px;
+  grid-template-areas:
+    "number date price"
+    "customer customer salesman";
+  gap: 5px 8px;
+}
+
+.quotation-header-grid .is-customer,
+.quotation-header-grid .is-salesman,
+.quotation-header-grid .is-price-type {
+  min-width: 0;
+}
+
+.quotation-header-grid .is-customer .ui-select,
+.quotation-header-grid .is-salesman .ui-select,
+.quotation-header-grid .is-price-type .ui-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.quotation-entry-title {
+  align-self: start;
+  justify-self: end;
+  padding: 4px 8px 0 0;
+  color: var(--ui-text);
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+
+.quotation-amount-options {
+  width: 220px;
+  min-width: 220px;
+  box-sizing: border-box;
+}
+
+.quotation-net-box {
+  min-height: 38px;
+}
+
+.quotation-net-box strong {
+  font-size: 24px;
+}
+
+@media (max-width: 1180px) {
+  .quotation-entry-head {
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
+
+  .quotation-header-grid {
+    width: 100%;
+    max-width: none;
+    grid-template-columns: 150px 190px minmax(240px, 1fr);
+  }
+
+  .quotation-entry-title {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .quotation-entry-head {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-header-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    grid-template-areas:
+      "number date"
+      "customer customer"
+      "salesman price";
+  }
+
+  .quotation-amount-options {
+    width: 100%;
+    min-width: 0;
+  }
+}
