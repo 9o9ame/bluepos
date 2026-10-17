@@ -366,12 +366,16 @@ export function SalesReturnsPage() {
     setSaleLabel('')
     setSaleSearch('')
     setSalePickerOpen(false)
-    setCustomerFilterUlid('')
+    setFromPartyUlid('')
+    setFromPartyType('account')
     setSalesmanFilterUlid('')
     setReturnDate(today())
     setReason('')
     setNotes('')
     setLineQty({})
+    setGeneralRows([])
+    setGeneralProductSearch('')
+    setGeneralProductPickerOpen(false)
     setError(null)
     setRefundAmount('')
     setRefundMethod('cash')
@@ -387,16 +391,40 @@ export function SalesReturnsPage() {
     setReturnDate(row.return_date)
     setReason(row.reason ?? '')
     setNotes(row.notes ?? '')
-    setCustomerFilterUlid(row.customer?.ulid ?? '')
+    if (row.settlement_account) {
+      setFromPartyUlid(row.settlement_account.ulid)
+      setFromPartyType('account')
+    } else if (row.customer) {
+      setFromPartyUlid(row.customer.ulid)
+      setFromPartyType('customer')
+    } else {
+      setFromPartyUlid('')
+      setFromPartyType('account')
+    }
     setSalesmanFilterUlid(row.salesman?.ulid ?? '')
     setRefundAmount(row.balance_due)
     const nextQty: Record<string, string> = {}
+    const nextGeneral: GeneralReturnRow[] = []
     for (const line of row.lines ?? []) {
       if (line.original_sale_item_ulid) {
         nextQty[line.original_sale_item_ulid] = line.quantity
+      } else if (line.product) {
+        nextGeneral.push({
+          key: line.ulid,
+          line_ulid: line.ulid,
+          product_ulid: line.product.ulid,
+          product_number: line.product.product_number,
+          product_name: line.product.name,
+          unit_code: line.unit?.code ?? '—',
+          quantity: line.quantity,
+          unit_price: line.unit_price,
+          discount_percent: line.discount_percent,
+          tax_percent: line.tax_percent,
+        })
       }
     }
     setLineQty(nextQty)
+    setGeneralRows(nextGeneral)
     setError(null)
   }
 
@@ -405,11 +433,41 @@ export function SalesReturnsPage() {
     setSaleLabel(sale.document_number)
     setSaleSearch('')
     setSalePickerOpen(false)
-    setCustomerFilterUlid(sale.customer?.ulid ?? '')
+    if (sale.customer) {
+      setFromPartyUlid(sale.customer.ulid)
+      setFromPartyType('customer')
+    }
     setSalesmanFilterUlid(sale.salesman?.ulid ?? '')
     setDocument(null)
     setLineQty({})
+    setGeneralRows([])
+    setGeneralProductSearch('')
+    setGeneralProductPickerOpen(false)
     setError(null)
+  }
+
+  function addGeneralProduct(product: Product) {
+    if (generalRows.some((row) => row.product_ulid === product.ulid)) {
+      feedback.error(`${product.name} is already on this return.`, 'Sales Return')
+      return
+    }
+
+    setGeneralRows((rows) => [
+      ...rows,
+      {
+        key: generalRowKey(),
+        product_ulid: product.ulid,
+        product_number: product.product_number,
+        product_name: product.name,
+        unit_code: product.base_unit?.code ?? '—',
+        quantity: '1.000000',
+        unit_price: retailPrice(product),
+        discount_percent: '0.00000000',
+        tax_percent: product.is_taxable ? product.tax_percent : '0.00000000',
+      },
+    ])
+    setGeneralProductSearch('')
+    setGeneralProductPickerOpen(false)
   }
 
   const openMutation = useMutation({
@@ -423,9 +481,12 @@ export function SalesReturnsPage() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!saleUlid) throw new Error('Select a posted sale invoice first.')
       if (returnEntryState.validationError) {
         throw new Error(returnEntryState.validationError)
+      }
+
+      if (!saleUlid && !fromPartyUlid) {
+        throw new Error('Select CASH IN HAND, another account, or a customer in From.')
       }
 
       let current = document
@@ -433,7 +494,10 @@ export function SalesReturnsPage() {
       if (!current?.ulid) {
         current = await createSaleReturn(
           {
-            sale_ulid: saleUlid,
+            sale_ulid: saleUlid || undefined,
+            customer_ulid: !saleUlid && fromPartyType === 'customer' ? fromPartyUlid : undefined,
+            account_ulid: !saleUlid && fromPartyType === 'account' ? fromPartyUlid : undefined,
+            salesman_ulid: !saleUlid && salesmanFilterUlid ? salesmanFilterUlid : undefined,
             return_date: returnDate,
             reason: reason || null,
             notes: notes || null,
@@ -449,49 +513,84 @@ export function SalesReturnsPage() {
       }
 
       const refreshed = await fetchSaleReturn(current.ulid)
-      const existingBySaleItem = new Map(
-        (refreshed.lines ?? [])
-          .filter((line) => line.original_sale_item_ulid)
-          .map((line) => [line.original_sale_item_ulid as string, line]),
-      )
 
-      for (const [saleItemUlid, quantity] of Object.entries(lineQty)) {
-        const amount = Number(quantity)
-        const existing = existingBySaleItem.get(saleItemUlid)
+      if (!saleUlid) {
+        const existingByProduct = new Map(
+          (refreshed.lines ?? [])
+            .filter((line) => !line.original_sale_item_ulid && line.product)
+            .map((line) => [line.product?.ulid as string, line]),
+        )
 
-        if (!Number.isFinite(amount) || amount <= 0) {
+        for (const row of generalRows) {
+          const existing = existingByProduct.get(row.product_ulid)
+          const payload = {
+            product_ulid: row.product_ulid,
+            quantity: qty(row.quantity),
+            unit_price: Number(row.unit_price || 0).toFixed(4),
+            discount_percent: Number(row.discount_percent || 0).toFixed(8),
+            reason: reason || null,
+          }
+
           if (existing) {
+            await updateSaleReturnLine(current.ulid, existing.ulid, payload)
+          } else {
+            await createSaleReturnLine(current.ulid, payload)
+          }
+        }
+
+        for (const [productUlid, existing] of existingByProduct) {
+          if (!generalRows.some((row) => row.product_ulid === productUlid)) {
             await deleteSaleReturnLine(current.ulid, existing.ulid)
           }
-          continue
+        }
+      } else {
+        const existingBySaleItem = new Map(
+          (refreshed.lines ?? [])
+            .filter((line) => line.original_sale_item_ulid)
+            .map((line) => [line.original_sale_item_ulid as string, line]),
+        )
+
+        for (const [saleItemUlid, quantity] of Object.entries(lineQty)) {
+          const amount = Number(quantity)
+          const existing = existingBySaleItem.get(saleItemUlid)
+
+          if (!Number.isFinite(amount) || amount <= 0) {
+            if (existing) {
+              await deleteSaleReturnLine(current.ulid, existing.ulid)
+            }
+            continue
+          }
+
+          const payload = {
+            sale_item_ulid: saleItemUlid,
+            quantity: qty(quantity),
+            reason: reason || null,
+          }
+
+          if (existing) {
+            await updateSaleReturnLine(current.ulid, existing.ulid, payload)
+          } else {
+            await createSaleReturnLine(current.ulid, payload)
+          }
         }
 
-        const payload = {
-          sale_item_ulid: saleItemUlid,
-          quantity: qty(quantity),
-          reason: reason || null,
-        }
-
-        if (existing) {
-          await updateSaleReturnLine(current.ulid, existing.ulid, payload)
-        } else {
-          await createSaleReturnLine(current.ulid, payload)
-        }
-      }
-
-      for (const [saleItemUlid, existing] of existingBySaleItem) {
-        if (!(saleItemUlid in lineQty) || Number(lineQty[saleItemUlid]) <= 0) {
-          await deleteSaleReturnLine(current.ulid, existing.ulid)
+        for (const [saleItemUlid, existing] of existingBySaleItem) {
+          if (!(saleItemUlid in lineQty) || Number(lineQty[saleItemUlid]) <= 0) {
+            await deleteSaleReturnLine(current.ulid, existing.ulid)
+          }
         }
       }
 
       return fetchSaleReturn(current.ulid)
     },
+
     onSuccess: async (saved) => {
       loadDocument(saved)
       createKeyRef.current = newReturnKey()
       await queryClient.invalidateQueries({ queryKey: ['sales-returns'] })
-      await queryClient.invalidateQueries({ queryKey: ['sales', 'returnable-lines', saleUlid] })
+      if (saleUlid) {
+        await queryClient.invalidateQueries({ queryKey: ['sales', 'returnable-lines', saleUlid] })
+      }
       feedback.success('Sales return draft saved.', 'Sales Return')
     },
     onError: handleError,
