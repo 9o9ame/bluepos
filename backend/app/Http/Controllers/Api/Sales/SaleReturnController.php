@@ -402,7 +402,9 @@ class SaleReturnController extends Controller
             ->where('status', SaleStatus::Posted->value)
             ->when(
                 $sale->customer_id === null,
-                fn ($query) => $query->whereNull('customer_id'),
+                fn ($query) => $query
+                    ->whereNull('customer_id')
+                    ->whereNull('settlement_account_id'),
                 fn ($query) => $query->where('customer_id', $sale->customer_id),
             )
             ->sum('grand_total');
