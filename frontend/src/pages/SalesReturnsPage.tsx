@@ -124,6 +124,7 @@ export function SalesReturnsPage() {
   const [generalRows, setGeneralRows] = useState<GeneralReturnRow[]>([])
   const [generalProductSearch, setGeneralProductSearch] = useState('')
   const [generalProductPickerOpen, setGeneralProductPickerOpen] = useState(false)
+  const [generalProductTargetKey, setGeneralProductTargetKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refundAmount, setRefundAmount] = useState('')
   const [refundMethod, setRefundMethod] = useState<SalePaymentMethod>('cash')
@@ -375,6 +376,7 @@ export function SalesReturnsPage() {
     setGeneralRows([])
     setGeneralProductSearch('')
     setGeneralProductPickerOpen(false)
+    setGeneralProductTargetKey(null)
     setError(null)
     setRefundAmount('')
     setRefundMethod('cash')
@@ -446,27 +448,46 @@ export function SalesReturnsPage() {
   }
 
   function addGeneralProduct(product: Product) {
-    if (generalRows.some((row) => row.product_ulid === product.ulid)) {
+    if (generalRows.some((row) => row.product_ulid === product.ulid && row.key !== generalProductTargetKey)) {
       feedback.error(`${product.name} is already on this return.`, 'Sales Return')
       return
     }
 
-    setGeneralRows((rows) => [
-      ...rows,
-      {
-        key: generalRowKey(),
-        product_ulid: product.ulid,
-        product_number: product.product_number,
-        product_name: product.name,
-        unit_code: product.base_unit?.code ?? '—',
-        quantity: '1.000000',
-        unit_price: retailPrice(product),
-        discount_percent: '0.00000000',
-        tax_percent: product.is_taxable ? product.tax_percent : '0.00000000',
-      },
-    ])
+    if (generalProductTargetKey) {
+      setGeneralRows((rows) => rows.map((row) =>
+        row.key === generalProductTargetKey
+          ? {
+              ...row,
+              product_ulid: product.ulid,
+              product_number: product.product_number,
+              product_name: product.name,
+              unit_code: product.base_unit?.code ?? '—',
+              unit_price: retailPrice(product),
+              discount_percent: '0.00000000',
+              tax_percent: product.is_taxable ? product.tax_percent : '0.00000000',
+            }
+          : row,
+      ))
+    } else {
+      setGeneralRows((rows) => [
+        ...rows,
+        {
+          key: generalRowKey(),
+          product_ulid: product.ulid,
+          product_number: product.product_number,
+          product_name: product.name,
+          unit_code: product.base_unit?.code ?? '—',
+          quantity: '1.000000',
+          unit_price: retailPrice(product),
+          discount_percent: '0.00000000',
+          tax_percent: product.is_taxable ? product.tax_percent : '0.00000000',
+        },
+      ])
+    }
+
     setGeneralProductSearch('')
     setGeneralProductPickerOpen(false)
+    setGeneralProductTargetKey(null)
   }
 
   const openMutation = useMutation({
@@ -1167,8 +1188,67 @@ export function SalesReturnsPage() {
                     const amounts = generalLineAmounts(row)
                     return (
                       <tr key={row.key}>
-                        <td>
-                          <strong>{row.product_number}</strong> — {row.product_name}
+                        <td className="sales-return-general-product-cell">
+                          {readOnly ? (
+                            <><strong>{row.product_number}</strong> — {row.product_name}</>
+                          ) : generalProductTargetKey === row.key ? (
+                            <>
+                              <input
+                                autoFocus
+                                value={generalProductSearch}
+                                placeholder="Select / search product"
+                                aria-label={`Change product for ${row.product_name}`}
+                                onChange={(e) => {
+                                  setGeneralProductSearch(e.target.value)
+                                  setGeneralProductPickerOpen(true)
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape') {
+                                    setGeneralProductTargetKey(null)
+                                    setGeneralProductSearch('')
+                                    setGeneralProductPickerOpen(false)
+                                    return
+                                  }
+                                  if (e.key === 'Enter') {
+                                    const first = generalProductQuery.data?.data?.[0]
+                                    if (first) {
+                                      e.preventDefault()
+                                      addGeneralProduct(first)
+                                    }
+                                  }
+                                }}
+                              />
+                              {generalProductPickerOpen ? (
+                                <div className="sales-return-general-product-results">
+                                  {(generalProductQuery.data?.data ?? []).map((product) => (
+                                    <button
+                                      type="button"
+                                      key={product.ulid}
+                                      onMouseDown={(e) => e.preventDefault()}
+                                      onClick={() => addGeneralProduct(product)}
+                                    >
+                                      <strong>{product.product_number}</strong>
+                                      <span>{product.name}</span>
+                                      <span>{money(retailPrice(product))}</span>
+                                    </button>
+                                  ))}
+                                  {generalProductQuery.isFetching ? <div>Searching products…</div> : null}
+                                </div>
+                              ) : null}
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              className="sales-return-general-product-edit"
+                              onClick={() => {
+                                setGeneralProductTargetKey(row.key)
+                                setGeneralProductSearch(row.product_name)
+                                setGeneralProductPickerOpen(true)
+                              }}
+                            >
+                              <strong>{row.product_number}</strong> — {row.product_name}
+                            </button>
+                          )}
                         </td>
                         <td className="num is-edit">
                           {readOnly ? row.quantity : (
@@ -1237,7 +1317,10 @@ export function SalesReturnsPage() {
                           value={generalProductSearch}
                           placeholder="Select / search product"
                           aria-label="General return product"
-                          onFocus={() => setGeneralProductPickerOpen(true)}
+                          onFocus={() => {
+                            setGeneralProductTargetKey(null)
+                            setGeneralProductPickerOpen(true)
+                          }}
                           onChange={(e) => {
                             setGeneralProductSearch(e.target.value)
                             setGeneralProductPickerOpen(true)
