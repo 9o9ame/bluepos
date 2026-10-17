@@ -4672,3 +4672,87 @@ html[data-theme='dark'] .sales-return-select-caret {
   outline: none;
   box-shadow: var(--ui-focus-shadow);
 }
+
+
+/* Canonical Sales Return dropdowns: same shared select behavior as the Sales screens. */
+.sales-return-canonical-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.sales-return-canonical-trigger,
+.sales-return-canonical-select .ui-select-combobox-trigger {
+  min-height: 25px;
+  height: 25px;
+}
+
+.sales-return-canonical-select .ui-select-value,
+.sales-return-canonical-select .ui-select-trigger-search {
+  font-weight: 850;
+}
+
+/* General return product lookup reuses the Sales Invoice product grid and combo geometry. */
+.sales-return-product-combo {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.sales-return-product-combo .sales-pos-product-entry {
+  box-sizing: border-box;
+  width: 100%;
+  height: 25px;
+  min-width: 0;
+  padding: 0 29px 0 7px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+  font-weight: 850;
+}
+
+.sales-return-product-combo .sales-pos-product-entry:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.sales-return-product-combo .sales-product-combo-toggle {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  min-width: 22px;
+  height: 21px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--ui-select-arrow-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-select-arrow-face);
+  color: var(--ui-select-selected-text);
+  box-shadow: var(--ui-control-shadow);
+  cursor: pointer;
+}
+
+.sales-return-product-combo .sales-product-combo-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.sales-return-product-combo .sales-product-combo-toggle > span {
+  display: grid;
+  place-items: center;
+  transition: transform var(--ui-transition-normal);
+}
+
+.sales-return-product-combo .sales-product-combo-toggle[aria-expanded='true'] > span {
+  transform: rotate(180deg);
+}
+
+html[data-animations='off'] .sales-return-product-combo .sales-product-combo-toggle > span {
+  transition: none;
+}
