@@ -1077,109 +1077,217 @@ export function SalesReturnsPage() {
           </section>
 
           <div className="sales-return-grid-wrap">
-            <table className="sales-return-grid">
-              <thead>
-                <tr>
-                  <th>Item / Product Description</th>
-                  <th>Kind</th>
-                  <th>Sold Qty</th>
-                  <th>Returned</th>
-                  <th>Available</th>
-                  <th>Return Qty</th>
-                  <th>Unit</th>
-                  <th>Price</th>
-                  <th>Disc</th>
-                  <th>Tax</th>
-                  <th>Net</th>
-                </tr>
-              </thead>
-              <tbody>
-                {returnable.map((row) => (
-                  <tr key={row.sale_item_ulid}>
-                    <td>
-                      <strong>{row.product.product_number}</strong> — {row.product.name}
-                    </td>
-                    <td>{row.line_kind.replace('_', ' ')}</td>
-                    <td className="num">{row.original_quantity}</td>
-                    <td className="num">{row.already_returned_quantity}</td>
-                    <td className="num">{row.remaining_returnable_quantity}</td>
-                    <td className="num is-edit">
-                      {readOnly ? (
-                        lineQty[row.sale_item_ulid] ?? '0'
-                      ) : (
+            {saleUlid ? (
+              <table className="sales-return-grid">
+                <thead>
+                  <tr>
+                    <th>Item / Product Description</th>
+                    <th>Kind</th>
+                    <th>Sold Qty</th>
+                    <th>Returned</th>
+                    <th>Available</th>
+                    <th>Return Qty</th>
+                    <th>Unit</th>
+                    <th>Price</th>
+                    <th>Disc</th>
+                    <th>Tax</th>
+                    <th>Net</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {returnable.map((row) => (
+                    <tr key={row.sale_item_ulid}>
+                      <td>
+                        <strong>{row.product.product_number}</strong> — {row.product.name}
+                      </td>
+                      <td>{row.line_kind.replace('_', ' ')}</td>
+                      <td className="num">{row.original_quantity}</td>
+                      <td className="num">{row.already_returned_quantity}</td>
+                      <td className="num">{row.remaining_returnable_quantity}</td>
+                      <td className="num is-edit">
+                        {readOnly ? (
+                          lineQty[row.sale_item_ulid] ?? '0'
+                        ) : (
+                          <input
+                            inputMode="decimal"
+                            value={lineQty[row.sale_item_ulid] ?? ''}
+                            placeholder="0"
+                            aria-label={`Return quantity for ${row.product.name}`}
+                            aria-invalid={
+                              Number(lineQty[row.sale_item_ulid] ?? 0) >
+                              Number(row.remaining_returnable_quantity)
+                            }
+                            title={`Maximum returnable: ${row.remaining_returnable_quantity}`}
+                            onChange={(e) => {
+                              const value = e.target.value
+                              if (value !== '' && !/^\d+(?:\.\d{0,6})?$/.test(value)) return
+                              setLineQty((prev) => ({ ...prev, [row.sale_item_ulid]: value }))
+                            }}
+                            onBlur={() => {
+                              const value = lineQty[row.sale_item_ulid]
+                              if (!value || Number(value) === 0) return
+                              setLineQty((prev) => ({ ...prev, [row.sale_item_ulid]: qty(value) }))
+                            }}
+                          />
+                        )}
+                      </td>
+                      <td>{row.unit?.code ?? '—'}</td>
+                      <td className="num">{money(row.unit_price)}</td>
+                      <td className="num">{money(row.discount_amount)}</td>
+                      <td className="num">{money(row.tax_amount)}</td>
+                      <td className="num">{money(row.line_total)}</td>
+                    </tr>
+                  ))}
+                  {returnableQuery.isFetching ? (
+                    <tr><td colSpan={11} className="sales-return-empty">Loading returnable sale lines…</td></tr>
+                  ) : null}
+                  {returnableQuery.isError ? (
+                    <tr><td colSpan={11} className="sales-return-empty">Could not load returnable sale lines. Use Refresh and try again.</td></tr>
+                  ) : null}
+                  {!returnableQuery.isFetching && !returnableQuery.isError && returnable.length === 0 ? (
+                    <tr><td colSpan={11} className="sales-return-empty">This sale has no remaining returnable quantity.</td></tr>
+                  ) : null}
+                </tbody>
+              </table>
+            ) : (
+              <table className="sales-return-grid is-general">
+                <thead>
+                  <tr>
+                    <th>Item / Product Description</th>
+                    <th>Quantity</th>
+                    <th>Price (C)</th>
+                    <th>AMT</th>
+                    <th>Disc%</th>
+                    <th>Tax</th>
+                    <th>Amount(Rs)</th>
+                    <th aria-label="Actions" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {generalRows.map((row) => {
+                    const amounts = generalLineAmounts(row)
+                    return (
+                      <tr key={row.key}>
+                        <td>
+                          <strong>{row.product_number}</strong> — {row.product_name}
+                        </td>
+                        <td className="num is-edit">
+                          {readOnly ? row.quantity : (
+                            <input
+                              inputMode="decimal"
+                              value={row.quantity}
+                              aria-label={`Return quantity for ${row.product_name}`}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                if (value !== '' && !/^\d+(?:\.\d{0,6})?$/.test(value)) return
+                                setGeneralRows((rows) => rows.map((item) => item.key === row.key ? { ...item, quantity: value } : item))
+                              }}
+                            />
+                          )}
+                        </td>
+                        <td className="num is-edit">
+                          {readOnly ? money(row.unit_price) : (
+                            <input
+                              inputMode="decimal"
+                              value={row.unit_price}
+                              aria-label={`Return price for ${row.product_name}`}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                if (value !== '' && !/^\d+(?:\.\d{0,4})?$/.test(value)) return
+                                setGeneralRows((rows) => rows.map((item) => item.key === row.key ? { ...item, unit_price: value } : item))
+                              }}
+                            />
+                          )}
+                        </td>
+                        <td className="num">{money(amounts.gross)}</td>
+                        <td className="num is-edit">
+                          {readOnly ? row.discount_percent : (
+                            <input
+                              inputMode="decimal"
+                              value={row.discount_percent}
+                              aria-label={`Discount percent for ${row.product_name}`}
+                              onChange={(e) => {
+                                const value = e.target.value
+                                if (value !== '' && !/^\d+(?:\.\d{0,8})?$/.test(value)) return
+                                setGeneralRows((rows) => rows.map((item) => item.key === row.key ? { ...item, discount_percent: value } : item))
+                              }}
+                            />
+                          )}
+                        </td>
+                        <td className="num">{money(amounts.tax)}</td>
+                        <td className="num">{money(amounts.total)}</td>
+                        <td className="sales-return-general-delete">
+                          {!readOnly ? (
+                            <button
+                              type="button"
+                              aria-label={`Remove ${row.product_name}`}
+                              onClick={() => setGeneralRows((rows) => rows.filter((item) => item.key !== row.key))}
+                            >
+                              <X size={13} />
+                            </button>
+                          ) : null}
+                        </td>
+                      </tr>
+                    )
+                  })}
+
+                  {!readOnly ? (
+                    <tr className="sales-return-general-entry">
+                      <td className="sales-return-general-product-cell">
                         <input
-                          inputMode="decimal"
-                          value={lineQty[row.sale_item_ulid] ?? ''}
-                          placeholder="0"
-                          aria-label={`Return quantity for ${row.product.name}`}
-                          aria-invalid={
-                            Number(lineQty[row.sale_item_ulid] ?? 0) >
-                            Number(row.remaining_returnable_quantity)
-                          }
-                          title={`Maximum returnable: ${row.remaining_returnable_quantity}`}
+                          value={generalProductSearch}
+                          placeholder="Select / search product"
+                          aria-label="General return product"
+                          onFocus={() => setGeneralProductPickerOpen(true)}
                           onChange={(e) => {
-                            const value = e.target.value
-                            if (value !== '' && !/^\d+(?:\.\d{0,6})?$/.test(value)) {
+                            setGeneralProductSearch(e.target.value)
+                            setGeneralProductPickerOpen(true)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') {
+                              setGeneralProductPickerOpen(false)
                               return
                             }
-
-                            setLineQty((prev) => ({
-                              ...prev,
-                              [row.sale_item_ulid]: value,
-                            }))
-                          }}
-                          onBlur={() => {
-                            const value = lineQty[row.sale_item_ulid]
-                            if (!value || Number(value) === 0) return
-
-                            setLineQty((prev) => ({
-                              ...prev,
-                              [row.sale_item_ulid]: qty(value),
-                            }))
+                            if (e.key === 'Enter') {
+                              const first = generalProductQuery.data?.data?.[0]
+                              if (first) {
+                                e.preventDefault()
+                                addGeneralProduct(first)
+                              }
+                            }
                           }}
                         />
-                      )}
-                    </td>
-                    <td>{row.unit?.code ?? '—'}</td>
-                    <td className="num">{money(row.unit_price)}</td>
-                    <td className="num">{money(row.discount_amount)}</td>
-                    <td className="num">{money(row.tax_amount)}</td>
-                    <td className="num">{money(row.line_total)}</td>
-                  </tr>
-                ))}
-                {saleUlid && returnableQuery.isFetching ? (
-                  <tr>
-                    <td colSpan={11} className="sales-return-empty">
-                      Loading returnable sale lines…
-                    </td>
-                  </tr>
-                ) : null}
-                {saleUlid && returnableQuery.isError ? (
-                  <tr>
-                    <td colSpan={11} className="sales-return-empty">
-                      Could not load returnable sale lines. Use Refresh and try again.
-                    </td>
-                  </tr>
-                ) : null}
-                {saleUlid &&
-                !returnableQuery.isFetching &&
-                !returnableQuery.isError &&
-                returnable.length === 0 ? (
-                  <tr>
-                    <td colSpan={11} className="sales-return-empty">
-                      This sale has no remaining returnable quantity.
-                    </td>
-                  </tr>
-                ) : null}
-                {!saleUlid ? (
-                  <tr>
-                    <td colSpan={11} className="sales-return-empty">
-                      Select a posted Sales Invoice to begin the return.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+                        {generalProductPickerOpen ? (
+                          <div className="sales-return-general-product-results">
+                            {(generalProductQuery.data?.data ?? []).map((product) => (
+                              <button
+                                type="button"
+                                key={product.ulid}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => addGeneralProduct(product)}
+                              >
+                                <strong>{product.product_number}</strong>
+                                <span>{product.name}</span>
+                                <span>{money(retailPrice(product))}</span>
+                              </button>
+                            ))}
+                            {generalProductQuery.isFetching ? <div>Searching products…</div> : null}
+                            {!generalProductQuery.isFetching && (generalProductQuery.data?.data.length ?? 0) === 0 ? <div>No matching products.</div> : null}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td colSpan={7} className="sales-return-general-entry-hint">
+                        Select products directly for a general return, or choose Sales# above for invoice-linked return.
+                      </td>
+                    </tr>
+                  ) : null}
+
+                  {readOnly && generalRows.length === 0 ? (
+                    <tr><td colSpan={8} className="sales-return-empty">This general return has no lines.</td></tr>
+                  ) : null}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {returnEntryState.validationError ? (
