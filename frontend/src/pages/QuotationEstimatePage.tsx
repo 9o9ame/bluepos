@@ -472,6 +472,7 @@ export function QuotationEstimatePage() {
             <label className="is-customer">
               <span>Customer</span>
               <UiSelect
+                className="quotation-canonical-select"
                 value={activeQuotation?.customer?.ulid ?? cart.customerUlid ?? ''}
                 disabled={readOnly}
                 options={customerOptions}
@@ -490,6 +491,7 @@ export function QuotationEstimatePage() {
             <label className="is-salesman">
               <span>Salesman</span>
               <UiSelect
+                className="quotation-canonical-select"
                 value={activeQuotation?.salesman?.ulid ?? salesmanUlid ?? ''}
                 disabled={readOnly}
                 options={salesmanOptions}
