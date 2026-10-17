@@ -649,3 +649,105 @@
 [data-animations='off'] .purchase-return-tabs > button {
   transition: none;
 }
+
+
+/* General purchase-return item entry mirrors the Sales Return direct-row workflow. */
+.purchase-return-general {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.purchase-return-general-entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px minmax(260px, 520px) auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 31px;
+  padding: 3px 7px;
+  border-bottom: 1px solid var(--ui-table-border);
+  background: var(--ui-surface-subtle);
+}
+
+.purchase-return-general-entry > svg {
+  color: var(--ui-text-muted);
+}
+
+.purchase-return-general-entry > input {
+  min-width: 0;
+  height: 24px;
+  padding: 2px 6px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+  font-size: 10px;
+}
+
+.purchase-return-general-entry > input:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.purchase-return-general-entry > strong {
+  color: var(--ui-success);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.purchase-return-grid.is-general th:first-child {
+  width: 39%;
+}
+
+.purchase-return-grid.is-general th:nth-child(2) {
+  width: 10%;
+}
+
+.purchase-return-grid.is-general th:nth-child(3) {
+  width: 11%;
+}
+
+.purchase-return-grid.is-general th:nth-child(4) {
+  width: 10%;
+}
+
+.purchase-return-grid.is-general th:nth-child(5),
+.purchase-return-grid.is-general th:nth-child(6),
+.purchase-return-grid.is-general th:nth-child(7) {
+  width: 9%;
+}
+
+.purchase-return-grid.is-general th:nth-child(8) {
+  width: 4%;
+}
+
+.purchase-return-unit-hint {
+  color: var(--ui-text-muted);
+  font-size: 9px;
+}
+
+.purchase-return-row-action {
+  padding: 1px 2px !important;
+  text-align: center;
+}
+
+.purchase-return-row-action .ui-button {
+  min-width: 24px;
+  min-height: 22px;
+  padding: 2px;
+}
+
+@media (max-width: 860px) {
+  .purchase-return-general-entry {
+    grid-template-columns: 18px minmax(0, 1fr);
+  }
+
+  .purchase-return-general-entry > strong {
+    grid-column: 2;
+  }
+}
