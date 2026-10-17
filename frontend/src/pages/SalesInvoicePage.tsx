@@ -1128,6 +1128,35 @@ export function SalesInvoicePage({
     finishActiveLine(lineKey)
   }
 
+  function handleCompletedFieldEnter(
+    event: ReactKeyboardEvent<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>,
+  ) {
+    if (event.key !== 'Enter') return
+
+    event.preventDefault()
+    const row = event.currentTarget.closest('tr')
+    if (!row) return
+
+    const fields = Array.from(
+      row.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>(
+        '[data-sale-editable="true"]:not(:disabled)',
+      ),
+    )
+    const currentIndex = fields.indexOf(event.currentTarget)
+    const next = fields[currentIndex + 1]
+
+    if (next) {
+      next.focus()
+      if (next instanceof HTMLInputElement) next.select()
+      return
+    }
+
+    window.setTimeout(() => {
+      productSearchRef.current?.focus()
+      productSearchRef.current?.select()
+    }, 0)
+  }
+
   useEffect(() => {
     if (!activeLineKey) return
     focusLineQuantity(activeLineKey)
@@ -2146,7 +2175,8 @@ export function SalesInvoicePage({
                             })}
                           </tr>
                         ))
-                    : (
+                    : null}
+
                       <tr className="is-entry-row">
                         {effectiveSalesColumns.map((col) => {
                           if (col.key === 'selector') {
@@ -2229,7 +2259,6 @@ export function SalesInvoicePage({
                           return <td key={col.key} />
                         })}
                       </tr>
-                    )}
 
                   {cart.lines
                     .filter((line) => line.line_key !== activeLineKey)
@@ -2250,10 +2279,33 @@ export function SalesInvoicePage({
                         }
 
                         if (col.key === 'product') {
+                          if (line.line_kind === 'sale') {
+                            return (
+                              <td key={col.key} className="sales-reference-yellow sales-product-search-cell">
+                                <button
+                                  type="button"
+                                  className="sales-pos-product-entry sales-pos-completed-product-trigger"
+                                  aria-label={`Edit product ${line.product_name}`}
+                                  onFocus={() => reopenCompletedLine(line)}
+                                  onClick={() => reopenCompletedLine(line)}
+                                >
+                                  <span>{line.product_number} — {line.product_name}</span>
+                                  <span className="sales-product-combo-toggle" aria-hidden>
+                                    <span>
+                                      <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                        <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                      </svg>
+                                    </span>
+                                  </span>
+                                </button>
+                              </td>
+                            )
+                          }
+
                           return (
                             <td key={col.key}>
                               <span className="sales-pos-line-product">{line.product_number} — {line.product_name}</span>
-                              {line.line_kind !== 'sale' ? <span className="sales-pos-line-badge">{line.line_kind === 'free_scheme' ? 'Free scheme' : 'Free packaging'}</span> : null}
+                              <span className="sales-pos-line-badge">{line.line_kind === 'free_scheme' ? 'Free scheme' : 'Free packaging'}</span>
                             </td>
                           )
                         }
@@ -2268,6 +2320,7 @@ export function SalesInvoicePage({
                                   data-sale-field="sales_qty"
                                   value={displayEditableNumber(line.quantity)}
                                   onChange={(e) => cart.setQuantity(line.line_key, e.target.value)}
+                                  onKeyDown={handleCompletedFieldEnter}
                                 />
                               </td>
                             )
@@ -2310,6 +2363,7 @@ export function SalesInvoicePage({
                                     }
                                   inputMode="decimal"
                                   onChange={(e) => cart.setDiscountPercent(line.line_key, e.target.value)}
+                                  onKeyDown={handleCompletedFieldEnter}
                                 />
                               </td>
                             )
@@ -2336,6 +2390,7 @@ export function SalesInvoicePage({
                                     }
                                   inputMode="decimal"
                                   onChange={(e) => cart.setDiscountAmount(line.line_key, e.target.value)}
+                                  onKeyDown={handleCompletedFieldEnter}
                                 />
                               </td>
                             )
@@ -2388,6 +2443,7 @@ export function SalesInvoicePage({
                                     value: unit.unit_ulid,
                                     label: unit.code,
                                   }))}
+                                  onKeyDown={handleCompletedFieldEnter}
                                   onChange={(value) => cart.setLineUnit(line.line_key, value)}
                                 />
                               </td>
