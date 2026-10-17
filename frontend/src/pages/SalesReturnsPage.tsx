@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Banknote, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, RefreshCw, RotateCcw, Save, Search, Wallet, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchSales, fetchSalesmen } from '../api/sales'
+import { fetchProducts } from '../api/catalog'
 import { fetchParties } from '../api/parties'
 import {
   createSaleReturn,
@@ -24,10 +25,25 @@ import { askConfirm, useFeedback } from '../feedback/FeedbackProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Sale, SalePaymentMethod } from '../types/sales'
+import type { Product } from '../types/catalog'
+import type { Party } from '../api/parties'
 import type { SaleReturn } from '../types/salesReturns'
 import './SalesReturnsPage.css'
 
 type ViewMode = 'entry' | 'search' | 'product'
+
+type GeneralReturnRow = {
+  key: string
+  line_ulid?: string
+  product_ulid: string
+  product_number: string
+  product_name: string
+  unit_code: string
+  quantity: string
+  unit_price: string
+  discount_percent: string
+  tax_percent: string
+}
 
 const REFUND_METHODS: Array<{
   value: SalePaymentMethod
@@ -62,6 +78,26 @@ function newRefundKey(): string {
   return `sale-return-refund-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
+function generalRowKey(): string {
+  return `general-return-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+}
+
+function generalLineAmounts(row: GeneralReturnRow) {
+  const quantity = Math.max(Number(row.quantity) || 0, 0)
+  const price = Math.max(Number(row.unit_price) || 0, 0)
+  const discountPercent = Math.min(Math.max(Number(row.discount_percent) || 0, 0), 100)
+  const taxPercent = Math.max(Number(row.tax_percent) || 0, 0)
+  const gross = quantity * price
+  const discount = gross * discountPercent / 100
+  const taxable = Math.max(gross - discount, 0)
+  const tax = taxable * taxPercent / 100
+  return { gross, discount, tax, total: taxable + tax }
+}
+
+function retailPrice(product: Product): string {
+  return product.prices?.find((row) => row.is_active && row.price_type === 'retail')?.amount ?? '0.0000'
+}
+
 export function SalesReturnsPage() {
   const queryClient = useQueryClient()
   const feedback = useFeedback()
@@ -75,7 +111,8 @@ export function SalesReturnsPage() {
   const [saleLabel, setSaleLabel] = useState('')
   const [saleSearch, setSaleSearch] = useState('')
   const [salePickerOpen, setSalePickerOpen] = useState(false)
-  const [customerFilterUlid, setCustomerFilterUlid] = useState('')
+  const [fromPartyUlid, setFromPartyUlid] = useState('')
+  const [fromPartyType, setFromPartyType] = useState<'customer' | 'account'>('account')
   const [salesmanFilterUlid, setSalesmanFilterUlid] = useState('')
   const [customerSelectOpen, setCustomerSelectOpen] = useState(false)
   const [salesmanSelectOpen, setSalesmanSelectOpen] = useState(false)
@@ -85,6 +122,9 @@ export function SalesReturnsPage() {
   const [reason, setReason] = useState('')
   const [notes, setNotes] = useState('')
   const [lineQty, setLineQty] = useState<Record<string, string>>({})
+  const [generalRows, setGeneralRows] = useState<GeneralReturnRow[]>([])
+  const [generalProductSearch, setGeneralProductSearch] = useState('')
+  const [generalProductPickerOpen, setGeneralProductPickerOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [refundAmount, setRefundAmount] = useState('')
   const [refundMethod, setRefundMethod] = useState<SalePaymentMethod>('cash')
@@ -103,8 +143,8 @@ export function SalesReturnsPage() {
   const readOnly = document?.status === 'posted'
 
   const customersQuery = useQuery({
-    queryKey: ['sales-return', 'customers'],
-    queryFn: () => fetchParties('customer'),
+    queryKey: ['sales-return', 'from-parties'],
+    queryFn: () => fetchParties('all'),
     enabled: view === 'entry' && canReturn,
     retry: false,
   })
@@ -117,11 +157,11 @@ export function SalesReturnsPage() {
   })
 
   const saleLookup = useQuery({
-    queryKey: ['sales', 'return-sale-lookup', saleSearch, customerFilterUlid, salesmanFilterUlid],
+    queryKey: ['sales', 'return-sale-lookup', saleSearch, fromPartyType, fromPartyUlid, salesmanFilterUlid],
     queryFn: () =>
       fetchSales({
         q: saleSearch || undefined,
-        customer_ulid: customerFilterUlid || undefined,
+        customer_ulid: fromPartyType === 'customer' ? fromPartyUlid || undefined : undefined,
         salesman_ulid: salesmanFilterUlid || undefined,
         status: 'posted',
         per_page: 20,
@@ -136,6 +176,39 @@ export function SalesReturnsPage() {
     enabled: view === 'entry' && Boolean(saleUlid),
     retry: false,
   })
+
+  const generalProductQuery = useQuery({
+    queryKey: ['sales-return', 'general-products', generalProductSearch],
+    queryFn: () => fetchProducts(
+      {
+        q: generalProductSearch || undefined,
+        page: 1,
+        per_page: 40,
+        sales_lookup: true,
+      },
+      { busy: 'none' },
+    ),
+    enabled: view === 'entry' && !saleUlid && !readOnly && generalProductPickerOpen,
+    retry: false,
+  })
+
+  useEffect(() => {
+    if (saleUlid || document?.ulid || fromPartyUlid) return
+
+    const candidates = (customersQuery.data ?? []).filter(
+      (row) => row.is_active && (row.party_type === 'account' || row.party_type === 'customer'),
+    )
+    const cash = candidates.find(
+      (row) => row.party_type === 'account' && row.name.trim().toLocaleUpperCase() === 'CASH IN HAND',
+    ) ?? candidates.find(
+      (row) => row.party_type === 'customer' && row.name.trim().toLocaleUpperCase() === 'CASH IN HAND',
+    )
+
+    if (cash) {
+      setFromPartyUlid(cash.ulid)
+      setFromPartyType(cash.party_type as 'customer' | 'account')
+    }
+  }, [customersQuery.data, document?.ulid, fromPartyUlid, saleUlid])
 
   const historyQuery = useQuery({
     queryKey: ['sales-returns', historySearch, dateFrom, dateTo],
@@ -165,6 +238,20 @@ export function SalesReturnsPage() {
   const returnable = returnableQuery.data?.data ?? []
 
   const liveTotals = useMemo(() => {
+    if (!saleUlid) {
+      return generalRows.reduce(
+        (acc, row) => {
+          const amounts = generalLineAmounts(row)
+          acc.subtotal += amounts.gross
+          acc.discount += amounts.discount
+          acc.tax += amounts.tax
+          acc.total += amounts.total
+          return acc
+        },
+        { subtotal: 0, discount: 0, tax: 0, total: 0 },
+      )
+    }
+
     return returnable.reduce(
       (acc, row) => {
         const selected = Number(lineQty[row.sale_item_ulid] ?? 0)
@@ -180,9 +267,45 @@ export function SalesReturnsPage() {
       },
       { subtotal: 0, discount: 0, tax: 0, total: 0 },
     )
-  }, [returnable, lineQty])
+  }, [generalRows, returnable, lineQty, saleUlid])
 
   const returnEntryState = useMemo(() => {
+    if (!saleUlid) {
+      let validationError: string | null = null
+      let positiveLineCount = 0
+
+      for (const row of generalRows) {
+        if (!row.product_ulid) {
+          validationError = 'Select a product for every general return row.'
+          break
+        }
+        if (!/^\d+(?:\.\d{0,6})?$/.test(row.quantity) || Number(row.quantity) <= 0) {
+          validationError = `Return quantity for ${row.product_name} must be greater than zero and use up to 6 decimals.`
+          break
+        }
+        if (!/^\d+(?:\.\d{0,4})?$/.test(row.unit_price) || Number(row.unit_price) < 0) {
+          validationError = `Price for ${row.product_name} must use up to 4 decimal places.`
+          break
+        }
+        if (!/^\d+(?:\.\d{0,8})?$/.test(row.discount_percent)) {
+          validationError = `Discount % for ${row.product_name} is invalid.`
+          break
+        }
+        const discount = Number(row.discount_percent)
+        if (!Number.isFinite(discount) || discount < 0 || discount > 100) {
+          validationError = `Discount % for ${row.product_name} must be between 0 and 100.`
+          break
+        }
+        positiveLineCount += 1
+      }
+
+      return {
+        positiveLineCount,
+        validationError,
+        hasReturnQuantity: positiveLineCount > 0,
+      }
+    }
+
     let positiveLineCount = 0
     let validationError: string | null = null
 
@@ -217,9 +340,9 @@ export function SalesReturnsPage() {
       validationError,
       hasReturnQuantity: positiveLineCount > 0,
     }
-  }, [returnable, lineQty])
+  }, [generalRows, returnable, lineQty, saleUlid])
 
-  const currentOutstanding = Number(returnableQuery.data?.sale.previous_balance ?? 0)
+  const currentOutstanding = saleUlid ? Number(returnableQuery.data?.sale.previous_balance ?? 0) : 0
   const thisBill = readOnly ? Number(document?.grand_total ?? 0) : liveTotals.total
   const previousBalance =
     document?.status === 'posted' ? currentOutstanding + thisBill : currentOutstanding
