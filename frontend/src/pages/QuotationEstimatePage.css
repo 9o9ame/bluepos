@@ -872,3 +872,60 @@ html[data-animations='off'] .quotation-product-search-input {
   border-color: var(--ui-accent);
   box-shadow: var(--ui-focus-shadow);
 }
+
+
+/* Quotation header: keep all supported entry fields on one compact line. */
+.quotation-header-grid {
+  width: 900px;
+  max-width: 900px;
+  grid-template-columns:
+    145px
+    185px
+    minmax(250px, 1fr)
+    minmax(220px, 1fr)
+    185px;
+  grid-template-areas: "number date customer salesman price";
+  gap: 6px 8px;
+  align-items: center;
+}
+
+.quotation-header-grid .is-number { grid-area: number; }
+.quotation-header-grid .is-date { grid-area: date; }
+.quotation-header-grid .is-customer { grid-area: customer; }
+.quotation-header-grid .is-salesman { grid-area: salesman; }
+.quotation-header-grid .is-price-type { grid-area: price; }
+
+.quotation-entry-head {
+  grid-template-columns: 900px minmax(120px, 1fr) 220px;
+}
+
+@media (max-width: 1380px) {
+  .quotation-entry-head {
+    grid-template-columns: minmax(0, 1fr) 220px;
+  }
+
+  .quotation-header-grid {
+    width: 100%;
+    max-width: none;
+    grid-template-columns:
+      130px
+      170px
+      minmax(220px, 1fr)
+      minmax(200px, 1fr)
+      170px;
+  }
+
+  .quotation-entry-title {
+    display: none;
+  }
+}
+
+@media (max-width: 980px) {
+  .quotation-header-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    grid-template-areas:
+      "number date"
+      "customer salesman"
+      "price price";
+  }
+}
