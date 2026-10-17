@@ -1408,3 +1408,23 @@
     grid-column: 1 / -1;
   }
 }
+
+
+/* Purchase Invoice Return Amount Options final desktop spans:
+   Amount 3, Disc 3, Tax 2, Total 2, Net 2. */
+@media (min-width: 861px) {
+  .purchase-return-amounts {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .purchase-return-amounts > div:nth-child(1),
+  .purchase-return-amounts > div:nth-child(2) {
+    grid-column: span 3;
+  }
+
+  .purchase-return-amounts > div:nth-child(3),
+  .purchase-return-amounts > div:nth-child(4),
+  .purchase-return-amounts > div:nth-child(5) {
+    grid-column: span 2;
+  }
+}
