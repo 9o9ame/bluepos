@@ -1051,9 +1051,25 @@ export function PurchaseOrderPage() {
             }}
           >
             <table className="purchase-order-lines">
+              <colgroup>
+                <col className="po-col-selector" />
+                <col className="po-col-product" />
+                <col className="po-col-stock" />
+                <col className="po-col-stock-value" />
+                <col className="po-col-consumption" />
+                <col className="po-col-difference" />
+                <col className="po-col-quantity" />
+                <col className="po-col-price" />
+                <col className="po-col-amt" />
+                <col className="po-col-disc-pct" />
+                <col className="po-col-disc-rs" />
+                <col className="po-col-amount" />
+                <col className="po-col-delete" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>Item / Product Description</th>
+                  <th className="purchase-order-row-selector" aria-label="Row" />
+                  <th className="purchase-order-product-heading">Item / Product Description</th>
                   <th className="is-num">In Stock</th>
                   <th className="is-num">Stock Val</th>
                   <th className="is-num">Consumption</th>
@@ -1071,6 +1087,7 @@ export function PurchaseOrderPage() {
                 {readOnly
                   ? displayedLines.map((line) => (
                       <tr key={line.ulid}>
+                        <td className="purchase-order-row-selector">›</td>
                         <td>
                           {line.product
                             ? `${line.product.product_number} — ${line.product.name}`
@@ -1093,6 +1110,7 @@ export function PurchaseOrderPage() {
                       const preview = linePreview(line)
                       return (
                         <tr key={line.key}>
+                          <td className="purchase-order-row-selector">›</td>
                           <td className="purchase-order-product-cell">
                             <div className="purchase-order-product-name">
                               <div className="purchase-order-row-product">
@@ -1247,6 +1265,7 @@ export function PurchaseOrderPage() {
 
                 {!readOnly ? (
                   <tr className="purchase-order-entry-row">
+                    <td className="purchase-order-row-selector">›</td>
                     <td className="purchase-order-product-cell">
                       <input
                         ref={productSearchRef}
@@ -1310,7 +1329,7 @@ export function PurchaseOrderPage() {
 
                 {readOnly && displayedLines.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="purchase-order-empty">
+                    <td colSpan={13} className="purchase-order-empty">
                       No purchase order lines found.
                     </td>
                   </tr>
