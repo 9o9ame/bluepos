@@ -20,6 +20,7 @@ import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { printSaleQuotation } from '../features/sales/quotationPrint'
 import { useSaleCart } from '../features/sales/useSaleCart'
 import { useAuth } from '../features/auth/AuthProvider'
+import { useLocalProducts } from '../features/catalog/useLocalCatalog'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import './QuotationEstimatePage.css'
@@ -49,6 +50,7 @@ export function QuotationEstimatePage() {
   const [salesmanUlid, setSalesmanUlid] = useState<string | null>(null)
   const [productQuery, setProductQuery] = useState('')
   const [productPickerOpen, setProductPickerOpen] = useState(false)
+  const [productLookupMode, setProductLookupMode] = useState<'browse' | 'search'>('browse')
   const [activeLineKey, setActiveLineKey] = useState<string | null>(null)
   const [activeProductQuery, setActiveProductQuery] = useState('')
   const [searchText, setSearchText] = useState('')
@@ -70,21 +72,53 @@ export function QuotationEstimatePage() {
     retry: false,
   })
 
-  const productsQuery = useQuery({
-    queryKey: ['quotation-estimate', 'products', productQuery],
+  const quotationProductLookupQuery =
+    productLookupMode === 'search'
+      ? (activeLineKey ? activeProductQuery : productQuery)
+      : ''
+
+  const localProductLookup = useLocalProducts(
+    session,
+    quotationProductLookupQuery,
+    tab === 'entry' && !readOnly,
+  )
+
+  const localProductLookupRows = localProductLookup.rows.filter(
+    (product) => product.is_active && product.status === 'active',
+  )
+
+  const serverProductLookupFallback = useQuery({
+    queryKey: ['quotation-estimate', 'product-lookup-fallback', quotationProductLookupQuery],
     queryFn: () => fetchProducts(
       {
-        q: productQuery.trim() || undefined,
-        per_page: 20,
+        q: quotationProductLookupQuery,
+        per_page: 50,
         page: 1,
         active_only: true,
         sales_lookup: true,
       },
       { busy: 'none' },
     ),
-    enabled: !readOnly && productPickerOpen,
+    enabled:
+      !readOnly &&
+      productLookupMode === 'search' &&
+      quotationProductLookupQuery.trim() !== '' &&
+      !localProductLookup.isFetching &&
+      localProductLookupRows.length === 0,
     retry: false,
   })
+
+  const productLookupRows =
+    localProductLookupRows.length > 0
+      ? localProductLookupRows
+      : (serverProductLookupFallback.data?.data ?? []).filter(
+          (product) => product.is_active && product.status === 'active',
+        )
+
+  const productLookupTotal =
+    localProductLookupRows.length > 0
+      ? localProductLookupRows.length
+      : (serverProductLookupFallback.data?.meta.total ?? productLookupRows.length)
 
   const quotationsQuery = useQuery({
     queryKey: ['quotation-estimate', 'search', searchText],
@@ -188,6 +222,7 @@ export function QuotationEstimatePage() {
     setSalesmanUlid(null)
     setProductQuery('')
     setProductPickerOpen(false)
+    setProductLookupMode('browse')
     setActiveLineKey(null)
     setActiveProductQuery('')
     setSavedQuotation(null)
@@ -266,6 +301,7 @@ export function QuotationEstimatePage() {
     setActiveLineKey(line.line_key)
     setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
     setProductQuery('')
+    setProductLookupMode('browse')
     setProductPickerOpen(true)
 
     window.setTimeout(() => {
@@ -321,11 +357,13 @@ export function QuotationEstimatePage() {
       setProductQuery('')
       setActiveProductQuery(`${product.product_number} — ${product.name}`)
       setProductPickerOpen(false)
+      setProductLookupMode('browse')
       setActiveLineKey(lineKey)
       focusLineQuantity(lineKey)
     } catch (error) {
       setProductQuery('')
       setProductPickerOpen(false)
+      setProductLookupMode('browse')
       feedback.error(errorMessage(error), 'Unable to add product')
     }
   }
@@ -617,6 +655,7 @@ export function QuotationEstimatePage() {
                                   aria-label="Change product"
                                   autoComplete="off"
                                   onFocus={() => {
+                                    setProductLookupMode('browse')
                                     setProductPickerOpen(true)
                                     if (!activeProductQuery) {
                                       setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
@@ -625,6 +664,7 @@ export function QuotationEstimatePage() {
                                   onChange={(event) => {
                                     setActiveProductQuery(event.target.value)
                                     setProductQuery(event.target.value)
+                                    setProductLookupMode('search')
                                     setProductPickerOpen(true)
                                   }}
                                   onKeyDown={(event) => {
@@ -635,7 +675,7 @@ export function QuotationEstimatePage() {
                                       return
                                     }
                                     if (event.key !== 'Enter') return
-                                    const first = productsQuery.data?.data?.[0]
+                                    const first = productLookupRows[0]
                                     if (!first) return
                                     event.preventDefault()
                                     void addSelectedProduct(first.ulid, line.line_key)
@@ -647,14 +687,17 @@ export function QuotationEstimatePage() {
                                   aria-label="Open product dropdown"
                                   aria-expanded={productPickerOpen}
                                   onMouseDown={(event) => event.preventDefault()}
-                                  onClick={() => setProductPickerOpen((open) => !open)}
+                                  onClick={() => {
+                                    setProductLookupMode('browse')
+                                    setProductPickerOpen((open) => !open)
+                                  }}
                                 >
                                   <span aria-hidden="true">⌄</span>
                                 </button>
                                 {productPickerOpen ? (
                                   <ProductLookupGrid
-                                    rows={productsQuery.data?.data ?? []}
-                                    total={productsQuery.data?.meta.total ?? 0}
+                                    rows={productLookupRows}
+                                    total={productLookupTotal}
                                     priceType={cart.priceType}
                                     selectedUlid={line.product_ulid}
                                     portalAnchorRef={activeProductPickerAnchorRef}
@@ -751,9 +794,13 @@ export function QuotationEstimatePage() {
                           placeholder="Search product name or number"
                           aria-label="Search product"
                           autoComplete="off"
-                          onFocus={() => setProductPickerOpen(true)}
+                          onFocus={() => {
+                            setProductLookupMode('browse')
+                            setProductPickerOpen(true)
+                          }}
                           onChange={(event) => {
                             setProductQuery(event.target.value)
+                            setProductLookupMode('search')
                             setProductPickerOpen(true)
                           }}
                           onKeyDown={(event) => {
@@ -762,7 +809,7 @@ export function QuotationEstimatePage() {
                               return
                             }
                             if (event.key !== 'Enter') return
-                            const first = productsQuery.data?.data?.[0]
+                            const first = productLookupRows[0]
                             if (!first) return
                             event.preventDefault()
                             void addSelectedProduct(first.ulid)
@@ -775,6 +822,7 @@ export function QuotationEstimatePage() {
                           aria-expanded={productPickerOpen}
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => {
+                            setProductLookupMode('browse')
                             setProductPickerOpen((open) => !open)
                             window.setTimeout(() => productSearchRef.current?.focus(), 0)
                           }}
@@ -784,8 +832,8 @@ export function QuotationEstimatePage() {
 
                         {productPickerOpen ? (
                           <ProductLookupGrid
-                            rows={productsQuery.data?.data ?? []}
-                            total={productsQuery.data?.meta.total ?? 0}
+                            rows={productLookupRows}
+                            total={productLookupTotal}
                             priceType={cart.priceType}
                             portalAnchorRef={productPickerAnchorRef}
                             themed
