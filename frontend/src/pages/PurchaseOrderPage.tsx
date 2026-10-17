@@ -1,4 +1,4 @@
-import { AlertTriangle, FileSearch, LoaderCircle, Play, Plus, Printer, ReceiptText, RefreshCw, Save, XCircle } from 'lucide-react'
+import { AlertTriangle, ChevronDown, FileSearch, LoaderCircle, Play, Plus, Printer, ReceiptText, RefreshCw, Save, XCircle } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
@@ -188,6 +188,7 @@ export function PurchaseOrderPage() {
   const [notes, setNotes] = useState('')
   const [productQuery, setProductQuery] = useState('')
   const [editingProductKey, setEditingProductKey] = useState<string | null>(null)
+  const [productPickerOpen, setProductPickerOpen] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [searchFrom, setSearchFrom] = useState(daysAgoIso(30))
   const [searchTo, setSearchTo] = useState(todayIso())
@@ -249,7 +250,7 @@ export function PurchaseOrderPage() {
         },
         { busy: 'none' },
       ),
-    enabled: !readOnly && productQuery.trim().length > 0,
+    enabled: !readOnly && productPickerOpen,
   })
 
   const ordersQuery = useQuery({
@@ -497,6 +498,7 @@ export function PurchaseOrderPage() {
     setNotes('')
     setProductQuery('')
     setEditingProductKey(null)
+    setProductPickerOpen(false)
     setLines([])
     setSavedOrder(null)
     setOpenedOrder(null)
@@ -570,6 +572,7 @@ export function PurchaseOrderPage() {
       })
       setProductQuery('')
       setEditingProductKey(null)
+      setProductPickerOpen(false)
     } catch (error) {
       feedback.error(
         error instanceof Error ? error.message : 'Unable to add product.',
@@ -1103,11 +1106,16 @@ export function PurchaseOrderPage() {
                                       placeholder="Search product name / barcode / ID"
                                       autoComplete="off"
                                       aria-label={`Change product for ${line.product_name}`}
-                                      onChange={(event) => setProductQuery(event.target.value)}
+                                      onFocus={() => setProductPickerOpen(true)}
+                                      onChange={(event) => {
+                                        setProductQuery(event.target.value)
+                                        setProductPickerOpen(true)
+                                      }}
                                       onKeyDown={(event) => {
                                         if (event.key === 'Escape') {
                                           setEditingProductKey(null)
                                           setProductQuery('')
+                                          setProductPickerOpen(false)
                                           return
                                         }
                                         if (event.key !== 'Enter') return
@@ -1117,7 +1125,17 @@ export function PurchaseOrderPage() {
                                         void addProduct(first)
                                       }}
                                     />
-                                    {productQuery.trim() && productsQuery.data?.data?.length ? (
+                                    <button
+                                      type="button"
+                                      className="purchase-order-product-toggle"
+                                      aria-label="Open product dropdown"
+                                      aria-expanded={productPickerOpen}
+                                      onMouseDown={(event) => event.preventDefault()}
+                                      onClick={() => setProductPickerOpen((open) => !open)}
+                                    >
+                                      <ChevronDown size={13} />
+                                    </button>
+                                    {productPickerOpen && productsQuery.data?.data?.length ? (
                                       <PurchaseProductLookup
                                         rows={productsQuery.data.data}
                                         anchorRef={productSearchRef}
@@ -1132,6 +1150,7 @@ export function PurchaseOrderPage() {
                                     onClick={() => {
                                       setEditingProductKey(line.key)
                                       setProductQuery(line.product_name)
+                                      setProductPickerOpen(true)
                                     }}
                                   >
                                     <strong>{line.product_number}</strong> — {line.product_name}
@@ -1235,10 +1254,14 @@ export function PurchaseOrderPage() {
                         value={productQuery}
                         placeholder="Search / select product"
                         autoComplete="off"
-                        onFocus={() => setEditingProductKey(null)}
+                        onFocus={() => {
+                          setEditingProductKey(null)
+                          setProductPickerOpen(true)
+                        }}
                         onChange={(event) => {
                           setEditingProductKey(null)
                           setProductQuery(event.target.value)
+                          setProductPickerOpen(true)
                         }}
                         onKeyDown={(event) => {
                           if (event.key !== 'Enter') return
@@ -1249,7 +1272,21 @@ export function PurchaseOrderPage() {
                         }}
                       />
 
-                      {productQuery.trim() && productsQuery.data?.data?.length ? (
+                      <button
+                        type="button"
+                        className="purchase-order-product-toggle"
+                        aria-label="Open product dropdown"
+                        aria-expanded={productPickerOpen}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => {
+                          setEditingProductKey(null)
+                          setProductPickerOpen((open) => !open)
+                        }}
+                      >
+                        <ChevronDown size={13} />
+                      </button>
+
+                      {productPickerOpen && productsQuery.data?.data?.length ? (
                         <PurchaseProductLookup
                           rows={productsQuery.data.data}
                           anchorRef={productSearchRef}
