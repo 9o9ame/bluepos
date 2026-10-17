@@ -4808,6 +4808,8 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   place-items: center;
   width: 18px;
   min-width: 18px;
+  height: auto;
+  min-height: 0;
   padding: 0;
   border: 1px solid var(--ui-select-arrow-border);
   border-radius: calc(var(--control-radius) - 1px);
