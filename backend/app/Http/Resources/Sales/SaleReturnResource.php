@@ -40,12 +40,12 @@ class SaleReturnResource extends JsonResource
             'reason' => $this->reason,
             'notes' => $this->notes,
             'posted_at' => $this->posted_at?->toIso8601String(),
-            'original_sale' => $this->whenLoaded('sale', fn () => [
+            'original_sale' => $this->whenLoaded('sale', fn () => $this->sale ? [
                 'ulid' => $this->sale->ulid,
                 'document_number' => $this->sale->document_number,
                 'sale_date' => $this->sale->sale_date?->toDateString(),
                 'grand_total' => $this->sale->grand_total,
-            ]),
+            ] : null),
             'return_mode' => $this->sale_id === null ? 'general' : 'invoice',
             'customer' => $this->whenLoaded('customer', fn () => $this->customer ? [
                 'ulid' => $this->customer->ulid,
