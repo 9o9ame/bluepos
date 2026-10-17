@@ -167,7 +167,7 @@ class PurchaseReturnController extends Controller
         $document = $this->findDocument($returnUlid, $tenantContext);
         $this->authorize('update', $document);
         $line = $this->findLine($document, $lineUlid);
-        $line->loadMissing('purchaseInvoiceLine');
+        $line->loadMissing(['purchaseInvoiceLine', 'product']);
 
         $data = $request->validate([
             'purchase_line_ulid' => ['sometimes', 'nullable', 'string', 'size:26'],
@@ -242,6 +242,8 @@ class PurchaseReturnController extends Controller
 
         $invoice = PurchaseInvoice::query()
             ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
+            ->where('warehouse_id', $tenantContext->warehouseId())
             ->with(['lines.product', 'lines.unit'])
             ->where('ulid', $purchaseUlid)
             ->first();
@@ -291,6 +293,8 @@ class PurchaseReturnController extends Controller
     {
         $document = PurchaseReturn::query()
             ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
+            ->where('warehouse_id', $tenantContext->warehouseId())
             ->where('ulid', $ulid)
             ->first();
 
