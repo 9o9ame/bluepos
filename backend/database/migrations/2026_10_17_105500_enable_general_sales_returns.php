@@ -15,11 +15,11 @@ return new class extends Migration
                 ->constrained('accounts')
                 ->restrictOnDelete();
 
-            $table->foreignId('sale_id')->nullable()->change();
+            $table->unsignedBigInteger('sale_id')->nullable()->change();
         });
 
         Schema::table('sale_return_lines', function (Blueprint $table): void {
-            $table->foreignId('sale_item_id')->nullable()->change();
+            $table->unsignedBigInteger('sale_item_id')->nullable()->change();
             $table->decimal('discount_percent', 12, 8)->default(0)->after('gross_amount');
             $table->decimal('tax_percent', 12, 8)->default(0)->after('discount_amount');
         });
@@ -29,12 +29,12 @@ return new class extends Migration
     {
         Schema::table('sale_return_lines', function (Blueprint $table): void {
             $table->dropColumn(['discount_percent', 'tax_percent']);
-            $table->foreignId('sale_item_id')->nullable(false)->change();
+            $table->unsignedBigInteger('sale_item_id')->nullable(false)->change();
         });
 
         Schema::table('sale_returns', function (Blueprint $table): void {
             $table->dropConstrainedForeignId('settlement_account_id');
-            $table->foreignId('sale_id')->nullable(false)->change();
+            $table->unsignedBigInteger('sale_id')->nullable(false)->change();
         });
     }
 };
