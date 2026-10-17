@@ -98,8 +98,11 @@ export function Ribbon({ onCalculator, onSoftwareOptions, onRecalculateStock, on
                     command.path ??
                     WORKSPACE_MODULES.find((module) => module.key === command.moduleKey)?.path
                   if (path) {
+                    const module = command.moduleKey
+                      ? WORKSPACE_MODULES.find((row) => row.key === command.moduleKey)
+                      : undefined
                     openModule(path, {
-                      newInstance: command.moduleKey === 'sales-invoice',
+                      newInstance: module?.multiInstance === true,
                     })
                   }
                 }}
