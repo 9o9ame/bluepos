@@ -7,9 +7,11 @@ use App\Enums\SaleReturnStatus;
 use App\Enums\SaleStatus;
 use App\Enums\StockMovementType;
 use App\Enums\WarehouseStatus;
+use App\Exceptions\ApiException;
 use App\Models\SaleItem;
 use App\Models\SaleReturn;
 use App\Models\SaleReturnLine;
+use App\Models\StockBalance;
 use App\Models\StockMovement;
 use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
@@ -57,7 +59,8 @@ class PostSaleReturnAction
                 ]);
             }
 
-            if (! $document->sale || $document->sale->status !== SaleStatus::Posted) {
+            $invoiceMode = $document->sale_id !== null;
+            if ($invoiceMode && (! $document->sale || $document->sale->status !== SaleStatus::Posted)) {
                 throw ValidationException::withMessages([
                     'sale_ulid' => 'Original sale must remain posted.',
                 ]);
@@ -73,37 +76,76 @@ class PostSaleReturnAction
 
             foreach ($document->lines as $line) {
                 /** @var SaleReturnLine $line */
-                $saleItem = SaleItem::query()
-                    ->whereKey($line->sale_item_id)
-                    ->where('sale_id', $document->sale_id)
-                    ->lockForUpdate()
-                    ->first();
+                $originalUnitCost = null;
 
-                if (! $saleItem) {
-                    throw ValidationException::withMessages([
-                        'lines' => 'An original sale line is no longer available.',
-                    ]);
+                if ($invoiceMode) {
+                    $saleItem = SaleItem::query()
+                        ->whereKey($line->sale_item_id)
+                        ->where('sale_id', $document->sale_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $saleItem) {
+                        throw ValidationException::withMessages([
+                            'lines' => 'An original sale line is no longer available.',
+                        ]);
+                    }
+
+                    $this->recalculate->assertReturnable(
+                        $saleItem,
+                        (string) $line->quantity,
+                        $document->id,
+                    );
+
+                    $saleMovement = StockMovement::query()
+                        ->where('tenant_id', $document->tenant_id)
+                        ->where('warehouse_id', $document->warehouse_id)
+                        ->where('product_id', $line->product_id)
+                        ->where('movement_type', StockMovementType::Sale->value)
+                        ->where('reference_type', 'sale')
+                        ->where('reference_ulid', $document->sale->ulid)
+                        ->where('reference_line_ulid', $saleItem->ulid)
+                        ->first();
+
+                    $originalUnitCost = $saleMovement?->unit_cost === null
+                        ? null
+                        : bcadd((string) $saleMovement->unit_cost, '0', 4);
+                } else {
+                    if ($line->sale_item_id !== null) {
+                        throw new ApiException(
+                            'GENERAL_RETURN_LINE_INVALID',
+                            'General sales return lines cannot reference an original sale item.',
+                            422,
+                        );
+                    }
+
+                    $balance = StockBalance::query()
+                        ->where('tenant_id', $document->tenant_id)
+                        ->where('warehouse_id', $document->warehouse_id)
+                        ->where('product_id', $line->product_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $balance || $balance->average_cost === null) {
+                        throw new ApiException(
+                            'GENERAL_RETURN_COST_REQUIRED',
+                            'Current warehouse average cost is required before posting a general sales return.',
+                            422,
+                        );
+                    }
+
+                    $originalUnitCost = bcadd((string) $balance->average_cost, '0', 4);
                 }
 
-                $this->recalculate->assertReturnable(
-                    $saleItem,
-                    (string) $line->quantity,
-                    $document->id,
-                );
-
-                $saleMovement = StockMovement::query()
-                    ->where('tenant_id', $document->tenant_id)
-                    ->where('warehouse_id', $document->warehouse_id)
-                    ->where('product_id', $line->product_id)
-                    ->where('movement_type', StockMovementType::Sale->value)
-                    ->where('reference_type', 'sale')
-                    ->where('reference_ulid', $document->sale->ulid)
-                    ->where('reference_line_ulid', $saleItem->ulid)
-                    ->first();
-
-                $originalUnitCost = $saleMovement?->unit_cost === null
-                    ? null
-                    : bcadd((string) $saleMovement->unit_cost, '0', 4);
+                if ($originalUnitCost === null) {
+                    throw new ApiException(
+                        'SALE_RETURN_COST_REQUIRED',
+                        $invoiceMode
+                            ? 'The original sale cost snapshot is required before posting this return.'
+                            : 'Current warehouse average cost is required before posting this general return.',
+                        422,
+                    );
+                }
 
                 $this->postMovement->execute([
                     'warehouse' => $document->warehouse,
@@ -132,7 +174,8 @@ class PostSaleReturnAction
             $this->audit->record('SALE_RETURN_POSTED', [
                 'resource_type' => 'sale_return',
                 'resource_ulid' => $document->ulid,
-                'sale_ulid' => $document->sale->ulid,
+                'sale_ulid' => $document->sale?->ulid,
+                'return_mode' => $invoiceMode ? 'invoice' : 'general',
                 'line_count' => $document->lines->count(),
                 'grand_total' => (string) $document->grand_total,
             ]);
