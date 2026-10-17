@@ -1,5 +1,5 @@
 import { FileSearch, Plus, Printer, ReceiptText, RefreshCw, Save, X, XCircle } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchProduct, fetchProducts, fetchProductStock } from '../api/catalog'
@@ -40,11 +40,17 @@ export function QuotationEstimatePage() {
   const cart = useSaleCart()
   const idempotencyKeyRef = useRef(newQuotationKey())
   const productSearchRef = useRef<HTMLInputElement>(null)
+  const productPickerAnchorRef = useRef<HTMLDivElement>(null)
+  const activeProductSearchRef = useRef<HTMLInputElement>(null)
+  const activeProductPickerAnchorRef = useRef<HTMLDivElement>(null)
 
   const [tab, setTab] = useState<'entry' | 'search'>('entry')
   const [quotationDate, setQuotationDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [salesmanUlid, setSalesmanUlid] = useState<string | null>(null)
   const [productQuery, setProductQuery] = useState('')
+  const [productPickerOpen, setProductPickerOpen] = useState(false)
+  const [activeLineKey, setActiveLineKey] = useState<string | null>(null)
+  const [activeProductQuery, setActiveProductQuery] = useState('')
   const [searchText, setSearchText] = useState('')
   const [savedQuotation, setSavedQuotation] = useState<SaleQuotation | null>(null)
   const [openedQuotation, setOpenedQuotation] = useState<SaleQuotation | null>(null)
@@ -76,7 +82,7 @@ export function QuotationEstimatePage() {
       },
       { busy: 'none' },
     ),
-    enabled: productQuery.trim().length > 0,
+    enabled: !readOnly && productPickerOpen,
     retry: false,
   })
 
@@ -136,10 +142,19 @@ export function QuotationEstimatePage() {
 
   const customerOptions = useMemo(
     () => [
-      { value: '', label: 'Walk-in / No customer' },
+      {
+        value: '',
+        label: 'Walk-in / No customer',
+        columns: ['—', 'Walk-in / No customer', '—'],
+      },
       ...(customersQuery.data ?? []).map((customer) => ({
         value: customer.ulid,
-        label: `${customer.code} — ${customer.name}`,
+        label: customer.name,
+        columns: [
+          customer.code || '—',
+          customer.name,
+          customer.mobile || customer.phone || '—',
+        ],
       })),
     ],
     [customersQuery.data],
@@ -147,18 +162,24 @@ export function QuotationEstimatePage() {
 
   const salesmanOptions = useMemo(
     () => [
-      { value: '', label: 'No salesman' },
+      {
+        value: '',
+        label: 'No salesman',
+        columns: ['—', 'No salesman', '—', '—'],
+      },
       ...(salesmenQuery.data ?? []).map((salesman) => ({
         value: salesman.ulid,
-        label: `${salesman.code} — ${salesman.name}`,
+        label: salesman.name,
+        columns: [
+          salesman.code || '—',
+          salesman.name,
+          salesman.address || '—',
+          salesman.mobile || '—',
+        ],
       })),
     ],
     [salesmenQuery.data],
   )
-
-  const entryRows = readOnly
-    ? activeQuotation?.items ?? []
-    : cart.paidLines
 
   function startNew() {
     cart.clear()
@@ -166,13 +187,97 @@ export function QuotationEstimatePage() {
     setQuotationDate(new Date().toISOString().slice(0, 10))
     setSalesmanUlid(null)
     setProductQuery('')
+    setProductPickerOpen(false)
+    setActiveLineKey(null)
+    setActiveProductQuery('')
     setSavedQuotation(null)
     setOpenedQuotation(null)
     idempotencyKeyRef.current = newQuotationKey()
     setTab('entry')
   }
 
-  async function addSelectedProduct(value: string) {
+  function focusLineQuantity(lineKey: string) {
+    window.setTimeout(() => {
+      const input = globalThis.document.querySelector<HTMLInputElement>(
+        `[data-quotation-line="${lineKey}"] [data-quotation-field="quantity"]`,
+      )
+      input?.focus()
+      input?.select()
+    }, 0)
+  }
+
+  function finishActiveLine(lineKey: string) {
+    if (activeLineKey !== lineKey) return
+
+    setActiveLineKey(null)
+    setActiveProductQuery('')
+    setProductPickerOpen(false)
+    window.setTimeout(() => {
+      productSearchRef.current?.focus()
+      productSearchRef.current?.select()
+    }, 0)
+  }
+
+  function handleLineEnter(
+    event: ReactKeyboardEvent<HTMLInputElement | HTMLButtonElement>,
+    lineKey: string,
+    active: boolean,
+  ) {
+    if (event.key !== 'Enter') return
+
+    event.preventDefault()
+    const row = event.currentTarget.closest('tr')
+    if (!row) return
+
+    const fields = Array.from(
+      row.querySelectorAll<HTMLInputElement | HTMLButtonElement>(
+        '[data-quotation-editable="true"]:not(:disabled)',
+      ),
+    )
+    const currentIndex = fields.indexOf(event.currentTarget)
+    const next = fields[currentIndex + 1]
+
+    if (next) {
+      next.focus()
+      if (next instanceof HTMLInputElement) next.select()
+      return
+    }
+
+    const line = cart.paidLines.find((item) => item.line_key === lineKey)
+    const quantity = Number.parseFloat(line?.quantity ?? '')
+    if (!line || !Number.isFinite(quantity) || quantity <= 0) {
+      feedback.error('Quotation quantity must be greater than zero.', 'Quotation / Estimate')
+      focusLineQuantity(lineKey)
+      return
+    }
+
+    if (active) {
+      finishActiveLine(lineKey)
+      return
+    }
+
+    window.setTimeout(() => {
+      productSearchRef.current?.focus()
+      productSearchRef.current?.select()
+    }, 0)
+  }
+
+  function editCompletedProduct(line: typeof cart.paidLines[number]) {
+    setActiveLineKey(line.line_key)
+    setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
+    setProductQuery('')
+    setProductPickerOpen(true)
+
+    window.setTimeout(() => {
+      activeProductSearchRef.current?.focus()
+      activeProductSearchRef.current?.select()
+    }, 0)
+  }
+
+  async function addSelectedProduct(
+    value: string,
+    replaceLineKey: string | null = null,
+  ) {
     if (!value || readOnly) return
 
     try {
@@ -186,12 +291,23 @@ export function QuotationEstimatePage() {
         (price) => price.is_active && price.price_type === expectedPriceType,
       )
 
-      const lineKey = cart.addProduct(
-        product as Product,
-        '1.000000',
-        null,
-        stock.active_warehouse.quantity,
-      )
+      let lineKey = replaceLineKey
+
+      if (replaceLineKey) {
+        cart.replaceProduct(
+          replaceLineKey,
+          product as Product,
+          null,
+          stock.active_warehouse.quantity,
+        )
+      } else {
+        lineKey = cart.addProduct(
+          product as Product,
+          '1.000000',
+          null,
+          stock.active_warehouse.quantity,
+        )
+      }
 
       if (!lineKey) return
 
@@ -202,9 +318,14 @@ export function QuotationEstimatePage() {
         )
       }
 
-        setProductQuery('')
+      setProductQuery('')
+      setActiveProductQuery(`${product.product_number} — ${product.name}`)
+      setProductPickerOpen(false)
+      setActiveLineKey(lineKey)
+      focusLineQuantity(lineKey)
     } catch (error) {
-        setProductQuery('')
+      setProductQuery('')
+      setProductPickerOpen(false)
       feedback.error(errorMessage(error), 'Unable to add product')
     }
   }
@@ -315,6 +436,15 @@ export function QuotationEstimatePage() {
                 value={activeQuotation?.customer?.ulid ?? cart.customerUlid ?? ''}
                 disabled={readOnly}
                 options={customerOptions}
+                searchable
+                searchInTrigger
+                searchPlaceholder="Search customer"
+                menuMinWidth={520}
+                menuColumns={[
+                  { header: 'Code', width: '110px' },
+                  { header: 'Name', width: 'minmax(220px, 1fr)' },
+                  { header: 'Mobile', width: '130px' },
+                ]}
                 onChange={(value) => cart.setCustomerUlid(value || null)}
               />
             </label>
@@ -324,6 +454,16 @@ export function QuotationEstimatePage() {
                 value={activeQuotation?.salesman?.ulid ?? salesmanUlid ?? ''}
                 disabled={readOnly}
                 options={salesmanOptions}
+                searchable
+                searchInTrigger
+                searchPlaceholder="Search salesman"
+                menuMinWidth={620}
+                menuColumns={[
+                  { header: 'Code', width: '100px' },
+                  { header: 'Name', width: 'minmax(180px, 1fr)' },
+                  { header: 'Address', width: 'minmax(180px, 1fr)' },
+                  { header: 'Mobile', width: '130px' },
+                ]}
                 onChange={(value) => setSalesmanUlid(value || null)}
               />
             </label>
@@ -359,10 +499,8 @@ export function QuotationEstimatePage() {
                 </tr>
               </thead>
               <tbody>
-                {entryRows.map((row) => {
-                  if (readOnly) {
-                    const item = row as SaleQuotation['items'][number]
-                    return (
+                {readOnly
+                  ? (activeQuotation?.items ?? []).map((item) => (
                       <tr key={item.ulid}>
                         <td>{item.product ? `${item.product.product_number} — ${item.product.name}` : '—'}</td>
                         <td>{item.unit?.symbol ?? item.unit?.code ?? '—'}</td>
@@ -374,104 +512,288 @@ export function QuotationEstimatePage() {
                         <td className="is-num">{item.tax_percent}</td>
                         <td className="is-num">{item.line_total}</td>
                       </tr>
-                    )
-                  }
+                    ))
+                  : cart.paidLines
+                      .filter((line) => line.line_key !== activeLineKey)
+                      .map((line) => {
+                        const preview = cart.linePreview(line)
+                        return (
+                          <tr key={line.line_key} data-quotation-line={line.line_key}>
+                            <td className="quotation-product-search-cell">
+                              <button
+                                type="button"
+                                className="quotation-completed-product-trigger"
+                                onClick={() => editCompletedProduct(line)}
+                              >
+                                <span>{line.product_number} — {line.product_name}</span>
+                                <span className="quotation-product-combo-toggle" aria-hidden="true">⌄</span>
+                              </button>
+                            </td>
+                            <td>
+                              {(line.available_units?.length ?? 0) > 0 ? (
+                                <UiSelect
+                                  value={line.unit_ulid ?? ''}
+                                  className="quotation-line-unit-select"
+                                  aria-label={`Unit for ${line.product_name}`}
+                                  triggerProps={{ 'data-quotation-editable': 'true' }}
+                                  options={(line.available_units ?? []).map((unit) => ({
+                                    value: unit.unit_ulid,
+                                    label: unit.code,
+                                  }))}
+                                  onKeyDown={(event) => handleLineEnter(event, line.line_key, false)}
+                                  onChange={(value) => cart.setLineUnit(line.line_key, value)}
+                                />
+                              ) : (
+                                line.unit_symbol ?? line.unit_code ?? '—'
+                              )}
+                            </td>
+                            <td className="is-num">
+                              {(() => {
+                                const available = cart.availableStock(line)
+                                return available === null ? '—' : Number.parseFloat(available).toFixed(3)
+                              })()}
+                            </td>
+                            <td className="is-num">
+                              <input
+                                data-quotation-editable="true"
+                                data-quotation-field="quantity"
+                                aria-label={`Quantity for ${line.product_name}`}
+                                value={line.quantity}
+                                onChange={(event) => cart.setQuantity(line.line_key, event.target.value)}
+                                onKeyDown={(event) => handleLineEnter(event, line.line_key, false)}
+                              />
+                            </td>
+                            <td className="is-num">{line.unit_price ?? '0.0000'}</td>
+                            <td className="is-num">
+                              <input
+                                data-quotation-editable="true"
+                                aria-label={`Discount percent for ${line.product_name}`}
+                                value={line.discount_percent ?? '0'}
+                                onChange={(event) => cart.setDiscountPercent(line.line_key, event.target.value)}
+                                onKeyDown={(event) => handleLineEnter(event, line.line_key, false)}
+                              />
+                            </td>
+                            <td className="is-num">
+                              <input
+                                data-quotation-editable="true"
+                                aria-label={`Discount amount for ${line.product_name}`}
+                                value={line.discount_amount ?? '0'}
+                                onChange={(event) => cart.setDiscountAmount(line.line_key, event.target.value)}
+                                onKeyDown={(event) => handleLineEnter(event, line.line_key, false)}
+                              />
+                            </td>
+                            <td className="is-num">{line.tax_percent ?? '0'}</td>
+                            <td className="is-num">{preview.netAmount}</td>
+                            <td>
+                              <UiButton
+                                variant="danger"
+                                aria-label={`Remove ${line.product_name}`}
+                                onClick={() => cart.removeLine(line.line_key)}
+                              >
+                                <XCircle size={14} />
+                              </UiButton>
+                            </td>
+                          </tr>
+                        )
+                      })}
 
-                  const line = row as typeof cart.paidLines[number]
-                  const preview = cart.linePreview(line)
-                  return (
-                    <tr key={line.line_key}>
-                      <td>{line.product_number} — {line.product_name}</td>
-                      <td>
-                        {(line.available_units?.length ?? 0) > 0 ? (
-                          <UiSelect
-                            value={line.unit_ulid ?? ''}
-                            className="quotation-line-unit-select"
-                            aria-label={`Unit for ${line.product_name}`}
-                            options={(line.available_units ?? []).map((unit) => ({
-                              value: unit.unit_ulid,
-                              label: unit.code,
-                            }))}
-                            onChange={(value) => cart.setLineUnit(line.line_key, value)}
-                          />
-                        ) : (
-                          line.unit_symbol ?? line.unit_code ?? '—'
-                        )}
-                      </td>
-                      <td className="is-num">
-                        {(() => {
-                          const available = cart.availableStock(line)
-                          return available === null ? '—' : Number.parseFloat(available).toFixed(3)
-                        })()}
-                      </td>
-                      <td className="is-num">
-                        <input
-                          aria-label={`Quantity for ${line.product_name}`}
-                          value={line.quantity}
-                          onChange={(event) => cart.setQuantity(line.line_key, event.target.value)}
-                        />
-                      </td>
-                      <td className="is-num">{line.unit_price ?? '0.0000'}</td>
-                      <td className="is-num">
-                        <input
-                          aria-label={`Discount percent for ${line.product_name}`}
-                          value={line.discount_percent ?? '0'}
-                          onChange={(event) => cart.setDiscountPercent(line.line_key, event.target.value)}
-                        />
-                      </td>
-                      <td className="is-num">
-                        <input
-                          aria-label={`Discount amount for ${line.product_name}`}
-                          value={line.discount_amount ?? '0'}
-                          onChange={(event) => cart.setDiscountAmount(line.line_key, event.target.value)}
-                        />
-                      </td>
-                      <td className="is-num">{line.tax_percent ?? '0'}</td>
-                      <td className="is-num">{preview.netAmount}</td>
-                      <td>
-                        <UiButton
-                          variant="danger"
-                          aria-label={`Remove ${line.product_name}`}
-                          onClick={() => cart.removeLine(line.line_key)}
-                        >
-                          <XCircle size={14} />
-                        </UiButton>
-                      </td>
-                    </tr>
-                  )
-                })}
-                {!readOnly ? (
+                {!readOnly && activeLineKey
+                  ? cart.paidLines
+                      .filter((line) => line.line_key === activeLineKey)
+                      .map((line) => {
+                        const preview = cart.linePreview(line)
+                        return (
+                          <tr
+                            key={line.line_key}
+                            className="quotation-active-row"
+                            data-quotation-line={line.line_key}
+                          >
+                            <td className="quotation-product-search-cell">
+                              <div ref={activeProductPickerAnchorRef} className="quotation-product-combo">
+                                <input
+                                  ref={activeProductSearchRef}
+                                  className="quotation-product-search-input"
+                                  value={activeProductQuery}
+                                  aria-label="Change product"
+                                  autoComplete="off"
+                                  onFocus={() => {
+                                    setProductPickerOpen(true)
+                                    if (!activeProductQuery) {
+                                      setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
+                                    }
+                                  }}
+                                  onChange={(event) => {
+                                    setActiveProductQuery(event.target.value)
+                                    setProductQuery(event.target.value)
+                                    setProductPickerOpen(true)
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (event.key === 'Escape') {
+                                      setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
+                                      setProductQuery('')
+                                      setProductPickerOpen(false)
+                                      return
+                                    }
+                                    if (event.key !== 'Enter') return
+                                    const first = productsQuery.data?.data?.[0]
+                                    if (!first) return
+                                    event.preventDefault()
+                                    void addSelectedProduct(first.ulid, line.line_key)
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  className="quotation-product-combo-toggle"
+                                  aria-label="Open product dropdown"
+                                  aria-expanded={productPickerOpen}
+                                  onMouseDown={(event) => event.preventDefault()}
+                                  onClick={() => setProductPickerOpen((open) => !open)}
+                                >
+                                  <span aria-hidden="true">⌄</span>
+                                </button>
+                                {productPickerOpen ? (
+                                  <ProductLookupGrid
+                                    rows={productsQuery.data?.data ?? []}
+                                    total={productsQuery.data?.meta.total ?? 0}
+                                    priceType={cart.priceType}
+                                    selectedUlid={line.product_ulid}
+                                    portalAnchorRef={activeProductPickerAnchorRef}
+                                    themed
+                                    onRequestClose={() => setProductPickerOpen(false)}
+                                    onSelect={(product) => void addSelectedProduct(product.ulid, line.line_key)}
+                                  />
+                                ) : null}
+                              </div>
+                            </td>
+                            <td>
+                              {(line.available_units?.length ?? 0) > 0 ? (
+                                <UiSelect
+                                  value={line.unit_ulid ?? ''}
+                                  className="quotation-line-unit-select"
+                                  aria-label={`Unit for ${line.product_name}`}
+                                  triggerProps={{ 'data-quotation-editable': 'true' }}
+                                  options={(line.available_units ?? []).map((unit) => ({
+                                    value: unit.unit_ulid,
+                                    label: unit.code,
+                                  }))}
+                                  onKeyDown={(event) => handleLineEnter(event, line.line_key, true)}
+                                  onChange={(value) => cart.setLineUnit(line.line_key, value)}
+                                />
+                              ) : (
+                                line.unit_symbol ?? line.unit_code ?? '—'
+                              )}
+                            </td>
+                            <td className="is-num">
+                              {(() => {
+                                const available = cart.availableStock(line)
+                                return available === null ? '—' : Number.parseFloat(available).toFixed(3)
+                              })()}
+                            </td>
+                            <td className="is-num">
+                              <input
+                                data-quotation-editable="true"
+                                data-quotation-field="quantity"
+                                aria-label={`Quantity for ${line.product_name}`}
+                                value={line.quantity}
+                                onChange={(event) => cart.setQuantity(line.line_key, event.target.value)}
+                                onKeyDown={(event) => handleLineEnter(event, line.line_key, true)}
+                              />
+                            </td>
+                            <td className="is-num">{line.unit_price ?? '0.0000'}</td>
+                            <td className="is-num">
+                              <input
+                                data-quotation-editable="true"
+                                aria-label={`Discount percent for ${line.product_name}`}
+                                value={line.discount_percent ?? '0'}
+                                onChange={(event) => cart.setDiscountPercent(line.line_key, event.target.value)}
+                                onKeyDown={(event) => handleLineEnter(event, line.line_key, true)}
+                              />
+                            </td>
+                            <td className="is-num">
+                              <input
+                                data-quotation-editable="true"
+                                aria-label={`Discount amount for ${line.product_name}`}
+                                value={line.discount_amount ?? '0'}
+                                onChange={(event) => cart.setDiscountAmount(line.line_key, event.target.value)}
+                                onKeyDown={(event) => handleLineEnter(event, line.line_key, true)}
+                              />
+                            </td>
+                            <td className="is-num">{line.tax_percent ?? '0'}</td>
+                            <td className="is-num">{preview.netAmount}</td>
+                            <td>
+                              <UiButton
+                                variant="danger"
+                                aria-label={`Remove ${line.product_name}`}
+                                onClick={() => {
+                                  cart.removeLine(line.line_key)
+                                  setActiveLineKey(null)
+                                  setActiveProductQuery('')
+                                  setProductPickerOpen(false)
+                                  window.setTimeout(() => productSearchRef.current?.focus(), 0)
+                                }}
+                              >
+                                <XCircle size={14} />
+                              </UiButton>
+                            </td>
+                          </tr>
+                        )
+                      })
+                  : null}
+
+                {!readOnly && !activeLineKey ? (
                   <tr className="quotation-entry-row">
                     <td className="quotation-product-search-cell">
-                      <input
-                        ref={productSearchRef}
-                        className="quotation-product-search-input"
-                        value={productQuery}
-                        placeholder="Search / select product"
-                        aria-label="Search product"
-                        autoComplete="off"
-                        onChange={(event) => setProductQuery(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key !== 'Enter') return
-                          const first = productsQuery.data?.data?.[0]
-                          if (!first) return
-
-                          event.preventDefault()
-                          void addSelectedProduct(first.ulid)
-                        }}
-                      />
-
-                      {productQuery.trim().length > 0 &&
-                      productsQuery.data?.data?.length ? (
-                        <ProductLookupGrid
-                          rows={productsQuery.data.data}
-                          total={productsQuery.data.meta.total}
-                          priceType={cart.priceType}
-                          portalAnchorRef={productSearchRef}
-                          themed
-                          onSelect={(product) => void addSelectedProduct(product.ulid)}
+                      <div ref={productPickerAnchorRef} className="quotation-product-combo">
+                        <input
+                          ref={productSearchRef}
+                          className="quotation-product-search-input"
+                          value={productQuery}
+                          placeholder="Search product name or number"
+                          aria-label="Search product"
+                          autoComplete="off"
+                          onFocus={() => setProductPickerOpen(true)}
+                          onChange={(event) => {
+                            setProductQuery(event.target.value)
+                            setProductPickerOpen(true)
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                              setProductPickerOpen(false)
+                              return
+                            }
+                            if (event.key !== 'Enter') return
+                            const first = productsQuery.data?.data?.[0]
+                            if (!first) return
+                            event.preventDefault()
+                            void addSelectedProduct(first.ulid)
+                          }}
                         />
-                      ) : null}
+                        <button
+                          type="button"
+                          className="quotation-product-combo-toggle"
+                          aria-label="Open product dropdown"
+                          aria-expanded={productPickerOpen}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            setProductPickerOpen((open) => !open)
+                            window.setTimeout(() => productSearchRef.current?.focus(), 0)
+                          }}
+                        >
+                          <span aria-hidden="true">⌄</span>
+                        </button>
+
+                        {productPickerOpen ? (
+                          <ProductLookupGrid
+                            rows={productsQuery.data?.data ?? []}
+                            total={productsQuery.data?.meta.total ?? 0}
+                            priceType={cart.priceType}
+                            portalAnchorRef={productPickerAnchorRef}
+                            themed
+                            onRequestClose={() => setProductPickerOpen(false)}
+                            onSelect={(product) => void addSelectedProduct(product.ulid)}
+                          />
+                        ) : null}
+                      </div>
                     </td>
                     <td>—</td>
                     <td className="is-num">—</td>
@@ -484,7 +806,7 @@ export function QuotationEstimatePage() {
                     <td />
                   </tr>
                 ) : null}
-                {readOnly && entryRows.length === 0 ? (
+                {readOnly && (activeQuotation?.items.length ?? 0) === 0 ? (
                   <tr>
                     <td colSpan={9} className="quotation-empty">
                       No quotation lines found.
