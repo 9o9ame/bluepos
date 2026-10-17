@@ -37,7 +37,8 @@ export function fetchPurchaseReturn(ulid: string) {
 }
 
 export function createPurchaseReturn(payload: {
-  purchase_ulid: string
+  purchase_ulid?: string | null
+  supplier_ulid?: string | null
   warehouse_ulid?: string | null
   return_date?: string
   supplier_reference?: string | null
@@ -54,6 +55,7 @@ export function updatePurchaseReturn(
   ulid: string,
   payload: Partial<{
     warehouse_ulid: string
+    supplier_ulid: string
     return_date: string
     supplier_reference: string | null
     reason: string | null
@@ -69,8 +71,10 @@ export function updatePurchaseReturn(
 export function createPurchaseReturnLine(
   returnUlid: string,
   payload: {
-    purchase_line_ulid: string
+    purchase_line_ulid?: string
+    product_ulid?: string
     quantity: string
+    unit_cost?: string
     discount_amount?: string
     tax_amount?: string
     batch_number?: string | null
@@ -90,7 +94,9 @@ export function updatePurchaseReturnLine(
   lineUlid: string,
   payload: Partial<{
     purchase_line_ulid: string
+    product_ulid: string
     quantity: string
+    unit_cost: string
     discount_amount: string
     tax_amount: string
     batch_number: string | null
