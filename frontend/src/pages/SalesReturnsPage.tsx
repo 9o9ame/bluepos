@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Banknote, CheckCircle2, CreditCard, FileText, Landmark, RefreshCw, RotateCcw, Save, Search, Wallet, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { Banknote, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, RefreshCw, RotateCcw, Save, Search, Wallet, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchSales, fetchSalesmen } from '../api/sales'
@@ -114,6 +114,7 @@ export function SalesReturnsPage() {
   const [saleUlid, setSaleUlid] = useState('')
   const [saleLabel, setSaleLabel] = useState('')
   const [saleSearch, setSaleSearch] = useState('')
+  const [salePickerOpen, setSalePickerOpen] = useState(false)
   const [fromPartyUlid, setFromPartyUlid] = useState('')
   const [fromPartyType, setFromPartyType] = useState<'customer' | 'account'>('account')
   const [salesmanFilterUlid, setSalesmanFilterUlid] = useState('')
@@ -126,6 +127,7 @@ export function SalesReturnsPage() {
   const [generalProductPickerOpen, setGeneralProductPickerOpen] = useState(false)
   const [generalProductLookupMode, setGeneralProductLookupMode] = useState<'browse' | 'search'>('browse')
   const [generalProductTargetKey, setGeneralProductTargetKey] = useState<string | null>(null)
+  const [generalActiveRowKey, setGeneralActiveRowKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refundAmount, setRefundAmount] = useState('')
   const [refundMethod, setRefundMethod] = useState<SalePaymentMethod>('cash')
@@ -141,6 +143,7 @@ export function SalesReturnsPage() {
 
   const createKeyRef = useRef(newReturnKey())
   const generalProductAnchorRef = useRef<HTMLDivElement | null>(null)
+  const generalProductEntryRef = useRef<HTMLInputElement | null>(null)
   const refundKeyRef = useRef(newRefundKey())
   const readOnly = document?.status === 'posted'
 
@@ -168,7 +171,7 @@ export function SalesReturnsPage() {
         status: 'posted',
         per_page: 20,
       }),
-    enabled: view === 'entry' && !document?.ulid && canReturn,
+    enabled: view === 'entry' && !document?.ulid && salePickerOpen,
     retry: false,
   })
 
@@ -411,6 +414,8 @@ export function SalesReturnsPage() {
     setGeneralProductPickerOpen(false)
     setGeneralProductLookupMode('browse')
     setGeneralProductTargetKey(null)
+    setGeneralActiveRowKey(null)
+    setSalePickerOpen(false)
     setError(null)
     setRefundAmount('')
     setRefundMethod('cash')
@@ -461,6 +466,8 @@ export function SalesReturnsPage() {
     }
     setLineQty(nextQty)
     setGeneralRows(nextGeneral)
+    setGeneralActiveRowKey(null)
+    setSalePickerOpen(false)
     setError(null)
   }
 
@@ -478,7 +485,59 @@ export function SalesReturnsPage() {
     setGeneralRows([])
     setGeneralProductSearch('')
     setGeneralProductPickerOpen(false)
+    setGeneralActiveRowKey(null)
+    setSalePickerOpen(false)
     setError(null)
+  }
+
+  function focusGeneralField(rowKey: string, field: 'quantity' | 'price' | 'discount') {
+    window.setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>(
+        `[data-return-row="${rowKey}"] [data-return-field="${field}"]`,
+      )
+      input?.focus()
+      input?.select()
+    }, 0)
+  }
+
+  function focusNextGeneralProduct() {
+    setGeneralActiveRowKey(null)
+    setGeneralProductTargetKey(null)
+    setGeneralProductSearch('')
+    setGeneralProductLookupMode('browse')
+    setGeneralProductPickerOpen(false)
+
+    window.setTimeout(() => {
+      generalProductEntryRef.current?.focus()
+      generalProductEntryRef.current?.select()
+    }, 0)
+  }
+
+  function handleGeneralFieldEnter(
+    event: ReactKeyboardEvent<HTMLInputElement>,
+    rowKey: string,
+  ) {
+    if (event.key !== 'Enter') return
+
+    event.preventDefault()
+    const row = event.currentTarget.closest('tr')
+    if (!row) return
+
+    const fields = Array.from(
+      row.querySelectorAll<HTMLInputElement>(
+        '[data-return-editable="true"]:not(:disabled)',
+      ),
+    )
+    const currentIndex = fields.indexOf(event.currentTarget)
+    const next = fields[currentIndex + 1]
+
+    if (next) {
+      next.focus()
+      next.select()
+      return
+    }
+
+    focusNextGeneralProduct()
   }
 
   function addGeneralProduct(product: Product) {
@@ -486,6 +545,8 @@ export function SalesReturnsPage() {
       feedback.error(`${product.name} is already on this return.`, 'Sales Return')
       return
     }
+
+    const rowKey = generalProductTargetKey ?? generalRowKey()
 
     if (generalProductTargetKey) {
       setGeneralRows((rows) => rows.map((row) =>
@@ -506,7 +567,7 @@ export function SalesReturnsPage() {
       setGeneralRows((rows) => [
         ...rows,
         {
-          key: generalRowKey(),
+          key: rowKey,
           product_ulid: product.ulid,
           product_number: product.product_number,
           product_name: product.name,
@@ -519,10 +580,12 @@ export function SalesReturnsPage() {
       ])
     }
 
+    setGeneralActiveRowKey(rowKey)
     setGeneralProductSearch('')
     setGeneralProductPickerOpen(false)
     setGeneralProductLookupMode('browse')
     setGeneralProductTargetKey(null)
+    focusGeneralField(rowKey, 'quantity')
   }
 
   const openMutation = useMutation({
@@ -783,69 +846,98 @@ export function SalesReturnsPage() {
 
                 <div className="sales-return-option-group is-sales">
                   <label>Sales#:</label>
-                  <UiSelect
-                    value={saleUlid}
-                    className="sales-return-canonical-select sales-return-sales-select"
-                    triggerClassName="sales-return-canonical-trigger"
-                    disabled={Boolean(document?.ulid) || readOnly}
-                    placeholder="Optional Invoice #"
-                    searchInTrigger
-                    searchable
-                    searchPlaceholder="Search invoice #, customer or salesman"
-                    aria-label="Sales invoice"
-                    menuMinWidth={760}
-                    maxMenuHeight={330}
-                    menuColumns={[
-                      { header: 'Invoice #', width: '112px' },
-                      { header: 'Date', width: '92px' },
-                      { header: 'Customer', width: 'minmax(190px, 1.3fr)' },
-                      { header: 'Salesman', width: 'minmax(160px, 1fr)' },
-                      { header: 'Total', width: '90px' },
-                      { header: 'Due', width: '90px' },
-                    ]}
-                    options={[
-                      ...(saleUlid &&
-                      !(saleLookup.data?.data ?? []).some((sale) => sale.ulid === saleUlid)
-                        ? [{
-                            value: saleUlid,
-                            label: saleLabel || 'Selected invoice',
-                            columns: [
-                              saleLabel || 'Selected invoice',
-                              '—',
-                              document?.customer?.name ?? 'CASH IN HAND',
-                              document?.salesman?.name ?? '—',
-                              money(document?.grand_total ?? 0),
-                              money(document?.balance_due ?? 0),
-                            ],
-                          }]
-                        : []),
-                      ...(saleLookup.data?.data ?? []).map((sale) => ({
-                        value: sale.ulid,
-                        label: sale.document_number,
-                        columns: [
-                          sale.document_number,
-                          sale.sale_date,
-                          sale.customer?.name ?? 'CASH IN HAND',
-                          sale.salesman?.name ?? '—',
-                          money(sale.grand_total),
-                          money(sale.balance_due),
-                        ],
-                      })),
-                    ]}
-                    onSearchChange={(value) => {
-                      setSaleSearch(value)
-                      if (saleUlid && value !== saleLabel) {
-                        setSaleUlid('')
-                        setSaleLabel('')
-                        setLineQty({})
-                        setGeneralRows([])
-                      }
-                    }}
-                    onChange={(value) => {
-                      const sale = (saleLookup.data?.data ?? []).find((row) => row.ulid === value)
-                      if (sale) void selectSale(sale)
-                    }}
-                  />
+                  <div className={`sales-return-sale-search${salePickerOpen ? ' is-open' : ''}`}>
+                    <div className="sales-return-sale-input">
+                      <Search size={13} aria-hidden="true" />
+                      <input
+                        value={saleLabel || saleSearch}
+                        disabled={Boolean(document?.ulid) || readOnly}
+                        placeholder="Optional Invoice #, customer or salesman"
+                        onFocus={() => {
+                          if (!document?.ulid && !readOnly) setSalePickerOpen(true)
+                        }}
+                        onChange={(e) => {
+                          setSaleSearch(e.target.value)
+                          setSaleLabel('')
+                          setSaleUlid('')
+                          setLineQty({})
+                          setGeneralRows([])
+                          setGeneralActiveRowKey(null)
+                          setSalePickerOpen(true)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            setSalePickerOpen(false)
+                            return
+                          }
+
+                          if (e.key === 'Enter' && salePickerOpen) {
+                            const first = saleLookup.data?.data?.[0]
+                            if (first) {
+                              e.preventDefault()
+                              void selectSale(first)
+                            }
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="sales-return-sale-trigger"
+                        disabled={Boolean(document?.ulid) || readOnly}
+                        onClick={() => setSalePickerOpen((open) => !open)}
+                        aria-label="Open posted sales"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+
+                    {!document?.ulid && salePickerOpen ? (
+                      <div className="sales-return-sale-results">
+                        <div className="sales-return-sale-results-head">
+                          <span>Invoice #</span>
+                          <span>Date</span>
+                          <span>Customer</span>
+                          <span>Salesman</span>
+                          <span>Total</span>
+                          <span>Due</span>
+                        </div>
+                        <div className="sales-return-sale-results-body">
+                          {(saleLookup.data?.data ?? []).map((sale) => (
+                            <button
+                              key={sale.ulid}
+                              type="button"
+                              className={saleLabel === sale.document_number ? 'is-selected' : undefined}
+                              onClick={() => void selectSale(sale)}
+                            >
+                              <strong>{sale.document_number}</strong>
+                              <span>{sale.sale_date}</span>
+                              <span>{sale.customer?.name ?? 'CASH IN HAND'}</span>
+                              <span>{sale.salesman?.name ?? '—'}</span>
+                              <span>{money(sale.grand_total)}</span>
+                              <span className={Number(sale.balance_due) > 0 ? 'is-due' : 'is-paid'}>
+                                {money(sale.balance_due)}
+                              </span>
+                            </button>
+                          ))}
+                          {saleLookup.isError ? (
+                            <div className="sales-return-sale-results-empty">
+                              Could not load posted sales. Use Refresh and try again.
+                            </div>
+                          ) : !saleLookup.isFetching && (saleLookup.data?.data.length ?? 0) === 0 ? (
+                            <div className="sales-return-sale-results-empty">
+                              No posted sales match this search.
+                            </div>
+                          ) : null}
+                          {saleLookup.isFetching ? (
+                            <div className="sales-return-sale-results-empty">Searching posted sales…</div>
+                          ) : null}
+                        </div>
+                        <div className="sales-return-sale-results-foot">
+                          {(saleLookup.data?.meta.total ?? 0)} posted invoice(s)
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="sales-return-option-group is-from">
@@ -881,6 +973,7 @@ export function SalesReturnsPage() {
                       const ulid = value.slice(separator + 1)
                       if (type !== 'customer' && type !== 'account') return
 
+                      setSalePickerOpen(false)
                       setFromPartyType(type)
                       setFromPartyUlid(ulid)
                       setSaleUlid('')
@@ -936,6 +1029,7 @@ export function SalesReturnsPage() {
                       })),
                     ]}
                     onChange={(value) => {
+                      setSalePickerOpen(false)
                       setSalesmanFilterUlid(value)
                       setSaleUlid('')
                       setSaleLabel('')
@@ -1082,7 +1176,7 @@ export function SalesReturnsPage() {
                   {generalRows.map((row) => {
                     const amounts = generalLineAmounts(row)
                     return (
-                      <tr key={row.key}>
+                      <tr key={row.key} data-return-row={row.key}>
                         <td className="sales-return-general-product-cell">
                           {readOnly ? (
                             <><strong>{row.product_number}</strong> — {row.product_name}</>
@@ -1154,6 +1248,7 @@ export function SalesReturnsPage() {
                               type="button"
                               className="sales-return-general-product-edit"
                               onClick={() => {
+                                setGeneralActiveRowKey(row.key)
                                 setGeneralProductTargetKey(row.key)
                                 setGeneralProductSearch(row.product_name)
                                 setGeneralProductLookupMode('browse')
@@ -1168,8 +1263,12 @@ export function SalesReturnsPage() {
                           {readOnly ? row.quantity : (
                             <input
                               inputMode="decimal"
+                              data-return-editable="true"
+                              data-return-field="quantity"
                               value={row.quantity}
                               aria-label={`Return quantity for ${row.product_name}`}
+                              onFocus={() => setGeneralActiveRowKey(row.key)}
+                              onKeyDown={(e) => handleGeneralFieldEnter(e, row.key)}
                               onChange={(e) => {
                                 const value = e.target.value
                                 if (value !== '' && !/^\d+(?:\.\d{0,6})?$/.test(value)) return
@@ -1182,8 +1281,12 @@ export function SalesReturnsPage() {
                           {readOnly ? money(row.unit_price) : (
                             <input
                               inputMode="decimal"
+                              data-return-editable="true"
+                              data-return-field="price"
                               value={row.unit_price}
                               aria-label={`Return price for ${row.product_name}`}
+                              onFocus={() => setGeneralActiveRowKey(row.key)}
+                              onKeyDown={(e) => handleGeneralFieldEnter(e, row.key)}
                               onChange={(e) => {
                                 const value = e.target.value
                                 if (value !== '' && !/^\d+(?:\.\d{0,4})?$/.test(value)) return
@@ -1197,8 +1300,12 @@ export function SalesReturnsPage() {
                           {readOnly ? row.discount_percent : (
                             <input
                               inputMode="decimal"
+                              data-return-editable="true"
+                              data-return-field="discount"
                               value={row.discount_percent}
                               aria-label={`Discount percent for ${row.product_name}`}
+                              onFocus={() => setGeneralActiveRowKey(row.key)}
+                              onKeyDown={(e) => handleGeneralFieldEnter(e, row.key)}
                               onChange={(e) => {
                                 const value = e.target.value
                                 if (value !== '' && !/^\d+(?:\.\d{0,8})?$/.test(value)) return
@@ -1214,7 +1321,10 @@ export function SalesReturnsPage() {
                             <button
                               type="button"
                               aria-label={`Remove ${row.product_name}`}
-                              onClick={() => setGeneralRows((rows) => rows.filter((item) => item.key !== row.key))}
+                              onClick={() => {
+                                setGeneralRows((rows) => rows.filter((item) => item.key !== row.key))
+                                if (generalActiveRowKey === row.key) setGeneralActiveRowKey(null)
+                              }}
                             >
                               <X size={13} />
                             </button>
@@ -1224,17 +1334,19 @@ export function SalesReturnsPage() {
                     )
                   })}
 
-                  {!readOnly && generalProductTargetKey === null ? (
+                  {!readOnly && generalProductTargetKey === null && generalActiveRowKey === null ? (
                     <tr className="sales-return-general-entry">
                       <td className="sales-return-general-product-cell">
                         <div ref={generalProductAnchorRef} className="sales-product-combo sales-return-product-combo">
                           <input
+                            ref={generalProductEntryRef}
                             className="sales-pos-product-entry"
                             value={generalProductSearch}
                             placeholder="Search product name or number"
                             aria-label="General return product"
                             autoComplete="off"
                             onFocus={() => {
+                              setGeneralActiveRowKey(null)
                               setGeneralProductTargetKey(null)
                               setGeneralProductLookupMode('browse')
                               setGeneralProductPickerOpen(true)
