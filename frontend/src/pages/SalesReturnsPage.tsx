@@ -782,184 +782,95 @@ export function SalesReturnsPage() {
 
                 <div className="sales-return-option-group is-sales">
                   <label>Sales#:</label>
-                  <div className={`sales-return-sale-search${salePickerOpen ? ' is-open' : ''}`}>
-                    <div className="sales-return-sale-input">
-                      <Search size={13} aria-hidden="true" />
-                      <input
-                        value={saleLabel || saleSearch}
-                        disabled={Boolean(document?.ulid) || readOnly}
-                        placeholder="Optional Invoice #, customer or salesman"
-                        onFocus={() => {
-                          if (!document?.ulid && !readOnly) setSalePickerOpen(true)
-                        }}
-                        onChange={(e) => {
-                          setSaleSearch(e.target.value)
-                          setSaleLabel('')
-                          setSaleUlid('')
-                          setLineQty({})
-                          setGeneralRows([])
-                          setSalePickerOpen(true)
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') {
-                            setSalePickerOpen(false)
-                            return
-                          }
-
-                          if (e.key === 'Enter' && salePickerOpen) {
-                            const first = saleLookup.data?.data?.[0]
-                            if (first) {
-                              e.preventDefault()
-                              void selectSale(first)
-                            }
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="sales-return-sale-trigger"
-                        disabled={Boolean(document?.ulid) || readOnly}
-                        onClick={() => setSalePickerOpen((open) => !open)}
-                        aria-label="Open posted sales"
-                      >
-                        <ChevronDown size={14} />
-                      </button>
-                    </div>
-
-                    {!document?.ulid && salePickerOpen ? (
-                      <div className="sales-return-sale-results">
-                        <div className="sales-return-sale-results-head">
-                          <span>Invoice #</span>
-                          <span>Date</span>
-                          <span>Customer</span>
-                          <span>Salesman</span>
-                          <span>Total</span>
-                          <span>Due</span>
-                        </div>
-                        <div className="sales-return-sale-results-body">
-                          {(saleLookup.data?.data ?? []).map((sale) => (
-                            <button
-                              key={sale.ulid}
-                              type="button"
-                              className={saleLabel === sale.document_number ? 'is-selected' : undefined}
-                              onClick={() => void selectSale(sale)}
-                            >
-                              <strong>{sale.document_number}</strong>
-                              <span>{sale.sale_date}</span>
-                              <span>{sale.customer?.name ?? 'CASH IN HAND'}</span>
-                              <span>{sale.salesman?.name ?? '—'}</span>
-                              <span>{money(sale.grand_total)}</span>
-                              <span className={Number(sale.balance_due) > 0 ? 'is-due' : 'is-paid'}>
-                                {money(sale.balance_due)}
-                              </span>
-                            </button>
-                          ))}
-                          {saleLookup.isError ? (
-                            <div className="sales-return-sale-results-empty">
-                              Could not load posted sales. Use Refresh and try again.
-                            </div>
-                          ) : !saleLookup.isFetching && (saleLookup.data?.data.length ?? 0) === 0 ? (
-                            <div className="sales-return-sale-results-empty">
-                              No posted sales match this search.
-                            </div>
-                          ) : null}
-                          {saleLookup.isFetching ? (
-                            <div className="sales-return-sale-results-empty">Searching posted sales…</div>
-                          ) : null}
-                        </div>
-                        <div className="sales-return-sale-results-foot">
-                          {(saleLookup.data?.meta.total ?? 0)} posted invoice(s)
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
+                  <UiSelect
+                    value={saleUlid}
+                    className="sales-return-canonical-select sales-return-sales-select"
+                    triggerClassName="sales-return-canonical-trigger"
+                    disabled={Boolean(document?.ulid) || readOnly}
+                    placeholder="Optional Invoice #"
+                    searchInTrigger
+                    searchable
+                    searchPlaceholder="Search invoice #, customer or salesman"
+                    aria-label="Sales invoice"
+                    menuMinWidth={760}
+                    maxMenuHeight={330}
+                    menuColumns={[
+                      { header: 'Invoice #', width: '112px' },
+                      { header: 'Date', width: '92px' },
+                      { header: 'Customer', width: 'minmax(190px, 1.3fr)' },
+                      { header: 'Salesman', width: 'minmax(160px, 1fr)' },
+                      { header: 'Total', width: '90px' },
+                      { header: 'Due', width: '90px' },
+                    ]}
+                    options={(saleLookup.data?.data ?? []).map((sale) => ({
+                      value: sale.ulid,
+                      label: sale.document_number,
+                      columns: [
+                        sale.document_number,
+                        sale.sale_date,
+                        sale.customer?.name ?? 'CASH IN HAND',
+                        sale.salesman?.name ?? '—',
+                        money(sale.grand_total),
+                        money(sale.balance_due),
+                      ],
+                    }))}
+                    onSearchChange={(value) => {
+                      setSaleSearch(value)
+                      if (saleUlid && value !== saleLabel) {
+                        setSaleUlid('')
+                        setSaleLabel('')
+                        setLineQty({})
+                        setGeneralRows([])
+                      }
+                    }}
+                    onChange={(value) => {
+                      const sale = (saleLookup.data?.data ?? []).find((row) => row.ulid === value)
+                      if (sale) void selectSale(sale)
+                    }}
+                  />
                 </div>
 
                 <div className="sales-return-option-group is-from">
                   <label>From:</label>
-                  <div className={`sales-return-detail-picker is-customer${customerSelectOpen ? ' is-open' : ''}`}>
-                    <button
-                      type="button"
-                      className="sales-return-detail-control"
-                      disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
-                      onClick={() => {
-                        setSalesmanSelectOpen(false)
-                        setSalesmanDropdownSearch('')
-                        setSalePickerOpen(false)
-                        setCustomerDropdownSearch('')
-                        setCustomerSelectOpen((open) => !open)
-                      }}
-                      aria-expanded={customerSelectOpen}
-                      aria-label="Choose customer or account"
-                    >
-                      <span>
-                        {fromPartyUlid
-                          ? (customersQuery.data ?? []).find((row) => row.ulid === fromPartyUlid)?.name ?? 'Selected account'
-                          : 'Select customer / account'}
-                      </span>
-                      <span className="sales-return-detail-caret" aria-hidden="true">
-                        <ChevronDown size={12} strokeWidth={2.75} />
-                      </span>
-                    </button>
+                  <UiSelect
+                    value={fromPartyUlid ? `${fromPartyType}:${fromPartyUlid}` : ''}
+                    className="sales-return-canonical-select"
+                    triggerClassName="sales-return-canonical-trigger"
+                    disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
+                    placeholder="Select customer / account"
+                    searchable
+                    searchPlaceholder="Search customer / account"
+                    aria-label="Customer or account"
+                    menuMinWidth={520}
+                    menuColumns={[
+                      { header: 'Code', width: '110px' },
+                      { header: 'Name', width: 'minmax(220px, 1fr)' },
+                      { header: 'Type', width: '100px' },
+                    ]}
+                    options={(customersQuery.data ?? []).map((party) => ({
+                      value: `${party.type}:${party.ulid}`,
+                      label: party.name,
+                      columns: [
+                        party.code || '—',
+                        party.name,
+                        party.type === 'account' ? 'Account' : 'Customer',
+                      ],
+                    }))}
+                    onChange={(value) => {
+                      const separator = value.indexOf(':')
+                      if (separator < 1) return
+                      const type = value.slice(0, separator)
+                      const ulid = value.slice(separator + 1)
+                      if (type !== 'customer' && type !== 'account') return
 
-                    <div
-                      className={`sales-return-detail-dropdown${customerSelectOpen ? ' is-open' : ''}`}
-                      aria-hidden={!customerSelectOpen}
-                    >
-                      <div className="ui-select-search-wrap sales-return-detail-search-wrap">
-                        <input
-                          className="ui-select-search"
-                          value={customerDropdownSearch}
-                          onChange={(event) => setCustomerDropdownSearch(event.target.value)}
-                          placeholder="Search customer / account..."
-                          aria-label="Search customers and accounts"
-                        />
-                      </div>
-                      <div className="sales-return-detail-head">
-                        <span>Code</span>
-                        <span>Name</span>
-                        <span>Type</span>
-                        <span>Mobile</span>
-                      </div>
-                      <div className="sales-return-detail-body">
-                        {(customersQuery.data ?? [])
-                          .filter((party) => (party.type === 'customer' || party.type === 'account'))
-                          .filter((party) => {
-                            const query = customerDropdownSearch.trim().toLocaleLowerCase()
-                            if (!query) return true
-                            return [party.code, party.name]
-                              .filter(Boolean)
-                              .some((value) => String(value).toLocaleLowerCase().includes(query))
-                          })
-                          .map((party) => (
-                          <button
-                            type="button"
-                            className={`sales-return-detail-row${fromPartyUlid === party.ulid ? ' is-selected' : ''}`}
-                            key={`${party.type}:${party.ulid}`}
-                            onClick={() => {
-                              setFromPartyUlid(party.ulid)
-                              setFromPartyType(party.type as 'customer' | 'account')
-                              setSaleUlid('')
-                              setSaleLabel('')
-                              setLineQty({})
-                              setCustomerSelectOpen(false)
-                              setSalePickerOpen(false)
-                            }}
-                          >
-                            <span>{party.code || '—'}</span>
-                            <strong>{party.name}</strong>
-                            <span>{party.type === 'account' ? 'Account' : 'Customer'}</span>
-                            <span>—</span>
-                          </button>
-                        ))}
-                      </div>
-                      <div className="sales-return-detail-foot">
-                        {(customersQuery.data ?? []).filter(
-                          (party) => (party.type === 'customer' || party.type === 'account'),
-                        ).length} customer/account option(s)
-                      </div>
-                    </div>
-                  </div>
+                      setFromPartyType(type)
+                      setFromPartyUlid(ulid)
+                      setSaleUlid('')
+                      setSaleLabel('')
+                      setSaleSearch('')
+                      setLineQty({})
+                    }}
+                  />
                 </div>
 
                 <div className="sales-return-option-group is-remarks">
@@ -973,113 +884,48 @@ export function SalesReturnsPage() {
 
                 <div className="sales-return-option-group is-salesman">
                   <label>S.Man:</label>
-                  <div className={`sales-return-detail-picker is-salesman${salesmanSelectOpen ? ' is-open' : ''}`}>
-                    <button
-                      type="button"
-                      className="sales-return-detail-control"
-                      disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
-                      onClick={() => {
-                        setCustomerSelectOpen(false)
-                        setCustomerDropdownSearch('')
-                        setSalePickerOpen(false)
-                        setSalesmanDropdownSearch('')
-                        setSalesmanSelectOpen((open) => !open)
-                      }}
-                      aria-expanded={salesmanSelectOpen}
-                      aria-label="Choose salesman"
-                    >
-                      <span>
-                        {salesmanFilterUlid
-                          ? (() => {
-                              const salesman = (salesmenQuery.data ?? []).find((row) => row.ulid === salesmanFilterUlid)
-                              return salesman ? salesman.name : 'Selected salesman'
-                            })()
-                          : 'All salesmen'}
-                      </span>
-                      <span className="sales-return-detail-caret" aria-hidden="true">
-                        <ChevronDown size={12} strokeWidth={2.75} />
-                      </span>
-                    </button>
-
-                    <div
-                      className={`sales-return-detail-dropdown${salesmanSelectOpen ? ' is-open' : ''}`}
-                      aria-hidden={!salesmanSelectOpen}
-                    >
-                      <div className="ui-select-search-wrap sales-return-detail-search-wrap">
-                        <input
-                          className="ui-select-search"
-                          value={salesmanDropdownSearch}
-                          onChange={(event) => setSalesmanDropdownSearch(event.target.value)}
-                          placeholder="Search salesman..."
-                          aria-label="Search salesmen"
-                        />
-                      </div>
-                      <div className="sales-return-detail-head">
-                        <span>Code</span>
-                        <span>Name</span>
-                        <span>Address</span>
-                        <span>Mobile</span>
-                      </div>
-                      <div className="sales-return-detail-body">
-                        {!salesmanDropdownSearch.trim() ? (
-                        <button
-                          type="button"
-                          className={`sales-return-detail-row${salesmanFilterUlid ? '' : ' is-selected'}`}
-                          onClick={() => {
-                            setSalesmanFilterUlid('')
-                            setSaleUlid('')
-                            setSaleLabel('')
-                            setLineQty({})
-                            setSalesmanSelectOpen(false)
-                            setSalePickerOpen(true)
-                          }}
-                        >
-                          <span>—</span>
-                          <strong>ALL SALESMEN</strong>
-                          <span>—</span>
-                          <span>—</span>
-                        </button>
-                        ) : null}
-                        {(salesmenQuery.data ?? [])
-                          .filter((salesman) => {
-                            const query = salesmanDropdownSearch.trim().toLocaleLowerCase()
-                            if (!query) return true
-                            return [salesman.code, salesman.name, salesman.address, salesman.mobile]
-                              .filter(Boolean)
-                              .some((value) => String(value).toLocaleLowerCase().includes(query))
-                          })
-                          .map((salesman) => (
-                          <button
-                            type="button"
-                            className={`sales-return-detail-row${salesmanFilterUlid === salesman.ulid ? ' is-selected' : ''}`}
-                            key={salesman.ulid}
-                            onClick={() => {
-                              setSalesmanFilterUlid(salesman.ulid)
-                              setSaleUlid('')
-                              setSaleLabel('')
-                              setLineQty({})
-                              setSalesmanSelectOpen(false)
-                              setSalePickerOpen(false)
-                            }}
-                          >
-                            <span>{salesman.code || '—'}</span>
-                            <strong>{salesman.name}</strong>
-                            <span>{salesman.address || '—'}</span>
-                            <span>{salesman.mobile || '—'}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <div className="sales-return-detail-foot">
-                        {(salesmenQuery.data ?? []).filter((salesman) => {
-                          const query = salesmanDropdownSearch.trim().toLocaleLowerCase()
-                          if (!query) return true
-                          return [salesman.code, salesman.name, salesman.address, salesman.mobile]
-                            .filter(Boolean)
-                            .some((value) => String(value).toLocaleLowerCase().includes(query))
-                        }).length + (salesmanDropdownSearch.trim() ? 0 : 1)} salesman option(s)
-                      </div>
-                    </div>
-                  </div>
+                  <UiSelect
+                    value={salesmanFilterUlid}
+                    className="sales-return-canonical-select"
+                    triggerClassName="sales-return-canonical-trigger"
+                    disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
+                    placeholder="No salesman"
+                    searchable
+                    searchPlaceholder="Search salesman"
+                    aria-label="Salesman"
+                    menuMinWidth={620}
+                    menuColumns={[
+                      { header: 'Code', width: '100px' },
+                      { header: 'Name', width: 'minmax(180px, 1fr)' },
+                      { header: 'Address', width: 'minmax(180px, 1fr)' },
+                      { header: 'Mobile', width: '130px' },
+                    ]}
+                    options={[
+                      {
+                        value: '',
+                        label: 'NO SALESMAN',
+                        columns: ['—', 'NO SALESMAN', '—', '—'],
+                      },
+                      ...(salesmenQuery.data ?? []).map((salesman) => ({
+                        value: salesman.ulid,
+                        label: salesman.name,
+                        columns: [
+                          salesman.code || '—',
+                          salesman.name,
+                          salesman.address || '—',
+                          salesman.mobile || '—',
+                        ],
+                      })),
+                    ]}
+                    onChange={(value) => {
+                      setSalesmanFilterUlid(value)
+                      setSaleUlid('')
+                      setSaleLabel('')
+                      setSaleSearch('')
+                      setLineQty({})
+                    }}
+                  />
+                </div>
                 </div>
                 </div>
 
@@ -1090,8 +936,6 @@ export function SalesReturnsPage() {
                     title="Refresh selected sale and balances"
                     disabled={returnableQuery.isFetching || saleLookup.isFetching}
                     onClick={() => {
-                      setCustomerSelectOpen(false)
-                      setSalesmanSelectOpen(false)
                       if (saleUlid) {
                         void returnableQuery.refetch()
                       } else {
