@@ -143,6 +143,8 @@ export function PurchaseReturnsPage({
   const [generalRows, setGeneralRows] = useState<GeneralReturnRow[]>([])
   const [generalProductSearch, setGeneralProductSearch] = useState('')
   const [generalProductPickerOpen, setGeneralProductPickerOpen] = useState(false)
+  const [generalProductLookupMode, setGeneralProductLookupMode] = useState<'browse' | 'search'>('browse')
+  const [generalProductTargetKey, setGeneralProductTargetKey] = useState<string | null>(null)
 
   const readOnly = document?.status === 'posted'
   const invoiceMode = Boolean(purchaseUlid || document?.return_mode === 'invoice')
@@ -190,9 +192,12 @@ export function PurchaseReturnsPage({
     retry: false,
   })
 
+  const generalProductLookupQuery =
+    generalProductLookupMode === 'search' ? generalProductSearch : ''
+
   const localGeneralProducts = useLocalProducts(
     session,
-    generalProductSearch,
+    generalProductLookupQuery,
     view === 'entry' && !invoiceMode && !readOnly && generalProductPickerOpen,
   )
 
@@ -267,6 +272,8 @@ export function PurchaseReturnsPage({
     setGeneralRows([])
     setGeneralProductSearch('')
     setGeneralProductPickerOpen(false)
+    setGeneralProductLookupMode('browse')
+    setGeneralProductTargetKey(null)
     setPurchasePickerOpen(false)
     setError(null)
   }
@@ -317,6 +324,8 @@ export function PurchaseReturnsPage({
     setGeneralRows(nextGeneral)
     setPurchasePickerOpen(false)
     setGeneralProductPickerOpen(false)
+    setGeneralProductLookupMode('browse')
+    setGeneralProductTargetKey(null)
     setError(null)
   }
 
@@ -334,8 +343,20 @@ export function PurchaseReturnsPage({
     setGeneralRows([])
     setGeneralProductSearch('')
     setGeneralProductPickerOpen(false)
+    setGeneralProductLookupMode('browse')
+    setGeneralProductTargetKey(null)
     setPurchasePickerOpen(false)
     setError(null)
+  }
+
+  function focusGeneralField(rowKey: string, field: 'quantity' | 'cost' | 'discount' | 'tax') {
+    window.setTimeout(() => {
+      const input = globalThis.document.querySelector<HTMLInputElement>(
+        `[data-return-row="${rowKey}"] [data-general-field="${field}"]`,
+      )
+      input?.focus()
+      input?.select()
+    }, 0)
   }
 
   function addGeneralProduct(product: Product) {
@@ -345,40 +366,63 @@ export function PurchaseReturnsPage({
       return
     }
 
-    const existing = generalRows.find((row) => row.product_ulid === product.ulid)
+    const existing = generalRows.find(
+      (row) =>
+        row.product_ulid === product.ulid &&
+        row.key !== generalProductTargetKey,
+    )
+
     if (existing) {
       setGeneralRows((current) =>
         current.map((row) =>
           row.key === existing.key
-            ? { ...row, quantity: qty((Number(row.quantity) || 0) + 1) }
+            ? {
+                ...row,
+                quantity: ((Number.parseFloat(row.quantity) || 0) + 1).toFixed(6),
+              }
+            : row,
+        ),
+      )
+      setGeneralProductTargetKey(null)
+      setGeneralProductSearch('')
+      setGeneralProductLookupMode('browse')
+      setGeneralProductPickerOpen(false)
+      setError(null)
+      focusGeneralField(existing.key, 'quantity')
+      return
+    }
+
+    const rowKey = generalProductTargetKey ?? generalRowKey()
+    const nextRow: GeneralReturnRow = {
+      key: rowKey,
+      product_ulid: product.ulid,
+      product_number: product.product_number,
+      product_name: product.name,
+      unit_code: product.base_unit?.code ?? '—',
+      quantity: '1.000000',
+      unit_cost: defaultProductCost(product),
+      discount_amount: '0.0000',
+      tax_amount: '0.0000',
+    }
+
+    if (generalProductTargetKey) {
+      setGeneralRows((current) =>
+        current.map((row) =>
+          row.key === generalProductTargetKey
+            ? { ...nextRow, line_ulid: row.line_ulid }
             : row,
         ),
       )
     } else {
-      setGeneralRows((current) => [
-        ...current,
-        {
-          key: generalRowKey(),
-          product_ulid: product.ulid,
-          product_number: product.product_number,
-          product_name: product.name,
-          unit_code: product.base_unit?.code ?? '—',
-          quantity: '1.000000',
-          unit_cost: defaultProductCost(product),
-          discount_amount: '0.0000',
-          tax_amount: '0.0000',
-        },
-      ])
+      setGeneralRows((current) => [...current, nextRow])
     }
 
     setGeneralProductSearch('')
     setGeneralProductPickerOpen(false)
+    setGeneralProductLookupMode('browse')
+    setGeneralProductTargetKey(null)
     setError(null)
-
-    window.setTimeout(() => {
-      generalProductEntryRef.current?.focus()
-      generalProductEntryRef.current?.select()
-    }, 0)
+    focusGeneralField(rowKey, 'quantity')
   }
 
   function handleGeneralEnter(event: ReactKeyboardEvent<HTMLInputElement>) {
@@ -398,24 +442,15 @@ export function PurchaseReturnsPage({
       return
     }
 
-    generalProductEntryRef.current?.focus()
-    generalProductEntryRef.current?.select()
-  }
-
-  useEffect(() => {
-    if (!active || view !== 'entry' || invoiceMode || readOnly) return
-
-    function handleProductShortcut(event: KeyboardEvent) {
-      if (event.key !== 'F1') return
-      event.preventDefault()
+    setGeneralProductTargetKey(null)
+    setGeneralProductSearch('')
+    setGeneralProductLookupMode('browse')
+    setGeneralProductPickerOpen(true)
+    window.setTimeout(() => {
       generalProductEntryRef.current?.focus()
       generalProductEntryRef.current?.select()
-      setGeneralProductPickerOpen(true)
-    }
-
-    window.addEventListener('keydown', handleProductShortcut)
-    return () => window.removeEventListener('keydown', handleProductShortcut)
-  }, [active, invoiceMode, readOnly, view])
+    }, 0)
+  }
 
   useEffect(() => {
     if (!purchasePickerOpen) return
@@ -989,53 +1024,6 @@ export function PurchaseReturnsPage({
             </div>
           ) : (
             <div className="purchase-return-general">
-              {!readOnly ? (
-                <div
-                  ref={generalProductAnchorRef}
-                  className="purchase-return-general-entry"
-                >
-                  <Search size={13} aria-hidden="true" />
-                  <input
-                    ref={generalProductEntryRef}
-                    value={generalProductSearch}
-                    placeholder="Search product / barcode / ID — add items directly"
-                    autoComplete="off"
-                    onFocus={() => setGeneralProductPickerOpen(true)}
-                    onChange={(event) => {
-                      setGeneralProductSearch(event.target.value)
-                      setGeneralProductPickerOpen(true)
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Escape') {
-                        setGeneralProductPickerOpen(false)
-                        return
-                      }
-                      if (event.key === 'Enter' && generalProductPickerOpen) {
-                        const first = generalProducts[0]
-                        if (first) {
-                          event.preventDefault()
-                          addGeneralProduct(first)
-                        }
-                      }
-                    }}
-                  />
-                  <strong>F1 to Add New</strong>
-
-                  {generalProductPickerOpen ? (
-                    <ProductLookupGrid
-                      rows={generalProducts}
-                      total={localGeneralProducts.total}
-                      priceType="retail"
-                      mode="purchase"
-                      themed
-                      portalAnchorRef={generalProductAnchorRef}
-                      onSelect={addGeneralProduct}
-                      onRequestClose={() => setGeneralProductPickerOpen(false)}
-                    />
-                  ) : null}
-                </div>
-              ) : null}
-
               <div className="purchase-return-grid-wrap">
                 <table className="purchase-return-grid is-general">
                   <thead>
@@ -1054,15 +1042,98 @@ export function PurchaseReturnsPage({
                     {generalRows.map((row) => {
                       const amounts = generalAmounts(row)
                       return (
-                        <tr key={row.key}>
-                          <td>
-                            <strong>{row.product_number}</strong> — {row.product_name}
-                            <span className="purchase-return-unit-hint"> · {row.unit_code}</span>
+                        <tr key={row.key} data-return-row={row.key}>
+                          <td className="purchase-return-general-product-cell">
+                            {readOnly ? (
+                              <>
+                                <strong>{row.product_number}</strong> — {row.product_name}
+                                <span className="purchase-return-unit-hint"> · {row.unit_code}</span>
+                              </>
+                            ) : generalProductTargetKey === row.key ? (
+                              <div
+                                ref={generalProductAnchorRef}
+                                className="purchase-return-product-combo"
+                              >
+                                <input
+                                  autoFocus
+                                  value={generalProductSearch}
+                                  placeholder="Search product name / barcode / ID"
+                                  aria-label={`Change product for ${row.product_name}`}
+                                  autoComplete="off"
+                                  onFocus={() => {
+                                    setGeneralProductLookupMode('browse')
+                                    setGeneralProductPickerOpen(true)
+                                  }}
+                                  onChange={(event) => {
+                                    setGeneralProductSearch(event.target.value)
+                                    setGeneralProductLookupMode('search')
+                                    setGeneralProductPickerOpen(true)
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (event.key === 'Escape') {
+                                      setGeneralProductTargetKey(null)
+                                      setGeneralProductSearch('')
+                                      setGeneralProductLookupMode('browse')
+                                      setGeneralProductPickerOpen(false)
+                                      return
+                                    }
+                                    if (event.key === 'Enter') {
+                                      const first = generalProducts[0]
+                                      if (first) {
+                                        event.preventDefault()
+                                        addGeneralProduct(first)
+                                      }
+                                    }
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  className="purchase-return-product-toggle"
+                                  aria-label="Open product dropdown"
+                                  aria-expanded={generalProductPickerOpen}
+                                  onMouseDown={(event) => event.preventDefault()}
+                                  onClick={() => {
+                                    setGeneralProductLookupMode('browse')
+                                    setGeneralProductPickerOpen((open) => !open)
+                                  }}
+                                >
+                                  <ChevronDown size={13} />
+                                </button>
+                                {generalProductPickerOpen ? (
+                                  <ProductLookupGrid
+                                    rows={generalProducts}
+                                    total={localGeneralProducts.total}
+                                    priceType="retail"
+                                    mode="purchase"
+                                    themed
+                                    portalAnchorRef={generalProductAnchorRef}
+                                    selectedUlid={row.product_ulid}
+                                    onSelect={addGeneralProduct}
+                                    onRequestClose={() => setGeneralProductPickerOpen(false)}
+                                  />
+                                ) : null}
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                className="purchase-return-general-product-edit"
+                                onClick={() => {
+                                  setGeneralProductTargetKey(row.key)
+                                  setGeneralProductSearch(row.product_name)
+                                  setGeneralProductLookupMode('browse')
+                                  setGeneralProductPickerOpen(true)
+                                }}
+                              >
+                                <strong>{row.product_number}</strong> — {row.product_name}
+                                <span className="purchase-return-unit-hint"> · {row.unit_code}</span>
+                              </button>
+                            )}
                           </td>
                           <td className="num is-edit">
                             {readOnly ? row.quantity : (
                               <input
                                 data-general-editable="true"
+                                data-general-field="quantity"
                                 inputMode="decimal"
                                 value={row.quantity}
                                 onKeyDown={handleGeneralEnter}
@@ -1083,6 +1154,7 @@ export function PurchaseReturnsPage({
                             {readOnly ? money(row.unit_cost) : (
                               <input
                                 data-general-editable="true"
+                                data-general-field="cost"
                                 inputMode="decimal"
                                 value={row.unit_cost}
                                 onKeyDown={handleGeneralEnter}
@@ -1101,6 +1173,7 @@ export function PurchaseReturnsPage({
                             {readOnly ? money(row.discount_amount) : (
                               <input
                                 data-general-editable="true"
+                                data-general-field="discount"
                                 inputMode="decimal"
                                 value={row.discount_amount}
                                 onKeyDown={handleGeneralEnter}
@@ -1118,6 +1191,7 @@ export function PurchaseReturnsPage({
                             {readOnly ? money(row.tax_amount) : (
                               <input
                                 data-general-editable="true"
+                                data-general-field="tax"
                                 inputMode="decimal"
                                 value={row.tax_amount}
                                 onKeyDown={handleGeneralEnter}
@@ -1139,6 +1213,10 @@ export function PurchaseReturnsPage({
                                 title={`Remove ${row.product_name}`}
                                 onClick={() => {
                                   setGeneralRows((current) => current.filter((item) => item.key !== row.key))
+                                  if (generalProductTargetKey === row.key) {
+                                    setGeneralProductTargetKey(null)
+                                    setGeneralProductPickerOpen(false)
+                                  }
                                 }}
                               >
                                 <X size={12} />
@@ -1149,10 +1227,82 @@ export function PurchaseReturnsPage({
                       )
                     })}
 
-                    {generalRows.length === 0 ? (
+                    {!readOnly ? (
+                      <tr className="purchase-return-general-add-row">
+                        <td className="purchase-return-general-product-cell">
+                          <div
+                            ref={generalProductTargetKey === null ? generalProductAnchorRef : undefined}
+                            className="purchase-return-product-combo"
+                          >
+                            <input
+                              ref={generalProductEntryRef}
+                              value={generalProductTargetKey === null ? generalProductSearch : ''}
+                              placeholder="Search product name / barcode / ID"
+                              aria-label="Add general purchase return product"
+                              autoComplete="off"
+                              onFocus={() => {
+                                setGeneralProductTargetKey(null)
+                                setGeneralProductLookupMode('browse')
+                                setGeneralProductPickerOpen(true)
+                              }}
+                              onChange={(event) => {
+                                setGeneralProductTargetKey(null)
+                                setGeneralProductSearch(event.target.value)
+                                setGeneralProductLookupMode('search')
+                                setGeneralProductPickerOpen(true)
+                              }}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Escape') {
+                                  setGeneralProductPickerOpen(false)
+                                  return
+                                }
+                                if (event.key === 'Enter') {
+                                  const first = generalProducts[0]
+                                  if (first) {
+                                    event.preventDefault()
+                                    addGeneralProduct(first)
+                                  }
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              className="purchase-return-product-toggle"
+                              aria-label="Open product dropdown"
+                              aria-expanded={generalProductTargetKey === null && generalProductPickerOpen}
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => {
+                                setGeneralProductTargetKey(null)
+                                setGeneralProductLookupMode('browse')
+                                setGeneralProductPickerOpen((open) => !open)
+                              }}
+                            >
+                              <ChevronDown size={13} />
+                            </button>
+                            {generalProductTargetKey === null && generalProductPickerOpen ? (
+                              <ProductLookupGrid
+                                rows={generalProducts}
+                                total={localGeneralProducts.total}
+                                priceType="retail"
+                                mode="purchase"
+                                themed
+                                portalAnchorRef={generalProductAnchorRef}
+                                onSelect={addGeneralProduct}
+                                onRequestClose={() => setGeneralProductPickerOpen(false)}
+                              />
+                            ) : null}
+                          </div>
+                        </td>
+                        <td colSpan={7} className="purchase-return-general-entry-hint">
+                          Add another product directly from this row, or select Purchase # above for invoice-linked return.
+                        </td>
+                      </tr>
+                    ) : null}
+
+                    {readOnly && generalRows.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="purchase-return-empty">
-                          Add products directly above, or select a posted Purchase # for invoice-linked return.
+                          This general purchase return has no lines.
                         </td>
                       </tr>
                     ) : null}
