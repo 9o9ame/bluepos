@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Banknote, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, RefreshCw, RotateCcw, Save, Search, Wallet, X } from 'lucide-react'
+import { Banknote, CheckCircle2, CreditCard, FileText, Landmark, RefreshCw, RotateCcw, Save, Search, Wallet, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchSales, fetchSalesmen } from '../api/sales'
@@ -423,6 +423,7 @@ export function SalesReturnsPage() {
     setDocument(row)
     setSaleUlid(row.original_sale?.ulid ?? '')
     setSaleLabel(row.original_sale?.document_number ?? '')
+    setSaleSearch(row.original_sale?.document_number ?? '')
     setReturnDate(row.return_date)
     setReason(row.reason ?? '')
     setNotes(row.notes ?? '')
@@ -466,7 +467,7 @@ export function SalesReturnsPage() {
   async function selectSale(sale: Sale) {
     setSaleUlid(sale.ulid)
     setSaleLabel(sale.document_number)
-    setSaleSearch('')
+    setSaleSearch(sale.document_number)
     if (sale.customer) {
       setFromPartyUlid(sale.customer.ulid)
       setFromPartyType('customer')
@@ -802,18 +803,35 @@ export function SalesReturnsPage() {
                       { header: 'Total', width: '90px' },
                       { header: 'Due', width: '90px' },
                     ]}
-                    options={(saleLookup.data?.data ?? []).map((sale) => ({
-                      value: sale.ulid,
-                      label: sale.document_number,
-                      columns: [
-                        sale.document_number,
-                        sale.sale_date,
-                        sale.customer?.name ?? 'CASH IN HAND',
-                        sale.salesman?.name ?? '—',
-                        money(sale.grand_total),
-                        money(sale.balance_due),
-                      ],
-                    }))}
+                    options={[
+                      ...(saleUlid &&
+                      !(saleLookup.data?.data ?? []).some((sale) => sale.ulid === saleUlid)
+                        ? [{
+                            value: saleUlid,
+                            label: saleLabel || 'Selected invoice',
+                            columns: [
+                              saleLabel || 'Selected invoice',
+                              '—',
+                              document?.customer?.name ?? 'CASH IN HAND',
+                              document?.salesman?.name ?? '—',
+                              money(document?.grand_total ?? 0),
+                              money(document?.balance_due ?? 0),
+                            ],
+                          }]
+                        : []),
+                      ...(saleLookup.data?.data ?? []).map((sale) => ({
+                        value: sale.ulid,
+                        label: sale.document_number,
+                        columns: [
+                          sale.document_number,
+                          sale.sale_date,
+                          sale.customer?.name ?? 'CASH IN HAND',
+                          sale.salesman?.name ?? '—',
+                          money(sale.grand_total),
+                          money(sale.balance_due),
+                        ],
+                      })),
+                    ]}
                     onSearchChange={(value) => {
                       setSaleSearch(value)
                       if (saleUlid && value !== saleLabel) {
