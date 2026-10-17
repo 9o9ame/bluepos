@@ -98,7 +98,10 @@ class SaleReturnController extends Controller
         $this->authorize('create', SaleReturn::class);
 
         $data = $request->validate([
-            'sale_ulid' => ['required', 'string', 'size:26'],
+            'sale_ulid' => ['nullable', 'string', 'size:26'],
+            'customer_ulid' => ['nullable', 'string', 'size:26'],
+            'account_ulid' => ['nullable', 'string', 'size:26'],
+            'salesman_ulid' => ['nullable', 'string', 'size:26'],
             'return_date' => ['nullable', 'date'],
             'reason' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:5000'],
@@ -150,13 +153,28 @@ class SaleReturnController extends Controller
         $this->authorize('update', $document);
 
         $data = $request->validate([
-            'sale_item_ulid' => ['required', 'string', 'size:26'],
+            'sale_item_ulid' => ['nullable', 'string', 'size:26'],
+            'product_ulid' => ['nullable', 'string', 'size:26'],
             'quantity' => [
                 'required',
                 'string',
                 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/',
                 'numeric',
                 'gt:0',
+            ],
+            'unit_price' => [
+                'nullable',
+                'string',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/',
+                'numeric',
+                'gte:0',
+            ],
+            'discount_percent' => [
+                'nullable',
+                'string',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/',
+                'numeric',
+                'between:0,100',
             ],
             'reason' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:500'],
@@ -180,7 +198,8 @@ class SaleReturnController extends Controller
         $line->loadMissing('saleItem');
 
         $data = $request->validate([
-            'sale_item_ulid' => ['sometimes', 'required', 'string', 'size:26'],
+            'sale_item_ulid' => ['sometimes', 'nullable', 'string', 'size:26'],
+            'product_ulid' => ['sometimes', 'nullable', 'string', 'size:26'],
             'quantity' => [
                 'sometimes',
                 'required',
@@ -189,15 +208,34 @@ class SaleReturnController extends Controller
                 'numeric',
                 'gt:0',
             ],
+            'unit_price' => [
+                'sometimes',
+                'required',
+                'string',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/',
+                'numeric',
+                'gte:0',
+            ],
+            'discount_percent' => [
+                'sometimes',
+                'required',
+                'string',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/',
+                'numeric',
+                'between:0,100',
+            ],
             'reason' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $payload = [
             'sale_item_ulid' => $data['sale_item_ulid']
-                ?? $line->saleItem?->ulid
-                ?? '',
+                ?? $line->saleItem?->ulid,
+            'product_ulid' => $data['product_ulid']
+                ?? $line->product?->ulid,
             'quantity' => $data['quantity'] ?? (string) $line->quantity,
+            'unit_price' => $data['unit_price'] ?? (string) $line->unit_price,
+            'discount_percent' => $data['discount_percent'] ?? (string) $line->discount_percent,
             'reason' => array_key_exists('reason', $data) ? $data['reason'] : $line->reason,
             'notes' => array_key_exists('notes', $data) ? $data['notes'] : $line->notes,
         ];
