@@ -44,6 +44,7 @@ export type PurchaseReturn = {
   document_number: string
   return_date: string
   status: PurchaseReturnStatus
+  return_mode: 'general' | 'invoice'
   subtotal: string
   discount_amount: string
   tax_amount: string
