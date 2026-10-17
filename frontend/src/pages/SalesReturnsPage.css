@@ -4823,3 +4823,16 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   border-color: var(--ui-accent);
   box-shadow: var(--ui-focus-shadow);
 }
+
+
+/* Avoid the shared arrow chip drawing a second surface inside the integrated From / Salesman arrow button. */
+.sales-return-option-group.is-from .sales-return-canonical-select .ui-select-combobox-toggle .ui-select-arrow,
+.sales-return-option-group.is-salesman .sales-return-canonical-select .ui-select-combobox-toggle .ui-select-arrow {
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+}
