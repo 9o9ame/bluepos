@@ -430,6 +430,50 @@ export function PurchasesPage({
   useEffect(() => {
     linesRef.current = lines
   }, [lines])
+  useEffect(() => {
+    if (
+      !active ||
+      mode !== 'editor' ||
+      readOnly ||
+      !productEditRowKey ||
+      productEditRowKey === 'new'
+    ) {
+      return
+    }
+
+    const rowKey = productEditRowKey
+
+    function handleOutsideProcessingRow(event: MouseEvent) {
+      const target = event.target
+      if (!(target instanceof Node)) return
+
+      const row = globalThis.document.querySelector<HTMLElement>(
+        `tr[data-purchase-row-key="${rowKey}"]`,
+      )
+      if (row?.contains(target)) return
+
+      if (
+        target instanceof Element &&
+        (
+          target.closest('.sales-pos-product-results-grid') ||
+          target.closest('.ui-select-menu') ||
+          target.closest('.ui-select-menu-portal')
+        )
+      ) {
+        return
+      }
+
+      const activeLine = linesRef.current.find((line) => line.key === rowKey)
+      const quantity = Number.parseFloat(activeLine?.quantity ?? '')
+      if (!activeLine || !Number.isFinite(quantity) || quantity <= 0) return
+
+      finishProcessingRow(false)
+    }
+
+    window.addEventListener('mousedown', handleOutsideProcessingRow)
+    return () => window.removeEventListener('mousedown', handleOutsideProcessingRow)
+  }, [active, mode, productEditRowKey, readOnly])
+
   const canSaveRoleDefault = useCan('roles.edit')
   const columnLayout = useColumnLayout({
     screenKey: PURCHASE_INVOICE_SCREEN,
@@ -637,6 +681,22 @@ export function PurchasesPage({
     })
   }
 
+  function finishProcessingRow(focusNext = true) {
+    if (!productEditRowKey || productEditRowKey === 'new') return
+
+    setProductEditRowKey(focusNext ? 'new' : 'new')
+    setProductLookupMode('search')
+    setProductQuery('')
+    setProductMenuOpen(false)
+
+    if (focusNext) {
+      requestAnimationFrame(() => {
+        productSearchRef.current?.focus()
+        productSearchRef.current?.select()
+      })
+    }
+  }
+
   function beginProductEdit(row: DraftLine | null) {
     setProductEditRowKey(row?.key ?? 'new')
     setProductQuery(row?.product_label ?? '')
@@ -695,7 +755,7 @@ export function PurchasesPage({
       return
     }
 
-    focusNewProductSearch()
+    finishProcessingRow(true)
   }
 
   function renderDualCell(
@@ -2689,8 +2749,8 @@ export function PurchasesPage({
                   )}
                 </tr>
               ))}
-              {editable ? (
-                <tr className="is-empty is-new-line">
+              {editable && (productEditRowKey === null || productEditRowKey === 'new') ? (
+                <tr className="is-empty is-new-line" data-purchase-new-row="true">
                   {effectivePurchaseColumns.map((col) =>
                     renderPurchaseCell(col, null, {
                       readOnly,
