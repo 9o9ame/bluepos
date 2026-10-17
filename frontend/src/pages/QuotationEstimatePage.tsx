@@ -522,16 +522,6 @@ export function QuotationEstimatePage() {
               />
             </label>
             </div>
-
-            <div className="quotation-entry-title" aria-hidden="true">QUOTATION</div>
-
-            <aside className="quotation-amount-options" aria-label="Quotation amount options">
-              <strong className="quotation-amount-options-title">Amount Options</strong>
-              <div className="quotation-net-box">
-                <span>Net:</span>
-                <strong>{activeQuotation?.grand_total ?? cart.preview.grandTotal}</strong>
-              </div>
-            </aside>
           </div>
 
           <div className="quotation-lines-wrap">
@@ -896,12 +886,20 @@ export function QuotationEstimatePage() {
               <span>Notes / Remarks</span>
               <textarea
                 className="desktop-input"
-                rows={3}
+                rows={2}
                 value={activeQuotation?.notes ?? cart.notes}
                 disabled={readOnly}
                 onChange={(event) => cart.setNotes(event.target.value)}
               />
             </label>
+
+            <aside className="quotation-amount-options quotation-amount-options-footer" aria-label="Quotation amount options">
+              <strong className="quotation-amount-options-title">Amount Options</strong>
+              <div className="quotation-net-box">
+                <span>Net:</span>
+                <strong>{activeQuotation?.grand_total ?? cart.preview.grandTotal}</strong>
+              </div>
+            </aside>
 
             <div className="quotation-totals">
               <div><span>Subtotal</span><strong>{activeQuotation?.subtotal ?? cart.preview.subtotal}</strong></div>
