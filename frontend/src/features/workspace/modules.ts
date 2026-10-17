@@ -56,6 +56,7 @@ export type WorkspaceModule = {
   permission?: string
   entitlement?: string
   closeable?: boolean
+  multiInstance?: boolean
   match?: (pathname: string) => boolean
   keyForPath?: (pathname: string) => string
   titleForPath?: (pathname: string) => string
@@ -243,6 +244,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     path: '/daily/sales',
     ribbon: 'daily-entries',
     status: 'ready',
+    multiInstance: true,
     permission: 'sales.view',
     entitlement: 'sales',
   },
@@ -252,6 +254,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     path: '/daily/quotation-estimate',
     ribbon: 'daily-entries',
     status: 'ready',
+    multiInstance: true,
     permission: 'sales.view',
     entitlement: 'sales',
   },
@@ -261,6 +264,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     path: '/daily/sales-return',
     ribbon: 'daily-entries',
     status: 'ready',
+    multiInstance: true,
     permission: 'sales.return',
     entitlement: 'sales',
   },
@@ -270,6 +274,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     path: '/daily/purchases',
     ribbon: 'daily-entries',
     status: 'ready',
+    multiInstance: true,
     permission: 'purchases.view',
     entitlement: 'purchases',
   },
@@ -279,6 +284,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     path: '/daily/purchase-orders',
     ribbon: 'daily-entries',
     status: 'ready',
+    multiInstance: true,
     permission: 'purchases.view',
     entitlement: 'purchases',
   },
@@ -288,6 +294,7 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     path: '/daily/purchase-return',
     ribbon: 'daily-entries',
     status: 'ready',
+    multiInstance: true,
   },
   {
     key: 'adjustments',
@@ -692,12 +699,12 @@ export function moduleTabIdentity(
   pathname: string,
   search = '',
 ): { key: string; title: string; path: string } {
-  if (module.key === 'sales-invoice') {
+  if (module.multiInstance) {
     const instance = new URLSearchParams(search).get('instance')
     if (instance && /^\d+$/.test(instance)) {
       return {
-        key: `sales-invoice:${instance}`,
-        title: `Sales Invoice ${instance}`,
+        key: `${module.key}:${instance}`,
+        title: `${module.title} ${instance}`,
         path: pathname + search,
       }
     }
