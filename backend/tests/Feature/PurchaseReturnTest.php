@@ -556,6 +556,82 @@ class PurchaseReturnTest extends TestCase
         ])->assertStatus(422)->assertJsonPath('error.key', 'DOCUMENT_POSTED');
     }
 
+    public function test_product_wise_lists_only_posted_returns_in_active_context(): void
+    {
+        $this->signInOwner('pr-product-wise')->assertOk();
+        $this->configurePurchaseClearing();
+
+        $warehouseUlid = $this->sessionWarehouseUlid();
+        $pcs = $this->unitUlid('PCS');
+
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-PR-PW',
+            'name' => 'Product Wise Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'Product Wise Return Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $purchaseUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'invoice_date' => '2026-10-17',
+        ])->assertCreated()->json('ulid');
+
+        $purchaseLineUlid = $this->postJson('/api/purchases/'.$purchaseUlid.'/lines', [
+            'product_ulid' => $productUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '5.000000',
+            'unit_cost' => '10.0000',
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchases/'.$purchaseUlid.'/post')->assertOk();
+
+        $postedReturnUlid = $this->postJson('/api/purchase-returns', [
+            'purchase_ulid' => $purchaseUlid,
+            'return_date' => '2026-10-17',
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchase-returns/'.$postedReturnUlid.'/lines', [
+            'purchase_line_ulid' => $purchaseLineUlid,
+            'quantity' => '2.000000',
+        ])->assertCreated();
+
+        $this->postJson('/api/purchase-returns/'.$postedReturnUlid.'/post')->assertOk();
+
+        $draftReturnUlid = $this->postJson('/api/purchase-returns', [
+            'purchase_ulid' => $purchaseUlid,
+            'return_date' => '2026-10-17',
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchase-returns/'.$draftReturnUlid.'/lines', [
+            'purchase_line_ulid' => $purchaseLineUlid,
+            'quantity' => '1.000000',
+        ])->assertCreated();
+
+        $response = $this->getJson(
+            '/api/purchase-returns/product-wise?date_from=2026-10-17&date_to=2026-10-17&per_page=100'
+        )->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.return_ulid', $postedReturnUlid)
+            ->assertJsonPath('data.0.return_mode', 'invoice')
+            ->assertJsonPath('data.0.supplier.ulid', $supplierUlid)
+            ->assertJsonPath('data.0.purchase.ulid', $purchaseUlid)
+            ->assertJsonPath('data.0.product.ulid', $productUlid)
+            ->assertJsonPath('data.0.unit.code', 'PCS')
+            ->assertJsonPath('data.0.quantity_out', '2.000000')
+            ->assertJsonPath('data.0.base_quantity_out', '2.000000')
+            ->assertJsonPath('data.0.amount', '20.0000');
+
+        $this->assertNoInternalIds($response->json());
+
+        $this->getJson(
+            '/api/purchase-returns/product-wise?date_from=2026-10-18&date_to=2026-10-18'
+        )->assertOk()->assertJsonPath('meta.total', 0);
+    }
+
     private function configurePurchaseClearing(): void
     {
         $tenantContext = app(TenantContext::class);
