@@ -29,6 +29,8 @@ class PurchaseReturnController extends Controller
         $perPage = min(max($request->integer('per_page', 25), 1), 100);
         $query = PurchaseReturn::query()
             ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
+            ->where('warehouse_id', $tenantContext->warehouseId())
             ->with(['supplier', 'warehouse', 'purchaseInvoice'])
             ->orderByDesc('return_date')
             ->orderByDesc('id');
@@ -85,7 +87,8 @@ class PurchaseReturnController extends Controller
         $this->authorize('create', PurchaseReturn::class);
 
         $data = $request->validate([
-            'purchase_ulid' => ['required', 'string', 'size:26'],
+            'purchase_ulid' => ['nullable', 'string', 'size:26'],
+            'supplier_ulid' => ['nullable', 'required_without:purchase_ulid', 'string', 'size:26'],
             'warehouse_ulid' => ['nullable', 'string', 'size:26'],
             'return_date' => ['nullable', 'date'],
             'supplier_reference' => ['nullable', 'string', 'max:100'],
@@ -117,6 +120,7 @@ class PurchaseReturnController extends Controller
 
         $data = $request->validate([
             'warehouse_ulid' => ['sometimes', 'required', 'string', 'size:26'],
+            'supplier_ulid' => ['sometimes', 'required', 'string', 'size:26'],
             'return_date' => ['sometimes', 'required', 'date'],
             'supplier_reference' => ['nullable', 'string', 'max:100'],
             'reason' => ['nullable', 'string', 'max:255'],
@@ -136,8 +140,10 @@ class PurchaseReturnController extends Controller
         $this->authorize('update', $document);
 
         $data = $request->validate([
-            'purchase_line_ulid' => ['required', 'string', 'size:26'],
+            'purchase_line_ulid' => ['nullable', 'string', 'size:26'],
+            'product_ulid' => ['nullable', 'string', 'size:26'],
             'quantity' => ['required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],
+            'unit_cost' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
             'discount_amount' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
             'tax_amount' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
             'batch_number' => ['nullable', 'string', 'max:100'],
@@ -164,8 +170,10 @@ class PurchaseReturnController extends Controller
         $line->loadMissing('purchaseInvoiceLine');
 
         $data = $request->validate([
-            'purchase_line_ulid' => ['sometimes', 'required', 'string', 'size:26'],
+            'purchase_line_ulid' => ['sometimes', 'nullable', 'string', 'size:26'],
+            'product_ulid' => ['sometimes', 'nullable', 'string', 'size:26'],
             'quantity' => ['sometimes', 'required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],
+            'unit_cost' => ['sometimes', 'nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
             'discount_amount' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
             'tax_amount' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
             'batch_number' => ['nullable', 'string', 'max:100'],
@@ -176,9 +184,13 @@ class PurchaseReturnController extends Controller
 
         $payload = [
             'purchase_line_ulid' => $data['purchase_line_ulid']
-                ?? $line->purchaseInvoiceLine?->ulid
-                ?? '',
+                ?? $line->purchaseInvoiceLine?->ulid,
+            'product_ulid' => $data['product_ulid']
+                ?? ($line->purchase_invoice_line_id === null ? $line->product?->ulid : null),
             'quantity' => $data['quantity'] ?? (string) $line->quantity,
+            'unit_cost' => array_key_exists('unit_cost', $data)
+                ? $data['unit_cost']
+                : (string) $line->unit_cost,
             'discount_amount' => array_key_exists('discount_amount', $data)
                 ? $data['discount_amount']
                 : (string) $line->discount_amount,
