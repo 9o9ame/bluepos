@@ -743,6 +743,7 @@ export function SalesReturnsPage() {
                           setSaleLabel('')
                           setSaleUlid('')
                           setLineQty({})
+                          setGeneralRows([])
                           setSalePickerOpen(true)
                         }}
                         onKeyDown={(e) => {
@@ -835,15 +836,12 @@ export function SalesReturnsPage() {
                         setCustomerSelectOpen((open) => !open)
                       }}
                       aria-expanded={customerSelectOpen}
-                      aria-label="Choose customer"
+                      aria-label="Choose customer or account"
                     >
                       <span>
-                        {customerFilterUlid
-                          ? (() => {
-                              const customer = (customersQuery.data ?? []).find((row) => row.ulid === customerFilterUlid)
-                              return customer ? `${customer.code} — ${customer.name}` : 'Selected customer'
-                            })()
-                          : 'All / CASH IN HAND'}
+                        {fromPartyUlid
+                          ? (customersQuery.data ?? []).find((row) => row.ulid === fromPartyUlid)?.name ?? 'Selected account'
+                          : 'Select customer / account'}
                       </span>
                       <span className="sales-return-detail-caret" aria-hidden="true">
                         <ChevronDown size={12} strokeWidth={2.75} />
@@ -859,73 +857,52 @@ export function SalesReturnsPage() {
                           className="ui-select-search"
                           value={customerDropdownSearch}
                           onChange={(event) => setCustomerDropdownSearch(event.target.value)}
-                          placeholder="Search customer..."
-                          aria-label="Search customers"
+                          placeholder="Search customer / account..."
+                          aria-label="Search customers and accounts"
                         />
                       </div>
                       <div className="sales-return-detail-head">
                         <span>Code</span>
                         <span>Name</span>
-                        <span>Address</span>
+                        <span>Type</span>
                         <span>Mobile</span>
                       </div>
                       <div className="sales-return-detail-body">
-                        {!customerDropdownSearch.trim() ? (
-                        <button
-                          type="button"
-                          className={`sales-return-detail-row${customerFilterUlid ? '' : ' is-selected'}`}
-                          onClick={() => {
-                            setCustomerFilterUlid('')
-                            setSaleUlid('')
-                            setSaleLabel('')
-                            setLineQty({})
-                            setCustomerSelectOpen(false)
-                            setSalePickerOpen(true)
-                          }}
-                        >
-                          <span>—</span>
-                          <strong>ALL / CASH IN HAND</strong>
-                          <span>Walk-in / all customers</span>
-                          <span>—</span>
-                        </button>
-                        ) : null}
                         {(customersQuery.data ?? [])
-                          .filter((customer) => {
+                          .filter((party) => party.is_active && (party.party_type === 'customer' || party.party_type === 'account'))
+                          .filter((party) => {
                             const query = customerDropdownSearch.trim().toLocaleLowerCase()
                             if (!query) return true
-                            return [customer.code, customer.name, customer.address, customer.mobile, customer.phone]
+                            return [party.code, party.name, party.address, party.mobile, party.phone]
                               .filter(Boolean)
                               .some((value) => String(value).toLocaleLowerCase().includes(query))
                           })
-                          .map((customer) => (
+                          .map((party) => (
                           <button
                             type="button"
-                            className={`sales-return-detail-row${customerFilterUlid === customer.ulid ? ' is-selected' : ''}`}
-                            key={customer.ulid}
+                            className={`sales-return-detail-row${fromPartyUlid === party.ulid ? ' is-selected' : ''}`}
+                            key={`${party.party_type}:${party.ulid}`}
                             onClick={() => {
-                              setCustomerFilterUlid(customer.ulid)
+                              setFromPartyUlid(party.ulid)
+                              setFromPartyType(party.party_type as 'customer' | 'account')
                               setSaleUlid('')
                               setSaleLabel('')
                               setLineQty({})
                               setCustomerSelectOpen(false)
-                              setSalePickerOpen(true)
+                              setSalePickerOpen(false)
                             }}
                           >
-                            <span>{customer.code || '—'}</span>
-                            <strong>{customer.name}</strong>
-                            <span>{customer.address || '—'}</span>
-                            <span>{customer.mobile || customer.phone || '—'}</span>
+                            <span>{party.code || '—'}</span>
+                            <strong>{party.name}</strong>
+                            <span>{party.party_type === 'account' ? 'Account' : 'Customer'}</span>
+                            <span>{party.mobile || party.phone || '—'}</span>
                           </button>
                         ))}
                       </div>
                       <div className="sales-return-detail-foot">
-                        {(customersQuery.data ?? []).filter((customer) => {
-                          const query = customerDropdownSearch.trim().toLocaleLowerCase()
-                          if (!query) return true
-                          return [customer.code, customer.name, customer.address, customer.mobile, customer.phone]
-                            .filter(Boolean)
-                            .some((value) => String(value).toLocaleLowerCase().includes(query))
-                        }).length + (customerDropdownSearch.trim() ? 0 : 1)} account(s)
+                        {(customersQuery.data ?? []).filter(
+                          (party) => party.is_active && (party.party_type === 'customer' || party.party_type === 'account'),
+                        ).length} customer/account option(s)
                       </div>
                     </div>
                   </div>
@@ -961,7 +938,7 @@ export function SalesReturnsPage() {
                         {salesmanFilterUlid
                           ? (() => {
                               const salesman = (salesmenQuery.data ?? []).find((row) => row.ulid === salesmanFilterUlid)
-                              return salesman ? `${salesman.code} — ${salesman.name}` : 'Selected salesman'
+                              return salesman ? salesman.name : 'Selected salesman'
                             })()
                           : 'All salesmen'}
                       </span>
@@ -1028,7 +1005,7 @@ export function SalesReturnsPage() {
                               setSaleLabel('')
                               setLineQty({})
                               setSalesmanSelectOpen(false)
-                              setSalePickerOpen(true)
+                              setSalePickerOpen(false)
                             }}
                           >
                             <span>{salesman.code || '—'}</span>
