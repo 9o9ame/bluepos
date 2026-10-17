@@ -101,7 +101,7 @@ function retailPrice(product: Product): string {
   return product.prices?.find((row) => row.is_active && row.price_type === 'retail')?.amount ?? '0.0000'
 }
 
-export function SalesReturnsPage() {
+export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
   const queryClient = useQueryClient()
   const feedback = useFeedback()
   const { session } = useAuth()
@@ -864,7 +864,13 @@ export function SalesReturnsPage() {
         void productWiseQuery.refetch()
       }
     },
-  })
+  }, active)
+
+  useEffect(() => {
+    if (active) return
+    setSalePickerOpen(false)
+    setGeneralProductPickerOpen(false)
+  }, [active])
 
   if (!canReturn) {
     return (
