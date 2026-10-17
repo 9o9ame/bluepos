@@ -4655,3 +4655,20 @@ html[data-theme='dark'] .sales-return-select-caret {
   color: var(--ui-danger);
   cursor: pointer;
 }
+
+
+.sales-return-general-product-edit {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  text-align: left;
+  cursor: text;
+}
+
+.sales-return-general-product-edit:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
