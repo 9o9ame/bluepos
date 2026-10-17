@@ -403,6 +403,21 @@ export function PurchaseReturnsPage({
   }
 
   useEffect(() => {
+    if (!active || view !== 'entry' || invoiceMode || readOnly) return
+
+    function handleProductShortcut(event: KeyboardEvent) {
+      if (event.key !== 'F1') return
+      event.preventDefault()
+      generalProductEntryRef.current?.focus()
+      generalProductEntryRef.current?.select()
+      setGeneralProductPickerOpen(true)
+    }
+
+    window.addEventListener('keydown', handleProductShortcut)
+    return () => window.removeEventListener('keydown', handleProductShortcut)
+  }, [active, invoiceMode, readOnly, view])
+
+  useEffect(() => {
     if (!purchasePickerOpen) return
 
     function handlePointerDown(event: MouseEvent) {
