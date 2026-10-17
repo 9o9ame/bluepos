@@ -8,6 +8,7 @@ use App\Enums\PurchaseInvoiceStatus;
 use App\Enums\PurchaseReturnStatus;
 use App\Enums\StockMovementType;
 use App\Enums\WarehouseStatus;
+use App\Exceptions\ApiException;
 use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceLine;
 use App\Models\PurchaseReturn;
@@ -46,22 +47,34 @@ class PostPurchaseReturnAction
                 return $document->fresh(CreatePurchaseReturnAction::with()) ?? $document;
             }
 
+            if ($document->branch_id !== $this->tenantContext->branchId()
+                || $document->warehouse_id !== $this->tenantContext->warehouseId()) {
+                throw ValidationException::withMessages([
+                    'warehouse_ulid' => 'Switch to the return branch and warehouse before posting this purchase return.',
+                ]);
+            }
+
             if ($document->lines->isEmpty()) {
                 throw ValidationException::withMessages([
                     'lines' => 'Add at least one return line before posting.',
                 ]);
             }
 
-            $invoice = PurchaseInvoice::query()
-                ->forTenant($this->tenantContext->tenantId())
-                ->whereKey($document->purchase_invoice_id)
-                ->lockForUpdate()
-                ->first();
+            $invoiceMode = $document->purchase_invoice_id !== null;
+            $invoice = null;
 
-            if (! $invoice || $invoice->status !== PurchaseInvoiceStatus::Posted) {
-                throw ValidationException::withMessages([
-                    'purchase_ulid' => 'Original purchase invoice must remain posted.',
-                ]);
+            if ($invoiceMode) {
+                $invoice = PurchaseInvoice::query()
+                    ->forTenant($this->tenantContext->tenantId())
+                    ->whereKey($document->purchase_invoice_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $invoice || $invoice->status !== PurchaseInvoiceStatus::Posted) {
+                    throw ValidationException::withMessages([
+                        'purchase_ulid' => 'Original purchase invoice must remain posted.',
+                    ]);
+                }
             }
 
             $warehouse = $document->warehouse;
@@ -71,45 +84,60 @@ class PostPurchaseReturnAction
                 ]);
             }
 
+            if (! $document->supplier || ! $document->supplier->is_active) {
+                throw ValidationException::withMessages([
+                    'supplier_ulid' => 'An active supplier is required before posting a purchase return.',
+                ]);
+            }
+
             $this->recalculate->execute($document);
             $this->accounting->execute($document);
 
             foreach ($document->lines as $line) {
                 /** @var PurchaseReturnLine $line */
-                $purchaseLine = PurchaseInvoiceLine::query()
-                    ->whereKey($line->purchase_invoice_line_id)
-                    ->where('purchase_invoice_id', $invoice->id)
-                    ->lockForUpdate()
-                    ->first();
-
-                if (! $purchaseLine) {
-                    throw ValidationException::withMessages([
-                        'purchase_line_ulid' => 'A return line references an invalid purchase line.',
-                    ]);
-                }
-
                 $product = $line->product;
                 if (! $product || $product->status !== ProductStatus::Active || ! $product->is_active) {
                     throw ValidationException::withMessages([
                         'product_ulid' => 'Purchase returns cannot be posted for an inactive product.',
                     ]);
                 }
-                if ($product->track_batch && (! is_string($line->batch_number) || $line->batch_number === '')) {
-                    throw ValidationException::withMessages([
-                        'batch_number' => 'Batch number is required for this product.',
-                    ]);
-                }
-                if ($product->track_expiry && $line->expiry_date === null) {
-                    throw ValidationException::withMessages([
-                        'expiry_date' => 'Expiry date is required for this product.',
-                    ]);
-                }
 
-                $this->recalculate->assertReturnable(
-                    $purchaseLine,
-                    (string) $line->base_quantity,
-                    $document->id,
-                );
+                if ($invoiceMode) {
+                    $purchaseLine = PurchaseInvoiceLine::query()
+                        ->whereKey($line->purchase_invoice_line_id)
+                        ->where('purchase_invoice_id', $invoice?->id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $purchaseLine) {
+                        throw ValidationException::withMessages([
+                            'purchase_line_ulid' => 'A return line references an invalid purchase line.',
+                        ]);
+                    }
+
+                    if ($product->track_batch && (! is_string($line->batch_number) || $line->batch_number === '')) {
+                        throw ValidationException::withMessages([
+                            'batch_number' => 'Batch number is required for this product.',
+                        ]);
+                    }
+                    if ($product->track_expiry && $line->expiry_date === null) {
+                        throw ValidationException::withMessages([
+                            'expiry_date' => 'Expiry date is required for this product.',
+                        ]);
+                    }
+
+                    $this->recalculate->assertReturnable(
+                        $purchaseLine,
+                        (string) $line->base_quantity,
+                        $document->id,
+                    );
+                } elseif ($line->purchase_invoice_line_id !== null) {
+                    throw new ApiException(
+                        'GENERAL_PURCHASE_RETURN_LINE_INVALID',
+                        'General purchase return lines cannot reference an original purchase line.',
+                        422,
+                    );
+                }
 
                 $inventoryUnitCost = $this->recalculate->inventoryUnitCost(
                     (string) $line->unit_cost,
@@ -130,6 +158,7 @@ class PostPurchaseReturnAction
                     'occurred_at' => $document->return_date?->copy()->startOfDay() ?? now(),
                     'idempotency_key' => 'purchase_return:'.$document->ulid.':'.$line->ulid,
                     'update_average_cost' => false,
+                    'notes' => $line->reason,
                 ]);
             }
 
@@ -142,7 +171,10 @@ class PostPurchaseReturnAction
             $this->audit->record('PURCHASE_RETURN_POSTED', [
                 'resource_type' => 'purchase_return',
                 'resource_ulid' => $document->ulid,
+                'purchase_ulid' => $document->purchaseInvoice?->ulid,
+                'return_mode' => $invoiceMode ? 'invoice' : 'general',
                 'line_count' => $document->lines->count(),
+                'grand_total' => (string) $document->grand_total,
             ]);
 
             return $document->fresh(CreatePurchaseReturnAction::with()) ?? $document;
