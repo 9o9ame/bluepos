@@ -854,7 +854,7 @@ export function QuotationEstimatePage() {
                     <td />
                   </tr>
                 ) : null}
-                {readOnly && (activeQuotation?.items.length ?? 0) === 0 ? (
+                {readOnly && (activeQuotation?.items?.length ?? 0) === 0 ? (
                   <tr>
                     <td colSpan={9} className="quotation-empty">
                       No quotation lines found.
