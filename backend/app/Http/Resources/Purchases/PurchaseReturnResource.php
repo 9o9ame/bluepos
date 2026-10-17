@@ -21,6 +21,7 @@ class PurchaseReturnResource extends JsonResource
             'document_number' => $this->document_number,
             'return_date' => $this->return_date?->toDateString(),
             'status' => $this->status->value,
+            'return_mode' => $this->purchase_invoice_id === null ? 'general' : 'invoice',
             'subtotal' => $this->subtotal,
             'discount_amount' => $this->discount_amount,
             'tax_amount' => $this->tax_amount,
@@ -30,6 +31,10 @@ class PurchaseReturnResource extends JsonResource
             'notes' => $this->notes,
             'posted_at' => $this->posted_at?->toIso8601String(),
             'original_purchase' => $this->whenLoaded('purchaseInvoice', function () {
+                if (! $this->purchaseInvoice) {
+                    return null;
+                }
+
                 return [
                     'ulid' => $this->purchaseInvoice->ulid,
                     'document_number' => $this->purchaseInvoice->document_number,
