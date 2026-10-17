@@ -11,6 +11,7 @@ import {
   deletePurchaseReturnLine,
   fetchPostedPurchases,
   fetchPurchaseReturn,
+  fetchPurchaseReturnProductWise,
   fetchPurchaseReturns,
   fetchReturnableLines,
   postPurchaseReturn,
@@ -125,6 +126,8 @@ export function PurchaseReturnsPage({
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [selectedListKey, setSelectedListKey] = useState<string | null>(null)
+  const [productDateFrom, setProductDateFrom] = useState(today())
+  const [productDateTo, setProductDateTo] = useState(today())
 
   const [document, setDocument] = useState<PurchaseReturn | null>(null)
   const [purchaseUlid, setPurchaseUlid] = useState('')
@@ -189,6 +192,19 @@ export function PurchaseReturnsPage({
     queryKey: ['returnable-lines', purchaseUlid],
     queryFn: () => fetchReturnableLines(purchaseUlid),
     enabled: Boolean(purchaseUlid) && view === 'entry',
+    retry: false,
+  })
+
+
+  const productWiseQuery = useQuery({
+    queryKey: ['purchase-returns', 'product-wise', productDateFrom, productDateTo],
+    queryFn: () =>
+      fetchPurchaseReturnProductWise({
+        date_from: productDateFrom || undefined,
+        date_to: productDateTo || undefined,
+        per_page: 100,
+      }),
+    enabled: canView && view === 'product',
     retry: false,
   })
 
@@ -642,6 +658,8 @@ export function PurchaseReturnsPage({
       refresh: () => {
         if (view === 'search') {
           void listQuery.refetch()
+        } else if (view === 'product') {
+          void productWiseQuery.refetch()
         } else if (view === 'entry') {
           if (document?.ulid) {
             void openMutation.mutateAsync(document.ulid).catch(handleError)
@@ -1504,13 +1522,79 @@ export function PurchaseReturnsPage({
 
       {view === 'product' ? (
         <div className="purchase-return-product-view">
-          <div className="purchase-return-product-placeholder">
-            <FileText size={22} />
-            <strong>Product Wise Purchase Return</strong>
-            <span>
-              Product-wise server aggregation is not available in the current Purchase Return API yet.
-              This tab remains reserved without fabricating financial totals.
-            </span>
+          <div className="purchase-return-product-filters">
+            <label>From Date</label>
+            <input
+              className="desktop-input"
+              type="date"
+              value={productDateFrom}
+              onChange={(event) => setProductDateFrom(event.target.value)}
+            />
+            <label>To Date</label>
+            <input
+              className="desktop-input"
+              type="date"
+              value={productDateTo}
+              onChange={(event) => setProductDateTo(event.target.value)}
+            />
+            <UiButton variant="primary" onClick={() => void productWiseQuery.refetch()}>
+              Show
+            </UiButton>
+          </div>
+
+          {productWiseQuery.isError ? (
+            <div className="purchase-return-error">
+              Could not load Product Wise Purchase Return data. Use Show or Refresh to try again.
+            </div>
+          ) : null}
+
+          <div className="purchase-return-product-grid">
+            <PosDataGrid
+              columns={[
+                { key: 'return_number', header: 'Return #', width: 110 },
+                { key: 'return_date', header: 'Date', width: 100 },
+                {
+                  key: 'supplier',
+                  header: 'Supplier',
+                  render: (row) => row.supplier?.name ?? '—',
+                },
+                {
+                  key: 'purchase',
+                  header: 'Purchase #',
+                  width: 125,
+                  render: (row) => row.purchase?.document_number ?? 'GENERAL',
+                },
+                {
+                  key: 'product',
+                  header: 'Product',
+                  render: (row) => `${row.product.product_number} — ${row.product.name}`,
+                },
+                {
+                  key: 'category',
+                  header: 'Category',
+                  width: 130,
+                  render: (row) => row.category?.name ?? '—',
+                },
+                {
+                  key: 'unit',
+                  header: 'Unit',
+                  width: 80,
+                  render: (row) => row.unit?.code ?? '—',
+                },
+                { key: 'quantity_out', header: 'Qty (-)', width: 100, align: 'right' },
+                { key: 'amount', header: 'Amount', width: 115, align: 'right' },
+              ]}
+              rows={productWiseQuery.data?.data ?? []}
+              rowKey={(row) => row.ulid}
+              onActivate={(row) =>
+                void openMutation.mutateAsync(row.return_ulid).catch(handleError)
+              }
+              emptyMessage={
+                productWiseQuery.isFetching
+                  ? 'Loading posted Purchase Return product activity…'
+                  : 'No posted Purchase Return product activity in this period.'
+              }
+            />
           </div>
         </div>
       ) : null}
