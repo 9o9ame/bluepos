@@ -948,6 +948,7 @@ export function SalesReturnsPage() {
                     disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
                     placeholder="Select customer / account"
                     searchable
+                    searchInTrigger
                     searchPlaceholder="Search customer / account"
                     aria-label="Customer or account"
                     menuMinWidth={520}
@@ -1001,6 +1002,7 @@ export function SalesReturnsPage() {
                     disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
                     placeholder="No salesman"
                     searchable
+                    searchInTrigger
                     searchPlaceholder="Search salesman"
                     aria-label="Salesman"
                     menuMinWidth={620}
