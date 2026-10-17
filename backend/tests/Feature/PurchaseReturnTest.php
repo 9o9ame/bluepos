@@ -449,6 +449,97 @@ class PurchaseReturnTest extends TestCase
         );
     }
 
+    public function test_general_purchase_return_can_add_products_without_purchase_invoice(): void
+    {
+        $this->signInOwner('pr-general')->assertOk();
+        $this->configurePurchaseClearing();
+
+        $context = app(TenantContext::class);
+        $warehouseUlid = $this->sessionWarehouseUlid();
+        $pcs = $this->unitUlid('PCS');
+
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-PR-GEN',
+            'name' => 'General Return Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'General Purchase Return Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $product = Product::query()->where('ulid', $productUlid)->firstOrFail();
+
+        StockBalance::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'warehouse_id' => $context->warehouseId(),
+            'product_id' => $product->id,
+            'quantity' => '10.000000',
+            'average_cost' => '7.0000',
+            'stock_value' => '70.0000',
+        ]);
+
+        $document = $this->postJson('/api/purchase-returns', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'reason' => 'Direct supplier return',
+        ])->assertCreated()
+            ->assertJsonPath('return_mode', 'general')
+            ->assertJsonPath('original_purchase', null)
+            ->assertJsonPath('supplier.ulid', $supplierUlid);
+
+        $returnUlid = $document->json('ulid');
+
+        $line = $this->postJson('/api/purchase-returns/'.$returnUlid.'/lines', [
+            'product_ulid' => $productUlid,
+            'quantity' => '2.000000',
+            'unit_cost' => '9.0000',
+            'discount_amount' => '1.0000',
+            'tax_amount' => '0.0000',
+        ])->assertCreated()
+            ->assertJsonPath('original_purchase_line_ulid', null)
+            ->assertJsonPath('quantity', '2.000000')
+            ->assertJsonPath('unit_cost', '9.0000')
+            ->assertJsonPath('line_total', '17.0000');
+
+        $this->assertNoInternalIds($line->json());
+
+        $this->postJson('/api/purchase-returns/'.$returnUlid.'/lines', [
+            'product_ulid' => $productUlid,
+            'quantity' => '1.000000',
+            'unit_cost' => '9.0000',
+        ])->assertStatus(422);
+
+        $posted = $this->postJson('/api/purchase-returns/'.$returnUlid.'/post')
+            ->assertOk()
+            ->assertJsonPath('status', 'posted')
+            ->assertJsonPath('return_mode', 'general')
+            ->assertJsonPath('grand_total', '17.0000');
+
+        $this->assertNoInternalIds($posted->json());
+
+        $movement = StockMovement::query()
+            ->where('movement_type', 'purchase_return')
+            ->where('reference_ulid', $returnUlid)
+            ->firstOrFail();
+
+        $this->assertSame('-2.000000', (string) $movement->quantity);
+        $this->assertSame('7.0000', (string) $movement->unit_cost);
+        $this->assertSame('8.000000', (string) StockBalance::query()->firstOrFail()->quantity);
+        $this->assertSame('7.0000', (string) StockBalance::query()->firstOrFail()->average_cost);
+
+        $this->assertNotNull(
+            JournalEntry::query()
+                ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_RETURN)
+                ->first()
+        );
+
+        $this->patchJson('/api/purchase-returns/'.$returnUlid, [
+            'notes' => 'No edit after post',
+        ])->assertStatus(422)->assertJsonPath('error.key', 'DOCUMENT_POSTED');
+    }
+
     private function configurePurchaseClearing(): void
     {
         $tenantContext = app(TenantContext::class);
