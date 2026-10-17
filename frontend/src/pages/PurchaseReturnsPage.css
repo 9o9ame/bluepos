@@ -1306,3 +1306,59 @@
     grid-column: 1 / -1;
   }
 }
+
+
+/* Amount + Discount share the complete first row width. */
+.purchase-return-amounts {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.purchase-return-amounts > div:nth-child(1),
+.purchase-return-amounts > div:nth-child(2) {
+  grid-column: span 1;
+  min-width: 0;
+}
+
+.purchase-return-amounts > div:nth-child(1) > strong,
+.purchase-return-amounts > div:nth-child(2) > strong {
+  min-width: 0;
+  width: 100%;
+}
+
+.purchase-return-amounts > div:nth-child(3),
+.purchase-return-amounts > div:nth-child(4),
+.purchase-return-amounts > div:nth-child(5),
+.purchase-return-amounts > div.is-net {
+  grid-column: auto;
+}
+
+.purchase-return-amounts > div:nth-child(3) {
+  grid-column: 1 / 2;
+}
+
+.purchase-return-amounts > div:nth-child(4) {
+  grid-column: 2 / 3;
+}
+
+.purchase-return-amounts > div:nth-child(5),
+.purchase-return-amounts > div.is-net {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 861px) {
+  .purchase-return-amounts {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .purchase-return-amounts > div:nth-child(1),
+  .purchase-return-amounts > div:nth-child(2) {
+    grid-column: span 3;
+  }
+
+  .purchase-return-amounts > div:nth-child(3),
+  .purchase-return-amounts > div:nth-child(4),
+  .purchase-return-amounts > div:nth-child(5),
+  .purchase-return-amounts > div.is-net {
+    grid-column: span 2;
+  }
+}
