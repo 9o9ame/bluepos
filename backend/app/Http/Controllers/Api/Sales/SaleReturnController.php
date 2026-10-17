@@ -38,7 +38,7 @@ class SaleReturnController extends Controller
             ->forTenant($tenantContext->tenantId())
             ->where('branch_id', $tenantContext->branchId())
             ->where('warehouse_id', $tenantContext->warehouseId())
-            ->with(['sale', 'customer', 'salesmanParty', 'branch', 'warehouse'])
+            ->with(['sale', 'customer', 'settlementAccount', 'salesmanParty', 'branch', 'warehouse'])
             ->withSum('refunds as refunded_amount', 'amount')
             ->orderByDesc('return_date')
             ->orderByDesc('id');
@@ -53,6 +53,10 @@ class SaleReturnController extends Controller
                     ->orWhereHas('sale', fn ($sale) => $sale->where('document_number', 'ilike', $term))
                     ->orWhereHas('customer', function ($customer) use ($term): void {
                         $customer->where('name', 'ilike', $term)
+                            ->orWhere('code', 'ilike', $term);
+                    })
+                    ->orWhereHas('settlementAccount', function ($account) use ($term): void {
+                        $account->where('name', 'ilike', $term)
                             ->orWhere('code', 'ilike', $term);
                     })
                     ->orWhereHas('salesmanParty', function ($salesman) use ($term): void {
