@@ -4560,3 +4560,98 @@ html[data-theme='dark'] .sales-return-select-caret {
 .sales-return-detail-dropdown.is-open .sales-return-detail-body {
   max-height: 210px;
 }
+
+
+/* General Sales Return mode: reference-style editable row entry without changing shared control visuals. */
+.sales-return-grid.is-general th:nth-child(1) { width: 42%; }
+.sales-return-grid.is-general th:nth-child(2) { width: 10%; }
+.sales-return-grid.is-general th:nth-child(3) { width: 11%; }
+.sales-return-grid.is-general th:nth-child(4) { width: 10%; }
+.sales-return-grid.is-general th:nth-child(5) { width: 9%; }
+.sales-return-grid.is-general th:nth-child(6) { width: 8%; }
+.sales-return-grid.is-general th:nth-child(7) { width: 9%; }
+.sales-return-grid.is-general th:nth-child(8) { width: 1%; }
+
+.sales-return-grid.is-general td.is-edit input,
+.sales-return-general-product-cell > input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: var(--control-height-compact, 24px);
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+}
+
+.sales-return-grid.is-general td.is-edit input {
+  text-align: right;
+}
+
+.sales-return-grid.is-general td.is-edit input:focus,
+.sales-return-general-product-cell > input:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.sales-return-general-product-cell {
+  position: relative;
+  overflow: visible !important;
+}
+
+.sales-return-general-product-results {
+  position: absolute;
+  z-index: 3;
+  inset: calc(100% + 2px) 0 auto 0;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-select-menu-bg);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.sales-return-general-product-results > button {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) 90px;
+  width: 100%;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--ui-table-border);
+  background: transparent;
+  color: var(--ui-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.sales-return-general-product-results > button:hover,
+.sales-return-general-product-results > button:focus-visible {
+  background: var(--ui-select-hover-bg);
+  color: var(--ui-select-hover-text);
+  outline: none;
+}
+
+.sales-return-general-product-results > button span:last-child {
+  text-align: right;
+}
+
+.sales-return-general-product-results > div,
+.sales-return-general-entry-hint {
+  padding: 7px 9px;
+  color: var(--ui-text-muted);
+}
+
+.sales-return-general-delete {
+  text-align: center;
+}
+
+.sales-return-general-delete button {
+  border: 0;
+  background: transparent;
+  color: var(--ui-danger);
+  cursor: pointer;
+}
