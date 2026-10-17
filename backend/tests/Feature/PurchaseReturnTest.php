@@ -526,8 +526,12 @@ class PurchaseReturnTest extends TestCase
 
         $this->assertSame('-2.000000', (string) $movement->quantity);
         $this->assertSame('7.0000', (string) $movement->unit_cost);
-        $this->assertSame('8.000000', (string) StockBalance::query()->firstOrFail()->quantity);
-        $this->assertSame('7.0000', (string) StockBalance::query()->firstOrFail()->average_cost);
+        $balance = StockBalance::query()
+            ->where('warehouse_id', $context->warehouseId())
+            ->where('product_id', $product->id)
+            ->firstOrFail();
+        $this->assertSame('8.000000', (string) $balance->quantity);
+        $this->assertSame('7.0000', (string) $balance->average_cost);
 
         $this->assertNotNull(
             JournalEntry::query()
