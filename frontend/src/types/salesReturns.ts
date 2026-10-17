@@ -40,7 +40,9 @@ export type SaleReturnLine = {
   stock_quantity: string
   unit_price: string
   gross_amount: string
+  discount_percent: string
   discount_amount: string
+  tax_percent: string
   tax_amount: string
   line_total: string
   reason: string | null
@@ -58,6 +60,7 @@ export type SaleReturn = {
   document_number: string
   return_date: string
   status: SaleReturnStatus
+  return_mode: 'general' | 'invoice'
   subtotal: string
   discount_amount: string
   tax_amount: string
@@ -75,6 +78,7 @@ export type SaleReturn = {
     grand_total: string
   } | null
   customer?: SaleReturnRef | null
+  settlement_account?: SaleReturnRef | null
   salesman?: SaleReturnRef | null
   branch?: SaleReturnRef | null
   warehouse?: SaleReturnRef | null
