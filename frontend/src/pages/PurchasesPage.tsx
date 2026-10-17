@@ -578,7 +578,7 @@ export function PurchasesPage({
   const stockQueries = useQueries({
     queries: lineProductUlids.map((productUlid) => ({
       queryKey: ['purchase-line-stock', productUlid, warehouseUlid] as const,
-      queryFn: () => fetchProductStock(productUlid),
+      queryFn: () => fetchProductStock(productUlid, { busy: 'none' }),
       enabled: mode === 'editor' && Boolean(productUlid && warehouseUlid),
       staleTime: 30_000,
     })),
@@ -1879,16 +1879,7 @@ export function PurchasesPage({
       }
     }
 
-    let unitCost = '0.0000'
-    if (warehouseUlid) {
-      try {
-        const stock = await fetchProductStock(product.ulid)
-        const match = stock.warehouses.find((row) => row.warehouse.ulid === warehouseUlid)
-        unitCost = moneyOrZero(match?.average_cost)
-      } catch {
-        // Keep zero trade price when stock lookup fails; operator can type cost.
-      }
-    }
+    const unitCost = moneyOrZero(product.sales_lookup?.average_cost)
 
     const retail = activeRetailAmount(product)
     const productTax = moneyOrZero(product.tax_percent)
@@ -2400,9 +2391,13 @@ export function PurchasesPage({
             <label className="pie-field">
               <span>Invoice Type</span>
               <UiSelect menuMotion="reveal"
+                className="pie-inline-search-select"
                 aria-label="Invoice Type"
                 value={shellInvoiceType}
                 disabled={!editable}
+                searchable
+                searchInTrigger
+                searchPlaceholder="Search invoice type"
                 options={[
                   { value: 'tax_gst', label: 'Tax Invoice (GST)' },
                   { value: 'commercial', label: 'Commercial Invoice' },
@@ -2414,9 +2409,13 @@ export function PurchasesPage({
             <label className="pie-field">
               <span>Currency</span>
               <UiSelect menuMotion="reveal"
+                className="pie-inline-search-select"
                 aria-label="Currency"
                 value={shellCurrency}
                 disabled={!editable}
+                searchable
+                searchInTrigger
+                searchPlaceholder="Search currency"
                 options={[
                   { value: 'PKR', label: 'PKR' },
                   { value: 'USD', label: 'USD' },
@@ -2810,9 +2809,13 @@ export function PurchasesPage({
             <label className="pie-field">
               <span>Terms</span>
               <UiSelect menuMotion="reveal"
+                className="pie-inline-search-select"
                 aria-label="Payment Terms"
                 value={shellPaymentTerms}
                 disabled={!editable}
+                searchable
+                searchInTrigger
+                searchPlaceholder="Search terms"
                 options={[
                   { value: 'credit', label: 'Credit' },
                   { value: 'cash', label: 'Cash' },
