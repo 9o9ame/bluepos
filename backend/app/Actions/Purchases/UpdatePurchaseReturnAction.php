@@ -43,8 +43,30 @@ class UpdatePurchaseReturnAction
                         'warehouse_ulid' => 'Purchase returns cannot use an inactive warehouse.',
                     ]);
                 }
+                if ((int) $warehouse->branch_id !== $this->tenantContext->branchId()
+                    || (int) $warehouse->id !== $this->tenantContext->warehouseId()) {
+                    throw ValidationException::withMessages([
+                        'warehouse_ulid' => 'Switch to the selected branch and warehouse before editing this purchase return.',
+                    ]);
+                }
                 $document->warehouse_id = $warehouse->id;
                 $document->branch_id = $warehouse->branch_id;
+            }
+
+            if (array_key_exists('supplier_ulid', $data)) {
+                if ($document->purchase_invoice_id !== null) {
+                    throw ValidationException::withMessages([
+                        'supplier_ulid' => 'Supplier is fixed by the original purchase invoice.',
+                    ]);
+                }
+
+                $supplier = $this->catalog->supplier((string) $data['supplier_ulid']);
+                if (! $supplier->is_active) {
+                    throw ValidationException::withMessages([
+                        'supplier_ulid' => 'Purchase returns cannot use an inactive supplier.',
+                    ]);
+                }
+                $document->supplier_id = $supplier->id;
             }
 
             foreach (['return_date', 'supplier_reference', 'reason', 'notes'] as $field) {
@@ -60,6 +82,7 @@ class UpdatePurchaseReturnAction
             $this->audit->record('PURCHASE_RETURN_UPDATED', [
                 'resource_type' => 'purchase_return',
                 'resource_ulid' => $document->ulid,
+                'return_mode' => $document->purchase_invoice_id === null ? 'general' : 'invoice',
             ]);
 
             return $document->fresh(CreatePurchaseReturnAction::with()) ?? $document;
