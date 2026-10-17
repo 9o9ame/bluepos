@@ -928,6 +928,33 @@ export function SalesInvoicePage({
               (row) => row.is_active && row.barcode === scannedValue,
             ) ?? null
 
+      const selectedUnit = scannedBarcode?.unit ?? product.base_unit ?? null
+      const selectedBarcode = scannedBarcode?.barcode ?? null
+      const existingLine = !replaceLineKey
+        ? cart.lines.find(
+            (line) =>
+              line.line_kind === 'sale' &&
+              line.product_ulid === product.ulid &&
+              (line.unit_ulid ?? null) === (selectedUnit?.ulid ?? null) &&
+              (line.barcode ?? null) === selectedBarcode,
+          )
+        : null
+
+      if (existingLine) {
+        const nextQuantity =
+          (Number.parseFloat(existingLine.quantity) || 0) + 1
+        cart.setQuantity(existingLine.line_key, nextQuantity.toFixed(6))
+
+        setActiveLineKey(existingLine.line_key)
+        setActiveProductQuery(`${existingLine.product_number} — ${existingLine.product_name}`)
+        setActiveProductPickerOpen(false)
+        setProductQuery('')
+        setBarcodeQuery('')
+        setSaveError(null)
+        focusLineQuantity(existingLine.line_key)
+        return
+      }
+
       if (
         !replaceLineKey &&
         saleSoftwareOptions?.disallow_duplicate_products &&
@@ -935,7 +962,7 @@ export function SalesInvoicePage({
           (line) => line.line_kind === 'sale' && line.product_ulid === product.ulid,
         )
       ) {
-        throw new Error(`${product.name} is already on this invoice.`)
+        throw new Error(`${product.name} is already on this invoice with a different unit or barcode.`)
       }
 
       const lineKey = replaceLineKey ?? cart.addProduct(
@@ -1067,16 +1094,19 @@ export function SalesInvoicePage({
     },
   })
 
-  function finishActiveLine(lineKey: string) {
+  function finishActiveLine(lineKey: string, focusNext = true) {
     if (activeLineKey !== lineKey) return
 
     setActiveLineKey(null)
     setActiveProductQuery('')
     setActiveProductPickerOpen(false)
-    window.setTimeout(() => {
-      productSearchRef.current?.focus()
-      productSearchRef.current?.select()
-    }, 0)
+
+    if (focusNext) {
+      window.setTimeout(() => {
+        productSearchRef.current?.focus()
+        productSearchRef.current?.select()
+      }, 0)
+    }
   }
 
   function reopenCompletedLine(line: SaleDraftLine) {
@@ -1179,6 +1209,37 @@ export function SalesInvoicePage({
     if (!activeLineKey) return
     focusLineQuantity(activeLineKey)
   }, [activeLineKey])
+  useEffect(() => {
+    if (!activeLineKey || savedSale || view !== 'pos') return
+
+    function handleOutsideActiveRow(event: MouseEvent) {
+      const target = event.target
+      if (!(target instanceof Node)) return
+
+      const row = globalThis.document.querySelector<HTMLElement>(
+        `[data-sale-line="${activeLineKey}"]`,
+      )
+      if (row?.contains(target)) return
+
+      if (
+        target instanceof Element &&
+        target.closest('.sales-pos-product-results-grid')
+      ) {
+        return
+      }
+
+      const line = cart.lines.find((item) => item.line_key === activeLineKey)
+      const quantity = Number.parseFloat(line?.quantity ?? '')
+      if (!line || !Number.isFinite(quantity) || quantity <= 0) return
+
+      setSaveError(null)
+      finishActiveLine(activeLineKey, false)
+    }
+
+    window.addEventListener('mousedown', handleOutsideActiveRow)
+    return () => window.removeEventListener('mousedown', handleOutsideActiveRow)
+  }, [activeLineKey, cart.lines, savedSale, view])
+
 
 
   function parkCurrentCart() {
