@@ -107,36 +107,38 @@ class RefundSaleReturnAction
                 ]);
             }
 
-            $collectedByMethod = bcadd(
-                (string) SalePayment::query()
-                    ->where('tenant_id', $tenantId)
-                    ->where('sale_id', $document->sale_id)
-                    ->where('method', $method->value)
-                    ->sum('amount'),
-                '0',
-                4,
-            );
+            if ($document->sale_id !== null) {
+                $collectedByMethod = bcadd(
+                    (string) SalePayment::query()
+                        ->where('tenant_id', $tenantId)
+                        ->where('sale_id', $document->sale_id)
+                        ->where('method', $method->value)
+                        ->sum('amount'),
+                    '0',
+                    4,
+                );
 
-            $alreadyRefundedByMethod = bcadd(
-                (string) SaleReturnRefund::query()
-                    ->where('tenant_id', $tenantId)
-                    ->where('method', $method->value)
-                    ->whereHas('saleReturn', fn ($query) => $query->where('sale_id', $document->sale_id))
-                    ->sum('amount'),
-                '0',
-                4,
-            );
+                $alreadyRefundedByMethod = bcadd(
+                    (string) SaleReturnRefund::query()
+                        ->where('tenant_id', $tenantId)
+                        ->where('method', $method->value)
+                        ->whereHas('saleReturn', fn ($query) => $query->where('sale_id', $document->sale_id))
+                        ->sum('amount'),
+                    '0',
+                    4,
+                );
 
-            $availableByMethod = bcsub($collectedByMethod, $alreadyRefundedByMethod, 4);
-            if (bccomp($availableByMethod, '0', 4) < 0) {
-                $availableByMethod = '0.0000';
-            }
+                $availableByMethod = bcsub($collectedByMethod, $alreadyRefundedByMethod, 4);
+                if (bccomp($availableByMethod, '0', 4) < 0) {
+                    $availableByMethod = '0.0000';
+                }
 
-            if (bccomp($amount, $availableByMethod, 4) > 0) {
-                throw ValidationException::withMessages([
-                    'amount' => ucfirst($method->value).' refund cannot exceed the unrefunded '
-                        .$method->value.' payment amount of '.$availableByMethod.'.',
-                ]);
+                if (bccomp($amount, $availableByMethod, 4) > 0) {
+                    throw ValidationException::withMessages([
+                        'amount' => ucfirst($method->value).' refund cannot exceed the unrefunded '
+                            .$method->value.' payment amount of '.$availableByMethod.'.',
+                    ]);
+                }
             }
 
             if ($method === SalePaymentMethod::Credit) {
@@ -235,6 +237,21 @@ class RefundSaleReturnAction
         }
 
         $tenantId = (int) $document->tenant_id;
+
+        if ($document->sale_id === null) {
+            $refunded = bcadd(
+                (string) SaleReturnRefund::query()
+                    ->where('tenant_id', $tenantId)
+                    ->where('sale_return_id', $document->id)
+                    ->sum('amount'),
+                '0',
+                4,
+            );
+
+            $remaining = bcsub((string) $document->grand_total, $refunded, 4);
+
+            return bccomp($remaining, '0', 4) < 0 ? '0.0000' : $remaining;
+        }
 
         $sale = Sale::query()
             ->forTenant($tenantId)
@@ -339,10 +356,27 @@ class RefundSaleReturnAction
             );
         }
 
+        $debit = $document->settlement_account_id !== null
+            ? Account::query()
+                ->forTenant($tenantId)
+                ->whereKey((int) $document->settlement_account_id)
+                ->where('is_active', true)
+                ->first()
+            : null;
+
+        if ($document->settlement_account_id !== null && ! $debit) {
+            throw new ApiException(
+                'SALE_RETURN_SETTLEMENT_ACCOUNT_REQUIRED',
+                'The selected sales return account is missing or inactive.',
+                422,
+            );
+        }
+
         return [
-            $document->customer_id !== null
-                ? $this->receivableAccount($document)
-                : $this->clearingAccount($settings, $tenantId),
+            $debit
+                ?? ($document->customer_id !== null
+                    ? $this->receivableAccount($document)
+                    : $this->clearingAccount($settings, $tenantId)),
             $cash,
         ];
     }
