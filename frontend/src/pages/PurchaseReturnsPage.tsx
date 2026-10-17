@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CheckCircle2, Plus, RefreshCw, Save, Trash2, X } from 'lucide-react'
+import { CheckCircle2, ChevronDown, FileText, RefreshCw, RotateCcw, Save, Search, Trash2, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { fetchSuppliers } from '../api/catalog'
@@ -19,14 +19,17 @@ import {
 } from '../api/purchaseReturns'
 import { ApiClientError } from '../api/client'
 import { askConfirm } from '../feedback/FeedbackProvider'
-import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
+import { DesktopButton } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { UiSelect } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
+import type { PurchaseInvoice } from '../types/purchases'
 import type { PurchaseReturn, ReturnablePurchaseLine } from '../types/purchaseReturns'
 import './PurchaseReturnsPage.css'
+
+type ViewMode = 'entry' | 'search' | 'product'
 
 function today(): string {
   return new Date().toISOString().slice(0, 10)
@@ -35,6 +38,11 @@ function today(): string {
 function qty(value: string): string {
   const n = Number(value)
   return Number.isFinite(n) ? n.toFixed(6) : '0.000000'
+}
+
+function money(value: string | number | null | undefined): string {
+  const n = typeof value === 'number' ? value : Number.parseFloat(value ?? '0')
+  return Number.isFinite(n) ? n.toFixed(2) : '0.00'
 }
 
 export function PurchaseReturnsPage({
@@ -56,12 +64,14 @@ export function PurchaseReturnsPage({
     [routeSearchParams, workspaceSearch],
   )
   const deepLinkHandled = useRef<string | null>(null)
+  const purchasePickerRef = useRef<HTMLDivElement | null>(null)
+
   const canView = useCan('purchase_returns.view')
   const canCreate = useCan('purchase_returns.create')
   const canEdit = useCan('purchase_returns.edit')
   const canPost = useCan('purchase_returns.post')
 
-  const [mode, setMode] = useState<'list' | 'editor'>('list')
+  const [view, setView] = useState<ViewMode>('entry')
   const [q, setQ] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [supplierFilter, setSupplierFilter] = useState('')
@@ -79,6 +89,7 @@ export function PurchaseReturnsPage({
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [purchaseSearch, setPurchaseSearch] = useState('')
+  const [purchasePickerOpen, setPurchasePickerOpen] = useState(false)
   const [lineQty, setLineQty] = useState<Record<string, string>>({})
 
   const readOnly = document?.status === 'posted'
@@ -92,33 +103,38 @@ export function PurchaseReturnsPage({
         supplier_ulid: supplierFilter || undefined,
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined,
-        per_page: 50,
+        per_page: 100,
       }),
-    enabled: canView && mode === 'list',
+    enabled: canView && view === 'search',
+    retry: false,
   })
 
   const suppliersQuery = useQuery({
     queryKey: ['suppliers'],
     queryFn: fetchSuppliers,
     enabled: canView,
+    retry: false,
   })
 
   const warehousesQuery = useQuery({
     queryKey: ['warehouses'],
     queryFn: fetchWarehouses,
     enabled: canView,
+    retry: false,
   })
 
   const purchaseLookup = useQuery({
     queryKey: ['posted-purchases-lookup', purchaseSearch],
-    queryFn: () => fetchPostedPurchases({ q: purchaseSearch, per_page: 20 }),
-    enabled: mode === 'editor' && !document?.ulid && purchaseSearch.trim().length >= 1,
+    queryFn: () => fetchPostedPurchases({ q: purchaseSearch || undefined, per_page: 20 }),
+    enabled: view === 'entry' && !document?.ulid && purchasePickerOpen,
+    retry: false,
   })
 
   const returnableQuery = useQuery({
     queryKey: ['returnable-lines', purchaseUlid],
     queryFn: () => fetchReturnableLines(purchaseUlid),
-    enabled: Boolean(purchaseUlid) && mode === 'editor',
+    enabled: Boolean(purchaseUlid) && view === 'entry',
+    retry: false,
   })
 
   const rows = listQuery.data?.data ?? []
@@ -129,8 +145,17 @@ export function PurchaseReturnsPage({
   const warehouses = warehousesQuery.data ?? []
   const returnable = returnableQuery.data?.data ?? []
 
+  const selectedLineCount = useMemo(
+    () => returnable.filter((row) => Number(lineQty[row.purchase_line_ulid] ?? 0) > 0).length,
+    [returnable, lineQty],
+  )
+
   function handleError(err: unknown) {
-    setError(err instanceof ApiClientError || err instanceof Error ? err.message : 'Purchase return failed.')
+    setError(
+      err instanceof ApiClientError || err instanceof Error
+        ? err.message
+        : 'Purchase return failed.',
+    )
   }
 
   function resetEditor() {
@@ -144,6 +169,7 @@ export function PurchaseReturnsPage({
     setNotes('')
     setLineQty({})
     setPurchaseSearch('')
+    setPurchasePickerOpen(false)
     setError(null)
   }
 
@@ -171,8 +197,36 @@ export function PurchaseReturnsPage({
       }
     }
     setLineQty(qtyMap)
+    setPurchasePickerOpen(false)
     setError(null)
   }
+
+  function selectPurchase(purchase: PurchaseInvoice) {
+    setPurchaseUlid(purchase.ulid)
+    setPurchaseLabel(
+      `${purchase.document_number}${
+        purchase.supplier_invoice_number ? ` · ${purchase.supplier_invoice_number}` : ''
+      }`,
+    )
+    setPurchaseSearch(purchase.document_number)
+    if (purchase.warehouse?.ulid) setWarehouseUlid(purchase.warehouse.ulid)
+    setLineQty({})
+    setPurchasePickerOpen(false)
+    setError(null)
+  }
+
+  useEffect(() => {
+    if (!purchasePickerOpen) return
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as Node
+      if (purchasePickerRef.current?.contains(target)) return
+      setPurchasePickerOpen(false)
+    }
+
+    window.addEventListener('mousedown', handlePointerDown)
+    return () => window.removeEventListener('mousedown', handlePointerDown)
+  }, [purchasePickerOpen])
 
   useEffect(() => {
     if (!active) return
@@ -195,8 +249,9 @@ export function PurchaseReturnsPage({
             purchase.supplier_invoice_number ? ` · ${purchase.supplier_invoice_number}` : ''
           }`,
         )
+        setPurchaseSearch(purchase.document_number)
         setWarehouseUlid(purchase.warehouse?.ulid ?? session?.warehouse.ulid ?? '')
-        setMode('editor')
+        setView('entry')
         setSearchParams({}, { replace: true })
       } catch (err) {
         handleError(err)
@@ -209,7 +264,7 @@ export function PurchaseReturnsPage({
     mutationFn: async (ulid: string) => fetchPurchaseReturn(ulid),
     onSuccess: (row) => {
       loadDocument(row)
-      setMode('editor')
+      setView('entry')
     },
   })
 
@@ -252,6 +307,7 @@ export function PurchaseReturnsPage({
           if (existing) await deletePurchaseReturnLine(current.ulid, existing.ulid)
           continue
         }
+
         const payload = {
           purchase_line_ulid: purchaseLineUlid,
           quantity: qty(quantity),
@@ -293,17 +349,29 @@ export function PurchaseReturnsPage({
     },
   })
 
-  useWorkspaceHandlers({
-    save: () => {
-      if (mode === 'editor' && !readOnly && (canEdit || canCreate)) {
-        void saveMutation.mutateAsync().catch(handleError)
-      }
+  useWorkspaceHandlers(
+    {
+      save: () => {
+        if (view === 'entry' && !readOnly && (canEdit || canCreate)) {
+          void saveMutation.mutateAsync().catch(handleError)
+        }
+      },
+      refresh: () => {
+        if (view === 'search') {
+          void listQuery.refetch()
+        } else if (view === 'entry') {
+          if (document?.ulid) {
+            void openMutation.mutateAsync(document.ulid).catch(handleError)
+          } else if (purchaseUlid) {
+            void returnableQuery.refetch()
+          } else {
+            void purchaseLookup.refetch()
+          }
+        }
+      },
     },
-    refresh: () => {
-      if (mode === 'list') void listQuery.refetch()
-      else if (document?.ulid) void openMutation.mutateAsync(document.ulid).catch(handleError)
-    },
-  }, active)
+    active,
+  )
 
   function remainingPurchaseQty(row: ReturnablePurchaseLine): string {
     const factor = Number(row.conversion_factor) || 1
@@ -311,37 +379,446 @@ export function PurchaseReturnsPage({
     return (remainingBase / factor).toFixed(6)
   }
 
+  function alreadyReturnedQty(row: ReturnablePurchaseLine): string {
+    const factor = Number(row.conversion_factor) || 1
+    const returnedBase = Number(row.already_returned_base_quantity) || 0
+    return (returnedBase / factor).toFixed(6)
+  }
+
   if (!canView) {
     return (
-      <DesktopPanel title="Purchase Returns">
-        <p className="p-3 text-sm text-[var(--text-muted)]">You do not have permission to view purchase returns.</p>
-      </DesktopPanel>
+      <div className="purchase-return-no-access">
+        You do not have permission to view Purchase Returns.
+      </div>
     )
   }
 
-  if (mode === 'list') {
-    return (
-      <DesktopPanel
-        title="Purchase Returns"
-        toolbar={
-          <>
-            <DesktopButton
-              icon={<Plus size={13} />}
-              label="New"
-              disabled={!canCreate}
-              onClick={() => {
-                resetEditor()
-                setMode('editor')
-              }}
+  return (
+    <section className="purchase-return-screen">
+      <header className="purchase-return-tabs">
+        <button
+          type="button"
+          className={view === 'entry' ? 'is-active' : ''}
+          onClick={() => setView('entry')}
+        >
+          <RotateCcw size={17} />
+          Purchase Return Invoice
+        </button>
+        <button
+          type="button"
+          className={view === 'search' ? 'is-active' : ''}
+          onClick={() => setView('search')}
+        >
+          <Search size={17} />
+          Search Return Invoices
+        </button>
+        <button
+          type="button"
+          className={view === 'product' ? 'is-active' : ''}
+          onClick={() => setView('product')}
+        >
+          <FileText size={17} />
+          Product Wise
+        </button>
+        <strong className="purchase-return-title">Purchase Return</strong>
+      </header>
+
+      {view === 'entry' ? (
+        <div className="purchase-return-entry">
+          <section className="purchase-return-head">
+            <fieldset>
+              <legend>Purchase Return Invoice Options</legend>
+
+              <div className="purchase-return-fields">
+                <div className="purchase-return-option-group is-ret">
+                  <label>Ret#:</label>
+                  <input value={document?.document_number ?? 'Auto'} readOnly />
+                </div>
+
+                <div className="purchase-return-option-group is-date">
+                  <label>Date:</label>
+                  <input
+                    type="date"
+                    value={returnDate}
+                    disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
+                    onChange={(event) => setReturnDate(event.target.value)}
+                  />
+                </div>
+
+                <div className="purchase-return-option-group is-purchase">
+                  <label>Purchase #:</label>
+                  <div
+                    ref={purchasePickerRef}
+                    className={`purchase-return-purchase-search${purchasePickerOpen ? ' is-open' : ''}`}
+                  >
+                    <div className="purchase-return-purchase-input">
+                      <Search size={13} aria-hidden="true" />
+                      <input
+                        value={purchaseLabel || purchaseSearch}
+                        disabled={Boolean(document?.ulid) || readOnly}
+                        placeholder="Search posted purchase #"
+                        onFocus={() => {
+                          if (!document?.ulid && !readOnly) setPurchasePickerOpen(true)
+                        }}
+                        onChange={(event) => {
+                          setPurchaseSearch(event.target.value)
+                          setPurchaseLabel('')
+                          setPurchaseUlid('')
+                          setLineQty({})
+                          setPurchasePickerOpen(true)
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Escape') {
+                            setPurchasePickerOpen(false)
+                            return
+                          }
+
+                          if (event.key === 'Enter' && purchasePickerOpen) {
+                            const first = purchaseLookup.data?.data?.[0]
+                            if (first) {
+                              event.preventDefault()
+                              selectPurchase(first)
+                            }
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="purchase-return-purchase-trigger"
+                        disabled={Boolean(document?.ulid) || readOnly}
+                        onClick={() => setPurchasePickerOpen((open) => !open)}
+                        aria-label="Open posted purchases"
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+
+                    {!document?.ulid && purchasePickerOpen ? (
+                      <div className="purchase-return-purchase-results">
+                        <div className="purchase-return-purchase-results-head">
+                          <span>Purchase #</span>
+                          <span>Date</span>
+                          <span>Supplier</span>
+                          <span>Supplier Ref</span>
+                          <span>Total</span>
+                        </div>
+                        <div className="purchase-return-purchase-results-body">
+                          {(purchaseLookup.data?.data ?? []).map((purchase) => (
+                            <button
+                              key={purchase.ulid}
+                              type="button"
+                              className={
+                                purchaseLabel.startsWith(purchase.document_number)
+                                  ? 'is-selected'
+                                  : undefined
+                              }
+                              onClick={() => selectPurchase(purchase)}
+                            >
+                              <strong>{purchase.document_number}</strong>
+                              <span>{purchase.purchase_date}</span>
+                              <span>{purchase.supplier?.name ?? '—'}</span>
+                              <span>{purchase.supplier_invoice_number ?? '—'}</span>
+                              <span>{money(purchase.grand_total)}</span>
+                            </button>
+                          ))}
+
+                          {purchaseLookup.isError ? (
+                            <div className="purchase-return-purchase-results-empty">
+                              Could not load posted purchases. Use Refresh and try again.
+                            </div>
+                          ) : !purchaseLookup.isFetching &&
+                            (purchaseLookup.data?.data.length ?? 0) === 0 ? (
+                            <div className="purchase-return-purchase-results-empty">
+                              No posted purchases match this search.
+                            </div>
+                          ) : null}
+
+                          {purchaseLookup.isFetching ? (
+                            <div className="purchase-return-purchase-results-empty">
+                              Searching posted purchases…
+                            </div>
+                          ) : null}
+                        </div>
+                        <div className="purchase-return-purchase-results-foot">
+                          {(purchaseLookup.data?.meta.total ?? 0)} posted purchase(s)
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="purchase-return-option-group is-supplier">
+                  <label>Supplier:</label>
+                  <input value={document?.supplier?.name ?? 'From purchase'} readOnly />
+                </div>
+
+                <div className="purchase-return-option-group is-warehouse">
+                  <label>Warehouse:</label>
+                  <UiSelect
+                    aria-label="Warehouse"
+                    value={warehouseUlid}
+                    disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
+                    className="purchase-return-canonical-select"
+                    triggerClassName="purchase-return-canonical-trigger"
+                    options={[
+                      { value: '', label: 'Select warehouse' },
+                      ...warehouses.map((warehouse) => ({
+                        value: warehouse.ulid,
+                        label: `${warehouse.code} · ${warehouse.name}`,
+                      })),
+                    ]}
+                    onChange={setWarehouseUlid}
+                  />
+                </div>
+
+                <div className="purchase-return-option-group is-supplier-ref">
+                  <label>Supp. Ref:</label>
+                  <input
+                    value={supplierReference}
+                    disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
+                    onChange={(event) => setSupplierReference(event.target.value)}
+                  />
+                </div>
+
+                <div className="purchase-return-option-group is-reason">
+                  <label>Reason:</label>
+                  <input
+                    value={reason}
+                    disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
+                    onChange={(event) => setReason(event.target.value)}
+                  />
+                </div>
+
+                <div className="purchase-return-option-group is-remarks">
+                  <label>Remarks:</label>
+                  <input
+                    value={notes}
+                    disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
+                    onChange={(event) => setNotes(event.target.value)}
+                  />
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset className="purchase-return-amounts">
+              <legend>Amount Options</legend>
+              <div>
+                <span>Amount:</span>
+                <strong>{money(document?.subtotal)}</strong>
+              </div>
+              <div>
+                <span>Disc (Rs):</span>
+                <strong>{money(document?.discount_amount)}</strong>
+              </div>
+              <div>
+                <span>Tax:</span>
+                <strong>{money(document?.tax_amount)}</strong>
+              </div>
+              <div className="is-total">
+                <span>Total:</span>
+                <strong>{money(document?.grand_total)}</strong>
+              </div>
+              <div className="is-net">
+                <span>Net:</span>
+                <strong>{money(document?.grand_total)}</strong>
+              </div>
+            </fieldset>
+          </section>
+
+          <div className="purchase-return-grid-wrap">
+            <table className="purchase-return-grid">
+              <thead>
+                <tr>
+                  <th>Item / Product Description</th>
+                  <th>Purchased Qty</th>
+                  <th>Already Returned</th>
+                  <th>Remaining</th>
+                  <th>Return Qty</th>
+                  <th>Unit</th>
+                  <th>Factor</th>
+                  <th>Unit Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {returnable.map((row) => (
+                  <tr key={row.purchase_line_ulid}>
+                    <td>
+                      <strong>{row.product.product_number}</strong> — {row.product.name}
+                    </td>
+                    <td className="num">{row.original_quantity}</td>
+                    <td className="num">{alreadyReturnedQty(row)}</td>
+                    <td className="num">{remainingPurchaseQty(row)}</td>
+                    <td className="num is-edit">
+                      {readOnly ? (
+                        lineQty[row.purchase_line_ulid] ?? '0'
+                      ) : (
+                        <input
+                          inputMode="decimal"
+                          value={lineQty[row.purchase_line_ulid] ?? ''}
+                          placeholder="0"
+                          aria-label={`Return quantity for ${row.product.name}`}
+                          aria-invalid={
+                            Number(lineQty[row.purchase_line_ulid] ?? 0) >
+                            Number(remainingPurchaseQty(row))
+                          }
+                          title={`Maximum returnable: ${remainingPurchaseQty(row)}`}
+                          onChange={(event) => {
+                            const value = event.target.value
+                            if (value !== '' && !/^\d+(?:\.\d{0,6})?$/.test(value)) return
+                            setLineQty((prev) => ({
+                              ...prev,
+                              [row.purchase_line_ulid]: value,
+                            }))
+                          }}
+                          onBlur={() => {
+                            const value = lineQty[row.purchase_line_ulid]
+                            if (!value || Number(value) === 0) return
+                            setLineQty((prev) => ({
+                              ...prev,
+                              [row.purchase_line_ulid]: qty(value),
+                            }))
+                          }}
+                        />
+                      )}
+                    </td>
+                    <td>{row.unit?.code ?? '—'}</td>
+                    <td className="num">{row.conversion_factor}</td>
+                    <td className="num">{money(row.unit_cost)}</td>
+                  </tr>
+                ))}
+
+                {returnableQuery.isFetching ? (
+                  <tr>
+                    <td colSpan={8} className="purchase-return-empty">
+                      Loading returnable purchase lines…
+                    </td>
+                  </tr>
+                ) : null}
+
+                {returnableQuery.isError ? (
+                  <tr>
+                    <td colSpan={8} className="purchase-return-empty">
+                      Could not load returnable purchase lines. Use Refresh and try again.
+                    </td>
+                  </tr>
+                ) : null}
+
+                {!returnableQuery.isFetching &&
+                !returnableQuery.isError &&
+                returnable.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="purchase-return-empty">
+                      {purchaseUlid
+                        ? 'This purchase has no remaining returnable quantity.'
+                        : 'Select a posted purchase first.'}
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+
+          {error ? <div className="purchase-return-error">{error}</div> : null}
+
+          <footer className="purchase-return-footer">
+            <span>{selectedLineCount} return line(s)</span>
+            <div className="purchase-return-actions">
+              <DesktopButton
+                icon={<Save size={13} />}
+                label="Save Draft"
+                shortcut="F9"
+                disabled={
+                  readOnly ||
+                  saveMutation.isPending ||
+                  (document?.ulid ? !canEdit : !canCreate)
+                }
+                onClick={() => void saveMutation.mutateAsync().catch(handleError)}
+              />
+              <DesktopButton
+                icon={<CheckCircle2 size={13} />}
+                label="Post"
+                disabled={readOnly || !canPost || postMutation.isPending}
+                onClick={() => {
+                  void (async () => {
+                    if (!(await askConfirm('Post this purchase return and reduce stock?'))) return
+                    void postMutation.mutateAsync().catch(handleError)
+                  })()
+                }}
+              />
+              <DesktopButton
+                icon={<RefreshCw size={13} />}
+                label="Refresh"
+                shortcut="F8"
+                onClick={() => {
+                  if (document?.ulid) {
+                    void openMutation.mutateAsync(document.ulid).catch(handleError)
+                  } else if (purchaseUlid) {
+                    void returnableQuery.refetch()
+                  } else {
+                    void purchaseLookup.refetch()
+                  }
+                }}
+              />
+              {!readOnly && document?.ulid ? (
+                <DesktopButton
+                  icon={<Trash2 size={13} />}
+                  label="Clear qty"
+                  onClick={() => setLineQty({})}
+                />
+              ) : null}
+              <DesktopButton
+                icon={<X size={13} />}
+                label="Close"
+                shortcut="Esc"
+                onClick={closeActiveTab}
+              />
+            </div>
+          </footer>
+        </div>
+      ) : null}
+
+      {view === 'search' ? (
+        <div className="purchase-return-search-view">
+          <div className="purchase-return-search-filters">
+            <input
+              className="desktop-input"
+              placeholder="Search return / purchase / supplier"
+              value={q}
+              onChange={(event) => setQ(event.target.value)}
             />
-            <DesktopButton
-              icon={<Save size={13} />}
-              label="Open"
-              disabled={!selectedListKey}
-              onClick={() => {
-                if (!selectedListKey) return
-                void openMutation.mutateAsync(selectedListKey).catch(handleError)
-              }}
+            <UiSelect
+              aria-label="Return status"
+              value={statusFilter}
+              options={[
+                { value: '', label: 'All statuses' },
+                { value: 'draft', label: 'Draft' },
+                { value: 'posted', label: 'Posted' },
+              ]}
+              onChange={setStatusFilter}
+            />
+            <UiSelect
+              aria-label="Supplier filter"
+              value={supplierFilter}
+              options={[
+                { value: '', label: 'All suppliers' },
+                ...suppliers.map((supplier) => ({
+                  value: supplier.ulid,
+                  label: `${supplier.code} · ${supplier.name}`,
+                })),
+              ]}
+              onChange={setSupplierFilter}
+            />
+            <input
+              className="desktop-input"
+              type="date"
+              value={dateFrom}
+              onChange={(event) => setDateFrom(event.target.value)}
+            />
+            <input
+              className="desktop-input"
+              type="date"
+              value={dateTo}
+              onChange={(event) => setDateTo(event.target.value)}
             />
             <DesktopButton
               icon={<RefreshCw size={13} />}
@@ -349,316 +826,95 @@ export function PurchaseReturnsPage({
               shortcut="F8"
               onClick={() => void listQuery.refetch()}
             />
-            <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
-          </>
-        }
-      >
-        <div className="purchase-return-list-filters">
-          <input
-            className="desktop-input"
-            placeholder="Search return / purchase / supplier"
-            value={q}
-            onChange={(event) => setQ(event.target.value)}
-          />
-          <UiSelect
-            aria-label="Return status"
-            value={statusFilter}
-            options={[
-              { value: '', label: 'All statuses' },
-              { value: 'draft', label: 'Draft' },
-              { value: 'posted', label: 'Posted' },
-            ]}
-            onChange={setStatusFilter}
-          />
-          <UiSelect
-            aria-label="Supplier filter"
-            value={supplierFilter}
-            options={[
-              { value: '', label: 'All suppliers' },
-              ...suppliers.map((supplier) => ({
-                value: supplier.ulid,
-                label: `${supplier.code} · ${supplier.name}`,
-              })),
-            ]}
-            onChange={setSupplierFilter}
-          />
-          <input className="desktop-input" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
-          <input className="desktop-input" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
-        </div>
-        {error ? <div className="mb-2 text-sm text-[var(--danger)]">{error}</div> : null}
-        <PosDataGrid
-          columns={[
-            { key: 'document_number', header: 'Return #', width: 110 },
-            { key: 'return_date', header: 'Date', width: 100 },
-            {
-              key: 'original_purchase',
-              header: 'Original Purchase #',
-              width: 140,
-              render: (row) => row.original_purchase?.document_number ?? '—',
-            },
-            {
-              key: 'supplier',
-              header: 'Supplier',
-              render: (row) => row.supplier?.name ?? '—',
-            },
-            {
-              key: 'warehouse',
-              header: 'Warehouse',
-              width: 120,
-              render: (row) => row.warehouse?.name ?? '—',
-            },
-            { key: 'grand_total', header: 'Total', align: 'right', width: 110 },
-            {
-              key: 'status',
-              header: 'Status',
-              width: 90,
-              render: (row) => row.status.toUpperCase(),
-            },
-          ]}
-          rows={rows}
-          rowKey={(row) => row.ulid}
-          selectedKey={selectedListKey}
-          onSelect={(row) => setSelectedListKey(row.ulid)}
-          onActivate={(row) => void openMutation.mutateAsync(row.ulid).catch(handleError)}
-          emptyMessage="No purchase returns yet."
-        />
-      </DesktopPanel>
-    )
-  }
-
-  return (
-    <div className="pos-invoice purchase-return-screen" style={{ gridTemplateColumns: '1fr' }}>
-      <div className="pos-invoice-main">
-        <div className="inner-tabs">
-          <button type="button" className="inner-tab is-active">Purchase Return</button>
-          <span style={{ marginLeft: 'auto', fontWeight: 800, fontSize: 16, padding: '4px 10px' }}>
-            {document?.document_number ?? 'New'} · {(document?.status ?? 'draft').toUpperCase()}
-          </span>
-        </div>
-
-        <div className="purchase-header purchase-return-editor-header">
-          <div className="purchase-return-editor-fields">
-            <div className="dense-row is-2">
-              <label>Return #</label>
-              <input className="desktop-input" disabled value={document?.document_number ?? 'Auto'} readOnly />
-              <label>Date</label>
-              <input
-                className="desktop-input"
-                type="date"
-                disabled={readOnly || !canEdit}
-                value={returnDate}
-                onChange={(event) => setReturnDate(event.target.value)}
-              />
-            </div>
-            <div className="dense-row is-2">
-              <label>Purchase</label>
-              <input
-                className="desktop-input"
-                disabled={Boolean(document?.ulid) || readOnly}
-                value={purchaseLabel || purchaseSearch}
-                placeholder="Search posted purchase #"
-                onChange={(event) => {
-                  setPurchaseSearch(event.target.value)
-                  setPurchaseLabel('')
-                  setPurchaseUlid('')
-                }}
-              />
-              <label>Supplier</label>
-              <input className="desktop-input" disabled value={document?.supplier?.name ?? 'From purchase'} readOnly />
-            </div>
-            <div className="dense-row is-2">
-              <label>Warehouse</label>
-              <UiSelect
-                aria-label="Warehouse"
-                disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
-                value={warehouseUlid}
-                options={[
-                  { value: '', label: 'Select warehouse' },
-                  ...warehouses.map((warehouse) => ({
-                    value: warehouse.ulid,
-                    label: `${warehouse.code} · ${warehouse.name}`,
-                  })),
-                ]}
-                onChange={setWarehouseUlid}
-              />
-              <label>Supp. Ref</label>
-              <input
-                className="desktop-input"
-                disabled={readOnly || !canEdit}
-                value={supplierReference}
-                onChange={(event) => setSupplierReference(event.target.value)}
-              />
-            </div>
-            <div className="dense-row purchase-return-reason-row">
-              <label>Reason</label>
-              <input
-                className="desktop-input"
-                disabled={readOnly || !canEdit}
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-              />
-            </div>
-            <div className="dense-row purchase-return-notes-row">
-              <label>Notes</label>
-              <textarea
-                className="desktop-textarea"
-                rows={2}
-                disabled={readOnly || !canEdit}
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-              />
-            </div>
           </div>
 
-          <div className="amt-stack">
-            <div className="amt-box is-cyan"><span>Subtotal</span><input disabled value={document?.subtotal ?? '0.0000'} readOnly /></div>
-            <div className="amt-box is-red"><span>Discount</span><input disabled value={document?.discount_amount ?? '0.0000'} readOnly /></div>
-            <div className="amt-box is-red"><span>Tax</span><input disabled value={document?.tax_amount ?? '0.0000'} readOnly /></div>
-            <div className="amt-box is-yellow"><span>Grand Total</span><input disabled value={document?.grand_total ?? '0.0000'} readOnly /></div>
+          {error ? <div className="purchase-return-error">{error}</div> : null}
+
+          <div className="purchase-return-search-grid">
+            <PosDataGrid
+              columns={[
+                { key: 'document_number', header: 'Return #', width: 110 },
+                { key: 'return_date', header: 'Date', width: 100 },
+                {
+                  key: 'original_purchase',
+                  header: 'Purchase #',
+                  width: 130,
+                  render: (row) => row.original_purchase?.document_number ?? '—',
+                },
+                {
+                  key: 'supplier',
+                  header: 'Supplier',
+                  render: (row) => row.supplier?.name ?? '—',
+                },
+                {
+                  key: 'warehouse',
+                  header: 'Warehouse',
+                  width: 140,
+                  render: (row) => row.warehouse?.name ?? '—',
+                },
+                { key: 'grand_total', header: 'Total', align: 'right', width: 110 },
+                {
+                  key: 'status',
+                  header: 'Status',
+                  width: 90,
+                  render: (row) => row.status.toUpperCase(),
+                },
+              ]}
+              rows={rows}
+              rowKey={(row) => row.ulid}
+              selectedKey={selectedListKey}
+              onSelect={(row) => setSelectedListKey(row.ulid)}
+              onActivate={(row) =>
+                void openMutation.mutateAsync(row.ulid).catch(handleError)
+              }
+              emptyMessage={listQuery.isFetching ? 'Loading purchase returns…' : 'No purchase returns yet.'}
+            />
           </div>
-        </div>
 
-        {!document?.ulid && purchaseLookup.data?.data?.length ? (
-          <div className="mb-2 max-h-36 overflow-auto border border-[var(--ui-border)] bg-[var(--ui-surface)] text-[11px]">
-            {purchaseLookup.data.data.map((purchase) => (
-              <button
-                key={purchase.ulid}
-                type="button"
-                className="block w-full px-2 py-1 text-left hover:bg-[var(--ui-accent-soft)]"
-                onClick={() => {
-                  setPurchaseUlid(purchase.ulid)
-                  setPurchaseLabel(
-                    `${purchase.document_number}${
-                      purchase.supplier_invoice_number ? ` · ${purchase.supplier_invoice_number}` : ''
-                    }`,
-                  )
-                  setPurchaseSearch('')
-                  if (purchase.warehouse?.ulid) setWarehouseUlid(purchase.warehouse.ulid)
-                }}
-              >
-                {purchase.document_number} · {purchase.supplier?.name ?? 'Supplier'} · {purchase.grand_total}
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        <div className="invoice-grid">
-          <PosDataGrid
-            columns={[
-              {
-                key: 'product',
-                header: 'Product',
-                render: (row) =>
-                  row.product ? `${row.product.product_number} · ${row.product.name}` : '—',
-              },
-              {
-                key: 'original_quantity',
-                header: 'Purchased Qty',
-                width: 100,
-                align: 'right',
-              },
-              {
-                key: 'already_returned_base_quantity',
-                header: 'Already Returned (base)',
-                width: 130,
-                align: 'right',
-              },
-              {
-                key: 'remaining',
-                header: 'Remaining',
-                width: 90,
-                align: 'right',
-                render: (row) => remainingPurchaseQty(row),
-              },
-              {
-                key: 'return_qty',
-                header: 'Return Qty',
-                width: 100,
-                align: 'right',
-                render: (row) =>
-                  readOnly ? (
-                    lineQty[row.purchase_line_ulid] ?? '0'
-                  ) : (
-                    <input
-                      className="desktop-input"
-                      value={lineQty[row.purchase_line_ulid] ?? ''}
-                      placeholder="0"
-                      onChange={(event) =>
-                        setLineQty((prev) => ({
-                          ...prev,
-                          [row.purchase_line_ulid]: event.target.value,
-                        }))
-                      }
-                    />
-                  ),
-              },
-              {
-                key: 'unit',
-                header: 'Unit',
-                width: 70,
-                render: (row) => row.unit?.code ?? '—',
-              },
-              { key: 'conversion_factor', header: 'Factor', width: 80, align: 'right' },
-              { key: 'unit_cost', header: 'Unit Cost', width: 90, align: 'right' },
-            ]}
-            rows={returnable}
-            rowKey={(row) => row.purchase_line_ulid}
-            emptyMessage={purchaseUlid ? 'No returnable lines.' : 'Select a posted purchase first.'}
-          />
-        </div>
-
-        {error ? <div className="mt-2 text-sm text-[var(--danger)]">{error}</div> : null}
-
-        <div className="invoice-bottom">
-          <span className="text-[11px] text-[var(--text-muted)]">
-            {returnable.filter((row) => Number(lineQty[row.purchase_line_ulid] ?? 0) > 0).length} return line(s)
-          </span>
-          <div className="flex gap-1">
-            <DesktopButton
-              icon={<Save size={13} />}
-              label="Save Draft"
-              shortcut="F9"
-              disabled={readOnly || saveMutation.isPending || (document?.ulid ? !canEdit : !canCreate)}
-              onClick={() => void saveMutation.mutateAsync().catch(handleError)}
-            />
-            <DesktopButton
-              icon={<CheckCircle2 size={13} />}
-              label="Post"
-              disabled={readOnly || !canPost || postMutation.isPending}
-              onClick={() => {
-                void (async () => {
-                  if (!(await askConfirm('Post this purchase return and reduce stock?'))) return
-                  void postMutation.mutateAsync().catch(handleError)
-                })()
-              }}
-            />
-            <DesktopButton
-              icon={<RefreshCw size={13} />}
-              label="Refresh"
-              shortcut="F8"
-              disabled={!document?.ulid}
-              onClick={() => document?.ulid && void openMutation.mutateAsync(document.ulid).catch(handleError)}
-            />
-            <DesktopButton
-              icon={<X size={13} />}
-              label="Close"
-              shortcut="Esc"
-              onClick={() => {
-                setMode('list')
-                setError(null)
-                void listQuery.refetch()
-              }}
-            />
-            {!readOnly && document?.ulid ? (
+          <footer className="purchase-return-footer">
+            <span>{rows.length} return invoice(s)</span>
+            <div className="purchase-return-actions">
               <DesktopButton
-                icon={<Trash2 size={13} />}
-                label="Clear qty"
-                onClick={() => setLineQty({})}
+                icon={<RotateCcw size={13} />}
+                label="New Return"
+                disabled={!canCreate}
+                onClick={() => {
+                  resetEditor()
+                  setView('entry')
+                }}
               />
-            ) : null}
+              <DesktopButton
+                icon={<Save size={13} />}
+                label="Open"
+                disabled={!selectedListKey}
+                onClick={() => {
+                  if (!selectedListKey) return
+                  void openMutation.mutateAsync(selectedListKey).catch(handleError)
+                }}
+              />
+              <DesktopButton
+                icon={<X size={13} />}
+                label="Close"
+                shortcut="Esc"
+                onClick={closeActiveTab}
+              />
+            </div>
+          </footer>
+        </div>
+      ) : null}
+
+      {view === 'product' ? (
+        <div className="purchase-return-product-view">
+          <div className="purchase-return-product-placeholder">
+            <FileText size={22} />
+            <strong>Product Wise Purchase Return</strong>
+            <span>
+              Product-wise server aggregation is not available in the current Purchase Return API yet.
+              This tab is reserved so the reference workflow stays intact without fabricating totals.
+            </span>
           </div>
         </div>
-      </div>
-    </div>
+      ) : null}
+    </section>
   )
 }
