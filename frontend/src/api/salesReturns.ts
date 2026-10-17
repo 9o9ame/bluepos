@@ -30,6 +30,19 @@ export function fetchSaleReturns(params?: {
   })
 }
 
+export type SaleReturnSourceParty = {
+  ulid: string
+  type: 'customer' | 'account'
+  code: string
+  name: string
+}
+
+export function fetchSaleReturnSourceParties() {
+  return apiFetch<{ data: SaleReturnSourceParty[] }>('/api/sales-returns/source-parties', {
+    busy: 'none',
+  }).then((response) => response.data)
+}
+
 export function fetchSaleReturn(returnUlid: string) {
   return apiFetch<SaleReturn>(`/api/sales-returns/${returnUlid}`)
 }
