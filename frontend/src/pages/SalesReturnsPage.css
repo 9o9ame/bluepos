@@ -4782,7 +4782,7 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   width: 100%;
   min-width: 0;
   height: 100%;
-  padding: 0 24px 0 7px;
+  padding: 0 23px 0 7px;
   border: 0;
   border-radius: inherit;
   outline: none;
@@ -4801,17 +4801,16 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 .sales-return-option-group.is-from .sales-return-canonical-select .ui-select-combobox-toggle,
 .sales-return-option-group.is-salesman .sales-return-canonical-select .ui-select-combobox-toggle {
   position: absolute;
-  top: 1px;
-  right: 1px;
-  bottom: 1px;
+  top: 2px;
+  right: 2px;
+  bottom: 2px;
   display: grid;
   place-items: center;
-  width: 21px;
-  min-width: 21px;
+  width: 18px;
+  min-width: 18px;
   padding: 0;
-  border: 0;
-  border-left: 1px solid var(--ui-select-arrow-border);
-  border-radius: 0 calc(var(--control-radius) - 1px) calc(var(--control-radius) - 1px) 0;
+  border: 1px solid var(--ui-select-arrow-border);
+  border-radius: calc(var(--control-radius) - 1px);
   background: var(--ui-select-arrow-face);
   color: var(--ui-select-selected-text);
   box-shadow: none;
