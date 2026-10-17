@@ -187,6 +187,7 @@ export function PurchaseOrderPage() {
   const [orderDate, setOrderDate] = useState(todayIso())
   const [notes, setNotes] = useState('')
   const [productQuery, setProductQuery] = useState('')
+  const [editingProductKey, setEditingProductKey] = useState<string | null>(null)
   const [searchText, setSearchText] = useState('')
   const [searchFrom, setSearchFrom] = useState(daysAgoIso(30))
   const [searchTo, setSearchTo] = useState(todayIso())
@@ -495,6 +496,7 @@ export function PurchaseOrderPage() {
     setOrderDate(todayIso())
     setNotes('')
     setProductQuery('')
+    setEditingProductKey(null)
     setLines([])
     setSavedOrder(null)
     setOpenedOrder(null)
@@ -529,27 +531,45 @@ export function PurchaseOrderPage() {
         return
       }
 
-      setLines((current) => [
-        ...current,
-        {
-          key: crypto.randomUUID(),
-          product_ulid: product.ulid,
-          product_number: product.product_number,
-          product_name: product.name,
-          unit_ulid: unit.ulid,
-          unit_code: unit.code,
-          unit_options: unitOptions,
-          in_stock: productRow.sales_lookup?.in_stock ?? '0.000000',
-          stock_value: '0.0000',
-          consumption: '0.000000',
-          difference: '0.000000',
-          quantity: '1.000000',
-          unit_price: productRow.sales_lookup?.average_cost ?? '0.0000',
-          discount_percent: '0',
-          discount_amount: '0.0000',
-        },
-      ])
+      const productPatch = {
+        product_ulid: product.ulid,
+        product_number: product.product_number,
+        product_name: product.name,
+        unit_ulid: unit.ulid,
+        unit_code: unit.code,
+        unit_options: unitOptions,
+        in_stock: productRow.sales_lookup?.in_stock ?? '0.000000',
+        stock_value: '0.0000',
+        consumption: '0.000000',
+        difference: '0.000000',
+        unit_price: productRow.sales_lookup?.average_cost ?? '0.0000',
+      }
+
+      setLines((current) => {
+        if (editingProductKey) {
+          return current.map((line) =>
+            line.key === editingProductKey
+              ? {
+                  ...line,
+                  ...productPatch,
+                }
+              : line,
+          )
+        }
+
+        return [
+          ...current,
+          {
+            key: crypto.randomUUID(),
+            ...productPatch,
+            quantity: '1.000000',
+            discount_percent: '0',
+            discount_amount: '0.0000',
+          },
+        ]
+      })
       setProductQuery('')
+      setEditingProductKey(null)
     } catch (error) {
       feedback.error(
         error instanceof Error ? error.message : 'Unable to add product.',
@@ -1070,9 +1090,54 @@ export function PurchaseOrderPage() {
                       const preview = linePreview(line)
                       return (
                         <tr key={line.key}>
-                          <td>
+                          <td className="purchase-order-product-cell">
                             <div className="purchase-order-product-name">
-                              <strong>{line.product_number} — {line.product_name}</strong>
+                              <div className="purchase-order-row-product">
+                                {editingProductKey === line.key ? (
+                                  <>
+                                    <input
+                                      ref={productSearchRef}
+                                      className="purchase-order-product-input"
+                                      autoFocus
+                                      value={productQuery}
+                                      placeholder="Search product name / barcode / ID"
+                                      autoComplete="off"
+                                      aria-label={`Change product for ${line.product_name}`}
+                                      onChange={(event) => setProductQuery(event.target.value)}
+                                      onKeyDown={(event) => {
+                                        if (event.key === 'Escape') {
+                                          setEditingProductKey(null)
+                                          setProductQuery('')
+                                          return
+                                        }
+                                        if (event.key !== 'Enter') return
+                                        const first = productsQuery.data?.data?.[0]
+                                        if (!first) return
+                                        event.preventDefault()
+                                        void addProduct(first)
+                                      }}
+                                    />
+                                    {productQuery.trim() && productsQuery.data?.data?.length ? (
+                                      <PurchaseProductLookup
+                                        rows={productsQuery.data.data}
+                                        anchorRef={productSearchRef}
+                                        onSelect={(product) => void addProduct(product)}
+                                      />
+                                    ) : null}
+                                  </>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="purchase-order-row-product-button"
+                                    onClick={() => {
+                                      setEditingProductKey(line.key)
+                                      setProductQuery(line.product_name)
+                                    }}
+                                  >
+                                    <strong>{line.product_number}</strong> — {line.product_name}
+                                  </button>
+                                )}
+                              </div>
                               <UiSelect
                                 className="purchase-order-unit"
                                 value={line.unit_ulid}
@@ -1170,7 +1235,11 @@ export function PurchaseOrderPage() {
                         value={productQuery}
                         placeholder="Search / select product"
                         autoComplete="off"
-                        onChange={(event) => setProductQuery(event.target.value)}
+                        onFocus={() => setEditingProductKey(null)}
+                        onChange={(event) => {
+                          setEditingProductKey(null)
+                          setProductQuery(event.target.value)
+                        }}
                         onKeyDown={(event) => {
                           if (event.key !== 'Enter') return
                           const first = productsQuery.data?.data?.[0]
