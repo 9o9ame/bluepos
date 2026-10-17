@@ -251,6 +251,108 @@ class SalesReturnAccountingTest extends TestCase
         );
     }
 
+    public function test_general_sales_return_uses_cashier_price_discount_current_tax_and_average_cost(): void
+    {
+        $this->signInOwner('general-sales-return')->assertOk();
+        $accounts = $this->configureAccounts();
+        $cashInHand = $this->leafAccount('CASH IN HAND', 'SRA-CASH');
+
+        $product = $this->createProduct(
+            'General Return Item',
+            '125.0000',
+            true,
+            '10.00000000',
+        );
+        $this->giveStock($product, '10.000000', '25.0000');
+
+        $returnUlid = $this->postJson('/api/sales-returns', [
+            'account_ulid' => $cashInHand->ulid,
+            'return_date' => now()->toDateString(),
+        ], $this->idem('general-sales-return-document'))
+            ->assertCreated()
+            ->assertJsonPath('return_mode', 'general')
+            ->assertJsonPath('original_sale', null)
+            ->assertJsonPath('settlement_account.ulid', $cashInHand->ulid)
+            ->json('ulid');
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/lines', [
+            'product_ulid' => $product->ulid,
+            'quantity' => '2.000000',
+            'unit_price' => '100.0000',
+            'discount_percent' => '10.00000000',
+        ])->assertCreated()
+            ->assertJsonPath('gross_amount', '200.0000')
+            ->assertJsonPath('discount_percent', '10.00000000')
+            ->assertJsonPath('discount_amount', '20.0000')
+            ->assertJsonPath('tax_percent', '10.00000000')
+            ->assertJsonPath('tax_amount', '18.0000')
+            ->assertJsonPath('line_total', '198.0000');
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/post')
+            ->assertOk()
+            ->assertJsonPath('status', 'posted')
+            ->assertJsonPath('subtotal', '200.0000')
+            ->assertJsonPath('discount_amount', '20.0000')
+            ->assertJsonPath('tax_amount', '18.0000')
+            ->assertJsonPath('grand_total', '198.0000');
+
+        $return = AppModelsSaleReturn::query()->where('ulid', $returnUlid)->firstOrFail();
+        $journal = JournalEntry::query()
+            ->where('document_type', JournalEntry::DOCUMENT_SALE_RETURN)
+            ->where('document_id', $return->id)
+            ->with('lines')
+            ->firstOrFail();
+
+        $this->assertNull($journal->reverses_journal_entry_id);
+        $this->assertLine($journal->id, $accounts['revenue']->id, '180.0000', '0.0000');
+        $this->assertLine($journal->id, $accounts['tax']->id, '18.0000', '0.0000');
+        $this->assertLine($journal->id, $cashInHand->id, '0.0000', '198.0000');
+        $this->assertLine($journal->id, $accounts['inventory']->id, '50.0000', '0.0000');
+        $this->assertLine($journal->id, $accounts['cogs']->id, '0.0000', '50.0000');
+
+        $movement = StockMovement::query()
+            ->where('movement_type', 'sale_return')
+            ->where('reference_ulid', $returnUlid)
+            ->firstOrFail();
+
+        $this->assertSame('25.0000', (string) $movement->unit_cost);
+        $this->assertSame('12.000000', $this->stock($product));
+    }
+
+    public function test_general_sales_return_requires_current_average_cost_on_post(): void
+    {
+        $this->signInOwner('general-sales-return-no-cost')->assertOk();
+        $this->configureAccounts();
+        $cashInHand = $this->leafAccount('CASH IN HAND NO COST', 'SRA-CASH-2');
+
+        $product = $this->createProduct('General Return No Cost', '100.0000');
+
+        $returnUlid = $this->postJson('/api/sales-returns', [
+            'account_ulid' => $cashInHand->ulid,
+        ], $this->idem('general-sales-return-no-cost-document'))
+            ->assertCreated()
+            ->json('ulid');
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/lines', [
+            'product_ulid' => $product->ulid,
+            'quantity' => '1.000000',
+            'unit_price' => '100.0000',
+            'discount_percent' => '0.00000000',
+        ])->assertCreated();
+
+        $this->postJson('/api/sales-returns/'.$returnUlid.'/post')
+            ->assertStatus(422)
+            ->assertJsonPath('error.key', 'GENERAL_RETURN_COST_REQUIRED');
+
+        $this->assertSame(
+            0,
+            StockMovement::query()
+                ->where('movement_type', 'sale_return')
+                ->where('reference_ulid', $returnUlid)
+                ->count(),
+        );
+    }
+
     /**
      * @return array{clearing:Account,revenue:Account,tax:Account,inventory:Account,cogs:Account}
      */
