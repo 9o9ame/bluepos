@@ -9,6 +9,7 @@ use App\Models\JournalEntry;
 use App\Models\JournalLine;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\SaleReturn;
 use App\Models\StockBalance;
 use App\Models\StockMovement;
 use App\Tenancy\TenantContext;
@@ -296,7 +297,7 @@ class SalesReturnAccountingTest extends TestCase
             ->assertJsonPath('tax_amount', '18.0000')
             ->assertJsonPath('grand_total', '198.0000');
 
-        $return = AppModelsSaleReturn::query()->where('ulid', $returnUlid)->firstOrFail();
+        $return = SaleReturn::query()->where('ulid', $returnUlid)->firstOrFail();
         $journal = JournalEntry::query()
             ->where('document_type', JournalEntry::DOCUMENT_SALE_RETURN)
             ->where('document_id', $return->id)
