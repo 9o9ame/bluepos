@@ -328,9 +328,22 @@ function incrementQuantityByOne(value: string): string {
   return `${nextWhole}.${nextFraction}`
 }
 
-export function PurchasesPage() {
+export function PurchasesPage({
+  active = true,
+  workspaceSearch,
+}: {
+  active?: boolean
+  workspaceSearch?: string
+} = {}) {
   const queryClient = useQueryClient()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [routeSearchParams, setSearchParams] = useSearchParams()
+  const searchParams = useMemo(
+    () =>
+      workspaceSearch === undefined
+        ? routeSearchParams
+        : new URLSearchParams(workspaceSearch),
+    [routeSearchParams, workspaceSearch],
+  )
   const { closeActiveTab, openModule } = useWorkspace()
   const { session } = useAuth()
 
@@ -1482,6 +1495,7 @@ export function PurchasesPage() {
   const autoPurchaseOrderUlid = searchParams.get('purchase_order')?.trim() ?? ''
 
   useEffect(() => {
+    if (!active) return
     if (!autoPurchaseOrderUlid) {
       autoPurchaseOrderAttemptedRef.current = ''
       return
@@ -1872,6 +1886,7 @@ export function PurchasesPage() {
     id: 'purchase-invoice-product',
     priority: 10,
     enabled:
+      active &&
       mode === 'editor' &&
       !readOnly &&
       (invoiceUlid ? canEdit : canCreate) &&
@@ -1937,7 +1952,16 @@ export function PurchasesPage() {
       if (mode === 'list') void listQuery.refetch()
       else if (invoiceUlid) void openInvoice(invoiceUlid)
     },
-  })
+  }, active)
+
+  useEffect(() => {
+    if (active) return
+    setProductMenuOpen(false)
+    setSupplierMenuOpen(false)
+    setProductModalOpen(false)
+    setSupplierModalOpen(false)
+    setPaymentModalOpen(false)
+  }, [active])
 
   const liveTotals = useMemo(
     () =>
