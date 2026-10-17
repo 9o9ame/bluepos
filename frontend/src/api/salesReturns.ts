@@ -36,7 +36,10 @@ export function fetchSaleReturn(returnUlid: string) {
 
 export function createSaleReturn(
   payload: {
-    sale_ulid: string
+    sale_ulid?: string
+    customer_ulid?: string
+    account_ulid?: string
+    salesman_ulid?: string
     return_date?: string
     reason?: string | null
     notes?: string | null
@@ -74,8 +77,11 @@ export function fetchReturnableSaleLines(saleUlid: string) {
 export function createSaleReturnLine(
   returnUlid: string,
   payload: {
-    sale_item_ulid: string
+    sale_item_ulid?: string
+    product_ulid?: string
     quantity: string
+    unit_price?: string
+    discount_percent?: string
     reason?: string | null
     notes?: string | null
   },
@@ -91,7 +97,10 @@ export function updateSaleReturnLine(
   lineUlid: string,
   payload: {
     sale_item_ulid?: string
+    product_ulid?: string
     quantity?: string
+    unit_price?: string
+    discount_percent?: string
     reason?: string | null
     notes?: string | null
   },
