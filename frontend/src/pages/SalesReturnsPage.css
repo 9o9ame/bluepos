@@ -4756,3 +4756,70 @@ html[data-theme='dark'] .sales-return-select-caret {
 html[data-animations='off'] .sales-return-product-combo .sales-product-combo-toggle > span {
   transition: none;
 }
+
+
+/* In-place From / Salesman selects: keep the arrow integrated inside the field, matching Sales#. */
+.sales-return-option-group.is-from .sales-return-canonical-select .ui-select-combobox-trigger,
+.sales-return-option-group.is-salesman .sales-return-canonical-select .ui-select-combobox-trigger {
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  box-shadow: var(--ui-control-shadow);
+}
+
+.sales-return-option-group.is-from .sales-return-canonical-select .ui-select-trigger-search,
+.sales-return-option-group.is-salesman .sales-return-canonical-select .ui-select-trigger-search {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 24px 0 7px;
+  border: 0;
+  border-radius: inherit;
+  outline: none;
+  background: transparent;
+  color: var(--ui-text);
+  font: inherit;
+  font-weight: 850;
+}
+
+.sales-return-option-group.is-from .sales-return-canonical-select .ui-select-trigger-search:focus,
+.sales-return-option-group.is-salesman .sales-return-canonical-select .ui-select-trigger-search:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.sales-return-option-group.is-from .sales-return-canonical-select .ui-select-combobox-toggle,
+.sales-return-option-group.is-salesman .sales-return-canonical-select .ui-select-combobox-toggle {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  min-width: 21px;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--ui-select-arrow-border);
+  border-radius: 0 calc(var(--control-radius) - 1px) calc(var(--control-radius) - 1px) 0;
+  background: var(--ui-select-arrow-face);
+  color: var(--ui-select-selected-text);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.sales-return-option-group.is-from .sales-return-canonical-select .ui-select-combobox-trigger:focus-within,
+.sales-return-option-group.is-salesman .sales-return-canonical-select .ui-select-combobox-trigger:focus-within {
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
