@@ -115,6 +115,9 @@ class SaleReturnController extends Controller
 
         $accounts = Account::query()
             ->forTenant($tenantContext->tenantId())
+            ->whereNull('supplier_id')
+            ->whereNull('customer_id')
+            ->whereNull('party_profile_id')
             ->where('is_active', true)
             ->orderBy('name')
             ->get(['id', 'ulid', 'code', 'name'])
