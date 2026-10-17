@@ -994,3 +994,183 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+
+/* Final Purchase Return geometry polish: unified combo fields and 2-row amounts. */
+.purchase-return-head {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
+
+.purchase-return-amounts {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.purchase-return-amounts > div {
+  grid-template-columns: max-content minmax(62px, 1fr);
+  min-width: 0;
+}
+
+.purchase-return-amounts > div:nth-child(1),
+.purchase-return-amounts > div:nth-child(2) {
+  grid-column: span 3;
+}
+
+.purchase-return-amounts > div:nth-child(3),
+.purchase-return-amounts > div:nth-child(4),
+.purchase-return-amounts > div:nth-child(5) {
+  grid-column: span 2;
+}
+
+.purchase-return-amounts > div.is-net {
+  grid-column: span 2;
+}
+
+.purchase-return-purchase-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 25px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.purchase-return-purchase-input:focus-within {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.purchase-return-purchase-input > svg {
+  position: absolute;
+  left: 7px;
+  z-index: 2;
+  pointer-events: none;
+  color: var(--ui-text-muted);
+}
+
+.purchase-return-purchase-input > input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 25px;
+  padding: 0 30px 0 25px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+}
+
+.purchase-return-purchase-search.is-open .purchase-return-purchase-input > input,
+.purchase-return-purchase-input > input:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.purchase-return-purchase-trigger {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  z-index: 2;
+  width: 22px;
+  height: 21px;
+  min-width: 22px;
+  min-height: 0;
+  border: 1px solid var(--ui-select-arrow-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-select-arrow-face);
+  box-shadow: var(--ui-control-shadow);
+}
+
+.purchase-return-purchase-trigger:hover:not(:disabled) {
+  background: var(--ui-control-hover-bg);
+  border-color: var(--ui-control-hover-border);
+}
+
+.purchase-return-product-combo {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.purchase-return-product-combo:focus-within {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.purchase-return-product-combo > input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 25px;
+  min-width: 0;
+  padding: 0 30px 0 7px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+  font-weight: 850;
+}
+
+.purchase-return-product-combo > input:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.purchase-return-product-toggle {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  z-index: 2;
+  width: 22px;
+  min-width: 22px;
+  height: 21px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--ui-select-arrow-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-select-arrow-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+}
+
+.purchase-return-product-toggle:hover {
+  background: var(--ui-control-hover-bg);
+  border-color: var(--ui-control-hover-border);
+}
+
+@media (max-width: 1180px) {
+  .purchase-return-head {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+}
+
+@media (max-width: 860px) {
+  .purchase-return-head {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-return-amounts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .purchase-return-amounts > div:nth-child(1),
+  .purchase-return-amounts > div:nth-child(2),
+  .purchase-return-amounts > div:nth-child(3),
+  .purchase-return-amounts > div:nth-child(4) {
+    grid-column: span 1;
+  }
+
+  .purchase-return-amounts > div:nth-child(5) {
+    grid-column: 1 / -1;
+  }
+}
