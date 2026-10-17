@@ -754,7 +754,7 @@ export function SalesReturnsPage() {
                       <input
                         value={saleLabel || saleSearch}
                         disabled={Boolean(document?.ulid) || readOnly}
-                        placeholder="Invoice #, customer or salesman"
+                        placeholder="Optional Invoice #, customer or salesman"
                         onFocus={() => {
                           if (!document?.ulid && !readOnly) setSalePickerOpen(true)
                         }}
@@ -1310,7 +1310,7 @@ export function SalesReturnsPage() {
                     )
                   })}
 
-                  {!readOnly ? (
+                  {!readOnly && generalProductTargetKey === null ? (
                     <tr className="sales-return-general-entry">
                       <td className="sales-return-general-product-cell">
                         <input
