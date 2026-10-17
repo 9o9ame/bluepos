@@ -1362,3 +1362,49 @@
     grid-column: span 2;
   }
 }
+
+
+/* Product Wise Purchase Return uses the same compact data-view pattern as Search. */
+.purchase-return-product-view {
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 5px;
+  padding: 5px;
+}
+
+.purchase-return-product-filters {
+  display: grid;
+  grid-template-columns: max-content 130px max-content 130px auto;
+  align-items: center;
+  gap: 5px;
+}
+
+.purchase-return-product-filters > label {
+  color: var(--ui-text);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.purchase-return-product-filters > input {
+  min-width: 0;
+  width: 100%;
+}
+
+.purchase-return-product-filters > .ui-button {
+  justify-self: start;
+}
+
+.purchase-return-product-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+@media (max-width: 860px) {
+  .purchase-return-product-filters {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .purchase-return-product-filters > .ui-button {
+    grid-column: 1 / -1;
+  }
+}
