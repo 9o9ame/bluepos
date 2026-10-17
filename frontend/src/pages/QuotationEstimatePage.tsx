@@ -385,13 +385,14 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
 
   useEffect(() => {
     if (!activeLineKey || readOnly || tab !== 'entry') return
+    const lineKey = activeLineKey
 
     function handleOutsideActiveRow(event: MouseEvent) {
       const target = event.target
       if (!(target instanceof Node)) return
 
       const row = globalThis.document.querySelector<HTMLElement>(
-        `[data-quotation-line="${activeLineKey}"]`,
+        `[data-quotation-line="${lineKey}"]`,
       )
       if (row?.contains(target)) return
 
@@ -402,11 +403,11 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
         return
       }
 
-      const line = cart.paidLines.find((item) => item.line_key === activeLineKey)
+      const line = cart.paidLines.find((item) => item.line_key === lineKey)
       const quantity = Number.parseFloat(line?.quantity ?? '')
       if (!line || !Number.isFinite(quantity) || quantity <= 0) return
 
-      finishActiveLine(activeLineKey, false)
+      finishActiveLine(lineKey, false)
     }
 
     window.addEventListener('mousedown', handleOutsideActiveRow)
