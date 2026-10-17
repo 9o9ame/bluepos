@@ -483,3 +483,218 @@ html[data-animations='off'] .quotation-product-search-input {
 .quotation-header-grid .ui-select-trigger-search {
   min-width: 0;
 }
+
+
+/* Reference-inspired Quotation geometry: compact options block + strong amount summary. */
+.quotation-entry {
+  grid-template-rows: auto minmax(340px, 1fr) 82px auto;
+  gap: 6px;
+  padding: 5px 7px 8px;
+}
+
+.quotation-entry-head {
+  display: grid;
+  grid-template-columns: minmax(680px, 1fr) 220px;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.quotation-header-grid {
+  grid-template-columns: 160px 210px minmax(250px, 1fr);
+  grid-template-areas:
+    "number date price"
+    "customer customer salesman";
+  gap: 5px 8px;
+  align-content: center;
+  padding: 5px 7px;
+}
+
+.quotation-header-grid .is-number { grid-area: number; }
+.quotation-header-grid .is-date { grid-area: date; }
+.quotation-header-grid .is-customer { grid-area: customer; }
+.quotation-header-grid .is-salesman { grid-area: salesman; }
+.quotation-header-grid .is-price-type { grid-area: price; }
+
+.quotation-header-grid label {
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 5px;
+  min-width: 0;
+  font-size: var(--ui-font-sm);
+}
+
+.quotation-header-grid input,
+.quotation-header-grid .ui-select-combobox-trigger,
+.quotation-header-grid .ui-select-trigger {
+  min-height: 25px;
+  height: 25px;
+}
+
+.quotation-header-grid .ui-select-trigger-search {
+  min-width: 0;
+  font-weight: var(--ui-weight-medium);
+}
+
+.quotation-amount-options {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface-subtle);
+  box-shadow: var(--ui-card-shadow);
+  padding: 6px 8px;
+}
+
+.quotation-amount-options-title {
+  color: var(--ui-text);
+  font-size: var(--ui-font-sm);
+  font-weight: var(--ui-weight-strong);
+}
+
+.quotation-net-box {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 35px;
+  padding: 4px 7px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  box-shadow: var(--ui-control-shadow);
+}
+
+.quotation-net-box span {
+  color: var(--ui-text-muted);
+  font-weight: var(--ui-weight-strong);
+}
+
+.quotation-net-box strong {
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ui-text);
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.quotation-lines-wrap {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.quotation-lines {
+  font-size: var(--ui-font-sm);
+}
+
+.quotation-lines th,
+.quotation-lines td {
+  height: 27px;
+  box-sizing: border-box;
+  padding: 3px 6px;
+  border-right: 1px solid var(--ui-table-border);
+}
+
+.quotation-lines th:last-child,
+.quotation-lines td:last-child {
+  border-right: 0;
+}
+
+.quotation-lines th {
+  font-weight: var(--ui-weight-strong);
+}
+
+.quotation-lines input {
+  min-height: 23px;
+  height: 23px;
+  box-sizing: border-box;
+  padding: 2px 5px;
+}
+
+.quotation-product-search-input {
+  min-width: 0;
+  min-height: 25px;
+  height: 25px;
+}
+
+.quotation-product-combo-toggle {
+  top: 2px;
+  right: 3px;
+  width: 20px;
+  min-width: 20px;
+  height: 21px;
+}
+
+.quotation-product-combo-toggle > span {
+  display: grid;
+  place-items: center;
+  height: 100%;
+}
+
+.quotation-completed-product-trigger {
+  min-height: 25px;
+  height: 25px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.quotation-footer-grid {
+  grid-template-columns: minmax(320px, 1fr) 390px;
+  gap: 8px;
+}
+
+.quotation-footer-grid > label,
+.quotation-totals {
+  padding: 5px 7px;
+}
+
+.quotation-totals {
+  gap: 0 14px;
+}
+
+.quotation-totals div {
+  padding: 2px 0;
+  font-size: var(--ui-font-sm);
+}
+
+.quotation-note {
+  padding-top: 5px;
+}
+
+@media (max-width: 1200px) {
+  .quotation-entry-head {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-header-grid {
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+    grid-template-areas:
+      "number date"
+      "customer salesman"
+      "price price";
+  }
+
+  .quotation-amount-options {
+    grid-template-columns: auto minmax(200px, 320px);
+    align-items: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .quotation-header-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "number"
+      "date"
+      "customer"
+      "salesman"
+      "price";
+  }
+
+  .quotation-amount-options {
+    grid-template-columns: 1fr;
+  }
+}
