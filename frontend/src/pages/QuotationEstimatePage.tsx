@@ -2,7 +2,7 @@ import { FileSearch, Plus, Printer, ReceiptText, RefreshCw, Save, X, XCircle } f
 import { useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
-import { fetchProduct, fetchProducts, fetchProductStock } from '../api/catalog'
+import { fetchProducts } from '../api/catalog'
 import { fetchParties } from '../api/parties'
 import {
   createSaleQuotation,
