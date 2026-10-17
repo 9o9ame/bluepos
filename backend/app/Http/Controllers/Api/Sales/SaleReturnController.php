@@ -17,6 +17,8 @@ use App\Http\Requests\Sales\StoreSaleReturnRefundRequest;
 use App\Http\Resources\Sales\SaleReturnLineResource;
 use App\Http\Resources\Sales\SaleReturnRefundResource;
 use App\Http\Resources\Sales\SaleReturnResource;
+use App\Models\Account;
+use App\Models\Customer;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\SalePayment;
@@ -92,6 +94,43 @@ class SaleReturnController extends Controller
                 'total' => $page->total(),
                 'last_page' => $page->lastPage(),
             ],
+        ];
+    }
+
+    public function sourceParties(TenantContext $tenantContext): array
+    {
+        $this->authorize('create', SaleReturn::class);
+
+        $customers = Customer::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'ulid', 'code', 'name'])
+            ->map(fn (Customer $customer): array => [
+                'ulid' => $customer->ulid,
+                'type' => 'customer',
+                'code' => $customer->code,
+                'name' => $customer->name,
+            ]);
+
+        $accounts = Account::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'ulid', 'code', 'name'])
+            ->map(fn (Account $account): array => [
+                'ulid' => $account->ulid,
+                'type' => 'account',
+                'code' => $account->code,
+                'name' => $account->name,
+            ]);
+
+        return [
+            'data' => $customers
+                ->concat($accounts)
+                ->sortBy(fn (array $row) => mb_strtolower((string) $row['name']), SORT_NATURAL)
+                ->values()
+                ->all(),
         ];
     }
 
