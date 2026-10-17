@@ -4,7 +4,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use RuntimeException;
 
 return new class extends Migration
 {
@@ -30,7 +29,7 @@ return new class extends Migration
             ->exists();
 
         if ($hasGeneralReturns || $hasGeneralLines) {
-            throw new RuntimeException(
+            throw new \RuntimeException(
                 'Cannot restore mandatory purchase invoice references while general purchase returns exist.'
             );
         }
