@@ -449,8 +449,9 @@ export function QuotationEstimatePage() {
 
       {tab === 'entry' ? (
         <div className="quotation-entry">
-          <div className="quotation-header-grid">
-            <label>
+          <div className="quotation-entry-head">
+            <div className="quotation-header-grid">
+            <label className="is-number">
               <span>Quotation #</span>
               <input
                 className="desktop-input"
@@ -458,7 +459,7 @@ export function QuotationEstimatePage() {
                 readOnly
               />
             </label>
-            <label>
+            <label className="is-date">
               <span>Date</span>
               <input
                 className="desktop-input"
@@ -468,7 +469,7 @@ export function QuotationEstimatePage() {
                 onChange={(event) => setQuotationDate(event.target.value)}
               />
             </label>
-            <label>
+            <label className="is-customer">
               <span>Customer</span>
               <UiSelect
                 value={activeQuotation?.customer?.ulid ?? cart.customerUlid ?? ''}
@@ -486,7 +487,7 @@ export function QuotationEstimatePage() {
                 onChange={(value) => cart.setCustomerUlid(value || null)}
               />
             </label>
-            <label>
+            <label className="is-salesman">
               <span>Salesman</span>
               <UiSelect
                 value={activeQuotation?.salesman?.ulid ?? salesmanUlid ?? ''}
@@ -505,7 +506,7 @@ export function QuotationEstimatePage() {
                 onChange={(value) => setSalesmanUlid(value || null)}
               />
             </label>
-            <label>
+            <label className="is-price-type">
               <span>Price Type</span>
               <UiSelect
                 value={activeQuotation?.price_type ?? cart.priceType}
@@ -518,6 +519,15 @@ export function QuotationEstimatePage() {
                 onChange={(value) => cart.setPriceType(value as 'default' | 'retail' | 'wholesale')}
               />
             </label>
+            </div>
+
+            <aside className="quotation-amount-options" aria-label="Quotation amount options">
+              <strong className="quotation-amount-options-title">Amount Options</strong>
+              <div className="quotation-net-box">
+                <span>Net:</span>
+                <strong>{activeQuotation?.grand_total ?? cart.preview.grandTotal}</strong>
+              </div>
+            </aside>
           </div>
 
           <div className="quotation-lines-wrap">
@@ -564,7 +574,11 @@ export function QuotationEstimatePage() {
                                 onClick={() => editCompletedProduct(line)}
                               >
                                 <span>{line.product_number} — {line.product_name}</span>
-                                <span className="quotation-product-combo-toggle" aria-hidden="true">⌄</span>
+                                <span className="quotation-product-combo-toggle" aria-hidden="true">
+                                  <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                    <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                  </svg>
+                                </span>
                               </button>
                             </td>
                             <td>
@@ -692,7 +706,11 @@ export function QuotationEstimatePage() {
                                     setProductPickerOpen((open) => !open)
                                   }}
                                 >
-                                  <span aria-hidden="true">⌄</span>
+                                  <span aria-hidden="true">
+                                  <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                    <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                  </svg>
+                                </span>
                                 </button>
                                 {productPickerOpen ? (
                                   <ProductLookupGrid
@@ -827,7 +845,11 @@ export function QuotationEstimatePage() {
                             window.setTimeout(() => productSearchRef.current?.focus(), 0)
                           }}
                         >
-                          <span aria-hidden="true">⌄</span>
+                          <span aria-hidden="true">
+                                  <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                    <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                  </svg>
+                                </span>
                         </button>
 
                         {productPickerOpen ? (
