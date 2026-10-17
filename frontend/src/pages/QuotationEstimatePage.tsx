@@ -521,6 +521,8 @@ export function QuotationEstimatePage() {
             </label>
             </div>
 
+            <div className="quotation-entry-title" aria-hidden="true">QUOTATION</div>
+
             <aside className="quotation-amount-options" aria-label="Quotation amount options">
               <strong className="quotation-amount-options-title">Amount Options</strong>
               <div className="quotation-net-box">
