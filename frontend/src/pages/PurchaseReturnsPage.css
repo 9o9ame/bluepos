@@ -1174,3 +1174,46 @@
     grid-column: 1 / -1;
   }
 }
+
+
+/* Amount Options: make Amount/Disc fill the full first card row cleanly. */
+.purchase-return-amounts {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 5px;
+  row-gap: 4px;
+}
+
+.purchase-return-amounts > div {
+  box-sizing: border-box;
+  width: 100%;
+  grid-template-columns: max-content minmax(0, 1fr);
+}
+
+.purchase-return-amounts > div > strong {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.purchase-return-amounts > div:nth-child(1),
+.purchase-return-amounts > div:nth-child(2) {
+  grid-column: span 1;
+}
+
+.purchase-return-amounts > div:nth-child(3),
+.purchase-return-amounts > div:nth-child(4),
+.purchase-return-amounts > div:nth-child(5) {
+  grid-column: auto;
+}
+
+.purchase-return-amounts > div:nth-child(3) {
+  grid-column: 1 / 2;
+}
+
+.purchase-return-amounts > div:nth-child(4) {
+  grid-column: 2 / 3;
+}
+
+.purchase-return-amounts > div:nth-child(5) {
+  grid-column: 1 / -1;
+  grid-template-columns: max-content minmax(0, 1fr);
+}
