@@ -161,7 +161,7 @@ function AppShellFrame({
   ])
 
   const persistentTabs = tabs.filter((tab) => {
-    const baseKey = tab.key.split(':', 1)[0]
+    const baseKey = (tab.key.split(':')[0] ?? tab.key)
     return persistentModuleKeys.has(baseKey)
   })
 
@@ -212,7 +212,7 @@ function AppShellFrame({
       <div className="workspace-host">
         <div className="workspace-host-inner">
           {persistentTabs.map((tab) => {
-            const baseKey = tab.key.split(':', 1)[0]
+            const baseKey = (tab.key.split(':')[0] ?? tab.key)
             const queryIndex = tab.path.indexOf('?')
             const workspaceSearch = queryIndex >= 0 ? tab.path.slice(queryIndex) : ''
             const active = activePersistentKey === baseKey && tab.key === activeKey
