@@ -517,17 +517,19 @@ export function SalesReturnsPage() {
     }, 0)
   }
 
-  function focusNextGeneralProduct() {
+  function focusNextGeneralProduct(focusNext = true) {
     setGeneralActiveRowKey(null)
     setGeneralProductTargetKey(null)
     setGeneralProductSearch('')
     setGeneralProductLookupMode('browse')
     setGeneralProductPickerOpen(false)
 
-    window.setTimeout(() => {
-      generalProductEntryRef.current?.focus()
-      generalProductEntryRef.current?.select()
-    }, 0)
+    if (focusNext) {
+      window.setTimeout(() => {
+        generalProductEntryRef.current?.focus()
+        generalProductEntryRef.current?.select()
+      }, 0)
+    }
   }
 
   function handleGeneralFieldEnter(
@@ -557,8 +559,29 @@ export function SalesReturnsPage() {
   }
 
   function addGeneralProduct(product: Product) {
-    if (generalRows.some((row) => row.product_ulid === product.ulid && row.key !== generalProductTargetKey)) {
-      feedback.error(`${product.name} is already on this return.`, 'Sales Return')
+    const existingRow = generalRows.find(
+      (row) =>
+        row.product_ulid === product.ulid &&
+        row.key !== generalProductTargetKey,
+    )
+
+    if (existingRow) {
+      setGeneralRows((rows) =>
+        rows.map((row) =>
+          row.key === existingRow.key
+            ? {
+                ...row,
+                quantity: ((Number.parseFloat(row.quantity) || 0) + 1).toFixed(6),
+              }
+            : row,
+        ),
+      )
+      setGeneralActiveRowKey(existingRow.key)
+      setGeneralProductTargetKey(null)
+      setGeneralProductSearch('')
+      setGeneralProductLookupMode('browse')
+      setGeneralProductPickerOpen(false)
+      focusGeneralField(existingRow.key, 'quantity')
       return
     }
 
@@ -603,6 +626,49 @@ export function SalesReturnsPage() {
     setGeneralProductTargetKey(null)
     focusGeneralField(rowKey, 'quantity')
   }
+
+  useEffect(() => {
+    if (
+      !generalActiveRowKey ||
+      readOnly ||
+      saleUlid ||
+      view !== 'entry'
+    ) {
+      return
+    }
+
+    function handleOutsideGeneralRow(event: MouseEvent) {
+      const target = event.target
+      if (!(target instanceof Node)) return
+
+      const row = globalThis.document.querySelector<HTMLElement>(
+        `[data-return-row="${generalActiveRowKey}"]`,
+      )
+      if (row?.contains(target)) return
+
+      if (
+        target instanceof Element &&
+        target.closest('.sales-pos-product-results-grid')
+      ) {
+        return
+      }
+
+      const activeRow = generalRows.find((item) => item.key === generalActiveRowKey)
+      const quantity = Number.parseFloat(activeRow?.quantity ?? '')
+      if (!activeRow || !Number.isFinite(quantity) || quantity <= 0) return
+
+      focusNextGeneralProduct(false)
+    }
+
+    window.addEventListener('mousedown', handleOutsideGeneralRow)
+    return () => window.removeEventListener('mousedown', handleOutsideGeneralRow)
+  }, [
+    generalActiveRowKey,
+    generalRows,
+    readOnly,
+    saleUlid,
+    view,
+  ])
 
   const openMutation = useMutation({
     mutationFn: fetchSaleReturn,
