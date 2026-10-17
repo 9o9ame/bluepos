@@ -46,10 +46,16 @@ class SaleReturnResource extends JsonResource
                 'sale_date' => $this->sale->sale_date?->toDateString(),
                 'grand_total' => $this->sale->grand_total,
             ]),
+            'return_mode' => $this->sale_id === null ? 'general' : 'invoice',
             'customer' => $this->whenLoaded('customer', fn () => $this->customer ? [
                 'ulid' => $this->customer->ulid,
                 'code' => $this->customer->code,
                 'name' => $this->customer->name,
+            ] : null),
+            'settlement_account' => $this->whenLoaded('settlementAccount', fn () => $this->settlementAccount ? [
+                'ulid' => $this->settlementAccount->ulid,
+                'code' => $this->settlementAccount->code,
+                'name' => $this->settlementAccount->name,
             ] : null),
             'salesman' => $this->whenLoaded('salesmanParty', fn () => $this->salesmanParty ? [
                 'ulid' => $this->salesmanParty->ulid,
