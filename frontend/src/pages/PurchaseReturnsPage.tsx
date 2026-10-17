@@ -1450,8 +1450,18 @@ export function PurchaseReturnsPage({
           <div className="purchase-return-search-grid">
             <PosDataGrid
               columns={[
-                { key: 'document_number', header: 'Return #', width: 110 },
-                { key: 'return_date', header: 'Date', width: 100 },
+                {
+                  key: 'document_number',
+                  header: 'Return #',
+                  width: 110,
+                  render: (row) => row.document_number,
+                },
+                {
+                  key: 'return_date',
+                  header: 'Date',
+                  width: 100,
+                  render: (row) => row.return_date,
+                },
                 {
                   key: 'original_purchase',
                   header: 'Purchase #',
@@ -1469,7 +1479,13 @@ export function PurchaseReturnsPage({
                   width: 140,
                   render: (row) => row.warehouse?.name ?? '—',
                 },
-                { key: 'grand_total', header: 'Total', align: 'right', width: 110 },
+                {
+                  key: 'grand_total',
+                  header: 'Total',
+                  align: 'right',
+                  width: 110,
+                  render: (row) => money(row.grand_total),
+                },
                 {
                   key: 'status',
                   header: 'Status',
