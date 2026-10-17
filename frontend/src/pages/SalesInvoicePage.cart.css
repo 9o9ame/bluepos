@@ -2923,3 +2923,44 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
   border-color: var(--ui-accent);
   box-shadow: var(--ui-focus-shadow);
 }
+
+
+/* Completed sale rows keep the product cell visibly editable without changing frozen column geometry. */
+.sales-pos-completed-product-trigger {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 27px;
+  height: 27px;
+  box-sizing: border-box;
+  padding: 4px 29px 4px 4px;
+  border: 1px solid var(--line, #c9c2ae);
+  border-radius: var(--control-radius);
+  background: #fffdf3;
+  color: #20242a;
+  -webkit-text-fill-color: #20242a;
+  font: inherit;
+  font-size: var(--ui-font-md);
+  font-weight: var(--ui-weight-medium);
+  line-height: var(--ui-line-normal);
+  text-align: left;
+  cursor: text;
+}
+
+.sales-pos-completed-product-trigger > span:first-child {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sales-pos-completed-product-trigger > .sales-product-combo-toggle {
+  pointer-events: none;
+}
+
+.sales-pos-completed-product-trigger:focus-visible {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
