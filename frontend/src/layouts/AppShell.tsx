@@ -217,20 +217,34 @@ function AppShellFrame({
             const workspaceSearch = queryIndex >= 0 ? tab.path.slice(queryIndex) : ''
             const active = activePersistentKey === baseKey && tab.key === activeKey
 
-            const content =
-              baseKey === 'sales-invoice' ? (
-                <SalesInvoicePage active={active} workspaceSearch={workspaceSearch} />
-              ) : baseKey === 'quotation-estimate' ? (
-                <QuotationEstimatePage active={active} />
-              ) : baseKey === 'sales-return' ? (
-                <SalesReturnsPage active={active} />
-              ) : baseKey === 'purchase-invoice' ? (
-                <PurchasesPage active={active} workspaceSearch={workspaceSearch} />
-              ) : baseKey === 'purchase-order' ? (
-                <PurchaseOrderPage />
-              ) : baseKey === 'purchase-return' ? (
-                <PurchaseReturnsPage active={active} workspaceSearch={workspaceSearch} />
-              ) : null
+            const tabAllowed =
+              baseKey === 'sales-invoice'
+                ? true
+                : baseKey === 'quotation-estimate'
+                  ? canViewSales
+                  : baseKey === 'sales-return'
+                    ? canReturnSales
+                    : baseKey === 'purchase-invoice' || baseKey === 'purchase-order'
+                      ? canViewPurchases
+                      : baseKey === 'purchase-return'
+                        ? canViewPurchaseReturns
+                        : false
+
+            const content = !tabAllowed
+              ? null
+              : baseKey === 'sales-invoice' ? (
+                  <SalesInvoicePage active={active} workspaceSearch={workspaceSearch} />
+                ) : baseKey === 'quotation-estimate' ? (
+                  <QuotationEstimatePage active={active} />
+                ) : baseKey === 'sales-return' ? (
+                  <SalesReturnsPage active={active} />
+                ) : baseKey === 'purchase-invoice' ? (
+                  <PurchasesPage active={active} workspaceSearch={workspaceSearch} />
+                ) : baseKey === 'purchase-order' ? (
+                  <PurchaseOrderPage />
+                ) : baseKey === 'purchase-return' ? (
+                  <PurchaseReturnsPage active={active} workspaceSearch={workspaceSearch} />
+                ) : null
 
             return (
               <div
