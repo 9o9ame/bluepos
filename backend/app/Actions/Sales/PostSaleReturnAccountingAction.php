@@ -63,28 +63,24 @@ class PostSaleReturnAccountingAction
         }
 
         $sale = $document->sale;
-        if (! $sale) {
-            throw new ApiException(
-                'SALE_ACCOUNTING_REQUIRED',
-                'The original sale is required before posting sales return accounting.',
-                422,
-            );
-        }
+        $originalJournal = null;
 
-        $originalJournal = JournalEntry::query()
-            ->forTenant($tenantId)
-            ->where('document_type', JournalEntry::DOCUMENT_SALE_INVOICE)
-            ->where('document_id', $sale->id)
-            ->where('status', JournalStatus::Posted->value)
-            ->lockForUpdate()
-            ->first();
+        if ($sale) {
+            $originalJournal = JournalEntry::query()
+                ->forTenant($tenantId)
+                ->where('document_type', JournalEntry::DOCUMENT_SALE_INVOICE)
+                ->where('document_id', $sale->id)
+                ->where('status', JournalStatus::Posted->value)
+                ->lockForUpdate()
+                ->first();
 
-        if (! $originalJournal) {
-            throw new ApiException(
-                'SALE_ACCOUNTING_REQUIRED',
-                'The original sale must have posted accounting before its return can be posted.',
-                422,
-            );
+            if (! $originalJournal) {
+                throw new ApiException(
+                    'SALE_ACCOUNTING_REQUIRED',
+                    'The original sale must have posted accounting before its return can be posted.',
+                    422,
+                );
+            }
         }
 
         $netRevenue = bcsub(
@@ -196,7 +192,7 @@ class PostSaleReturnAccountingAction
             'created_by' => $this->tenantContext->userId(),
             'posted_by' => $this->tenantContext->userId(),
             'posted_at' => now(),
-            'reverses_journal_entry_id' => $originalJournal->id,
+            'reverses_journal_entry_id' => $originalJournal?->id,
         ]);
 
         $sort = 0;
@@ -271,6 +267,23 @@ class PostSaleReturnAccountingAction
         ?BusinessSetting $settings,
         int $tenantId,
     ): Account {
+        if ($document->settlement_account_id !== null) {
+            $account = Account::query()
+                ->forTenant($tenantId)
+                ->whereKey((int) $document->settlement_account_id)
+                ->first();
+
+            if (! $account || ! $account->is_active) {
+                throw new ApiException(
+                    'SALE_RETURN_SETTLEMENT_ACCOUNT_REQUIRED',
+                    'The selected sales return account is missing or inactive.',
+                    422,
+                );
+            }
+
+            return $account;
+        }
+
         if ($document->customer_id !== null) {
             $customer = Customer::query()
                 ->forTenant($tenantId)
