@@ -92,14 +92,24 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const openModule = useCallback(
     (path: string, options?: { newInstance?: boolean }) => {
-      if (options?.newInstance && path === '/daily/sales') {
-        const highestInstance = tabsRef.current.reduce((highest, tab) => {
-          const match = /^sales-invoice:(\d+)$/.exec(tab.key)
-          return match ? Math.max(highest, Number.parseInt(match[1], 10)) : highest
-        }, 0)
-        const instance = highestInstance + 1
-        navigate(`/daily/sales?instance=${instance}`)
-        return
+      if (options?.newInstance) {
+        const queryIndex = path.indexOf('?')
+        const pathname = queryIndex >= 0 ? path.slice(0, queryIndex) : path
+        const module = resolveWorkspaceModule(pathname)
+
+        if (module.multiInstance) {
+          const keyPrefix = `${module.key}:`
+          const highestInstance = tabsRef.current.reduce((highest, tab) => {
+            if (!tab.key.startsWith(keyPrefix)) return highest
+            const instance = Number.parseInt(tab.key.slice(keyPrefix.length), 10)
+            return Number.isFinite(instance) ? Math.max(highest, instance) : highest
+          }, 0)
+          const instance = highestInstance + 1
+          const params = new URLSearchParams(queryIndex >= 0 ? path.slice(queryIndex + 1) : '')
+          params.set('instance', String(instance))
+          navigate(`${pathname}?${params.toString()}`)
+          return
+        }
       }
 
       navigate(path)
