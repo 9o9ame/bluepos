@@ -65,27 +65,21 @@ class PostPurchaseReturnAccountingAction
         }
 
         $invoice = $document->purchaseInvoice;
-        if (! $invoice) {
-            throw new ApiException(
-                'PURCHASE_ACCOUNTING_REQUIRED',
-                'The original purchase accounting journal is required before posting a purchase return.',
-                422,
-            );
-        }
+        if ($invoice) {
+            $purchaseJournalExists = JournalEntry::query()
+                ->forTenant($tenantId)
+                ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_INVOICE)
+                ->where('document_id', $invoice->id)
+                ->where('status', JournalStatus::Posted)
+                ->exists();
 
-        $purchaseJournalExists = JournalEntry::query()
-            ->forTenant($tenantId)
-            ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_INVOICE)
-            ->where('document_id', $invoice->id)
-            ->where('status', JournalStatus::Posted)
-            ->exists();
-
-        if (! $purchaseJournalExists) {
-            throw new ApiException(
-                'PURCHASE_ACCOUNTING_REQUIRED',
-                'The original purchase accounting journal is required before posting a purchase return.',
-                422,
-            );
+            if (! $purchaseJournalExists) {
+                throw new ApiException(
+                    'PURCHASE_ACCOUNTING_REQUIRED',
+                    'The original purchase accounting journal is required before posting an invoice-linked purchase return.',
+                    422,
+                );
+            }
         }
 
         $supplier = $document->supplier;
