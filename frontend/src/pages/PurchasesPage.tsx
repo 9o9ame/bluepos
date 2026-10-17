@@ -664,6 +664,18 @@ export function PurchasesPage({
     })
   }
 
+  function focusQuantityInRow(rowKey: string) {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const input = document.querySelector<HTMLInputElement>(
+          `tr[data-purchase-row-key="${rowKey}"] [data-purchase-field="quantity"]`,
+        )
+        input?.focus()
+        input?.select()
+      })
+    })
+  }
+
   function handleLineEnter(event: ReactKeyboardEvent<HTMLElement>) {
     if (event.key !== 'Enter' || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return
 
@@ -1002,7 +1014,18 @@ export function PurchasesPage({
       case 'qty':
         return (
           <td className={cls} style={widthStyle}>
-            {editableInput(row.quantity, (value) => patchLine(row.key, { quantity: value }))}
+            {ctx.readOnly ? (
+              row.quantity
+            ) : (
+              <input
+                value={row.quantity}
+                data-purchase-edit="true"
+                data-purchase-field="quantity"
+                onKeyDown={handleLineEnter}
+                onChange={(event) => patchLine(row.key, { quantity: event.target.value })}
+                onClick={(event) => event.stopPropagation()}
+              />
+            )}
           </td>
         )
       case 'free_pcs':
@@ -1725,6 +1748,12 @@ export function PurchasesPage({
     replaceRowKey?: string,
     lookupQueryOverride?: string,
   ) {
+    const unit = preferPcsUnit(product, lookupQueryOverride ?? productQuery)
+    if (!unit.unit_ulid) {
+      setError('Selected product has no base unit.')
+      return
+    }
+
     const existingLine = replaceRowKey
       ? lines.find((line) => line.key === replaceRowKey) ?? null
       : null
@@ -1754,10 +1783,39 @@ export function PurchasesPage({
       return
     }
 
-    const unit = preferPcsUnit(product, lookupQueryOverride ?? productQuery)
-    if (!unit.unit_ulid) {
-      setError('Selected product has no base unit.')
-      return
+    if (!replaceRowKey) {
+      const existing = linesRef.current.find(
+        (line) =>
+          line.product_ulid === product.ulid &&
+          line.unit_ulid === unit.unit_ulid &&
+          line.conversion_factor === unit.conversion_factor,
+      )
+
+      if (existing) {
+        setLines((prev) => {
+          const next = prev.map((line) =>
+            line.key === existing.key
+              ? applyCalcToLine(
+                  {
+                    ...line,
+                    quantity: incrementQuantityByOne(line.quantity),
+                  },
+                  calcSettings,
+                )
+              : line,
+          )
+          linesRef.current = next
+          return next
+        })
+
+        setSelectedLineKey(existing.key)
+        setProductEditRowKey(existing.key)
+        setProductQuery(existing.product_label)
+        setProductMenuOpen(false)
+        setError(null)
+        focusQuantityInRow(existing.key)
+        return
+      }
     }
 
     let unitCost = '0.0000'
@@ -1876,6 +1934,8 @@ export function PurchasesPage({
       setProductEditRowKey(existing.key)
       setProductQuery(existing.product_label)
       setProductMenuOpen(false)
+      setError(null)
+      focusQuantityInRow(existing.key)
       return
     }
 
