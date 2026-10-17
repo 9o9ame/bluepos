@@ -58,8 +58,14 @@ export function recalculateStock() {
   })
 }
 
-export function fetchProductStock(productUlid: string) {
-  return apiFetch<ProductStock>(`/api/products/${productUlid}/stock`)
+export function fetchProductStock(
+  productUlid: string,
+  options?: { busy?: 'block' | 'fetch' | 'none' },
+) {
+  return apiFetch<ProductStock>(
+    `/api/products/${productUlid}/stock`,
+    options,
+  )
 }
 
 export function fetchStock(params: {
