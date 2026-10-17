@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'warehouse_id',
     'sale_id',
     'customer_id',
+    'settlement_account_id',
     'salesman_party_profile_id',
     'document_number',
     'return_date',
@@ -70,6 +71,12 @@ class SaleReturn extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    /** @return BelongsTo<Account, $this> */
+    public function settlementAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'settlement_account_id');
     }
 
     /** @return BelongsTo<PartyProfile, $this> */
