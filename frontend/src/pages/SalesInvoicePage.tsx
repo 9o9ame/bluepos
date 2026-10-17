@@ -439,6 +439,8 @@ export function SalesInvoicePage({
   const receivedRef = useRef<HTMLInputElement | null>(null)
   const productSearchRef = useRef<HTMLInputElement | null>(null)
   const productPickerAnchorRef = useRef<HTMLDivElement | null>(null)
+  const activeProductSearchRef = useRef<HTMLInputElement | null>(null)
+  const activeProductPickerAnchorRef = useRef<HTMLDivElement | null>(null)
 
   const copyFromMutation = useMutation({
     mutationFn: async () => {
@@ -1086,6 +1088,22 @@ export function SalesInvoicePage({
     setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
     setActiveProductPickerOpen(false)
     focusLineQuantity(line.line_key)
+  }
+
+  function editCompletedProduct(line: SaleDraftLine) {
+    if (line.line_kind !== 'sale') return
+
+    setSaveError(null)
+    setProductQuery('')
+    setActiveLineKey(line.line_key)
+    setActiveProductQuery(`${line.product_number} — ${line.product_name}`)
+    setProductLookupMode('browse')
+    setActiveProductPickerOpen(true)
+
+    window.setTimeout(() => {
+      activeProductSearchRef.current?.focus()
+      activeProductSearchRef.current?.select()
+    }, 0)
   }
 
   function handleActiveFieldEnter(
@@ -1973,10 +1991,11 @@ export function SalesInvoicePage({
                                 return (
                                   <td key={col.key} className="sales-reference-yellow sales-product-search-cell">
                                     <div
-                                      ref={productPickerAnchorRef}
+                                      ref={activeProductPickerAnchorRef}
                                       className="sales-product-combo"
                                     >
                                       <input
+                                        ref={activeProductSearchRef}
                                         className="sales-pos-product-entry is-active-product"
                                         value={activeProductQuery}
                                         aria-label="Change product"
@@ -2029,13 +2048,13 @@ export function SalesInvoicePage({
                                         </span>
                                       </button>
 
-                                      {activeProductPickerOpen ? (
+                                      {activeProductPickerOpen && activeLineKey === line.line_key ? (
                                         <ProductLookupGrid
                                           rows={productLookupRows}
                                           total={productLookupTotal}
                                           priceType={cart.priceType}
                                           selectedUlid={line.product_ulid}
-                                          portalAnchorRef={productPickerAnchorRef}
+                                          portalAnchorRef={activeProductPickerAnchorRef}
                                           onRequestClose={() => setActiveProductPickerOpen(false)}
                                           onSelect={(product) =>
                                             void addProductFromEntry(product.ulid, '', line.line_key, product)
@@ -2197,6 +2216,20 @@ export function SalesInvoicePage({
                                     placeholder="Search product name or number"
                                     autoComplete="off"
                                     onFocus={() => {
+                                      if (activeLineKey) {
+                                        const activeLine = cart.lines.find((row) => row.line_key === activeLineKey)
+                                        const quantity = Number.parseFloat(activeLine?.quantity ?? '')
+                                        if (!activeLine || !Number.isFinite(quantity) || quantity <= 0) {
+                                          setSaveError('Sale quantity must be greater than zero.')
+                                          feedback.error('Sale quantity must be greater than zero.', 'Sales Invoice')
+                                          focusLineQuantity(activeLineKey)
+                                          return
+                                        }
+
+                                        setActiveLineKey(null)
+                                        setActiveProductQuery('')
+                                      }
+
                                       setProductLookupMode('browse')
                                       setActiveProductPickerOpen(true)
                                     }}
@@ -2225,6 +2258,20 @@ export function SalesInvoicePage({
                                     aria-expanded={activeProductPickerOpen}
                                     onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => {
+                                      if (activeLineKey) {
+                                        const activeLine = cart.lines.find((row) => row.line_key === activeLineKey)
+                                        const quantity = Number.parseFloat(activeLine?.quantity ?? '')
+                                        if (!activeLine || !Number.isFinite(quantity) || quantity <= 0) {
+                                          setSaveError('Sale quantity must be greater than zero.')
+                                          feedback.error('Sale quantity must be greater than zero.', 'Sales Invoice')
+                                          focusLineQuantity(activeLineKey)
+                                          return
+                                        }
+
+                                        setActiveLineKey(null)
+                                        setActiveProductQuery('')
+                                      }
+
                                       setProductLookupMode('browse')
                                       setActiveProductPickerOpen((open) => !open)
                                       requestAnimationFrame(() => productSearchRef.current?.focus())
@@ -2237,7 +2284,7 @@ export function SalesInvoicePage({
                                     </span>
                                   </button>
 
-                                  {activeProductPickerOpen ? (
+                                  {activeProductPickerOpen && !activeLineKey ? (
                                     <ProductLookupGrid
                                       rows={productLookupRows}
                                       total={productLookupTotal}
@@ -2286,8 +2333,7 @@ export function SalesInvoicePage({
                                   type="button"
                                   className="sales-pos-product-entry sales-pos-completed-product-trigger"
                                   aria-label={`Edit product ${line.product_name}`}
-                                  onFocus={() => reopenCompletedLine(line)}
-                                  onClick={() => reopenCompletedLine(line)}
+                                  onClick={() => editCompletedProduct(line)}
                                 >
                                   <span>{line.product_number} — {line.product_name}</span>
                                   <span className="sales-product-combo-toggle" aria-hidden>
