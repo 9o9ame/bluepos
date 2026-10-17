@@ -1,5 +1,5 @@
 import { FileSearch, Plus, Printer, ReceiptText, RefreshCw, Save, X, XCircle } from 'lucide-react'
-import { useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchProducts } from '../api/catalog'
@@ -241,16 +241,19 @@ export function QuotationEstimatePage() {
     }, 0)
   }
 
-  function finishActiveLine(lineKey: string) {
+  function finishActiveLine(lineKey: string, focusNext = true) {
     if (activeLineKey !== lineKey) return
 
     setActiveLineKey(null)
     setActiveProductQuery('')
     setProductPickerOpen(false)
-    window.setTimeout(() => {
-      productSearchRef.current?.focus()
-      productSearchRef.current?.select()
-    }, 0)
+
+    if (focusNext) {
+      window.setTimeout(() => {
+        productSearchRef.current?.focus()
+        productSearchRef.current?.select()
+      }, 0)
+    }
   }
 
   function handleLineEnter(
@@ -324,6 +327,29 @@ export function QuotationEstimatePage() {
 
     let lineKey = replaceLineKey
 
+    const existingLine = !replaceLineKey
+      ? cart.lines.find(
+          (line) =>
+            line.line_kind === 'sale' &&
+            line.product_ulid === product.ulid &&
+            (line.unit_ulid ?? null) === (product.base_unit?.ulid ?? null) &&
+            (line.barcode ?? null) === null,
+        )
+      : null
+
+    if (existingLine) {
+      const nextQuantity = (Number.parseFloat(existingLine.quantity) || 0) + 1
+      cart.setQuantity(existingLine.line_key, nextQuantity.toFixed(6))
+
+      setProductQuery('')
+      setActiveProductQuery(`${existingLine.product_number} — ${existingLine.product_name}`)
+      setProductPickerOpen(false)
+      setProductLookupMode('browse')
+      setActiveLineKey(existingLine.line_key)
+      focusLineQuantity(existingLine.line_key)
+      return
+    }
+
     if (replaceLineKey) {
       cart.replaceProduct(
         replaceLineKey,
@@ -356,6 +382,36 @@ export function QuotationEstimatePage() {
     setActiveLineKey(lineKey)
     focusLineQuantity(lineKey)
   }
+
+  useEffect(() => {
+    if (!activeLineKey || readOnly || tab !== 'entry') return
+
+    function handleOutsideActiveRow(event: MouseEvent) {
+      const target = event.target
+      if (!(target instanceof Node)) return
+
+      const row = globalThis.document.querySelector<HTMLElement>(
+        `[data-quotation-line="${activeLineKey}"]`,
+      )
+      if (row?.contains(target)) return
+
+      if (
+        target instanceof Element &&
+        target.closest('.sales-pos-product-results-grid')
+      ) {
+        return
+      }
+
+      const line = cart.paidLines.find((item) => item.line_key === activeLineKey)
+      const quantity = Number.parseFloat(line?.quantity ?? '')
+      if (!line || !Number.isFinite(quantity) || quantity <= 0) return
+
+      finishActiveLine(activeLineKey, false)
+    }
+
+    window.addEventListener('mousedown', handleOutsideActiveRow)
+    return () => window.removeEventListener('mousedown', handleOutsideActiveRow)
+  }, [activeLineKey, cart.paidLines, readOnly, tab])
 
   return (
     <DesktopPanel
