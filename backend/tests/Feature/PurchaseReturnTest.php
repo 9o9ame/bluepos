@@ -491,6 +491,18 @@ class PurchaseReturnTest extends TestCase
 
         $returnUlid = $document->json('ulid');
 
+        $trackedProductUlid = $this->postJson('/api/products', [
+            'name' => 'Tracked General Return Product',
+            'base_unit_ulid' => $pcs,
+            'track_batch' => true,
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchase-returns/'.$returnUlid.'/lines', [
+            'product_ulid' => $trackedProductUlid,
+            'quantity' => '1.000000',
+            'unit_cost' => '5.0000',
+        ])->assertStatus(422);
+
         $line = $this->postJson('/api/purchase-returns/'.$returnUlid.'/lines', [
             'product_ulid' => $productUlid,
             'quantity' => '2.000000',
