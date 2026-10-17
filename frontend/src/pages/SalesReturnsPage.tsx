@@ -927,7 +927,6 @@ export function SalesReturnsPage() {
                   />
                 </div>
                 </div>
-                </div>
 
                 <div className="sales-return-fields-right">
                   <UiButton
@@ -1070,14 +1069,21 @@ export function SalesReturnsPage() {
                           {readOnly ? (
                             <><strong>{row.product_number}</strong> — {row.product_name}</>
                           ) : generalProductTargetKey === row.key ? (
-                            <>
+                            <div ref={generalProductAnchorRef} className="sales-product-combo sales-return-product-combo">
                               <input
                                 autoFocus
+                                className="sales-pos-product-entry"
                                 value={generalProductSearch}
-                                placeholder="Select / search product"
+                                placeholder="Search product name or number"
                                 aria-label={`Change product for ${row.product_name}`}
+                                autoComplete="off"
+                                onFocus={() => {
+                                  setGeneralProductLookupMode('browse')
+                                  setGeneralProductPickerOpen(true)
+                                }}
                                 onChange={(e) => {
                                   setGeneralProductSearch(e.target.value)
+                                  setGeneralProductLookupMode('search')
                                   setGeneralProductPickerOpen(true)
                                 }}
                                 onKeyDown={(e) => {
@@ -1088,7 +1094,7 @@ export function SalesReturnsPage() {
                                     return
                                   }
                                   if (e.key === 'Enter') {
-                                    const first = generalProductQuery.data?.data?.[0]
+                                    const first = generalProductRows[0]
                                     if (first) {
                                       e.preventDefault()
                                       addGeneralProduct(first)
@@ -1096,24 +1102,35 @@ export function SalesReturnsPage() {
                                   }
                                 }}
                               />
+                              <button
+                                type="button"
+                                className="sales-product-combo-toggle"
+                                aria-label="Open product dropdown"
+                                aria-expanded={generalProductPickerOpen}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                  setGeneralProductLookupMode('browse')
+                                  setGeneralProductPickerOpen((open) => !open)
+                                }}
+                              >
+                                <span aria-hidden>
+                                  <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                    <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                  </svg>
+                                </span>
+                              </button>
                               {generalProductPickerOpen ? (
-                                <div className="sales-return-general-product-results">
-                                  {(generalProductQuery.data?.data ?? []).map((product) => (
-                                    <button
-                                      type="button"
-                                      key={product.ulid}
-                                      onMouseDown={(e) => e.preventDefault()}
-                                      onClick={() => addGeneralProduct(product)}
-                                    >
-                                      <strong>{product.product_number}</strong>
-                                      <span>{product.name}</span>
-                                      <span>{money(retailPrice(product))}</span>
-                                    </button>
-                                  ))}
-                                  {generalProductQuery.isFetching ? <div>Searching products…</div> : null}
-                                </div>
+                                <ProductLookupGrid
+                                  rows={generalProductRows}
+                                  total={generalProductTotal}
+                                  priceType="retail"
+                                  portalAnchorRef={generalProductAnchorRef}
+                                  selectedUlid={row.product_ulid}
+                                  onRequestClose={() => setGeneralProductPickerOpen(false)}
+                                  onSelect={addGeneralProduct}
+                                />
                               ) : null}
-                            </>
+                            </div>
                           ) : (
                             <button
                               type="button"
@@ -1121,6 +1138,7 @@ export function SalesReturnsPage() {
                               onClick={() => {
                                 setGeneralProductTargetKey(row.key)
                                 setGeneralProductSearch(row.product_name)
+                                setGeneralProductLookupMode('browse')
                                 setGeneralProductPickerOpen(true)
                               }}
                             >
@@ -1191,50 +1209,65 @@ export function SalesReturnsPage() {
                   {!readOnly && generalProductTargetKey === null ? (
                     <tr className="sales-return-general-entry">
                       <td className="sales-return-general-product-cell">
-                        <input
-                          value={generalProductSearch}
-                          placeholder="Select / search product"
-                          aria-label="General return product"
-                          onFocus={() => {
-                            setGeneralProductTargetKey(null)
-                            setGeneralProductPickerOpen(true)
-                          }}
-                          onChange={(e) => {
-                            setGeneralProductSearch(e.target.value)
-                            setGeneralProductPickerOpen(true)
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Escape') {
-                              setGeneralProductPickerOpen(false)
-                              return
-                            }
-                            if (e.key === 'Enter') {
-                              const first = generalProductQuery.data?.data?.[0]
-                              if (first) {
-                                e.preventDefault()
-                                addGeneralProduct(first)
+                        <div ref={generalProductAnchorRef} className="sales-product-combo sales-return-product-combo">
+                          <input
+                            className="sales-pos-product-entry"
+                            value={generalProductSearch}
+                            placeholder="Search product name or number"
+                            aria-label="General return product"
+                            autoComplete="off"
+                            onFocus={() => {
+                              setGeneralProductTargetKey(null)
+                              setGeneralProductLookupMode('browse')
+                              setGeneralProductPickerOpen(true)
+                            }}
+                            onChange={(e) => {
+                              setGeneralProductSearch(e.target.value)
+                              setGeneralProductLookupMode('search')
+                              setGeneralProductPickerOpen(true)
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') {
+                                setGeneralProductPickerOpen(false)
+                                return
                               }
-                            }
-                          }}
-                        />
-                        {generalProductPickerOpen ? (
-                          <div className="sales-return-general-product-results">
-                            {(generalProductQuery.data?.data ?? []).map((product) => (
-                              <button
-                                type="button"
-                                key={product.ulid}
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={() => addGeneralProduct(product)}
-                              >
-                                <strong>{product.product_number}</strong>
-                                <span>{product.name}</span>
-                                <span>{money(retailPrice(product))}</span>
-                              </button>
-                            ))}
-                            {generalProductQuery.isFetching ? <div>Searching products…</div> : null}
-                            {!generalProductQuery.isFetching && (generalProductQuery.data?.data.length ?? 0) === 0 ? <div>No matching products.</div> : null}
-                          </div>
-                        ) : null}
+                              if (e.key === 'Enter') {
+                                const first = generalProductRows[0]
+                                if (first) {
+                                  e.preventDefault()
+                                  addGeneralProduct(first)
+                                }
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="sales-product-combo-toggle"
+                            aria-label="Open product dropdown"
+                            aria-expanded={generalProductPickerOpen}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                              setGeneralProductLookupMode('browse')
+                              setGeneralProductPickerOpen((open) => !open)
+                            }}
+                          >
+                            <span aria-hidden>
+                              <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                              </svg>
+                            </span>
+                          </button>
+                          {generalProductPickerOpen ? (
+                            <ProductLookupGrid
+                              rows={generalProductRows}
+                              total={generalProductTotal}
+                              priceType="retail"
+                              portalAnchorRef={generalProductAnchorRef}
+                              onRequestClose={() => setGeneralProductPickerOpen(false)}
+                              onSelect={addGeneralProduct}
+                            />
+                          ) : null}
+                        </div>
                       </td>
                       <td colSpan={7} className="sales-return-general-entry-hint">
                         Select products directly for a general return, or choose Sales# above for invoice-linked return.
