@@ -144,6 +144,7 @@ export function SalesReturnsPage() {
   const createKeyRef = useRef(newReturnKey())
   const generalProductAnchorRef = useRef<HTMLDivElement | null>(null)
   const generalProductEntryRef = useRef<HTMLInputElement | null>(null)
+  const salePickerRef = useRef<HTMLDivElement | null>(null)
   const refundKeyRef = useRef(newRefundKey())
   const readOnly = document?.status === 'posted'
 
@@ -246,6 +247,22 @@ export function SalesReturnsPage() {
       setFromPartyType(cash.type)
     }
   }, [customersQuery.data, document?.ulid, fromPartyUlid, saleUlid])
+
+  useEffect(() => {
+    if (!salePickerOpen) return
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as Node
+      if (salePickerRef.current?.contains(target)) return
+      setSalePickerOpen(false)
+    }
+
+    window.addEventListener('mousedown', handlePointerDown)
+
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown)
+    }
+  }, [salePickerOpen])
 
   const historyQuery = useQuery({
     queryKey: ['sales-returns', historySearch, dateFrom, dateTo],
@@ -845,7 +862,7 @@ export function SalesReturnsPage() {
 
                 <div className="sales-return-option-group is-sales">
                   <label>Sales#:</label>
-                  <div className={`sales-return-sale-search${salePickerOpen ? ' is-open' : ''}`}>
+                  <div ref={salePickerRef} className={`sales-return-sale-search${salePickerOpen ? ' is-open' : ''}`}>
                     <div className="sales-return-sale-input">
                       <Search size={13} aria-hidden="true" />
                       <input
