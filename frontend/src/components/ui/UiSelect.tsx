@@ -32,7 +32,6 @@ export type UiSelectProps = {
   defaultValue?: string
   options: UiSelectOption[]
   onChange?: (value: string) => void
-  onSearchChange?: (value: string) => void
   disabled?: boolean
   className?: string
   triggerClassName?: string
@@ -75,7 +74,6 @@ export function UiSelect({
   defaultValue,
   options,
   onChange,
-  onSearchChange,
   disabled = false,
   className,
   triggerClassName,
@@ -375,7 +373,6 @@ export function UiSelect({
               const next = event.target.value
               setTriggerSearchText(next)
               setSearch(next)
-              onSearchChange?.(next)
               if (!open) setOpen(true)
             }}
             onKeyDown={(event) => {
@@ -545,11 +542,7 @@ export function UiSelect({
                     value={search}
                     placeholder={searchPlaceholder}
                     aria-label={`Search ${ariaLabel ?? 'options'}`}
-                    onChange={(event) => {
-                      const next = event.target.value
-                      setSearch(next)
-                      onSearchChange?.(next)
-                    }}
+                    onChange={(event) => setSearch(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === 'ArrowDown') {
                         event.preventDefault()
