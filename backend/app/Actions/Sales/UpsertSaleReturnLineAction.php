@@ -113,17 +113,16 @@ class UpsertSaleReturnLineAction
             ]);
         }
 
-        if ($line === null) {
-            $exists = SaleReturnLine::query()
-                ->where('sale_return_id', $document->id)
-                ->where('sale_item_id', $saleItem->id)
-                ->exists();
+        $duplicateSaleItem = SaleReturnLine::query()
+            ->where('sale_return_id', $document->id)
+            ->where('sale_item_id', $saleItem->id)
+            ->when($line !== null, fn ($query) => $query->where('id', '!=', $line->id))
+            ->exists();
 
-            if ($exists) {
-                throw ValidationException::withMessages([
-                    'sale_item_ulid' => 'This sale line is already on the return.',
-                ]);
-            }
+        if ($duplicateSaleItem) {
+            throw ValidationException::withMessages([
+                'sale_item_ulid' => 'This sale line is already on the return.',
+            ]);
         }
 
         $quantity = $this->normalizeQuantity((string) ($data['quantity'] ?? '0'));
@@ -176,18 +175,17 @@ class UpsertSaleReturnLineAction
             ]);
         }
 
-        if ($line === null) {
-            $exists = SaleReturnLine::query()
-                ->where('sale_return_id', $document->id)
-                ->whereNull('sale_item_id')
-                ->where('product_id', $product->id)
-                ->exists();
+        $duplicateProduct = SaleReturnLine::query()
+            ->where('sale_return_id', $document->id)
+            ->whereNull('sale_item_id')
+            ->where('product_id', $product->id)
+            ->when($line !== null, fn ($query) => $query->where('id', '!=', $line->id))
+            ->exists();
 
-            if ($exists) {
-                throw ValidationException::withMessages([
-                    'product_ulid' => 'This product is already on the general return.',
-                ]);
-            }
+        if ($duplicateProduct) {
+            throw ValidationException::withMessages([
+                'product_ulid' => 'This product is already on the general return.',
+            ]);
         }
 
         $quantity = $this->normalizeQuantity((string) ($data['quantity'] ?? '0'));
