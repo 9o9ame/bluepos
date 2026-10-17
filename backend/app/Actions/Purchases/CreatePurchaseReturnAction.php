@@ -45,6 +45,8 @@ class CreatePurchaseReturnAction
             if ($purchaseUlid !== '') {
                 $invoice = PurchaseInvoice::query()
                     ->forTenant($tenantId)
+                    ->where('branch_id', $this->tenantContext->branchId())
+                    ->where('warehouse_id', $this->tenantContext->warehouseId())
                     ->with(['supplier', 'warehouse'])
                     ->where('ulid', $purchaseUlid)
                     ->lockForUpdate()
