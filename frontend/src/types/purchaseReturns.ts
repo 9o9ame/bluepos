@@ -77,3 +77,38 @@ export type ReturnablePurchaseLine = {
   batch_number: string | null
   expiry_date: string | null
 }
+
+
+export type PurchaseReturnProductWiseRow = {
+  ulid: string
+  return_ulid: string
+  return_number: string
+  return_date: string
+  return_mode: 'general' | 'invoice'
+  supplier: {
+    ulid: string
+    name: string
+  } | null
+  purchase: {
+    ulid: string
+    document_number: string
+    supplier_invoice_number: string | null
+  } | null
+  product: {
+    ulid: string
+    product_number: string
+    name: string
+  }
+  category: {
+    ulid: string
+    name: string
+  } | null
+  unit: {
+    ulid: string
+    code: string
+    name: string
+  } | null
+  quantity_out: string
+  base_quantity_out: string
+  amount: string
+}
