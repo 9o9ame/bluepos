@@ -195,7 +195,7 @@ class SaleReturnController extends Controller
         $document = $this->findDocument($returnUlid, $tenantContext);
         $this->authorize('update', $document);
         $line = $this->findLine($document, $lineUlid);
-        $line->loadMissing('saleItem');
+        $line->loadMissing(['saleItem', 'product']);
 
         $data = $request->validate([
             'sale_item_ulid' => ['sometimes', 'nullable', 'string', 'size:26'],
