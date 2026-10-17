@@ -3,6 +3,7 @@ import type { Paginated } from '../types/catalog'
 import type {
   PurchaseReturn,
   PurchaseReturnLine,
+  PurchaseReturnProductWiseRow,
   ReturnablePurchaseLine,
 } from '../types/purchaseReturns'
 import type { PurchaseInvoice } from '../types/purchases'
@@ -140,4 +141,24 @@ export function fetchPostedPurchases(params?: { q?: string; page?: number; per_p
   if (params?.page) search.set('page', String(params.page))
   search.set('per_page', String(params?.per_page ?? 25))
   return apiFetch<Paginated<PurchaseInvoice>>(`/api/purchases?${search.toString()}`)
+}
+
+
+export function fetchPurchaseReturnProductWise(params?: {
+  date_from?: string
+  date_to?: string
+  page?: number
+  per_page?: number
+}) {
+  const search = new URLSearchParams()
+  if (params?.date_from) search.set('date_from', params.date_from)
+  if (params?.date_to) search.set('date_to', params.date_to)
+  if (params?.page) search.set('page', String(params.page))
+  search.set('per_page', String(params?.per_page ?? 50))
+  const suffix = search.toString() ? `?${search.toString()}` : ''
+
+  return apiFetch<Paginated<PurchaseReturnProductWiseRow>>(
+    `/api/purchase-returns/product-wise${suffix}`,
+    { busy: 'none' },
+  )
 }
