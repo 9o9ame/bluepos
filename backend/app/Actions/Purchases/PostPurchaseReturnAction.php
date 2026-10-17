@@ -13,6 +13,7 @@ use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceLine;
 use App\Models\PurchaseReturn;
 use App\Models\PurchaseReturnLine;
+use App\Models\StockBalance;
 use App\Security\AuditLogger;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
@@ -139,10 +140,29 @@ class PostPurchaseReturnAction
                     );
                 }
 
-                $inventoryUnitCost = $this->recalculate->inventoryUnitCost(
-                    (string) $line->unit_cost,
-                    (string) $line->conversion_factor,
-                );
+                if ($invoiceMode) {
+                    $inventoryUnitCost = $this->recalculate->inventoryUnitCost(
+                        (string) $line->unit_cost,
+                        (string) $line->conversion_factor,
+                    );
+                } else {
+                    $balance = StockBalance::query()
+                        ->where('tenant_id', $document->tenant_id)
+                        ->where('warehouse_id', $document->warehouse_id)
+                        ->where('product_id', $line->product_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $balance || $balance->average_cost === null) {
+                        throw new ApiException(
+                            'GENERAL_PURCHASE_RETURN_COST_REQUIRED',
+                            'Current warehouse average cost is required before posting a general purchase return.',
+                            422,
+                        );
+                    }
+
+                    $inventoryUnitCost = bcadd((string) $balance->average_cost, '0', 4);
+                }
 
                 $negativeQty = bcmul((string) $line->base_quantity, '-1', 6);
 
