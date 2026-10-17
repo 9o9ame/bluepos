@@ -515,7 +515,7 @@ export function PurchaseReturnsPage({
                               onClick={() => selectPurchase(purchase)}
                             >
                               <strong>{purchase.document_number}</strong>
-                              <span>{purchase.purchase_date}</span>
+                              <span>{purchase.invoice_date}</span>
                               <span>{purchase.supplier?.name ?? '—'}</span>
                               <span>{purchase.supplier_invoice_number ?? '—'}</span>
                               <span>{money(purchase.grand_total)}</span>
