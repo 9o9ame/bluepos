@@ -790,3 +790,85 @@ html[data-animations='off'] .quotation-product-search-input {
     min-width: 0;
   }
 }
+
+
+/* Match Sales Return's proven single-surface searchable select treatment. */
+.quotation-header-grid .is-customer .quotation-canonical-select .ui-select-combobox-trigger,
+.quotation-header-grid .is-salesman .quotation-canonical-select .ui-select-combobox-trigger {
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 25px;
+  min-height: 25px;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  box-shadow: var(--ui-control-shadow);
+}
+
+.quotation-header-grid .is-customer .quotation-canonical-select .ui-select-trigger-search,
+.quotation-header-grid .is-salesman .quotation-canonical-select .ui-select-trigger-search {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 23px 0 7px;
+  border: 0;
+  border-radius: inherit;
+  outline: none;
+  background: transparent;
+  color: var(--ui-text);
+  box-shadow: none;
+  font: inherit;
+  font-weight: var(--ui-weight-medium);
+}
+
+.quotation-header-grid .is-customer .quotation-canonical-select .ui-select-trigger-search:focus,
+.quotation-header-grid .is-salesman .quotation-canonical-select .ui-select-trigger-search:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.quotation-header-grid .is-customer .quotation-canonical-select .ui-select-combobox-toggle,
+.quotation-header-grid .is-salesman .quotation-canonical-select .ui-select-combobox-toggle {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  bottom: 2px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  min-width: 18px;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--ui-select-arrow-border);
+  border-radius: calc(var(--control-radius) - 1px);
+  background: var(--ui-select-arrow-face);
+  color: var(--ui-select-selected-text);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.quotation-header-grid .is-customer .quotation-canonical-select .ui-select-combobox-toggle .ui-select-arrow,
+.quotation-header-grid .is-salesman .quotation-canonical-select .ui-select-combobox-toggle .ui-select-arrow {
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+}
+
+.quotation-header-grid .is-customer .quotation-canonical-select .ui-select-combobox-trigger:focus-within,
+.quotation-header-grid .is-salesman .quotation-canonical-select .ui-select-combobox-trigger:focus-within {
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
