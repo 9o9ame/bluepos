@@ -430,6 +430,15 @@ export function PurchasesPage({
   useEffect(() => {
     linesRef.current = lines
   }, [lines])
+
+
+  const canSaveRoleDefault = useCan('roles.edit')
+  const columnLayout = useColumnLayout({
+    screenKey: PURCHASE_INVOICE_SCREEN,
+    catalog: PURCHASE_INVOICE_COLUMNS,
+  })
+
+  const readOnly = status === 'posted' || status === 'cancelled'
   useEffect(() => {
     if (
       !active ||
@@ -473,14 +482,6 @@ export function PurchasesPage({
     window.addEventListener('mousedown', handleOutsideProcessingRow)
     return () => window.removeEventListener('mousedown', handleOutsideProcessingRow)
   }, [active, mode, productEditRowKey, readOnly])
-
-  const canSaveRoleDefault = useCan('roles.edit')
-  const columnLayout = useColumnLayout({
-    screenKey: PURCHASE_INVOICE_SCREEN,
-    catalog: PURCHASE_INVOICE_COLUMNS,
-  })
-
-  const readOnly = status === 'posted' || status === 'cancelled'
 
   const listQuery = useInfiniteQuery({
     queryKey: ['purchases', q, statusFilter, supplierFilter, dateFrom, dateTo],
@@ -684,7 +685,7 @@ export function PurchasesPage({
   function finishProcessingRow(focusNext = true) {
     if (!productEditRowKey || productEditRowKey === 'new') return
 
-    setProductEditRowKey(focusNext ? 'new' : 'new')
+    setProductEditRowKey('new')
     setProductLookupMode('search')
     setProductQuery('')
     setProductMenuOpen(false)
