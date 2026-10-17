@@ -1973,6 +1973,208 @@ export function SalesInvoicePage({
                 </thead>
 
                 <tbody>
+                  {cart.lines
+                    .filter((line) => line.line_key !== activeLineKey)
+                    .map((line) => (
+                    <tr
+                      key={line.line_key}
+                      className={
+                        line.line_kind === 'sale'
+                          ? 'sales-pos-line is-completed-entry'
+                          : 'sales-pos-line is-free'
+                      }
+                      title={line.line_kind === 'sale' ? 'Double-click to edit this line' : undefined}
+                      onDoubleClick={() => reopenCompletedLine(line)}
+                    >
+                      {effectiveSalesColumns.map((col) => {
+                        if (col.key === 'selector') {
+                          return <td key={col.key} className="sales-reference-row-arrow">›</td>
+                        }
+
+                        if (col.key === 'product') {
+                          if (line.line_kind === 'sale') {
+                            return (
+                              <td key={col.key} className="sales-reference-yellow sales-product-search-cell">
+                                <button
+                                  type="button"
+                                  className="sales-pos-product-entry sales-pos-completed-product-trigger"
+                                  aria-label={`Edit product ${line.product_name}`}
+                                  onClick={() => editCompletedProduct(line)}
+                                >
+                                  <span>{line.product_number} — {line.product_name}</span>
+                                  <span className="sales-product-combo-toggle" aria-hidden>
+                                    <span>
+                                      <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                        <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                      </svg>
+                                    </span>
+                                  </span>
+                                </button>
+                              </td>
+                            )
+                          }
+
+                          return (
+                            <td key={col.key}>
+                              <span className="sales-pos-line-product">{line.product_number} — {line.product_name}</span>
+                              <span className="sales-pos-line-badge">{line.line_kind === 'free_scheme' ? 'Free scheme' : 'Free packaging'}</span>
+                            </td>
+                          )
+                        }
+
+                        if (col.key === 'sales_qty') {
+                          if (line.line_kind === 'sale') {
+                            return (
+                              <td key={col.key}>
+                                <input
+                                  className="sales-pos-line-qty"
+                                  data-sale-editable="true"
+                                  data-sale-field="sales_qty"
+                                  value={displayEditableNumber(line.quantity)}
+                                  onChange={(e) => cart.setQuantity(line.line_key, e.target.value)}
+                                  onKeyDown={handleCompletedFieldEnter}
+                                />
+                              </td>
+                            )
+                          }
+
+                          return (
+                            <td key={col.key} className="sales-pos-line-value">
+                              {Number.parseFloat(line.quantity || '0').toFixed(
+                                line.unit_allows_decimal === false ? 0 : 3,
+                              )}
+                            </td>
+                          )
+                        }
+
+                        if (col.key === 'delete') {
+                          return <td key={col.key} className="sales-reference-delete-cell"><button type="button" aria-label="Delete row" onClick={() => cart.removeLine(line.line_key)}><XCircle size={16} /></button></td>
+                        }
+
+                        const linePreview = cart.linePreview(line)
+
+                        if (col.key === 'in_stock') {
+                          const available = cart.availableStock(line)
+                          return <td key={col.key} className="sales-pos-line-pending">{available === null ? '—' : Number.parseFloat(available).toFixed(3)}</td>
+                        }
+
+                        if (col.key === 'price') return <td key={col.key} className="sales-pos-line-pending">{line.line_kind === 'sale' ? Number.parseFloat(line.unit_price ?? '0').toFixed(2) : '0.00'}</td>
+                        if (col.key === 'amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.grossAmount}</td>
+
+                        if (col.key === 'disc_pct') {
+                          if (line.line_kind === 'sale') {
+                            return (
+                              <td key={col.key}>
+                                <input
+                                  className="sales-pos-line-qty"
+                                  data-sale-editable="true"
+                                  value={
+                                      line.discount_source === 'percent'
+                                        ? line.discount_percent ?? ''
+                                        : displayEditableNumber(line.discount_percent ?? '0')
+                                    }
+                                  inputMode="decimal"
+                                  onChange={(e) => cart.setDiscountPercent(line.line_key, e.target.value)}
+                                  onKeyDown={handleCompletedFieldEnter}
+                                />
+                              </td>
+                            )
+                          }
+
+                          return (
+                            <td key={col.key} className="sales-pos-line-value">
+                              {Number.parseFloat(line.discount_percent ?? '0').toFixed(2)}
+                            </td>
+                          )
+                        }
+
+                        if (col.key === 'disc_rs') {
+                          if (line.line_kind === 'sale') {
+                            return (
+                              <td key={col.key}>
+                                <input
+                                  className="sales-pos-line-qty"
+                                  data-sale-editable="true"
+                                  value={
+                                      line.discount_source === 'amount'
+                                        ? line.discount_amount ?? ''
+                                        : displayEditableNumber(line.discount_amount ?? '0')
+                                    }
+                                  inputMode="decimal"
+                                  onChange={(e) => cart.setDiscountAmount(line.line_key, e.target.value)}
+                                  onKeyDown={handleCompletedFieldEnter}
+                                />
+                              </td>
+                            )
+                          }
+
+                          return (
+                            <td key={col.key} className="sales-pos-line-value">
+                              {Number.parseFloat(line.discount_amount ?? '0').toFixed(2)}
+                            </td>
+                          )
+                        }
+
+                        if (col.key === 'net_amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.netAmount}</td>
+
+                        if (COST_VIEW_COLUMN_KEYS.includes(col.key as (typeof COST_VIEW_COLUMN_KEYS)[number])) {
+                          if (line.line_kind !== 'sale') {
+                            return <td key={col.key} className="sales-pos-line-pending">—</td>
+                          }
+
+                          const costPreview = cart.lineCostPreview(line)
+                          const value =
+                            col.key === 'cost_rate' ? costPreview.costRate
+                              : col.key === 'cost_amt' ? costPreview.costAmount
+                                : col.key === 'com_rs' ? costPreview.comRs
+                                  : costPreview.comPct
+
+                          return (
+                            <td
+                              key={col.key}
+                              className={`sales-pos-line-pending${costPreview.belowCost ? ' is-below-cost' : ''}`}
+                            >
+                              {value === null ? '—' : displayEditableNumber(value)}
+                            </td>
+                          )
+                        }
+
+                        if (col.key === 'barcode') return <td key={col.key}>{line.barcode ?? ''}</td>
+
+                        if (col.key === 'uom') {
+                          if (line.line_kind === 'sale' && (line.available_units?.length ?? 0) > 0) {
+                            return (
+                              <td key={col.key}>
+                                <UiSelect
+                                  value={line.unit_ulid ?? ''}
+                                  className="sales-pos-line-uom-select"
+                                  triggerClassName="sales-pos-line-uom-trigger"
+                                  aria-label={`Unit for ${line.product_name}`}
+                                  triggerProps={{ 'data-sale-editable': 'true' }}
+                                  options={(line.available_units ?? []).map((unit) => ({
+                                    value: unit.unit_ulid,
+                                    label: unit.code,
+                                  }))}
+                                  onKeyDown={handleCompletedFieldEnter}
+                                  onChange={(value) => cart.setLineUnit(line.line_key, value)}
+                                />
+                              </td>
+                            )
+                          }
+
+                          return (
+                            <td key={col.key} className="sales-pos-line-value">
+                              {line.unit_code ?? line.unit_symbol ?? ''}
+                            </td>
+                          )
+                        }
+
+                        if (col.key === 's_tax_pct') return <td key={col.key} className="sales-pos-line-pending">{linePreview.taxPercent}</td>
+                        return <td key={col.key} />
+                      })}
+                    </tr>
+                  ))}
+
                   {activeLineKey
                     ? cart.lines
                         .filter((line) => line.line_key === activeLineKey)
@@ -2196,318 +2398,119 @@ export function SalesInvoicePage({
                         ))
                     : null}
 
-                      <tr className="is-entry-row">
-                        {effectiveSalesColumns.map((col) => {
-                          if (col.key === 'selector') {
-                            return <td key={col.key} className="sales-reference-row-arrow">›</td>
-                          }
-
-                          if (col.key === 'product') {
-                            return (
-                              <td key={col.key} className="sales-reference-yellow sales-product-search-cell">
-                                <div
-                                  ref={productPickerAnchorRef}
-                                  className="sales-product-combo"
-                                >
-                                  <input
-                                    ref={productSearchRef}
-                                    className="sales-pos-product-entry"
-                                    value={productQuery}
-                                    placeholder="Search product name or number"
-                                    autoComplete="off"
-                                    onFocus={() => {
-                                      if (activeLineKey) {
-                                        const activeLine = cart.lines.find((row) => row.line_key === activeLineKey)
-                                        const quantity = Number.parseFloat(activeLine?.quantity ?? '')
-                                        if (!activeLine || !Number.isFinite(quantity) || quantity <= 0) {
-                                          setSaveError('Sale quantity must be greater than zero.')
-                                          feedback.error('Sale quantity must be greater than zero.', 'Sales Invoice')
-                                          focusLineQuantity(activeLineKey)
-                                          return
-                                        }
-
-                                        setActiveLineKey(null)
-                                        setActiveProductQuery('')
-                                      }
-
-                                      setProductLookupMode('browse')
-                                      setActiveProductPickerOpen(true)
-                                    }}
-                                    onChange={(e) => {
-                                      setProductQuery(e.target.value)
-                                      setProductLookupMode('search')
-                                      setActiveProductPickerOpen(true)
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Escape') {
-                                        setActiveProductPickerOpen(false)
-                                        return
-                                      }
-                                      if (e.key !== 'Enter') return
-                                      const first = productLookupRows[0]
-                                      if (first) {
-                                        e.preventDefault()
-                                        void addProductFromEntry(first.ulid, '', null, first)
-                                      }
-                                    }}
-                                  />
-                                  <button
-                                    type="button"
-                                    className="sales-product-combo-toggle"
-                                    aria-label="Open product dropdown"
-                                    aria-expanded={activeProductPickerOpen}
-                                    onMouseDown={(e) => e.preventDefault()}
-                                    onClick={() => {
-                                      if (activeLineKey) {
-                                        const activeLine = cart.lines.find((row) => row.line_key === activeLineKey)
-                                        const quantity = Number.parseFloat(activeLine?.quantity ?? '')
-                                        if (!activeLine || !Number.isFinite(quantity) || quantity <= 0) {
-                                          setSaveError('Sale quantity must be greater than zero.')
-                                          feedback.error('Sale quantity must be greater than zero.', 'Sales Invoice')
-                                          focusLineQuantity(activeLineKey)
-                                          return
-                                        }
-
-                                        setActiveLineKey(null)
-                                        setActiveProductQuery('')
-                                      }
-
-                                      setProductLookupMode('browse')
-                                      setActiveProductPickerOpen((open) => !open)
-                                      requestAnimationFrame(() => productSearchRef.current?.focus())
-                                    }}
-                                  >
-                                    <span aria-hidden>
-                                      <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
-                                        <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
-                                      </svg>
-                                    </span>
-                                  </button>
-
-                                  {activeProductPickerOpen && !activeLineKey ? (
-                                    <ProductLookupGrid
-                                      rows={productLookupRows}
-                                      total={productLookupTotal}
-                                      priceType={cart.priceType}
-                                      portalAnchorRef={productPickerAnchorRef}
-                                      onRequestClose={() => setActiveProductPickerOpen(false)}
-                                      onSelect={(product) => void addProductFromEntry(product.ulid, '', null, product)}
-                                    />
-                                  ) : null}
-                                </div>
-                              </td>
-                            )
-                          }
-
-                          if (col.key === 'delete') {
-                            return <td key={col.key} className="sales-reference-delete-cell"><button type="button" aria-label="Clear product search" onClick={() => setProductQuery('')}><XCircle size={16} /></button></td>
-                          }
-
-                          return <td key={col.key} />
-                        })}
-                      </tr>
-
-                  {cart.lines
-                    .filter((line) => line.line_key !== activeLineKey)
-                    .map((line) => (
-                    <tr
-                      key={line.line_key}
-                      className={
-                        line.line_kind === 'sale'
-                          ? 'sales-pos-line is-completed-entry'
-                          : 'sales-pos-line is-free'
-                      }
-                      title={line.line_kind === 'sale' ? 'Double-click to edit this line' : undefined}
-                      onDoubleClick={() => reopenCompletedLine(line)}
-                    >
-                      {effectiveSalesColumns.map((col) => {
-                        if (col.key === 'selector') {
-                          return <td key={col.key} className="sales-reference-row-arrow">›</td>
-                        }
-
-                        if (col.key === 'product') {
-                          if (line.line_kind === 'sale') {
-                            return (
-                              <td key={col.key} className="sales-reference-yellow sales-product-search-cell">
-                                <button
-                                  type="button"
-                                  className="sales-pos-product-entry sales-pos-completed-product-trigger"
-                                  aria-label={`Edit product ${line.product_name}`}
-                                  onClick={() => editCompletedProduct(line)}
-                                >
-                                  <span>{line.product_number} — {line.product_name}</span>
-                                  <span className="sales-product-combo-toggle" aria-hidden>
-                                    <span>
-                                      <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
-                                        <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
-                                      </svg>
-                                    </span>
-                                  </span>
-                                </button>
-                              </td>
-                            )
-                          }
-
-                          return (
-                            <td key={col.key}>
-                              <span className="sales-pos-line-product">{line.product_number} — {line.product_name}</span>
-                              <span className="sales-pos-line-badge">{line.line_kind === 'free_scheme' ? 'Free scheme' : 'Free packaging'}</span>
-                            </td>
-                          )
-                        }
-
-                        if (col.key === 'sales_qty') {
-                          if (line.line_kind === 'sale') {
-                            return (
-                              <td key={col.key}>
-                                <input
-                                  className="sales-pos-line-qty"
-                                  data-sale-editable="true"
-                                  data-sale-field="sales_qty"
-                                  value={displayEditableNumber(line.quantity)}
-                                  onChange={(e) => cart.setQuantity(line.line_key, e.target.value)}
-                                  onKeyDown={handleCompletedFieldEnter}
-                                />
-                              </td>
-                            )
-                          }
-
-                          return (
-                            <td key={col.key} className="sales-pos-line-value">
-                              {Number.parseFloat(line.quantity || '0').toFixed(
-                                line.unit_allows_decimal === false ? 0 : 3,
-                              )}
-                            </td>
-                          )
-                        }
-
-                        if (col.key === 'delete') {
-                          return <td key={col.key} className="sales-reference-delete-cell"><button type="button" aria-label="Delete row" onClick={() => cart.removeLine(line.line_key)}><XCircle size={16} /></button></td>
-                        }
-
-                        const linePreview = cart.linePreview(line)
-
-                        if (col.key === 'in_stock') {
-                          const available = cart.availableStock(line)
-                          return <td key={col.key} className="sales-pos-line-pending">{available === null ? '—' : Number.parseFloat(available).toFixed(3)}</td>
-                        }
-
-                        if (col.key === 'price') return <td key={col.key} className="sales-pos-line-pending">{line.line_kind === 'sale' ? Number.parseFloat(line.unit_price ?? '0').toFixed(2) : '0.00'}</td>
-                        if (col.key === 'amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.grossAmount}</td>
-
-                        if (col.key === 'disc_pct') {
-                          if (line.line_kind === 'sale') {
-                            return (
-                              <td key={col.key}>
-                                <input
-                                  className="sales-pos-line-qty"
-                                  data-sale-editable="true"
-                                  value={
-                                      line.discount_source === 'percent'
-                                        ? line.discount_percent ?? ''
-                                        : displayEditableNumber(line.discount_percent ?? '0')
-                                    }
-                                  inputMode="decimal"
-                                  onChange={(e) => cart.setDiscountPercent(line.line_key, e.target.value)}
-                                  onKeyDown={handleCompletedFieldEnter}
-                                />
-                              </td>
-                            )
-                          }
-
-                          return (
-                            <td key={col.key} className="sales-pos-line-value">
-                              {Number.parseFloat(line.discount_percent ?? '0').toFixed(2)}
-                            </td>
-                          )
-                        }
-
-                        if (col.key === 'disc_rs') {
-                          if (line.line_kind === 'sale') {
-                            return (
-                              <td key={col.key}>
-                                <input
-                                  className="sales-pos-line-qty"
-                                  data-sale-editable="true"
-                                  value={
-                                      line.discount_source === 'amount'
-                                        ? line.discount_amount ?? ''
-                                        : displayEditableNumber(line.discount_amount ?? '0')
-                                    }
-                                  inputMode="decimal"
-                                  onChange={(e) => cart.setDiscountAmount(line.line_key, e.target.value)}
-                                  onKeyDown={handleCompletedFieldEnter}
-                                />
-                              </td>
-                            )
-                          }
-
-                          return (
-                            <td key={col.key} className="sales-pos-line-value">
-                              {Number.parseFloat(line.discount_amount ?? '0').toFixed(2)}
-                            </td>
-                          )
-                        }
-
-                        if (col.key === 'net_amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.netAmount}</td>
-
-                        if (COST_VIEW_COLUMN_KEYS.includes(col.key as (typeof COST_VIEW_COLUMN_KEYS)[number])) {
-                          if (line.line_kind !== 'sale') {
-                            return <td key={col.key} className="sales-pos-line-pending">—</td>
-                          }
-
-                          const costPreview = cart.lineCostPreview(line)
-                          const value =
-                            col.key === 'cost_rate' ? costPreview.costRate
-                              : col.key === 'cost_amt' ? costPreview.costAmount
-                                : col.key === 'com_rs' ? costPreview.comRs
-                                  : costPreview.comPct
-
-                          return (
-                            <td
-                              key={col.key}
-                              className={`sales-pos-line-pending${costPreview.belowCost ? ' is-below-cost' : ''}`}
-                            >
-                              {value === null ? '—' : displayEditableNumber(value)}
-                            </td>
-                          )
-                        }
-
-                        if (col.key === 'barcode') return <td key={col.key}>{line.barcode ?? ''}</td>
-
-                        if (col.key === 'uom') {
-                          if (line.line_kind === 'sale' && (line.available_units?.length ?? 0) > 0) {
-                            return (
-                              <td key={col.key}>
-                                <UiSelect
-                                  value={line.unit_ulid ?? ''}
-                                  className="sales-pos-line-uom-select"
-                                  triggerClassName="sales-pos-line-uom-trigger"
-                                  aria-label={`Unit for ${line.product_name}`}
-                                  triggerProps={{ 'data-sale-editable': 'true' }}
-                                  options={(line.available_units ?? []).map((unit) => ({
-                                    value: unit.unit_ulid,
-                                    label: unit.code,
-                                  }))}
-                                  onKeyDown={handleCompletedFieldEnter}
-                                  onChange={(value) => cart.setLineUnit(line.line_key, value)}
-                                />
-                              </td>
-                            )
-                          }
-
-                          return (
-                            <td key={col.key} className="sales-pos-line-value">
-                              {line.unit_code ?? line.unit_symbol ?? ''}
-                            </td>
-                          )
-                        }
-
-                        if (col.key === 's_tax_pct') return <td key={col.key} className="sales-pos-line-pending">{linePreview.taxPercent}</td>
-                        return <td key={col.key} />
-                      })}
-                    </tr>
-                  ))}
+                  {!activeLineKey ? (
+                    <tr className="is-entry-row">
+                                            {effectiveSalesColumns.map((col) => {
+                                              if (col.key === 'selector') {
+                                                return <td key={col.key} className="sales-reference-row-arrow">›</td>
+                                              }
+                    
+                                              if (col.key === 'product') {
+                                                return (
+                                                  <td key={col.key} className="sales-reference-yellow sales-product-search-cell">
+                                                    <div
+                                                      ref={productPickerAnchorRef}
+                                                      className="sales-product-combo"
+                                                    >
+                                                      <input
+                                                        ref={productSearchRef}
+                                                        className="sales-pos-product-entry"
+                                                        value={productQuery}
+                                                        placeholder="Search product name or number"
+                                                        autoComplete="off"
+                                                        onFocus={() => {
+                                                          if (activeLineKey) {
+                                                            const activeLine = cart.lines.find((row) => row.line_key === activeLineKey)
+                                                            const quantity = Number.parseFloat(activeLine?.quantity ?? '')
+                                                            if (!activeLine || !Number.isFinite(quantity) || quantity <= 0) {
+                                                              setSaveError('Sale quantity must be greater than zero.')
+                                                              feedback.error('Sale quantity must be greater than zero.', 'Sales Invoice')
+                                                              focusLineQuantity(activeLineKey)
+                                                              return
+                                                            }
+                    
+                                                            setActiveLineKey(null)
+                                                            setActiveProductQuery('')
+                                                          }
+                    
+                                                          setProductLookupMode('browse')
+                                                          setActiveProductPickerOpen(true)
+                                                        }}
+                                                        onChange={(e) => {
+                                                          setProductQuery(e.target.value)
+                                                          setProductLookupMode('search')
+                                                          setActiveProductPickerOpen(true)
+                                                        }}
+                                                        onKeyDown={(e) => {
+                                                          if (e.key === 'Escape') {
+                                                            setActiveProductPickerOpen(false)
+                                                            return
+                                                          }
+                                                          if (e.key !== 'Enter') return
+                                                          const first = productLookupRows[0]
+                                                          if (first) {
+                                                            e.preventDefault()
+                                                            void addProductFromEntry(first.ulid, '', null, first)
+                                                          }
+                                                        }}
+                                                      />
+                                                      <button
+                                                        type="button"
+                                                        className="sales-product-combo-toggle"
+                                                        aria-label="Open product dropdown"
+                                                        aria-expanded={activeProductPickerOpen}
+                                                        onMouseDown={(e) => e.preventDefault()}
+                                                        onClick={() => {
+                                                          if (activeLineKey) {
+                                                            const activeLine = cart.lines.find((row) => row.line_key === activeLineKey)
+                                                            const quantity = Number.parseFloat(activeLine?.quantity ?? '')
+                                                            if (!activeLine || !Number.isFinite(quantity) || quantity <= 0) {
+                                                              setSaveError('Sale quantity must be greater than zero.')
+                                                              feedback.error('Sale quantity must be greater than zero.', 'Sales Invoice')
+                                                              focusLineQuantity(activeLineKey)
+                                                              return
+                                                            }
+                    
+                                                            setActiveLineKey(null)
+                                                            setActiveProductQuery('')
+                                                          }
+                    
+                                                          setProductLookupMode('browse')
+                                                          setActiveProductPickerOpen((open) => !open)
+                                                          requestAnimationFrame(() => productSearchRef.current?.focus())
+                                                        }}
+                                                      >
+                                                        <span aria-hidden>
+                                                          <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                                            <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                                          </svg>
+                                                        </span>
+                                                      </button>
+                    
+                                                      {activeProductPickerOpen && !activeLineKey ? (
+                                                        <ProductLookupGrid
+                                                          rows={productLookupRows}
+                                                          total={productLookupTotal}
+                                                          priceType={cart.priceType}
+                                                          portalAnchorRef={productPickerAnchorRef}
+                                                          onRequestClose={() => setActiveProductPickerOpen(false)}
+                                                          onSelect={(product) => void addProductFromEntry(product.ulid, '', null, product)}
+                                                        />
+                                                      ) : null}
+                                                    </div>
+                                                  </td>
+                                                )
+                                              }
+                    
+                                              if (col.key === 'delete') {
+                                                return <td key={col.key} className="sales-reference-delete-cell"><button type="button" aria-label="Clear product search" onClick={() => setProductQuery('')}><XCircle size={16} /></button></td>
+                                              }
+                    
+                                              return <td key={col.key} />
+                                            })}
+                                          </tr>
+                    
+                  ) : null}
                 </tbody>
               </table>
 
