@@ -26,7 +26,6 @@ import { useCan } from '../features/auth/useCan'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Sale, SalePaymentMethod } from '../types/sales'
 import type { Product } from '../types/catalog'
-import type { Party } from '../api/parties'
 import type { SaleReturn } from '../types/salesReturns'
 import './SalesReturnsPage.css'
 
@@ -1445,7 +1444,7 @@ export function SalesReturnsPage() {
               {
                 key: 'customer',
                 header: 'Customer',
-                render: (row) => row.customer?.name ?? 'CASH IN HAND',
+                render: (row) => row.customer?.name ?? row.settlement_account?.name ?? 'CASH IN HAND',
               },
               {
                 key: 'original_sale',
