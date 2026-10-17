@@ -929,3 +929,109 @@ html[data-animations='off'] .quotation-product-search-input {
       "price price";
   }
 }
+
+
+/* Final quotation composition: one-line header, compact notes, bottom amount options. */
+.quotation-entry {
+  grid-template-rows: auto minmax(340px, 1fr) auto auto;
+}
+
+.quotation-entry-head {
+  display: block;
+}
+
+.quotation-header-grid {
+  width: 100%;
+  max-width: none;
+  grid-template-columns:
+    minmax(135px, .7fr)
+    minmax(165px, .85fr)
+    minmax(260px, 1.5fr)
+    minmax(230px, 1.25fr)
+    minmax(180px, .9fr);
+  grid-template-areas: "number date customer salesman price";
+  gap: 6px 8px;
+  align-items: center;
+}
+
+.quotation-entry-title {
+  display: none !important;
+}
+
+.quotation-footer-grid {
+  grid-template-columns: minmax(260px, 1fr) 220px 340px;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.quotation-footer-grid > label {
+  min-width: 0;
+  padding: 4px 6px;
+}
+
+.quotation-footer-grid > label textarea {
+  min-height: 38px;
+  height: 38px;
+  resize: vertical;
+}
+
+.quotation-amount-options-footer {
+  width: 220px;
+  min-width: 220px;
+  align-self: stretch;
+  padding: 5px 7px;
+}
+
+.quotation-amount-options-footer .quotation-net-box {
+  min-height: 31px;
+  padding: 3px 6px;
+}
+
+.quotation-amount-options-footer .quotation-net-box strong {
+  font-size: 20px;
+}
+
+.quotation-totals {
+  align-self: stretch;
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .quotation-header-grid {
+    grid-template-columns:
+      minmax(120px, .65fr)
+      minmax(150px, .8fr)
+      minmax(220px, 1.4fr)
+      minmax(190px, 1.15fr)
+      minmax(160px, .85fr);
+    grid-template-areas: "number date customer salesman price";
+  }
+
+  .quotation-footer-grid {
+    grid-template-columns: minmax(240px, 1fr) 200px 300px;
+  }
+
+  .quotation-amount-options-footer {
+    width: 200px;
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 900px) {
+  .quotation-header-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    grid-template-areas:
+      "number date"
+      "customer salesman"
+      "price price";
+  }
+
+  .quotation-footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-amount-options-footer {
+    width: 100%;
+    min-width: 0;
+  }
+}
