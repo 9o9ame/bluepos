@@ -4837,3 +4837,28 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   color: inherit;
   box-shadow: none;
 }
+
+
+/* Canonical Custom Table migration.
+   The outer Sales Return region owns layout only; PosEntryGrid owns table chrome. */
+.sales-return-grid-wrap {
+  overflow: hidden !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.sales-return-custom-grid {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.sales-return-custom-table td.is-edit {
+  padding: 2px 4px;
+}
+
+.sales-return-custom-table .sales-return-general-product-cell {
+  overflow: visible;
+}
