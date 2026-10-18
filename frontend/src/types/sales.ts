@@ -222,8 +222,6 @@ export type SaleHold = {
 export type SaleHoldPayload = {
   sale_date?: string | null
   customer_ulid?: string | null
-  customer_name?: string | null
-  customer_phone?: string | null
   salesman_ulid?: string | null
   payment_due?: boolean
   initial_payment?: {
@@ -280,6 +278,8 @@ export type SalePayload = {
   invoice_discount_amount?: string | null
 
   customer_ulid?: string | null
+  customer_name?: string | null
+  customer_phone?: string | null
   salesman_ulid?: string | null
   payment_due?: boolean
   initial_payment?: {
