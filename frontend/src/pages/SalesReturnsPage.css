@@ -4036,8 +4036,8 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 .sales-return-fields-right {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  grid-template-rows: repeat(2, 27px) !important;
-  gap: 5px 6px !important;
+  grid-template-rows: repeat(2, 25px) !important;
+  gap: 4px 6px !important;
   align-self: stretch !important;
   align-content: center !important;
   align-items: center !important;
@@ -4051,8 +4051,8 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   box-sizing: border-box !important;
   width: 100% !important;
   min-width: 0 !important;
-  height: 27px !important;
-  min-height: 27px !important;
+  height: 25px !important;
+  min-height: 25px !important;
   align-self: center !important;
   justify-self: stretch !important;
 }
@@ -4138,14 +4138,15 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 
 @media (max-width: 1450px) {
   .sales-return-fields-right {
-    grid-template-rows: repeat(2, 26px) !important;
+    grid-template-rows: repeat(2, 24px) !important;
+    gap: 4px 6px !important;
     min-height: 57px !important;
   }
 
   .sales-return-fields-right .sales-return-header-refresh,
   .sales-return-fields-right .sales-return-balance-chip {
-    height: 26px !important;
-    min-height: 26px !important;
+    height: 24px !important;
+    min-height: 24px !important;
   }
 
   .sales-return-fields-right .sales-return-balance-chip > span,
