@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { Banknote, CheckCircle2, ChevronDown, CreditCard, FileText, Landmark, RefreshCw, RotateCcw, Save, Search, Wallet, X } from 'lucide-react'
+import { Banknote, CheckCircle2, CreditCard, FileText, Landmark, RefreshCw, RotateCcw, Save, Search, Wallet, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
 import { fetchSales, fetchSalesmen } from '../api/sales'
@@ -1126,7 +1126,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
             {saleUlid ? (
               <PosEntryGrid
                 className="sales-return-custom-grid"
-                tableClassName="sales-return-grid"
+                tableClassName="sales-return-custom-table"
                 ariaLabel="Invoice-linked sales return lines"
                 minWidth={980}
                 columns={[
@@ -1149,10 +1149,10 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                         <strong>{row.product.product_number}</strong> — {row.product.name}
                       </td>
                       <td>{row.line_kind.replace('_', ' ')}</td>
-                      <td className="num">{row.original_quantity}</td>
-                      <td className="num">{row.already_returned_quantity}</td>
-                      <td className="num">{row.remaining_returnable_quantity}</td>
-                      <td className="num is-edit">
+                      <td className="is-num">{row.original_quantity}</td>
+                      <td className="is-num">{row.already_returned_quantity}</td>
+                      <td className="is-num">{row.remaining_returnable_quantity}</td>
+                      <td className="is-num is-edit">
                         {readOnly ? (
                           lineQty[row.sale_item_ulid] ?? '0'
                         ) : (
@@ -1180,10 +1180,10 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                         )}
                       </td>
                       <td>{row.unit?.code ?? '—'}</td>
-                      <td className="num">{money(row.unit_price)}</td>
-                      <td className="num">{money(row.discount_amount)}</td>
-                      <td className="num">{money(row.tax_amount)}</td>
-                      <td className="num">{money(row.line_total)}</td>
+                      <td className="is-num">{money(row.unit_price)}</td>
+                      <td className="is-num">{money(row.discount_amount)}</td>
+                      <td className="is-num">{money(row.tax_amount)}</td>
+                      <td className="is-num">{money(row.line_total)}</td>
                     </tr>
                   ))}
                   {returnableQuery.isFetching ? (
@@ -1199,7 +1199,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
             ) : (
               <PosEntryGrid
                 className="sales-return-custom-grid"
-                tableClassName="sales-return-grid is-general"
+                tableClassName="sales-return-custom-table is-general"
                 ariaLabel="General sales return lines"
                 minWidth={860}
                 columns={[
@@ -1300,7 +1300,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                             </button>
                           )}
                         </td>
-                        <td className="num is-edit">
+                        <td className="is-num is-edit">
                           {readOnly ? row.quantity : (
                             <input
                               inputMode="decimal"
@@ -1318,7 +1318,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                             />
                           )}
                         </td>
-                        <td className="num is-edit">
+                        <td className="is-num is-edit">
                           {readOnly ? money(row.unit_price) : (
                             <input
                               inputMode="decimal"
@@ -1336,8 +1336,8 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                             />
                           )}
                         </td>
-                        <td className="num">{money(amounts.gross)}</td>
-                        <td className="num is-edit">
+                        <td className="is-num">{money(amounts.gross)}</td>
+                        <td className="is-num is-edit">
                           {readOnly ? row.discount_percent : (
                             <input
                               inputMode="decimal"
@@ -1355,8 +1355,8 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                             />
                           )}
                         </td>
-                        <td className="num">{money(amounts.tax)}</td>
-                        <td className="num">{money(amounts.total)}</td>
+                        <td className="is-num">{money(amounts.tax)}</td>
+                        <td className="is-num">{money(amounts.total)}</td>
                         <td className="sales-return-general-delete">
                           {!readOnly ? (
                             <button
