@@ -3965,7 +3965,7 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   overflow: visible;
 }
 
-/* 2) Approved Amount Options */
+/* 2) Approved header cards: Return Invoice Options + Balance Options + Amount Options */
 @media (min-width: 1181px) {
   .sales-return-head {
     grid-template-columns: minmax(0, 1fr) 280px 380px !important;
@@ -3978,6 +3978,17 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   }
 }
 
+/* The embedded balance area was moved into its own sibling card. */
+.sales-return-fields {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-areas: "left" !important;
+}
+
+.sales-return-fields-left {
+  width: 100% !important;
+}
+
+.sales-return-balances,
 .sales-return-amounts {
   box-sizing: border-box !important;
   display: grid !important;
@@ -4049,7 +4060,8 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   white-space: nowrap !important;
 }
 
-.sales-return-amounts > div.is-net {
+.sales-return-amounts > div.is-net,
+.sales-return-balances > div.is-total-balance {
   background: color-mix(in srgb, var(--ui-success) 18%, var(--ui-surface)) !important;
 }
 
@@ -4057,17 +4069,8 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   font-size: 11px !important;
 }
 
-.sales-return-balances {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  align-content: start !important;
-  gap: 4px !important;
-  min-width: 0 !important;
-  padding: 5px 6px 6px !important;
-  overflow: visible !important;
-}
-
-.sales-return-balances > div {
-  grid-template-columns: max-content minmax(68px, 1fr) !important;
+.sales-return-balances > div.is-total-balance > strong {
+  color: var(--ui-success) !important;
 }
 
 .sales-return-balances > div.is-refresh {
@@ -4089,147 +4092,9 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   font-size: 10px !important;
 }
 
-.sales-return-balances .is-total-balance {
-  background: color-mix(in srgb, var(--ui-success) 18%, var(--ui-surface)) !important;
-}
-
-.sales-return-balances .is-total-balance > strong {
-  color: var(--ui-success) !important;
-}
-
 @media (max-width: 860px) {
   .sales-return-head {
     grid-template-columns: 1fr !important;
-  }
-}
-
-/* 3) Frozen balance summary geometry */
-.sales-return-fields-right {
-  box-sizing: border-box !important;
-  display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  grid-template-rows: repeat(2, 25px) !important;
-  grid-template-areas: none !important;
-  gap: 4px 6px !important;
-  align-self: center !important;
-  align-content: center !important;
-  align-items: center !important;
-  min-width: 0 !important;
-  height: 56px !important;
-  min-height: 56px !important;
-  max-height: 56px !important;
-  padding: 0 !important;
-}
-
-.sales-return-fields-right .sales-return-header-refresh,
-.sales-return-fields-right .sales-return-balance-chip {
-  box-sizing: border-box !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  height: 25px !important;
-  min-height: 25px !important;
-  align-self: center !important;
-  justify-self: stretch !important;
-}
-
-.sales-return-fields-right .sales-return-header-refresh {
-  grid-column: 1 !important;
-  grid-row: 1 !important;
-}
-
-.sales-return-fields-right .is-previous {
-  grid-column: 2 !important;
-  grid-row: 1 !important;
-}
-
-.sales-return-fields-right .is-this-bill {
-  grid-column: 1 !important;
-  grid-row: 2 !important;
-}
-
-.sales-return-fields-right .is-total-balance {
-  grid-column: 2 !important;
-  grid-row: 2 !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip {
-  display: grid !important;
-  grid-template-columns: max-content minmax(0, 1fr) !important;
-  align-items: center !important;
-  margin: 0 !important;
-  padding: 2px 4px !important;
-  column-gap: 5px !important;
-  border: 1px solid var(--ui-border) !important;
-  border-radius: var(--control-radius) !important;
-  background: var(--ui-surface-subtle) !important;
-  box-shadow: none !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip > span,
-.sales-return-fields-right .sales-return-balance-chip > strong {
-  display: flex !important;
-  align-items: center !important;
-  min-width: 0 !important;
-  height: 19px !important;
-  min-height: 19px !important;
-  margin: 0 !important;
-  line-height: 1 !important;
-  white-space: nowrap !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip > span {
-  justify-content: flex-start !important;
-  color: var(--ui-text) !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-  text-align: left !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip > strong {
-  box-sizing: border-box !important;
-  justify-content: center !important;
-  align-self: center !important;
-  width: 100% !important;
-  margin: 0 !important;
-  padding: 0 6px !important;
-  border: 1px solid var(--ui-control-border) !important;
-  border-radius: var(--control-radius) !important;
-  background: var(--ui-control-face) !important;
-  color: var(--ui-text) !important;
-  box-shadow: var(--ui-control-shadow) !important;
-  font-size: 10px !important;
-  font-weight: 800 !important;
-  font-variant-numeric: tabular-nums !important;
-  text-align: center !important;
-}
-
-.sales-return-fields-right .is-total-balance {
-  background: color-mix(in srgb, var(--ui-success) 18%, var(--ui-surface)) !important;
-}
-
-.sales-return-fields-right .is-total-balance > strong {
-  color: var(--ui-success) !important;
-}
-
-@media (max-width: 1450px) {
-  .sales-return-fields-right {
-    grid-template-rows: repeat(2, 24px) !important;
-    gap: 4px 6px !important;
-    height: 56px !important;
-    min-height: 56px !important;
-    max-height: 56px !important;
-  }
-
-  .sales-return-fields-right .sales-return-header-refresh,
-  .sales-return-fields-right .sales-return-balance-chip {
-    height: 24px !important;
-    min-height: 24px !important;
-  }
-
-  .sales-return-fields-right .sales-return-balance-chip > span,
-  .sales-return-fields-right .sales-return-balance-chip > strong {
-    height: 18px !important;
-    min-height: 18px !important;
   }
 }
 
