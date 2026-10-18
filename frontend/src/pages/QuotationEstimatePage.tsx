@@ -542,7 +542,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
               <span>Salesman</span>
               <UiTableDropdown
                 className="quotation-canonical-select"
-                value={activeQuotation?.salesman?.ulid ?? salesmanUlid ?? ''>
+                value={activeQuotation?.salesman?.ulid ?? salesmanUlid ?? ''}
                 disabled={readOnly}
                 options={salesmanOptions}
                 searchPlaceholder="Search salesman"
@@ -631,6 +631,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                                 <UiSimpleDropdown
                                   value={line.unit_ulid ?? ''}
                                   className="quotation-line-unit-select"
+                                  searchable={false}
                                   aria-label={`Unit for ${line.product_name}`}
                                   triggerProps={{ 'data-quotation-editable': 'true' }}
                                   options={(line.available_units ?? []).map((unit) => ({
@@ -776,6 +777,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                                 <UiSimpleDropdown
                                   value={line.unit_ulid ?? ''}
                                   className="quotation-line-unit-select"
+                                  searchable={false}
                                   aria-label={`Unit for ${line.product_name}`}
                                   triggerProps={{ 'data-quotation-editable': 'true' }}
                                   options={(line.available_units ?? []).map((unit) => ({
