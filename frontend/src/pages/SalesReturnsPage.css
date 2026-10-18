@@ -153,6 +153,7 @@
   gap: 3px;
 }
 
+.sales-return-balances > div,
 .sales-return-amounts > div {
   display: grid;
   grid-template-columns: 1fr 115px;
@@ -161,6 +162,7 @@
   border-bottom: 1px solid #d4dadd;
 }
 
+.sales-return-balances span,
 .sales-return-amounts span {
   font-weight: 850;
   text-align: right;
@@ -736,11 +738,13 @@
     linear-gradient(180deg, #fbfdff 0%, #eff6fa 100%) !important;
 }
 
+.sales-return-balances > div,
 .sales-return-amounts > div {
   min-height: 26px;
   border-bottom-color: #c9d6de;
 }
 
+.sales-return-balances span,
 .sales-return-amounts span {
   color: #24485f;
 }
@@ -1572,11 +1576,13 @@
   gap: 0 !important;
 }
 
+.sales-return-balances > div,
 .sales-return-amounts > div {
   min-height: 21px !important;
   grid-template-columns: 1fr 88px !important;
 }
 
+.sales-return-balances span,
 .sales-return-amounts span {
   font-size: 8px !important;
 }
@@ -1788,10 +1794,12 @@
   padding-bottom: 6px !important;
 }
 
+.sales-return-balances > div,
 .sales-return-amounts > div {
   min-height: 25px !important;
 }
 
+.sales-return-balances span,
 .sales-return-amounts span {
   font-size: 10px !important;
 }
@@ -1867,6 +1875,7 @@
   align-content: start !important;
 }
 
+.sales-return-balances > div,
 .sales-return-amounts > div {
   display: grid !important;
   grid-template-columns: 1fr 74px !important;
@@ -2257,6 +2266,7 @@
   font-size: 12px !important;
 }
 
+.sales-return-balances span,
 .sales-return-amounts span {
   font-size: 12px !important;
 }
@@ -2575,6 +2585,7 @@ html[data-animations='off'] .sales-return-screen * {
   box-shadow: var(--ui-card-shadow) !important;
 }
 
+.sales-return-balances > div,
 .sales-return-amounts > div {
   min-height: 27px !important;
   padding: 4px 6px !important;
@@ -2582,12 +2593,14 @@ html[data-animations='off'] .sales-return-screen * {
   background: var(--ui-surface-subtle) !important;
 }
 
+.sales-return-balances span,
 .sales-return-amounts span {
   color: var(--ui-text-muted) !important;
   font-size: 10px !important;
   font-weight: 700 !important;
 }
 
+.sales-return-balances strong,
 .sales-return-amounts strong,
 .sales-return-amounts .is-net strong {
   color: var(--ui-text) !important;
@@ -3063,17 +3076,20 @@ html[data-theme='dark'] .sales-return-detail-caret {
   padding: 5px 7px 6px !important;
 }
 
+.sales-return-balances > div,
 .sales-return-amounts > div {
   grid-template-columns: minmax(58px, 1fr) minmax(66px, .72fr) !important;
   min-height: 24px !important;
   padding: 2px 5px !important;
 }
 
+.sales-return-balances span,
 .sales-return-amounts span {
   font-size: var(--ui-font-xs, 9px) !important;
   text-align: left !important;
 }
 
+.sales-return-balances strong,
 .sales-return-amounts strong,
 .sales-return-amounts .is-net strong {
   font-size: var(--ui-font-sm, 10px) !important;
@@ -3370,12 +3386,24 @@ html[data-theme='dark'] .sales-return-select-caret {
   white-space: nowrap !important;
 }
 
+.sales-return-fields {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-areas: "left" !important;
+}
+
+.sales-return-fields-left {
+  width: 100% !important;
+}
+
+/* Balance Options mirrors the approved Amount Options card. */
+.sales-return-balances,
 .sales-return-amounts {
   box-sizing: border-box !important;
   min-width: 0 !important;
   overflow: hidden !important;
 }
 
+.sales-return-balances > div,
 .sales-return-amounts > div {
   box-sizing: border-box !important;
   grid-template-columns: minmax(72px, 1fr) minmax(78px, .78fr) !important;
@@ -3940,13 +3968,13 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 /* 2) Approved Amount Options */
 @media (min-width: 1181px) {
   .sales-return-head {
-    grid-template-columns: minmax(0, 1fr) 380px !important;
+    grid-template-columns: minmax(0, 1fr) 280px 380px !important;
   }
 }
 
 @media (min-width: 861px) and (max-width: 1180px) {
   .sales-return-head {
-    grid-template-columns: minmax(0, 1fr) 340px !important;
+    grid-template-columns: minmax(0, 1fr) 250px 340px !important;
   }
 }
 
@@ -3961,6 +3989,7 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   overflow: visible !important;
 }
 
+.sales-return-balances > div,
 .sales-return-amounts > div {
   box-sizing: border-box !important;
   display: grid !important;
@@ -3982,6 +4011,7 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   grid-row: auto !important;
 }
 
+.sales-return-balances span,
 .sales-return-amounts span {
   min-width: 0 !important;
   color: var(--ui-text) !important;
@@ -3992,6 +4022,7 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   white-space: nowrap !important;
 }
 
+.sales-return-balances strong,
 .sales-return-amounts strong,
 .sales-return-amounts .is-net strong {
   box-sizing: border-box !important;
@@ -4024,6 +4055,46 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 
 .sales-return-amounts > div.is-net > strong {
   font-size: 11px !important;
+}
+
+.sales-return-balances {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-content: start !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  padding: 5px 6px 6px !important;
+  overflow: visible !important;
+}
+
+.sales-return-balances > div {
+  grid-template-columns: max-content minmax(68px, 1fr) !important;
+}
+
+.sales-return-balances > div.is-refresh {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.sales-return-balances .sales-return-balance-refresh {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 19px !important;
+  min-height: 19px !important;
+  margin: 0 !important;
+  padding: 0 6px !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  font-size: 10px !important;
+}
+
+.sales-return-balances .is-total-balance {
+  background: color-mix(in srgb, var(--ui-success) 18%, var(--ui-surface)) !important;
+}
+
+.sales-return-balances .is-total-balance > strong {
+  color: var(--ui-success) !important;
 }
 
 @media (max-width: 860px) {
