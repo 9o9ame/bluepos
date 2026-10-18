@@ -136,7 +136,7 @@ When discussing or implementing these patterns, use these exact names:
   entry-row surface and base editor geometry. The approved Sales Invoice table is
   the visual baseline. Empty editable cells are blank unless the workflow explicitly
   requires a placeholder.
-- **List Table** -> `PosDataGrid`. Use for read/search/report/history/tabular lists
+- **Simple Table** -> `PosDataGrid`. Use for read/search/report/history/tabular lists
   where rows are displayed or selected rather than edited inline.
 
 Do not recreate these four patterns with page-specific table/dropdown chrome. Page CSS
