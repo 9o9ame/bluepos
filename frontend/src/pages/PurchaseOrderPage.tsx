@@ -1121,7 +1121,10 @@ export function PurchaseOrderPage() {
                                       className="purchase-order-product-toggle"
                                       aria-label="Open product dropdown"
                                       aria-expanded={productPickerOpen}
-                                      onMouseDown={(event) => event.preventDefault()}
+                                      onMouseDown={(event) => {
+                                        event.preventDefault()
+                                        event.stopPropagation()
+                                      }}
                                       onClick={() => setProductPickerOpen((open) => !open)}
                                     >
                                       <span aria-hidden>
@@ -1278,7 +1281,10 @@ export function PurchaseOrderPage() {
                         className="purchase-order-product-toggle"
                         aria-label="Open product dropdown"
                         aria-expanded={productPickerOpen}
-                        onMouseDown={(event) => event.preventDefault()}
+                        onMouseDown={(event) => {
+                          event.preventDefault()
+                          event.stopPropagation()
+                        }}
                         onClick={() => {
                           setEditingProductKey(null)
                           setProductPickerOpen((open) => !open)
