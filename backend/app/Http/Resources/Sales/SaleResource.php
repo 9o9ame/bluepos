@@ -75,6 +75,8 @@ class SaleResource extends JsonResource
             'net_sale_total' => $netSaleTotal,
             'paid_amount' => $paidAmount,
             'balance_due' => $balanceDue,
+            'customer_name' => $this->customer_name,
+            'customer_phone' => $this->customer_phone,
             'notes' => $this->notes,
             'posted_at' => $this->posted_at?->toIso8601String(),
             'salesman' => $this->whenLoaded('salesmanParty', fn () => $this->salesmanParty === null ? null : [
