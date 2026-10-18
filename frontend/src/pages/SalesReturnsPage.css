@@ -4969,190 +4969,29 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 }
 
 
-/* Sales Return vertical centering polish for amount values and balance chips. */
-.sales-return-amounts > div {
-  min-height: 29px !important;
-  padding: 3px 4px !important;
-}
-
-.sales-return-amounts strong,
-.sales-return-amounts .is-net strong {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  height: 23px !important;
-  line-height: 1 !important;
-}
-
-.sales-return-fields-right {
-  grid-template-rows: repeat(2, 30px) !important;
-  align-content: center !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip {
-  height: 30px !important;
-  min-height: 30px !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  align-items: center !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip > span,
-.sales-return-fields-right .sales-return-balance-chip > strong {
-  display: flex !important;
-  align-items: center !important;
-  min-height: 100% !important;
-  line-height: 1 !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip > strong {
-  justify-content: flex-end !important;
-}
-
-@media (max-width: 1450px) {
-  .sales-return-fields-right {
-    grid-template-rows: repeat(2, 29px) !important;
-  }
-
-  .sales-return-fields-right .sales-return-balance-chip {
-    height: 29px !important;
-    min-height: 29px !important;
-  }
-}
-
-
-/* Sales Return final vertical centering: keep inner controls visually centered
-   between the top/bottom borders of their outer rows. */
-.sales-return-amounts > div {
-  min-height: 31px !important;
-  padding-top: 3px !important;
-  padding-bottom: 3px !important;
-}
-
-.sales-return-amounts strong,
-.sales-return-amounts .is-net strong {
-  height: 23px !important;
-  min-height: 23px !important;
-  align-self: center !important;
-}
-
-.sales-return-fields-right {
-  grid-template-rows: repeat(2, 30px) !important;
-  align-items: center !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip {
-  align-self: center !important;
-  height: 27px !important;
-  min-height: 27px !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-}
-
-@media (max-width: 1450px) {
-  .sales-return-fields-right {
-    grid-template-rows: repeat(2, 29px) !important;
-  }
-
-  .sales-return-fields-right .sales-return-balance-chip {
-    height: 26px !important;
-    min-height: 26px !important;
-  }
-}
-
-
-/* Match Previous / This Bill / Total Balance values to Amount Options value fields. */
-.sales-return-fields-right .sales-return-balance-chip {
-  border: 1px solid var(--ui-border) !important;
-  border-radius: var(--control-radius) !important;
-  background: var(--ui-surface-subtle) !important;
-  box-shadow: none !important;
-  padding: 3px 4px !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip > span {
-  color: var(--ui-text) !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip > strong {
-  box-sizing: border-box !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-  height: 23px !important;
-  min-height: 23px !important;
-  padding: 3px 6px !important;
-  border: 1px solid var(--ui-control-border) !important;
-  border-radius: var(--control-radius) !important;
-  background: var(--ui-control-face) !important;
-  color: var(--ui-text) !important;
-  box-shadow: var(--ui-control-shadow) !important;
-  font-size: 10px !important;
-  font-weight: 800 !important;
-  font-variant-numeric: tabular-nums !important;
-  line-height: 1 !important;
-  text-align: right !important;
-}
-
-.sales-return-fields-right .is-total-balance {
-  background: color-mix(in srgb, var(--ui-success) 18%, var(--ui-surface)) !important;
-}
-
-.sales-return-fields-right .is-total-balance > strong {
-  color: var(--ui-success) !important;
-}
-
-
-/* Sales Return balance chips: center the controls, keep labels left,
-   and give Total Balance a wider centered value field. */
-.sales-return-fields-right .sales-return-balance-chip {
-  justify-self: center !important;
-  width: calc(100% - 6px) !important;
-  grid-template-columns: max-content minmax(64px, 1fr) !important;
-  column-gap: 6px !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip > span {
-  justify-content: flex-start !important;
-  text-align: left !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip > strong {
-  justify-content: center !important;
-  text-align: center !important;
-}
-
-.sales-return-fields-right .is-total-balance {
-  grid-template-columns: max-content minmax(96px, 1.35fr) !important;
-  width: calc(100% - 6px) !important;
-}
-
-.sales-return-fields-right .is-total-balance > strong {
-  justify-self: center !important;
-  width: 100% !important;
-  max-width: 128px !important;
-  justify-content: center !important;
-  text-align: center !important;
-}
-
-
-/* Sales Return balances: definitive 2x2 layout.
-   Row 1: Refresh | Previous
-   Row 2: This Bill | Total Balance */
+/* Sales Return balance summary — authoritative geometry.
+   Keep the 2x2 block vertically centered inside Return Invoice Options. */
 .sales-return-fields-right {
   display: grid !important;
-  grid-template-columns: 82px minmax(118px, 1fr) !important;
-  grid-template-rows: repeat(2, 31px) !important;
-  gap: 4px 6px !important;
-  align-items: center !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, 27px) !important;
+  gap: 5px 6px !important;
+  align-self: stretch !important;
   align-content: center !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  min-height: 59px !important;
+  padding: 2px 0 !important;
 }
 
 .sales-return-fields-right .sales-return-header-refresh {
   grid-column: 1 !important;
   grid-row: 1 !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 27px !important;
+  min-height: 27px !important;
   align-self: center !important;
   justify-self: stretch !important;
 }
@@ -5175,25 +5014,36 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 .sales-return-fields-right .sales-return-balance-chip {
   box-sizing: border-box !important;
   display: grid !important;
-  grid-template-columns: max-content minmax(68px, 1fr) !important;
+  grid-template-columns: max-content minmax(0, 1fr) !important;
   align-items: center !important;
   align-self: center !important;
   justify-self: stretch !important;
   width: 100% !important;
-  height: 29px !important;
-  min-height: 29px !important;
-  padding: 3px 4px !important;
+  min-width: 0 !important;
+  height: 27px !important;
+  min-height: 27px !important;
+  margin: 0 !important;
+  padding: 2px 4px !important;
   column-gap: 5px !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface-subtle) !important;
+  box-shadow: none !important;
 }
 
 .sales-return-fields-right .sales-return-balance-chip > span {
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
-  height: 23px !important;
-  min-height: 23px !important;
+  min-width: 0 !important;
+  height: 21px !important;
+  margin: 0 !important;
+  color: var(--ui-text) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
   line-height: 1 !important;
   text-align: left !important;
+  white-space: nowrap !important;
 }
 
 .sales-return-fields-right .sales-return-balance-chip > strong {
@@ -5203,92 +5053,48 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   justify-content: center !important;
   align-self: center !important;
   width: 100% !important;
-  height: 23px !important;
-  min-height: 23px !important;
-  max-width: none !important;
+  min-width: 0 !important;
+  height: 21px !important;
+  min-height: 21px !important;
   margin: 0 !important;
-  padding: 3px 6px !important;
+  padding: 2px 6px !important;
+  border: 1px solid var(--ui-control-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-control-face) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  font-variant-numeric: tabular-nums !important;
   line-height: 1 !important;
   text-align: center !important;
+  white-space: nowrap !important;
 }
 
 .sales-return-fields-right .is-total-balance {
-  grid-template-columns: max-content minmax(82px, 1fr) !important;
+  background: color-mix(in srgb, var(--ui-success) 18%, var(--ui-surface)) !important;
+}
+
+.sales-return-fields-right .is-total-balance > strong {
+  color: var(--ui-success) !important;
 }
 
 @media (max-width: 1450px) {
   .sales-return-fields-right {
-    grid-template-columns: 78px minmax(108px, 1fr) !important;
-    grid-template-rows: repeat(2, 30px) !important;
-  }
-
-  .sales-return-fields-right .sales-return-balance-chip {
-    height: 28px !important;
-    min-height: 28px !important;
-  }
-}
-
-
-/* Sales Return balance block: all four controls use equal outer widths. */
-.sales-return-fields-right {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-}
-
-.sales-return-fields-right .sales-return-header-refresh,
-.sales-return-fields-right .sales-return-balance-chip {
-  width: 100% !important;
-  min-width: 0 !important;
-  justify-self: stretch !important;
-}
-
-@media (max-width: 1450px) {
-  .sales-return-fields-right {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-
-
-/* Sales Return balance block: exact vertical-fit math.
-   31px outer - 2px borders - 6px vertical padding = 23px inner control. */
-.sales-return-fields-right {
-  grid-template-rows: repeat(2, 33px) !important;
-}
-
-.sales-return-fields-right .sales-return-header-refresh {
-  align-self: center !important;
-  height: 31px !important;
-  min-height: 31px !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip {
-  box-sizing: border-box !important;
-  align-self: center !important;
-  height: 31px !important;
-  min-height: 31px !important;
-  padding-top: 3px !important;
-  padding-bottom: 3px !important;
-}
-
-.sales-return-fields-right .sales-return-balance-chip > span,
-.sales-return-fields-right .sales-return-balance-chip > strong {
-  height: 23px !important;
-  min-height: 23px !important;
-  align-self: center !important;
-}
-
-@media (max-width: 1450px) {
-  .sales-return-fields-right {
-    grid-template-rows: repeat(2, 32px) !important;
+    grid-template-rows: repeat(2, 26px) !important;
+    min-height: 57px !important;
   }
 
   .sales-return-fields-right .sales-return-header-refresh,
   .sales-return-fields-right .sales-return-balance-chip {
-    height: 30px !important;
-    min-height: 30px !important;
+    height: 26px !important;
+    min-height: 26px !important;
   }
 
-  .sales-return-fields-right .sales-return-balance-chip {
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
+  .sales-return-fields-right .sales-return-balance-chip > span,
+  .sales-return-fields-right .sales-return-balance-chip > strong {
+    height: 20px !important;
+    min-height: 20px !important;
   }
 }
+
