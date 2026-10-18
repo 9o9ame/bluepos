@@ -1530,3 +1530,51 @@ html[data-animations='off'] .purchase-return-product-toggle > span {
   transition: none;
 }
 
+/* Search Return Invoices dropdowns: main-field search, one visual surface. */
+:root .purchase-return-search-filters .purchase-return-search-status-select .ui-select-combobox-trigger,
+:root .purchase-return-search-filters .purchase-return-search-supplier-select .ui-select-combobox-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+}
+
+:root .purchase-return-search-filters .purchase-return-search-status-select .ui-select-trigger-search,
+:root .purchase-return-search-filters .purchase-return-search-supplier-select .ui-select-trigger-search {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 28px 0 7px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+:root .purchase-return-search-filters .purchase-return-search-status-select .ui-select-trigger-search:focus,
+:root .purchase-return-search-filters .purchase-return-search-supplier-select .ui-select-trigger-search:focus {
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:root .purchase-return-search-filters .purchase-return-search-status-select .ui-select-combobox-toggle,
+:root .purchase-return-search-filters .purchase-return-search-supplier-select .ui-select-combobox-toggle {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  width: 20px;
+  min-width: 20px;
+  height: 18px;
+  min-height: 18px;
+  transform: translateY(-50%);
+}
+
