@@ -55,7 +55,8 @@ function receiptHtml(sale: Sale, options: SaleReceiptOptions = {}): string {
   <div class="center"><h2>${escapeHtml(options.heading?.trim() || 'RETAIL INVOICE')}</h2></div>
   <div>Invoice #: ${escapeHtml(sale.document_number)}</div>
   <div>Date: ${escapeHtml(sale.sale_date)}</div>
-  <div>Customer: ${escapeHtml(sale.customer?.name ?? 'CASH IN HAND')}</div>
+  <div>Customer: ${escapeHtml(sale.customer_name?.trim() || sale.customer?.name || 'CASH IN HAND')}</div>
+  ${sale.customer_phone?.trim() ? `<div>Phone: ${escapeHtml(sale.customer_phone)}</div>` : ''}
   <div>Branch: ${escapeHtml(sale.branch?.name ?? '')}</div>
   <div class="line"></div>
   <table>
