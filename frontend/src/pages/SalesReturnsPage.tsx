@@ -20,6 +20,7 @@ import {
 } from '../api/salesReturns'
 import { DesktopButton } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { PosEntryGrid } from '../components/desktop/PosEntryGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import { askConfirm, useFeedback } from '../feedback/FeedbackProvider'
@@ -1177,33 +1178,35 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
 
           <div className="sales-return-grid-wrap">
             {saleUlid ? (
-              <table className="sales-return-grid">
-                <thead>
-                  <tr>
-                    <th>Item / Product Description</th>
-                    <th>Kind</th>
-                    <th>Sold Qty</th>
-                    <th>Returned</th>
-                    <th>Available</th>
-                    <th>Return Qty</th>
-                    <th>Unit</th>
-                    <th>Price</th>
-                    <th>Disc</th>
-                    <th>Tax</th>
-                    <th>Net</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <PosEntryGrid
+                className="sales-return-custom-grid"
+                tableClassName="sales-return-custom-table"
+                ariaLabel="Invoice-linked sales return lines"
+                minWidth={980}
+                columns={[
+                  { key: 'product', header: 'Item / Product Description' },
+                  { key: 'kind', header: 'Kind', width: 90 },
+                  { key: 'sold', header: 'Sold Qty', width: 86, align: 'right' },
+                  { key: 'returned', header: 'Returned', width: 86, align: 'right' },
+                  { key: 'available', header: 'Available', width: 86, align: 'right' },
+                  { key: 'return', header: 'Return Qty', width: 92, align: 'right' },
+                  { key: 'unit', header: 'Unit', width: 74 },
+                  { key: 'price', header: 'Price', width: 90, align: 'right' },
+                  { key: 'disc', header: 'Disc', width: 90, align: 'right' },
+                  { key: 'tax', header: 'Tax', width: 90, align: 'right' },
+                  { key: 'net', header: 'Net', width: 100, align: 'right' },
+                ]}
+              >
                   {returnable.map((row) => (
                     <tr key={row.sale_item_ulid}>
                       <td>
                         <strong>{row.product.product_number}</strong> — {row.product.name}
                       </td>
                       <td>{row.line_kind.replace('_', ' ')}</td>
-                      <td className="num">{row.original_quantity}</td>
-                      <td className="num">{row.already_returned_quantity}</td>
-                      <td className="num">{row.remaining_returnable_quantity}</td>
-                      <td className="num is-edit">
+                      <td className="is-num">{row.original_quantity}</td>
+                      <td className="is-num">{row.already_returned_quantity}</td>
+                      <td className="is-num">{row.remaining_returnable_quantity}</td>
+                      <td className="is-num is-edit">
                         {readOnly ? (
                           lineQty[row.sale_item_ulid] ?? '0'
                         ) : (
@@ -1231,10 +1234,10 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                         )}
                       </td>
                       <td>{row.unit?.code ?? '—'}</td>
-                      <td className="num">{money(row.unit_price)}</td>
-                      <td className="num">{money(row.discount_amount)}</td>
-                      <td className="num">{money(row.tax_amount)}</td>
-                      <td className="num">{money(row.line_total)}</td>
+                      <td className="is-num">{money(row.unit_price)}</td>
+                      <td className="is-num">{money(row.discount_amount)}</td>
+                      <td className="is-num">{money(row.tax_amount)}</td>
+                      <td className="is-num">{money(row.line_total)}</td>
                     </tr>
                   ))}
                   {returnableQuery.isFetching ? (
@@ -1246,23 +1249,24 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                   {!returnableQuery.isFetching && !returnableQuery.isError && returnable.length === 0 ? (
                     <tr><td colSpan={11} className="sales-return-empty">This sale has no remaining returnable quantity.</td></tr>
                   ) : null}
-                </tbody>
-              </table>
+              </PosEntryGrid>
             ) : (
-              <table className="sales-return-grid is-general">
-                <thead>
-                  <tr>
-                    <th>Item / Product Description</th>
-                    <th>Quantity</th>
-                    <th>Price (C)</th>
-                    <th>AMT</th>
-                    <th>Disc%</th>
-                    <th>Tax</th>
-                    <th>Amount(Rs)</th>
-                    <th aria-label="Actions" />
-                  </tr>
-                </thead>
-                <tbody>
+              <PosEntryGrid
+                className="sales-return-custom-grid"
+                tableClassName="sales-return-custom-table is-general"
+                ariaLabel="General sales return lines"
+                minWidth={860}
+                columns={[
+                  { key: 'product', header: 'Item / Product Description' },
+                  { key: 'quantity', header: 'Quantity', width: 100, align: 'right' },
+                  { key: 'price', header: 'Price (C)', width: 100, align: 'right' },
+                  { key: 'amt', header: 'AMT', width: 100, align: 'right' },
+                  { key: 'disc', header: 'Disc%', width: 88, align: 'right' },
+                  { key: 'tax', header: 'Tax', width: 88, align: 'right' },
+                  { key: 'amount', header: 'Amount(Rs)', width: 110, align: 'right' },
+                  { key: 'actions', header: '', width: 34, align: 'center' },
+                ]}
+              >
                   {generalRows.map((row) => {
                     const amounts = generalLineAmounts(row)
                     return (
@@ -1349,7 +1353,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                             </button>
                           )}
                         </td>
-                        <td className="num is-edit">
+                        <td className="is-num is-edit">
                           {readOnly ? row.quantity : (
                             <input
                               inputMode="decimal"
@@ -1367,7 +1371,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                             />
                           )}
                         </td>
-                        <td className="num is-edit">
+                        <td className="is-num is-edit">
                           {readOnly ? money(row.unit_price) : (
                             <input
                               inputMode="decimal"
@@ -1385,8 +1389,8 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                             />
                           )}
                         </td>
-                        <td className="num">{money(amounts.gross)}</td>
-                        <td className="num is-edit">
+                        <td className="is-num">{money(amounts.gross)}</td>
+                        <td className="is-num is-edit">
                           {readOnly ? row.discount_percent : (
                             <input
                               inputMode="decimal"
@@ -1404,8 +1408,8 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                             />
                           )}
                         </td>
-                        <td className="num">{money(amounts.tax)}</td>
-                        <td className="num">{money(amounts.total)}</td>
+                        <td className="is-num">{money(amounts.tax)}</td>
+                        <td className="is-num">{money(amounts.total)}</td>
                         <td className="sales-return-general-delete">
                           {!readOnly ? (
                             <button
@@ -1425,7 +1429,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                   })}
 
                   {!readOnly && generalProductTargetKey === null && generalActiveRowKey === null ? (
-                    <tr className="sales-return-general-entry">
+                    <tr className="sales-return-general-entry is-entry-row">
                       <td className="sales-return-general-product-cell">
                         <div ref={generalProductAnchorRef} className="sales-product-combo sales-return-product-combo">
                           <input
@@ -1498,8 +1502,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                   {readOnly && generalRows.length === 0 ? (
                     <tr><td colSpan={8} className="sales-return-empty">This general return has no lines.</td></tr>
                   ) : null}
-                </tbody>
-              </table>
+              </PosEntryGrid>
             )}
           </div>
 
