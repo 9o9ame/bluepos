@@ -4862,3 +4862,9 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 .sales-return-custom-table td.is-edit {
   padding: 2px 4px;
 }
+
+
+/* Sales Return Custom Table: approved centered column headings. */
+.sales-return-custom-table th {
+  text-align: center !important;
+}
