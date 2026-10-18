@@ -912,14 +912,14 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                         ) : null}
                       </div>
                     </td>
-                    <td>—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
+                    <td />
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
                     <td />
                   </tr>
                 ) : null}
