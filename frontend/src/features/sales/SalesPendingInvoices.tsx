@@ -8,7 +8,7 @@ import { useFeedback } from '../../feedback/FeedbackProvider'
 import type { Sale, SaleHold } from '../../types/sales'
 import { SalePaymentPanel } from './SalePaymentPanel'
 import { previewSaleReceipt, printSaleReceipt } from './saleReceipt'
-import { UiSelect } from '../../components/ui/UiSelect'
+import { UiTableDropdown } from '../../components/ui/UiSelect'
 import { UiButton } from '../../components/ui/UiButton'
 
 type Props = {
@@ -261,15 +261,34 @@ export function SalesPendingInvoices({
 
           <label>
             <span>Salesman</span>
-            <UiSelect
+            <UiTableDropdown
               className="sales-due-salesman-select"
               aria-label="Salesman"
               value={salesmanUlid}
+              placeholder="All"
+              searchPlaceholder="Search salesman"
+              menuMinWidth={560}
+              menuColumns={[
+                { header: 'Code', width: '92px' },
+                { header: 'Name', width: '180px' },
+                { header: 'Address', width: '190px' },
+                { header: 'Mobile', width: '110px' },
+              ]}
               options={[
-                { value: '', label: 'All' },
+                {
+                  value: '',
+                  label: 'All',
+                  columns: ['—', 'All', '—', '—'],
+                },
                 ...(salesmenQuery.data ?? []).map((salesman) => ({
                   value: salesman.ulid,
                   label: `${salesman.code} — ${salesman.name}`,
+                  columns: [
+                    salesman.code || '—',
+                    salesman.name,
+                    salesman.address || '—',
+                    salesman.mobile || '—',
+                  ],
                 })),
               ]}
               onChange={setSalesmanUlid}
