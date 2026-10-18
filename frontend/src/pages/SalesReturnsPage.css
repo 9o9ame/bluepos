@@ -58,9 +58,6 @@
 }
 
 .sales-return-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 295px;
-  gap: 8px;
   flex: 0 0 auto;
 }
 
@@ -78,12 +75,6 @@
   font-weight: 900;
 }
 
-.sales-return-fields {
-  display: grid;
-  grid-template-columns: 54px 150px 48px 150px 58px minmax(170px, 1fr);
-  align-items: center;
-  gap: 3px 5px;
-}
 
 .sales-return-fields label {
   color: #304b5e;
@@ -429,13 +420,9 @@
 }
 
 @media (max-width: 1100px) {
-  .sales-return-head {
-    grid-template-columns: 1fr;
-  }
+  
 
-  .sales-return-fields {
-    grid-template-columns: 54px minmax(130px, 1fr) 48px minmax(130px, 1fr);
-  }
+  
 
   .sales-return-settlement {
     grid-template-columns: auto 120px auto 120px;
@@ -506,9 +493,6 @@
     0 2px 2px rgba(100,0,0,.14);
 }
 
-.sales-return-head {
-  gap: 6px;
-}
 
 .sales-return-head fieldset {
   border: 1px solid #7899b0;
@@ -1252,25 +1236,13 @@
    Compact Return Invoice Options — keep every header option on one line.
    Dropdown carets mirror the Sales Invoice rotating blue caret.
    ========================================================================== */
-.sales-return-head {
-  grid-template-columns: minmax(0, 1fr) 295px;
-}
+
 
 .sales-return-head > fieldset:first-child {
   overflow: visible;
 }
 
 .sales-return-fields {
-  display: grid !important;
-  grid-template-columns:
-    34px minmax(68px, .46fr)
-    32px minmax(108px, .72fr)
-    42px minmax(180px, 1.28fr)
-    36px minmax(130px, .92fr)
-    54px minmax(105px, .78fr)
-    40px minmax(130px, .92fr)
-    42px minmax(105px, .78fr) !important;
-  align-items: center;
   column-gap: 4px !important;
   row-gap: 0 !important;
 }
@@ -1305,14 +1277,6 @@
 
 @media (max-width: 1450px) {
   .sales-return-fields {
-    grid-template-columns:
-      30px minmax(62px, .42fr)
-      30px minmax(102px, .66fr)
-      38px minmax(165px, 1.18fr)
-      34px minmax(118px, .84fr)
-      48px minmax(96px, .70fr)
-      38px minmax(118px, .84fr)
-      40px minmax(96px, .70fr) !important;
     column-gap: 3px !important;
   }
 
@@ -1351,28 +1315,16 @@
    Reference-style single-line Return Invoice Options.
    The fieldset stays one row; numeric balance widgets sit inline with controls.
    ========================================================================== */
-.sales-return-fields {
-  display: flex !important;
-  align-items: center;
-  gap: 4px !important;
-  min-width: 0;
-  width: 100%;
-  overflow: visible;
-}
+
 
 .sales-return-option-group {
   display: flex;
   align-items: center;
-  gap: 3px;
-  min-width: 0;
   flex: 0 0 auto;
 }
 
 .sales-return-option-group > label {
   flex: 0 0 auto;
-  color: #294c64;
-  font-size: 9px;
-  font-weight: 900;
   white-space: nowrap;
   text-align: right;
 }
@@ -1541,9 +1493,7 @@
 }
 
 @media (max-width: 1450px) {
-  .sales-return-fields {
-    gap: 3px !important;
-  }
+  
 
   .sales-return-option-group.is-ret { width: 80px; }
   .sales-return-option-group.is-date { width: 137px; }
@@ -1556,9 +1506,7 @@
   .sales-return-balance-chip { width: 64px; }
   .sales-return-balance-chip.is-total-balance { width: 70px; }
 
-  .sales-return-option-group > label {
-    font-size: 8px;
-  }
+  
 }
 
 @media (max-width: 1180px) {
@@ -1569,7 +1517,6 @@
 
   .sales-return-fields {
     width: max-content;
-    min-width: 1030px;
   }
 }
 
@@ -1581,10 +1528,6 @@
   padding-top: 3px;
 }
 
-.sales-return-head {
-  grid-template-columns: minmax(0, 1fr) 250px !important;
-  gap: 4px !important;
-}
 
 .sales-return-head fieldset {
   padding: 2px 5px 4px !important;
@@ -1597,19 +1540,6 @@
   line-height: 10px;
 }
 
-.sales-return-fields {
-  gap: 2px !important;
-  min-height: 23px;
-}
-
-.sales-return-option-group {
-  gap: 2px !important;
-}
-
-.sales-return-option-group > label {
-  font-size: 7.5px !important;
-  line-height: 10px;
-}
 
 .sales-return-option-group.is-ret { width: 72px !important; }
 .sales-return-option-group.is-date { width: 126px !important; }
@@ -1716,9 +1646,7 @@
 }
 
 @media (max-width: 1450px) {
-  .sales-return-head {
-    grid-template-columns: minmax(0, 1fr) 235px !important;
-  }
+  
 
   .sales-return-option-group.is-ret { width: 68px !important; }
   .sales-return-option-group.is-date { width: 118px !important; }
@@ -1733,9 +1661,7 @@
 }
 
 @media (max-width: 1180px) {
-  .sales-return-fields {
-    min-width: 940px !important;
-  }
+  
 }
 
 
@@ -1748,24 +1674,6 @@
   overflow: visible !important;
 }
 
-.sales-return-fields {
-  display: grid !important;
-  grid-template-columns:
-    minmax(78px, .55fr)
-    minmax(132px, .85fr)
-    minmax(210px, 1.45fr)
-    64px
-    72px
-    minmax(190px, 1.25fr)
-    74px !important;
-  grid-template-areas:
-    "ret date sales refresh previous from thisbill"
-    "remarks remarks remarks total salesman salesman salesman";
-  gap: 3px 5px !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  align-items: center;
-}
 
 .sales-return-option-group.is-ret {
   grid-area: ret;
@@ -1817,9 +1725,6 @@
   width: auto !important;
 }
 
-.sales-return-option-group {
-  min-width: 0;
-}
 
 .sales-return-option-group > input,
 .sales-return-option-group > .sales-return-sale-search,
@@ -1843,17 +1748,7 @@
 }
 
 @media (max-width: 1450px) {
-  .sales-return-fields {
-    grid-template-columns:
-      minmax(70px, .55fr)
-      minmax(120px, .82fr)
-      minmax(185px, 1.35fr)
-      58px
-      66px
-      minmax(165px, 1.15fr)
-      68px !important;
-    gap: 3px 4px !important;
-  }
+  
 }
 
 @media (max-width: 1180px) {
@@ -1862,9 +1757,7 @@
     overflow-y: visible !important;
   }
 
-  .sales-return-fields {
-    min-width: 920px !important;
-  }
+  
 }
 
 
@@ -1877,19 +1770,13 @@
   line-height: 12px !important;
 }
 
-.sales-return-fields {
-  gap: 5px 7px !important;
-  min-height: 56px !important;
-}
 
 .sales-return-option-group {
   gap: 4px !important;
 }
 
 .sales-return-option-group > label {
-  font-size: 10px !important;
   line-height: 12px !important;
-  font-weight: 900 !important;
 }
 
 .sales-return-fields .sales-return-option-group > input,
@@ -1994,25 +1881,7 @@
    Right = Previous / Total Balance / This Bill
    Amount Options = 2 x 2 compact matrix.
    ========================================================================== */
-.sales-return-fields {
-  display: grid !important;
-  grid-template-columns:
-    minmax(82px, .55fr)
-    minmax(140px, .82fr)
-    minmax(220px, 1.35fr)
-    minmax(190px, 1.15fr)
-    minmax(180px, 1.05fr)
-    minmax(190px, 1.15fr)
-    84px
-    88px
-    84px !important;
-  grid-template-areas:
-    "ret date sales from salesman remarks previous total thisbill"
-    "ret date sales from salesman remarks previous total thisbill" !important;
-  align-items: center !important;
-  gap: 5px 6px !important;
-  min-height: 28px !important;
-}
+
 
 .sales-return-option-group.is-ret { grid-area: ret !important; }
 .sales-return-option-group.is-date { grid-area: date !important; }
@@ -2045,9 +1914,7 @@
 }
 
 /* Make the left-side fields visually dominant and the balance widgets compact. */
-.sales-return-option-group {
-  min-width: 0;
-}
+
 
 .sales-return-option-group.is-sales .sales-return-sale-results {
   left: 0 !important;
@@ -2094,19 +1961,7 @@
 }
 
 @media (max-width: 1450px) {
-  .sales-return-fields {
-    grid-template-columns:
-      minmax(74px, .52fr)
-      minmax(126px, .78fr)
-      minmax(195px, 1.25fr)
-      minmax(165px, 1.03fr)
-      minmax(158px, .98fr)
-      minmax(165px, 1.03fr)
-      76px
-      80px
-      76px !important;
-    gap: 4px 5px !important;
-  }
+  
 }
 
 @media (max-width: 1180px) {
@@ -2115,9 +1970,7 @@
     overflow-y: visible !important;
   }
 
-  .sales-return-fields {
-    min-width: 1160px !important;
-  }
+  
 }
 
 
@@ -2126,25 +1979,7 @@
    Left = return controls. Right = Previous / Total Balance / This Bill.
    Amount Options remains the separate right-hand fieldset.
    ========================================================================== */
-.sales-return-fields {
-  display: grid !important;
-  grid-template-columns:
-    minmax(86px, .55fr)
-    minmax(142px, .82fr)
-    minmax(230px, 1.35fr)
-    minmax(195px, 1.12fr)
-    18px
-    minmax(82px, .48fr)
-    minmax(86px, .50fr)
-    minmax(82px, .48fr) !important;
-  grid-template-areas:
-    "ret date sales from spacer previous total thisbill"
-    "salesman salesman remarks remarks spacer . . ." !important;
-  align-items: center !important;
-  gap: 5px 6px !important;
-  width: 100% !important;
-  min-width: 0 !important;
-}
+
 
 .sales-return-option-group.is-ret { grid-area: ret !important; }
 .sales-return-option-group.is-date { grid-area: date !important; }
@@ -2192,18 +2027,7 @@
 }
 
 @media (max-width: 1450px) {
-  .sales-return-fields {
-    grid-template-columns:
-      minmax(78px, .52fr)
-      minmax(128px, .78fr)
-      minmax(205px, 1.25fr)
-      minmax(170px, 1.03fr)
-      14px
-      minmax(76px, .45fr)
-      minmax(80px, .47fr)
-      minmax(76px, .45fr) !important;
-    gap: 4px 5px !important;
-  }
+  
 }
 
 @media (max-width: 1180px) {
@@ -2212,9 +2036,7 @@
     overflow-y: visible !important;
   }
 
-  .sales-return-fields {
-    min-width: 980px !important;
-  }
+  
 }
 
 
@@ -2222,22 +2044,7 @@
    Reference-style Sales Return header + detailed From / S.Man pickers.
    Keep the entry header compact; detail grids open only on demand.
    ========================================================================== */
-.sales-return-fields {
-  grid-template-columns:
-    minmax(86px, .55fr)
-    minmax(142px, .82fr)
-    minmax(230px, 1.35fr)
-    70px
-    minmax(82px, .48fr)
-    minmax(86px, .50fr)
-    minmax(82px, .48fr)
-    minmax(100px, .58fr) !important;
-  grid-template-areas:
-    "ret date sales refresh previous total thisbill thisbill"
-    "from from salesman salesman remarks remarks remarks remarks" !important;
-  gap: 5px 6px !important;
-  overflow: visible !important;
-}
+
 
 .sales-return-header-refresh {
   grid-area: refresh !important;
@@ -2257,25 +2064,13 @@
 
 
 @media (max-width: 1450px) {
-  .sales-return-fields {
-    grid-template-columns:
-      minmax(78px, .52fr)
-      minmax(128px, .78fr)
-      minmax(205px, 1.25fr)
-      64px
-      minmax(76px, .45fr)
-      minmax(80px, .47fr)
-      minmax(76px, .45fr)
-      minmax(92px, .55fr) !important;
-  }
+  
 
   
 }
 
 @media (max-width: 1180px) {
-  .sales-return-fields {
-    min-width: 980px !important;
-  }
+  
 
   
 }
@@ -2290,25 +2085,7 @@
    keep Refresh directly beside Sales# and create a clear visual gap before
    the balance widgets on the right.
    ========================================================================== */
-.sales-return-fields {
-  grid-template-columns:
-    minmax(86px, .55fr)
-    minmax(142px, .82fr)
-    minmax(230px, 1.35fr)
-    72px
-    minmax(195px, 1.12fr)
-    minmax(180px, 1.05fr)
-    minmax(190px, 1.15fr)
-    28px
-    minmax(82px, .48fr)
-    minmax(86px, .50fr)
-    minmax(82px, .48fr) !important;
-  grid-template-areas:
-    "ret date sales refresh from salesman remarks gap previous total thisbill"
-    "ret date sales refresh from salesman remarks gap previous total thisbill" !important;
-  align-items: center !important;
-  gap: 5px 6px !important;
-}
+
 
 .sales-return-fields::after {
   content: "";
@@ -2346,21 +2123,7 @@
 }
 
 @media (max-width: 1450px) {
-  .sales-return-fields {
-    grid-template-columns:
-      minmax(78px, .52fr)
-      minmax(128px, .78fr)
-      minmax(205px, 1.25fr)
-      68px
-      minmax(170px, 1.03fr)
-      minmax(160px, .98fr)
-      minmax(165px, 1.03fr)
-      22px
-      minmax(76px, .45fr)
-      minmax(80px, .47fr)
-      minmax(76px, .45fr) !important;
-    gap: 4px 5px !important;
-  }
+  
 
   .sales-return-header-refresh {
     width: 68px !important;
@@ -2369,9 +2132,7 @@
 }
 
 @media (max-width: 1180px) {
-  .sales-return-fields {
-    min-width: 1180px !important;
-  }
+  
 }
 
 
@@ -2379,34 +2140,12 @@
    Sales Return header — three distinct boxes.
    Left: return fields. Middle: refresh + balances. Right: Amount Options.
    ========================================================================== */
-.sales-return-head {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 330px 250px !important;
-  gap: 12px !important;
-  align-items: stretch;
-}
+
 
 .sales-return-head > fieldset:first-child {
   min-width: 0;
 }
 
-.sales-return-fields {
-  display: grid !important;
-  grid-template-columns:
-    minmax(90px, .55fr)
-    minmax(145px, .82fr)
-    minmax(235px, 1.35fr)
-    minmax(210px, 1.18fr)
-    minmax(190px, 1.05fr)
-    minmax(220px, 1.20fr) !important;
-  grid-template-areas:
-    "ret date sales sales sales sales"
-    "from from salesman salesman remarks remarks" !important;
-  gap: 6px 8px !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  overflow: visible !important;
-}
 
 .sales-return-fields::before,
 .sales-return-fields::after {
@@ -2422,32 +2161,17 @@
 
 
 @media (max-width: 1450px) {
-  .sales-return-head {
-    grid-template-columns: minmax(0, 1fr) 305px 235px !important;
-    gap: 10px !important;
-  }
+  
 
   .sales-return-fields {
-    grid-template-columns:
-      minmax(80px, .55fr)
-      minmax(130px, .82fr)
-      minmax(210px, 1.35fr)
-      minmax(185px, 1.15fr)
-      minmax(170px, 1fr)
-      minmax(195px, 1.15fr) !important;
     gap: 5px 6px !important;
   }
 }
 
 @media (max-width: 1180px) {
-  .sales-return-head {
-    grid-template-columns: minmax(940px, 1fr) 290px 225px !important;
-    overflow-x: auto;
-  }
+  
 
-  .sales-return-fields {
-    min-width: 920px !important;
-  }
+  
 }
 
 
@@ -2458,8 +2182,6 @@
    ========================================================================== */
 .sales-return-head {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 250px !important;
-  gap: 10px !important;
   align-items: stretch !important;
 }
 
@@ -2476,7 +2198,6 @@
   gap: 0 !important;
   min-width: 0 !important;
   width: 100% !important;
-  min-height: 58px !important;
   overflow: visible !important;
 }
 
@@ -2499,7 +2220,6 @@
     "ret date sales sales sales sales"
     "from from salesman salesman remarks remarks";
   align-items: center;
-  gap: 6px 8px;
   min-width: 0;
 }
 
@@ -2578,7 +2298,6 @@
 
 @media (max-width: 1450px) {
   .sales-return-head {
-    grid-template-columns: minmax(0, 1fr) 235px !important;
     gap: 8px !important;
   }
 
@@ -2850,23 +2569,11 @@ html[data-animations='off'] .sales-return-screen * {
   font-weight: 750 !important;
 }
 
-.sales-return-fields {
-  min-height: 62px !important;
-}
-
-.sales-return-fields-left {
-  gap: 7px 8px !important;
-}
 
 .sales-return-option-group {
   min-width: 0;
 }
 
-.sales-return-option-group > label {
-  color: var(--ui-text-muted) !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-}
 
 .sales-return-fields .sales-return-option-group > input,
 .sales-return-fields .sales-return-sale-input,
