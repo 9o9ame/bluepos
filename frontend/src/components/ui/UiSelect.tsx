@@ -664,7 +664,7 @@ export type UiSimpleDropdownProps = Omit<
  * second search box.
  */
 export function UiSimpleDropdown({
-  searchable = true,
+  searchable = false,
   ...props
 }: UiSimpleDropdownProps) {
   return (
