@@ -854,6 +854,15 @@ export function PurchaseOrderPage() {
                     Apply to Pack
                   </span>
                 </label>
+                <label className="purchase-order-title-pack">
+                  <input
+                    type="checkbox"
+                    checked={includeNonSold}
+                    disabled={readOnly || !['last_n_days', 'between_dates'].includes(orderType)}
+                    onChange={(event) => setIncludeNonSold(event.target.checked)}
+                  />
+                  <span>Non Sold Product Also</span>
+                </label>
               </div>
 
               <div className="purchase-order-option-grid">
@@ -886,16 +895,6 @@ export function PurchaseOrderPage() {
                     onChange={(value) => setOrderType(value as PurchaseOrderGenerateMode)}
                     aria-label="Order type"
                   />
-                </label>
-
-                <label className="purchase-order-check po-option-nonsold">
-                  <input
-                    type="checkbox"
-                    checked={includeNonSold}
-                    disabled={readOnly || !['last_n_days', 'between_dates'].includes(orderType)}
-                    onChange={(event) => setIncludeNonSold(event.target.checked)}
-                  />
-                  <span>Non Sold Product Also</span>
                 </label>
 
                 <label className="po-option-days">
