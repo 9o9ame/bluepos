@@ -701,7 +701,7 @@ html[data-animations='off'] .purchase-order-product-toggle > span {
 .purchase-order-search-bar {
   display: flex;
   flex: 0 0 auto;
-  align-items: end;
+  align-items: center;
   gap: 8px;
   margin-bottom: 10px;
 }
@@ -711,8 +711,18 @@ html[data-animations='off'] .purchase-order-product-toggle > span {
 }
 
 .purchase-order-search-bar label {
-  display: grid;
-  gap: 3px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.purchase-order-search-bar label > span {
+  flex: 0 0 auto;
+  color: var(--ui-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .purchase-order-search-bar input {
@@ -1000,6 +1010,11 @@ html[data-animations='off'] .purchase-order-product-toggle > span {
   .purchase-order-search-bar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .purchase-order-search-bar label {
+    display: grid;
+    gap: 3px;
   }
 
   .purchase-order-search-bar > input {
