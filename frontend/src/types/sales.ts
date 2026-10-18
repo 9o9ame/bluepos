@@ -83,6 +83,8 @@ export type Sale = {
   net_sale_total: string
   paid_amount: string
   balance_due: string
+  customer_name: string | null
+  customer_phone: string | null
   notes: string | null
   posted_at: string | null
   salesman?: SalesmanOption | null
@@ -220,6 +222,8 @@ export type SaleHold = {
 export type SaleHoldPayload = {
   sale_date?: string | null
   customer_ulid?: string | null
+  customer_name?: string | null
+  customer_phone?: string | null
   salesman_ulid?: string | null
   payment_due?: boolean
   initial_payment?: {
