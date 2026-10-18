@@ -1,7 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  ChevronDown,
   FileSearch,
   PackageSearch,
   Plus,
@@ -11,7 +10,6 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { fetchProducts } from '../api/catalog'
 import {
   createInventoryAdjustment,
   createInventoryAdjustmentLine,
@@ -25,11 +23,13 @@ import {
   updateInventoryAdjustmentLine,
 } from '../api/inventory'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
+import { PosEntryGrid } from '../components/desktop/PosEntryGrid'
 import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { UiButton } from '../components/ui/UiButton'
-import { UiSelect } from '../components/ui/UiSelect'
+import { UiSelect, UiSimpleDropdown, UiTableDropdown } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
+import { useLocalProducts } from '../features/catalog/useLocalCatalog'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import type { Product } from '../types/catalog'
@@ -137,19 +137,14 @@ export function InventoryAdjustmentsPage() {
     }),
   })
 
-  const productsQuery = useQuery({
-    queryKey: ['products', 'inventory-adjustments', deferredProductSearch],
-    queryFn: () => fetchProducts(
-      {
-        q: deferredProductSearch.trim() || undefined,
-        per_page: 50,
-        active_only: true,
-        sales_lookup: true,
-      },
-      { busy: 'none' },
-    ),
-    enabled: tab === 'invoice',
-  })
+  const localProductLookup = useLocalProducts(
+    session,
+    deferredProductSearch,
+    tab === 'invoice',
+  )
+  const productLookupRows = localProductLookup.rows.filter(
+    (product) => product.is_active && product.status === 'active',
+  )
 
   const document = documentQuery.data ?? null
   const entryEnabled = canAdjust && (!document || document.status === 'draft')
@@ -196,6 +191,7 @@ export function InventoryAdjustmentsPage() {
   const accountOptions = (accountsQuery.data?.data ?? []).map((account) => ({
     value: account.ulid,
     label: `${account.code} — ${account.name}`,
+    columns: [account.code, account.name],
   }))
 
   function clearLineForm(focusProduct = false) {
@@ -448,7 +444,7 @@ export function InventoryAdjustmentsPage() {
     { key: 'remarks', header: 'Remarks', render: (row) => row.remarks ?? '—' },
   ], [])
 
-  const selectedEntryProduct = productsQuery.data?.data.find((row) => row.ulid === productUlid) ?? null
+  const selectedEntryProduct = productLookupRows.find((row) => row.ulid === productUlid) ?? null
   const selectedExistingLine = (document?.lines ?? []).find((row) => row.ulid === selectedLineUlid) ?? null
 
   const entryPreview = useMemo(() => {
@@ -541,7 +537,7 @@ export function InventoryAdjustmentsPage() {
               </label>
               <label className="inventory-adjustments-account">
                 <span>Account:</span>
-                <UiSelect
+                <UiTableDropdown
                   value={accountUlid}
                   options={accountOptions}
                   onChange={(value) => {
@@ -550,7 +546,12 @@ export function InventoryAdjustmentsPage() {
                   }}
                   disabled={Boolean(document && document.status === 'posted')}
                   placeholder={accountsQuery.isLoading ? 'Loading accounts…' : 'Select account'}
-                  searchPlaceholder="Search accounts…"
+                  searchPlaceholder="Search account"
+                  menuColumns={[
+                    { header: 'Code', width: '120px' },
+                    { header: 'Account', width: 'minmax(0, 1fr)' },
+                  ]}
+                  menuMinWidth={420}
                 />
               </label>
             </div>
@@ -559,11 +560,11 @@ export function InventoryAdjustmentsPage() {
               <div className="inventory-adjustments-section-title">Amount Options</div>
               <label>
                 <span>Adjustment Type:</span>
-                <UiSelect
+                <UiSimpleDropdown
                   value="stock_adjustment"
                   options={[{ value: 'stock_adjustment', label: 'Stock Adjustment' }]}
                   onChange={() => undefined}
-                  searchable={false}
+                  searchPlaceholder="Search adjustment type"
                 />
               </label>
               <label>
@@ -580,20 +581,21 @@ export function InventoryAdjustmentsPage() {
 
           <div className="inventory-adjustments-grid">
             <div className="inventory-adjustments-entry-grid-wrap">
-              <table className="inventory-adjustments-entry-grid">
-                <thead>
-                  <tr>
-                    <th>ITEM / PRODUCT DESCRIPTION</th>
-                    <th>In Stock</th>
-                    <th>Qty +</th>
-                    <th>Qty -</th>
-                    <th>After Stock</th>
-                    <th>Price</th>
-                    <th>Amount</th>
-                    <th>Remarks</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <PosEntryGrid
+                className="inventory-adjustments-custom-table"
+                tableClassName="inventory-adjustments-entry-grid"
+                ariaLabel="Inventory adjustment lines"
+                columns={[
+                  { key: 'product', header: 'ITEM / PRODUCT DESCRIPTION', width: '30%' },
+                  { key: 'stock', header: 'In Stock', width: '7%', align: 'right' },
+                  { key: 'plus', header: 'Qty +', width: '7%', align: 'right' },
+                  { key: 'minus', header: 'Qty -', width: '7%', align: 'right' },
+                  { key: 'after', header: 'After Stock', width: '8%', align: 'right' },
+                  { key: 'price', header: 'Price', width: '7%', align: 'right' },
+                  { key: 'amount', header: 'Amount', width: '8%', align: 'right' },
+                  { key: 'remarks', header: 'Remarks', width: '26%' },
+                ]}
+              >
                   {(document?.lines ?? []).map((line) => (
                     <tr
                       key={line.ulid}
@@ -603,14 +605,14 @@ export function InventoryAdjustmentsPage() {
                         if (document?.status === 'draft' && canAdjust) fillLineForm(line)
                       }}
                     >
-                      <td>{line.product ? `${line.product.product_number} · ${line.product.name}` : '—'}</td>
+                      <td>{line.product ? `${line.product.product_number} · ${line.product.name}` : ''}</td>
                       <td className="is-num">{line.in_stock}</td>
                       <td className="is-num">{line.qty_plus}</td>
                       <td className="is-num">{line.qty_minus}</td>
                       <td className="is-num">{line.after_stock}</td>
                       <td className="is-num">{line.price}</td>
                       <td className="is-num">{line.amount}</td>
-                      <td>{line.remarks ?? '—'}</td>
+                      <td>{line.remarks ?? ''}</td>
                     </tr>
                   ))}
 
@@ -624,7 +626,7 @@ export function InventoryAdjustmentsPage() {
                             autoComplete="off"
                             placeholder="Search product name, number, SKU or barcode"
                             onFocus={() => {
-                              if (productSearch.trim() || (productsQuery.data?.data?.length ?? 0) > 0) {
+                              if (productSearch.trim() || productLookupRows.length > 0) {
                                 setProductPickerOpen(true)
                               }
                             }}
@@ -643,7 +645,7 @@ export function InventoryAdjustmentsPage() {
 
                               if (event.key !== 'Enter') return
 
-                              const first = productsQuery.data?.data?.[0]
+                              const first = productLookupRows[0]
                               if (first) {
                                 event.preventDefault()
                                 selectEntryProduct(first)
@@ -654,28 +656,38 @@ export function InventoryAdjustmentsPage() {
                             type="button"
                             className="inventory-adjustments-product-arrow"
                             aria-label="Open product list"
+                            aria-expanded={productPickerOpen}
+                            onMouseDown={(event) => {
+                              event.preventDefault()
+                              event.stopPropagation()
+                            }}
                             onClick={() => {
                               setProductPickerOpen((open) => !open)
                               window.setTimeout(() => productInputRef.current?.focus(), 0)
                             }}
                           >
-                            <ChevronDown size={14} />
+                            <span aria-hidden>
+                              <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                              </svg>
+                            </span>
                           </button>
 
-                          {productPickerOpen && (productsQuery.data?.data?.length ?? 0) > 0 ? (
+                          {productPickerOpen && productLookupRows.length > 0 ? (
                             <ProductLookupGrid
-                              rows={productsQuery.data?.data ?? []}
-                              total={productsQuery.data?.meta.total ?? 0}
+                              rows={productLookupRows}
+                              total={productLookupRows.length}
                               priceType="default"
                               onSelect={selectEntryProduct}
                               portalAnchorRef={productAnchorRef}
                               themed
                               selectedUlid={productUlid}
+                              onRequestClose={() => setProductPickerOpen(false)}
                             />
                           ) : null}
                         </div>
                       </td>
-                      <td className="is-num is-readonly">{productUlid ? entryPreview.inStock : '—'}</td>
+                      <td className="is-num is-readonly">{productUlid ? entryPreview.inStock : ''}</td>
                       <td>
                         <input
                           ref={qtyPlusRef}
@@ -714,9 +726,9 @@ export function InventoryAdjustmentsPage() {
                           }}
                         />
                       </td>
-                      <td className="is-num is-readonly">{productUlid ? entryPreview.afterStock : '—'}</td>
-                      <td className="is-num is-readonly">{productUlid ? entryPreview.price : '—'}</td>
-                      <td className="is-num is-readonly">{productUlid ? entryPreview.amount : '—'}</td>
+                      <td className="is-num is-readonly">{productUlid ? entryPreview.afterStock : ''}</td>
+                      <td className="is-num is-readonly">{productUlid ? entryPreview.price : ''}</td>
+                      <td className="is-num is-readonly">{productUlid ? entryPreview.amount : ''}</td>
                       <td className="inventory-adjustments-entry-remarks">
                         <input
                           ref={remarksRef}
@@ -749,8 +761,7 @@ export function InventoryAdjustmentsPage() {
                       </td>
                     </tr>
                   ) : null}
-                </tbody>
-              </table>
+              </PosEntryGrid>
             </div>
           </div>
 
