@@ -2965,3 +2965,89 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
   border-color: var(--ui-accent);
   box-shadow: var(--ui-focus-shadow);
 }
+
+/* Posted Invoices full-screen filter sizing + single-surface Salesman Table Dropdown. */
+:root .sales-posted-history.sales-history .sales-history-search {
+  flex: 1 1 360px;
+  max-width: none;
+}
+
+:root .sales-posted-history.sales-history .sales-history-filter > input {
+  width: 148px;
+  min-width: 148px;
+}
+
+:root .sales-posted-history.sales-history .sales-history-filter .sales-history-salesman-select {
+  width: 240px;
+  min-width: 240px;
+}
+
+:root .sales-posted-history.sales-history .sales-history-filter .sales-history-status-select {
+  width: 160px;
+  min-width: 160px;
+}
+
+:root .sales-posted-history.sales-history .sales-history-salesman-select .ui-select-combobox-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+}
+
+:root .sales-posted-history.sales-history .sales-history-salesman-select .ui-select-trigger-search {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 28px 0 7px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+:root .sales-posted-history.sales-history .sales-history-salesman-select .ui-select-trigger-search:focus {
+  border: 0 !important;
+  outline: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:root .sales-posted-history.sales-history .sales-history-salesman-select .ui-select-combobox-toggle {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  width: 20px;
+  min-width: 20px;
+  height: 18px;
+  min-height: 18px;
+  transform: translateY(-50%);
+}
+
+@media (max-width: 1450px) {
+  :root .sales-posted-history.sales-history .sales-history-search {
+    flex-basis: 300px;
+  }
+
+  :root .sales-posted-history.sales-history .sales-history-filter > input {
+    width: 132px;
+    min-width: 132px;
+  }
+
+  :root .sales-posted-history.sales-history .sales-history-filter .sales-history-salesman-select {
+    width: 205px;
+    min-width: 205px;
+  }
+
+  :root .sales-posted-history.sales-history .sales-history-filter .sales-history-status-select {
+    width: 140px;
+    min-width: 140px;
+  }
+}
+
