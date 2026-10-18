@@ -18,6 +18,7 @@ import {
 } from '../api/purchases'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { PosEntryGrid } from '../components/desktop/PosEntryGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiModal } from '../components/ui/UiModal'
 import { UiSelect, UiSimpleDropdown, UiTableDropdown } from '../components/ui/UiSelect'
@@ -1041,40 +1042,26 @@ export function PurchaseOrderPage() {
               })
             }}
           >
-            <table className="purchase-order-lines">
-              <colgroup>
-                <col className="po-col-selector" />
-                <col className="po-col-product" />
-                <col className="po-col-stock" />
-                <col className="po-col-stock-value" />
-                <col className="po-col-consumption" />
-                <col className="po-col-difference" />
-                <col className="po-col-quantity" />
-                <col className="po-col-price" />
-                <col className="po-col-amt" />
-                <col className="po-col-disc-pct" />
-                <col className="po-col-disc-rs" />
-                <col className="po-col-amount" />
-                <col className="po-col-delete" />
-              </colgroup>
-              <thead>
-                <tr>
-                  <th className="purchase-order-row-selector" aria-label="Row" />
-                  <th className="purchase-order-product-heading">Item / Product Description</th>
-                  <th className="is-num">In Stock</th>
-                  <th className="is-num">Stock Val</th>
-                  <th className="is-num">Consumption</th>
-                  <th className="is-num">Difference</th>
-                  <th className="is-num">Quantity</th>
-                  <th className="is-num">Price</th>
-                  <th className="is-num">Amt</th>
-                  <th className="is-num">Dis %</th>
-                  <th className="is-num">Dis-Rs</th>
-                  <th className="is-num">Amount</th>
-                  <th aria-label="Actions" />
-                </tr>
-              </thead>
-              <tbody>
+            <PosEntryGrid
+              className="purchase-order-custom-table"
+              tableClassName="purchase-order-lines"
+              ariaLabel="Purchase order lines"
+              columns={[
+                { key: 'selector', header: '', width: '2.5%', align: 'center', className: 'purchase-order-row-selector' },
+                { key: 'product', header: 'Item / Product Description', width: '43%', className: 'purchase-order-product-heading' },
+                { key: 'stock', header: 'In Stock', width: '6%', align: 'right' },
+                { key: 'stock-value', header: 'Stock Val', width: '6%', align: 'right' },
+                { key: 'consumption', header: 'Consumption', width: '6.5%', align: 'right' },
+                { key: 'difference', header: 'Difference', width: '6.5%', align: 'right' },
+                { key: 'quantity', header: 'Quantity', width: '6%', align: 'right' },
+                { key: 'price', header: 'Price', width: '6%', align: 'right' },
+                { key: 'amt', header: 'Amt', width: '6%', align: 'right' },
+                { key: 'disc-pct', header: 'Dis %', width: '5.5%', align: 'right' },
+                { key: 'disc-rs', header: 'Dis-Rs', width: '6%', align: 'right' },
+                { key: 'amount', header: 'Amount', width: '7%', align: 'right' },
+                { key: 'actions', header: '', width: '3%' },
+              ]}
+            >
                 {readOnly
                   ? displayedLines.map((line) => (
                       <tr key={line.ulid}>
@@ -1082,12 +1069,12 @@ export function PurchaseOrderPage() {
                         <td>
                           {line.product
                             ? `${line.product.product_number} — ${line.product.name}`
-                            : '—'}
+                            : ''}
                         </td>
-                        <td className="is-num">—</td>
-                        <td className="is-num">—</td>
-                        <td className="is-num">—</td>
-                        <td className="is-num">—</td>
+                        <td className="is-num" />
+                        <td className="is-num" />
+                        <td className="is-num" />
+                        <td className="is-num" />
                         <td className="is-num">{line.quantity}</td>
                         <td className="is-num">{line.unit_price}</td>
                         <td className="is-num">{line.gross_amount}</td>
@@ -1255,7 +1242,7 @@ export function PurchaseOrderPage() {
                     })}
 
                 {!readOnly ? (
-                  <tr className="purchase-order-entry-row">
+                  <tr className="purchase-order-entry-row is-entry-row">
                     <td className="purchase-order-row-selector">›</td>
                     <td className="purchase-order-product-cell">
                       <input
@@ -1304,16 +1291,16 @@ export function PurchaseOrderPage() {
                         />
                       ) : null}
                     </td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
-                    <td className="is-num">—</td>
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
+                    <td className="is-num" />
                     <td />
                   </tr>
                 ) : null}
@@ -1325,8 +1312,7 @@ export function PurchaseOrderPage() {
                     </td>
                   </tr>
                 ) : null}
-              </tbody>
-            </table>
+            </PosEntryGrid>
 
             {loadMoreMutation.isPending ? (
               <div className="purchase-order-load-more" role="status" aria-live="polite">
