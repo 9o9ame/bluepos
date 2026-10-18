@@ -3211,3 +3211,47 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
   transform: translateY(-50%);
 }
 
+/* Expenses Account Table Dropdowns: search in main field, one control surface. */
+:root .sales-expenses-view .sales-expense-entry-toolbar .sales-expense-account-select .ui-select-combobox-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+}
+
+:root .sales-expenses-view .sales-expense-entry-toolbar .sales-expense-account-select .ui-select-trigger-search {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 28px 0 7px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+:root .sales-expenses-view .sales-expense-entry-toolbar .sales-expense-account-select .ui-select-trigger-search:focus {
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:root .sales-expenses-view .sales-expense-entry-toolbar .sales-expense-account-select .ui-select-combobox-toggle {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  width: 20px;
+  min-width: 20px;
+  height: 18px;
+  min-height: 18px;
+  transform: translateY(-50%);
+}
+
