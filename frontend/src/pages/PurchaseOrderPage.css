@@ -707,7 +707,15 @@ html[data-animations='off'] .purchase-order-product-toggle > span {
 }
 
 .purchase-order-search-bar > input {
-  min-width: 310px;
+  flex: 0 1 520px;
+  width: min(520px, 42vw);
+  min-width: 260px;
+  max-width: 520px;
+}
+
+.purchase-order-search-bar label input[type='date'] {
+  width: 132px;
+  min-width: 132px;
 }
 
 .purchase-order-search-bar label {
