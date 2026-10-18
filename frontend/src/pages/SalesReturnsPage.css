@@ -5019,3 +5019,43 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
     min-height: 29px !important;
   }
 }
+
+
+/* Sales Return final vertical centering: keep inner controls visually centered
+   between the top/bottom borders of their outer rows. */
+.sales-return-amounts > div {
+  min-height: 31px !important;
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+}
+
+.sales-return-amounts strong,
+.sales-return-amounts .is-net strong {
+  height: 23px !important;
+  min-height: 23px !important;
+  align-self: center !important;
+}
+
+.sales-return-fields-right {
+  grid-template-rows: repeat(2, 30px) !important;
+  align-items: center !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip {
+  align-self: center !important;
+  height: 27px !important;
+  min-height: 27px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 1450px) {
+  .sales-return-fields-right {
+    grid-template-rows: repeat(2, 29px) !important;
+  }
+
+  .sales-return-fields-right .sales-return-balance-chip {
+    height: 26px !important;
+    min-height: 26px !important;
+  }
+}
