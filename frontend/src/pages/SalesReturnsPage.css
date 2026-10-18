@@ -4001,7 +4001,8 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   align-self: center !important;
   width: 100% !important;
   min-width: 0 !important;
-  height: 23px !important;
+  height: 19px !important;
+  min-height: 19px !important;
   margin: 0 !important;
   padding: 0 6px !important;
   border: 1px solid var(--ui-control-border) !important;
@@ -4094,8 +4095,8 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   display: flex !important;
   align-items: center !important;
   min-width: 0 !important;
-  height: 21px !important;
-  min-height: 21px !important;
+  height: 19px !important;
+  min-height: 19px !important;
   margin: 0 !important;
   line-height: 1 !important;
   white-space: nowrap !important;
@@ -4149,8 +4150,8 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 
   .sales-return-fields-right .sales-return-balance-chip > span,
   .sales-return-fields-right .sales-return-balance-chip > strong {
-    height: 20px !important;
-    min-height: 20px !important;
+    height: 18px !important;
+    min-height: 18px !important;
   }
 }
 
