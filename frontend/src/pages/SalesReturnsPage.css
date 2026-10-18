@@ -64,15 +64,6 @@
 .sales-return-head fieldset {
   min-width: 0;
   margin: 0;
-  padding: 5px 7px 7px;
-  border: 1px solid #9aaab5;
-  background: rgba(255,255,255,.6);
-}
-
-.sales-return-head legend {
-  padding: 0 5px;
-  color: #293e4d;
-  font-weight: 900;
 }
 
 
@@ -496,7 +487,6 @@
 
 .sales-return-head fieldset {
   border: 1px solid #7899b0;
-  border-radius: 7px;
   background:
     linear-gradient(180deg, rgba(255,255,255,.98), rgba(233,242,248,.96));
   box-shadow:
@@ -505,8 +495,6 @@
 }
 
 .sales-return-head legend {
-  color: #173f5b;
-  font-size: 10px;
   letter-spacing: .15px;
   text-shadow: 0 1px 0 #fff;
 }
@@ -1336,31 +1324,18 @@
   flex: 1 1 auto;
 }
 
-.sales-return-option-group.is-ret { width: 86px; }
+
 .sales-return-option-group.is-ret > input { width: 50px; }
 
-.sales-return-option-group.is-date { width: 145px; }
+
 .sales-return-option-group.is-date > input { width: 108px; }
 
-.sales-return-option-group.is-sales {
-  width: 215px;
-  position: relative;
-  z-index: 45;
-}
-
-.sales-return-option-group.is-from { width: 178px; }
-.sales-return-option-group.is-remarks { width: 150px; }
-.sales-return-option-group.is-salesman { width: 175px; }
 
 .sales-return-header-refresh {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  width: 67px;
-  height: 25px;
-  padding: 0 5px;
   border: 1px solid #668ba5;
   border-radius: 4px;
   background:
@@ -1370,7 +1345,6 @@
     inset 0 1px 0 rgba(255,255,255,.95),
     0 1px 2px rgba(34,67,90,.15);
   font: inherit;
-  font-size: 9px;
   font-weight: 900;
   cursor: pointer;
 }
@@ -1495,14 +1469,14 @@
 @media (max-width: 1450px) {
   
 
-  .sales-return-option-group.is-ret { width: 80px; }
-  .sales-return-option-group.is-date { width: 137px; }
-  .sales-return-option-group.is-sales { width: 190px; }
-  .sales-return-option-group.is-from { width: 158px; }
-  .sales-return-option-group.is-remarks { width: 132px; }
-  .sales-return-option-group.is-salesman { width: 158px; }
+  
+  
+  
+  
+  
+  
 
-  .sales-return-header-refresh { width: 61px; }
+  
   .sales-return-balance-chip { width: 64px; }
   .sales-return-balance-chip.is-total-balance { width: 70px; }
 
@@ -1534,19 +1508,6 @@
   border-radius: 5px !important;
 }
 
-.sales-return-head legend {
-  padding: 0 4px !important;
-  font-size: 8px !important;
-  line-height: 10px;
-}
-
-
-.sales-return-option-group.is-ret { width: 72px !important; }
-.sales-return-option-group.is-date { width: 126px !important; }
-.sales-return-option-group.is-sales { width: 180px !important; }
-.sales-return-option-group.is-from { width: 152px !important; }
-.sales-return-option-group.is-remarks { width: 128px !important; }
-.sales-return-option-group.is-salesman { width: 150px !important; }
 
 .sales-return-fields .sales-return-option-group > input,
 .sales-return-fields .sales-return-sale-input,
@@ -1575,12 +1536,7 @@
 
 
 .sales-return-header-refresh {
-  width: 52px !important;
-  height: 22px !important;
-  min-height: 22px !important;
-  padding: 0 3px !important;
   gap: 2px !important;
-  font-size: 7.5px !important;
 }
 
 .sales-return-header-refresh svg {
@@ -1655,7 +1611,7 @@
   .sales-return-option-group.is-remarks { width: 115px !important; }
   .sales-return-option-group.is-salesman { width: 137px !important; }
 
-  .sales-return-header-refresh { width: 48px !important; }
+  
   .sales-return-balance-chip { width: 51px !important; }
   .sales-return-balance-chip.is-total-balance { width: 58px !important; }
 }
@@ -1676,24 +1632,17 @@
 
 
 .sales-return-option-group.is-ret {
-  grid-area: ret;
   width: auto !important;
 }
 
 .sales-return-option-group.is-date {
-  grid-area: date;
   width: auto !important;
 }
 
 .sales-return-option-group.is-sales {
-  grid-area: sales;
   width: auto !important;
 }
 
-.sales-return-header-refresh {
-  grid-area: refresh;
-  width: 100% !important;
-}
 
 .sales-return-balance-chip.is-previous {
   grid-area: previous;
@@ -1701,7 +1650,6 @@
 }
 
 .sales-return-option-group.is-from {
-  grid-area: from;
   width: auto !important;
 }
 
@@ -1711,7 +1659,6 @@
 }
 
 .sales-return-option-group.is-remarks {
-  grid-area: remarks;
   width: auto !important;
 }
 
@@ -1721,7 +1668,6 @@
 }
 
 .sales-return-option-group.is-salesman {
-  grid-area: salesman;
   width: auto !important;
 }
 
@@ -1766,7 +1712,6 @@
    Keep the 2-row layout, restore normal POS font and control heights.
    ========================================================================== */
 .sales-return-head legend {
-  font-size: 10px !important;
   line-height: 12px !important;
 }
 
@@ -1813,8 +1758,6 @@
 
 
 .sales-return-header-refresh {
-  height: 25px !important;
-  min-height: 25px !important;
   font-size: 10px !important;
   padding: 0 6px !important;
 }
@@ -1883,13 +1826,6 @@
    ========================================================================== */
 
 
-.sales-return-option-group.is-ret { grid-area: ret !important; }
-.sales-return-option-group.is-date { grid-area: date !important; }
-.sales-return-option-group.is-sales { grid-area: sales !important; }
-.sales-return-option-group.is-from { grid-area: from !important; }
-.sales-return-option-group.is-salesman { grid-area: salesman !important; }
-.sales-return-option-group.is-remarks { grid-area: remarks !important; }
-
 .sales-return-balance-chip.is-previous {
   grid-area: previous !important;
   width: 100% !important;
@@ -1906,11 +1842,8 @@
 }
 
 .sales-return-header-refresh {
-  position: absolute;
   right: 6px;
   top: -22px;
-  width: 64px !important;
-  z-index: 2;
 }
 
 /* Make the left-side fields visually dominant and the balance widgets compact. */
@@ -1981,13 +1914,6 @@
    ========================================================================== */
 
 
-.sales-return-option-group.is-ret { grid-area: ret !important; }
-.sales-return-option-group.is-date { grid-area: date !important; }
-.sales-return-option-group.is-sales { grid-area: sales !important; }
-.sales-return-option-group.is-from { grid-area: from !important; }
-.sales-return-option-group.is-salesman { grid-area: salesman !important; }
-.sales-return-option-group.is-remarks { grid-area: remarks !important; }
-
 .sales-return-balance-chip.is-previous {
   grid-area: previous !important;
   width: 100% !important;
@@ -2046,18 +1972,6 @@
    ========================================================================== */
 
 
-.sales-return-header-refresh {
-  grid-area: refresh !important;
-  position: static !important;
-  width: 100% !important;
-  height: 25px !important;
-  min-height: 25px !important;
-}
-
-.sales-return-option-group.is-from { grid-area: from !important; }
-.sales-return-option-group.is-salesman { grid-area: salesman !important; }
-.sales-return-option-group.is-remarks { grid-area: remarks !important; }
-
 .sales-return-fields::before {
   content: none !important;
 }
@@ -2103,9 +2017,6 @@
   z-index: 2;
 }
 
-.sales-return-option-group.is-from { grid-area: from !important; }
-.sales-return-option-group.is-salesman { grid-area: salesman !important; }
-.sales-return-option-group.is-remarks { grid-area: remarks !important; }
 
 .sales-return-balance-chip.is-previous {
   grid-area: previous !important;
@@ -2151,13 +2062,6 @@
 .sales-return-fields::after {
   content: none !important;
 }
-
-.sales-return-option-group.is-ret { grid-area: ret !important; }
-.sales-return-option-group.is-date { grid-area: date !important; }
-.sales-return-option-group.is-sales { grid-area: sales !important; }
-.sales-return-option-group.is-from { grid-area: from !important; }
-.sales-return-option-group.is-salesman { grid-area: salesman !important; }
-.sales-return-option-group.is-remarks { grid-area: remarks !important; }
 
 
 @media (max-width: 1450px) {
@@ -2335,9 +2239,7 @@
 
 
 /* Slightly larger Sales Return header typography for easier reading. */
-.sales-return-head legend {
-  font-size: 12px !important;
-}
+
 
 .sales-return-option-group > label,
 .sales-return-detail-control,
@@ -2555,7 +2457,6 @@ html[data-animations='off'] .sales-return-screen * {
 }
 
 .sales-return-head > fieldset {
-  padding: 6px 8px 8px !important;
   border-color: var(--ui-border) !important;
   border-radius: var(--panel-radius) !important;
   background: var(--ui-surface) !important;
@@ -2565,7 +2466,6 @@ html[data-animations='off'] .sales-return-screen * {
 .sales-return-head legend {
   padding: 0 5px !important;
   color: var(--ui-text) !important;
-  font-size: 11px !important;
   font-weight: 750 !important;
 }
 
