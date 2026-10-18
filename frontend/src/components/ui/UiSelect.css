@@ -83,6 +83,51 @@
   cursor: not-allowed;
 }
 
+/* Canonical Simple Dropdown: searchable in the main field, but visually one
+   control surface. The inner text input must never look like a second field. */
+.ui-simple-dropdown .ui-select-combobox-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+}
+
+.ui-simple-dropdown .ui-select-trigger-search {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 28px 0 7px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.ui-simple-dropdown .ui-select-trigger-search:focus {
+  border: 0 !important;
+  outline: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ui-simple-dropdown .ui-select-combobox-toggle {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  width: 20px;
+  min-width: 20px;
+  height: 18px;
+  min-height: 18px;
+  transform: translateY(-50%);
+}
+
 .ui-select.is-open .ui-select-trigger,
 .ui-select-trigger:focus-visible {
   outline: none;
