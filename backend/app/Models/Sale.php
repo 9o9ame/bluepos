@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'branch_id',
     'warehouse_id',
     'customer_id',
+    'customer_name',
+    'customer_phone',
     'salesman_party_profile_id',
     'document_number',
     'status',
