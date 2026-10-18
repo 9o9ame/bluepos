@@ -20,8 +20,9 @@ import {
 } from '../api/salesReturns'
 import { DesktopButton } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { PosEntryGrid } from '../components/desktop/PosEntryGrid'
 import { UiButton } from '../components/ui/UiButton'
-import { UiSelect } from '../components/ui/UiSelect'
+import { UiTableDropdown } from '../components/ui/UiSelect'
 import { askConfirm, useFeedback } from '../feedback/FeedbackProvider'
 import { useCan } from '../features/auth/useCan'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -172,7 +173,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
         status: 'posted',
         per_page: 20,
       }),
-    enabled: view === 'entry' && !document?.ulid && salePickerOpen,
+    enabled: view === 'entry' && !document?.ulid && !readOnly,
     retry: false,
   })
 
@@ -934,110 +935,58 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
 
                 <div className="sales-return-option-group is-sales">
                   <label>Sales#:</label>
-                  <div ref={salePickerRef} className={`sales-return-sale-search${salePickerOpen ? ' is-open' : ''}`}>
-                    <div className="sales-return-sale-input">
-                      <Search size={13} aria-hidden="true" />
-                      <input
-                        value={saleLabel || saleSearch}
-                        disabled={Boolean(document?.ulid) || readOnly}
-                        placeholder="Optional Invoice #, customer or salesman"
-                        onFocus={() => {
-                          if (!document?.ulid && !readOnly) setSalePickerOpen(true)
-                        }}
-                        onChange={(e) => {
-                          setSaleSearch(e.target.value)
-                          setSaleLabel('')
-                          setSaleUlid('')
-                          setLineQty({})
-                          setGeneralRows([])
-                          setGeneralActiveRowKey(null)
-                          setSalePickerOpen(true)
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') {
-                            setSalePickerOpen(false)
-                            return
-                          }
-
-                          if (e.key === 'Enter' && salePickerOpen) {
-                            const first = saleLookup.data?.data?.[0]
-                            if (first) {
-                              e.preventDefault()
-                              void selectSale(first)
-                            }
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="sales-return-sale-trigger"
-                        disabled={Boolean(document?.ulid) || readOnly}
-                        onClick={() => setSalePickerOpen((open) => !open)}
-                        aria-label="Open posted sales"
-                      >
-                        <ChevronDown size={14} />
-                      </button>
-                    </div>
-
-                    {!document?.ulid && salePickerOpen ? (
-                      <div className="sales-return-sale-results">
-                        <div className="sales-return-sale-results-head">
-                          <span>Invoice #</span>
-                          <span>Date</span>
-                          <span>Customer</span>
-                          <span>Salesman</span>
-                          <span>Total</span>
-                          <span>Due</span>
-                        </div>
-                        <div className="sales-return-sale-results-body">
-                          {(saleLookup.data?.data ?? []).map((sale) => (
-                            <button
-                              key={sale.ulid}
-                              type="button"
-                              className={saleLabel === sale.document_number ? 'is-selected' : undefined}
-                              onClick={() => void selectSale(sale)}
-                            >
-                              <strong>{sale.document_number}</strong>
-                              <span>{sale.sale_date}</span>
-                              <span>{sale.customer?.name ?? 'CASH IN HAND'}</span>
-                              <span>{sale.salesman?.name ?? '—'}</span>
-                              <span>{money(sale.grand_total)}</span>
-                              <span className={Number(sale.balance_due) > 0 ? 'is-due' : 'is-paid'}>
-                                {money(sale.balance_due)}
-                              </span>
-                            </button>
-                          ))}
-                          {saleLookup.isError ? (
-                            <div className="sales-return-sale-results-empty">
-                              Could not load posted sales. Use Refresh and try again.
-                            </div>
-                          ) : !saleLookup.isFetching && (saleLookup.data?.data.length ?? 0) === 0 ? (
-                            <div className="sales-return-sale-results-empty">
-                              No posted sales match this search.
-                            </div>
-                          ) : null}
-                          {saleLookup.isFetching ? (
-                            <div className="sales-return-sale-results-empty">Searching posted sales…</div>
-                          ) : null}
-                        </div>
-                        <div className="sales-return-sale-results-foot">
-                          {(saleLookup.data?.meta.total ?? 0)} posted invoice(s)
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
+                  <UiTableDropdown
+                    value={saleUlid}
+                    className="sales-return-canonical-select"
+                    triggerClassName="sales-return-canonical-trigger"
+                    disabled={Boolean(document?.ulid) || readOnly}
+                    placeholder="Optional Invoice #, customer or salesman"
+                    searchPlaceholder="Search posted sale"
+                    aria-label="Posted sale"
+                    menuMinWidth={760}
+                    menuColumns={[
+                      { header: 'Invoice #', width: '110px' },
+                      { header: 'Date', width: '100px' },
+                      { header: 'Customer', width: 'minmax(180px, 1fr)' },
+                      { header: 'Salesman', width: 'minmax(150px, 1fr)' },
+                      { header: 'Total', width: '100px' },
+                      { header: 'Due', width: '100px' },
+                    ]}
+                    options={(saleLookup.data?.data ?? []).map((sale) => ({
+                      value: sale.ulid,
+                      label: sale.document_number,
+                      columns: [
+                        sale.document_number,
+                        sale.sale_date,
+                        sale.customer?.name ?? 'CASH IN HAND',
+                        sale.salesman?.name ?? '—',
+                        money(sale.grand_total),
+                        money(sale.balance_due),
+                      ],
+                    }))}
+                    onSearchChange={(query) => {
+                      setSaleSearch(query)
+                      setSaleLabel('')
+                      setSaleUlid('')
+                      setLineQty({})
+                      setGeneralRows([])
+                      setGeneralActiveRowKey(null)
+                    }}
+                    onChange={(value) => {
+                      const sale = (saleLookup.data?.data ?? []).find((row) => row.ulid === value)
+                      if (sale) void selectSale(sale)
+                    }}
+                  />
                 </div>
 
                 <div className="sales-return-option-group is-from">
                   <label>From:</label>
-                  <UiSelect
+                  <UiTableDropdown
                     value={fromPartyUlid ? `${fromPartyType}:${fromPartyUlid}` : ''}
                     className="sales-return-canonical-select"
                     triggerClassName="sales-return-canonical-trigger"
                     disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
                     placeholder="Select customer / account"
-                    searchable
-                    searchInTrigger
                     searchPlaceholder="Search customer / account"
                     aria-label="Customer or account"
                     menuMinWidth={520}
@@ -1084,14 +1033,12 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
 
                 <div className="sales-return-option-group is-salesman">
                   <label>S.Man:</label>
-                  <UiSelect
+                  <UiTableDropdown
                     value={salesmanFilterUlid}
                     className="sales-return-canonical-select"
                     triggerClassName="sales-return-canonical-trigger"
                     disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
                     placeholder="No salesman"
-                    searchable
-                    searchInTrigger
                     searchPlaceholder="Search salesman"
                     aria-label="Salesman"
                     menuMinWidth={620}
@@ -1177,23 +1124,25 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
 
           <div className="sales-return-grid-wrap">
             {saleUlid ? (
-              <table className="sales-return-grid">
-                <thead>
-                  <tr>
-                    <th>Item / Product Description</th>
-                    <th>Kind</th>
-                    <th>Sold Qty</th>
-                    <th>Returned</th>
-                    <th>Available</th>
-                    <th>Return Qty</th>
-                    <th>Unit</th>
-                    <th>Price</th>
-                    <th>Disc</th>
-                    <th>Tax</th>
-                    <th>Net</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <PosEntryGrid
+                className="sales-return-custom-grid"
+                tableClassName="sales-return-grid"
+                ariaLabel="Invoice-linked sales return lines"
+                minWidth={980}
+                columns={[
+                  { key: 'product', header: 'Item / Product Description' },
+                  { key: 'kind', header: 'Kind', width: 90 },
+                  { key: 'sold', header: 'Sold Qty', width: 86, align: 'right' },
+                  { key: 'returned', header: 'Returned', width: 86, align: 'right' },
+                  { key: 'available', header: 'Available', width: 86, align: 'right' },
+                  { key: 'return', header: 'Return Qty', width: 92, align: 'right' },
+                  { key: 'unit', header: 'Unit', width: 74 },
+                  { key: 'price', header: 'Price', width: 90, align: 'right' },
+                  { key: 'disc', header: 'Disc', width: 90, align: 'right' },
+                  { key: 'tax', header: 'Tax', width: 90, align: 'right' },
+                  { key: 'net', header: 'Net', width: 100, align: 'right' },
+                ]}
+              >
                   {returnable.map((row) => (
                     <tr key={row.sale_item_ulid}>
                       <td>
@@ -1246,23 +1195,24 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                   {!returnableQuery.isFetching && !returnableQuery.isError && returnable.length === 0 ? (
                     <tr><td colSpan={11} className="sales-return-empty">This sale has no remaining returnable quantity.</td></tr>
                   ) : null}
-                </tbody>
-              </table>
+              </PosEntryGrid>
             ) : (
-              <table className="sales-return-grid is-general">
-                <thead>
-                  <tr>
-                    <th>Item / Product Description</th>
-                    <th>Quantity</th>
-                    <th>Price (C)</th>
-                    <th>AMT</th>
-                    <th>Disc%</th>
-                    <th>Tax</th>
-                    <th>Amount(Rs)</th>
-                    <th aria-label="Actions" />
-                  </tr>
-                </thead>
-                <tbody>
+              <PosEntryGrid
+                className="sales-return-custom-grid"
+                tableClassName="sales-return-grid is-general"
+                ariaLabel="General sales return lines"
+                minWidth={860}
+                columns={[
+                  { key: 'product', header: 'Item / Product Description' },
+                  { key: 'quantity', header: 'Quantity', width: 100, align: 'right' },
+                  { key: 'price', header: 'Price (C)', width: 100, align: 'right' },
+                  { key: 'amt', header: 'AMT', width: 100, align: 'right' },
+                  { key: 'disc', header: 'Disc%', width: 88, align: 'right' },
+                  { key: 'tax', header: 'Tax', width: 88, align: 'right' },
+                  { key: 'amount', header: 'Amount(Rs)', width: 110, align: 'right' },
+                  { key: 'actions', header: '', width: 34, align: 'center' },
+                ]}
+              >
                   {generalRows.map((row) => {
                     const amounts = generalLineAmounts(row)
                     return (
@@ -1328,6 +1278,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                                   priceType="retail"
                                   portalAnchorRef={generalProductAnchorRef}
                                   selectedUlid={row.product_ulid}
+                                  themed
                                   onRequestClose={() => setGeneralProductPickerOpen(false)}
                                   onSelect={addGeneralProduct}
                                 />
@@ -1425,7 +1376,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                   })}
 
                   {!readOnly && generalProductTargetKey === null && generalActiveRowKey === null ? (
-                    <tr className="sales-return-general-entry">
+                    <tr className="sales-return-general-entry is-entry-row">
                       <td className="sales-return-general-product-cell">
                         <div ref={generalProductAnchorRef} className="sales-product-combo sales-return-product-combo">
                           <input
@@ -1483,6 +1434,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                               total={generalProductTotal}
                               priceType="retail"
                               portalAnchorRef={generalProductAnchorRef}
+                              themed
                               onRequestClose={() => setGeneralProductPickerOpen(false)}
                               onSelect={addGeneralProduct}
                             />
@@ -1498,8 +1450,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                   {readOnly && generalRows.length === 0 ? (
                     <tr><td colSpan={8} className="sales-return-empty">This general return has no lines.</td></tr>
                   ) : null}
-                </tbody>
-              </table>
+              </PosEntryGrid>
             )}
           </div>
 
