@@ -5103,3 +5103,36 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 .sales-return-fields-right .is-total-balance > strong {
   color: var(--ui-success) !important;
 }
+
+
+/* Sales Return balance chips: center the controls, keep labels left,
+   and give Total Balance a wider centered value field. */
+.sales-return-fields-right .sales-return-balance-chip {
+  justify-self: center !important;
+  width: calc(100% - 6px) !important;
+  grid-template-columns: max-content minmax(64px, 1fr) !important;
+  column-gap: 6px !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > span {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > strong {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.sales-return-fields-right .is-total-balance {
+  grid-template-columns: max-content minmax(96px, 1.35fr) !important;
+  width: calc(100% - 6px) !important;
+}
+
+.sales-return-fields-right .is-total-balance > strong {
+  justify-self: center !important;
+  width: 100% !important;
+  max-width: 128px !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
