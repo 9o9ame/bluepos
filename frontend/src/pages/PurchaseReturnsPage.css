@@ -1429,3 +1429,133 @@
     grid-column: span 2;
   }
 }
+
+
+/* Purchase Return Amount Options — authoritative layout.
+   Keep all supported financial summary fields in one wider, compact card. */
+@media (min-width: 1181px) {
+  .purchase-return-head {
+    grid-template-columns: minmax(0, 1fr) 440px !important;
+  }
+}
+
+@media (min-width: 861px) and (max-width: 1180px) {
+  .purchase-return-head {
+    grid-template-columns: minmax(0, 1fr) 400px !important;
+  }
+}
+
+.purchase-return-amounts {
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  grid-auto-rows: minmax(26px, auto) !important;
+  gap: 4px 5px !important;
+  align-content: start !important;
+  min-width: 0 !important;
+  padding: 5px 6px 6px !important;
+}
+
+.purchase-return-amounts > div {
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-columns: max-content minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+  min-height: 26px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.purchase-return-amounts > div:nth-child(1) {
+  grid-column: 1 / 4 !important;
+  grid-row: 1 !important;
+}
+
+.purchase-return-amounts > div:nth-child(2) {
+  grid-column: 4 / 7 !important;
+  grid-row: 1 !important;
+}
+
+.purchase-return-amounts > div:nth-child(3) {
+  grid-column: 1 / 3 !important;
+  grid-row: 2 !important;
+}
+
+.purchase-return-amounts > div:nth-child(4) {
+  grid-column: 3 / 5 !important;
+  grid-row: 2 !important;
+}
+
+.purchase-return-amounts > div:nth-child(5),
+.purchase-return-amounts > div.is-net {
+  grid-column: 5 / 7 !important;
+  grid-row: 2 !important;
+}
+
+.purchase-return-amounts > div > span {
+  min-width: 0 !important;
+  color: var(--ui-text) !important;
+  font-size: 10px !important;
+  font-weight: 750 !important;
+  line-height: 1 !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+}
+
+.purchase-return-amounts > div > strong {
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 24px !important;
+  padding: 2px 6px !important;
+  border: 1px solid var(--ui-control-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-control-face) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: 1 !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+}
+
+.purchase-return-amounts > div.is-total > span,
+.purchase-return-amounts > div.is-net > span {
+  color: var(--ui-accent-strong) !important;
+}
+
+.purchase-return-amounts > div.is-total > strong,
+.purchase-return-amounts > div.is-net > strong {
+  border-color: color-mix(in srgb, var(--ui-accent) 55%, var(--ui-control-border)) !important;
+  background: var(--ui-accent-soft) !important;
+  color: var(--ui-accent-strong) !important;
+}
+
+@media (max-width: 860px) {
+  .purchase-return-amounts {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .purchase-return-amounts > div:nth-child(1),
+  .purchase-return-amounts > div:nth-child(2),
+  .purchase-return-amounts > div:nth-child(3),
+  .purchase-return-amounts > div:nth-child(4) {
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+
+  .purchase-return-amounts > div:nth-child(5),
+  .purchase-return-amounts > div.is-net {
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+  }
+}
