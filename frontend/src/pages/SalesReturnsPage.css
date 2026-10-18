@@ -5059,3 +5059,47 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
     min-height: 26px !important;
   }
 }
+
+
+/* Match Previous / This Bill / Total Balance values to Amount Options value fields. */
+.sales-return-fields-right .sales-return-balance-chip {
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-surface-subtle) !important;
+  box-shadow: none !important;
+  padding: 3px 4px !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > span {
+  color: var(--ui-text) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > strong {
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  height: 23px !important;
+  min-height: 23px !important;
+  padding: 3px 6px !important;
+  border: 1px solid var(--ui-control-border) !important;
+  border-radius: var(--control-radius) !important;
+  background: var(--ui-control-face) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: 1 !important;
+  text-align: right !important;
+}
+
+.sales-return-fields-right .is-total-balance {
+  background: color-mix(in srgb, var(--ui-success) 18%, var(--ui-surface)) !important;
+}
+
+.sales-return-fields-right .is-total-balance > strong {
+  color: var(--ui-success) !important;
+}
