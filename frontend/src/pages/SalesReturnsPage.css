@@ -5136,3 +5136,94 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   justify-content: center !important;
   text-align: center !important;
 }
+
+
+/* Sales Return balances: definitive 2x2 layout.
+   Row 1: Refresh | Previous
+   Row 2: This Bill | Total Balance */
+.sales-return-fields-right {
+  display: grid !important;
+  grid-template-columns: 82px minmax(118px, 1fr) !important;
+  grid-template-rows: repeat(2, 31px) !important;
+  gap: 4px 6px !important;
+  align-items: center !important;
+  align-content: center !important;
+}
+
+.sales-return-fields-right .sales-return-header-refresh {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  align-self: center !important;
+  justify-self: stretch !important;
+}
+
+.sales-return-fields-right .is-previous {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+}
+
+.sales-return-fields-right .is-this-bill {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+}
+
+.sales-return-fields-right .is-total-balance {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip {
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-columns: max-content minmax(68px, 1fr) !important;
+  align-items: center !important;
+  align-self: center !important;
+  justify-self: stretch !important;
+  width: 100% !important;
+  height: 29px !important;
+  min-height: 29px !important;
+  padding: 3px 4px !important;
+  column-gap: 5px !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > span {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  height: 23px !important;
+  min-height: 23px !important;
+  line-height: 1 !important;
+  text-align: left !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > strong {
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  align-self: center !important;
+  width: 100% !important;
+  height: 23px !important;
+  min-height: 23px !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 3px 6px !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+
+.sales-return-fields-right .is-total-balance {
+  grid-template-columns: max-content minmax(82px, 1fr) !important;
+}
+
+@media (max-width: 1450px) {
+  .sales-return-fields-right {
+    grid-template-columns: 78px minmax(108px, 1fr) !important;
+    grid-template-rows: repeat(2, 30px) !important;
+  }
+
+  .sales-return-fields-right .sales-return-balance-chip {
+    height: 28px !important;
+    min-height: 28px !important;
+  }
+}
