@@ -651,3 +651,53 @@ export function UiSelect({
     </div>
   )
 }
+
+
+export type UiSimpleDropdownProps = Omit<
+  UiSelectProps,
+  'searchInTrigger' | 'menuColumns'
+>
+
+/**
+ * Canonical BluePOS "Simple Dropdown".
+ * Search lives in the trigger field when searchable; the popup never adds a
+ * second search box.
+ */
+export function UiSimpleDropdown({
+  searchable = true,
+  ...props
+}: UiSimpleDropdownProps) {
+  return (
+    <UiSelect
+      {...props}
+      searchable={searchable}
+      searchInTrigger={searchable}
+    />
+  )
+}
+
+export type UiTableDropdownProps = Omit<
+  UiSelectProps,
+  'searchInTrigger'
+> & {
+  menuColumns: UiSelectMenuColumn[]
+}
+
+/**
+ * Canonical BluePOS "Table Dropdown".
+ * The trigger is the search field; popup rows use headed columns.
+ */
+export function UiTableDropdown({
+  searchable = true,
+  menuColumns,
+  ...props
+}: UiTableDropdownProps) {
+  return (
+    <UiSelect
+      {...props}
+      searchable={searchable}
+      searchInTrigger
+      menuColumns={menuColumns}
+    />
+  )
+}
