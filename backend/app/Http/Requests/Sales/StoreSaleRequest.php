@@ -57,6 +57,8 @@ class StoreSaleRequest extends FormRequest
         return [
             'sale_date' => ['nullable', 'date'],
             'customer_ulid' => ['nullable', 'string', 'size:26'],
+            'customer_name' => ['nullable', 'string', 'max:180'],
+            'customer_phone' => ['nullable', 'string', 'max:64'],
             'salesman_ulid' => ['nullable', 'string', 'size:26'],
             'payment_due' => ['sometimes', 'boolean'],
             'invoice_discount_percent' => [
