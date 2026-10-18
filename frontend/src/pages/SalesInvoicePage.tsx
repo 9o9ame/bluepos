@@ -1241,6 +1241,27 @@ export function SalesInvoicePage({
     return () => window.removeEventListener('mousedown', handleOutsideActiveRow)
   }, [activeLineKey, cart.lines, savedSale, view])
 
+  useEffect(() => {
+    if (!customerPickerOpen && !salesmanPickerOpen) return
+
+    function handleOutsideHeaderPicker(event: MouseEvent) {
+      const target = event.target
+      if (!(target instanceof Element)) return
+
+      if (customerPickerOpen && !target.closest('.sales-reference-to')) {
+        setCustomerPickerOpen(false)
+        setCustomerPickerSearch('')
+      }
+
+      if (salesmanPickerOpen && !target.closest('.sales-reference-salesman')) {
+        setSalesmanPickerOpen(false)
+      }
+    }
+
+    window.addEventListener('mousedown', handleOutsideHeaderPicker)
+    return () => window.removeEventListener('mousedown', handleOutsideHeaderPicker)
+  }, [customerPickerOpen, salesmanPickerOpen])
+
 
 
   function parkCurrentCart() {
@@ -1681,16 +1702,6 @@ export function SalesInvoicePage({
                         aria-hidden={!salesmanPickerOpen}
                       >
                         <div className="sales-pos-salesman-grid" role="listbox" aria-label="Choose salesman">
-                          <div className="sales-picker-search">
-                            <input
-                              value={salesmanSearch}
-                              placeholder="Search salesman by code, name, address or mobile"
-                              aria-label="Search salesman"
-                              autoComplete="off"
-                              onChange={(event) => setSalesmanSearch(event.target.value)}
-                            />
-                          </div>
-  
                           <div className="sales-pos-salesman-grid-head" aria-hidden="true">
                             <span>Code</span>
                             <span>Name</span>
@@ -1794,16 +1805,6 @@ export function SalesInvoicePage({
 
                     <div className={`sales-customer-dropdown-shutter${customerPickerOpen ? ' is-open' : ''}`} aria-hidden={!customerPickerOpen}>
                       <div className="sales-pos-customer-grid" role="listbox" aria-label="Choose customer">
-                        <div className="sales-picker-search">
-                          <input
-                            value={customerPickerSearch}
-                            placeholder="Search customer by code, name, address or mobile"
-                            aria-label="Search customer"
-                            autoComplete="off"
-                            onChange={(event) => setCustomerPickerSearch(event.target.value)}
-                          />
-                        </div>
-
                         <div className="sales-pos-customer-grid-head" aria-hidden="true">
                           <span>Code</span>
                           <span>Party Name</span>
@@ -2315,6 +2316,7 @@ export function SalesInvoicePage({
                                       {activeProductPickerOpen && activeLineKey === line.line_key ? (
                                         <ProductLookupGrid
                                           rows={productLookupRows}
+                                          themed
                                           total={productLookupTotal}
                                           priceType={cart.priceType}
                                           selectedUlid={line.product_ulid}
@@ -2552,6 +2554,7 @@ export function SalesInvoicePage({
                                                       {activeProductPickerOpen && !activeLineKey ? (
                                                         <ProductLookupGrid
                                                           rows={productLookupRows}
+                                                          themed
                                                           total={productLookupTotal}
                                                           priceType={cart.priceType}
                                                           portalAnchorRef={productPickerAnchorRef}
