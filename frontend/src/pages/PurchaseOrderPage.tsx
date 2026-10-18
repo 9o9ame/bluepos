@@ -995,16 +995,6 @@ export function PurchaseOrderPage() {
               </UiButton>
             </div>
 
-            <label className="purchase-order-remarks">
-              <span>Remarks</span>
-              <textarea
-                value={activeOrder?.notes ?? notes}
-                disabled={readOnly}
-                rows={5}
-                onChange={(event) => setNotes(event.target.value)}
-              />
-            </label>
-
             <aside className="purchase-order-amount-options">
               <div className="purchase-order-section-title">Amount Options</div>
               <div>
@@ -1346,10 +1336,15 @@ export function PurchaseOrderPage() {
           </div>
 
           <div className="purchase-order-footer">
-            <div className="purchase-order-status-note">
-              Generated planning values are informational until Save. Purchase Order remains
-              non-posting; stock/accounting change only through Purchase Invoice posting.
-            </div>
+            <label className="purchase-order-remarks purchase-order-footer-remarks">
+              <span>Remarks</span>
+              <textarea
+                value={activeOrder?.notes ?? notes}
+                disabled={readOnly}
+                rows={2}
+                onChange={(event) => setNotes(event.target.value)}
+              />
+            </label>
             <div className="purchase-order-totals">
               <div>
                 <span>Subtotal</span>
