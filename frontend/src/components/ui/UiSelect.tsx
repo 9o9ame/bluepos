@@ -664,12 +664,14 @@ export type UiSimpleDropdownProps = Omit<
  * second search box.
  */
 export function UiSimpleDropdown({
-  searchable = false,
+  searchable = true,
+  className,
   ...props
 }: UiSimpleDropdownProps) {
   return (
     <UiSelect
       {...props}
+      className={['ui-simple-dropdown', className ?? ''].filter(Boolean).join(' ')}
       searchable={searchable}
       searchInTrigger={searchable}
     />
