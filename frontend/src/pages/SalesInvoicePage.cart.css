@@ -3108,3 +3108,57 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
   }
 }
 
+/* Posted Invoices: filter labels are structural only, never control surfaces. */
+:root .sales-posted-history.sales-history .sales-history-filter {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Status Simple Dropdown must remain one visual control even though the page
+   has legacy generic input styling for filter inputs. */
+:root .sales-posted-history.sales-history .sales-history-status-select .ui-select-combobox-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+}
+
+:root .sales-posted-history.sales-history .sales-history-status-select .ui-select-trigger-search {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 28px 0 7px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+:root .sales-posted-history.sales-history .sales-history-status-select .ui-select-trigger-search:focus {
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:root .sales-posted-history.sales-history .sales-history-status-select .ui-select-combobox-toggle {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  width: 20px;
+  min-width: 20px;
+  height: 18px;
+  min-height: 18px;
+  transform: translateY(-50%);
+}
+
