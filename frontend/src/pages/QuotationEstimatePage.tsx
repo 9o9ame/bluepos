@@ -14,8 +14,9 @@ import type { Product } from '../types/catalog'
 import type { SaleQuotation } from '../types/sales'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { PosEntryGrid } from '../components/desktop/PosEntryGrid'
 import { UiButton } from '../components/ui/UiButton'
-import { UiSelect } from '../components/ui/UiSelect'
+import { UiSimpleDropdown, UiTableDropdown } from '../components/ui/UiSelect'
 import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { printSaleQuotation } from '../features/sales/quotationPrint'
 import { useSaleCart } from '../features/sales/useSaleCart'
@@ -522,13 +523,11 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
             </label>
             <label className="is-customer">
               <span>Customer</span>
-              <UiSelect
+              <UiTableDropdown
                 className="quotation-canonical-select"
                 value={activeQuotation?.customer?.ulid ?? cart.customerUlid ?? ''}
                 disabled={readOnly}
                 options={customerOptions}
-                searchable
-                searchInTrigger
                 searchPlaceholder="Search customer"
                 menuMinWidth={520}
                 menuColumns={[
@@ -541,13 +540,11 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
             </label>
             <label className="is-salesman">
               <span>Salesman</span>
-              <UiSelect
+              <UiTableDropdown
                 className="quotation-canonical-select"
-                value={activeQuotation?.salesman?.ulid ?? salesmanUlid ?? ''}
+                value={activeQuotation?.salesman?.ulid ?? salesmanUlid ?? ''>
                 disabled={readOnly}
                 options={salesmanOptions}
-                searchable
-                searchInTrigger
                 searchPlaceholder="Search salesman"
                 menuMinWidth={620}
                 menuColumns={[
@@ -561,7 +558,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
             </label>
             <label className="is-price-type">
               <span>Price Type</span>
-              <UiSelect
+              <UiSimpleDropdown
                 value={activeQuotation?.price_type ?? cart.priceType}
                 disabled={readOnly}
                 options={[
@@ -575,23 +572,26 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
             </div>
           </div>
 
-          <div className="quotation-lines-wrap">
-            <table className="quotation-lines">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Unit</th>
-                  <th className="is-num">In Stock</th>
-                  <th className="is-num">Qty</th>
-                  <th className="is-num">Rate</th>
-                  <th className="is-num">Disc %</th>
-                  <th className="is-num">Disc Rs</th>
-                  <th className="is-num">Tax %</th>
-                  <th className="is-num">Amount</th>
-                  {!readOnly ? <th aria-label="Remove" /> : null}
-                </tr>
-              </thead>
-              <tbody>
+          <PosEntryGrid
+            className="quotation-lines-wrap"
+            tableClassName="quotation-lines"
+            ariaLabel="Quotation line items"
+            minWidth={980}
+            columns={[
+              { key: 'product', header: 'Product' },
+              { key: 'unit', header: 'Unit', width: 90 },
+              { key: 'stock', header: 'In Stock', width: 82, align: 'right' },
+              { key: 'qty', header: 'Qty', width: 78, align: 'right' },
+              { key: 'rate', header: 'Rate', width: 90, align: 'right' },
+              { key: 'disc-pct', header: 'Disc %', width: 82, align: 'right' },
+              { key: 'disc-rs', header: 'Disc Rs', width: 94, align: 'right' },
+              { key: 'tax-pct', header: 'Tax %', width: 78, align: 'right' },
+              { key: 'amount', header: 'Amount', width: 104, align: 'right' },
+              ...(!readOnly
+                ? [{ key: 'remove', header: '', width: 34, align: 'center' as const }]
+                : []),
+            ]}
+          >
                 {readOnly
                   ? (activeQuotation?.items ?? []).map((item) => (
                       <tr key={item.ulid}>
@@ -628,7 +628,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                             </td>
                             <td>
                               {(line.available_units?.length ?? 0) > 0 ? (
-                                <UiSelect
+                                <UiSimpleDropdown
                                   value={line.unit_ulid ?? ''}
                                   className="quotation-line-unit-select"
                                   aria-label={`Unit for ${line.product_name}`}
@@ -773,7 +773,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                             </td>
                             <td>
                               {(line.available_units?.length ?? 0) > 0 ? (
-                                <UiSelect
+                                <UiSimpleDropdown
                                   value={line.unit_ulid ?? ''}
                                   className="quotation-line-unit-select"
                                   aria-label={`Unit for ${line.product_name}`}
@@ -847,7 +847,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                   : null}
 
                 {!readOnly && !activeLineKey ? (
-                  <tr className="quotation-entry-row">
+                  <tr className="quotation-entry-row is-entry-row">
                     <td className="quotation-product-search-cell">
                       <div ref={productPickerAnchorRef} className="quotation-product-combo">
                         <input
@@ -928,9 +928,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                     </td>
                   </tr>
                 ) : null}
-              </tbody>
-            </table>
-          </div>
+          </PosEntryGrid>
 
           <div className="quotation-footer-grid">
             <label>
