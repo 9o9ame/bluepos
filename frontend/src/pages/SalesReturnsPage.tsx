@@ -115,7 +115,6 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
   const [saleUlid, setSaleUlid] = useState('')
   const [saleLabel, setSaleLabel] = useState('')
   const [saleSearch, setSaleSearch] = useState('')
-  const [salePickerOpen, setSalePickerOpen] = useState(false)
   const [fromPartyUlid, setFromPartyUlid] = useState('')
   const [fromPartyType, setFromPartyType] = useState<'customer' | 'account'>('account')
   const [salesmanFilterUlid, setSalesmanFilterUlid] = useState('')
@@ -145,7 +144,6 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
   const createKeyRef = useRef(newReturnKey())
   const generalProductAnchorRef = useRef<HTMLDivElement | null>(null)
   const generalProductEntryRef = useRef<HTMLInputElement | null>(null)
-  const salePickerRef = useRef<HTMLDivElement | null>(null)
   const refundKeyRef = useRef(newRefundKey())
   const readOnly = document?.status === 'posted'
 
@@ -249,21 +247,6 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
     }
   }, [customersQuery.data, document?.ulid, fromPartyUlid, saleUlid])
 
-  useEffect(() => {
-    if (!salePickerOpen) return
-
-    function handlePointerDown(event: MouseEvent) {
-      const target = event.target as Node
-      if (salePickerRef.current?.contains(target)) return
-      setSalePickerOpen(false)
-    }
-
-    window.addEventListener('mousedown', handlePointerDown)
-
-    return () => {
-      window.removeEventListener('mousedown', handlePointerDown)
-    }
-  }, [salePickerOpen])
 
   const historyQuery = useQuery({
     queryKey: ['sales-returns', historySearch, dateFrom, dateTo],
@@ -433,7 +416,6 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
     setGeneralProductLookupMode('browse')
     setGeneralProductTargetKey(null)
     setGeneralActiveRowKey(null)
-    setSalePickerOpen(false)
     setError(null)
     setRefundAmount('')
     setRefundMethod('cash')
@@ -485,7 +467,6 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
     setLineQty(nextQty)
     setGeneralRows(nextGeneral)
     setGeneralActiveRowKey(null)
-    setSalePickerOpen(false)
     setError(null)
   }
 
@@ -504,7 +485,6 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
     setGeneralProductSearch('')
     setGeneralProductPickerOpen(false)
     setGeneralActiveRowKey(null)
-    setSalePickerOpen(false)
     setError(null)
   }
 
@@ -869,7 +849,6 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
 
   useEffect(() => {
     if (active) return
-    setSalePickerOpen(false)
     setGeneralProductPickerOpen(false)
   }, [active])
 
@@ -937,8 +916,6 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                   <label>Sales#:</label>
                   <UiTableDropdown
                     value={saleUlid}
-                    className="sales-return-canonical-select"
-                    triggerClassName="sales-return-canonical-trigger"
                     disabled={Boolean(document?.ulid) || readOnly}
                     placeholder="Optional Invoice #, customer or salesman"
                     searchPlaceholder="Search posted sale"
@@ -983,8 +960,6 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                   <label>From:</label>
                   <UiTableDropdown
                     value={fromPartyUlid ? `${fromPartyType}:${fromPartyUlid}` : ''}
-                    className="sales-return-canonical-select"
-                    triggerClassName="sales-return-canonical-trigger"
                     disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
                     placeholder="Select customer / account"
                     searchPlaceholder="Search customer / account"
@@ -1011,8 +986,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                       const ulid = value.slice(separator + 1)
                       if (type !== 'customer' && type !== 'account') return
 
-                      setSalePickerOpen(false)
-                      setFromPartyType(type)
+                                        setFromPartyType(type)
                       setFromPartyUlid(ulid)
                       setSaleUlid('')
                       setSaleLabel('')
@@ -1035,8 +1009,6 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                   <label>S.Man:</label>
                   <UiTableDropdown
                     value={salesmanFilterUlid}
-                    className="sales-return-canonical-select"
-                    triggerClassName="sales-return-canonical-trigger"
                     disabled={Boolean(saleUlid) || Boolean(document?.ulid)}
                     placeholder="No salesman"
                     searchPlaceholder="Search salesman"
@@ -1066,8 +1038,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                       })),
                     ]}
                     onChange={(value) => {
-                      setSalePickerOpen(false)
-                      setSalesmanFilterUlid(value)
+                                        setSalesmanFilterUlid(value)
                       setSaleUlid('')
                       setSaleLabel('')
                       setSaleSearch('')
