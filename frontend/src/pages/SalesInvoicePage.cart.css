@@ -2663,21 +2663,22 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
 }
 
 
-/* Posted invoice filter alignment — match Due toolbar label/control rhythm. */
-/* Geometry only. UiSelect/input/button visual states remain theme-owned. */
+/* Posted invoice filter alignment — labels sit to the left of controls. */
+/* Geometry only. Canonical dropdown/input visual states remain theme-owned. */
 :root .sales-posted-history.sales-history .sales-history-toolbar {
-  align-items: end;
+  align-items: center;
 }
 
 :root .sales-posted-history.sales-history .sales-history-filter {
-  display: grid;
-  grid-template-rows: auto 28px;
-  align-content: end;
-  gap: 3px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
 }
 
 :root .sales-posted-history.sales-history .sales-history-filter > span {
   display: block;
+  flex: 0 0 auto;
   min-width: 0;
   font-size: 9px;
   line-height: 1;
@@ -2690,7 +2691,7 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
 }
 
 :root .sales-posted-history.sales-history .sales-history-filter > .ui-select {
-  align-self: end;
+  align-self: center;
 }
 
 :root .sales-posted-history.sales-history .sales-history-filter > .ui-select .ui-select-trigger {
@@ -2701,12 +2702,12 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
 :root .sales-posted-history.sales-history .sales-history-reset {
   min-height: 28px;
   height: 28px;
-  align-self: end;
+  align-self: center;
 }
 
 :root .sales-posted-history.sales-history .sales-history-toolbar-summary,
 :root .sales-posted-history.sales-history .sales-history-count {
-  align-self: end;
+  align-self: center;
 }
 
 
