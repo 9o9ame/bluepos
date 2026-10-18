@@ -107,8 +107,7 @@
 }
 
 .quotation-header-grid input,
-.quotation-footer-grid textarea,
-.quotation-lines input {
+.quotation-footer-grid textarea {
   border: 1px solid var(--ui-control-border);
   border-radius: var(--control-radius);
   background: var(--ui-control-face);
@@ -118,20 +117,14 @@
 }
 
 .quotation-header-grid input:focus,
-.quotation-footer-grid textarea:focus,
-.quotation-lines input:focus {
+.quotation-footer-grid textarea:focus {
   outline: none;
   box-shadow: var(--ui-focus-shadow);
 }
 
-.quotation-lines input {
-  width: 82px;
-  padding: 4px 6px;
-  text-align: right;
-}
-
 .quotation-line-unit-select {
-  min-width: 92px;
+  width: 100%;
+  min-width: 0;
 }
 
 /* Quotation owns workflow/cell behavior only.
@@ -530,13 +523,6 @@ html[data-animations='off'] .quotation-product-search-input {
   font-size: 22px;
   line-height: 1;
   font-weight: 800;
-}
-
-.quotation-lines input {
-  min-height: 23px;
-  height: 23px;
-  box-sizing: border-box;
-  padding: 2px 5px;
 }
 
 .quotation-product-search-input {
