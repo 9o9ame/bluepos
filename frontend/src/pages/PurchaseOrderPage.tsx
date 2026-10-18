@@ -22,7 +22,7 @@ import { PosEntryGrid } from '../components/desktop/PosEntryGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiModal } from '../components/ui/UiModal'
 import { UiSelect, UiSimpleDropdown, UiTableDropdown } from '../components/ui/UiSelect'
-import { PurchaseProductLookup } from '../features/purchases/PurchaseProductLookup'
+import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
@@ -1132,9 +1132,14 @@ export function PurchaseOrderPage() {
                                       <ChevronDown size={13} />
                                     </button>
                                     {productPickerOpen && productsQuery.data?.data?.length ? (
-                                      <PurchaseProductLookup
+                                      <ProductLookupGrid
                                         rows={productsQuery.data.data}
-                                        anchorRef={productSearchRef}
+                                        total={productsQuery.data.meta.total}
+                                        priceType="retail"
+                                        mode="purchase"
+                                        themed
+                                        portalAnchorRef={productSearchRef}
+                                        onRequestClose={() => setProductPickerOpen(false)}
                                         onSelect={(product) => void addProduct(product)}
                                       />
                                     ) : null}
@@ -1284,9 +1289,14 @@ export function PurchaseOrderPage() {
                       </button>
 
                       {productPickerOpen && productsQuery.data?.data?.length ? (
-                        <PurchaseProductLookup
+                        <ProductLookupGrid
                           rows={productsQuery.data.data}
-                          anchorRef={productSearchRef}
+                          total={productsQuery.data.meta.total}
+                          priceType="retail"
+                          mode="purchase"
+                          themed
+                          portalAnchorRef={productSearchRef}
+                          onRequestClose={() => setProductPickerOpen(false)}
                           onSelect={(product) => void addProduct(product)}
                         />
                       ) : null}
