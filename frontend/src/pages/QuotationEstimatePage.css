@@ -106,7 +106,7 @@
   font-size: 12px;
 }
 
-.quotation-header-grid input,
+.quotation-header-grid input:not(.ui-select-trigger-search),
 .quotation-footer-grid textarea {
   border: 1px solid var(--ui-control-border);
   border-radius: var(--control-radius);
@@ -116,7 +116,7 @@
   font: inherit;
 }
 
-.quotation-header-grid input:focus,
+.quotation-header-grid input:not(.ui-select-trigger-search):focus,
 .quotation-footer-grid textarea:focus {
   outline: none;
   box-shadow: var(--ui-focus-shadow);
@@ -466,7 +466,7 @@ html[data-animations='off'] .quotation-product-search-input {
   font-size: var(--ui-font-sm);
 }
 
-.quotation-header-grid input,
+.quotation-header-grid input:not(.ui-select-trigger-search),
 .quotation-header-grid .ui-select-combobox-trigger,
 .quotation-header-grid .ui-select-trigger {
   min-height: 25px;
