@@ -1487,15 +1487,20 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                               total={generalProductTotal}
                               priceType="retail"
                               portalAnchorRef={generalProductAnchorRef}
+                              themed
                               onRequestClose={() => setGeneralProductPickerOpen(false)}
                               onSelect={addGeneralProduct}
                             />
                           ) : null}
                         </div>
                       </td>
-                      <td colSpan={7} className="sales-return-general-entry-hint">
-                        Select products directly for a general return, or choose Sales# above for invoice-linked return.
-                      </td>
+                      <td className="is-num" />
+                      <td className="is-num" />
+                      <td className="is-num" />
+                      <td className="is-num" />
+                      <td className="is-num" />
+                      <td className="is-num" />
+                      <td />
                     </tr>
                   ) : null}
 
