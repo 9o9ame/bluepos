@@ -20,7 +20,7 @@ import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiModal } from '../components/ui/UiModal'
-import { UiSelect } from '../components/ui/UiSelect'
+import { UiSelect, UiSimpleDropdown, UiTableDropdown } from '../components/ui/UiSelect'
 import { PurchaseProductLookup } from '../features/purchases/PurchaseProductLookup'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
@@ -887,11 +887,11 @@ export function PurchaseOrderPage() {
 
                 <label className="is-order-type po-option-type">
                   <span>Order Type</span>
-                  <UiSelect
+                  <UiSimpleDropdown
                     value={orderType}
                     disabled={readOnly}
-                    searchable={false}
                     options={ORDER_TYPE_OPTIONS}
+                    searchPlaceholder="Search order type"
                     onChange={(value) => setOrderType(value as PurchaseOrderGenerateMode)}
                     aria-label="Order type"
                   />
@@ -930,7 +930,7 @@ export function PurchaseOrderPage() {
 
                 <label className="is-wide po-option-supplier">
                   <span>From / Supplier</span>
-                  <UiSelect
+                  <UiTableDropdown
                     value={activeOrder?.supplier?.ulid ?? supplierUlid}
                     options={supplierOptions}
                     disabled={readOnly}
@@ -950,10 +950,11 @@ export function PurchaseOrderPage() {
 
                 <label className="po-option-category">
                   <span>Category</span>
-                  <UiSelect
+                  <UiSimpleDropdown
                     value={categoryUlid}
                     options={categoryOptions}
                     disabled={readOnly}
+                    searchPlaceholder="Search category"
                     onChange={setCategoryUlid}
                     aria-label="Category filter"
                   />
@@ -961,10 +962,11 @@ export function PurchaseOrderPage() {
 
                 <label className="po-option-company">
                   <span>Company</span>
-                  <UiSelect
+                  <UiSimpleDropdown
                     value={brandUlid}
                     options={brandOptions}
                     disabled={readOnly}
+                    searchPlaceholder="Search company"
                     onChange={setBrandUlid}
                     aria-label="Company or brand filter"
                   />
