@@ -4838,9 +4838,12 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   box-shadow: none;
 }
 
+/* ==========================================================================
+   Experimental UI primitives branch — Sales Return approved overrides
+   Keep this section small and authoritative. Do not append competing rules.
+   ========================================================================== */
 
-/* Sales Return uses the approved canonical Custom Table only.
-   Keep page layout/dropdowns unchanged; let PosEntryGrid own table chrome. */
+/* 1) Approved Custom Table */
 .sales-return-grid-wrap {
   overflow: hidden;
   border: 0;
@@ -4855,23 +4858,19 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   box-shadow: none;
 }
 
-.sales-return-custom-table .sales-return-general-product-cell {
-  overflow: visible;
+.sales-return-custom-table th {
+  text-align: center !important;
 }
 
 .sales-return-custom-table td.is-edit {
   padding: 2px 4px;
 }
 
-
-/* Sales Return Custom Table: approved centered column headings. */
-.sales-return-custom-table th {
-  text-align: center !important;
+.sales-return-custom-table .sales-return-general-product-cell {
+  overflow: visible;
 }
 
-
-/* Sales Return Amount Options — match the approved Purchase Return card.
-   Purchase Return itself is intentionally untouched. */
+/* 2) Approved Amount Options */
 @media (min-width: 1181px) {
   .sales-return-head {
     grid-template-columns: minmax(0, 1fr) 380px !important;
@@ -4887,7 +4886,7 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 .sales-return-amounts {
   box-sizing: border-box !important;
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   align-content: start !important;
   gap: 4px !important;
   min-width: 0 !important;
@@ -4910,10 +4909,7 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   background: var(--ui-surface-subtle) !important;
 }
 
-.sales-return-amounts > div:nth-child(1),
-.sales-return-amounts > div:nth-child(2),
-.sales-return-amounts > div:nth-child(3),
-.sales-return-amounts > div:nth-child(4),
+.sales-return-amounts > div:nth-child(-n + 4),
 .sales-return-amounts > div.is-net {
   grid-column: auto !important;
   grid-row: auto !important;
@@ -4962,15 +4958,9 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   .sales-return-head {
     grid-template-columns: 1fr !important;
   }
-
-  .sales-return-amounts {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
 }
 
-
-/* Sales Return balance summary — authoritative geometry.
-   Keep the 2x2 block vertically centered inside Return Invoice Options. */
+/* 3) Frozen balance summary geometry */
 .sales-return-fields-right {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -4984,9 +4974,8 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   padding: 2px 0 !important;
 }
 
-.sales-return-fields-right .sales-return-header-refresh {
-  grid-column: 1 !important;
-  grid-row: 1 !important;
+.sales-return-fields-right .sales-return-header-refresh,
+.sales-return-fields-right .sales-return-balance-chip {
   box-sizing: border-box !important;
   width: 100% !important;
   min-width: 0 !important;
@@ -4994,6 +4983,11 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   min-height: 27px !important;
   align-self: center !important;
   justify-self: stretch !important;
+}
+
+.sales-return-fields-right .sales-return-header-refresh {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
 }
 
 .sales-return-fields-right .is-previous {
@@ -5012,16 +5006,9 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 }
 
 .sales-return-fields-right .sales-return-balance-chip {
-  box-sizing: border-box !important;
   display: grid !important;
   grid-template-columns: max-content minmax(0, 1fr) !important;
   align-items: center !important;
-  align-self: center !important;
-  justify-self: stretch !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  height: 27px !important;
-  min-height: 27px !important;
   margin: 0 !important;
   padding: 2px 4px !important;
   column-gap: 5px !important;
@@ -5031,32 +5018,30 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   box-shadow: none !important;
 }
 
-.sales-return-fields-right .sales-return-balance-chip > span {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  min-width: 0 !important;
-  height: 21px !important;
-  margin: 0 !important;
-  color: var(--ui-text) !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-  line-height: 1 !important;
-  text-align: left !important;
-  white-space: nowrap !important;
-}
-
+.sales-return-fields-right .sales-return-balance-chip > span,
 .sales-return-fields-right .sales-return-balance-chip > strong {
-  box-sizing: border-box !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
-  align-self: center !important;
-  width: 100% !important;
   min-width: 0 !important;
   height: 21px !important;
   min-height: 21px !important;
   margin: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > span {
+  justify-content: flex-start !important;
+  color: var(--ui-text) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-align: left !important;
+}
+
+.sales-return-fields-right .sales-return-balance-chip > strong {
+  box-sizing: border-box !important;
+  justify-content: center !important;
+  width: 100% !important;
   padding: 2px 6px !important;
   border: 1px solid var(--ui-control-border) !important;
   border-radius: var(--control-radius) !important;
@@ -5066,9 +5051,7 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   font-size: 10px !important;
   font-weight: 800 !important;
   font-variant-numeric: tabular-nums !important;
-  line-height: 1 !important;
   text-align: center !important;
-  white-space: nowrap !important;
 }
 
 .sales-return-fields-right .is-total-balance {
