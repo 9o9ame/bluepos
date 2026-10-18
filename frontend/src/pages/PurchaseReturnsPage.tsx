@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
-import { CheckCircle2, ChevronDown, FileText, RefreshCw, RotateCcw, Save, Search, Trash2, X } from 'lucide-react'
+import { CheckCircle2, FileText, RefreshCw, RotateCcw, Save, Search, Trash2, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { fetchSuppliers } from '../api/catalog'
@@ -22,8 +22,9 @@ import { ApiClientError } from '../api/client'
 import { askConfirm } from '../feedback/FeedbackProvider'
 import { DesktopButton } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
+import { PosEntryGrid } from '../components/desktop/PosEntryGrid'
 import { UiButton } from '../components/ui/UiButton'
-import { UiSelect } from '../components/ui/UiSelect'
+import { UiSelect, UiSimpleDropdown, UiTableDropdown } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useLocalProducts } from '../features/catalog/useLocalCatalog'
@@ -110,7 +111,6 @@ export function PurchaseReturnsPage({
   )
 
   const deepLinkHandled = useRef<string | null>(null)
-  const purchasePickerRef = useRef<HTMLDivElement | null>(null)
   const generalProductAnchorRef = useRef<HTMLDivElement | null>(null)
   const generalProductEntryRef = useRef<HTMLInputElement | null>(null)
 
@@ -140,7 +140,6 @@ export function PurchaseReturnsPage({
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [purchaseSearch, setPurchaseSearch] = useState('')
-  const [purchasePickerOpen, setPurchasePickerOpen] = useState(false)
   const [lineQty, setLineQty] = useState<Record<string, string>>({})
 
   const [generalRows, setGeneralRows] = useState<GeneralReturnRow[]>([])
@@ -184,7 +183,7 @@ export function PurchaseReturnsPage({
   const purchaseLookup = useQuery({
     queryKey: ['posted-purchases-lookup', purchaseSearch],
     queryFn: () => fetchPostedPurchases({ q: purchaseSearch || undefined, per_page: 20 }),
-    enabled: view === 'entry' && !document?.ulid && purchasePickerOpen,
+    enabled: view === 'entry' && !document?.ulid,
     retry: false,
   })
 
@@ -228,6 +227,66 @@ export function PurchaseReturnsPage({
   )
   const warehouses = warehousesQuery.data ?? []
   const returnable = returnableQuery.data?.data ?? []
+
+  const purchaseOptions = useMemo(() => {
+    const rows = purchaseLookup.data?.data ?? []
+    const options = rows.map((purchase) => ({
+      value: purchase.ulid,
+      label: `${purchase.document_number}${purchase.supplier_invoice_number ? ` · ${purchase.supplier_invoice_number}` : ''}`,
+      columns: [
+        purchase.document_number,
+        purchase.invoice_date,
+        purchase.supplier?.name ?? '',
+        purchase.supplier_invoice_number ?? '',
+        money(purchase.grand_total),
+      ],
+    }))
+
+    if (purchaseUlid && purchaseLabel && !options.some((option) => option.value === purchaseUlid)) {
+      options.unshift({
+        value: purchaseUlid,
+        label: purchaseLabel,
+        columns: [purchaseSearch || purchaseLabel, '', '', '', ''],
+      })
+    }
+
+    return [
+      {
+        value: '',
+        label: 'Optional: select posted purchase #',
+        columns: ['', '', '', '', ''],
+      },
+      ...options,
+    ]
+  }, [purchaseLabel, purchaseLookup.data?.data, purchaseSearch, purchaseUlid])
+
+  const supplierOptions = useMemo(
+    () => [
+      { value: '', label: 'Select supplier', columns: ['', 'Select supplier', '', ''] },
+      ...suppliers.map((supplier) => ({
+        value: supplier.ulid,
+        label: `${supplier.code} · ${supplier.name}`,
+        columns: [
+          supplier.code,
+          supplier.name,
+          supplier.address ?? '',
+          supplier.mobile ?? supplier.phone ?? '',
+        ],
+      })),
+    ],
+    [suppliers],
+  )
+
+  const warehouseOptions = useMemo(
+    () => [
+      { value: '', label: 'Select warehouse' },
+      ...warehouses.map((warehouse) => ({
+        value: warehouse.ulid,
+        label: `${warehouse.code} · ${warehouse.name}`,
+      })),
+    ],
+    [warehouses],
+  )
 
   const liveTotals = useMemo(() => {
     if (!invoiceMode) {
@@ -290,7 +349,6 @@ export function PurchaseReturnsPage({
     setGeneralProductPickerOpen(false)
     setGeneralProductLookupMode('browse')
     setGeneralProductTargetKey(null)
-    setPurchasePickerOpen(false)
     setError(null)
   }
 
@@ -338,7 +396,6 @@ export function PurchaseReturnsPage({
 
     setLineQty(qtyMap)
     setGeneralRows(nextGeneral)
-    setPurchasePickerOpen(false)
     setGeneralProductPickerOpen(false)
     setGeneralProductLookupMode('browse')
     setGeneralProductTargetKey(null)
@@ -361,7 +418,6 @@ export function PurchaseReturnsPage({
     setGeneralProductPickerOpen(false)
     setGeneralProductLookupMode('browse')
     setGeneralProductTargetKey(null)
-    setPurchasePickerOpen(false)
     setError(null)
   }
 
@@ -467,19 +523,6 @@ export function PurchaseReturnsPage({
       generalProductEntryRef.current?.select()
     }, 0)
   }
-
-  useEffect(() => {
-    if (!purchasePickerOpen) return
-
-    function handlePointerDown(event: MouseEvent) {
-      const target = event.target as Node
-      if (purchasePickerRef.current?.contains(target)) return
-      setPurchasePickerOpen(false)
-    }
-
-    window.addEventListener('mousedown', handlePointerDown)
-    return () => window.removeEventListener('mousedown', handlePointerDown)
-  }, [purchasePickerOpen])
 
   useEffect(() => {
     if (!active) return
@@ -748,106 +791,39 @@ export function PurchaseReturnsPage({
 
                 <div className="purchase-return-option-group is-purchase">
                   <label>Purchase #:</label>
-                  <div
-                    ref={purchasePickerRef}
-                    className={`purchase-return-purchase-search${purchasePickerOpen ? ' is-open' : ''}`}
-                  >
-                    <div className="purchase-return-purchase-input">
-                      <Search size={13} aria-hidden="true" />
-                      <input
-                        value={purchaseLabel || purchaseSearch}
-                        disabled={Boolean(document?.ulid) || readOnly}
-                        placeholder="Optional: select posted purchase #"
-                        onFocus={() => {
-                          if (!document?.ulid && !readOnly) setPurchasePickerOpen(true)
-                        }}
-                        onChange={(event) => {
-                          setPurchaseSearch(event.target.value)
-                          setPurchaseLabel('')
-                          setPurchaseUlid('')
-                          setSupplierUlid('')
-                          setLineQty({})
-                          setGeneralRows([])
-                          setPurchasePickerOpen(true)
-                        }}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Escape') {
-                            setPurchasePickerOpen(false)
-                            return
-                          }
+                  <UiTableDropdown
+                    aria-label="Purchase number"
+                    value={purchaseUlid}
+                    disabled={Boolean(document?.ulid) || readOnly}
+                    className="purchase-return-canonical-select purchase-return-purchase-select"
+                    triggerClassName="purchase-return-canonical-trigger"
+                    placeholder="Optional: select posted purchase #"
+                    searchPlaceholder="Search posted purchase"
+                    options={purchaseOptions}
+                    menuColumns={[
+                      { header: 'Purchase #', width: '120px' },
+                      { header: 'Date', width: '100px' },
+                      { header: 'Supplier', width: '210px' },
+                      { header: 'Supplier Ref', width: '130px' },
+                      { header: 'Total', width: '100px' },
+                    ]}
+                    menuMinWidth={680}
+                    onSearchChange={setPurchaseSearch}
+                    onChange={(value) => {
+                      if (!value) {
+                        setPurchaseUlid('')
+                        setPurchaseLabel('')
+                        setPurchaseSearch('')
+                        setSupplierUlid('')
+                        setLineQty({})
+                        setGeneralRows([])
+                        return
+                      }
 
-                          if (event.key === 'Enter' && purchasePickerOpen) {
-                            const first = purchaseLookup.data?.data?.[0]
-                            if (first) {
-                              event.preventDefault()
-                              selectPurchase(first)
-                            }
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="purchase-return-purchase-trigger"
-                        disabled={Boolean(document?.ulid) || readOnly}
-                        onClick={() => setPurchasePickerOpen((open) => !open)}
-                        aria-label="Open posted purchases"
-                      >
-                        <ChevronDown size={14} />
-                      </button>
-                    </div>
-
-                    {!document?.ulid && purchasePickerOpen ? (
-                      <div className="purchase-return-purchase-results">
-                        <div className="purchase-return-purchase-results-head">
-                          <span>Purchase #</span>
-                          <span>Date</span>
-                          <span>Supplier</span>
-                          <span>Supplier Ref</span>
-                          <span>Total</span>
-                        </div>
-                        <div className="purchase-return-purchase-results-body">
-                          {(purchaseLookup.data?.data ?? []).map((purchase) => (
-                            <button
-                              key={purchase.ulid}
-                              type="button"
-                              className={
-                                purchaseLabel.startsWith(purchase.document_number)
-                                  ? 'is-selected'
-                                  : undefined
-                              }
-                              onClick={() => selectPurchase(purchase)}
-                            >
-                              <strong>{purchase.document_number}</strong>
-                              <span>{purchase.invoice_date}</span>
-                              <span>{purchase.supplier?.name ?? '—'}</span>
-                              <span>{purchase.supplier_invoice_number ?? '—'}</span>
-                              <span>{money(purchase.grand_total)}</span>
-                            </button>
-                          ))}
-
-                          {purchaseLookup.isError ? (
-                            <div className="purchase-return-purchase-results-empty">
-                              Could not load posted purchases. Use Refresh and try again.
-                            </div>
-                          ) : !purchaseLookup.isFetching &&
-                            (purchaseLookup.data?.data.length ?? 0) === 0 ? (
-                            <div className="purchase-return-purchase-results-empty">
-                              No posted purchases match this search.
-                            </div>
-                          ) : null}
-
-                          {purchaseLookup.isFetching ? (
-                            <div className="purchase-return-purchase-results-empty">
-                              Searching posted purchases…
-                            </div>
-                          ) : null}
-                        </div>
-                        <div className="purchase-return-purchase-results-foot">
-                          {(purchaseLookup.data?.meta.total ?? 0)} posted purchase(s)
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
+                      const purchase = purchaseLookup.data?.data.find((row) => row.ulid === value)
+                      if (purchase) selectPurchase(purchase)
+                    }}
+                  />
                 </div>
 
                 <div className="purchase-return-option-group is-supplier">
@@ -855,20 +831,22 @@ export function PurchaseReturnsPage({
                   {invoiceMode ? (
                     <input value={selectedSupplierName} readOnly />
                   ) : (
-                    <UiSelect
+                    <UiTableDropdown
                       aria-label="Supplier"
                       value={supplierUlid}
                       disabled={readOnly || Boolean(document?.ulid && document.return_mode === 'invoice')}
                       className="purchase-return-canonical-select"
                       triggerClassName="purchase-return-canonical-trigger"
                       placeholder="Select supplier"
-                      options={[
-                        { value: '', label: 'Select supplier' },
-                        ...suppliers.map((supplier) => ({
-                          value: supplier.ulid,
-                          label: `${supplier.code} · ${supplier.name}`,
-                        })),
+                      searchPlaceholder="Search supplier"
+                      options={supplierOptions}
+                      menuColumns={[
+                        { header: 'Code', width: '100px' },
+                        { header: 'Name', width: '220px' },
+                        { header: 'Address', width: '240px' },
+                        { header: 'Mobile', width: '130px' },
                       ]}
+                      menuMinWidth={720}
                       onChange={setSupplierUlid}
                     />
                   )}
@@ -876,19 +854,14 @@ export function PurchaseReturnsPage({
 
                 <div className="purchase-return-option-group is-warehouse">
                   <label>Warehouse:</label>
-                  <UiSelect
+                  <UiSimpleDropdown
                     aria-label="Warehouse"
                     value={warehouseUlid}
                     disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
                     className="purchase-return-canonical-select"
                     triggerClassName="purchase-return-canonical-trigger"
-                    options={[
-                      { value: '', label: 'Select warehouse' },
-                      ...warehouses.map((warehouse) => ({
-                        value: warehouse.ulid,
-                        label: `${warehouse.code} · ${warehouse.name}`,
-                      })),
-                    ]}
+                    searchPlaceholder="Search warehouse"
+                    options={warehouseOptions}
                     onChange={setWarehouseUlid}
                   />
                 </div>
@@ -949,20 +922,21 @@ export function PurchaseReturnsPage({
 
           {invoiceMode ? (
             <div className="purchase-return-grid-wrap">
-              <table className="purchase-return-grid">
-                <thead>
-                  <tr>
-                    <th>Item / Product Description</th>
-                    <th>Purchased Qty</th>
-                    <th>Already Returned</th>
-                    <th>Remaining</th>
-                    <th>Return Qty</th>
-                    <th>Unit</th>
-                    <th>Factor</th>
-                    <th>Unit Cost</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <PosEntryGrid
+                className="purchase-return-custom-table"
+                tableClassName="purchase-return-grid"
+                ariaLabel="Purchase return invoice lines"
+                columns={[
+                  { key: 'product', header: 'Item / Product Description', width: '42%' },
+                  { key: 'purchased', header: 'Purchased Qty', width: '10%', align: 'right' },
+                  { key: 'returned', header: 'Already Returned', width: '10%', align: 'right' },
+                  { key: 'remaining', header: 'Remaining', width: '10%', align: 'right' },
+                  { key: 'return', header: 'Return Qty', width: '10%', align: 'right' },
+                  { key: 'unit', header: 'Unit', width: '7%' },
+                  { key: 'factor', header: 'Factor', width: '10%', align: 'right' },
+                  { key: 'cost', header: 'Unit Cost', width: '10%', align: 'right' },
+                ]}
+              >
                   {returnable.map((row) => (
                     <tr key={row.purchase_line_ulid}>
                       <td>
@@ -1037,26 +1011,26 @@ export function PurchaseReturnsPage({
                       </td>
                     </tr>
                   ) : null}
-                </tbody>
-              </table>
+                </PosEntryGrid>
             </div>
           ) : (
             <div className="purchase-return-general">
               <div className="purchase-return-grid-wrap">
-                <table className="purchase-return-grid is-general">
-                  <thead>
-                    <tr>
-                      <th>Item / Product Description</th>
-                      <th>Quantity</th>
-                      <th>Unit Cost</th>
-                      <th>AMT</th>
-                      <th>Disc (Rs)</th>
-                      <th>Tax</th>
-                      <th>Amount (Rs)</th>
-                      <th aria-label="Actions" />
-                    </tr>
-                  </thead>
-                  <tbody>
+                <PosEntryGrid
+                  className="purchase-return-custom-table"
+                  tableClassName="purchase-return-grid is-general"
+                  ariaLabel="General purchase return lines"
+                  columns={[
+                    { key: 'product', header: 'Item / Product Description', width: '42%' },
+                    { key: 'quantity', header: 'Quantity', width: '10%', align: 'right' },
+                    { key: 'cost', header: 'Unit Cost', width: '10%', align: 'right' },
+                    { key: 'amt', header: 'AMT', width: '10%', align: 'right' },
+                    { key: 'discount', header: 'Disc (Rs)', width: '10%', align: 'right' },
+                    { key: 'tax', header: 'Tax', width: '8%', align: 'right' },
+                    { key: 'amount', header: 'Amount (Rs)', width: '10%', align: 'right' },
+                    { key: 'actions', header: '', width: '36px' },
+                  ]}
+                >
                     {generalRows.map((row) => {
                       const amounts = generalAmounts(row)
                       return (
@@ -1109,13 +1083,20 @@ export function PurchaseReturnsPage({
                                   className="purchase-return-product-toggle"
                                   aria-label="Open product dropdown"
                                   aria-expanded={generalProductPickerOpen}
-                                  onMouseDown={(event) => event.preventDefault()}
+                                  onMouseDown={(event) => {
+                                    event.preventDefault()
+                                    event.stopPropagation()
+                                  }}
                                   onClick={() => {
                                     setGeneralProductLookupMode('browse')
                                     setGeneralProductPickerOpen((open) => !open)
                                   }}
                                 >
-                                  <ChevronDown size={13} />
+                                  <span aria-hidden>
+                                  <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                    <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                  </svg>
+                                </span>
                                 </button>
                                 {generalProductPickerOpen ? (
                                   <ProductLookupGrid
@@ -1246,7 +1227,7 @@ export function PurchaseReturnsPage({
                     })}
 
                     {!readOnly ? (
-                      <tr className="purchase-return-general-add-row">
+                      <tr className="purchase-return-general-add-row is-entry-row">
                         <td className="purchase-return-general-product-cell">
                           <div
                             ref={generalProductTargetKey === null ? generalProductAnchorRef : undefined}
@@ -1288,14 +1269,21 @@ export function PurchaseReturnsPage({
                               className="purchase-return-product-toggle"
                               aria-label="Open product dropdown"
                               aria-expanded={generalProductTargetKey === null && generalProductPickerOpen}
-                              onMouseDown={(event) => event.preventDefault()}
+                              onMouseDown={(event) => {
+                                    event.preventDefault()
+                                    event.stopPropagation()
+                                  }}
                               onClick={() => {
                                 setGeneralProductTargetKey(null)
                                 setGeneralProductLookupMode('browse')
                                 setGeneralProductPickerOpen((open) => !open)
                               }}
                             >
-                              <ChevronDown size={13} />
+                              <span aria-hidden>
+                                  <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                    <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                  </svg>
+                                </span>
                             </button>
                             {generalProductTargetKey === null && generalProductPickerOpen ? (
                               <ProductLookupGrid
@@ -1324,8 +1312,7 @@ export function PurchaseReturnsPage({
                         </td>
                       </tr>
                     ) : null}
-                  </tbody>
-                </table>
+                </PosEntryGrid>
               </div>
             </div>
           )}
