@@ -5,7 +5,6 @@ import {
   fetchBrands,
   fetchCategories,
   fetchProduct,
-  fetchProducts,
   fetchSuppliers,
 } from '../api/catalog'
 import {
@@ -23,7 +22,9 @@ import { UiButton } from '../components/ui/UiButton'
 import { UiModal } from '../components/ui/UiModal'
 import { UiSelect, UiSimpleDropdown, UiTableDropdown } from '../components/ui/UiSelect'
 import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
+import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
+import { useLocalProducts } from '../features/catalog/useLocalCatalog'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import type { Product } from '../types/catalog'
@@ -179,6 +180,7 @@ function generatedLine(row: PurchaseOrderGenerateRow): DraftLine | null {
 
 export function PurchaseOrderPage() {
   const { closeActiveTab, openModule } = useWorkspace()
+  const { session } = useAuth()
   const feedback = useFeedback()
   const canCreate = useCan('purchases.create')
   const canEdit = useCan('purchases.edit')
@@ -238,21 +240,14 @@ export function PurchaseOrderPage() {
     retry: false,
   })
 
-  const productsQuery = useQuery({
-    queryKey: ['products', 'purchase-order', productQuery],
-    queryFn: () =>
-      fetchProducts(
-        {
-          q: productQuery.trim() || undefined,
-          page: 1,
-          per_page: 15,
-          active_only: true,
-          sales_lookup: true,
-        },
-        { busy: 'none' },
-      ),
-    enabled: !readOnly && productPickerOpen,
-  })
+  const localProductLookup = useLocalProducts(
+    session,
+    productQuery,
+    !readOnly && productPickerOpen,
+  )
+  const productLookupRows = localProductLookup.rows.filter(
+    (product) => product.is_active && product.status === 'active',
+  )
 
   const ordersQuery = useQuery({
     queryKey: ['purchase-orders', searchText, searchFrom, searchTo],
@@ -1115,7 +1110,7 @@ export function PurchaseOrderPage() {
                                           return
                                         }
                                         if (event.key !== 'Enter') return
-                                        const first = productsQuery.data?.data?.[0]
+                                        const first = productLookupRows[0]
                                         if (!first) return
                                         event.preventDefault()
                                         void addProduct(first)
@@ -1129,12 +1124,16 @@ export function PurchaseOrderPage() {
                                       onMouseDown={(event) => event.preventDefault()}
                                       onClick={() => setProductPickerOpen((open) => !open)}
                                     >
-                                      <ChevronDown size={13} />
+                                      <span aria-hidden>
+                                        <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                          <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                        </svg>
+                                      </span>
                                     </button>
-                                    {productPickerOpen && productsQuery.data?.data?.length ? (
+                                    {productPickerOpen && productLookupRows.length ? (
                                       <ProductLookupGrid
-                                        rows={productsQuery.data.data}
-                                        total={productsQuery.data.meta.total}
+                                        rows={productLookupRows}
+                                        total={productLookupRows.length}
                                         priceType="retail"
                                         mode="purchase"
                                         themed
@@ -1267,7 +1266,7 @@ export function PurchaseOrderPage() {
                         }}
                         onKeyDown={(event) => {
                           if (event.key !== 'Enter') return
-                          const first = productsQuery.data?.data?.[0]
+                          const first = productLookupRows[0]
                           if (!first) return
                           event.preventDefault()
                           void addProduct(first)
@@ -1285,13 +1284,17 @@ export function PurchaseOrderPage() {
                           setProductPickerOpen((open) => !open)
                         }}
                       >
-                        <ChevronDown size={13} />
+                        <span aria-hidden>
+                          <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                            <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                          </svg>
+                        </span>
                       </button>
 
-                      {productPickerOpen && productsQuery.data?.data?.length ? (
+                      {productPickerOpen && productLookupRows.length ? (
                         <ProductLookupGrid
-                          rows={productsQuery.data.data}
-                          total={productsQuery.data.meta.total}
+                          rows={productLookupRows}
+                          total={productLookupRows.length}
                           priceType="retail"
                           mode="purchase"
                           themed
