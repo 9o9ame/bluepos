@@ -334,6 +334,17 @@ class CreateSaleAction
         );
     }
 
+    private function nullableTrimmedString(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value === '' ? null : $value;
+    }
+
     /**
      * @param list<array<string, mixed>> $lines
      * @param array<string, mixed> $data
