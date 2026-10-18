@@ -207,6 +207,30 @@
 
 .sales-pos-product-results-grid.is-themed .sales-pos-product-grid-body {
   background: var(--ui-surface);
+  scrollbar-color:
+    color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border))
+    var(--ui-surface-muted);
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-body::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-body::-webkit-scrollbar-track {
+  background: var(--ui-surface-muted);
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-body::-webkit-scrollbar-thumb {
+  border: 2px solid var(--ui-surface-muted);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border));
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row > span,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row > strong {
+  background: transparent !important;
+  color: inherit !important;
 }
 
 .sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row {
