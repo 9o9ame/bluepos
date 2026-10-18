@@ -118,6 +118,37 @@ Density-dependent font, spacing and control-height variables already exposed by 
 
 ## 4. Canonical components
 
+### BluePOS canonical UI vocabulary
+
+When discussing or implementing these patterns, use these exact names:
+
+- **Simple Dropdown** -> `UiSimpleDropdown` (implemented through `UiSelect`).
+  Use for ordinary single-value choices such as warehouse, unit, status, order type,
+  category, price type and payment method. When searchable, search happens in the
+  main trigger field; do not add a second search input inside the popup.
+- **Table Dropdown** -> `UiTableDropdown` (implemented through `UiSelect` with
+  headed columns). Use for entity lookups such as customer, supplier, salesman,
+  account, invoice or other multi-column choices. Search happens in the main trigger
+  field; the popup contains headings and result rows, not another search bar.
+- **Custom Table** -> `PosEntryGrid`. Use for editable/addable transaction-line
+  tables. Modules define their own columns, widths, cells and business behavior;
+  the shared component owns table header, borders, row density, numeric alignment,
+  entry-row surface and base editor geometry. The approved Sales Invoice table is
+  the visual baseline. Empty editable cells are blank unless the workflow explicitly
+  requires a placeholder.
+- **List Table** -> `PosDataGrid`. Use for read/search/report/history/tabular lists
+  where rows are displayed or selected rather than edited inline.
+
+Do not recreate these four patterns with page-specific table/dropdown chrome. Page CSS
+may control layout and business-specific cells, but not duplicate shared borders,
+header faces, row height, dropdown arrows, search placement or base editor geometry.
+
+**Approved exceptions:** Purchase Invoice has specialized approved table behavior and
+must not be migrated to `PosEntryGrid` unless explicitly requested. Sales Invoice is
+the approved visual reference and should not be rewritten merely to adopt the shared
+component.
+
+
 ### Dropdowns / selects
 
 Canonical component: `UiSelect` in `frontend/src/components/ui/UiSelect.tsx`.
