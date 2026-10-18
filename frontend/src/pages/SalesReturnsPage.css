@@ -5227,3 +5227,22 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
     min-height: 28px !important;
   }
 }
+
+
+/* Sales Return balance block: all four controls use equal outer widths. */
+.sales-return-fields-right {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.sales-return-fields-right .sales-return-header-refresh,
+.sales-return-fields-right .sales-return-balance-chip {
+  width: 100% !important;
+  min-width: 0 !important;
+  justify-self: stretch !important;
+}
+
+@media (max-width: 1450px) {
+  .sales-return-fields-right {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
