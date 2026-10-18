@@ -1299,9 +1299,13 @@ export function PurchaseReturnsPage({
                             ) : null}
                           </div>
                         </td>
-                        <td colSpan={7} className="purchase-return-general-entry-hint">
-                          Add another product directly from this row, or select Purchase # above for invoice-linked return.
-                        </td>
+                        <td className="num" />
+                        <td className="num" />
+                        <td className="num" />
+                        <td className="num" />
+                        <td className="num" />
+                        <td className="num" />
+                        <td />
                       </tr>
                     ) : null}
 
