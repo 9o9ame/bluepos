@@ -42,6 +42,7 @@ export type UiSelectProps = {
   searchable?: boolean
   searchPlaceholder?: string
   searchInTrigger?: boolean
+  onSearchChange?: (query: string) => void
   onFocus?: FocusEventHandler<HTMLButtonElement>
   onBlur?: FocusEventHandler<HTMLButtonElement>
   onKeyDown?: KeyboardEventHandler<HTMLButtonElement>
@@ -84,6 +85,7 @@ export function UiSelect({
   searchable = true,
   searchPlaceholder = 'Search…',
   searchInTrigger = false,
+  onSearchChange,
   onFocus,
   onBlur,
   onKeyDown,
@@ -373,6 +375,7 @@ export function UiSelect({
               const next = event.target.value
               setTriggerSearchText(next)
               setSearch(next)
+              onSearchChange?.(next)
               if (!open) setOpen(true)
             }}
             onKeyDown={(event) => {
@@ -542,7 +545,11 @@ export function UiSelect({
                     value={search}
                     placeholder={searchPlaceholder}
                     aria-label={`Search ${ariaLabel ?? 'options'}`}
-                    onChange={(event) => setSearch(event.target.value)}
+                    onChange={(event) => {
+                      const next = event.target.value
+                      setSearch(next)
+                      onSearchChange?.(next)
+                    }}
                     onKeyDown={(event) => {
                       if (event.key === 'ArrowDown') {
                         event.preventDefault()
