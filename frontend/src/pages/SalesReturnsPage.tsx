@@ -1130,40 +1130,44 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                   />
                 </div>
                 </div>
+              </div>
+            </fieldset>
 
-                <div className="sales-return-fields-right">
-                  <UiButton
-                    variant="info"
-                    className="sales-return-header-refresh"
-                    title="Refresh selected sale and balances"
-                    disabled={returnableQuery.isFetching || saleLookup.isFetching}
-                    onClick={() => {
-                      if (saleUlid) {
-                        void returnableQuery.refetch()
-                      } else {
-                        void saleLookup.refetch()
-                      }
-                    }}
-                  >
-                    <RefreshCw size={12} />
-                    <span>Refresh</span>
-                  </UiButton>
+            <fieldset className="sales-return-balances">
+              <legend>Balance Options</legend>
 
-                  <div className="sales-return-balance-chip is-previous">
-                    <span>Previous</span>
-                    <strong>{money(previousBalance)}</strong>
-                  </div>
+              <div className="is-refresh">
+                <UiButton
+                  variant="info"
+                  className="sales-return-balance-refresh"
+                  title="Refresh selected sale and balances"
+                  disabled={returnableQuery.isFetching || saleLookup.isFetching}
+                  onClick={() => {
+                    if (saleUlid) {
+                      void returnableQuery.refetch()
+                    } else {
+                      void saleLookup.refetch()
+                    }
+                  }}
+                >
+                  <RefreshCw size={12} />
+                  <span>Refresh</span>
+                </UiButton>
+              </div>
 
-                  <div className="sales-return-balance-chip is-this-bill">
-                    <span>This Bill</span>
-                    <strong>{money(thisBill)}</strong>
-                  </div>
+              <div>
+                <span>Previous:</span>
+                <strong>{money(previousBalance)}</strong>
+              </div>
 
-                  <div className="sales-return-balance-chip is-total-balance">
-                    <span>Total Balance</span>
-                    <strong>{money(totalBalance)}</strong>
-                  </div>
-                </div>
+              <div>
+                <span>This Bill:</span>
+                <strong>{money(thisBill)}</strong>
+              </div>
+
+              <div className="is-total-balance">
+                <span>Total Balance:</span>
+                <strong>{money(totalBalance)}</strong>
               </div>
             </fieldset>
 
