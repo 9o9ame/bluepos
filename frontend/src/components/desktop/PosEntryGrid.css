@@ -1,0 +1,125 @@
+/* Canonical BluePOS Custom Table.
+   Sales Invoice is the approved visual baseline; modules supply only columns
+   and business-specific cell content. */
+
+.pos-entry-grid-wrap {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid var(--ui-table-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
+}
+
+.pos-entry-grid {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font-size: var(--ui-font-sm, 11px);
+}
+
+.pos-entry-grid th,
+.pos-entry-grid td {
+  box-sizing: border-box;
+  height: 27px;
+  padding: 2px 5px;
+  overflow: hidden;
+  border-right: 1px solid var(--ui-table-border);
+  border-bottom: 1px solid var(--ui-table-border);
+  color: var(--ui-text);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.pos-entry-grid th:last-child,
+.pos-entry-grid td:last-child {
+  border-right: 0;
+}
+
+.pos-entry-grid th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 28px;
+  background: var(--ui-table-header);
+  color: var(--ui-table-header-text);
+  font-weight: var(--ui-weight-strong, 700);
+  text-align: center;
+}
+
+.pos-entry-grid td.is-num,
+.pos-entry-grid th.is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pos-entry-grid td.is-center,
+.pos-entry-grid th.is-center {
+  text-align: center;
+}
+
+.pos-entry-grid tbody tr:nth-child(even):not(.is-entry-row) td {
+  background: var(--ui-row-alt);
+}
+
+.pos-entry-grid tbody tr:hover td {
+  background: var(--ui-row-hover);
+}
+
+.pos-entry-grid tbody tr.is-selected td {
+  background: var(--ui-selected-row);
+  color: var(--ui-selected-row-text);
+}
+
+.pos-entry-grid tbody tr.is-entry-row td {
+  background: var(--ui-surface);
+}
+
+.pos-entry-grid input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 23px;
+  min-height: 23px;
+  margin: 0;
+  padding: 1px 4px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+}
+
+.pos-entry-grid td.is-num > input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pos-entry-grid input:focus {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.pos-entry-grid .ui-select-trigger {
+  min-height: 23px;
+  height: 23px;
+}
+
+.pos-entry-grid .ui-button {
+  min-width: 22px;
+  min-height: 22px;
+  padding: 0;
+}
+
+html[data-animations='off'] .pos-entry-grid,
+html[data-animations='off'] .pos-entry-grid * {
+  transition: none !important;
+  animation: none !important;
+}
