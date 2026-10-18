@@ -3956,13 +3956,13 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
 /* 2) Approved header cards: Return Invoice Options + Balance Options + Amount Options */
 @media (min-width: 1181px) {
   .sales-return-head {
-    grid-template-columns: minmax(0, 1fr) 280px 380px !important;
+    grid-template-columns: minmax(0, 1fr) 320px 380px !important;
   }
 }
 
 @media (min-width: 861px) and (max-width: 1180px) {
   .sales-return-head {
-    grid-template-columns: minmax(0, 1fr) 250px 340px !important;
+    grid-template-columns: minmax(0, 1fr) 280px 340px !important;
   }
 }
 
