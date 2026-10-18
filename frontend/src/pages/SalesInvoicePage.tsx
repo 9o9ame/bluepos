@@ -74,6 +74,15 @@ const SALES_COL_CLASS: Record<string, string> = {
 const COST_VIEW_COLUMN_KEYS = ['cost_rate', 'cost_amt', 'com_rs', 'com_pct'] as const
 
 
+function isCashInHandCustomer(party: Party | null | undefined): boolean {
+  return party?.name.trim().toLocaleUpperCase() === 'CASH IN HAND'
+}
+
+function partyPhone(party: Party | null | undefined): string {
+  return party?.mobile?.trim() || party?.phone?.trim() || ''
+}
+
+
 function salesColClass(col: ResolvedGridColumn): string {
   return SALES_COL_CLASS[col.key] ?? `col-${col.key}`
 }
@@ -166,8 +175,10 @@ export function SalesInvoicePage({
 
   const [selectedCustomer, setSelectedCustomer] = useState<Party | null>(null)
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
-  const [customerSearch, setCustomerSearch] = useState('CASH IN HAND')
+  const [customerSearch, setCustomerSearch] = useState('')
   const [customerPickerSearch, setCustomerPickerSearch] = useState('')
+  const [invoiceCustomerName, setInvoiceCustomerName] = useState('')
+  const [invoiceCustomerPhone, setInvoiceCustomerPhone] = useState('')
   const [salesmanPickerOpen, setSalesmanPickerOpen] = useState(false)
   const [salesmanSearch, setSalesmanSearch] = useState('')
   const [partyModalOpen, setPartyModalOpen] = useState(false)
@@ -382,6 +393,34 @@ export function SalesInvoicePage({
     )
   }, [customersQuery.data, customerPickerSearch])
 
+  const cashInHandCustomer = useMemo(
+    () => (customersQuery.data ?? []).find((party) => isCashInHandCustomer(party)) ?? null,
+    [customersQuery.data],
+  )
+
+  useEffect(() => {
+    if (savedSale || selectedCustomer || cart.customerUlid || !cashInHandCustomer) return
+
+    setSelectedCustomer(cashInHandCustomer)
+    cart.setCustomerUlid(cashInHandCustomer.ulid)
+    setCustomerSearch(cashInHandCustomer.name)
+    setCustomerPickerSearch('')
+    setInvoiceCustomerName('')
+    setInvoiceCustomerPhone('')
+  }, [cashInHandCustomer, cart, savedSale, selectedCustomer])
+
+  function selectInvoiceCustomer(party: Party): void {
+    const cashInHand = isCashInHandCustomer(party)
+
+    setSelectedCustomer(party)
+    cart.setCustomerUlid(party.ulid)
+    setCustomerSearch(party.name)
+    setCustomerPickerSearch('')
+    setInvoiceCustomerName(cashInHand ? '' : party.name)
+    setInvoiceCustomerPhone(cashInHand ? '' : partyPhone(party))
+    setCustomerPickerOpen(false)
+  }
+
   /*
    * IMPORTANT:
    * Do not hide schemes based on the local permission hook.
@@ -527,7 +566,13 @@ export function SalesInvoicePage({
       setCopyFromValue(source.document_number)
       setQuotationValue('')
       setSelectedCustomer(customer)
-      setCustomerSearch(customer?.name ?? 'CASH IN HAND')
+      setCustomerSearch(customer?.name ?? '')
+      setInvoiceCustomerName(
+        source.customer_name ?? (customer && !isCashInHandCustomer(customer) ? customer.name : ''),
+      )
+      setInvoiceCustomerPhone(
+        source.customer_phone ?? (customer && !isCashInHandCustomer(customer) ? partyPhone(customer) : ''),
+      )
       setSelectedSalesmanUlid(source.salesman?.ulid ?? null)
       setSalesmanSearch(
         source.salesman
@@ -683,7 +728,9 @@ export function SalesInvoicePage({
       setQuotationValue(source.document_number)
       setCopyFromValue('')
       setSelectedCustomer(customer)
-      setCustomerSearch(customer?.name ?? 'CASH IN HAND')
+      setCustomerSearch(customer?.name ?? '')
+      setInvoiceCustomerName(customer && !isCashInHandCustomer(customer) ? customer.name : '')
+      setInvoiceCustomerPhone(customer && !isCashInHandCustomer(customer) ? partyPhone(customer) : '')
       setSelectedSalesmanUlid(source.salesman?.ulid ?? null)
       setSalesmanSearch(
         source.salesman
@@ -749,6 +796,8 @@ export function SalesInvoicePage({
           sale_date: saleDate,
           notes: cart.notes || null,
           customer_ulid: cart.customerUlid,
+          customer_name: invoiceCustomerName.trim() || null,
+          customer_phone: invoiceCustomerPhone.trim() || null,
           salesman_ulid: selectedSalesmanUlid,
           payment_due: paymentDue,
           initial_payments:
@@ -766,7 +815,9 @@ export function SalesInvoicePage({
       cart.clear()
       setSelectedCustomer(null)
       setPaymentDue(false)
-      setCustomerSearch('CASH IN HAND')
+      setCustomerSearch('')
+      setInvoiceCustomerName('')
+      setInvoiceCustomerPhone('')
       setProductQuery('')
       setActiveProductQuery('')
       setActiveProductPickerOpen(false)
@@ -850,7 +901,9 @@ export function SalesInvoicePage({
       cart.clear()
       setSelectedCustomer(null)
       setPaymentDue(false)
-      setCustomerSearch('CASH IN HAND')
+      setCustomerSearch('')
+      setInvoiceCustomerName('')
+      setInvoiceCustomerPhone('')
       setSelectedSalesmanUlid(null)
       setSalesmanSearch('')
       setReceived('')
@@ -1287,7 +1340,9 @@ export function SalesInvoicePage({
 
     setSelectedCustomer(customer)
     setPaymentDue(false)
-    setCustomerSearch(customer?.name ?? 'CASH IN HAND')
+    setCustomerSearch(customer?.name ?? '')
+    setInvoiceCustomerName(customer && !isCashInHandCustomer(customer) ? customer.name : '')
+    setInvoiceCustomerPhone(customer && !isCashInHandCustomer(customer) ? partyPhone(customer) : '')
     setSelectedSalesmanUlid(hold.salesman?.ulid ?? null)
     setSalesmanSearch(
       hold.salesman
@@ -1330,6 +1385,9 @@ export function SalesInvoicePage({
     setPaymentModalOpen(false)
     setRecalledHoldUlid(null)
     setSelectedCustomer(null)
+    setInvoiceCustomerName('')
+    setInvoiceCustomerPhone('')
+    setCustomerSearch('')
     setPaymentDue(false)
     setReceived('')
     setPaymentReference('')
@@ -1355,11 +1413,7 @@ export function SalesInvoicePage({
   async function handlePartySaved(party: Party) {
     if (party.party_type !== 'customer') return
 
-    setSelectedCustomer(party)
-    cart.setCustomerUlid(party.ulid)
-    setCustomerSearch(party.name)
-    setCustomerPickerSearch('')
-    setCustomerPickerOpen(false)
+    selectInvoiceCustomer(party)
     setPartyModalOpen(false)
     await customersQuery.refetch()
   }
@@ -1813,36 +1867,13 @@ export function SalesInvoicePage({
                         </div>
 
                         <div className="sales-pos-customer-grid-body">
-                          <button
-                            type="button"
-                            className={`sales-pos-customer-grid-row${selectedCustomer ? '' : ' is-selected'}`}
-                            onClick={() => {
-                              setSelectedCustomer(null)
-                              cart.setCustomerUlid(null)
-                              setPaymentDue(false)
-                              setCustomerSearch('CASH IN HAND')
-                              setCustomerPickerSearch('')
-                              setCustomerPickerOpen(false)
-                            }}
-                          >
-                            <span>—</span>
-                            <strong>CASH IN HAND</strong>
-                            <span>Walk-in customer</span>
-                            <span>—</span>
-                          </button>
 
                           {filteredCustomers.map((party) => (
                             <button
                               type="button"
                               className={`sales-pos-customer-grid-row${selectedCustomer?.ulid === party.ulid ? ' is-selected' : ''}`}
                               key={party.ulid}
-                              onClick={() => {
-                                setSelectedCustomer(party)
-                                cart.setCustomerUlid(party.ulid)
-                                setCustomerSearch(party.name)
-                                setCustomerPickerSearch('')
-                                setCustomerPickerOpen(false)
-                              }}
+                              onClick={() => selectInvoiceCustomer(party)}
                             >
                               <span>{party.code || '—'}</span>
                               <strong>{party.name}</strong>
@@ -1853,7 +1884,7 @@ export function SalesInvoicePage({
                         </div>
 
                         <div className="sales-pos-customer-grid-foot">
-                          {filteredCustomers.length + 1} of {(customersQuery.data?.length ?? 0) + 1} Parties
+                          {filteredCustomers.length} of {customersQuery.data?.length ?? 0} Parties
                         </div>
                       </div>
                     </div>
@@ -1862,16 +1893,19 @@ export function SalesInvoicePage({
                   <label>Name:</label>
 
                   <input
-                    value={selectedCustomer?.name ?? ''}
-                    readOnly
-                    placeholder="Walk-in customer"
+                    value={invoiceCustomerName}
+                    disabled={Boolean(savedSale)}
+                    placeholder={isCashInHandCustomer(selectedCustomer) ? 'Walk-in customer name' : 'Customer name'}
+                    onChange={(event) => setInvoiceCustomerName(event.target.value)}
                   />
 
-                  <label>CNIC:</label>
+                  <label>Phone:</label>
 
                   <input
-                    value={selectedCustomer?.cnic ?? ''}
-                    readOnly
+                    value={invoiceCustomerPhone}
+                    disabled={Boolean(savedSale)}
+                    placeholder={isCashInHandCustomer(selectedCustomer) ? 'Walk-in phone' : 'Phone'}
+                    onChange={(event) => setInvoiceCustomerPhone(event.target.value)}
                   />
                 </div>
 
