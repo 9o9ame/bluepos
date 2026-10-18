@@ -124,49 +124,6 @@
   box-shadow: var(--ui-focus-shadow);
 }
 
-.quotation-lines-wrap {
-  min-height: 0;
-  overflow: auto;
-  border: 1px solid var(--ui-table-border);
-  border-radius: var(--panel-radius);
-  background: var(--ui-surface);
-  box-shadow: var(--ui-card-shadow);
-}
-
-.quotation-lines {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--ui-surface);
-  color: var(--ui-text);
-  font-size: 13px;
-}
-
-.quotation-lines th,
-.quotation-lines td {
-  border-bottom: 1px solid var(--ui-table-border);
-  padding: 5px 8px;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.quotation-lines th {
-  background: var(--ui-table-header);
-  color: var(--ui-table-header-text);
-  font-weight: 600;
-}
-
-.quotation-lines tbody tr:nth-child(even) {
-  background: var(--ui-row-alt);
-}
-
-.quotation-lines tbody tr:hover {
-  background: var(--ui-row-hover);
-}
-
-.quotation-lines .is-num {
-  text-align: right;
-}
-
 .quotation-lines input {
   width: 82px;
   padding: 4px 6px;
@@ -177,24 +134,18 @@
   min-width: 92px;
 }
 
-.quotation-lines th:nth-child(3),
-.quotation-lines td:nth-child(3) {
-  width: 84px;
-}
+/* Quotation owns workflow/cell behavior only.
+   Header, borders, row density and base editor geometry come from PosEntryGrid. */
 
-.quotation-entry-row td {
-  background: var(--ui-surface-subtle);
-}
-
-.quotation-entry-row td:first-child {
-  min-width: 360px;
-  white-space: normal;
+.quotation-lines-wrap {
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .quotation-product-search-cell {
-  min-width: 360px;
-  overflow: visible;
+  overflow: visible !important;
 }
+
 
 .quotation-product-search-input {
   width: 100% !important;
@@ -579,32 +530,6 @@ html[data-animations='off'] .quotation-product-search-input {
   font-size: 22px;
   line-height: 1;
   font-weight: 800;
-}
-
-.quotation-lines-wrap {
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.quotation-lines {
-  font-size: var(--ui-font-sm);
-}
-
-.quotation-lines th,
-.quotation-lines td {
-  height: 27px;
-  box-sizing: border-box;
-  padding: 3px 6px;
-  border-right: 1px solid var(--ui-table-border);
-}
-
-.quotation-lines th:last-child,
-.quotation-lines td:last-child {
-  border-right: 0;
-}
-
-.quotation-lines th {
-  font-weight: var(--ui-weight-strong);
 }
 
 .quotation-lines input {
