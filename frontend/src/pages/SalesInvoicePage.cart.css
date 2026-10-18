@@ -3051,3 +3051,60 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
   }
 }
 
+/* Posted Invoices toolbar balance: compact free-text search, roomier entity filters. */
+:root .sales-posted-history.sales-history .sales-history-search {
+  flex: 0 1 300px;
+  width: 300px;
+  max-width: 300px;
+}
+
+:root .sales-posted-history.sales-history .sales-history-filter > span {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--ui-text-muted) !important;
+}
+
+:root .sales-posted-history.sales-history .sales-history-filter .sales-history-salesman-select {
+  width: 300px;
+  min-width: 300px;
+}
+
+:root .sales-posted-history.sales-history .sales-history-filter .sales-history-status-select {
+  width: 175px;
+  min-width: 175px;
+}
+
+@media (min-width: 1451px) {
+  :root .sales-posted-history.sales-history .sales-history-search {
+    width: 320px;
+    max-width: 320px;
+    flex-basis: 320px;
+  }
+
+  :root .sales-posted-history.sales-history .sales-history-filter .sales-history-salesman-select {
+    width: 320px;
+    min-width: 320px;
+  }
+}
+
+@media (max-width: 1450px) {
+  :root .sales-posted-history.sales-history .sales-history-search {
+    width: 260px;
+    max-width: 260px;
+    flex-basis: 260px;
+  }
+
+  :root .sales-posted-history.sales-history .sales-history-filter .sales-history-salesman-select {
+    width: 250px;
+    min-width: 250px;
+  }
+
+  :root .sales-posted-history.sales-history .sales-history-filter .sales-history-status-select {
+    width: 150px;
+    min-width: 150px;
+  }
+}
+
