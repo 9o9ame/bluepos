@@ -1052,3 +1052,34 @@ html[data-animations='off'] .purchase-order-load-more svg {
   transform: translateY(-50%);
 }
 
+/* Purchase Order lines now use the canonical Custom Table shell.
+   The outer wrapper keeps Purchase Order's infinite-scroll behavior. */
+.purchase-order-lines-wrap > .purchase-order-custom-table {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.purchase-order-custom-table .purchase-order-lines {
+  min-width: 0;
+}
+
+.purchase-order-custom-table .purchase-order-lines th,
+.purchase-order-custom-table .purchase-order-lines td {
+  height: 27px;
+  padding: 2px 5px;
+}
+
+.purchase-order-custom-table .purchase-order-lines th {
+  height: 28px;
+}
+
+.purchase-order-custom-table .purchase-order-lines .purchase-order-row-selector {
+  text-align: center;
+}
+
+.purchase-order-custom-table .purchase-order-entry-row td {
+  background: var(--ui-surface);
+}
+
