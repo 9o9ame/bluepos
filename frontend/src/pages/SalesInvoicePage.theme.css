@@ -3084,3 +3084,127 @@ html[data-animations='off'] .sales-reference-screen * {
 .sales-pos-product-grid-row.is-selected > * {
   color: var(--ui-select-selected-text) !important;
 }
+
+/* ==========================================================================
+   Sales Invoice lookup theme parity.
+   Keep frozen Sales Invoice geometry; only normalize lookup colors/states.
+   ========================================================================== */
+.sales-pos-customer-grid,
+.sales-pos-salesman-grid,
+.sales-pos-product-results-grid.is-themed {
+  border-color: var(--ui-border) !important;
+  background: var(--ui-select-menu-bg, var(--ui-surface)) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.sales-pos-customer-grid-head,
+.sales-pos-salesman-grid-head,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head {
+  border-bottom-color: var(--ui-table-border) !important;
+  background: var(--ui-table-header) !important;
+  color: var(--ui-table-header-text) !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+.sales-pos-customer-grid-head > span,
+.sales-pos-salesman-grid-head > span,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head > span {
+  border-right-color: var(--ui-table-border) !important;
+}
+
+.sales-pos-customer-grid-body,
+.sales-pos-salesman-grid-body,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-body {
+  background: var(--ui-surface) !important;
+  scrollbar-color:
+    color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border))
+    var(--ui-surface-muted);
+}
+
+.sales-pos-customer-grid-row,
+.sales-pos-salesman-grid-row,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row {
+  border-bottom-color: var(--ui-table-border) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-pos-customer-grid-row:nth-child(even),
+.sales-pos-salesman-grid-row:nth-child(even),
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:nth-child(even) {
+  background: var(--ui-row-alt) !important;
+}
+
+.sales-pos-customer-grid-row > span,
+.sales-pos-customer-grid-row > strong,
+.sales-pos-salesman-grid-row > span,
+.sales-pos-salesman-grid-row > strong,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row > span,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row > strong {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+.sales-pos-customer-grid-row:hover:not(.is-selected),
+.sales-pos-customer-grid-row:focus-visible:not(.is-selected),
+.sales-pos-salesman-grid-row:hover:not(.is-selected),
+.sales-pos-salesman-grid-row:focus-visible:not(.is-selected),
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:hover:not(.is-selected),
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:focus-visible:not(.is-selected) {
+  border-color: color-mix(in srgb, var(--ui-accent) 38%, transparent) !important;
+  background: var(--ui-select-hover-bg) !important;
+  color: var(--ui-select-hover-text) !important;
+  box-shadow: none !important;
+}
+
+.sales-pos-customer-grid-row.is-selected,
+.sales-pos-salesman-grid-row.is-selected,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row.is-selected {
+  border-color: var(--ui-accent-strong) !important;
+  background: var(--ui-select-selected-face) !important;
+  color: var(--ui-select-selected-text) !important;
+  box-shadow: none !important;
+}
+
+.sales-pos-customer-grid-foot,
+.sales-pos-salesman-grid-foot,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-foot {
+  border-top-color: var(--ui-border) !important;
+  background: var(--ui-surface-subtle) !important;
+  color: var(--ui-text-muted) !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+.sales-pos-customer-grid-body::-webkit-scrollbar-track,
+.sales-pos-salesman-grid-body::-webkit-scrollbar-track,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-body::-webkit-scrollbar-track {
+  background: var(--ui-surface-muted) !important;
+  border-left-color: var(--ui-border) !important;
+}
+
+.sales-pos-customer-grid-body::-webkit-scrollbar-thumb,
+.sales-pos-salesman-grid-body::-webkit-scrollbar-thumb,
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-body::-webkit-scrollbar-thumb {
+  border-color: var(--ui-surface-muted) !important;
+  background: color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border)) !important;
+}
+
+.sales-reference-to > input,
+.sales-reference-salesman > input {
+  border-color: var(--ui-control-border) !important;
+  background: var(--ui-control-face) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.sales-reference-to.is-open > input,
+.sales-reference-salesman.is-open > input,
+.sales-reference-to:focus-within > input,
+.sales-reference-salesman:focus-within > input {
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
