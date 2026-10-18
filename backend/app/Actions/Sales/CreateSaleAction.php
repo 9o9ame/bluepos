@@ -357,6 +357,8 @@ class CreateSaleAction
             'branch_id' => $warehouse->branch_id,
             'warehouse_id' => $warehouse->id,
             'customer_id' => $customer?->id,
+            'customer_name' => $this->nullableTrimmedString($data['customer_name'] ?? null),
+            'customer_phone' => $this->nullableTrimmedString($data['customer_phone'] ?? null),
             'salesman_party_profile_id' => $salesman?->id,
             'document_number' => $this->nextDocumentNumber($tenantId),
             'status' => SaleStatus::Posted,
