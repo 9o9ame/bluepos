@@ -181,6 +181,33 @@ class CreateSaleTest extends TestCase
         $this->assertSame('10.000000', $this->stockFor($product));
     }
 
+    public function test_sale_persists_customer_name_and_phone_snapshots(): void
+    {
+        $this->signInOwner('sale-customer-snapshot')->assertOk();
+        $product = $this->createProduct('Walk In Snapshot Item', ['retail' => '75.0000']);
+        $this->giveStock($product, '10');
+        $customer = $this->createCustomer('CASH IN HAND');
+
+        $response = $this->postJson('/api/sales', [
+            'customer_ulid' => $customer,
+            'customer_name' => 'Walk In Buyer',
+            'customer_phone' => '03001234567',
+            'items' => [
+                ['product_ulid' => $product, 'quantity' => '1'],
+            ],
+        ], $this->idem('sale-customer-snapshot-1'))
+            ->assertCreated()
+            ->assertJsonPath('customer.ulid', $customer)
+            ->assertJsonPath('customer_name', 'Walk In Buyer')
+            ->assertJsonPath('customer_phone', '03001234567');
+
+        $sale = Sale::query()->where('ulid', $response->json('ulid'))->firstOrFail();
+
+        $this->assertSame('Walk In Buyer', $sale->customer_name);
+        $this->assertSame('03001234567', $sale->customer_phone);
+        $this->assertNoInternalIds($response->json());
+    }
+
     public function test_payment_due_sale_persists_selected_customer_and_balance(): void
     {
         $this->signInOwner('sale-due-valid')->assertOk();
