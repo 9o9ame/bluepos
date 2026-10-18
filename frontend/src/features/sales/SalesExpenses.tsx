@@ -2,7 +2,7 @@ import { useDeferredValue, useMemo, useState } from 'react'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { Plus, RotateCcw, Search } from 'lucide-react'
 import { createExpense, fetchExpenseAccounts, fetchExpenses } from '../../api/sales'
-import { UiSelect } from '../../components/ui/UiSelect'
+import { UiTableDropdown } from '../../components/ui/UiSelect'
 import { useCan } from '../auth/useCan'
 import { useAuth } from '../auth/AuthProvider'
 import { useFeedback } from '../../feedback/FeedbackProvider'
@@ -83,10 +83,15 @@ export function SalesExpenses() {
 
   const accountOptions = useMemo(
     () => [
-      { value: '', label: 'Select account' },
+      {
+        value: '',
+        label: 'Select account',
+        columns: ['—', 'Select account'],
+      },
       ...(accountsQuery.data ?? []).map((account) => ({
         value: account.ulid,
         label: `${account.code} — ${account.name}`,
+        columns: [account.code || '—', account.name],
       })),
     ],
     [accountsQuery.data],
@@ -203,22 +208,36 @@ export function SalesExpenses() {
 
             <label>
               <span>Expense Account</span>
-              <UiSelect
+              <UiTableDropdown
                 value={expenseAccountUlid}
                 className="sales-expense-account-select"
                 options={accountOptions}
                 aria-label="Expense account"
+                placeholder="Select account"
+                searchPlaceholder="Search account"
+                menuMinWidth={420}
+                menuColumns={[
+                  { header: 'Code', width: '110px' },
+                  { header: 'Account', width: 'minmax(0, 1fr)' },
+                ]}
                 onChange={setExpenseAccountUlid}
               />
             </label>
 
             <label>
               <span>Payment Account</span>
-              <UiSelect
+              <UiTableDropdown
                 value={paymentAccountUlid}
                 className="sales-expense-account-select"
                 options={accountOptions}
                 aria-label="Payment account"
+                placeholder="Select account"
+                searchPlaceholder="Search account"
+                menuMinWidth={420}
+                menuColumns={[
+                  { header: 'Code', width: '110px' },
+                  { header: 'Account', width: 'minmax(0, 1fr)' },
+                ]}
                 onChange={setPaymentAccountUlid}
               />
             </label>
