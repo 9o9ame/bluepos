@@ -1394,9 +1394,12 @@ export function PurchaseReturnsPage({
               value={q}
               onChange={(event) => setQ(event.target.value)}
             />
-            <UiSelect
+            <UiSimpleDropdown
               aria-label="Return status"
               value={statusFilter}
+              className="purchase-return-search-status-select"
+              placeholder="All statuses"
+              searchPlaceholder="Search status"
               options={[
                 { value: '', label: 'All statuses' },
                 { value: 'draft', label: 'Draft' },
@@ -1404,16 +1407,32 @@ export function PurchaseReturnsPage({
               ]}
               onChange={setStatusFilter}
             />
-            <UiSelect
+            <UiTableDropdown
               aria-label="Supplier filter"
               value={supplierFilter}
+              className="purchase-return-search-supplier-select"
+              placeholder="All suppliers"
+              searchPlaceholder="Search supplier"
               options={[
-                { value: '', label: 'All suppliers' },
+                { value: '', label: 'All suppliers', columns: ['', 'All suppliers', '', ''] },
                 ...suppliers.map((supplier) => ({
                   value: supplier.ulid,
                   label: `${supplier.code} · ${supplier.name}`,
+                  columns: [
+                    supplier.code,
+                    supplier.name,
+                    supplier.address ?? '',
+                    supplier.mobile ?? supplier.phone ?? '',
+                  ],
                 })),
               ]}
+              menuColumns={[
+                { header: 'Code', width: '100px' },
+                { header: 'Name', width: '220px' },
+                { header: 'Address', width: '240px' },
+                { header: 'Mobile', width: '130px' },
+              ]}
+              menuMinWidth={720}
               onChange={setSupplierFilter}
             />
             <input
