@@ -3902,6 +3902,42 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   box-shadow: none;
 }
 
+/* Sales# lookup uses the same canonical arrow face/chevron language as From:. */
+.sales-return-sale-trigger {
+  top: 2px !important;
+  right: 2px !important;
+  bottom: 2px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: 1 / 1;
+  border: 1px solid var(--ui-select-arrow-border) !important;
+  border-radius: calc(var(--control-radius) - 1px) !important;
+  background: var(--ui-select-arrow-face) !important;
+  color: var(--ui-select-selected-text) !important;
+  box-shadow: none !important;
+}
+
+.sales-return-sale-arrow {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  transition: transform var(--ui-transition-normal);
+}
+
+.sales-return-sale-arrow svg {
+  width: clamp(9px, 64%, 12px) !important;
+  height: auto !important;
+  color: inherit !important;
+  overflow: visible;
+}
+
+.sales-return-sale-search.is-open .sales-return-sale-arrow {
+  transform: rotate(180deg);
+}
+
 /* ==========================================================================
    Experimental UI primitives branch — Sales Return approved overrides
    Keep this section small and authoritative. Do not append competing rules.
