@@ -8530,3 +8530,62 @@ textarea {
     font-size: 10px;
   }
 }
+
+
+/* ==========================================================================
+   Wide laptop ribbon density 1280-1439
+   Keep the full Daily Entries ribbon; reduce command/icon density just enough
+   to avoid crowding while preserving the approved 1440+ ribbon.
+   ========================================================================== */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .ribbon-body {
+    min-height: 76px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .ribbon-body .ribbon-group {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+
+  .ribbon-body .ribbon-group-items {
+    gap: 1px;
+  }
+
+  .ribbon-body .ribbon-group-caption {
+    padding-bottom: 2px;
+    font-size: 8.5px;
+  }
+
+  .ribbon-body .ribbon-command {
+    min-width: 92px;
+    max-width: 136px;
+    padding: 3px 5px;
+    gap: 4px;
+    font-size: 9px;
+    line-height: 1.05;
+  }
+
+  .ribbon-body .ribbon-icon-tile {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    border-radius: 5px;
+  }
+
+  .ribbon-body .ribbon-icon-tile svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .ribbon-body .ribbon-icon-tile.has-custom-icon img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .ribbon-body .ribbon-command-label {
+    min-width: 0;
+    gap: 1px;
+  }
+}
