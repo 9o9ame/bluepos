@@ -442,13 +442,8 @@
 
 .pie-supplier-combo-toggle {
   position: absolute;
-  top: 0;
-  right: 0;
   display: grid;
   place-items: center;
-  width: 20px;
-  min-width: 20px;
-  height: 20px;
   min-height: 0;
   padding: 0;
   border: 1px solid var(--ui-select-arrow-border, var(--ui-accent));
@@ -718,9 +713,6 @@ html[data-animations='off'] .pie-supplier-combo-arrow {
 .pie-product-combo-add {
   display: grid;
   place-items: center;
-  width: 20px;
-  min-width: 20px;
-  height: 20px;
   min-height: 0;
   padding: 0;
   border: 1px solid var(--ui-select-arrow-border, var(--ui-accent));
