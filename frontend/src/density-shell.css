@@ -588,7 +588,10 @@ html[data-density] #root :where(
 }
 
 html[data-density] #root .sales-reference-field-caret svg {
-  stroke-width: 2.8 !important;
+  width: clamp(9px, 66%, 12px) !important;
+  height: auto !important;
+  stroke: #fff !important;
+  stroke-width: 3.1 !important;
 }
 
 /* Inputs reserve only the responsive arrow footprint, not a fixed 25-28px. */
