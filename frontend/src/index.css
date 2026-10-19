@@ -8589,3 +8589,64 @@ textarea {
     gap: 1px;
   }
 }
+
+
+/* ==========================================================================
+   Low-height laptop ribbon density
+   Preserve the approved ribbon composition while reducing vertical cost on
+   real laptops whose browser chrome leaves a short CSS viewport.
+   ========================================================================== */
+@media (min-width: 1280px) and (max-height: 700px) {
+  .ribbon-tabs {
+    min-height: 22px;
+    padding-top: 2px;
+  }
+
+  .ribbon-tab {
+    padding-top: 2px;
+    padding-bottom: 4px;
+    font-size: 10px;
+  }
+
+  .ribbon-tab.is-active {
+    padding-bottom: 5px;
+  }
+
+  .ribbon-body {
+    min-height: 72px;
+    padding-top: 2px;
+  }
+
+  .ribbon-group {
+    padding-top: 1px;
+  }
+
+  .ribbon-group-caption {
+    padding-top: 1px;
+    padding-bottom: 2px;
+    font-size: 8px;
+  }
+
+  .ribbon-command {
+    min-height: 38px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    font-size: 9px;
+  }
+
+  .ribbon-icon-tile {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+  }
+
+  .ribbon-icon-tile svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .ribbon-icon-tile.has-custom-icon img {
+    width: 20px;
+    height: 20px;
+  }
+}
