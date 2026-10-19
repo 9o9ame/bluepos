@@ -8650,3 +8650,22 @@ textarea {
     height: 20px;
   }
 }
+
+
+/* ==========================================================================
+   Compact ribbon group caption bar
+   Reduce the gray group-label strip under the secondary ribbon and keep its
+   text crisp/white without changing ribbon command geometry.
+   ========================================================================== */
+.ribbon-group-caption {
+  min-height: 16px !important;
+  padding: 1px 6px 1px !important;
+  color: #fff !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+}
+
+:root[data-theme='light'][data-skin='advanced'] .ribbon-group-caption,
+:root[data-theme='dark'][data-skin='advanced'] .ribbon-group-caption {
+  color: #fff !important;
+}
