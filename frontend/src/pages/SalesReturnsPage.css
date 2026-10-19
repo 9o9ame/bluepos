@@ -4086,3 +4086,114 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
   }
 }
 
+
+
+/* ==========================================================================
+   Sales Return laptop header composition
+   861-1180: keep Return Invoice Options readable on the first row, then place
+   Balance Options and Amount Options side-by-side underneath. This replaces
+   the old forced 1180px-wide scrolling header at 1024-class laptop widths.
+   ========================================================================== */
+@media (min-width: 861px) and (max-width: 1180px) {
+  .sales-return-head {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-rows: auto auto !important;
+    gap: 6px !important;
+    overflow: visible !important;
+  }
+
+  .sales-return-head > fieldset:first-child {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .sales-return-head > .sales-return-balances {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    min-width: 0 !important;
+  }
+
+  .sales-return-head > .sales-return-amounts {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    min-width: 0 !important;
+  }
+
+  .sales-return-fields {
+    min-width: 0 !important;
+    width: 100% !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas: "left" !important;
+  }
+
+  .sales-return-fields-left {
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns:
+      minmax(110px, .72fr)
+      minmax(150px, .9fr)
+      minmax(0, 1.75fr) !important;
+    grid-template-areas:
+      "ret date sales"
+      "from salesman remarks" !important;
+    gap: 4px 6px !important;
+  }
+
+  .sales-return-option-group {
+    min-width: 0 !important;
+  }
+
+  .sales-return-option-group > label {
+    font-size: 8.5px !important;
+  }
+
+  .sales-return-fields .sales-return-option-group > input,
+  .sales-return-fields .sales-return-sale-input,
+  .sales-return-canonical-trigger,
+  .sales-return-canonical-select .ui-select-combobox-trigger {
+    height: 24px !important;
+    min-height: 24px !important;
+  }
+
+  .sales-return-balances,
+  .sales-return-amounts {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    padding: 4px 6px 5px !important;
+    overflow: hidden !important;
+  }
+
+  .sales-return-balances > div,
+  .sales-return-amounts > div {
+    grid-template-columns: max-content minmax(64px, 1fr) !important;
+    min-height: 23px !important;
+    padding: 2px 4px !important;
+    gap: 4px !important;
+  }
+
+  .sales-return-balances span,
+  .sales-return-amounts span {
+    font-size: 8.5px !important;
+    text-align: left !important;
+  }
+
+  .sales-return-balances strong,
+  .sales-return-amounts strong,
+  .sales-return-amounts .is-net strong {
+    height: 18px !important;
+    min-height: 18px !important;
+    padding: 0 5px !important;
+    font-size: 9px !important;
+  }
+
+  .sales-return-balances .sales-return-balance-refresh {
+    height: 18px !important;
+    min-height: 18px !important;
+    font-size: 9px !important;
+  }
+
+  .sales-return-grid-wrap {
+    margin-top: 5px !important;
+  }
+}
