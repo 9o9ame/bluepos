@@ -3867,3 +3867,182 @@ html[data-animations='off'] .sales-reference-screen * {
     font-size: 11px !important;
   }
 }
+
+
+/* ==========================================================================
+   Sales Invoice responsive phase 6: compact laptop lookups and Amounts containment
+   1024-1279 only. Keep desktop >=1280 and tablet rules unchanged.
+   ========================================================================== */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  /* Customer / salesman lookup tables: smaller footprint at laptop width. */
+  .sales-reference-to > .sales-customer-dropdown-shutter,
+  .sales-reference-salesman > .sales-salesman-dropdown-shutter {
+    width: 520px !important;
+    max-width: min(520px, calc(100vw - 300px)) !important;
+  }
+
+  .sales-salesman-dropdown-shutter.is-open {
+    max-height: 230px !important;
+  }
+
+  .sales-pos-customer-grid,
+  .sales-pos-salesman-grid {
+    font-size: 9.5px !important;
+  }
+
+  .sales-pos-customer-grid-head,
+  .sales-pos-salesman-grid-head,
+  .sales-pos-customer-grid-row,
+  .sales-pos-salesman-grid-row {
+    grid-template-columns:
+      78px
+      minmax(150px, 1.15fr)
+      minmax(180px, 1.35fr)
+      92px !important;
+  }
+
+  .sales-pos-customer-grid-head,
+  .sales-pos-salesman-grid-head {
+    min-height: 21px !important;
+  }
+
+  .sales-pos-customer-grid-row,
+  .sales-pos-salesman-grid-row {
+    min-height: 20px !important;
+  }
+
+  .sales-pos-customer-grid-head > span,
+  .sales-pos-customer-grid-row > span,
+  .sales-pos-customer-grid-row > strong,
+  .sales-pos-salesman-grid-head > span,
+  .sales-pos-salesman-grid-row > span,
+  .sales-pos-salesman-grid-row > strong {
+    padding: 3px 5px !important;
+  }
+
+  .sales-pos-customer-grid-body,
+  .sales-pos-salesman-grid-body {
+    max-height: 175px !important;
+  }
+
+  .sales-pos-customer-grid-foot,
+  .sales-pos-salesman-grid-foot {
+    min-height: 19px !important;
+    padding: 3px 6px !important;
+    font-size: 9px !important;
+  }
+
+  /* Product lookup: reduce both width and height while keeping all columns. */
+  .sales-pos-product-results-grid {
+    width: 620px !important;
+    max-width: min(620px, calc(100vw - 300px)) !important;
+    max-height: 245px !important;
+    font-size: 9px !important;
+  }
+
+  .sales-pos-product-grid-head,
+  .sales-pos-product-grid-row {
+    grid-template-columns:
+      52px
+      minmax(205px, 1.8fr)
+      58px
+      66px
+      62px
+      62px
+      48px
+      66px !important;
+  }
+
+  .sales-pos-product-grid-head {
+    min-height: 21px !important;
+  }
+
+  .sales-pos-product-grid-row {
+    min-height: 20px !important;
+  }
+
+  .sales-pos-product-grid-head > span,
+  .sales-pos-product-grid-row > span,
+  .sales-pos-product-grid-row > strong {
+    padding: 3px 4px !important;
+  }
+
+  .sales-pos-product-grid-body {
+    max-height: 190px !important;
+  }
+
+  .sales-pos-product-grid-foot {
+    min-height: 19px !important;
+    padding: 3px 6px !important;
+    font-size: 9px !important;
+  }
+
+  /* Amounts: use the full sidebar width and keep every row inside the fieldset. */
+  .sales-reference-pay > .sales-reference-amounts {
+    width: auto !important;
+    max-width: none !important;
+    min-height: 86px !important;
+    margin: 0 0 5px !important;
+    padding: 3px 4px 5px !important;
+    overflow: hidden !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-checks {
+    top: 2px !important;
+    left: 6px !important;
+    right: 4px !important;
+    gap: 12px !important;
+    height: 18px !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-checks label {
+    font-size: 8.5px !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid {
+    grid-template-columns: 38px minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-rows: 20px 18px 20px !important;
+    column-gap: 3px !important;
+    row-gap: 2px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-top: 17px !important;
+    padding: 0 !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > strong.is-green {
+    width: 100% !important;
+    height: 20px !important;
+    line-height: 20px !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    font-size: 9px !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > button {
+    height: 18px !important;
+    min-height: 18px !important;
+    font-size: 8px !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > label {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 1px !important;
+    overflow: hidden !important;
+    text-align: center !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    font-size: 8px !important;
+    line-height: 18px !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > input {
+    height: 20px !important;
+    min-height: 20px !important;
+    line-height: 18px !important;
+    padding: 0 3px !important;
+    font-size: 9px !important;
+  }
+}
