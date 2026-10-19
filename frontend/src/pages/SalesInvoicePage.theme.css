@@ -3261,3 +3261,118 @@ html[data-animations='off'] .sales-reference-screen * {
   box-shadow: var(--ui-focus-shadow) !important;
 }
 
+
+
+/* ==========================================================================
+   Sales Invoice responsive phase 2: body/footer fit
+   Desktop >=1280 remains unchanged. Tablet widths let the responsive header
+   grow to its intrinsic height and move the crowded footer into two rows.
+   Frozen Amounts child order/geometry and business behavior are unchanged.
+   ========================================================================== */
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .sales-reference-meta {
+    height: auto !important;
+    min-height: 0 !important;
+    align-items: start;
+  }
+
+  .sales-reference-options {
+    align-self: start;
+  }
+
+  .sales-reference-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    gap: 3px !important;
+    min-height: 0 !important;
+    padding: 4px 6px !important;
+    overflow: visible !important;
+  }
+
+  .sales-reference-subtabs-bottom {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .sales-reference-actions-center {
+    width: 100%;
+    margin-left: 0 !important;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 1023px) {
+  .sales-reference-meta {
+    height: auto !important;
+    min-height: 0 !important;
+    align-items: start;
+  }
+
+  .sales-reference-options {
+    align-self: start;
+  }
+
+  .sales-reference-entry-row {
+    min-width: 0;
+    padding-left: 0 !important;
+  }
+
+  .sales-reference-product-entry-wrap {
+    flex: 1 1 180px;
+    width: auto;
+    min-width: 120px;
+    max-width: 260px;
+  }
+
+  .sales-reference-product-entry {
+    width: 100% !important;
+    max-width: 100%;
+    flex-basis: auto !important;
+  }
+
+  .sales-reference-f1 {
+    width: auto !important;
+    min-width: 82px;
+    flex: 0 0 auto !important;
+    padding-right: 4px;
+  }
+
+  .sales-reference-sale-btn {
+    flex: 0 0 64px !important;
+    width: 64px !important;
+  }
+
+  .sales-reference-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    gap: 3px !important;
+    min-height: 0 !important;
+    padding: 4px !important;
+    overflow: visible !important;
+  }
+
+  .sales-reference-subtabs-bottom {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .sales-reference-actions-center {
+    width: 100%;
+    min-width: 0;
+    margin-left: 0 !important;
+    justify-content: flex-end;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .sales-reference-actions-center button {
+    flex: 0 0 auto;
+  }
+}
