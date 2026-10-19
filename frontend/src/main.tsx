@@ -13,10 +13,10 @@ import '@fontsource/roboto-condensed/700.css'
 import { AppearanceProvider } from './features/appearance/AppearanceProvider'
 import { FeedbackProvider } from './feedback/FeedbackProvider'
 import { applyAppDisplayMode } from './features/desktop/appDisplayMode'
-import './density.css'
 import './index.css'
-import './density-shell.css'
 import './appearance.css'
+import './density.css'
+import './density-shell.css'
 
 applyAppDisplayMode()
 
