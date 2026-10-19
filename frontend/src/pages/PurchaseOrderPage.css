@@ -1163,3 +1163,153 @@ html[data-animations='off'] .purchase-order-load-more svg {
   text-align: right;
 }
 
+
+
+/* ==========================================================================
+   Purchase Order laptop composition 1024-1180
+   Keep the approved option geometry, but avoid a full-width Generate strip.
+   Options stay full width; Generate + Amount Options share the second row.
+   ========================================================================== */
+@media (min-width: 1024px) and (max-width: 1180px) {
+  .purchase-order-entry {
+    grid-template-rows: auto minmax(300px, 1fr) auto;
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .purchase-order-top {
+    grid-template-columns: 92px minmax(0, 1fr) !important;
+    grid-template-rows: auto auto;
+    gap: 6px !important;
+    align-items: stretch;
+  }
+
+  .purchase-order-options {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .purchase-order-generate {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 5px !important;
+  }
+
+  .purchase-order-generate .ui-button {
+    width: 100%;
+    min-height: 44px !important;
+    height: 100%;
+    flex-direction: column !important;
+    gap: 3px !important;
+    padding: 4px !important;
+    font-size: 9px !important;
+  }
+
+  .purchase-order-amount-options {
+    grid-column: 2;
+    grid-row: 2;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    align-content: stretch;
+    gap: 4px !important;
+    padding: 0 5px 5px !important;
+    min-width: 0;
+  }
+
+  .purchase-order-amount-options .purchase-order-section-title {
+    grid-column: 1 / -1 !important;
+    margin: 0 -5px 0 !important;
+    padding: 3px 6px !important;
+    font-size: 9px !important;
+  }
+
+  .purchase-order-amount-options > div:not(.purchase-order-section-title),
+  .purchase-order-amount-options > div:last-child {
+    grid-column: auto !important;
+    min-height: 22px !important;
+    grid-template-columns: max-content minmax(0, 1fr) !important;
+    gap: 3px !important;
+    padding: 1px 3px !important;
+  }
+
+  .purchase-order-amount-options span {
+    font-size: 8px !important;
+  }
+
+  .purchase-order-amount-options strong {
+    height: 17px !important;
+    min-height: 17px !important;
+    padding: 0 4px !important;
+    font-size: 8.5px !important;
+  }
+
+  .purchase-order-section-title {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    font-size: 10px;
+  }
+
+  .purchase-order-options-title {
+    column-gap: 14px;
+  }
+
+  .purchase-order-title-pack {
+    gap: 4px;
+    font-size: 9px;
+  }
+
+  .purchase-order-option-grid {
+    gap: 4px 6px;
+    padding: 5px 6px 6px;
+  }
+
+  .purchase-order-option-grid label,
+  .purchase-order-option-grid .purchase-order-unmapped {
+    font-size: 9px;
+  }
+
+  .purchase-order-option-grid label:not(.purchase-order-check) {
+    gap: 4px;
+  }
+
+  .purchase-order-option-grid input,
+  .purchase-order-option-grid .ui-select-trigger,
+  .purchase-order-option-grid .ui-select-combobox-trigger {
+    min-height: 22px;
+    height: 22px;
+    font-size: 9px;
+  }
+
+  .purchase-order-lines-wrap {
+    overflow-x: hidden;
+  }
+
+  .purchase-order-custom-table .purchase-order-lines {
+    width: 100%;
+    min-width: 0 !important;
+    font-size: 8.5px !important;
+  }
+
+  .purchase-order-custom-table .purchase-order-lines th,
+  .purchase-order-custom-table .purchase-order-lines td {
+    height: 24px !important;
+    padding: 1px 3px !important;
+  }
+
+  .purchase-order-custom-table .purchase-order-lines th {
+    height: 25px !important;
+    font-size: 8px !important;
+  }
+
+  .purchase-order-custom-table .purchase-order-product-input {
+    height: 21px !important;
+    font-size: 9px !important;
+  }
+
+  .purchase-order-custom-table .purchase-order-product-toggle {
+    top: 1px;
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+  }
+}
