@@ -4046,3 +4046,224 @@ html[data-animations='off'] .sales-reference-screen * {
     font-size: 9px !important;
   }
 }
+
+
+/* ==========================================================================
+   Sales Invoice responsive phase 7: compact 1280-1439 desktop
+   Preserve the approved wide layout structure; reduce density only where the
+   1280/1366 screenshots begin to underlap. 1440+ remains unchanged.
+   ========================================================================== */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .sales-reference-screen {
+    font-size: 10px !important;
+  }
+
+  .sales-reference-screen :where(button, input, textarea, select) {
+    font-size: 10px !important;
+  }
+
+  /* Invoice Options: keep the approved single-row order, but let every pair
+     shrink enough to fit before the payment sidebar. */
+  .sales-reference-options {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
+
+  .sales-reference-options-head {
+    height: 19px !important;
+    min-height: 19px !important;
+    margin-bottom: 2px !important;
+    gap: 5px !important;
+    font-size: 9px !important;
+  }
+
+  .sales-reference-copy-from {
+    font-size: 9px !important;
+  }
+
+  .sales-reference-copy-from input {
+    width: 58px !important;
+    height: 19px !important;
+    font-size: 9px !important;
+  }
+
+  .sales-reference-option-grid {
+    grid-template-columns:
+      22px minmax(90px, 1.20fr)
+      28px minmax(78px, 1fr)
+      30px minmax(78px, 1fr)
+      24px minmax(58px, .65fr)
+      28px minmax(78px, .90fr)
+      26px minmax(78px, .90fr)
+      32px minmax(82px, .95fr) !important;
+    column-gap: 3px !important;
+    row-gap: 0 !important;
+  }
+
+  .sales-reference-option-grid > label {
+    font-size: 9px !important;
+  }
+
+  .sales-reference-option-grid > input,
+  .sales-reference-option-grid > .sales-reference-input-button {
+    min-width: 0 !important;
+    height: 20px !important;
+  }
+
+  .sales-reference-input-button input,
+  .sales-reference-input-button button {
+    height: 20px !important;
+  }
+
+  .sales-reference-input-button button {
+    width: 20px !important;
+    flex-basis: 20px !important;
+  }
+
+  /* F1/scanner row: slightly denser without changing its layout. */
+  .sales-reference-entry-row {
+    height: 31px !important;
+    min-height: 31px !important;
+  }
+
+  .sales-reference-product-entry {
+    height: 31px !important;
+  }
+
+  .sales-reference-f1 {
+    font-size: 11px !important;
+  }
+
+  .sales-reference-sale-btn {
+    height: 27px !important;
+    font-size: 9px !important;
+  }
+
+  /* Amounts: same child order/geometry, smaller typography and rows so the
+     Sales Tax label/value remain inside the fieldset. */
+  .sales-reference-pay > .sales-reference-amounts {
+    margin: 0 3px 5px !important;
+    padding: 3px 4px 5px !important;
+    min-height: 82px !important;
+    overflow: hidden !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-checks {
+    top: 2px !important;
+    left: 6px !important;
+    gap: 14px !important;
+    height: 18px !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-checks label {
+    font-size: 8.5px !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid {
+    grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-rows: 20px 18px 20px !important;
+    column-gap: 3px !important;
+    row-gap: 2px !important;
+    width: 100% !important;
+    margin-top: 17px !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > strong.is-green {
+    width: 100% !important;
+    height: 20px !important;
+    line-height: 20px !important;
+    font-size: 9px !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > label {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    font-size: 8px !important;
+    line-height: 18px !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > button {
+    height: 18px !important;
+    min-height: 18px !important;
+    font-size: 8px !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > input {
+    height: 20px !important;
+    min-height: 20px !important;
+    line-height: 18px !important;
+    padding: 0 3px !important;
+    font-size: 9px !important;
+  }
+
+  /* Bottom rows: shrink icons/text first; keep both rows on one line. */
+  .sales-reference-actions {
+    gap: 4px !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+  }
+
+  .sales-reference-subtabs-bottom {
+    gap: 2px !important;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-subtab,
+  .sales-reference-subtabs-bottom .sales-reference-subtab:nth-child(1),
+  .sales-reference-subtabs-bottom .sales-reference-subtab:nth-child(2),
+  .sales-reference-subtabs-bottom .sales-reference-subtab:nth-child(3) {
+    flex: 0 1 auto !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    min-height: 30px !important;
+    height: 30px !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    gap: 3px !important;
+    font-size: 8.5px !important;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-tab-icon {
+    width: 20px !important;
+    min-width: 20px !important;
+    height: 20px !important;
+    flex-basis: 20px !important;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-tab-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-subtab > span:last-child {
+    font-size: 8.5px !important;
+  }
+
+  .sales-reference-actions-center {
+    gap: 2px !important;
+  }
+
+  .sales-reference-actions-center button {
+    height: 32px !important;
+    min-width: 0 !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    gap: 3px !important;
+    font-size: 8.5px !important;
+  }
+
+  .sales-reference-action-icon {
+    width: 20px !important;
+    height: 20px !important;
+    flex-basis: 20px !important;
+  }
+
+  .sales-reference-action-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+}
