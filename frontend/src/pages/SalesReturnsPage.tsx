@@ -1578,9 +1578,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                 </div>
               ) : document?.status === 'posted' ? (
                 <small className="sales-return-refund-complete">Refund fully settled.</small>
-              ) : (
-                <small className="sales-return-settlement-hint">Post the Sales Return before refund settlement.</small>
-              )}
+              ) : null}
             </div>
 
             <div className="sales-return-actions">
