@@ -961,7 +961,7 @@ html[data-animations='off'] .sales-product-combo-toggle > span {
   color: #edf4f8;
 }
 
-@media (max-width: 1250px) {
+@media (max-width: 1439px) {
   .sales-history-toolbar {
     flex-wrap: wrap;
     align-items: end;
@@ -2032,7 +2032,7 @@ html[data-animations='off'] .sales-product-combo-toggle > span {
   border-bottom-color: #405766;
 }
 
-@media (max-width: 1250px) {
+@media (max-width: 1439px) {
   .sales-posted-history .sales-history-toolbar-summary {
     order: 10;
     width: auto;
@@ -2517,7 +2517,7 @@ html[data-animations='off'] .sales-reference-screen * {
   min-height: 28px;
 }
 
-@media (max-width: 1250px) {
+@media (max-width: 1439px) {
   .sales-posted-history .sales-history-filter .sales-history-salesman-select,
   .sales-due-toolbar > label .sales-due-salesman-select {
     width: 170px;
@@ -3349,7 +3349,7 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
    Expenses laptop responsive wrap v2
    Keep the complete 1024 expense toolbar in exactly two compact rows.
    ========================================================================== */
-@media (min-width: 1024px) and (max-width: 1279px) {
+@media (min-width: 1024px) and (max-width: 1439px) {
   .sales-expenses-view .sales-expense-entry-toolbar {
     grid-template-columns:
       82px
@@ -3480,7 +3480,7 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
 
 
 /* Expenses laptop equal date filter widths. */
-@media (min-width: 1024px) and (max-width: 1279px) {
+@media (min-width: 1024px) and (max-width: 1439px) {
   .sales-expenses-view .sales-expense-entry-toolbar > label:nth-of-type(8),
   .sales-expenses-view .sales-expense-entry-toolbar > label:nth-of-type(9) {
     width: 100% !important;
