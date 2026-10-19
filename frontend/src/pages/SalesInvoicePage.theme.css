@@ -3663,3 +3663,207 @@ html[data-animations='off'] .sales-reference-screen * {
     font-size: 27px !important;
   }
 }
+
+
+/* ==========================================================================
+   Sales Invoice responsive phase 5: 1024 laptop composition
+   Laptop-only polish requested from the 1024x768 review. Tablet remains
+   intentionally unchanged for now; desktop >=1280 keeps the approved layout.
+   ========================================================================== */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .sales-reference-screen {
+    grid-template-columns: minmax(0, 1fr) 244px !important;
+  }
+
+  .sales-reference-pay {
+    width: 244px !important;
+    min-width: 244px !important;
+    max-width: 244px !important;
+    padding: 4px 6px 5px !important;
+  }
+
+  /* Use the full Invoice Options width: To / Name / Phone fill row one. */
+  .sales-reference-option-grid > .sales-responsive-phone-field {
+    grid-column: 6 / 9 !important;
+  }
+
+  /* Keep document fields on row two, with Salesman consuming the right edge. */
+  .sales-reference-option-grid > .sales-responsive-salesman-label {
+    grid-column: 7 !important;
+    grid-row: 2 !important;
+  }
+
+  .sales-reference-option-grid > .sales-responsive-salesman-field {
+    grid-column: 8 !important;
+    grid-row: 2 !important;
+  }
+
+  /* Scanner row: barcode left, F1 visible, operational status in the middle,
+     and Sale anchored at the far right instead of leaving dead space. */
+  .sales-reference-entry-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 0 5px !important;
+  }
+
+  .sales-reference-product-entry-wrap {
+    order: 1;
+    flex: 0 1 255px !important;
+    width: 255px !important;
+    min-width: 190px !important;
+    max-width: 255px !important;
+  }
+
+  .sales-reference-product-entry {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+  }
+
+  .sales-reference-f1 {
+    order: 2;
+    display: flex !important;
+    align-items: center !important;
+    width: auto !important;
+    min-width: 104px !important;
+    flex: 0 0 104px !important;
+    padding: 0 4px !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+    font-size: 10px !important;
+  }
+
+  .sales-reference-entry-status {
+    order: 3;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 0 5px !important;
+    justify-content: flex-end !important;
+  }
+
+  .sales-reference-sale-btn {
+    order: 4;
+    flex: 0 0 68px !important;
+    width: 68px !important;
+    min-width: 68px !important;
+    margin-left: auto !important;
+    margin-right: 0 !important;
+  }
+
+  /* Both footer lines are centered on laptop widths. */
+  .sales-reference-actions {
+    justify-items: center !important;
+  }
+
+  .sales-reference-subtabs-bottom {
+    width: auto !important;
+    max-width: 100% !important;
+    justify-content: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .sales-reference-actions-center {
+    width: auto !important;
+    justify-content: center !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* Right payment card: preserve field order and Amounts structure, but reduce
+     vertical density so the full card reads cleanly at 768px height. */
+  .sales-reference-retail-title {
+    padding-bottom: 5px !important;
+    font-size: 19px !important;
+    line-height: 1 !important;
+  }
+
+  .sales-reference-pay-options {
+    padding: 3px 5px 5px !important;
+  }
+
+  .sales-reference-pay-options legend {
+    font-size: 9.5px !important;
+  }
+
+  .sales-reference-pay-head-values,
+  .sales-reference-disc-values {
+    gap: 3px !important;
+  }
+
+  .sales-reference-pay-head-values strong,
+  .sales-reference-disc-values strong,
+  .sales-reference-disc-values input {
+    height: 24px !important;
+    line-height: 24px !important;
+    font-size: 10px !important;
+  }
+
+  .sales-reference-disc-line {
+    min-height: 22px !important;
+    font-size: 12px !important;
+  }
+
+  .sales-reference-payment-label,
+  .sales-reference-remarks-label,
+  .sales-reference-side-label {
+    margin-top: 3px !important;
+    margin-bottom: 1px !important;
+    font-size: 9.5px !important;
+  }
+
+  .sales-reference-payment-method,
+  .sales-reference-payment-select-trigger {
+    min-height: 27px !important;
+    height: 27px !important;
+  }
+
+  .sales-reference-pay-options textarea {
+    height: 34px !important;
+    min-height: 34px !important;
+  }
+
+  .sales-reference-total-block {
+    margin-top: 4px !important;
+  }
+
+  .sales-reference-total-block > span {
+    margin-bottom: 1px !important;
+    font-size: 10px !important;
+  }
+
+  .sales-reference-total-block > div {
+    height: 40px !important;
+    line-height: 40px !important;
+    font-size: 24px !important;
+  }
+
+  .sales-reference-received {
+    height: 29px !important;
+  }
+
+  .sales-reference-card {
+    height: 31px !important;
+  }
+
+  .sales-reference-card strong:first-child {
+    font-size: 18px !important;
+  }
+
+  .sales-reference-card strong,
+  .sales-reference-received strong {
+    font-size: 13px !important;
+  }
+
+  .sales-reference-balance {
+    height: 26px !important;
+  }
+
+  .sales-reference-balance strong {
+    font-size: 11px !important;
+  }
+}
