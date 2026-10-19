@@ -517,7 +517,9 @@ html[data-density] #root :where(
   .sales-reference-inline-caret > .sales-reference-field-caret,
   .sales-product-combo-toggle,
   .quotation-product-combo-toggle,
+  .sales-return-sale-trigger,
   .sales-return-product-combo .sales-product-combo-toggle,
+  .pie-supplier-combo-toggle,
   .purchase-order-product-toggle,
   .purchase-return-product-toggle
 ) {
@@ -550,6 +552,9 @@ html[data-density] #root :where(
   .sales-reference-field-caret,
   .sales-product-combo-toggle,
   .quotation-product-combo-toggle,
+  .sales-return-sale-trigger,
+  .pie-supplier-combo-toggle,
+  .pie-product-combo-toggle,
   .purchase-order-product-toggle,
   .purchase-return-product-toggle
 ) {
@@ -562,6 +567,9 @@ html[data-density] #root :where(
   .sales-reference-field-caret,
   .sales-product-combo-toggle,
   .quotation-product-combo-toggle,
+  .sales-return-sale-trigger,
+  .pie-supplier-combo-toggle,
+  .pie-product-combo-toggle,
   .purchase-order-product-toggle,
   .purchase-return-product-toggle
 ) svg {
@@ -592,6 +600,17 @@ html[data-density] #root .sales-reference-field-caret svg {
   height: auto !important;
   stroke: #fff !important;
   stroke-width: 3.1 !important;
+}
+
+/* Purchase Invoice item dropdown lives inside a field-relative action strip,
+   so size the arrow button from that strip rather than absolute offsets. */
+html[data-density] #root .pie-product-combo-toggle {
+  width: auto !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  aspect-ratio: 1 / 1;
+  padding: 0 !important;
 }
 
 /* Inputs reserve only the responsive arrow footprint, not a fixed 25-28px. */
