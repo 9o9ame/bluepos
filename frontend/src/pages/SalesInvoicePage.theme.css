@@ -4053,7 +4053,7 @@ html[data-animations='off'] .sales-reference-screen * {
    Preserve the approved wide layout structure; reduce density only where the
    1280/1366 screenshots begin to underlap. 1440+ remains unchanged.
    ========================================================================== */
-@media (min-width: 1280px) and (max-width: 1439px) {
+@media (min-width: 1280px) and (max-width: 1599px) {
   .sales-reference-screen {
     font-size: 10px !important;
   }
@@ -4273,7 +4273,7 @@ html[data-animations='off'] .sales-reference-screen * {
    Sales Invoice responsive phase 8: wrap 1280-1439 and compress footer/payment
    1440+ approved geometry stays unchanged.
    ========================================================================== */
-@media (min-width: 1280px) and (max-width: 1439px) {
+@media (min-width: 1280px) and (max-width: 1599px) {
   /* Invoice Options: move from one crushed row to two controlled rows. */
   .sales-reference-meta {
     height: auto !important;
