@@ -8449,3 +8449,84 @@ textarea {
 }
 
 /* ============================ END PHASE C1 ================================ */
+
+
+/* ==========================================================================
+   Laptop compact Daily Entries ribbon
+   1024-1279 only: group Sales/Purchase into dropdown commands so the approved
+   desktop ribbon remains unchanged while avoiding horizontal ribbon scrolling.
+   ========================================================================== */
+.ribbon-daily-compact {
+  display: none;
+}
+
+.ribbon-body > [class^='ribbon-group-'] {
+  display: contents;
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .ribbon-body {
+    min-height: 62px;
+    padding-top: 3px;
+    overflow: visible;
+  }
+
+  .ribbon-daily-compact {
+    display: contents;
+  }
+
+  .ribbon-group-sales,
+  .ribbon-group-purchases {
+    display: none !important;
+  }
+
+  .ribbon-body .ribbon-group {
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+
+  .ribbon-body .ribbon-group-items {
+    gap: 2px;
+  }
+
+  .ribbon-body .ribbon-group-caption {
+    padding-bottom: 2px;
+    font-size: 8.5px;
+  }
+
+  .ribbon-body .ribbon-command {
+    min-width: 88px;
+    max-width: 132px;
+    min-height: 42px;
+    padding: 2px 5px;
+    gap: 4px;
+    font-size: 9px;
+  }
+
+  .ribbon-body .ribbon-icon-tile {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    border-radius: 5px;
+  }
+
+  .ribbon-body .ribbon-icon-tile svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .ribbon-body .ribbon-command-label {
+    min-width: 0;
+    white-space: nowrap;
+  }
+
+  .ribbon-body .ribbon-menu {
+    min-width: 190px;
+    z-index: 80;
+  }
+
+  .ribbon-body .ribbon-menu button {
+    padding: 5px 9px;
+    font-size: 10px;
+  }
+}
