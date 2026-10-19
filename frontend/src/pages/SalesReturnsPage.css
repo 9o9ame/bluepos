@@ -4197,3 +4197,68 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
     margin-top: 5px !important;
   }
 }
+
+
+/* ==========================================================================
+   Sales Return laptop single-line summary cards
+   Keep Balance Options and Amount Options side-by-side, but make each card a
+   single compact row on 861-1180 laptop widths for a cleaner header.
+   ========================================================================== */
+@media (min-width: 861px) and (max-width: 1180px) {
+  .sales-return-balances,
+  .sales-return-amounts {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-rows: 1fr !important;
+    align-items: center !important;
+    gap: 3px !important;
+    padding: 4px 5px 5px !important;
+  }
+
+  .sales-return-balances > div,
+  .sales-return-amounts > div {
+    grid-column: auto !important;
+    grid-row: 1 !important;
+    grid-template-columns: max-content minmax(0, 1fr) !important;
+    min-width: 0 !important;
+    min-height: 22px !important;
+    padding: 2px 3px !important;
+    gap: 3px !important;
+  }
+
+  .sales-return-balances > div.is-refresh {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+  }
+
+  .sales-return-balances .sales-return-balance-refresh {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 18px !important;
+    min-height: 18px !important;
+    padding: 0 4px !important;
+    gap: 2px !important;
+    font-size: 8px !important;
+  }
+
+  .sales-return-balances span,
+  .sales-return-amounts span {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    font-size: 8px !important;
+  }
+
+  .sales-return-balances strong,
+  .sales-return-amounts strong,
+  .sales-return-amounts .is-net strong {
+    height: 17px !important;
+    min-height: 17px !important;
+    padding: 0 4px !important;
+    font-size: 8.5px !important;
+  }
+
+  .sales-return-amounts .is-net strong {
+    font-size: 9px !important;
+  }
+}
