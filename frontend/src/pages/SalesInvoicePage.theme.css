@@ -3417,3 +3417,249 @@ html[data-animations='off'] .sales-reference-screen * {
     white-space: nowrap;
   }
 }
+
+
+/* ==========================================================================
+   Sales Invoice responsive phase 4: adaptive density and tablet scroll
+   Wide desktop >=1280 remains the approved frozen reference.
+   Laptop widths become denser; tablet widths wrap the header cleanly and use
+   controlled workspace scrolling instead of crushing controls beyond usability.
+   ========================================================================== */
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .sales-reference-screen {
+    font-size: 10px !important;
+  }
+
+  .sales-reference-screen :where(button, input, textarea, select) {
+    font-size: 10.5px !important;
+  }
+
+  .sales-reference-options-head {
+    height: auto !important;
+    min-height: 20px;
+    margin-bottom: 2px !important;
+    gap: 2px 6px !important;
+    font-size: 10px !important;
+  }
+
+  .sales-reference-copy-from {
+    flex: 0 1 180px !important;
+    min-width: 145px !important;
+  }
+
+  .sales-reference-copy-from input,
+  .sales-reference-option-grid > input,
+  .sales-reference-option-grid > .sales-reference-input-button {
+    min-height: 21px !important;
+    height: 21px !important;
+  }
+
+  .sales-reference-option-grid {
+    grid-template-columns:
+      22px minmax(0, 1.15fr)
+      30px minmax(0, .95fr)
+      30px minmax(0, .9fr)
+      34px minmax(0, 1fr) !important;
+    column-gap: 3px !important;
+    row-gap: 3px !important;
+  }
+
+  .sales-reference-option-grid > .sales-responsive-customer-label { grid-column: 1 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-customer-field { grid-column: 2 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-name-label { grid-column: 3 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-name-field { grid-column: 4 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-phone-label { grid-column: 5 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-phone-field { grid-column: 6 !important; grid-row: 1 !important; }
+
+  .sales-reference-option-grid > .sales-responsive-invoice-label { grid-column: 1 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-invoice-field { grid-column: 2 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-date-label { grid-column: 3 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-date-field { grid-column: 4 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-quotation-label { grid-column: 5 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-quotation-field { grid-column: 6 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-salesman-label { grid-column: 7 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-salesman-field { grid-column: 8 !important; grid-row: 2 !important; }
+
+  .sales-reference-entry-row {
+    height: 30px !important;
+    min-height: 30px !important;
+  }
+
+  .sales-reference-product-entry,
+  .sales-reference-f1 {
+    height: 30px !important;
+  }
+
+  .sales-reference-sale-btn {
+    height: 27px !important;
+  }
+
+  .sales-reference-grid th {
+    height: 29px !important;
+    font-size: 9px !important;
+  }
+
+  .sales-reference-grid td {
+    height: 25px !important;
+    font-size: 9.5px !important;
+  }
+
+  .sales-reference-actions-center button {
+    height: 34px !important;
+    font-size: 9.5px !important;
+  }
+
+  .sales-reference-action-icon {
+    width: 22px !important;
+    height: 22px !important;
+    flex-basis: 22px !important;
+  }
+
+  .sales-reference-action-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-subtab {
+    min-height: 30px !important;
+    height: 30px !important;
+    font-size: 9px !important;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-tab-icon {
+    width: 22px !important;
+    height: 22px !important;
+    flex-basis: 22px !important;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-tab-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .sales-reference-retail-title {
+    font-size: 20px !important;
+  }
+
+  .sales-reference-pay {
+    font-size: 9.5px !important;
+  }
+
+  .sales-reference-pay :where(input, textarea, button) {
+    font-size: 10px !important;
+  }
+
+  .sales-reference-total-block > div {
+    height: 46px !important;
+    line-height: 46px !important;
+    font-size: 27px !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  .workspace-host-inner:has(.sales-reference-screen) {
+    overflow: auto !important;
+    scrollbar-gutter: stable;
+  }
+
+  .sales-reference-screen {
+    min-width: 800px !important;
+    width: 800px !important;
+    max-width: none !important;
+    overflow: visible !important;
+    font-size: 10px !important;
+  }
+
+  .sales-reference-main {
+    min-width: 570px !important;
+  }
+
+  .sales-reference-pay {
+    width: 230px !important;
+    min-width: 230px !important;
+    max-width: 230px !important;
+  }
+
+  .sales-reference-options-head {
+    height: auto !important;
+    min-height: 0 !important;
+    margin-bottom: 4px !important;
+    gap: 3px 6px !important;
+  }
+
+  .sales-reference-copy-from {
+    flex: 1 0 100% !important;
+    width: 100%;
+    min-width: 0 !important;
+    margin-left: 0 !important;
+    justify-content: flex-end;
+  }
+
+  .sales-reference-copy-from input {
+    width: 74px !important;
+  }
+
+  .sales-reference-option-grid {
+    grid-template-columns:
+      26px minmax(0, 1fr)
+      34px minmax(0, 1fr) !important;
+    column-gap: 4px !important;
+    row-gap: 3px !important;
+  }
+
+  .sales-reference-option-grid > .sales-responsive-customer-label { grid-column: 1 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-customer-field { grid-column: 2 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-name-label { grid-column: 3 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-name-field { grid-column: 4 !important; grid-row: 1 !important; }
+
+  .sales-reference-option-grid > .sales-responsive-phone-label { grid-column: 1 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-phone-field { grid-column: 2 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-invoice-label { grid-column: 3 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-invoice-field { grid-column: 4 !important; grid-row: 2 !important; }
+
+  .sales-reference-option-grid > .sales-responsive-date-label { grid-column: 1 !important; grid-row: 3 !important; }
+  .sales-reference-option-grid > .sales-responsive-date-field { grid-column: 2 !important; grid-row: 3 !important; }
+  .sales-reference-option-grid > .sales-responsive-quotation-label { grid-column: 3 !important; grid-row: 3 !important; }
+  .sales-reference-option-grid > .sales-responsive-quotation-field { grid-column: 4 !important; grid-row: 3 !important; }
+
+  .sales-reference-option-grid > .sales-responsive-salesman-label { grid-column: 1 !important; grid-row: 4 !important; }
+  .sales-reference-option-grid > .sales-responsive-salesman-field {
+    grid-column: 2 / 5 !important;
+    grid-row: 4 !important;
+  }
+
+  .sales-reference-screen :where(button, input, textarea, select) {
+    font-size: 10px !important;
+  }
+
+  .sales-reference-grid th {
+    font-size: 8.5px !important;
+  }
+
+  .sales-reference-grid td {
+    font-size: 9px !important;
+  }
+
+  .sales-reference-actions-center button {
+    min-width: 68px !important;
+    height: 33px !important;
+    font-size: 9px !important;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-subtab {
+    min-height: 30px !important;
+    height: 30px !important;
+    font-size: 8.5px !important;
+  }
+
+  .sales-reference-retail-title {
+    font-size: 20px !important;
+  }
+
+  .sales-reference-total-block > div {
+    height: 46px !important;
+    line-height: 46px !important;
+    font-size: 27px !important;
+  }
+}
