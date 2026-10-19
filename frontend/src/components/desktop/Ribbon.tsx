@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { useAppearance } from '../../features/appearance/AppearanceProvider'
+import { useAuth } from '../../features/auth/AuthProvider'
 import { useWorkspace } from '../../features/workspace/WorkspaceProvider'
 import { RIBBON_GROUPS, RIBBON_TABS, WORKSPACE_MODULES } from '../../features/workspace/modules'
 import { RibbonCommand, RibbonGroup } from './RibbonCommand'
@@ -33,6 +34,34 @@ type RibbonProps = {
 export function Ribbon({ onCalculator, onSoftwareOptions, onRecalculateStock, onLock }: RibbonProps) {
   const { ribbonTab, setRibbonTab, openModule, activeModule } = useWorkspace()
   const { skin } = useAppearance()
+  const { session } = useAuth()
+
+  const canUse = (permission?: string, entitlement?: string) => {
+    const permissionAllowed = !permission || Boolean(session?.permissions.includes(permission))
+    const features = session?.entitlements?.features
+    const entitlementAllowed = !entitlement || !features || features.includes(entitlement)
+    return permissionAllowed && entitlementAllowed
+  }
+
+  const openRibbonPath = (path: string) => {
+    const module = WORKSPACE_MODULES.find((row) => row.path === path)
+    openModule(path, { newInstance: module?.multiInstance === true })
+  }
+
+  const compactSalesMenu = RIBBON_GROUPS['daily-entries']
+    .find((group) => group.id === 'sales')
+    ?.commands
+    .filter((command) => canUse(command.permission, command.entitlement))
+    .map((command) => ({ label: command.label, status: command.status, path: command.path ?? WORKSPACE_MODULES.find((row) => row.key === command.moduleKey)?.path }))
+    .filter((item): item is { label: string; status: 'ready' | 'shell' | 'later'; path: string } => Boolean(item.path)) ?? []
+
+  const compactPurchaseMenu = RIBBON_GROUPS['daily-entries']
+    .find((group) => group.id === 'purchases')
+    ?.commands
+    .filter((command) => command.id !== 'adjustments')
+    .filter((command) => canUse(command.permission, command.entitlement))
+    .map((command) => ({ label: command.label, status: command.status, path: command.path ?? WORKSPACE_MODULES.find((row) => row.key === command.moduleKey)?.path }))
+    .filter((item): item is { label: string; status: 'ready' | 'shell' | 'later'; path: string } => Boolean(item.path)) ?? []
 
   return (
     <div className="ribbon">
@@ -69,8 +98,42 @@ export function Ribbon({ onCalculator, onSoftwareOptions, onRecalculateStock, on
         })}
       </div>
       <div className="ribbon-body" role="tabpanel">
+        {ribbonTab === 'daily-entries' ? (
+          <div className="ribbon-daily-compact" aria-label="Compact daily entries navigation">
+            {compactSalesMenu.length ? (
+              <RibbonGroup caption="Sales">
+                <RibbonCommand
+                  id="sales-compact"
+                  label="Sales"
+                  icon={FilePenLine}
+                  status="ready"
+                  tone="blue"
+                  hasMenu
+                  menu={compactSalesMenu}
+                  active={['sales-invoice', 'quotation-estimate', 'sales-return'].includes(activeModule.key)}
+                  onNavigate={openRibbonPath}
+                />
+              </RibbonGroup>
+            ) : null}
+            {compactPurchaseMenu.length ? (
+              <RibbonGroup caption="Purchases">
+                <RibbonCommand
+                  id="purchase-compact"
+                  label="Purchase"
+                  icon={ClipboardList}
+                  status="ready"
+                  tone="gold"
+                  hasMenu
+                  menu={compactPurchaseMenu}
+                  active={['purchase-invoice', 'purchase-order', 'purchase-return'].includes(activeModule.key)}
+                  onNavigate={openRibbonPath}
+                />
+              </RibbonGroup>
+            ) : null}
+          </div>
+        ) : null}
         {RIBBON_GROUPS[ribbonTab].map((group) => (
-          <VisibleRibbonGroup key={group.id} caption={group.caption}>
+          <VisibleRibbonGroup key={group.id} caption={group.caption} className={`ribbon-group-${group.id}`}>
             {group.commands.map((command) => (
               <RibbonCommand
                 key={command.id}
@@ -115,10 +178,14 @@ export function Ribbon({ onCalculator, onSoftwareOptions, onRecalculateStock, on
   )
 }
 
-function VisibleRibbonGroup({ caption, children }: { caption: string; children: ReactNode }) {
+function VisibleRibbonGroup({ caption, children, className }: { caption: string; children: ReactNode; className?: string }) {
   const visible = Children.toArray(children).some((child) => isValidElement(child))
   if (!visible) {
     return null
   }
-  return <RibbonGroup caption={caption}>{children}</RibbonGroup>
+  return (
+    <div className={className}>
+      <RibbonGroup caption={caption}>{children}</RibbonGroup>
+    </div>
+  )
 }
