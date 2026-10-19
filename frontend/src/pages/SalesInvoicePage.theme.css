@@ -4267,3 +4267,167 @@ html[data-animations='off'] .sales-reference-screen * {
     height: 16px !important;
   }
 }
+
+
+/* ==========================================================================
+   Sales Invoice responsive phase 8: wrap 1280-1439 and compress footer/payment
+   1440+ approved geometry stays unchanged.
+   ========================================================================== */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  /* Invoice Options: move from one crushed row to two controlled rows. */
+  .sales-reference-meta {
+    height: auto !important;
+    min-height: 72px !important;
+    align-items: start !important;
+  }
+
+  .sales-reference-options {
+    align-self: start !important;
+  }
+
+  .sales-reference-option-grid {
+    grid-template-columns:
+      24px minmax(0, 1.2fr)
+      30px minmax(0, 1fr)
+      30px minmax(0, 1fr)
+      34px minmax(0, 1fr) !important;
+    column-gap: 4px !important;
+    row-gap: 3px !important;
+  }
+
+  .sales-reference-option-grid > .sales-responsive-customer-label { grid-column: 1 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-customer-field { grid-column: 2 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-name-label { grid-column: 3 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-name-field { grid-column: 4 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-phone-label { grid-column: 5 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-phone-field { grid-column: 6 / 9 !important; grid-row: 1 !important; }
+
+  .sales-reference-option-grid > .sales-responsive-invoice-label { grid-column: 1 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-invoice-field { grid-column: 2 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-date-label { grid-column: 3 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-date-field { grid-column: 4 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-quotation-label { grid-column: 5 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-quotation-field { grid-column: 6 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-salesman-label { grid-column: 7 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-salesman-field { grid-column: 8 !important; grid-row: 2 !important; }
+
+  /* Bottom section: shorter, cleaner, and no visible underline below the tabs. */
+  .sales-reference-actions {
+    min-height: 42px !important;
+    padding: 3px 6px !important;
+    align-items: center !important;
+    border-bottom: 0 !important;
+  }
+
+  .sales-reference-subtabs-bottom {
+    min-height: 0 !important;
+    height: 30px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-subtab {
+    height: 28px !important;
+    min-height: 28px !important;
+    border-bottom-color: transparent !important;
+  }
+
+  .sales-reference-actions-center button {
+    height: 29px !important;
+  }
+
+  /* Right panel below Amounts: reduce vertical consumption rather than letting
+     controls push into one another. */
+  .sales-reference-pay-options {
+    padding: 2px 4px 4px !important;
+  }
+
+  .sales-reference-pay-options legend {
+    font-size: 9px !important;
+  }
+
+  .sales-reference-pay-head-values,
+  .sales-reference-disc-values {
+    gap: 2px !important;
+  }
+
+  .sales-reference-pay-head-values strong,
+  .sales-reference-disc-values strong,
+  .sales-reference-disc-values input {
+    height: 21px !important;
+    min-height: 21px !important;
+    line-height: 21px !important;
+    font-size: 9px !important;
+  }
+
+  .sales-reference-disc-line {
+    min-height: 19px !important;
+    line-height: 19px !important;
+    font-size: 10.5px !important;
+  }
+
+  .sales-reference-payment-label,
+  .sales-reference-remarks-label,
+  .sales-reference-side-label {
+    margin-top: 2px !important;
+    margin-bottom: 0 !important;
+    font-size: 9px !important;
+    line-height: 1 !important;
+  }
+
+  .sales-reference-payment-method,
+  .sales-reference-payment-select-trigger {
+    height: 24px !important;
+    min-height: 24px !important;
+  }
+
+  .sales-reference-pay-options textarea {
+    height: 29px !important;
+    min-height: 29px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
+  .sales-reference-total-block {
+    margin-top: 3px !important;
+  }
+
+  .sales-reference-total-block > span {
+    margin-bottom: 0 !important;
+    font-size: 9px !important;
+    line-height: 1 !important;
+  }
+
+  .sales-reference-total-block > div {
+    height: 36px !important;
+    line-height: 36px !important;
+    font-size: 22px !important;
+  }
+
+  .sales-reference-received {
+    height: 26px !important;
+  }
+
+  .sales-reference-card {
+    height: 28px !important;
+  }
+
+  .sales-reference-card strong:first-child {
+    font-size: 16px !important;
+  }
+
+  .sales-reference-card strong,
+  .sales-reference-received strong {
+    font-size: 11px !important;
+  }
+
+  .sales-reference-balance {
+    height: 23px !important;
+  }
+
+  .sales-reference-balance strong {
+    font-size: 10px !important;
+  }
+}
