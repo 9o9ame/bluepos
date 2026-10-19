@@ -4094,7 +4094,7 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
    Balance Options and Amount Options side-by-side underneath. This replaces
    the old forced 1180px-wide scrolling header at 1024-class laptop widths.
    ========================================================================== */
-@media (min-width: 861px) and (max-width: 1180px) {
+@media (min-width: 861px) and (max-width: 1439px) {
   .sales-return-head {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     grid-template-rows: auto auto !important;
@@ -4204,7 +4204,7 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
    Keep Balance Options and Amount Options side-by-side, but make each card a
    single compact row on 861-1180 laptop widths for a cleaner header.
    ========================================================================== */
-@media (min-width: 861px) and (max-width: 1180px) {
+@media (min-width: 861px) and (max-width: 1439px) {
   .sales-return-balances,
   .sales-return-amounts {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
