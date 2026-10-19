@@ -2627,22 +2627,22 @@ html[data-animations='off'] .sales-reference-screen * {
     row-gap: 4px !important;
   }
 
-  .sales-responsive-customer-label { grid-column: 1 !important; grid-row: 1 !important; }
-  .sales-responsive-customer-field { grid-column: 2 !important; grid-row: 1 !important; }
-  .sales-responsive-name-label { grid-column: 3 !important; grid-row: 1 !important; }
-  .sales-responsive-name-field { grid-column: 4 !important; grid-row: 1 !important; }
-  .sales-responsive-phone-label { grid-column: 5 !important; grid-row: 1 !important; }
-  .sales-responsive-phone-field { grid-column: 6 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-customer-label { grid-column: 1 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-customer-field { grid-column: 2 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-name-label { grid-column: 3 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-name-field { grid-column: 4 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-phone-label { grid-column: 5 !important; grid-row: 1 !important; }
+  .sales-reference-option-grid > .sales-responsive-phone-field { grid-column: 6 !important; grid-row: 1 !important; }
 
-  .sales-responsive-invoice-label { grid-column: 1 !important; grid-row: 2 !important; }
-  .sales-responsive-invoice-field { grid-column: 2 !important; grid-row: 2 !important; }
-  .sales-responsive-date-label { grid-column: 3 !important; grid-row: 2 !important; }
-  .sales-responsive-date-field { grid-column: 4 !important; grid-row: 2 !important; }
-  .sales-responsive-quotation-label { grid-column: 5 !important; grid-row: 2 !important; }
-  .sales-responsive-quotation-field { grid-column: 6 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-invoice-label { grid-column: 1 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-invoice-field { grid-column: 2 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-date-label { grid-column: 3 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-date-field { grid-column: 4 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-quotation-label { grid-column: 5 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-quotation-field { grid-column: 6 !important; grid-row: 2 !important; }
 
-  .sales-responsive-salesman-label { grid-column: 1 !important; grid-row: 3 !important; }
-  .sales-responsive-salesman-field {
+  .sales-reference-option-grid > .sales-responsive-salesman-label { grid-column: 1 !important; grid-row: 3 !important; }
+  .sales-reference-option-grid > .sales-responsive-salesman-field {
     grid-column: 2 / 4 !important;
     grid-row: 3 !important;
   }
@@ -2726,18 +2726,18 @@ html[data-animations='off'] .sales-reference-screen * {
   .sales-responsive-name-label { grid-column: 3 !important; grid-row: 1 !important; }
   .sales-responsive-name-field { grid-column: 4 !important; grid-row: 1 !important; }
 
-  .sales-responsive-phone-label { grid-column: 1 !important; grid-row: 2 !important; }
-  .sales-responsive-phone-field { grid-column: 2 !important; grid-row: 2 !important; }
-  .sales-responsive-invoice-label { grid-column: 3 !important; grid-row: 2 !important; }
-  .sales-responsive-invoice-field { grid-column: 4 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-phone-label { grid-column: 1 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-phone-field { grid-column: 2 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-invoice-label { grid-column: 3 !important; grid-row: 2 !important; }
+  .sales-reference-option-grid > .sales-responsive-invoice-field { grid-column: 4 !important; grid-row: 2 !important; }
 
-  .sales-responsive-date-label { grid-column: 1 !important; grid-row: 3 !important; }
-  .sales-responsive-date-field { grid-column: 2 !important; grid-row: 3 !important; }
-  .sales-responsive-quotation-label { grid-column: 3 !important; grid-row: 3 !important; }
-  .sales-responsive-quotation-field { grid-column: 4 !important; grid-row: 3 !important; }
+  .sales-reference-option-grid > .sales-responsive-date-label { grid-column: 1 !important; grid-row: 3 !important; }
+  .sales-reference-option-grid > .sales-responsive-date-field { grid-column: 2 !important; grid-row: 3 !important; }
+  .sales-reference-option-grid > .sales-responsive-quotation-label { grid-column: 3 !important; grid-row: 3 !important; }
+  .sales-reference-option-grid > .sales-responsive-quotation-field { grid-column: 4 !important; grid-row: 3 !important; }
 
-  .sales-responsive-salesman-label { grid-column: 1 !important; grid-row: 4 !important; }
-  .sales-responsive-salesman-field {
+  .sales-reference-option-grid > .sales-responsive-salesman-label { grid-column: 1 !important; grid-row: 4 !important; }
+  .sales-reference-option-grid > .sales-responsive-salesman-field {
     grid-column: 2 / 5 !important;
     grid-row: 4 !important;
   }
@@ -3374,5 +3374,46 @@ html[data-animations='off'] .sales-reference-screen * {
 
   .sales-reference-actions-center button {
     flex: 0 0 auto;
+  }
+}
+
+
+/* ==========================================================================
+   Sales Invoice responsive phase 3: specificity/footer correction
+   The legacy frozen-header nth-child rules carry higher specificity than the
+   semantic responsive classes. The parent-qualified selectors above ensure
+   tablet placement actually wins without changing desktop >=1280 geometry.
+   ========================================================================== */
+
+@media (max-width: 1023px) {
+  .sales-reference-actions-center {
+    justify-content: flex-start !important;
+    overflow-x: hidden !important;
+  }
+
+  .sales-reference-actions-center button {
+    flex: 1 1 0 !important;
+    min-width: 72px !important;
+    max-width: none !important;
+    padding-left: 3px !important;
+    padding-right: 3px !important;
+  }
+
+  .sales-reference-subtabs-bottom {
+    overflow-x: hidden !important;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-subtab {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding-left: 3px !important;
+    padding-right: 3px !important;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-subtab > span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
