@@ -1088,7 +1088,8 @@ export function PurchaseOrderPage() {
                             <div className="purchase-order-product-name">
                               <div className="purchase-order-row-product">
                                 {editingProductKey === line.key ? (
-                                  <div className="purchase-order-product-combo">
+                                  <>
+                                    <div className="purchase-order-product-combo">
                                     <input
                                       ref={productSearchRef}
                                       className="purchase-order-product-input"
@@ -1133,7 +1134,7 @@ export function PurchaseOrderPage() {
                                         </svg>
                                       </span>
                                     </button>
-                                  </div>
+                                    </div>
                                     {productPickerOpen && productLookupRows.length ? (
                                       <ProductLookupGrid
                                         rows={productLookupRows}
