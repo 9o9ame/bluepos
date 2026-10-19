@@ -4431,3 +4431,153 @@ html[data-animations='off'] .sales-reference-screen * {
     font-size: 10px !important;
   }
 }
+
+
+/* ==========================================================================
+   Sales Invoice low-height laptop density
+   Real laptops can expose substantially less CSS viewport height than DevTools
+   768px presets because browser chrome/taskbars consume space. Keep the same
+   width composition, but tighten vertical geometry when viewport height is low.
+   ========================================================================== */
+@media (min-width: 1280px) and (max-height: 700px) {
+  .sales-reference-meta {
+    min-height: 62px !important;
+  }
+
+  .sales-reference-options-head {
+    min-height: 16px !important;
+    height: 16px !important;
+    margin-bottom: 1px !important;
+    line-height: 16px !important;
+  }
+
+  .sales-reference-option-grid {
+    row-gap: 2px !important;
+  }
+
+  .sales-reference-option-grid > input,
+  .sales-reference-option-grid > .sales-reference-input-button,
+  .sales-reference-input-button input,
+  .sales-reference-input-button button {
+    height: 18px !important;
+    min-height: 18px !important;
+  }
+
+  .sales-reference-entry-row {
+    height: 27px !important;
+    min-height: 27px !important;
+  }
+
+  .sales-reference-product-entry,
+  .sales-reference-f1 {
+    height: 27px !important;
+  }
+
+  .sales-reference-sale-btn {
+    height: 24px !important;
+  }
+
+  .sales-reference-grid th {
+    height: 27px !important;
+  }
+
+  .sales-reference-grid td {
+    height: 23px !important;
+  }
+
+  .sales-reference-actions {
+    min-height: 36px !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+  }
+
+  .sales-reference-subtabs-bottom {
+    height: 26px !important;
+  }
+
+  .sales-reference-subtabs-bottom .sales-reference-subtab {
+    height: 25px !important;
+    min-height: 25px !important;
+  }
+
+  .sales-reference-actions-center button {
+    height: 26px !important;
+  }
+
+  .sales-reference-retail-title {
+    padding-bottom: 3px !important;
+    font-size: 18px !important;
+  }
+
+  .sales-reference-pay > .sales-reference-amounts {
+    min-height: 76px !important;
+    margin-bottom: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
+  .sales-reference-pay-options {
+    padding: 2px 4px 3px !important;
+  }
+
+  .sales-reference-pay-head-values strong,
+  .sales-reference-disc-values strong,
+  .sales-reference-disc-values input {
+    height: 19px !important;
+    min-height: 19px !important;
+    line-height: 19px !important;
+  }
+
+  .sales-reference-disc-line {
+    min-height: 17px !important;
+    line-height: 17px !important;
+  }
+
+  .sales-reference-payment-label,
+  .sales-reference-remarks-label,
+  .sales-reference-side-label {
+    margin-top: 1px !important;
+    font-size: 8.5px !important;
+  }
+
+  .sales-reference-payment-method,
+  .sales-reference-payment-select-trigger {
+    height: 22px !important;
+    min-height: 22px !important;
+  }
+
+  .sales-reference-pay-options textarea {
+    height: 25px !important;
+    min-height: 25px !important;
+  }
+
+  .sales-reference-total-block {
+    margin-top: 2px !important;
+  }
+
+  .sales-reference-total-block > div {
+    height: 31px !important;
+    line-height: 31px !important;
+    font-size: 20px !important;
+  }
+
+  .sales-reference-received {
+    height: 23px !important;
+  }
+
+  .sales-reference-card {
+    height: 25px !important;
+  }
+
+  .sales-reference-card strong:first-child {
+    font-size: 15px !important;
+  }
+
+  .sales-reference-card strong,
+  .sales-reference-received strong {
+    font-size: 10px !important;
+  }
+
+  .sales-reference-balance {
+    height: 21px !important;
+  }
+}
