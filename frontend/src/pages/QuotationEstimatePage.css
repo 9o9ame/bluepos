@@ -947,3 +947,105 @@ html[data-animations='off'] .quotation-product-search-input {
     min-width: 0;
   }
 }
+
+
+/* ==========================================================================
+   Quotation laptop cleanup: amount options, grid fit, price type
+   Keep the canonical controls; fix only page-owned geometry/composition.
+   ========================================================================== */
+@media (min-width: 901px) and (max-width: 1200px) {
+  .quotation-entry {
+    overflow: hidden;
+  }
+
+  .quotation-lines-wrap {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .quotation-lines {
+    width: 100%;
+    min-width: 820px !important;
+  }
+
+  .quotation-header-grid {
+    grid-template-columns:
+      minmax(115px, .62fr)
+      minmax(145px, .78fr)
+      minmax(205px, 1.35fr)
+      minmax(175px, 1.1fr)
+      minmax(150px, .82fr);
+    gap: 5px 6px;
+  }
+
+  .quotation-header-grid label {
+    gap: 4px;
+    font-size: var(--ui-font-sm);
+  }
+
+  .quotation-price-type-select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .quotation-price-type-select .ui-select-trigger {
+    width: 100%;
+    min-width: 0;
+    height: 25px;
+    min-height: 25px;
+    padding-left: 6px;
+    padding-right: 24px;
+  }
+
+  .quotation-price-type-select .ui-select-value {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .quotation-price-type-select .ui-select-arrow {
+    flex: 0 0 auto;
+  }
+
+  .quotation-footer-grid {
+    grid-template-columns: minmax(250px, 1fr) 185px 290px;
+    gap: 6px;
+  }
+
+  .quotation-amount-options-footer {
+    width: 185px;
+    min-width: 185px;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto 1fr;
+    align-content: stretch;
+    align-items: stretch;
+    gap: 4px;
+    padding: 4px 6px;
+  }
+
+  .quotation-amount-options-footer .quotation-amount-options-title {
+    line-height: 1.1;
+  }
+
+  .quotation-amount-options-footer .quotation-net-box {
+    width: 100%;
+    min-width: 0;
+    min-height: 30px;
+    padding: 3px 5px;
+    gap: 5px;
+  }
+
+  .quotation-amount-options-footer .quotation-net-box strong {
+    font-size: 18px;
+  }
+
+  .quotation-totals {
+    padding: 5px 8px;
+    gap: 0 10px;
+  }
+
+  .quotation-totals div {
+    gap: 6px;
+  }
+}
