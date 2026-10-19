@@ -299,6 +299,28 @@ html[data-density] #root :where(
   line-height: var(--ui-line-tight) !important;
 }
 
+/* Shared input/select height is global responsive density. Buttons may keep
+   page-owned larger action geometry, but their minimum size remains global. */
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .quotation-estimate-page,
+  .purchase-order-page,
+  .bp-workspace
+) :where(
+  input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  select,
+  .ui-select-trigger,
+  .ui-select-combobox-trigger
+) {
+  height: var(--ui-control-h-md) !important;
+}
+
 /* Do not force textarea height globally; only typography belongs here. */
 html[data-density] #root :where(
   .product-reference-screen,
