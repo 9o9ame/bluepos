@@ -550,14 +550,9 @@
 
 .purchase-order-product-toggle {
   position: absolute;
-  top: 2px;
-  right: 4px;
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 22px;
-  min-width: 22px;
-  height: 22px;
   min-height: 0;
   padding: 0;
   border: 1px solid var(--ui-select-arrow-border, var(--ui-accent));
@@ -1307,10 +1302,7 @@ html[data-animations='off'] .purchase-order-load-more svg {
   }
 
   .purchase-order-custom-table .purchase-order-product-toggle {
-    top: 1px;
-    width: 20px;
-    min-width: 20px;
-    height: 20px;
+    /* Arrow geometry is owned by global responsive density. */
   }
 }
 
