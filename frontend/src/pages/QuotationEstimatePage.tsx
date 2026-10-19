@@ -559,8 +559,10 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
             <label className="is-price-type">
               <span>Price Type</span>
               <UiSimpleDropdown
+                className="quotation-price-type-select"
                 value={activeQuotation?.price_type ?? cart.priceType}
                 disabled={readOnly}
+                menuMinWidth={150}
                 options={[
                   { value: 'default', label: 'Default / Retail' },
                   { value: 'retail', label: 'Retail' },
@@ -576,19 +578,19 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
             className="quotation-lines-wrap"
             tableClassName="quotation-lines"
             ariaLabel="Quotation line items"
-            minWidth={980}
+            minWidth={820}
             columns={[
               { key: 'product', header: 'Product' },
-              { key: 'unit', header: 'Unit', width: 90 },
-              { key: 'stock', header: 'In Stock', width: 82, align: 'right' },
-              { key: 'qty', header: 'Qty', width: 78, align: 'right' },
-              { key: 'rate', header: 'Rate', width: 90, align: 'right' },
-              { key: 'disc-pct', header: 'Disc %', width: 82, align: 'right' },
-              { key: 'disc-rs', header: 'Disc Rs', width: 94, align: 'right' },
-              { key: 'tax-pct', header: 'Tax %', width: 78, align: 'right' },
-              { key: 'amount', header: 'Amount', width: 104, align: 'right' },
+              { key: 'unit', header: 'Unit', width: 72 },
+              { key: 'stock', header: 'In Stock', width: 68, align: 'right' },
+              { key: 'qty', header: 'Qty', width: 60, align: 'right' },
+              { key: 'rate', header: 'Rate', width: 70, align: 'right' },
+              { key: 'disc-pct', header: 'Disc %', width: 60, align: 'right' },
+              { key: 'disc-rs', header: 'Disc Rs', width: 70, align: 'right' },
+              { key: 'tax-pct', header: 'Tax %', width: 60, align: 'right' },
+              { key: 'amount', header: 'Amount', width: 82, align: 'right' },
               ...(!readOnly
-                ? [{ key: 'remove', header: '', width: 34, align: 'center' as const }]
+                ? [{ key: 'remove', header: '', width: 30, align: 'center' as const }]
                 : []),
             ]}
           >
