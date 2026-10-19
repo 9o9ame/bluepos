@@ -976,7 +976,11 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                         onClick={() => setSalePickerOpen((open) => !open)}
                         aria-label="Open posted sales"
                       >
-                        <ChevronDown size={14} />
+                        <span className="sales-return-sale-arrow" aria-hidden>
+                          <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                            <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                          </svg>
+                        </span>
                       </button>
                     </div>
 
