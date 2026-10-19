@@ -479,46 +479,6 @@ html[data-density] #root :where(
   max-height: 100% !important;
 }
 
-/* Custom dropdown arrow buttons used by migrated modules are controls, but
-   they are NOT ordinary action buttons. Let arrow-density tokens win over the
-   generic global button minimum-height rule. */
-html[data-density] #root :where(
-  .sales-reference-field-caret,
-  .quotation-product-combo-toggle,
-  .sales-return-product-combo .sales-product-combo-toggle,
-  .purchase-order-product-toggle,
-  .purchase-return-product-toggle
-) {
-  width: var(--ui-select-arrow-w) !important;
-  min-width: var(--ui-select-arrow-w) !important;
-  height: var(--ui-select-arrow-h) !important;
-  min-height: var(--ui-select-arrow-h) !important;
-  padding: 0 !important;
-}
-
-html[data-density] #root :where(
-  .sales-reference-field-caret,
-  .quotation-product-combo-toggle,
-  .sales-return-product-combo .sales-product-combo-toggle,
-  .purchase-order-product-toggle,
-  .purchase-return-product-toggle
-) svg {
-  width: var(--ui-select-chevron-w) !important;
-  height: var(--ui-select-chevron-h) !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
-}
-
-/* Product-entry controls reserve only the space their responsive arrow needs. */
-html[data-density] #root :where(
-  .quotation-product-combo .quotation-product-search-input,
-  .purchase-order-product-input,
-  .sales-return-product-combo .sales-pos-product-entry,
-  .purchase-return-product-combo > input
-) {
-  padding-right: calc(var(--ui-select-arrow-w) + 8px) !important;
-}
-
 html[data-density] #root .ui-button {
   gap: var(--ui-button-gap) !important;
   min-height: var(--ui-control-h-md) !important;
