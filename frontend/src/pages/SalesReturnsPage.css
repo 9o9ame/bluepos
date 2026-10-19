@@ -1530,12 +1530,6 @@
   padding-right: 23px !important;
 }
 
-.sales-return-sale-trigger {
-  width: 21px !important;
-  height: 20px !important;
-}
-
-
 .sales-return-header-refresh {
   gap: 2px !important;
 }
@@ -1753,12 +1747,6 @@
   padding-left: 25px !important;
   padding-right: 28px !important;
 }
-
-.sales-return-sale-trigger {
-  width: 25px !important;
-  height: 23px !important;
-}
-
 
 .sales-return-header-refresh {
   font-size: 10px !important;
@@ -3263,10 +3251,6 @@ html[data-theme='dark'] .sales-return-detail-caret {
 .sales-return-select-caret {
   display: grid !important;
   place-items: center !important;
-  width: 20px !important;
-  min-width: 20px !important;
-  height: 18px !important;
-  min-height: 18px !important;
   padding: 0 !important;
   border: 1px solid color-mix(in srgb, var(--ui-accent) 72%, var(--ui-border)) !important;
   border-radius: var(--control-radius) !important;
