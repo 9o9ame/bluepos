@@ -469,6 +469,16 @@ html[data-density] #root .ui-select-combobox-toggle {
   min-height: var(--ui-select-arrow-h) !important;
 }
 
+html[data-density] #root :where(
+  .ui-select-arrow,
+  .ui-select-combobox-toggle
+) svg {
+  width: calc(var(--ui-select-arrow-w) * 0.52) !important;
+  height: calc(var(--ui-select-arrow-h) * 0.45) !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
 html[data-density] #root .ui-button {
   gap: var(--ui-button-gap) !important;
   min-height: var(--ui-control-h-md) !important;
