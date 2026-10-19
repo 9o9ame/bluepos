@@ -552,11 +552,43 @@ html[data-density] #root :where(
   .quotation-product-combo-toggle,
   .purchase-order-product-toggle,
   .purchase-return-product-toggle
+) {
+  color: #fff !important;
+}
+
+html[data-density] #root :where(
+  .ui-select-arrow,
+  .ui-select-combobox-toggle,
+  .sales-reference-field-caret,
+  .sales-product-combo-toggle,
+  .quotation-product-combo-toggle,
+  .purchase-order-product-toggle,
+  .purchase-return-product-toggle
 ) svg {
-  width: 52% !important;
-  height: 38% !important;
-  max-width: 100% !important;
-  max-height: 100% !important;
+  display: block !important;
+  width: clamp(8px, 58%, 11px) !important;
+  height: auto !important;
+  max-width: 72% !important;
+  max-height: 72% !important;
+  color: #fff !important;
+  stroke: #fff !important;
+  overflow: visible !important;
+}
+
+html[data-density] #root :where(
+  .ui-select-arrow,
+  .ui-select-combobox-toggle,
+  .sales-reference-field-caret,
+  .sales-product-combo-toggle,
+  .quotation-product-combo-toggle,
+  .purchase-order-product-toggle,
+  .purchase-return-product-toggle
+) svg path[fill='currentColor'] {
+  fill: #fff !important;
+}
+
+html[data-density] #root .sales-reference-field-caret svg {
+  stroke-width: 2.8 !important;
 }
 
 /* Inputs reserve only the responsive arrow footprint, not a fixed 25-28px. */
