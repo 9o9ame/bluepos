@@ -2587,15 +2587,12 @@ html[data-animations='off'] .sales-reference-screen * {
 
 
 /* ==========================================================================
-   Sales Invoice responsive stabilization
-   Desktop >=1280 keeps approved geometry.
-   1024-1279 compacts spacing only.
-   <1024 preserves the desktop POS canvas and allows horizontal scrolling
-   instead of collapsing the frozen layout.
+   Sales Invoice responsive phase 1: Invoice Options / Header
+   Desktop >=1280 keeps the approved frozen geometry.
+   Tablet layouts use semantic field classes instead of brittle nth-child
+   placement, so optional Salesman visibility cannot break the grid.
    ========================================================================== */
 
-/* The shortcuts are the first nonessential footer content. Hide them before
-   they can force Save / Refresh / Preview / Print / Close off the row. */
 @media (max-width: 1600px) {
   .sales-reference-shortcuts {
     display: none !important;
@@ -2603,21 +2600,51 @@ html[data-animations='off'] .sales-reference-screen * {
 }
 
 @media (min-width: 1024px) and (max-width: 1279px) {
-  .sales-reference-option-grid {
-    grid-template-columns:
-      22px minmax(150px, 1.25fr)
-      34px minmax(126px, 1fr)
-      30px minmax(94px, .78fr)
-      30px minmax(58px, .52fr)
-      26px minmax(108px, .88fr)
-      30px minmax(96px, .78fr)
-      38px minmax(104px, .84fr) !important;
-    column-gap: 3px !important;
-  }
-
   .sales-reference-options {
     padding-left: 4px;
     padding-right: 4px;
+  }
+
+  .sales-reference-options-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+  }
+
+  .sales-reference-copy-from {
+    flex: 0 1 220px;
+    min-width: 170px;
+    margin-left: auto;
+  }
+
+  .sales-reference-option-grid {
+    grid-template-columns:
+      26px minmax(0, 1fr)
+      38px minmax(0, 1fr)
+      40px minmax(0, 1fr) !important;
+    column-gap: 4px !important;
+    row-gap: 4px !important;
+  }
+
+  .sales-responsive-customer-label { grid-column: 1 !important; grid-row: 1 !important; }
+  .sales-responsive-customer-field { grid-column: 2 !important; grid-row: 1 !important; }
+  .sales-responsive-name-label { grid-column: 3 !important; grid-row: 1 !important; }
+  .sales-responsive-name-field { grid-column: 4 !important; grid-row: 1 !important; }
+  .sales-responsive-phone-label { grid-column: 5 !important; grid-row: 1 !important; }
+  .sales-responsive-phone-field { grid-column: 6 !important; grid-row: 1 !important; }
+
+  .sales-responsive-invoice-label { grid-column: 1 !important; grid-row: 2 !important; }
+  .sales-responsive-invoice-field { grid-column: 2 !important; grid-row: 2 !important; }
+  .sales-responsive-date-label { grid-column: 3 !important; grid-row: 2 !important; }
+  .sales-responsive-date-field { grid-column: 4 !important; grid-row: 2 !important; }
+  .sales-responsive-quotation-label { grid-column: 5 !important; grid-row: 2 !important; }
+  .sales-responsive-quotation-field { grid-column: 6 !important; grid-row: 2 !important; }
+
+  .sales-responsive-salesman-label { grid-column: 1 !important; grid-row: 3 !important; }
+  .sales-responsive-salesman-field {
+    grid-column: 2 / 4 !important;
+    grid-row: 3 !important;
   }
 
   .sales-reference-entry-row {
@@ -2658,34 +2685,61 @@ html[data-animations='off'] .sales-reference-screen * {
   }
 }
 
-/* Below 1024px this remains a desktop POS surface. Do not stack or hide
-   accounting/payment controls; preserve a usable minimum canvas instead. */
 @media (max-width: 1023px) {
-  .sales-reference-screen {
-    min-width: 1180px !important;
-    overflow-x: auto !important;
-  }
-
+  .sales-reference-screen,
   .sales-reference-main {
-    min-width: 950px !important;
+    min-width: 0 !important;
   }
 
-  .sales-reference-pay {
-    flex: 0 0 220px !important;
-    width: 220px !important;
-    min-width: 220px !important;
+  .sales-reference-screen {
+    overflow-x: hidden !important;
+  }
+
+  .sales-reference-options {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .sales-reference-options-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 7px;
+  }
+
+  .sales-reference-copy-from {
+    flex: 1 1 100%;
+    min-width: 0;
+    margin-left: 0;
   }
 
   .sales-reference-option-grid {
     grid-template-columns:
-      22px minmax(160px, 1.3fr)
-      34px minmax(135px, 1.05fr)
-      30px minmax(100px, .8fr)
-      30px minmax(62px, .52fr)
-      26px minmax(112px, .9fr)
-      30px minmax(100px, .8fr)
-      38px minmax(108px, .86fr) !important;
+      30px minmax(0, 1fr)
+      40px minmax(0, 1fr) !important;
     column-gap: 4px !important;
+    row-gap: 4px !important;
+  }
+
+  .sales-responsive-customer-label { grid-column: 1 !important; grid-row: 1 !important; }
+  .sales-responsive-customer-field { grid-column: 2 !important; grid-row: 1 !important; }
+  .sales-responsive-name-label { grid-column: 3 !important; grid-row: 1 !important; }
+  .sales-responsive-name-field { grid-column: 4 !important; grid-row: 1 !important; }
+
+  .sales-responsive-phone-label { grid-column: 1 !important; grid-row: 2 !important; }
+  .sales-responsive-phone-field { grid-column: 2 !important; grid-row: 2 !important; }
+  .sales-responsive-invoice-label { grid-column: 3 !important; grid-row: 2 !important; }
+  .sales-responsive-invoice-field { grid-column: 4 !important; grid-row: 2 !important; }
+
+  .sales-responsive-date-label { grid-column: 1 !important; grid-row: 3 !important; }
+  .sales-responsive-date-field { grid-column: 2 !important; grid-row: 3 !important; }
+  .sales-responsive-quotation-label { grid-column: 3 !important; grid-row: 3 !important; }
+  .sales-responsive-quotation-field { grid-column: 4 !important; grid-row: 3 !important; }
+
+  .sales-responsive-salesman-label { grid-column: 1 !important; grid-row: 4 !important; }
+  .sales-responsive-salesman-field {
+    grid-column: 2 / 5 !important;
+    grid-row: 4 !important;
   }
 
   .sales-reference-grid-wrap {
@@ -2715,13 +2769,12 @@ html[data-animations='off'] .sales-reference-screen * {
   }
 
   .sales-reference-entry-status {
-    max-width: 360px;
+    max-width: 100%;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 }
-
 
 /* Sales Invoice containment + footer fit polish. */
 /* User-requested visual correction only; financial values/Amounts field order are unchanged. */
