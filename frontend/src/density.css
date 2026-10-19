@@ -73,8 +73,8 @@
     --ui-table-cell-pad-x: 3px;
     --ui-table-cell-pad-y: 1px;
     --ui-entry-control-h: 20px;
-    --ui-select-arrow-w: 18px;
-    --ui-select-arrow-h: 16px;
+    --ui-select-arrow-w: 15px;
+    --ui-select-arrow-h: 14px;
     --ui-button-gap: 4px;
   }
 
@@ -123,8 +123,8 @@
     --ui-table-cell-pad-x: 4px;
     --ui-table-cell-pad-y: 1px;
     --ui-entry-control-h: 21px;
-    --ui-select-arrow-w: 18px;
-    --ui-select-arrow-h: 16px;
+    --ui-select-arrow-w: 16px;
+    --ui-select-arrow-h: 14px;
     --ui-button-gap: 4px;
   }
 }
@@ -178,8 +178,8 @@
     --ui-table-cell-pad-x: 4px;
     --ui-table-cell-pad-y: 1px;
     --ui-entry-control-h: 21px;
-    --ui-select-arrow-w: 18px;
-    --ui-select-arrow-h: 16px;
+    --ui-select-arrow-w: 16px;
+    --ui-select-arrow-h: 15px;
     --ui-button-gap: 4px;
   }
 
@@ -228,8 +228,8 @@
     --ui-table-cell-pad-x: 4px;
     --ui-table-cell-pad-y: 2px;
     --ui-entry-control-h: 22px;
-    --ui-select-arrow-w: 19px;
-    --ui-select-arrow-h: 17px;
+    --ui-select-arrow-w: 17px;
+    --ui-select-arrow-h: 15px;
     --ui-button-gap: 5px;
   }
 }
@@ -283,8 +283,8 @@
     --ui-table-cell-pad-x: 4px;
     --ui-table-cell-pad-y: 2px;
     --ui-entry-control-h: 22px;
-    --ui-select-arrow-w: 19px;
-    --ui-select-arrow-h: 17px;
+    --ui-select-arrow-w: 17px;
+    --ui-select-arrow-h: 16px;
     --ui-button-gap: 5px;
   }
 
@@ -333,8 +333,8 @@
     --ui-table-cell-pad-x: 5px;
     --ui-table-cell-pad-y: 2px;
     --ui-entry-control-h: 23px;
-    --ui-select-arrow-w: 20px;
-    --ui-select-arrow-h: 18px;
+    --ui-select-arrow-w: 18px;
+    --ui-select-arrow-h: 16px;
     --ui-button-gap: 5px;
   }
 }
