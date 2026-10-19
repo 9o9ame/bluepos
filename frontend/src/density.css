@@ -1,124 +1,95 @@
 /*
- * BluePOS responsive density tokens
- * Sizing only — does not change layout order, skins, or themes.
+ * BluePOS global responsive density tokens.
  *
- * Levels:
- *   standard     — default (approx. 1441–1799px)
- *   compact      — width <= 1440 OR height <= 800 (1366x768 target)
- *   comfortable  — width >= 1800 AND height >= 901 (1920x1080+)
+ * RESPONSIBILITY:
+ * - This file owns shared responsive sizing only.
+ * - Theme/skin/color/radius/shadow remain owned by appearance.css.
+ * - Page/module CSS owns composition only: wrapping, grid placement, widths
+ *   required by business layout, sticky regions, and page-specific geometry.
+ *
+ * The user's Compact/Comfortable preference remains the base density. These
+ * media queries calibrate that selected density for the available laptop /
+ * desktop viewport. Tablet/mobile (<1024px) is intentionally untouched here.
  */
 
 :root {
-  --ui-density: standard;
-
-  --ui-font-xs: 9px;
-  --ui-font-sm: 10px;
-  --ui-font-md: 11px;
-  --ui-font-lg: 12px;
-  --ui-font-xl: 13px;
-  --ui-font-title: 14px;
-
-  --ui-control-h-sm: 22px;
-  --ui-control-h-md: 24px;
-  --ui-control-h-lg: 28px;
-
-  --ui-icon-sm: 12px;
-  --ui-icon-md: 14px;
-  --ui-icon-lg: 18px;
-
-  --ui-gap-xs: 3px;
-  --ui-gap-sm: 6px;
-  --ui-gap-md: 8px;
-  --ui-gap-lg: 12px;
-
-  --ui-pad-xs: 4px;
-  --ui-pad-sm: 6px;
-  --ui-pad-md: 8px;
-
-  --ui-header-h: 26px;
-  --ui-ribbon-tab-h: 45px;
-  --ui-ribbon-body-h: 58px;
-  --ui-ribbon-command-h: 40px;
-  --ui-ribbon-command-min-w: 118px;
-  --ui-ribbon-command-max-w: 170px;
-  --ui-ribbon-icon-tile: 28px;
-  --ui-ribbon-icon: 22px;
-  --ui-nav-icon: 26px;
-  --ui-nav-font: 13px;
-  --ui-command-font: 12px;
-  --ui-workspace-tab-h: 26px;
-  --ui-statusbar-h: 22px;
-
-  --ui-preview-h: 130px;
-  --ui-preview-svg-h: 88px;
+  /* Shared geometry fallbacks used by canonical/common components. */
+  --ui-table-row-h: 27px;
+  --ui-table-header-h: 28px;
+  --ui-table-cell-pad-x: 5px;
+  --ui-table-cell-pad-y: 2px;
+  --ui-entry-control-h: 23px;
+  --ui-select-arrow-w: 20px;
+  --ui-select-arrow-h: 18px;
+  --ui-button-gap: 6px;
 }
 
-/* Comfortable desktop — only when both dimensions are large */
-@media (min-width: 1800px) and (min-height: 901px) {
-  :root {
-    --ui-density: comfortable;
-
-    --ui-font-xs: 10px;
-    --ui-font-sm: 11px;
-    --ui-font-md: 12px;
-    --ui-font-lg: 13px;
-    --ui-font-xl: 14px;
-    --ui-font-title: 15px;
-
-    --ui-control-h-sm: 23px;
-    --ui-control-h-md: 26px;
-    --ui-control-h-lg: 30px;
-
-    --ui-icon-sm: 13px;
-    --ui-icon-md: 15px;
-    --ui-icon-lg: 19px;
-
-    --ui-gap-xs: 4px;
-    --ui-gap-sm: 7px;
-    --ui-gap-md: 9px;
-    --ui-gap-lg: 13px;
-
-    --ui-pad-xs: 5px;
-    --ui-pad-sm: 7px;
-    --ui-pad-md: 9px;
-
-    --ui-header-h: 28px;
-    --ui-ribbon-tab-h: 48px;
-    --ui-ribbon-body-h: 62px;
-    --ui-ribbon-command-h: 42px;
-    --ui-ribbon-command-min-w: 124px;
-    --ui-ribbon-command-max-w: 180px;
-    --ui-ribbon-icon-tile: 30px;
-    --ui-ribbon-icon: 24px;
-    --ui-nav-icon: 28px;
-    --ui-nav-font: 14px;
-    --ui-command-font: 13px;
-    --ui-workspace-tab-h: 28px;
-    --ui-statusbar-h: 24px;
-
-    --ui-preview-h: 140px;
-    --ui-preview-svg-h: 96px;
-  }
-}
-
-/*
- * Compact laptop — wins over comfortable when width or height is tight.
- * Covers 1366x768, 1440x900 (height edge), 1536x864.
- */
-@media (max-width: 1440px), (max-height: 800px) {
-  :root {
-    --ui-density: compact;
-
-    --ui-font-xs: 9px;
-    --ui-font-sm: 9.5px;
-    --ui-font-md: 10.5px;
-    --ui-font-lg: 11px;
-    --ui-font-xl: 12px;
+/* --------------------------------------------------------------------------
+   1024-1279: compact laptop
+   -------------------------------------------------------------------------- */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  :root[data-density='compact'],
+  :root[data-font][data-density='compact'] {
+    --ui-font-xs: 8.5px;
+    --ui-font-sm: 9px;
+    --ui-font-md: 9.5px;
+    --ui-font-lg: 10.5px;
+    --ui-font-xl: 11.5px;
     --ui-font-title: 12.5px;
+
+    --ui-control-h-sm: 18px;
+    --ui-control-h-md: 20px;
+    --ui-control-h-lg: 23px;
+
+    --ui-icon-sm: 10px;
+    --ui-icon-md: 12px;
+    --ui-icon-lg: 15px;
+
+    --ui-gap-xs: 2px;
+    --ui-gap-sm: 3px;
+    --ui-gap-md: 5px;
+    --ui-gap-lg: 7px;
+
+    --ui-pad-xs: 2px;
+    --ui-pad-sm: 3px;
+    --ui-pad-md: 5px;
+
+    --ui-header-h: 20px;
+    --ui-ribbon-tab-h: 34px;
+    --ui-ribbon-body-h: 46px;
+    --ui-ribbon-command-h: 32px;
+    --ui-ribbon-command-min-w: 84px;
+    --ui-ribbon-command-max-w: 132px;
+    --ui-ribbon-icon-tile: 22px;
+    --ui-ribbon-icon: 18px;
+    --ui-nav-icon: 20px;
+    --ui-nav-font: 10.5px;
+    --ui-command-font: 9.5px;
+    --ui-workspace-tab-h: 20px;
+    --ui-statusbar-h: 18px;
+
+    --ui-table-row-h: 23px;
+    --ui-table-header-h: 24px;
+    --ui-table-cell-pad-x: 3px;
+    --ui-table-cell-pad-y: 1px;
+    --ui-entry-control-h: 20px;
+    --ui-select-arrow-w: 18px;
+    --ui-select-arrow-h: 16px;
+    --ui-button-gap: 4px;
+  }
+
+  :root[data-density='comfortable'],
+  :root[data-font][data-density='comfortable'] {
+    --ui-font-xs: 9.5px;
+    --ui-font-sm: 10px;
+    --ui-font-md: 10.5px;
+    --ui-font-lg: 11.5px;
+    --ui-font-xl: 12.5px;
+    --ui-font-title: 14px;
 
     --ui-control-h-sm: 20px;
     --ui-control-h-md: 22px;
-    --ui-control-h-lg: 26px;
+    --ui-control-h-lg: 25px;
 
     --ui-icon-sm: 11px;
     --ui-icon-md: 13px;
@@ -134,52 +105,271 @@
     --ui-pad-md: 6px;
 
     --ui-header-h: 22px;
-    --ui-ribbon-tab-h: 38px;
-    --ui-ribbon-body-h: 50px;
-    --ui-ribbon-command-h: 36px;
-    --ui-ribbon-command-min-w: 110px;
-    --ui-ribbon-command-max-w: 160px;
-    --ui-ribbon-icon-tile: 24px;
-    --ui-ribbon-icon: 20px;
-    --ui-nav-icon: 22px;
-    --ui-nav-font: 12px;
-    --ui-command-font: 11px;
-    --ui-workspace-tab-h: 22px;
-    --ui-statusbar-h: 20px;
-
-    --ui-preview-h: 110px;
-    --ui-preview-svg-h: 72px;
-  }
-}
-
-/* Extra-compact when both axes are tight (classic 1366x768) */
-@media (max-width: 1440px) and (max-height: 800px) {
-  :root {
     --ui-ribbon-tab-h: 36px;
     --ui-ribbon-body-h: 48px;
     --ui-ribbon-command-h: 34px;
-    --ui-ribbon-icon-tile: 22px;
-    --ui-ribbon-icon: 18px;
-    --ui-nav-icon: 20px;
-    --ui-preview-h: 100px;
-    --ui-preview-svg-h: 64px;
+    --ui-ribbon-command-min-w: 88px;
+    --ui-ribbon-command-max-w: 138px;
+    --ui-ribbon-icon-tile: 23px;
+    --ui-ribbon-icon: 19px;
+    --ui-nav-icon: 21px;
+    --ui-nav-font: 11px;
+    --ui-command-font: 10px;
+    --ui-workspace-tab-h: 21px;
+    --ui-statusbar-h: 19px;
+
+    --ui-table-row-h: 24px;
+    --ui-table-header-h: 25px;
+    --ui-table-cell-pad-x: 4px;
+    --ui-table-cell-pad-y: 1px;
+    --ui-entry-control-h: 21px;
+    --ui-select-arrow-w: 18px;
+    --ui-select-arrow-h: 16px;
+    --ui-button-gap: 4px;
   }
 }
 
-/*
- * Fullscreen often frees vertical chrome; if height is ample, ease compact
- * slightly without jumping to comfortable.
- */
-@media (min-height: 901px) {
-  :root[data-app-mode='fullscreen'] {
-    --ui-header-h: 26px;
-    --ui-ribbon-tab-h: 44px;
-    --ui-ribbon-body-h: 56px;
-    --ui-ribbon-command-h: 40px;
-    --ui-ribbon-icon-tile: 28px;
+/* --------------------------------------------------------------------------
+   1280-1439: regular laptop
+   -------------------------------------------------------------------------- */
+@media (min-width: 1280px) and (max-width: 1439px) {
+  :root[data-density='compact'],
+  :root[data-font][data-density='compact'] {
+    --ui-font-xs: 9px;
+    --ui-font-sm: 9.5px;
+    --ui-font-md: 10px;
+    --ui-font-lg: 11px;
+    --ui-font-xl: 12px;
+    --ui-font-title: 13.5px;
+
+    --ui-control-h-sm: 19px;
+    --ui-control-h-md: 21px;
+    --ui-control-h-lg: 24px;
+
+    --ui-icon-sm: 10px;
+    --ui-icon-md: 12px;
+    --ui-icon-lg: 15px;
+
+    --ui-gap-xs: 2px;
+    --ui-gap-sm: 4px;
+    --ui-gap-md: 6px;
+    --ui-gap-lg: 8px;
+
+    --ui-pad-xs: 3px;
+    --ui-pad-sm: 4px;
+    --ui-pad-md: 6px;
+
+    --ui-header-h: 21px;
+    --ui-ribbon-tab-h: 35px;
+    --ui-ribbon-body-h: 48px;
+    --ui-ribbon-command-h: 34px;
+    --ui-ribbon-command-min-w: 88px;
+    --ui-ribbon-command-max-w: 138px;
+    --ui-ribbon-icon-tile: 23px;
+    --ui-ribbon-icon: 19px;
+    --ui-nav-icon: 21px;
+    --ui-nav-font: 11px;
+    --ui-command-font: 10px;
+    --ui-workspace-tab-h: 21px;
+    --ui-statusbar-h: 19px;
+
+    --ui-table-row-h: 24px;
+    --ui-table-header-h: 25px;
+    --ui-table-cell-pad-x: 4px;
+    --ui-table-cell-pad-y: 1px;
+    --ui-entry-control-h: 21px;
+    --ui-select-arrow-w: 18px;
+    --ui-select-arrow-h: 16px;
+    --ui-button-gap: 4px;
+  }
+
+  :root[data-density='comfortable'],
+  :root[data-font][data-density='comfortable'] {
+    --ui-font-xs: 10px;
+    --ui-font-sm: 10.5px;
+    --ui-font-md: 11.5px;
+    --ui-font-lg: 12.5px;
+    --ui-font-xl: 13.5px;
+    --ui-font-title: 15px;
+
+    --ui-control-h-sm: 21px;
+    --ui-control-h-md: 24px;
+    --ui-control-h-lg: 27px;
+
+    --ui-icon-sm: 12px;
+    --ui-icon-md: 14px;
+    --ui-icon-lg: 17px;
+
+    --ui-gap-xs: 3px;
+    --ui-gap-sm: 5px;
+    --ui-gap-md: 7px;
+    --ui-gap-lg: 10px;
+
+    --ui-pad-xs: 4px;
+    --ui-pad-sm: 5px;
+    --ui-pad-md: 7px;
+
+    --ui-header-h: 24px;
+    --ui-ribbon-tab-h: 39px;
+    --ui-ribbon-body-h: 51px;
+    --ui-ribbon-command-h: 36px;
+    --ui-ribbon-command-min-w: 94px;
+    --ui-ribbon-command-max-w: 146px;
+    --ui-ribbon-icon-tile: 25px;
+    --ui-ribbon-icon: 20px;
+    --ui-nav-icon: 23px;
+    --ui-nav-font: 12px;
+    --ui-command-font: 11px;
+    --ui-workspace-tab-h: 23px;
+    --ui-statusbar-h: 20px;
+
+    --ui-table-row-h: 25px;
+    --ui-table-header-h: 26px;
+    --ui-table-cell-pad-x: 4px;
+    --ui-table-cell-pad-y: 2px;
+    --ui-entry-control-h: 22px;
+    --ui-select-arrow-w: 19px;
+    --ui-select-arrow-h: 17px;
+    --ui-button-gap: 5px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   1440-1599: wide laptop / small desktop
+   -------------------------------------------------------------------------- */
+@media (min-width: 1440px) and (max-width: 1599px) {
+  :root[data-density='compact'],
+  :root[data-font][data-density='compact'] {
+    --ui-font-xs: 9.5px;
+    --ui-font-sm: 10px;
+    --ui-font-md: 10.5px;
+    --ui-font-lg: 11.5px;
+    --ui-font-xl: 12.5px;
+    --ui-font-title: 14px;
+
+    --ui-control-h-sm: 20px;
+    --ui-control-h-md: 22px;
+    --ui-control-h-lg: 25px;
+
+    --ui-icon-sm: 11px;
+    --ui-icon-md: 13px;
+    --ui-icon-lg: 16px;
+
+    --ui-gap-xs: 2px;
+    --ui-gap-sm: 4px;
+    --ui-gap-md: 6px;
+    --ui-gap-lg: 8px;
+
+    --ui-pad-xs: 3px;
+    --ui-pad-sm: 4px;
+    --ui-pad-md: 6px;
+
+    --ui-header-h: 22px;
+    --ui-ribbon-tab-h: 36px;
+    --ui-ribbon-body-h: 50px;
+    --ui-ribbon-command-h: 35px;
+    --ui-ribbon-command-min-w: 92px;
+    --ui-ribbon-command-max-w: 142px;
+    --ui-ribbon-icon-tile: 24px;
+    --ui-ribbon-icon: 20px;
+    --ui-nav-icon: 22px;
+    --ui-nav-font: 11.5px;
+    --ui-command-font: 10.5px;
+    --ui-workspace-tab-h: 22px;
+    --ui-statusbar-h: 20px;
+
+    --ui-table-row-h: 25px;
+    --ui-table-header-h: 26px;
+    --ui-table-cell-pad-x: 4px;
+    --ui-table-cell-pad-y: 2px;
+    --ui-entry-control-h: 22px;
+    --ui-select-arrow-w: 19px;
+    --ui-select-arrow-h: 17px;
+    --ui-button-gap: 5px;
+  }
+
+  :root[data-density='comfortable'],
+  :root[data-font][data-density='comfortable'] {
+    --ui-font-xs: 10.5px;
+    --ui-font-sm: 11.5px;
+    --ui-font-md: 12px;
+    --ui-font-lg: 13px;
+    --ui-font-xl: 14px;
+    --ui-font-title: 15.5px;
+
+    --ui-control-h-sm: 22px;
+    --ui-control-h-md: 25px;
+    --ui-control-h-lg: 28px;
+
+    --ui-icon-sm: 12px;
+    --ui-icon-md: 14px;
+    --ui-icon-lg: 18px;
+
+    --ui-gap-xs: 3px;
+    --ui-gap-sm: 6px;
+    --ui-gap-md: 8px;
+    --ui-gap-lg: 11px;
+
+    --ui-pad-xs: 4px;
+    --ui-pad-sm: 6px;
+    --ui-pad-md: 8px;
+
+    --ui-header-h: 25px;
+    --ui-ribbon-tab-h: 42px;
+    --ui-ribbon-body-h: 55px;
+    --ui-ribbon-command-h: 38px;
+    --ui-ribbon-command-min-w: 102px;
+    --ui-ribbon-command-max-w: 154px;
+    --ui-ribbon-icon-tile: 27px;
     --ui-ribbon-icon: 22px;
-    --ui-workspace-tab-h: 26px;
-    --ui-preview-h: 128px;
-    --ui-preview-svg-h: 84px;
+    --ui-nav-icon: 25px;
+    --ui-nav-font: 12.5px;
+    --ui-command-font: 11.5px;
+    --ui-workspace-tab-h: 25px;
+    --ui-statusbar-h: 22px;
+
+    --ui-table-row-h: 26px;
+    --ui-table-header-h: 27px;
+    --ui-table-cell-pad-x: 5px;
+    --ui-table-cell-pad-y: 2px;
+    --ui-entry-control-h: 23px;
+    --ui-select-arrow-w: 20px;
+    --ui-select-arrow-h: 18px;
+    --ui-button-gap: 5px;
+  }
+}
+
+/* Short real-world laptop viewports: browser chrome/taskbar can reduce usable
+   height even when CSS width is large. Keep composition unchanged; only make
+   shared density slightly shorter. */
+@media (min-width: 1024px) and (max-height: 700px) {
+  :root[data-density='compact'],
+  :root[data-font][data-density='compact'] {
+    --ui-control-h-sm: 18px;
+    --ui-control-h-md: 20px;
+    --ui-control-h-lg: 22px;
+    --ui-ribbon-tab-h: 32px;
+    --ui-ribbon-body-h: 44px;
+    --ui-ribbon-command-h: 31px;
+    --ui-workspace-tab-h: 19px;
+    --ui-statusbar-h: 18px;
+    --ui-table-row-h: 22px;
+    --ui-table-header-h: 23px;
+    --ui-entry-control-h: 19px;
+  }
+
+  :root[data-density='comfortable'],
+  :root[data-font][data-density='comfortable'] {
+    --ui-control-h-sm: 19px;
+    --ui-control-h-md: 21px;
+    --ui-control-h-lg: 24px;
+    --ui-ribbon-tab-h: 34px;
+    --ui-ribbon-body-h: 46px;
+    --ui-ribbon-command-h: 33px;
+    --ui-workspace-tab-h: 20px;
+    --ui-statusbar-h: 19px;
+    --ui-table-row-h: 23px;
+    --ui-table-header-h: 24px;
+    --ui-entry-control-h: 20px;
   }
 }
