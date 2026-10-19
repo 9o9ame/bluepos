@@ -1406,3 +1406,64 @@ html[data-animations='off'] .purchase-order-load-more svg {
     min-width: 108px !important;
   }
 }
+
+
+/* ==========================================================================
+   Purchase Order laptop footer remarks
+   Keep Remarks + totals on one compact row at 1024-1180 instead of stacking
+   the textarea full-width and pushing totals below the visible area.
+   ========================================================================== */
+@media (min-width: 1024px) and (max-width: 1180px) {
+  .purchase-order-footer {
+    grid-template-columns: minmax(0, 1fr) 300px !important;
+    gap: 6px !important;
+    align-items: stretch !important;
+    min-height: 48px !important;
+  }
+
+  .purchase-order-footer-remarks {
+    min-height: 48px !important;
+    padding: 5px 6px !important;
+    grid-template-rows: 9px 28px !important;
+    gap: 2px !important;
+  }
+
+  .purchase-order-footer-remarks > span {
+    font-size: 8px !important;
+    line-height: 9px !important;
+  }
+
+  .purchase-order-footer-remarks textarea {
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 4px 5px !important;
+    font-size: 9px !important;
+    resize: none !important;
+  }
+
+  .purchase-order-totals {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+    padding: 5px 7px !important;
+    min-width: 0 !important;
+  }
+
+  .purchase-order-totals > div {
+    grid-template-rows: 9px 23px !important;
+    gap: 2px !important;
+  }
+
+  .purchase-order-totals span {
+    font-size: 8px !important;
+    line-height: 9px !important;
+  }
+
+  .purchase-order-totals strong {
+    height: 23px !important;
+    font-size: 10px !important;
+  }
+
+  .purchase-order-totals .is-grand strong {
+    font-size: 11px !important;
+  }
+}
