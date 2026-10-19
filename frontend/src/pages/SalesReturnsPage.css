@@ -568,11 +568,8 @@
 
 .sales-return-sale-trigger {
   position: absolute;
-  right: 1px;
   display: grid;
   place-items: center;
-  width: 25px;
-  height: 23px;
   padding: 0;
   border: 0;
   border-left: 1px solid #a8bdcb;
@@ -4337,7 +4334,6 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
     font-size: 9px !important;
   }
 
-  .sales-return-sale-trigger,
   .sales-return-option-group.is-from .sales-return-canonical-select .ui-select-combobox-toggle,
   .sales-return-option-group.is-salesman .sales-return-canonical-select .ui-select-combobox-toggle {
     width: 17px !important;
