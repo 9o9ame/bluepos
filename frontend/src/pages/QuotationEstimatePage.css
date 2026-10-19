@@ -341,22 +341,27 @@ html[data-animations='off'] .quotation-product-search-input {
   position: relative;
   width: 100%;
   min-width: 0;
+  height: var(--ui-control-h-md);
 }
 
 .quotation-product-combo .quotation-product-search-input {
-  padding-right: 28px;
+  height: 100%;
+  min-height: 0;
+  padding-right: calc(var(--ui-control-h-md) + 3px);
 }
 
 .quotation-product-combo-toggle {
   position: absolute;
   top: 2px;
-  right: 3px;
+  right: 2px;
+  bottom: 2px;
   display: grid;
   place-items: center;
-  width: 20px;
-  min-width: 20px;
-  height: calc(100% - 4px);
+  width: auto;
+  min-width: 0;
+  height: auto;
   min-height: 0;
+  aspect-ratio: 1 / 1;
   padding: 0;
   border: 1px solid var(--ui-select-arrow-border);
   border-radius: var(--control-radius);
@@ -527,17 +532,7 @@ html[data-animations='off'] .quotation-product-search-input {
 
 .quotation-product-search-input {
   min-width: 0;
-  min-height: 25px;
-  height: 25px;
-}
-
-.quotation-product-combo-toggle {
-  top: 50%;
-  right: 4px;
-  width: 22px;
-  min-width: 22px;
-  height: 22px;
-  transform: translateY(-50%);
+  min-height: 0;
 }
 
 .quotation-product-combo-toggle > span {
