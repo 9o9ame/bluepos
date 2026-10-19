@@ -289,7 +289,6 @@ html[data-density] #root :where(
 ) :where(
   input:not([type='checkbox']):not([type='radio']):not([type='file']),
   select,
-  button,
   .ui-button,
   .ui-select-trigger,
   .ui-select-combobox-trigger
