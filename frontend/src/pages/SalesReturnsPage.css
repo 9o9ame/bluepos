@@ -4269,7 +4269,7 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
    1440-1599: keep all three header cards on one row. Reduce field/control
    density instead of wrapping cards.
    ========================================================================== */
-@media (min-width: 1440px) and (max-width: 1599px) {
+@media (min-width: 1440px) and (max-width: 1919px) {
   .sales-return-head {
     grid-template-columns: minmax(0, 1fr) 255px 320px !important;
     grid-template-rows: auto !important;
