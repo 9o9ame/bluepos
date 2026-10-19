@@ -669,7 +669,7 @@ html[data-animations='off'] .pie-supplier-combo-arrow {
   position: relative;
   width: 100%;
   min-width: 0;
-  height: 27px;
+  height: var(--ui-control-h-md);
   overflow: visible;
 }
 
@@ -677,8 +677,8 @@ html[data-animations='off'] .pie-supplier-combo-arrow {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  height: 20px !important;
-  padding: 0 48px 0 5px !important;
+  height: 100% !important;
+  padding: 0 calc((var(--ui-control-h-md) - 4px) * 2 + 8px) 0 5px !important;
   border: 1px solid var(--ui-control-border) !important;
   border-radius: var(--control-radius) !important;
   background: var(--ui-control-face) !important;
@@ -701,10 +701,10 @@ html[data-animations='off'] .pie-supplier-combo-arrow {
   position: absolute;
   top: 2px;
   right: 2px;
+  bottom: 2px;
   z-index: 2;
   display: flex;
   align-items: stretch;
-  height: 16px;
   gap: 2px;
   pointer-events: auto;
 }
@@ -713,10 +713,11 @@ html[data-animations='off'] .pie-supplier-combo-arrow {
 .pie-product-combo-add {
   display: grid;
   place-items: center;
-  width: 16px;
-  min-width: 16px;
-  height: 16px;
-  min-height: 16px;
+  width: auto;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
   padding: 0;
   border: 1px solid var(--ui-select-arrow-border, var(--ui-accent));
   border-radius: var(--control-radius);
