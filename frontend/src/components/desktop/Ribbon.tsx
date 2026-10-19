@@ -55,6 +55,11 @@ export function Ribbon({ onCalculator, onSoftwareOptions, onRecalculateStock, on
     .map((command) => ({ label: command.label, status: command.status, path: command.path ?? WORKSPACE_MODULES.find((row) => row.key === command.moduleKey)?.path }))
     .filter((item): item is { label: string; status: 'ready' | 'shell' | 'later'; path: string } => Boolean(item.path)) ?? []
 
+  const compactAdjustment = RIBBON_GROUPS['daily-entries']
+    .find((group) => group.id === 'purchases')
+    ?.commands
+    .find((command) => command.id === 'adjustments')
+
   const compactPurchaseMenu = RIBBON_GROUPS['daily-entries']
     .find((group) => group.id === 'purchases')
     ?.commands
@@ -128,6 +133,17 @@ export function Ribbon({ onCalculator, onSoftwareOptions, onRecalculateStock, on
                   active={['purchase-invoice', 'purchase-order', 'purchase-return'].includes(activeModule.key)}
                   onNavigate={openRibbonPath}
                 />
+                {compactAdjustment && canUse(compactAdjustment.permission, compactAdjustment.entitlement) ? (
+                  <RibbonCommand
+                    {...compactAdjustment}
+                    active={compactAdjustment.moduleKey === activeModule.key}
+                    onNavigate={openRibbonPath}
+                    onClick={() => {
+                      const path = compactAdjustment.path ?? WORKSPACE_MODULES.find((row) => row.key === compactAdjustment.moduleKey)?.path
+                      if (path) openRibbonPath(path)
+                    }}
+                  />
+                ) : null}
               </RibbonGroup>
             ) : null}
           </div>
