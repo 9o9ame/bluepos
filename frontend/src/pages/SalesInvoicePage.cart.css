@@ -3493,3 +3493,46 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
     min-width: 0 !important;
   }
 }
+
+
+/* ==========================================================================
+   Posted Invoices wide-laptop continuity 1440-1599
+   Keep the stable wrapped filter composition beyond the previous 1439px cliff.
+   ========================================================================== */
+@media (min-width: 1440px) and (max-width: 1599px) {
+  .sales-posted-history .sales-history-toolbar {
+    flex-wrap: wrap !important;
+    align-items: end !important;
+  }
+
+  .sales-posted-history .sales-history-toolbar-summary {
+    order: 10 !important;
+    width: auto !important;
+    margin-left: 0 !important;
+  }
+
+  .sales-posted-history .sales-history-count {
+    margin-left: 0 !important;
+  }
+
+  .sales-posted-history .sales-history-search {
+    width: 260px !important;
+    max-width: 260px !important;
+    flex: 0 1 260px !important;
+  }
+
+  .sales-posted-history .sales-history-filter > input {
+    width: 132px !important;
+    min-width: 132px !important;
+  }
+
+  .sales-posted-history .sales-history-filter .sales-history-salesman-select {
+    width: 250px !important;
+    min-width: 250px !important;
+  }
+
+  .sales-posted-history .sales-history-filter .sales-history-status-select {
+    width: 150px !important;
+    min-width: 150px !important;
+  }
+}
