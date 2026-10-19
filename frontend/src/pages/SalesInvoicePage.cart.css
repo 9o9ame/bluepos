@@ -3477,3 +3477,19 @@ html[data-animations='off'] .sales-pending-view .sales-due-toolbar input {
     font-size: 9px !important;
   }
 }
+
+
+/* Expenses laptop equal date filter widths. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .sales-expenses-view .sales-expense-entry-toolbar > label:nth-of-type(8),
+  .sales-expenses-view .sales-expense-entry-toolbar > label:nth-of-type(9) {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .sales-expenses-view .sales-expense-entry-toolbar > label:nth-of-type(8) > input,
+  .sales-expenses-view .sales-expense-entry-toolbar > label:nth-of-type(9) > input {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
