@@ -460,23 +460,115 @@ html[data-density] #root :where(
   min-height: var(--ui-entry-control-h) !important;
 }
 
-/* Canonical dropdown arrow geometry is also global responsive density. */
-html[data-density] #root .ui-select-arrow,
-html[data-density] #root .ui-select-combobox-toggle {
-  width: var(--ui-select-arrow-w) !important;
-  min-width: var(--ui-select-arrow-w) !important;
-  height: var(--ui-select-arrow-h) !important;
-  min-height: var(--ui-select-arrow-h) !important;
+/* --------------------------------------------------------------------------
+   Field-relative dropdown arrow geometry
+   Arrow size follows the rendered field height rather than a fixed pixel size.
+   A 2px inset is preserved on top, bottom and right so arrows remain centered
+   and visually balanced across responsive densities.
+   -------------------------------------------------------------------------- */
+
+/* Canonical non-search select: let the arrow stretch with the field row. */
+html[data-density] #root .ui-select-trigger {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 2px !important;
+}
+
+html[data-density] #root .ui-select-trigger > .ui-select-arrow {
+  align-self: stretch !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: 1 / 1;
+  margin: 2px 0 2px 0 !important;
+}
+
+/* Canonical searchable/simple dropdown: one square arrow chip inset inside
+   the trigger border. The child arrow surface fills that square. */
+html[data-density] #root .ui-select-combobox-trigger {
+  position: relative;
+}
+
+html[data-density] #root .ui-select-combobox-trigger > .ui-select-combobox-toggle {
+  position: absolute !important;
+  top: 2px !important;
+  right: 2px !important;
+  bottom: 2px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: 1 / 1;
+  transform: none !important;
+  padding: 0 !important;
+}
+
+html[data-density] #root .ui-select-combobox-toggle > .ui-select-arrow {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+
+/* Custom dropdown buttons used by migrated POS modules follow the same
+   field-relative 2px inset rule. */
+html[data-density] #root :where(
+  .sales-reference-inline-caret > .sales-reference-field-caret,
+  .sales-product-combo-toggle,
+  .quotation-product-combo-toggle,
+  .sales-return-product-combo .sales-product-combo-toggle,
+  .purchase-order-product-toggle,
+  .purchase-return-product-toggle
+) {
+  top: 2px !important;
+  right: 2px !important;
+  bottom: 2px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: 1 / 1;
+  padding: 0 !important;
+  transform: none !important;
+}
+
+/* Sales customer field also owns a quick-add button. Keep the arrow square
+   directly before that button with the same small visual gap. */
+html[data-density] #root .sales-reference-to > .sales-reference-field-caret {
+  right: 25px !important;
+}
+
+/* Preserve open-state rotation for the custom arrow controls. */
+html[data-density] #root .sales-reference-inline-caret.is-open > .sales-reference-field-caret {
+  transform: rotate(180deg) !important;
 }
 
 html[data-density] #root :where(
   .ui-select-arrow,
-  .ui-select-combobox-toggle
+  .ui-select-combobox-toggle,
+  .sales-reference-field-caret,
+  .sales-product-combo-toggle,
+  .quotation-product-combo-toggle,
+  .purchase-order-product-toggle,
+  .purchase-return-product-toggle
 ) svg {
-  width: calc(var(--ui-select-arrow-w) * 0.52) !important;
-  height: calc(var(--ui-select-arrow-h) * 0.45) !important;
+  width: 52% !important;
+  height: 38% !important;
   max-width: 100% !important;
   max-height: 100% !important;
+}
+
+/* Inputs reserve only the responsive arrow footprint, not a fixed 25-28px. */
+html[data-density] #root :where(
+  .ui-simple-dropdown .ui-select-trigger-search,
+  .sales-reference-inline-caret > input,
+  .sales-product-combo .sales-pos-product-entry,
+  .quotation-product-combo .quotation-product-search-input,
+  .purchase-order-product-input,
+  .purchase-return-product-combo > input
+) {
+  padding-right: calc(var(--ui-control-h-md) + 3px) !important;
 }
 
 html[data-density] #root .ui-button {
