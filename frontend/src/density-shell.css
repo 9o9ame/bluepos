@@ -249,3 +249,216 @@ body {
     overflow-x: hidden;
   }
 }
+
+
+/* ==========================================================================
+   GLOBAL RESPONSIVE MODULE DENSITY BRIDGE
+   Shared sizing is owned here. Module CSS should use media queries for
+   composition only (wrap/order/grid/width), not redefine common font/control
+   sizes that already belong to the global design system.
+   ========================================================================== */
+
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .quotation-estimate-page,
+  .purchase-order-page,
+  .bp-workspace
+) {
+  font-size: var(--ui-font-sm) !important;
+  line-height: var(--ui-line-normal);
+}
+
+/* Shared ordinary controls across migrated modules. */
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .quotation-estimate-page,
+  .purchase-order-page,
+  .bp-workspace
+) :where(
+  input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  select,
+  button,
+  .ui-button,
+  .ui-select-trigger,
+  .ui-select-combobox-trigger
+) {
+  min-height: var(--ui-control-h-md) !important;
+  font-size: var(--ui-font-md) !important;
+  line-height: var(--ui-line-tight) !important;
+}
+
+/* Do not force textarea height globally; only typography belongs here. */
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .quotation-estimate-page,
+  .purchase-order-page,
+  .bp-workspace
+) textarea {
+  font-size: var(--ui-font-md) !important;
+  line-height: var(--ui-line-normal) !important;
+}
+
+/* Shared labels, legends and table text. */
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .quotation-estimate-page,
+  .purchase-order-page,
+  .bp-workspace
+) :where(
+  label,
+  legend,
+  .field-label,
+  .desktop-field > span
+) {
+  font-size: var(--ui-font-sm) !important;
+  line-height: var(--ui-line-tight) !important;
+}
+
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .quotation-estimate-page,
+  .purchase-order-page,
+  .bp-workspace
+) :where(
+  table,
+  .pos-grid,
+  .pos-entry-grid
+) {
+  font-size: var(--ui-font-sm) !important;
+}
+
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .quotation-estimate-page,
+  .purchase-order-page,
+  .bp-workspace
+) :where(
+  .pos-grid th,
+  .pos-grid td,
+  .pos-entry-grid th,
+  .pos-entry-grid td
+) {
+  padding:
+    var(--ui-table-cell-pad-y)
+    var(--ui-table-cell-pad-x) !important;
+}
+
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .quotation-estimate-page,
+  .purchase-order-page,
+  .bp-workspace
+) :where(
+  .pos-grid th,
+  .pos-entry-grid th
+) {
+  height: var(--ui-table-header-h) !important;
+  min-height: var(--ui-table-header-h) !important;
+  font-size: var(--ui-font-sm) !important;
+}
+
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .quotation-estimate-page,
+  .purchase-order-page,
+  .bp-workspace
+) :where(
+  .pos-grid td,
+  .pos-entry-grid td
+) {
+  height: var(--ui-table-row-h) !important;
+  min-height: var(--ui-table-row-h) !important;
+  font-size: var(--ui-font-sm) !important;
+}
+
+html[data-density] #root :where(
+  .product-reference-screen,
+  .parties-vca,
+  .purchase-reference-screen,
+  .purchase-entry-screen,
+  .purchase-return-screen,
+  .sales-reference-screen,
+  .sales-return-screen,
+  .quotation-estimate-page,
+  .purchase-order-page,
+  .bp-workspace
+) :where(
+  .pos-entry-grid input,
+  .pos-entry-grid .ui-select-trigger
+) {
+  height: var(--ui-entry-control-h) !important;
+  min-height: var(--ui-entry-control-h) !important;
+}
+
+/* Canonical dropdown arrow geometry is also global responsive density. */
+html[data-density] #root .ui-select-arrow,
+html[data-density] #root .ui-select-combobox-toggle {
+  width: var(--ui-select-arrow-w) !important;
+  min-width: var(--ui-select-arrow-w) !important;
+  height: var(--ui-select-arrow-h) !important;
+  min-height: var(--ui-select-arrow-h) !important;
+}
+
+html[data-density] #root .ui-button {
+  gap: var(--ui-button-gap) !important;
+  min-height: var(--ui-control-h-md) !important;
+  font-size: var(--ui-font-md) !important;
+}
+
+/* Ribbon/common shell sizing is entirely token-driven. */
+.ribbon-group-caption {
+  min-height: calc(var(--ui-font-sm) + 6px) !important;
+  padding: 1px var(--ui-pad-sm) !important;
+  color: #fff !important;
+  font-size: var(--ui-font-sm) !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+}
