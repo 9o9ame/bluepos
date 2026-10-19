@@ -1088,7 +1088,7 @@ export function PurchaseOrderPage() {
                             <div className="purchase-order-product-name">
                               <div className="purchase-order-row-product">
                                 {editingProductKey === line.key ? (
-                                  <>
+                                  <div className="purchase-order-product-combo">
                                     <input
                                       ref={productSearchRef}
                                       className="purchase-order-product-input"
@@ -1133,6 +1133,7 @@ export function PurchaseOrderPage() {
                                         </svg>
                                       </span>
                                     </button>
+                                  </div>
                                     {productPickerOpen && productLookupRows.length ? (
                                       <ProductLookupGrid
                                         rows={productLookupRows}
@@ -1252,9 +1253,10 @@ export function PurchaseOrderPage() {
                   <tr className="purchase-order-entry-row is-entry-row">
                     <td className="purchase-order-row-selector">›</td>
                     <td className="purchase-order-product-cell">
-                      <input
-                        ref={productSearchRef}
-                        className="purchase-order-product-input"
+                      <div className="purchase-order-product-combo">
+                        <input
+                          ref={productSearchRef}
+                          className="purchase-order-product-input"
                         value={productQuery}
                         placeholder="Search / select product"
                         autoComplete="off"
@@ -1295,7 +1297,8 @@ export function PurchaseOrderPage() {
                             <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
                           </svg>
                         </span>
-                      </button>
+                        </button>
+                      </div>
 
                       {productPickerOpen && productLookupRows.length ? (
                         <ProductLookupGrid
