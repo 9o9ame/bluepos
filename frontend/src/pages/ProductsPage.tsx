@@ -53,7 +53,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useLocalProducts, useLocalSuppliers } from '../features/catalog/useLocalCatalog'
 import { useBarcodeScannerTarget } from '../features/scanner/useBarcodeScanner'
-import { refreshProducts, refreshSuppliers } from '../data/catalogCache'
+import { refreshSuppliers } from '../data/catalogCache'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
 import type { OpeningBalance } from '../types/inventory'
@@ -1904,6 +1904,8 @@ export function ProductsPage({
               setSelectedKey(row.ulid)
             }}
             emptyMessage="No products found."
+            virtualize
+            estimatedRowHeight={20}
             loading={localProducts.isLoading}
             loadingLabel="Loading cached products…"
           />
