@@ -1,23 +1,23 @@
 /* Products dropdown layout only; visual chrome comes from UiSelect.css. */
 .product-reference-screen .product-dropdown,
-.product-reference-screen .product-barcode-unit-dropdown {
+.product-reference-screen .product-barcode-unit-dropdown{
   width: 100%;
   min-width: 0;
 }
 
-.product-reference-screen .product-def-groupbar > .product-dropdown {
+.product-reference-screen .product-def-groupbar > .product-dropdown{
   flex: 1 1 auto;
 }
 
-.product-reference-screen .pdf-field-plus > .product-dropdown {
+.product-reference-screen .pdf-field-plus > .product-dropdown{
   min-width: 0;
 }
 
-.product-reference-screen .pdf-barcode-table td:nth-child(2) {
+.product-reference-screen .pdf-barcode-table td:nth-child(2){
   padding-block: 2px;
 }
 
-.product-reference-screen .pdf-barcode-table .product-barcode-unit-dropdown {
+.product-reference-screen .pdf-barcode-table .product-barcode-unit-dropdown{
   align-self: center;
 }
 
@@ -28,9 +28,10 @@
 
 /*
  * Product list filters stay on one row on desktop/laptop:
- * compact category selector on the left, wide search field on the right.
+ * compact category selector on the left,
+wide search field on the right.
  */
-.product-reference-screen .product-def-filterbar {
+.product-reference-screen .product-def-filterbar{
   display: grid;
   grid-template-columns: minmax(220px, 34%) minmax(0, 1fr);
   align-items: center;
@@ -38,7 +39,7 @@
   padding: 4px 6px;
 }
 
-.product-reference-screen .product-def-filterbar .product-def-groupbar {
+.product-reference-screen .product-def-filterbar .product-def-groupbar{
   min-width: 0;
   width: 100%;
   height: 32px;
@@ -46,26 +47,26 @@
   padding-inline: 6px;
 }
 
-.product-reference-screen .product-def-filterbar .product-def-grid-top {
+.product-reference-screen .product-def-filterbar .product-def-grid-top{
   flex: none;
   min-width: 0;
   width: 100%;
   padding: 0;
 }
 
-.product-reference-screen .product-def-filterbar .product-def-grid-search {
+.product-reference-screen .product-def-filterbar .product-def-grid-search{
   width: 100%;
   min-width: 0;
 }
 
-.product-reference-screen .product-def-filterbar .product-def-grid-search .pdf-input {
+.product-reference-screen .product-def-filterbar .product-def-grid-search .pdf-input{
   width: 100% !important;
   min-width: 0 !important;
   height: 32px;
 }
 
 @media (max-width: 1100px) {
-  .product-reference-screen.product-def {
+  .product-reference-screen.product-def{
     grid-template-columns: 124px minmax(340px, 41%) minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
     column-gap: 4px;
@@ -73,7 +74,7 @@
     overflow: hidden;
   }
 
-  .product-reference-screen .product-def-rail {
+  .product-reference-screen .product-def-rail{
     flex-direction: column;
     flex-wrap: nowrap;
     min-width: 0;
@@ -83,63 +84,63 @@
   }
 
   .product-reference-screen .product-def-photo,
-  .product-reference-screen .product-def-image-loader {
+  .product-reference-screen .product-def-image-loader{
     height: 118px;
     min-height: 118px;
     max-height: 118px;
     padding: 4px;
   }
 
-  .product-reference-screen .product-def-rail-btn {
+  .product-reference-screen .product-def-rail-btn{
     min-height: 34px;
     padding: 3px 3px;
   }
 
-  .product-reference-screen .product-def-rail-spacer {
+  .product-reference-screen .product-def-rail-spacer{
     flex: 1 1 auto;
     min-height: 4px;
   }
 
-  .product-reference-screen .product-def-cmd {
+  .product-reference-screen .product-def-cmd{
     min-height: 36px;
     height: 36px;
     gap: 6px;
     padding: 0 6px;
   }
 
-  .product-reference-screen .product-def-cmd-icon {
+  .product-reference-screen .product-def-cmd-icon{
     width: 26px;
     height: 26px;
     border-radius: 7px;
   }
 
-  .product-reference-screen .product-def-cmd-icon svg {
+  .product-reference-screen .product-def-cmd-icon svg{
     width: 14px;
     height: 14px;
   }
 
-  .product-reference-screen .product-def-cmd-label {
+  .product-reference-screen .product-def-cmd-label{
     font-size: 10px;
   }
 
-  .product-reference-screen .product-def-cmd-key {
+  .product-reference-screen .product-def-cmd-key{
     font-size: 9px;
   }
 
-  .product-reference-screen .product-def-cmd-text {
+  .product-reference-screen .product-def-cmd-text{
     min-width: 0;
     gap: 2px;
     overflow: visible;
   }
 
   .product-reference-screen .product-def-form,
-  .product-reference-screen .product-def-grid {
+  .product-reference-screen .product-def-grid{
     min-width: 0;
     min-height: 0;
     overflow: hidden;
   }
 
-  .product-reference-screen .product-def-fields {
+  .product-reference-screen .product-def-fields{
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
@@ -148,30 +149,29 @@
   .product-reference-screen .pdf-row,
   .product-reference-screen .pdf-row-split,
   .product-reference-screen .pdf-row-rates,
-  .product-reference-screen .pdf-row-check {
+  .product-reference-screen .pdf-row-check{
     min-width: 0;
   }
 
   .product-reference-screen .pdf-input,
-  .product-reference-screen .pdf-select,
-  .product-reference-screen .pdf-field-plus {
+  .product-reference-screen .pdf-field-plus{
     min-width: 0;
   }
 
-  .product-reference-screen .product-def-grid .pos-grid-wrap {
+  .product-reference-screen .product-def-grid .pos-grid-wrap{
     min-width: 0;
     overflow-x: hidden;
     overflow-y: auto;
   }
 
-  .product-reference-screen .product-def-grid .pos-grid {
+  .product-reference-screen .product-def-grid .pos-grid{
     width: 100%;
     min-width: 0;
     table-layout: fixed;
   }
 
   .product-reference-screen .product-def-grid .pos-grid th,
-  .product-reference-screen .product-def-grid .pos-grid td {
+  .product-reference-screen .product-def-grid .pos-grid td{
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
