@@ -5,7 +5,7 @@
 
 @media (max-width: 1100px) {
   .product-reference-screen.product-def {
-    grid-template-columns: 64px minmax(350px, 44%) minmax(0, 1fr);
+    grid-template-columns: 80px minmax(338px, 43%) minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
     min-width: 0;
     overflow: hidden;
@@ -14,7 +14,7 @@
   .product-reference-screen .product-def-rail {
     min-width: 0;
     gap: 3px;
-    padding: 4px 3px;
+    padding: 4px 4px;
   }
 
   .product-reference-screen .product-def-photo,
