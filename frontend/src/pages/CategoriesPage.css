@@ -1,4 +1,5 @@
-.categories-page {
+.categories-page,
+.categories-page .desktop-panel-body {
   min-height: 0;
 }
 
@@ -25,7 +26,6 @@
   min-height: 0;
   overflow: auto;
 }
-
 
 .categories-page .form-group-body {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
