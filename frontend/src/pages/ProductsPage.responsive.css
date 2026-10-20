@@ -1,3 +1,22 @@
+/* Fine alignment for Products dropdowns only. */
+.product-reference-screen .product-def-filterbar .product-def-groupbar .ui-select-trigger {
+  height: 30px;
+}
+
+.product-reference-screen .pdf-barcode-table .ui-select-trigger {
+  height: 18px;
+  min-height: 18px;
+}
+
+.product-reference-screen .pdf-barcode-table .ui-simple-dropdown .ui-select-combobox-toggle {
+  height: 16px;
+  min-height: 16px;
+}
+
+.product-reference-screen .pdf-barcode-table .ui-select-arrow {
+  height: 16px;
+}
+
 /*
  * Products Definition — laptop responsive geometry.
  * Preserve the approved desktop composition; only rebalance widths/overflow.
