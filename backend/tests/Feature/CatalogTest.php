@@ -215,6 +215,69 @@ class CatalogTest extends TestCase
         ])->assertCreated();
     }
 
+    public function test_subcategory_brand_and_unit_codes_are_server_generated_and_immutable(): void
+    {
+        $this->signInOwner('master-auto-codes')->assertOk();
+
+        $categoryUlid = $this->postJson('/api/categories', [
+            'name' => 'Auto Parent',
+        ])->assertCreated()->json('ulid');
+
+        $subcategory = $this->postJson('/api/subcategories', [
+            'category_ulid' => $categoryUlid,
+            'code' => 'CLIENT-SUB',
+            'name' => 'Auto Subcategory',
+        ])->assertCreated();
+        $subcategory->assertJsonPath('code', 'SUB-000001');
+
+        $brand = $this->postJson('/api/brands', [
+            'code' => 'CLIENT-BRAND',
+            'name' => 'Auto Brand',
+        ])->assertCreated();
+        $brand->assertJsonPath('code', 'BRD-000001');
+
+        $unit = $this->postJson('/api/units', [
+            'code' => 'CLIENT-UNIT',
+            'name' => 'Auto Unit',
+            'symbol' => 'au',
+            'allows_decimal' => true,
+        ])->assertCreated();
+        $unit->assertJsonPath('code', 'UNT-000001');
+
+        $this->patchJson('/api/subcategories/'.$subcategory->json('ulid'), [
+            'code' => 'HACKED-SUB',
+            'name' => 'Updated Subcategory',
+        ])->assertOk()
+            ->assertJsonPath('code', 'SUB-000001')
+            ->assertJsonPath('name', 'Updated Subcategory');
+
+        $this->patchJson('/api/brands/'.$brand->json('ulid'), [
+            'code' => 'HACKED-BRAND',
+            'name' => 'Updated Brand',
+        ])->assertOk()
+            ->assertJsonPath('code', 'BRD-000001')
+            ->assertJsonPath('name', 'Updated Brand');
+
+        $this->patchJson('/api/units/'.$unit->json('ulid'), [
+            'code' => 'HACKED-UNIT',
+            'name' => 'Updated Unit',
+        ])->assertOk()
+            ->assertJsonPath('code', 'UNT-000001')
+            ->assertJsonPath('name', 'Updated Unit');
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('master-auto-codes-other')->assertOk();
+
+        $otherBrand = $this->postJson('/api/brands', [
+            'name' => 'Other Tenant Brand',
+        ])->assertCreated();
+        $otherBrand->assertJsonPath('code', 'BRD-000001');
+
+        $this->assertNoInternalIds($subcategory->json());
+        $this->assertNoInternalIds($brand->json());
+        $this->assertNoInternalIds($unit->json());
+    }
+
     public function test_catalog_masters_can_be_created_updated_and_deactivated(): void
     {
         $this->signInOwner('master-crud')->assertOk();
