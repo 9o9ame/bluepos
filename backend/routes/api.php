@@ -330,6 +330,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::post('/inventory/stock-takes', [StockTakeController::class, 'store']);
         Route::get('/inventory/stock-takes/{stockTakeUlid}', [StockTakeController::class, 'show']);
         Route::patch('/inventory/stock-takes/{stockTakeUlid}', [StockTakeController::class, 'update']);
+        Route::put('/inventory/stock-takes/{stockTakeUlid}/draft', [StockTakeController::class, 'saveDraft']);
         Route::delete('/inventory/stock-takes/{stockTakeUlid}', [StockTakeController::class, 'destroy']);
         Route::post('/inventory/stock-takes/{stockTakeUlid}/lines', [StockTakeController::class, 'storeLine']);
         Route::patch('/inventory/stock-takes/{stockTakeUlid}/lines/{lineUlid}', [StockTakeController::class, 'updateLine']);
