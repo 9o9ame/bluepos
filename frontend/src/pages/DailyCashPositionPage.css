@@ -706,10 +706,30 @@
 @media (max-width: 1180px) {
   .dcp-dashboard-body {
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(145px, 0.78fr) minmax(190px, 1fr);
+    gap: 7px;
+  }
+
+  .dcp-dashboard-chart-card {
+    min-height: 0;
+  }
+
+  .dcp-dashboard-chart-wrap {
+    padding: 5px;
+  }
+
+  .dcp-dashboard-chart-wrap svg {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .dcp-dashboard-empty {
+    min-height: 0;
   }
 
   .dcp-dashboard-side {
-    min-height: 300px;
+    min-height: 0;
+    align-self: stretch;
   }
 }
 
