@@ -335,7 +335,8 @@
 @media (max-width: 1100px) {
   .product-view-workspace {
     grid-template-columns: 1fr;
-    overflow: auto;
+    grid-template-rows: minmax(0, 1fr) auto;
+    overflow: hidden;
   }
 
   .product-view-grid .pos-grid {
@@ -354,7 +355,7 @@
   }
 
   .product-view-grid {
-    min-height: 440px;
+    min-height: 0;
   }
 
   .product-view-side {
@@ -368,7 +369,6 @@
 
   .product-view-side-card {
     min-width: 0;
-    max-height: 78px;
   }
 
   .product-view-side-card h3 {
