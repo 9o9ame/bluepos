@@ -1,7 +1,6 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Boxes, Plus, RefreshCw, Save, Send, Trash2, X } from 'lucide-react'
-import { fetchProducts } from '../api/catalog'
 import {
   createStockTake,
   createStockTakeLine,
@@ -16,9 +15,10 @@ import {
 } from '../api/inventory'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
-import { UiSelect } from '../components/ui/UiSelect'
+import { UiSimpleDropdown } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
+import { useLocalProducts } from '../features/catalog/useLocalCatalog'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import type { Product } from '../types/catalog'
@@ -54,7 +54,6 @@ export function StockTakingPage() {
   const [headerDirty, setHeaderDirty] = useState(false)
 
   const [productSearch, setProductSearch] = useState('')
-  const deferredProductSearch = useDeferredValue(productSearch)
   const [productUlid, setProductUlid] = useState('')
   const [countedQuantity, setCountedQuantity] = useState('')
   const [lineNotes, setLineNotes] = useState('')
@@ -80,18 +79,11 @@ export function StockTakingPage() {
     enabled: Boolean(documentUlid),
   })
 
-  const productsQuery = useQuery({
-    queryKey: ['products', 'stock-taking', deferredProductSearch],
-    queryFn: () => fetchProducts(
-      {
-        q: deferredProductSearch.trim() || undefined,
-        per_page: 50,
-        active_only: true,
-      },
-      { busy: 'none' },
-    ),
-    enabled: mode === 'editor',
-  })
+  const localProducts = useLocalProducts(
+    session,
+    productSearch,
+    mode === 'editor',
+  )
 
   const document = documentQuery.data ?? null
   const editable = Boolean(document && document.status === 'draft' && canAdjust)
@@ -247,10 +239,12 @@ export function StockTakingPage() {
     { key: 'notes', header: 'Notes', render: (row) => row.notes ?? '—' },
   ], [])
 
-  const productOptions = (productsQuery.data?.data ?? []).map((product) => ({
-    value: product.ulid,
-    label: productLabel(product),
-  }))
+  const productOptions = localProducts.rows
+    .filter((product) => product.is_active)
+    .map((product) => ({
+      value: product.ulid,
+      label: productLabel(product),
+    }))
 
   if (mode === 'list') {
     const selectedDocument = (listQuery.data ?? []).find((row) => row.ulid === selectedListKey) ?? null
@@ -259,7 +253,7 @@ export function StockTakingPage() {
       <section className="stock-taking-page">
         <div className="stock-taking-toolbar">
           <div className="stock-taking-toolbar-left">
-            <UiSelect
+            <UiSimpleDropdown
               className="stock-taking-new-warehouse"
               value={newWarehouseUlid}
               options={(warehousesQuery.data ?? []).map((warehouse) => ({
@@ -278,7 +272,7 @@ export function StockTakingPage() {
             >
               <Plus size={15} /> New
             </UiButton>
-            <UiSelect
+            <UiSimpleDropdown
               className="stock-taking-status-filter"
               value={statusFilter}
               options={[
@@ -287,10 +281,9 @@ export function StockTakingPage() {
                 { value: 'posted', label: 'Posted' },
               ]}
               onChange={setStatusFilter}
-              searchable={false}
               aria-label="Stock Taking status filter"
             />
-            <UiSelect
+            <UiSimpleDropdown
               className="stock-taking-warehouse-filter"
               value={warehouseFilter}
               options={[
@@ -457,18 +450,17 @@ export function StockTakingPage() {
           </label>
           <label className="stock-taking-product-select">
             <span>Product</span>
-            <UiSelect
+            <UiSimpleDropdown
               value={productUlid}
               options={productOptions}
               onChange={(value) => {
                 setProductUlid(value)
-                const product = productsQuery.data?.data.find((row) => row.ulid === value)
+                const product = localProducts.rows.find((row) => row.ulid === value)
                 if (product) setProductSearch(productLabel(product))
                 setLineDirty(true)
               }}
               disabled={!editable}
-              placeholder={productsQuery.isFetching ? 'Searching…' : 'Select product'}
-              searchPlaceholder="Filter loaded products…"
+              placeholder={localProducts.isLoading ? 'Loading products…' : 'Select product'}
             />
           </label>
           <label>
