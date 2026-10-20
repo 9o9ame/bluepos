@@ -63,7 +63,12 @@ export function fetchCategories() {
 }
 
 export function createCategory(
-  payload: Omit<CatalogMasterPayload, 'code'> & { code?: string },
+  payload: {
+    name: string
+    description?: string | null
+    is_active?: boolean
+    sort_order?: number
+  },
 ) {
   return apiFetch<CatalogItem>('/api/categories', {
     method: 'POST',
@@ -73,7 +78,12 @@ export function createCategory(
 
 export function updateCategory(
   ulid: string,
-  payload: Partial<CatalogMasterPayload>,
+  payload: Partial<{
+    name: string
+    description: string | null
+    is_active: boolean
+    sort_order: number
+  }>,
 ) {
   return apiFetch<CatalogItem>(
     `/api/categories/${ulid}`,
