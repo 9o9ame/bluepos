@@ -13,17 +13,13 @@ export function CategoriesPage() {
   const editor = useCatalogMasterEditor('category')
 
   const filteredRows = useMemo(() => {
-    const codeQuery = editor.code.trim().toLocaleLowerCase()
     const nameQuery = editor.name.trim().toLocaleLowerCase()
+    if (!nameQuery || editor.selected) return editor.rows
 
-    if (!codeQuery && !nameQuery) return editor.rows
-
-    return editor.rows.filter((row) => {
-      const codeMatches = !codeQuery || row.code.toLocaleLowerCase().includes(codeQuery)
-      const nameMatches = !nameQuery || row.name.toLocaleLowerCase().includes(nameQuery)
-      return codeMatches && nameMatches
-    })
-  }, [editor.code, editor.name, editor.rows])
+    return editor.rows.filter((row) =>
+      row.name.toLocaleLowerCase().includes(nameQuery),
+    )
+  }, [editor.name, editor.rows, editor.selected])
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -84,19 +80,11 @@ export function CategoriesPage() {
       {editor.canCreate || editor.canEdit ? (
         <form id="category-form" onSubmit={onSubmit}>
           <FormGroup title={editor.selected ? 'Edit category' : 'New category'}>
-            <Field label="Code">
-              <input
-                className="desktop-input"
-                value={editor.code}
-                placeholder={editor.selected ? 'Category code' : 'Search or leave blank for auto code'}
-                onChange={(e) => editor.setCode(e.target.value)}
-              />
-            </Field>
             <Field label="Name">
               <input
                 className="desktop-input"
                 value={editor.name}
-                placeholder="Search or enter category name"
+                placeholder={editor.selected ? 'Category name' : 'Search or enter category name'}
                 onChange={(e) => editor.setName(e.target.value)}
                 required
               />
