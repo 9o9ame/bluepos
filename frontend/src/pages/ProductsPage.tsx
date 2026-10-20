@@ -45,7 +45,7 @@ import {
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { CatalogQuickEditorModal, type QuickEditorKind } from '../components/catalog/CatalogQuickEditorModal'
 import { loadBarcodePrintSettings, printBarcodeLabels } from '../components/products/barcodePrint'
-import { UiSelect } from '../components/ui/UiSelect'
+import { UiSelect, UiSimpleDropdown, UiTableDropdown } from '../components/ui/UiSelect'
 import { StockValueBadge } from '../components/ui/StockValueBadge'
 import { PartyModal } from '../components/parties/PartyModal'
 import type { Party } from '../api/parties'
@@ -102,6 +102,10 @@ function createBarcodeDraft(
   }
 }
 
+type PdfSelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
+  simple?: boolean
+}
+
 function PdfSelect({
   className,
   onChange,
@@ -110,8 +114,9 @@ function PdfSelect({
   value,
   disabled,
   title,
+  simple = false,
   'aria-label': ariaLabel,
-}: SelectHTMLAttributes<HTMLSelectElement>) {
+}: PdfSelectProps) {
   const options = Children.toArray(children).flatMap((child) => {
     if (!isValidElement(child) || child.type !== 'option') return []
 
@@ -132,8 +137,10 @@ function PdfSelect({
     }]
   })
 
+  const SelectComponent = simple ? UiSimpleDropdown : UiSelect
+
   return (
-    <UiSelect
+    <SelectComponent
       value={String(value ?? '')}
       options={options}
       disabled={disabled}
