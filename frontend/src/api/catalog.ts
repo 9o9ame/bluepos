@@ -63,7 +63,7 @@ export function fetchCategories() {
 }
 
 export function createCategory(
-  payload: CatalogMasterPayload,
+  payload: Omit<CatalogMasterPayload, 'code'> & { code?: string },
 ) {
   return apiFetch<CatalogItem>('/api/categories', {
     method: 'POST',
