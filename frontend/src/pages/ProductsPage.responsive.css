@@ -1,6 +1,11 @@
 /* Fine alignment for Products dropdowns only. */
+.product-reference-screen .product-def-filterbar .product-def-groupbar .ui-select {
+  align-self: center;
+}
+
 .product-reference-screen .product-def-filterbar .product-def-groupbar .ui-select-trigger {
-  height: 30px;
+  height: 28px;
+  min-height: 28px;
 }
 
 .product-reference-screen .pdf-barcode-table .ui-select-trigger {
@@ -9,12 +14,12 @@
 }
 
 .product-reference-screen .pdf-barcode-table .ui-simple-dropdown .ui-select-combobox-toggle {
-  height: 16px;
-  min-height: 16px;
+  height: 14px;
+  min-height: 14px;
 }
 
 .product-reference-screen .pdf-barcode-table .ui-select-arrow {
-  height: 16px;
+  height: 14px;
 }
 
 /*
