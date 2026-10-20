@@ -18,7 +18,6 @@ class StoreSubcategoryRequest extends FormRequest
     {
         return [
             'category_ulid' => ['required', 'string', 'size:26'],
-            'code' => ['required', 'string', 'max:64', 'alpha_dash'],
             'name' => ['required', 'string', 'max:160'],
             'description' => ['nullable', 'string', 'max:255'],
             'is_active' => ['sometimes', 'boolean'],
