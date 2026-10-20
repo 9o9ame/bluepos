@@ -237,3 +237,30 @@
 
 }
 
+
+.stock-taking-delete-cell {
+  text-align: center;
+}
+
+.stock-taking-delete-row {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--control-radius);
+  background: transparent;
+  color: var(--ui-danger);
+  cursor: pointer;
+}
+
+.stock-taking-delete-row:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-danger) 10%, transparent);
+}
+
+.stock-taking-delete-row:disabled {
+  color: var(--ui-text-muted);
+  cursor: not-allowed;
+}
