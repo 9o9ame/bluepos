@@ -140,8 +140,13 @@ export function useCatalogMasterEditor(
       let item: CatalogMasterRecord
 
       if (kind === 'category') {
+        const categoryCreatePayload = {
+          name: name.trim(),
+          ...(code.trim() ? { code: code.trim() } : {}),
+        }
+
         item = created
-          ? await createCategory(payload)
+          ? await createCategory(categoryCreatePayload)
           : await updateCategory(selectedKey, payload)
       } else if (kind === 'subcategory') {
         if (!categoryUlid) {
