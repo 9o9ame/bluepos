@@ -97,8 +97,8 @@
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px;
+  padding: 0;
+  overflow: hidden;
 }
 
 .stock-taking-grid-card {
@@ -112,29 +112,19 @@
   height: 100%;
 }
 
-.stock-taking-line-entry {
-  display: grid;
-  grid-template-columns: minmax(180px, 1.2fr) minmax(220px, 1.5fr) 130px minmax(180px, 1fr) auto;
-  gap: 6px;
-  align-items: end;
-}
-
-.stock-taking-header-card label,
-.stock-taking-line-entry label {
+.stock-taking-header-card label {
   display: grid;
   gap: 3px;
   min-width: 0;
 }
 
-.stock-taking-header-card label > span,
-.stock-taking-line-entry label > span {
+.stock-taking-header-card label > span {
   color: var(--ui-text-muted);
   font-size: var(--ui-font-size-xs, 11px);
   font-weight: 600;
 }
 
-.stock-taking-header-card input,
-.stock-taking-line-entry input {
+.stock-taking-header-card input {
   width: 100%;
   min-width: 0;
   height: var(--ui-control-h-md, 28px);
@@ -147,22 +137,44 @@
   font: inherit;
 }
 
-.stock-taking-header-card input:focus-visible,
-.stock-taking-line-entry input:focus-visible {
+.stock-taking-header-card input:focus-visible {
   outline: none;
   border-color: var(--ui-accent);
   box-shadow: var(--ui-focus-shadow);
 }
 
-.stock-taking-header-card input:disabled,
-.stock-taking-line-entry input:disabled {
+.stock-taking-header-card input:disabled {
   background: var(--ui-surface-muted);
   color: var(--ui-text-muted);
 }
 
-.stock-taking-line-actions {
-  align-self: end;
-  flex-wrap: nowrap;
+.stock-taking-entry-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.stock-taking-entry-grid .pos-entry-grid {
+  min-width: 0;
+}
+
+.stock-taking-entry-grid tbody tr:not(.is-entry-row) {
+  cursor: pointer;
+}
+
+.stock-taking-entry-actions {
+  overflow: visible !important;
+  white-space: nowrap !important;
+}
+
+.stock-taking-entry-actions .ui-button {
+  min-width: auto;
+  margin-right: 3px;
+  padding-inline: 5px;
+}
+
+.stock-taking-entry-actions .ui-button:last-child {
+  margin-right: 0;
 }
 
 .stock-taking-footer {
@@ -222,29 +234,14 @@
     grid-column: 1 / -1;
   }
 
-  .stock-taking-line-entry {
-    grid-template-columns: 1fr 1fr 130px;
-  }
-
-  .stock-taking-line-notes,
-  .stock-taking-line-actions {
-    grid-column: span 2;
-  }
 }
 
 @media (max-width: 760px) {
-  .stock-taking-header-card,
-  .stock-taking-line-entry {
+  .stock-taking-header-card {
     grid-template-columns: 1fr;
   }
 
-  .stock-taking-notes-field,
-  .stock-taking-line-notes,
-  .stock-taking-line-actions {
+  .stock-taking-notes-field {
     grid-column: auto;
-  }
-
-  .stock-taking-line-actions {
-    flex-wrap: wrap;
   }
 }
