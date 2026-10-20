@@ -83,18 +83,68 @@
 .product-view-grid .pos-grid-wrap {
   height: 100%;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--ui-surface);
 }
 
 .product-view-grid .pos-grid {
-  min-width: 1370px;
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
 }
 
-.product-view-grid .pos-grid th {
+.product-view-grid .pos-grid th,
+.product-view-grid .pos-grid td {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.product-view-grid .pos-grid thead tr:first-child th {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 3;
+}
+
+.product-view-grid .pos-grid-filter-row th {
+  position: sticky;
+  top: var(--ui-table-header-h);
+  z-index: 2;
+  height: var(--ui-entry-control-h);
+  min-height: var(--ui-entry-control-h);
+  padding: 1px 2px !important;
+  background: var(--ui-surface);
+}
+
+.product-view-column-filter {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0 !important;
+  height: calc(var(--ui-entry-control-h) - 2px) !important;
+  min-height: 0 !important;
+  padding: 0 2px !important;
+  border: 1px solid var(--ui-control-border);
+  border-radius: calc(var(--control-radius) - 1px);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: none;
+  font: inherit;
+  font-size: inherit !important;
+  line-height: 1;
+}
+
+.product-view-column-filter:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.product-view-description-cell {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .product-view-stock-cell {
@@ -249,6 +299,21 @@
   .product-view-workspace {
     grid-template-columns: 1fr;
     overflow: auto;
+  }
+
+  .product-view-grid .pos-grid {
+    font-size: 8px;
+  }
+
+  .product-view-grid .pos-grid th,
+  .product-view-grid .pos-grid td {
+    padding-left: 2px !important;
+    padding-right: 2px !important;
+  }
+
+  .product-view-grid .pos-grid thead tr:first-child th {
+    white-space: normal;
+    line-height: 1.05;
   }
 
   .product-view-grid {
