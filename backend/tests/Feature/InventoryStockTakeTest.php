@@ -99,6 +99,73 @@ class InventoryStockTakeTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_stock_take_draft_save_syncs_all_lines_atomically(): void
+    {
+        $this->signInOwner('st-draft-sync')->assertOk();
+        $warehouseUlid = $this->sessionWarehouseUlid();
+        $productA = $this->createProduct('Draft Sync Product A');
+        $productB = $this->createProduct('Draft Sync Product B');
+
+        $this->postOpeningStock($warehouseUlid, $productA, '10.000000', '4.0000');
+
+        $documentUlid = $this->postJson('/api/inventory/stock-takes', [
+            'warehouse_ulid' => $warehouseUlid,
+        ])->assertCreated()->json('ulid');
+
+        $saved = $this->putJson('/api/inventory/stock-takes/'.$documentUlid.'/draft', [
+            'count_date' => now()->toDateString(),
+            'lines' => [
+                [
+                    'product_ulid' => $productA,
+                    'counted_quantity' => '7.000000',
+                    'notes' => 'A',
+                ],
+                [
+                    'product_ulid' => $productB,
+                    'counted_quantity' => '3.000000',
+                    'notes' => 'B',
+                ],
+            ],
+        ])->assertOk();
+
+        $this->assertCount(2, $saved->json('lines'));
+        $lineA = collect($saved->json('lines'))->firstWhere('product.ulid', $productA);
+        $this->assertSame('10.000000', $lineA['system_quantity']);
+        $this->assertSame('7.000000', $lineA['counted_quantity']);
+        $this->assertSame('-3.000000', $lineA['variance_quantity']);
+        $this->assertNoInternalIds($saved->json());
+
+        $resaved = $this->putJson('/api/inventory/stock-takes/'.$documentUlid.'/draft', [
+            'count_date' => now()->toDateString(),
+            'lines' => [
+                [
+                    'product_ulid' => $productB,
+                    'counted_quantity' => '4.000000',
+                    'notes' => null,
+                ],
+            ],
+        ])->assertOk();
+
+        $this->assertCount(1, $resaved->json('lines'));
+        $resaved->assertJsonPath('lines.0.product.ulid', $productB);
+        $resaved->assertJsonPath('lines.0.counted_quantity', '4.000000');
+
+        $this->putJson('/api/inventory/stock-takes/'.$documentUlid.'/draft', [
+            'count_date' => now()->toDateString(),
+            'lines' => [
+                ['product_ulid' => $productB, 'counted_quantity' => '1.000000'],
+                ['product_ulid' => $productB, 'counted_quantity' => '2.000000'],
+            ],
+        ])->assertStatus(422);
+
+        $this->postJson('/api/inventory/stock-takes/'.$documentUlid.'/post')->assertOk();
+
+        $this->putJson('/api/inventory/stock-takes/'.$documentUlid.'/draft', [
+            'count_date' => now()->toDateString(),
+            'lines' => [],
+        ])->assertStatus(422)->assertJsonPath('error.key', 'DOCUMENT_POSTED');
+    }
+
     public function test_stock_take_posts_adjustment_in_and_zero_variance_is_noop(): void
     {
         $this->signInOwner('st-in')->assertOk();
@@ -179,6 +246,10 @@ class InventoryStockTakeTest extends TestCase
         $this->getJson('/api/inventory/stock-takes/'.$documentA)->assertNotFound();
         $this->patchJson('/api/inventory/stock-takes/'.$documentA, ['notes' => 'Leak'])
             ->assertNotFound();
+        $this->putJson('/api/inventory/stock-takes/'.$documentA.'/draft', [
+            'count_date' => now()->toDateString(),
+            'lines' => [],
+        ])->assertNotFound();
         $this->postJson('/api/inventory/stock-takes', [
             'warehouse_ulid' => $warehouseA,
         ])->assertNotFound();
