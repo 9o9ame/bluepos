@@ -21,13 +21,13 @@
 .product-tabular-primary-row {
   display: grid;
   grid-template-columns:
-    minmax(210px, 250px)
-    minmax(260px, 315px)
-    minmax(460px, 1fr)
+    minmax(170px, .9fr)
+    minmax(180px, .85fr)
+    minmax(260px, 1.35fr)
     auto
-    minmax(220px, max-content)
+    minmax(250px, max-content)
     auto;
-  gap: 7px;
+  gap: 6px;
   align-items: end;
   min-width: 0;
 }
@@ -210,7 +210,7 @@
   transition: none !important;
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1366px) {
   .product-tabular-toolbar {
     gap: 4px;
     padding: 5px 6px 6px;
