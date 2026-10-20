@@ -13,10 +13,11 @@ import {
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { PosEntryGrid, type PosEntryGridColumn } from '../components/desktop/PosEntryGrid'
 import { UiButton } from '../components/ui/UiButton'
-import { UiSimpleDropdown, UiTableDropdown } from '../components/ui/UiSelect'
+import { UiSimpleDropdown } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useLocalProducts } from '../features/catalog/useLocalCatalog'
+import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import type { Product } from '../types/catalog'
@@ -90,7 +91,11 @@ export function StockTakingPage() {
   const [lineNotes, setLineNotes] = useState('')
   const [selectedDraftKey, setSelectedDraftKey] = useState<string | null>(null)
   const [lineDirty, setLineDirty] = useState(false)
+  const [productLookupQuery, setProductLookupQuery] = useState('')
+  const [productLookupOpen, setProductLookupOpen] = useState(false)
   const entryRowRef = useRef<HTMLTableRowElement | null>(null)
+  const productLookupAnchorRef = useRef<HTMLDivElement | null>(null)
+  const productLookupInputRef = useRef<HTMLInputElement | null>(null)
 
   const warehousesQuery = useQuery({
     queryKey: ['warehouses'],
@@ -113,7 +118,7 @@ export function StockTakingPage() {
 
   const localProducts = useLocalProducts(
     session,
-    '',
+    productLookupQuery,
     mode === 'editor',
   )
 
@@ -143,6 +148,8 @@ export function StockTakingPage() {
 
   function clearLineForm() {
     setProductUlid('')
+    setProductLookupQuery('')
+    setProductLookupOpen(false)
     setCountedQuantity('0.00')
     setLineNotes('')
     setSelectedDraftKey(null)
@@ -152,6 +159,8 @@ export function StockTakingPage() {
   function fillLineForm(line: StockTakeDraftLine) {
     setSelectedDraftKey(line.key)
     setProductUlid(line.product_ulid)
+    setProductLookupQuery(`${line.product_number} · ${line.product_name}`)
+    setProductLookupOpen(false)
     setCountedQuantity(line.counted_quantity)
     setLineNotes(line.notes ?? '')
     setLineDirty(false)
@@ -256,27 +265,6 @@ export function StockTakingPage() {
     { key: 'delete', header: '', width: 38, align: 'center' },
   ], [])
 
-  const productOptions = useMemo(
-    () =>
-      (localProducts.data ?? [])
-        .filter((product) => product.is_active)
-        .map((product) => ({
-          value: product.ulid,
-          label: productLabel(product),
-          columns: [
-            product.product_number,
-            `${product.primary_barcode ?? product.sku ?? '—'} · ${product.name}`,
-            product.sales_lookup?.in_stock ?? '—',
-            retailPrice(product),
-            product.purchase_rate ?? '—',
-            product.sales_lookup?.average_cost ?? '—',
-            product.base_unit?.code ?? '—',
-            product.rack_location ?? '—',
-          ],
-        })),
-    [localProducts.data],
-  )
-
   const selectedProduct = localProducts.data?.find((product) => product.ulid === productUlid) ?? null
   const selectedDraftLine = selectedDraftKey
     ? draftLines.find((line) => line.key === selectedDraftKey) ?? null
@@ -285,9 +273,7 @@ export function StockTakingPage() {
   function focusEntryField(field: 'product' | 'counted' | 'notes') {
     window.setTimeout(() => {
       if (field === 'product') {
-        entryRowRef.current
-          ?.querySelector<HTMLInputElement>('.ui-select-trigger-search')
-          ?.focus()
+        productLookupInputRef.current?.focus()
         return
       }
 
@@ -651,31 +637,97 @@ export function StockTakingPage() {
             <td>{selectedProduct?.product_number ?? selectedDraftLine?.product_number ?? ''}</td>
             <td>{selectedProduct?.sku ?? selectedDraftLine?.sku ?? ''}</td>
             <td>
-              <UiTableDropdown
-                value={productUlid}
-                options={productOptions}
-                menuColumns={[
-                  { header: 'ID', width: '78px' },
-                  { header: 'Description', width: 'minmax(280px, 1fr)' },
-                  { header: 'In Stock', width: '74px' },
-                  { header: 'Unit Price', width: '82px' },
-                  { header: 'Base Rate', width: '82px' },
-                  { header: 'Cost', width: '82px' },
-                  { header: 'Unit', width: '62px' },
-                  { header: 'Location', width: '90px' },
-                ]}
-                menuMinWidth={920}
-                menuResultLimit={80}
-                maxMenuHeight={280}
-                onChange={(value) => {
-                  setProductUlid(value)
-                  setLineDirty(true)
-                  focusEntryField('counted')
-                }}
-                disabled={!editable}
-                placeholder={localProducts.isLoading ? 'Loading products…' : 'Select product'}
-                aria-label="Stock Taking product"
-              />
+              <div
+                ref={productLookupAnchorRef}
+                className={[
+                  'ui-select',
+                  productLookupOpen ? 'is-open' : '',
+                ].filter(Boolean).join(' ')}
+              >
+                <div className="ui-select-trigger ui-select-combobox-trigger">
+                  <input
+                    ref={productLookupInputRef}
+                    type="text"
+                    className="ui-select-trigger-search"
+                    value={productLookupQuery}
+                    disabled={!editable}
+                    placeholder={localProducts.isLoading ? 'Loading products…' : 'Select product'}
+                    aria-label="Stock Taking product"
+                    autoComplete="off"
+                    onFocus={() => {
+                      if (!editable) return
+                      setProductLookupOpen(true)
+                    }}
+                    onChange={(event) => {
+                      setProductLookupQuery(event.target.value)
+                      setProductUlid('')
+                      setLineDirty(true)
+                      setProductLookupOpen(true)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') {
+                        setProductLookupOpen(false)
+                        return
+                      }
+
+                      if (event.key !== 'Enter') return
+                      const first = localProducts.rows.find(
+                        (product) => product.is_active && product.status === 'active',
+                      )
+                      if (!first) return
+
+                      event.preventDefault()
+                      setProductUlid(first.ulid)
+                      setProductLookupQuery(productLabel(first))
+                      setProductLookupOpen(false)
+                      setLineDirty(true)
+                      focusEntryField('counted')
+                    }}
+                  />
+
+                  <button
+                    type="button"
+                    className="ui-select-combobox-toggle"
+                    disabled={!editable}
+                    aria-label={productLookupOpen ? 'Close product dropdown' : 'Open product dropdown'}
+                    aria-expanded={productLookupOpen}
+                    tabIndex={-1}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      if (!editable) return
+                      setProductLookupOpen((open) => !open)
+                      requestAnimationFrame(() => productLookupInputRef.current?.focus())
+                    }}
+                  >
+                    <span className="ui-select-arrow" aria-hidden>
+                      <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                        <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                      </svg>
+                    </span>
+                  </button>
+                </div>
+
+                {productLookupOpen ? (
+                  <ProductLookupGrid
+                    rows={localProducts.rows.filter(
+                      (product) => product.is_active && product.status === 'active',
+                    )}
+                    total={localProducts.total}
+                    priceType="retail"
+                    themed
+                    portalAnchorRef={productLookupAnchorRef}
+                    selectedUlid={productUlid || null}
+                    onRequestClose={() => setProductLookupOpen(false)}
+                    onSelect={(product) => {
+                      setProductUlid(product.ulid)
+                      setProductLookupQuery(productLabel(product))
+                      setProductLookupOpen(false)
+                      setLineDirty(true)
+                      focusEntryField('counted')
+                    }}
+                  />
+                ) : null}
+              </div>
             </td>
             <td className="is-num">{selectedDraftLine?.system_quantity ?? ''}</td>
             <td className="is-num">
