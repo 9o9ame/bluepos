@@ -39,10 +39,13 @@ function openProductViewDb(): Promise<IDBDatabase> {
 
 export function productViewCacheKey(
   tenantUlid: string,
+  membershipUlid: string,
   branchUlid: string,
   warehouseUlid: string,
+  canViewInventory: boolean,
 ): string {
-  return `${tenantUlid}:${branchUlid}:${warehouseUlid}`
+  const permissionScope = canViewInventory ? 'inventory-view' : 'inventory-hidden'
+  return `${tenantUlid}:${membershipUlid}:${branchUlid}:${warehouseUlid}:${permissionScope}`
 }
 
 export async function readProductViewSnapshot(
