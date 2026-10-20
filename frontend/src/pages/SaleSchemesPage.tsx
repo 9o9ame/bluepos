@@ -11,7 +11,7 @@ import {
 } from '../api/saleSchemes'
 import { DesktopButton, DesktopPanel, Field, FormGroup } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
-import { UiSelect } from '../components/ui/UiSelect'
+import { UiSimpleDropdown, UiTableDropdown } from '../components/ui/UiSelect'
 import { useCan } from '../features/auth/useCan'
 import { askConfirm } from '../feedback/FeedbackProvider'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
@@ -187,11 +187,6 @@ export function SaleSchemesPage() {
       }
     >
       {error ? <p className="mb-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
-      <p className="mb-3 text-[12px] text-[var(--ui-text-muted)]">
-        Admin chooses <strong>Salesman decides</strong> (Add/Skip) or <strong>Auto</strong> (apply when eligible).
-        Packaging bags/boxes are separate — mark products as Packaging in Define Products.
-      </p>
-
       {(canCreate || canEdit) && (creating || selected) ? (
         <form id="sale-scheme-form" onSubmit={onSubmit}>
           <FormGroup title={creating ? 'New scheme' : 'Edit scheme'}>
@@ -199,10 +194,11 @@ export function SaleSchemesPage() {
               <input className="desktop-input" value={name} onChange={(e) => setName(e.target.value)} required />
             </Field>
             <Field label="Apply mode">
-              <UiSelect
+              <UiSimpleDropdown
                 triggerClassName="desktop-input"
                 aria-label="Apply mode"
                 value={applyMode}
+                searchable={false}
                 options={[
                   { value: 'salesman', label: 'Salesman decides (Add / Skip)' },
                   { value: 'auto', label: 'Auto apply when eligible' },
@@ -219,19 +215,23 @@ export function SaleSchemesPage() {
               />
             </Field>
             <Field label="Free product">
-              <UiSelect
+              <UiTableDropdown
                 triggerClassName="desktop-input"
                 aria-label="Free product"
                 value={rewardProductUlid}
-                options={[
-                  { value: '', label: '— Select product —' },
-                  ...products
-                    .filter((row) => row.is_active || row.ulid === rewardProductUlid)
-                    .map((row) => ({
-                      value: row.ulid,
-                      label: `${row.product_number} — ${row.name}`,
-                    })),
+                placeholder="— Select product —"
+                menuMinWidth={420}
+                menuColumns={[
+                  { header: 'Product #', width: '120px' },
+                  { header: 'Product' },
                 ]}
+                options={products
+                  .filter((row) => row.is_active || row.ulid === rewardProductUlid)
+                  .map((row) => ({
+                    value: row.ulid,
+                    label: `${row.product_number} — ${row.name}`,
+                    columns: [row.product_number, row.name],
+                  }))}
                 onChange={setRewardProductUlid}
               />
             </Field>
