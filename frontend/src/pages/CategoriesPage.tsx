@@ -1,4 +1,4 @@
-import { FormEvent } from 'react'
+import { FormEvent, useMemo } from 'react'
 import { Plus, RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { ApiClientError } from '../api/client'
 import { useCatalogMasterEditor } from '../components/catalog/useCatalogMasterEditor'
@@ -11,6 +11,19 @@ import './CategoriesPage.css'
 export function CategoriesPage() {
   const { closeActiveTab } = useWorkspace()
   const editor = useCatalogMasterEditor('category')
+
+  const filteredRows = useMemo(() => {
+    const codeQuery = editor.code.trim().toLocaleLowerCase()
+    const nameQuery = editor.name.trim().toLocaleLowerCase()
+
+    if (!codeQuery && !nameQuery) return editor.rows
+
+    return editor.rows.filter((row) => {
+      const codeMatches = !codeQuery || row.code.toLocaleLowerCase().includes(codeQuery)
+      const nameMatches = !nameQuery || row.name.toLocaleLowerCase().includes(nameQuery)
+      return codeMatches && nameMatches
+    })
+  }, [editor.code, editor.name, editor.rows])
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -71,8 +84,23 @@ export function CategoriesPage() {
       {editor.canCreate || editor.canEdit ? (
         <form id="category-form" onSubmit={onSubmit}>
           <FormGroup title={editor.selected ? 'Edit category' : 'New category'}>
-            <Field label="Code"><input className="desktop-input" value={editor.code} onChange={(e) => editor.setCode(e.target.value)} required /></Field>
-            <Field label="Name"><input className="desktop-input" value={editor.name} onChange={(e) => editor.setName(e.target.value)} required /></Field>
+            <Field label="Code">
+              <input
+                className="desktop-input"
+                value={editor.code}
+                placeholder={editor.selected ? 'Category code' : 'Search or leave blank for auto code'}
+                onChange={(e) => editor.setCode(e.target.value)}
+              />
+            </Field>
+            <Field label="Name">
+              <input
+                className="desktop-input"
+                value={editor.name}
+                placeholder="Search or enter category name"
+                onChange={(e) => editor.setName(e.target.value)}
+                required
+              />
+            </Field>
           </FormGroup>
         </form>
       ) : null}
@@ -83,7 +111,7 @@ export function CategoriesPage() {
             { key: 'name', header: 'Name', render: (row) => row.name },
             { key: 'status', header: 'Status', width: 100, render: (row) => (row.is_active ? 'Active' : 'Archived') },
           ]}
-          rows={editor.rows}
+          rows={filteredRows}
           rowKey={(row) => row.ulid}
           selectedKey={editor.selectedKey}
           onSelect={editor.select}
