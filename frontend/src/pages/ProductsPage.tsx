@@ -1869,12 +1869,12 @@ export function ProductsPage({
 
           <PosDataGrid
             columns={[
-              { key: 'no', header: 'No', width: 64, render: (row: Product) => row.product_number },
-              { key: 'name', header: 'Name', render: (row: Product) => row.name },
+              { key: 'no', header: 'No', width: 56, render: (row: Product) => row.product_number },
+              { key: 'name', header: 'Name', width: 190, render: (row: Product) => row.name },
               {
                 key: 'stock',
                 header: 'In Stock',
-                width: 88,
+                width: 72,
                 align: 'right',
                 render: (row: Product) => {
                   if (!canViewStock) {
@@ -1916,7 +1916,7 @@ export function ProductsPage({
             <span className="product-def-pager">
               {localProducts.isBackgroundRefreshing
                 ? 'Syncing in background…'
-                : 'IndexedDB catalogue'}
+                : 'All products loaded'}
             </span>
           </div>
         </section>
