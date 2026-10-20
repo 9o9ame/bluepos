@@ -1,27 +1,24 @@
-/* Fine alignment for Products dropdowns only. */
-.product-reference-screen .product-def-filterbar .product-def-groupbar .ui-select {
+/* Products dropdown layout only; visual chrome comes from UiSelect.css. */
+.product-reference-screen .product-dropdown,
+.product-reference-screen .product-barcode-unit-dropdown {
+  width: 100%;
+  min-width: 0;
+}
+
+.product-reference-screen .product-def-groupbar > .product-dropdown {
+  flex: 1 1 auto;
+}
+
+.product-reference-screen .pdf-field-plus > .product-dropdown {
+  min-width: 0;
+}
+
+.product-reference-screen .pdf-barcode-table td:nth-child(2) {
+  padding-block: 2px;
+}
+
+.product-reference-screen .pdf-barcode-table .product-barcode-unit-dropdown {
   align-self: center;
-  height: 24px;
-}
-
-.product-reference-screen .product-def-filterbar .product-def-groupbar .ui-select-trigger {
-  height: 24px;
-  min-height: 24px;
-}
-
-.product-reference-screen .pdf-barcode-table .ui-select,
-.product-reference-screen .pdf-barcode-table .ui-select-trigger {
-  height: 16px;
-  min-height: 16px;
-}
-
-.product-reference-screen .pdf-barcode-table .ui-simple-dropdown .ui-select-combobox-toggle {
-  height: 12px;
-  min-height: 12px;
-}
-
-.product-reference-screen .pdf-barcode-table .ui-select-arrow {
-  height: 12px;
 }
 
 /*
