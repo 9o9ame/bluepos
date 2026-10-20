@@ -29,8 +29,7 @@
 }
 
 .stock-taking-toolbar-left,
-.stock-taking-toolbar-right,
-.stock-taking-line-actions {
+.stock-taking-toolbar-right {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -160,21 +159,6 @@
 
 .stock-taking-entry-grid tbody tr:not(.is-entry-row) {
   cursor: pointer;
-}
-
-.stock-taking-entry-actions {
-  overflow: visible !important;
-  white-space: nowrap !important;
-}
-
-.stock-taking-entry-actions .ui-button {
-  min-width: auto;
-  margin-right: 3px;
-  padding-inline: 5px;
-}
-
-.stock-taking-entry-actions .ui-button:last-child {
-  margin-right: 0;
 }
 
 .stock-taking-footer {
