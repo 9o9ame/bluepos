@@ -720,11 +720,13 @@ export type UiTableDropdownProps = Omit<
 export function UiTableDropdown({
   searchable = true,
   menuColumns,
+  className,
   ...props
 }: UiTableDropdownProps) {
   return (
     <UiSelect
       {...props}
+      className={['ui-table-dropdown', className ?? ''].filter(Boolean).join(' ')}
       searchable={searchable}
       searchInTrigger
       menuColumns={menuColumns}
