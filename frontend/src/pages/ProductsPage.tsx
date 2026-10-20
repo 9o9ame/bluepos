@@ -1401,6 +1401,7 @@ export function ProductsPage({
               <label>Category</label>
               <div className="pdf-field-plus">
                 <PdfSelect
+                  simple
                   value={categoryUlid}
                   disabled={!canSave}
                   onChange={(e) => {
@@ -1427,6 +1428,7 @@ export function ProductsPage({
               <label className="pdf-right-label">Subcategory</label>
               <div className="pdf-field-plus">
                 <PdfSelect
+                  simple
                   value={subcategoryUlid}
                   disabled={!canSave || !categoryUlid}
                   onChange={(e) => setSubcategoryUlid(e.target.value)}
@@ -1464,21 +1466,33 @@ export function ProductsPage({
             <div className="pdf-row">
               <label>Supplier</label>
               <div className="pdf-field-plus">
-                <PdfSelect
+                <UiTableDropdown
                   value={primarySupplierUlid}
                   disabled={!canSave}
-                  onChange={(e) => setPrimarySupplierUlid(e.target.value)}
-                >
-                  <option value="">—</option>
-                  {supplierRows
-                    .filter((row) => {
-                      if (creating) return row.is_active
-                      return row.is_active || row.ulid === primarySupplierUlid
-                    })
-                    .map((row) => (
-                      <option key={row.ulid} value={row.ulid}>{row.name}</option>
-                    ))}
-                </PdfSelect>
+                  className="pdf-select-shell"
+                  aria-label="Supplier"
+                  placeholder="—"
+                  menuMinWidth={440}
+                  menuColumns={[
+                    { header: 'Code', width: '90px' },
+                    { header: 'Supplier', width: 'minmax(180px, 1fr)' },
+                    { header: 'Phone', width: '120px' },
+                  ]}
+                  options={[
+                    { value: '', label: '—', columns: ['—', '—', '—'] },
+                    ...supplierRows
+                      .filter((row) => {
+                        if (creating) return row.is_active
+                        return row.is_active || row.ulid === primarySupplierUlid
+                      })
+                      .map((row) => ({
+                        value: row.ulid,
+                        label: row.name,
+                        columns: [row.code, row.name, row.mobile ?? row.phone ?? ''],
+                      })),
+                  ]}
+                  onChange={setPrimarySupplierUlid}
+                />
                 <button
                   type="button"
                   className="pdf-plus-button"
@@ -1496,6 +1510,7 @@ export function ProductsPage({
               <label>Company</label>
               <div className="pdf-field-plus">
                 <PdfSelect
+                  simple
                   value={brandUlid}
                   disabled={!canSave}
                   onChange={(e) => setBrandUlid(e.target.value)}
@@ -1524,6 +1539,7 @@ export function ProductsPage({
               <label className="pdf-right-label">Bar.Grp</label>
               <div className="pdf-field-plus">
                 <PdfSelect
+                  simple
                   value={barcodeGroupUlid}
                   disabled={!canSave}
                   onChange={(e) => setBarcodeGroupUlid(e.target.value)}
@@ -1551,6 +1567,7 @@ export function ProductsPage({
               <label>Measure Unit</label>
               <div className="pdf-field-plus">
                 <PdfSelect
+                  simple
                   value={baseUnitUlid || units.data?.[0]?.ulid || ''}
                   disabled={!canSave}
                   onChange={(e) => onBaseUnitChange(e.target.value)}
@@ -1723,6 +1740,7 @@ export function ProductsPage({
                         </td>
                         <td>
                           <PdfSelect
+                            simple
                             className="pdf-barcode-input"
                             value={row.unit_ulid}
                             disabled={!canSave || !canBarcodes}
@@ -1844,6 +1862,7 @@ export function ProductsPage({
             <div className="product-def-groupbar">
               <span className="product-def-groupbar-label">Category / Group</span>
               <PdfSelect
+                simple
                 className="product-def-groupbar-select"
                 value={listCategoryUlid}
                 aria-label="Filter products by category"
