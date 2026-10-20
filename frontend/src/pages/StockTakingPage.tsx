@@ -14,6 +14,7 @@ import {
   updateStockTakeLine,
 } from '../api/inventory'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
+import { PosEntryGrid, type PosEntryGridColumn } from '../components/desktop/PosEntryGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSimpleDropdown } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -229,14 +230,15 @@ export function StockTakingPage() {
     { key: 'notes', header: 'Notes', render: (row) => row.notes ?? '—' },
   ], [])
 
-  const lineColumns = useMemo<PosGridColumn<StockTakeLine>[]>(() => [
-    { key: 'number', header: 'Product #', width: 100, render: (row) => row.product?.product_number ?? '—' },
-    { key: 'sku', header: 'SKU', width: 100, render: (row) => row.product?.sku ?? '—' },
-    { key: 'product', header: 'Product', width: '34%', render: (row) => row.product?.name ?? '—' },
-    { key: 'system', header: 'System Qty', width: 120, align: 'right', render: (row) => row.system_quantity },
-    { key: 'counted', header: 'Counted Qty', width: 120, align: 'right', render: (row) => row.counted_quantity },
-    { key: 'variance', header: 'Variance', width: 120, align: 'right', render: (row) => row.variance_quantity },
-    { key: 'notes', header: 'Notes', render: (row) => row.notes ?? '—' },
+  const lineColumns = useMemo<PosEntryGridColumn[]>(() => [
+    { key: 'number', header: 'Product #', width: 90 },
+    { key: 'sku', header: 'SKU', width: 90 },
+    { key: 'product', header: 'Product', width: '30%' },
+    { key: 'system', header: 'System Qty', width: 105, align: 'right' },
+    { key: 'counted', header: 'Counted Qty', width: 105, align: 'right' },
+    { key: 'variance', header: 'Variance', width: 105, align: 'right' },
+    { key: 'notes', header: 'Notes', width: '20%' },
+    { key: 'actions', header: 'Actions', width: 170, align: 'center' },
   ], [])
 
   const productOptions = localProducts.rows
@@ -245,6 +247,9 @@ export function StockTakingPage() {
       value: product.ulid,
       label: productLabel(product),
     }))
+
+  const selectedProduct = localProducts.rows.find((product) => product.ulid === productUlid) ?? null
+  const selectedDocumentLine = document?.lines?.find((line) => line.ulid === selectedLineUlid) ?? null
 
   if (mode === 'list') {
     const selectedDocument = (listQuery.data ?? []).find((row) => row.ulid === selectedListKey) ?? null
@@ -435,100 +440,109 @@ export function StockTakingPage() {
       </div>
 
       <div className="stock-taking-line-card">
-        <div className="stock-taking-line-entry">
-          <label className="stock-taking-product-search">
-            <span>Search product</span>
-            <input
-              value={productSearch}
-              disabled={!editable}
-              placeholder="Product #, SKU, barcode or name"
-              onChange={(event) => {
-                setProductSearch(event.target.value)
-                setLineDirty(true)
-              }}
-            />
-          </label>
-          <label className="stock-taking-product-select">
-            <span>Product</span>
-            <UiSimpleDropdown
-              value={productUlid}
-              options={productOptions}
-              onChange={(value) => {
-                setProductUlid(value)
-                const product = localProducts.rows.find((row) => row.ulid === value)
-                if (product) setProductSearch(productLabel(product))
-                setLineDirty(true)
-              }}
-              disabled={!editable}
-              placeholder={localProducts.isLoading ? 'Loading products…' : 'Select product'}
-            />
-          </label>
-          <label>
-            <span>Counted Qty</span>
-            <input
-              inputMode="decimal"
-              value={countedQuantity}
-              disabled={!editable}
-              onChange={(event) => {
-                setCountedQuantity(event.target.value)
-                setLineDirty(true)
-              }}
-              placeholder="0.000000"
-            />
-          </label>
-          <label className="stock-taking-line-notes">
-            <span>Line Notes</span>
-            <input
-              value={lineNotes}
-              maxLength={500}
-              disabled={!editable}
-              onChange={(event) => {
-                setLineNotes(event.target.value)
-                setLineDirty(true)
-              }}
-            />
-          </label>
-          <div className="stock-taking-line-actions">
-            <UiButton
-              variant="primary"
-              onClick={() => {
-                if (!productUlid || !countedQuantity.trim()) {
-                  feedback.info('Select a product and enter the counted quantity.', 'Stock Taking')
-                  return
-                }
-                saveLine.mutate()
-              }}
-              disabled={!editable || saveLine.isPending}
-            >
-              {selectedLineUlid ? <Save size={15} /> : <Plus size={15} />}
-              {selectedLineUlid ? 'Update' : 'Add'}
-            </UiButton>
-            <UiButton onClick={clearLineForm} disabled={!editable && !selectedLineUlid}>
-              Clear
-            </UiButton>
-            <UiButton
-              variant="danger"
-              onClick={async () => {
-                if (!selectedLineUlid) return
-                if (!await feedback.confirm('Remove this Stock Take line?')) return
-                removeLine.mutate(selectedLineUlid)
-              }}
-              disabled={!editable || !selectedLineUlid || removeLine.isPending}
-            >
-              <Trash2 size={15} /> Remove
-            </UiButton>
-          </div>
-        </div>
-
-        <PosDataGrid
+        <PosEntryGrid
           columns={lineColumns}
-          rows={document?.lines ?? []}
-          rowKey={(row) => row.ulid}
-          selectedKey={selectedLineUlid}
-          onSelect={fillLineForm}
-          onActivate={fillLineForm}
-          emptyMessage={documentQuery.isLoading ? 'Loading lines…' : 'No Stock Take lines yet.'}
-        />
+          className="stock-taking-entry-grid"
+          ariaLabel="Stock Taking lines"
+        >
+          <tr className="is-entry-row">
+            <td>{selectedProduct?.product_number ?? selectedDocumentLine?.product?.product_number ?? ''}</td>
+            <td>{selectedProduct?.sku ?? selectedDocumentLine?.product?.sku ?? ''}</td>
+            <td>
+              <UiSimpleDropdown
+                value={productUlid}
+                options={productOptions}
+                onSearchChange={(query) => {
+                  setProductSearch(query)
+                  setLineDirty(true)
+                }}
+                onChange={(value) => {
+                  setProductUlid(value)
+                  const product = localProducts.rows.find((row) => row.ulid === value)
+                  if (product) setProductSearch(productLabel(product))
+                  setLineDirty(true)
+                }}
+                disabled={!editable}
+                placeholder={localProducts.isLoading ? 'Loading products…' : 'Select product'}
+                aria-label="Stock Taking product"
+              />
+            </td>
+            <td className="is-num">{selectedDocumentLine?.system_quantity ?? ''}</td>
+            <td className="is-num">
+              <input
+                inputMode="decimal"
+                value={countedQuantity}
+                disabled={!editable}
+                onChange={(event) => {
+                  setCountedQuantity(event.target.value)
+                  setLineDirty(true)
+                }}
+                aria-label="Counted quantity"
+              />
+            </td>
+            <td className="is-num">{selectedDocumentLine?.variance_quantity ?? ''}</td>
+            <td>
+              <input
+                value={lineNotes}
+                maxLength={500}
+                disabled={!editable}
+                onChange={(event) => {
+                  setLineNotes(event.target.value)
+                  setLineDirty(true)
+                }}
+                aria-label="Line notes"
+              />
+            </td>
+            <td className="stock-taking-entry-actions is-center">
+              <UiButton
+                variant="primary"
+                onClick={() => {
+                  if (!productUlid || !countedQuantity.trim()) {
+                    feedback.info('Select a product and enter the counted quantity.', 'Stock Taking')
+                    return
+                  }
+                  saveLine.mutate()
+                }}
+                disabled={!editable || saveLine.isPending}
+              >
+                {selectedLineUlid ? <Save size={15} /> : <Plus size={15} />}
+                {selectedLineUlid ? 'Update' : 'Add'}
+              </UiButton>
+              <UiButton onClick={clearLineForm} disabled={!editable && !selectedLineUlid}>
+                Clear
+              </UiButton>
+              <UiButton
+                variant="danger"
+                onClick={async () => {
+                  if (!selectedLineUlid) return
+                  if (!await feedback.confirm('Remove this Stock Take line?')) return
+                  removeLine.mutate(selectedLineUlid)
+                }}
+                disabled={!editable || !selectedLineUlid || removeLine.isPending}
+              >
+                <Trash2 size={15} /> Remove
+              </UiButton>
+            </td>
+          </tr>
+
+          {(document?.lines ?? []).map((line) => (
+            <tr
+              key={line.ulid}
+              className={selectedLineUlid === line.ulid ? 'is-selected' : undefined}
+              onClick={() => fillLineForm(line)}
+              onDoubleClick={() => fillLineForm(line)}
+            >
+              <td>{line.product?.product_number ?? '—'}</td>
+              <td>{line.product?.sku ?? '—'}</td>
+              <td>{line.product?.name ?? '—'}</td>
+              <td className="is-num">{line.system_quantity}</td>
+              <td className="is-num">{line.counted_quantity}</td>
+              <td className="is-num">{line.variance_quantity}</td>
+              <td>{line.notes ?? '—'}</td>
+              <td />
+            </tr>
+          ))}
+        </PosEntryGrid>
       </div>
 
       <footer className="stock-taking-footer">
