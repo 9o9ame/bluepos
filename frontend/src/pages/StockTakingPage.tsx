@@ -5,6 +5,7 @@ import {
   createStockTake,
   createStockTakeLine,
   deleteStockTake,
+  deleteStockTakeLine,
   fetchStockTake,
   fetchStockTakes,
   fetchWarehouses,
@@ -53,7 +54,6 @@ export function StockTakingPage() {
   const [documentNotes, setDocumentNotes] = useState('')
   const [headerDirty, setHeaderDirty] = useState(false)
 
-  const [productSearch, setProductSearch] = useState('')
   const [productUlid, setProductUlid] = useState('')
   const [countedQuantity, setCountedQuantity] = useState('')
   const [lineNotes, setLineNotes] = useState('')
@@ -82,7 +82,7 @@ export function StockTakingPage() {
 
   const localProducts = useLocalProducts(
     session,
-    productSearch,
+    '',
     mode === 'editor',
   )
 
@@ -103,7 +103,6 @@ export function StockTakingPage() {
   }, [newWarehouseUlid, session?.warehouse.ulid])
 
   function clearLineForm() {
-    setProductSearch('')
     setProductUlid('')
     setCountedQuantity('')
     setLineNotes('')
@@ -114,7 +113,6 @@ export function StockTakingPage() {
   function fillLineForm(line: StockTakeLine) {
     setSelectedLineUlid(line.ulid)
     setProductUlid(line.product?.ulid ?? '')
-    setProductSearch('')
     setCountedQuantity(line.counted_quantity)
     setLineNotes(line.notes ?? '')
     setLineDirty(false)
@@ -187,6 +185,19 @@ export function StockTakingPage() {
     onError: (error) => feedback.fromApiError(error, 'Unable to save Stock Take line.'),
   })
 
+  const removeLine = useMutation({
+    mutationFn: (lineUlid: string) =>
+      deleteStockTakeLine(documentUlid as string, lineUlid),
+    onSuccess: async () => {
+      clearLineForm()
+      await queryClient.invalidateQueries({ queryKey: ['inventory-stock-take', documentUlid] })
+      await queryClient.invalidateQueries({ queryKey: ['inventory-stock-takes'] })
+      feedback.success('Stock Take line removed.')
+      focusEntryField('product')
+    },
+    onError: (error) => feedback.fromApiError(error, 'Unable to remove Stock Take line.'),
+  })
+
   const postDocument = useMutation({
     mutationFn: () => postStockTake(documentUlid as string),
     onSuccess: async () => {
@@ -232,6 +243,7 @@ export function StockTakingPage() {
     { key: 'counted', header: 'Counted Qty', width: 105, align: 'right' },
     { key: 'variance', header: 'Variance', width: 105, align: 'right' },
     { key: 'notes', header: 'Notes', width: '20%' },
+    { key: 'delete', header: '', width: 38, align: 'center' },
   ], [])
 
   const productOptions = localProducts.rows
@@ -517,14 +529,9 @@ export function StockTakingPage() {
                   { header: 'Category', width: '140px' },
                 ]}
                 menuMinWidth={650}
-                onSearchChange={(query) => {
-                  setProductSearch(query)
-                  setLineDirty(true)
-                }}
                 onChange={(value) => {
                   setProductUlid(value)
-                  setProductSearch('')
-                  setLineDirty(true)
+                                setLineDirty(true)
                   focusEntryField('counted')
                 }}
                 disabled={!editable}
@@ -562,6 +569,7 @@ export function StockTakingPage() {
                 aria-label="Line notes"
               />
             </td>
+            <td />
           </tr>
 
           {(document?.lines ?? []).map((line) => (
@@ -581,6 +589,23 @@ export function StockTakingPage() {
               <td className="is-num">{line.counted_quantity}</td>
               <td className="is-num">{line.variance_quantity}</td>
               <td>{line.notes ?? '—'}</td>
+              <td className="stock-taking-delete-cell">
+                {editable ? (
+                  <button
+                    type="button"
+                    className="stock-taking-delete-row"
+                    aria-label="Remove Stock Taking row"
+                    disabled={removeLine.isPending}
+                    onClick={async (event) => {
+                      event.stopPropagation()
+                      if (!await feedback.confirm('Remove this Stock Take line?')) return
+                      removeLine.mutate(line.ulid)
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                ) : null}
+              </td>
             </tr>
           ))}
         </PosEntryGrid>
