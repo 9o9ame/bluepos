@@ -1,5 +1,5 @@
 /* Inline create/edit support for the single-screen Products workflow */
-.product-reference-screen .product-inline-error {
+.product-reference-screen .product-inline-error{
   margin: 6px 9px 0;
   padding: 5px 7px;
   border: 1px solid #b45353;
@@ -9,7 +9,7 @@
   font-weight: 700;
 }
 
-.product-reference-screen .pdf-barcode-input {
+.product-reference-screen .pdf-barcode-input{
   width: 100%;
   height: 18px;
   min-width: 0;
@@ -20,28 +20,29 @@
   font: inherit;
 }
 
-.product-reference-screen .pdf-barcode-input:focus {
+.product-reference-screen .pdf-barcode-input:focus{
   outline: 1px solid #4f8fc0;
   background: #fff;
 }
 
-.product-reference-screen .pdf-barcode-input:read-only {
+.product-reference-screen .pdf-barcode-input:read-only{
   color: #626d77;
 }
 
-.product-reference-screen .pdf-barcode-table td:first-child {
+.product-reference-screen .pdf-barcode-table td:first-child{
   padding: 1px 2px;
 }
 /* Products inline-editor polish — append to ProductsPage.reference.css */
 
-/* Keep search and New on one line, even when the global input rules are wide. */
-.product-reference-screen .product-def-grid-top {
+/* Keep search and New on one line,
+even when the global input rules are wide. */
+.product-reference-screen .product-def-grid-top{
   display: block;
   flex: 0 0 46px;
   padding: 5px 8px;
 }
 
-.product-reference-screen .product-def-grid-search {
+.product-reference-screen .product-def-grid-search{
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) !important;
   align-items: center;
@@ -50,7 +51,7 @@
   min-width: 0;
 }
 
-.product-reference-screen .product-def-grid-search .pdf-input {
+.product-reference-screen .product-def-grid-search .pdf-input{
   width: 100% !important;
   min-width: 0 !important;
   height: 32px;
@@ -58,7 +59,7 @@
 }
 
 /* Give the group selector breathing room and a reference-like raised header. */
-.product-reference-screen .product-def-groupbar {
+.product-reference-screen .product-def-groupbar{
   display: flex !important;
   align-items: center;
   gap: 8px !important;
@@ -69,13 +70,13 @@
   box-sizing: border-box;
 }
 
-.product-reference-screen .product-def-groupbar-label {
+.product-reference-screen .product-def-groupbar-label{
   display: inline-block;
   white-space: nowrap;
 }
 
 /* Barcode block spans the form column (full width). */
-.product-reference-screen .pdf-barcode-box {
+.product-reference-screen .pdf-barcode-box{
   width: 100%;
   margin-left: 0;
   margin-right: 0;
@@ -83,7 +84,7 @@
 }
 
 /* Keep the editable barcode cells compact. */
-.product-reference-screen .pdf-barcode-input {
+.product-reference-screen .pdf-barcode-input{
   width: 100%;
   height: 18px;
   min-width: 0;
@@ -93,25 +94,26 @@
   font: inherit;
 }
 
-.product-reference-screen .pdf-barcode-input:focus {
+.product-reference-screen .pdf-barcode-input:focus{
   outline: 1px solid #4f8fc0;
   background: #fff;
 }
 
 /* The form should remain stable when New mode clears the selection. */
 .product-reference-screen .product-def-form,
-.product-reference-screen .product-def-grid {
+.product-reference-screen .product-def-grid{
   min-width: 0;
 }
 
-/* Slightly stronger selected row, closer to the reference application. */
+/* Slightly stronger selected row,
+closer to the reference application. */
 .product-reference-screen .product-def-grid .pos-grid tbody tr.is-selected td,
-.product-reference-screen .product-def-grid .pos-grid tbody tr[aria-selected='true'] td {
+.product-reference-screen .product-def-grid .pos-grid tbody tr[aria-selected='true'] td{
   background: #6b91d4;
 }
 
 /* Smaller widths: keep toolbar usable instead of stacking. */
-@media (max-width: 1050px) {
+@media (max-width: 1050px){
   .product-reference-screen .product-def-grid-search {
     grid-template-columns: minmax(0, 1fr) !important;
   }
@@ -119,7 +121,7 @@
 
 /* Products field + buttons for reference-style master-data popups */
 
-.product-reference-screen .pdf-field-plus {
+.product-reference-screen .pdf-field-plus{
   display: grid;
   grid-template-columns: minmax(0, 1fr) 25px;
   align-items: stretch;
@@ -127,13 +129,12 @@
   min-width: 0;
 }
 
-.product-reference-screen .pdf-field-plus > .pdf-input,
-.product-reference-screen .pdf-field-plus > .pdf-select {
+.product-reference-screen .pdf-field-plus > .pdf-input{
   width: 100%;
   min-width: 0;
 }
 
-.product-reference-screen .pdf-plus-button {
+.product-reference-screen .pdf-plus-button{
   display: grid;
   place-items: center;
   width: 25px;
@@ -149,21 +150,21 @@
     0 1px 1px rgba(0,0,0,.12);
 }
 
-.product-reference-screen .pdf-plus-button:hover:not(:disabled) {
+.product-reference-screen .pdf-plus-button:hover:not(:disabled){
   background: linear-gradient(#f0fbff, #9bdbf7 52%, #69b9de);
 }
 
-.product-reference-screen .pdf-plus-button:active:not(:disabled) {
+.product-reference-screen .pdf-plus-button:active:not(:disabled){
   background: linear-gradient(#64b4db, #9bdcf8);
 }
 
-.product-reference-screen .pdf-plus-button:disabled {
+.product-reference-screen .pdf-plus-button:disabled{
   opacity: .45;
 }
 
 
 /* ---------- PRODUCTS REFERENCE TOKEN BRIDGE ---------- */
 /* Shared components (UiSelect/UiButton/PosDataGrid) own their visual states. */
-.product-reference-screen {
+.product-reference-screen{
   color: var(--ui-text) !important;
 }
