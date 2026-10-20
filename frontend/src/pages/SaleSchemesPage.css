@@ -51,6 +51,16 @@
   white-space: nowrap;
 }
 
+.sale-schemes-search {
+  flex: 0 0 auto;
+  width: min(360px, 100%);
+  margin-bottom: var(--density-gap, 6px);
+}
+
+.sale-schemes-search .desktop-input {
+  width: 100%;
+}
+
 .sale-schemes-grid {
   flex: 1 1 auto;
   min-height: 0;

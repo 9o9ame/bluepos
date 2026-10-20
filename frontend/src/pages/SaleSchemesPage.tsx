@@ -40,6 +40,7 @@ export function SaleSchemesPage() {
   const [startsOn, setStartsOn] = useState('')
   const [endsOn, setEndsOn] = useState('')
   const [isStackable, setIsStackable] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const schemesQuery = useQuery({
     queryKey: ['sale-schemes'],
@@ -56,6 +57,25 @@ export function SaleSchemesPage() {
     [rows, selectedKey],
   )
   const products = productsQuery.data?.data ?? []
+  const filteredRows = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase()
+    if (!query) return rows
+
+    return rows.filter((row) => {
+      const mode = row.apply_mode === 'auto' ? 'auto' : 'salesman'
+      const status = row.is_active ? 'active' : 'inactive'
+      const rewardProduct = row.reward_product?.name ?? ''
+
+      return [
+        row.name,
+        mode,
+        row.min_sale_amount,
+        rewardProduct,
+        row.max_reward_qty,
+        status,
+      ].some((value) => value.toLocaleLowerCase().includes(query))
+    })
+  }, [rows, searchQuery])
 
   useEffect(() => {
     if (creating) return
@@ -187,6 +207,17 @@ export function SaleSchemesPage() {
       }
     >
       {error ? <p className="mb-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
+      <div className="sale-schemes-search">
+        <input
+          className="desktop-input"
+          type="search"
+          value={searchQuery}
+          placeholder="Search sale schemes"
+          aria-label="Search sale schemes"
+          onChange={(event) => setSearchQuery(event.target.value)}
+        />
+      </div>
+
       {(canCreate || canEdit) && (creating || selected) ? (
         <form id="sale-scheme-form" onSubmit={onSubmit}>
           <FormGroup title={creating ? 'New scheme' : 'Edit scheme'}>
@@ -315,7 +346,7 @@ export function SaleSchemesPage() {
               render: (row) => (row.is_active ? 'Active' : 'Inactive'),
             },
           ]}
-          rows={rows}
+          rows={filteredRows}
           rowKey={(row) => row.ulid}
           selectedKey={selectedKey}
           onSelect={(row) => {
