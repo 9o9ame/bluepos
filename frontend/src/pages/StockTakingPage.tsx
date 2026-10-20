@@ -44,10 +44,6 @@ type StockTakeDraftLine = {
   notes: string | null
 }
 
-function retailPrice(product: Product) {
-  return product.prices?.find((price) => price.is_active && price.price_type === 'retail')?.amount ?? '—'
-}
-
 function draftLineFromServer(line: StockTakeLine): StockTakeDraftLine | null {
   if (!line.product) return null
 
