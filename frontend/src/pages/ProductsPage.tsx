@@ -1834,19 +1834,6 @@ export function ProductsPage({
 
         <section className="product-def-grid">
           <div className="product-def-filterbar">
-            <div className="product-def-grid-top">
-              <div className="product-def-grid-search">
-                <input
-                  className="pdf-input"
-                  placeholder="Search products..."
-                  value={q}
-                  onChange={(e) => {
-                    setQ(e.target.value)
-                  }}
-                />
-              </div>
-            </div>
-
             <div className="product-def-groupbar">
               <span className="product-def-groupbar-label">Category / Group</span>
               <PdfSelect
@@ -1866,6 +1853,19 @@ export function ProductsPage({
                     </option>
                   ))}
               </PdfSelect>
+            </div>
+
+            <div className="product-def-grid-top">
+              <div className="product-def-grid-search">
+                <input
+                  className="pdf-input"
+                  placeholder="Search products..."
+                  value={q}
+                  onChange={(e) => {
+                    setQ(e.target.value)
+                  }}
+                />
+              </div>
             </div>
           </div>
 
