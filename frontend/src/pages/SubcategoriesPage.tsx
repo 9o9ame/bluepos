@@ -27,7 +27,7 @@ import {
   FormGroup,
 } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
-import { UiSelect } from '../components/ui/UiSelect'
+import { UiSimpleDropdown } from '../components/ui/UiSelect'
 import { useCan } from '../features/auth/useCan'
 import {
   useWorkspace,
@@ -77,9 +77,6 @@ export function SubcategoriesPage() {
   const [categoryUlid, setCategoryUlid] =
     useState('')
 
-  const [code, setCode] =
-    useState('')
-
   const [name, setName] =
     useState('')
 
@@ -100,6 +97,24 @@ export function SubcategoriesPage() {
     categories.data?.[0]?.ulid ??
     ''
 
+  const filteredRows = useMemo(() => {
+    if (selected) return rows
+
+    const nameQuery = name.trim().toLocaleLowerCase()
+    const categoryFilter = categoryUlid || defaultCategoryUlid
+
+    return rows.filter((row) => {
+      const categoryMatches =
+        !categoryFilter ||
+        (row.category?.ulid ?? row.category_ulid ?? '') === categoryFilter
+      const nameMatches =
+        !nameQuery ||
+        row.name.toLocaleLowerCase().includes(nameQuery)
+
+      return categoryMatches && nameMatches
+    })
+  }, [categoryUlid, defaultCategoryUlid, name, rows, selected])
+
   const canSave =
     selectedKey
       ? canEdit
@@ -116,7 +131,6 @@ export function SubcategoriesPage() {
         '',
     )
 
-    setCode(row.code)
     setName(row.name)
     setError(null)
   }
@@ -126,7 +140,6 @@ export function SubcategoriesPage() {
     setCategoryUlid(
       defaultCategoryUlid,
     )
-    setCode('')
     setName('')
     setError(null)
   }
@@ -138,9 +151,6 @@ export function SubcategoriesPage() {
           category_ulid:
             categoryUlid ||
             defaultCategoryUlid,
-
-          code:
-            code.trim(),
 
           name:
             name.trim(),
@@ -376,7 +386,7 @@ export function SubcategoriesPage() {
             }
           >
             <Field label="Category">
-              <UiSelect
+              <UiSimpleDropdown
                 triggerClassName="desktop-select"
                 aria-label="Category"
                 value={categoryUlid || defaultCategoryUlid}
@@ -388,23 +398,11 @@ export function SubcategoriesPage() {
               />
             </Field>
 
-            <Field label="Code">
-              <input
-                className="desktop-input"
-                value={code}
-                onChange={(e) =>
-                  setCode(
-                    e.target.value,
-                  )
-                }
-                required
-              />
-            </Field>
-
             <Field label="Name">
               <input
                 className="desktop-input"
                 value={name}
+                placeholder={selected ? 'Subcategory name' : 'Search or enter subcategory name'}
                 onChange={(e) =>
                   setName(
                     e.target.value,
@@ -452,7 +450,7 @@ export function SubcategoriesPage() {
                   : 'Archived',
             },
           ]}
-          rows={rows}
+          rows={filteredRows}
           rowKey={(row) =>
             row.ulid
           }
