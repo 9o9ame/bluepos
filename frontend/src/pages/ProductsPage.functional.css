@@ -1,30 +1,29 @@
 /* BluePOS — Define Products functional additions. */
 
-.pdf-barcode-table tbody tr {
+.pdf-barcode-table tbody tr{
   cursor: default;
 }
 
-.pdf-barcode-table tbody tr.is-selected td {
+.pdf-barcode-table tbody tr.is-selected td{
   box-shadow: inset 0 0 0 1px var(--appearance-accent, #2b78b8);
 }
 
-.pdf-barcode-table select.pdf-barcode-input,
-.pdf-barcode-table input.pdf-barcode-input {
+.pdf-barcode-table input.pdf-barcode-input{
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
 }
 
-.pdf-barcode-table .pdf-barcode-factor {
+.pdf-barcode-table .pdf-barcode-factor{
   text-align: right;
 }
 
-.pdf-barcode-table td.is-center input[type='radio'] {
+.pdf-barcode-table td.is-center input[type='radio']{
   margin: 0;
   vertical-align: middle;
 }
 
-.pdf-barcode-empty {
+.pdf-barcode-empty{
   text-align: center;
   opacity: 0.7;
 }
@@ -32,7 +31,7 @@
 
 /* Phase F1.1 — keep barcode navigation visible when many rows exist.
    The row area scrolls; the title and navigation footer remain fixed. */
-.product-reference-screen .pdf-barcode-box {
+.product-reference-screen .pdf-barcode-box{
   display: flex;
   flex-direction: column;
   min-height: 150px;
@@ -40,24 +39,24 @@
   overflow: hidden;
 }
 
-.product-reference-screen .pdf-barcode-table-scroll {
+.product-reference-screen .pdf-barcode-table-scroll{
   flex: 1 1 auto;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
 }
 
-.product-reference-screen .pdf-barcode-table {
+.product-reference-screen .pdf-barcode-table{
   margin: 0;
 }
 
-.product-reference-screen .pdf-barcode-table th {
+.product-reference-screen .pdf-barcode-table th{
   position: sticky;
   top: 0;
   z-index: 2;
 }
 
-.product-reference-screen .pdf-barcode-nav {
+.product-reference-screen .pdf-barcode-nav{
   flex: 0 0 24px;
   min-height: 24px;
   position: relative;
@@ -65,10 +64,12 @@
 }
 
 /* Phase F1.2 — Product image loader.
-   Match Vendor / Customers / Accounts: 100% rail width, outer solid +
-   inner dashed with inset padding, outer radius 10 / inner radius 8. */
+   Match Vendor / Customers / Accounts: 100% rail width,
+outer solid +
+   inner dashed with inset padding,
+outer radius 10 / inner radius 8. */
 .product-reference-screen .product-def-photo,
-.product-reference-screen .product-def-image-loader {
+.product-reference-screen .product-def-image-loader{
   position: relative;
   box-sizing: border-box;
   display: block;
@@ -86,20 +87,20 @@
   border-radius: 10px;
 }
 
-.product-reference-screen .product-def-image-loader:focus-visible {
+.product-reference-screen .product-def-image-loader:focus-visible{
   outline: 2px solid var(--skin-focus-ring, #2b78b8);
   outline-offset: -2px;
 }
 
-.product-reference-screen .product-def-image-loader.has-image {
+.product-reference-screen .product-def-image-loader.has-image{
   padding: 4px;
 }
 
-.product-reference-screen .product-def-image-input {
+.product-reference-screen .product-def-image-input{
   display: none;
 }
 
-.product-reference-screen .product-def-image-preview {
+.product-reference-screen .product-def-image-preview{
   display: block;
   width: 100%;
   height: 100%;
@@ -109,7 +110,7 @@
   border-radius: 10px;
 }
 
-.product-reference-screen .product-def-image-remove {
+.product-reference-screen .product-def-image-remove{
   position: absolute;
   top: 6px;
   right: 6px;
@@ -128,21 +129,21 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
 }
 
-.product-reference-screen .product-def-image-remove:hover {
+.product-reference-screen .product-def-image-remove:hover{
   background: #bd3434;
 }
 
-:root[data-theme='dark'] .product-reference-screen .product-def-image-loader {
+:root[data-theme='dark'] .product-reference-screen .product-def-image-loader{
   background: #171c21;
 }
 
-:root[data-theme='dark'] .product-reference-screen .product-def-image-preview {
+:root[data-theme='dark'] .product-reference-screen .product-def-image-preview{
   background: #171c21;
 }
 
 
 /* Phase F1.3 — clearer product-image uploader affordance. */
-.product-reference-screen .product-def-image-empty {
+.product-reference-screen .product-def-image-empty{
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -161,13 +162,13 @@
     transform .15s ease;
 }
 
-.product-reference-screen .product-def-image-loader:hover .product-def-image-empty {
+.product-reference-screen .product-def-image-loader:hover .product-def-image-empty{
   border-color: #2f79ad;
   background:
     linear-gradient(180deg, rgba(255,255,255,.9), rgba(210,231,246,.95));
 }
 
-.product-reference-screen .product-def-image-icon {
+.product-reference-screen .product-def-image-icon{
   width: 56px;
   height: 48px;
   display: grid;
@@ -178,62 +179,59 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
-.product-reference-screen .product-def-image-icon svg {
+.product-reference-screen .product-def-image-icon svg{
   width: 28px;
   height: 28px;
   max-width: 28px;
   max-height: 28px;
 }
 
-:root[data-theme='dark'] .product-reference-screen .product-def-image-empty {
+:root[data-theme='dark'] .product-reference-screen .product-def-image-empty{
   border-color: #4b6375;
   background:
     linear-gradient(180deg, rgba(40,49,57,.96), rgba(24,31,37,.96));
   color: #d8e9f5;
 }
 
-:root[data-theme='dark'] .product-reference-screen .product-def-image-loader:hover .product-def-image-empty {
+:root[data-theme='dark'] .product-reference-screen .product-def-image-loader:hover .product-def-image-empty{
   border-color: #69b7f5;
   background:
     linear-gradient(180deg, rgba(45,57,67,.98), rgba(28,37,44,.98));
 }
 
-:root[data-theme='dark'] .product-reference-screen .product-def-image-icon {
+:root[data-theme='dark'] .product-reference-screen .product-def-image-icon{
   background: rgba(105, 183, 245, .12);
   color: #79c4ff;
 }
 
 :root[data-skin='advanced'] .product-reference-screen .product-def-photo,
-:root[data-skin='advanced'] .product-reference-screen .product-def-image-loader {
+:root[data-skin='advanced'] .product-reference-screen .product-def-image-loader{
   border-radius: 10px;
 }
 
 :root[data-skin='advanced'] .product-reference-screen .product-def-image-empty,
-:root[data-skin='advanced'] .product-reference-screen .product-def-image-preview {
+:root[data-skin='advanced'] .product-reference-screen .product-def-image-preview{
   border-radius: 10px;
 }
 
 :root[data-skin='classic'] .product-reference-screen .product-def-photo,
 :root[data-skin='classic'] .product-reference-screen .product-def-image-loader,
 :root[data-skin='classic'] .product-reference-screen .product-def-image-empty,
-:root[data-skin='classic'] .product-reference-screen .product-def-image-preview {
+:root[data-skin='classic'] .product-reference-screen .product-def-image-preview{
   border-radius: 10px;
 }
 
 
 /* ---------- PRODUCTS FUNCTIONAL TOKEN BRIDGE ---------- */
-.product-reference-screen .product-inline-error {
+.product-reference-screen .product-inline-error{
   color: var(--ui-danger) !important;
 }
 
-.product-reference-screen :where(.is-selected, .is-active) {
+.product-reference-screen :where(.is-selected, .is-active){
   border-color: var(--ui-accent) !important;
 }
-.product-reference-screen :where(.pdf-input, .pdf-select, .pdf-barcode-input):disabled {
-  background: var(--ui-surface-muted) !important;
-  color: var(--ui-text-muted) !important;
-}
-html[data-animations='off'] .product-reference-screen * {
+
+html[data-animations='off'] .product-reference-screen *{
   transition: none !important;
   animation: none !important;
 }
@@ -241,6 +239,6 @@ html[data-animations='off'] .product-reference-screen * {
 
 /* Make the currently edited field easy to spot without changing geometry. */
 .product-reference-screen :where(input, textarea):not(:read-only):not(:disabled):focus-visible,
-.product-reference-screen .pdf-barcode-input:not(:read-only):not(:disabled):focus-visible {
+.product-reference-screen .pdf-barcode-input:not(:read-only):not(:disabled):focus-visible{
   background: var(--ui-accent-soft) !important;
 }
