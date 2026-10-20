@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Catalog\GenerateCatalogMasterCodeAction;
 use App\Catalog\TenantCatalog;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Catalog\StoreSubcategoryRequest;
@@ -11,7 +12,7 @@ use App\Models\Subcategory;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 class SubcategoryController extends Controller
 {
@@ -29,7 +30,6 @@ class SubcategoryController extends Controller
 
         if ($request->filled('category_ulid')) {
             $category = $this->catalog->category((string) $request->string('category_ulid'));
-
             $query->where('category_id', $category->id);
         }
 
@@ -38,39 +38,26 @@ class SubcategoryController extends Controller
 
     public function store(
         StoreSubcategoryRequest $request,
-        TenantContext $tenantContext
+        TenantContext $tenantContext,
+        GenerateCatalogMasterCodeAction $generateCode,
     ): JsonResponse {
         $this->authorize('create', Subcategory::class);
 
-        $category = $this->catalog->category(
-            $request->validated('category_ulid')
-        );
+        $subcategory = DB::transaction(function () use ($request, $tenantContext, $generateCode): Subcategory {
+            $category = $this->catalog->category($request->validated('category_ulid'));
 
-        $exists = Subcategory::query()
-            ->forTenant($tenantContext->tenantId())
-            ->where('category_id', $category->id)
-            ->where('code', $request->validated('code'))
-            ->exists();
-
-        if ($exists) {
-            throw ValidationException::withMessages([
-                'code' => 'This subcategory code already exists for the category.',
+            return Subcategory::query()->create([
+                'tenant_id' => $tenantContext->tenantId(),
+                'category_id' => $category->id,
+                'code' => $generateCode->execute(Subcategory::class, $tenantContext->tenantId(), 'SUB'),
+                'name' => $request->validated('name'),
+                'description' => $request->validated('description'),
+                'is_active' => $request->boolean('is_active', true),
+                'sort_order' => $request->integer('sort_order'),
             ]);
-        }
+        });
 
-        $subcategory = Subcategory::query()->create([
-            'tenant_id' => $tenantContext->tenantId(),
-            'category_id' => $category->id,
-            'code' => $request->validated('code'),
-            'name' => $request->validated('name'),
-            'description' => $request->validated('description'),
-            'is_active' => $request->boolean('is_active', true),
-            'sort_order' => $request->integer('sort_order'),
-        ]);
-
-        return (new SubcategoryResource(
-            $subcategory->load('category')
-        ))
+        return (new SubcategoryResource($subcategory->load('category')))
             ->response()
             ->setStatusCode(201);
     }
@@ -78,12 +65,9 @@ class SubcategoryController extends Controller
     public function show(string $subcategoryUlid): SubcategoryResource
     {
         $subcategory = $this->catalog->subcategory($subcategoryUlid);
-
         $this->authorize('view', $subcategory);
 
-        return new SubcategoryResource(
-            $subcategory->load('category')
-        );
+        return new SubcategoryResource($subcategory->load('category'));
     }
 
     public function update(
@@ -91,45 +75,30 @@ class SubcategoryController extends Controller
         string $subcategoryUlid
     ): SubcategoryResource {
         $subcategory = $this->catalog->subcategory($subcategoryUlid);
-
         $this->authorize('update', $subcategory);
 
         $data = $request->validated();
 
         if (isset($data['category_ulid'])) {
-            $category = $this->catalog->category(
-                $data['category_ulid']
-            );
-
+            $category = $this->catalog->category($data['category_ulid']);
             $subcategory->category_id = $category->id;
-
             unset($data['category_ulid']);
         }
 
         $subcategory->fill($data);
         $subcategory->save();
 
-        return new SubcategoryResource(
-            $subcategory->load('category')
-        );
+        return new SubcategoryResource($subcategory->load('category'));
     }
 
     public function destroy(string $subcategoryUlid): JsonResponse
     {
         $subcategory = $this->catalog->subcategory($subcategoryUlid);
-
         $this->authorize('delete', $subcategory);
 
-        /*
-         * Master data is never physically deleted.
-         * DELETE means archive/deactivate.
-         */
         $subcategory->is_active = false;
         $subcategory->save();
 
-        return response()->json([
-            'ok' => true,
-            'archived' => true,
-        ]);
+        return response()->json(['ok' => true, 'archived' => true]);
     }
 }
