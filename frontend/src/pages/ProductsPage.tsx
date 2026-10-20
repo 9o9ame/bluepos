@@ -1833,38 +1833,40 @@ export function ProductsPage({
         </section>
 
         <section className="product-def-grid">
-          <div className="product-def-grid-top">
-            <div className="product-def-grid-search">
-              <input
-                className="pdf-input"
-                placeholder="Search products..."
-                value={q}
-                onChange={(e) => {
-                  setQ(e.target.value)
-                }}
-              />
+          <div className="product-def-filterbar">
+            <div className="product-def-grid-top">
+              <div className="product-def-grid-search">
+                <input
+                  className="pdf-input"
+                  placeholder="Search products..."
+                  value={q}
+                  onChange={(e) => {
+                    setQ(e.target.value)
+                  }}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="product-def-groupbar">
-            <span className="product-def-groupbar-label">Category / Group</span>
-            <PdfSelect
-              className="product-def-groupbar-select"
-              value={listCategoryUlid}
-              aria-label="Filter products by category"
-              onChange={(e) => {
-                setListCategoryUlid(e.target.value)
-              }}
-            >
-              <option value="">All Products</option>
-              {(categories.data ?? [])
-                .filter((row) => row.is_active || row.ulid === listCategoryUlid)
-                .map((row) => (
-                  <option key={row.ulid} value={row.ulid}>
-                    {row.name}
-                  </option>
-                ))}
-            </PdfSelect>
+            <div className="product-def-groupbar">
+              <span className="product-def-groupbar-label">Category / Group</span>
+              <PdfSelect
+                className="product-def-groupbar-select"
+                value={listCategoryUlid}
+                aria-label="Filter products by category"
+                onChange={(e) => {
+                  setListCategoryUlid(e.target.value)
+                }}
+              >
+                <option value="">All Products</option>
+                {(categories.data ?? [])
+                  .filter((row) => row.is_active || row.ulid === listCategoryUlid)
+                  .map((row) => (
+                    <option key={row.ulid} value={row.ulid}>
+                      {row.name}
+                    </option>
+                  ))}
+              </PdfSelect>
+            </div>
           </div>
 
           <PosDataGrid
