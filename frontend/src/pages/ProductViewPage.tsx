@@ -58,6 +58,11 @@ function pricePeriod(price: ProductPrice): string {
   return 'Current'
 }
 
+function productDescription(row: ProductViewRow): string {
+  const barcode = row.barcode?.barcode ?? row.product.primary_barcode
+  return barcode ? `${barcode} * ${row.product.name}` : row.product.name
+}
+
 function expandedRows(products: Product[], singleProductRow: boolean): ProductViewRow[] {
   return products.flatMap((product) => {
     const activeBarcodes = product.barcodes?.filter((barcode) => barcode.is_active) ?? []
@@ -93,6 +98,7 @@ export function ProductViewPage() {
   const [lessThanReorder, setLessThanReorder] = useState(false)
   const [singleProductRow, setSingleProductRow] = useState(true)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
 
   const productsQuery = useInfiniteQuery({
     queryKey: [
@@ -130,93 +136,187 @@ export function ProductViewPage() {
   )
   const meta = productsQuery.data?.pages[0]?.meta as ProductViewMeta | undefined
 
+  const visibleRows = useMemo(() => {
+    const activeFilters = Object.entries(columnFilters)
+      .map(([key, value]) => [key, value.trim().toLocaleLowerCase()] as const)
+      .filter(([, value]) => value.length > 0)
+
+    if (activeFilters.length === 0) return rows
+
+    return rows.filter((row) => activeFilters.every(([key, filter]) => {
+      let value = ''
+
+      switch (key) {
+        case 'product_number':
+          value = row.product.product_number
+          break
+        case 'description':
+          value = productDescription(row)
+          break
+        case 'category':
+          value = row.product.category?.name ?? ''
+          break
+        case 'company':
+          value = row.product.brand?.name ?? ''
+          break
+        case 'supplier':
+          value = row.product.primary_supplier?.name ?? ''
+          break
+        case 'location':
+          value = row.product.rack_location ?? ''
+          break
+        case 'trade':
+          value = money(activePrice(row.product, 'wholesale')?.amount)
+          break
+        case 'selling':
+          value = money(activePrice(row.product, 'retail')?.amount)
+          break
+        case 'cost':
+          value = canViewInventory ? money(row.product.sales_lookup?.average_cost) : ''
+          break
+        case 'reorder':
+          value = quantity(row.product.reorder_level)
+          break
+        case 'stock':
+          value = quantity(row.product.sales_lookup?.in_stock)
+          break
+        case 'stock_value_cost':
+          value = canViewInventory ? money(row.product.sales_lookup?.stock_value) : ''
+          break
+        case 'minimum_sale':
+          value = money(activePrice(row.product, 'minimum_sale')?.amount)
+          break
+        case 'stock_value_sale':
+          value = money(row.product.sales_lookup?.retail_stock_value)
+          break
+        default:
+          value = ''
+      }
+
+      return value.toLocaleLowerCase().includes(filter)
+    }))
+  }, [canViewInventory, columnFilters, rows])
+
   useEffect(() => {
-    if (rows.length === 0) {
+    if (visibleRows.length === 0) {
       setSelectedKey(null)
       return
     }
 
-    if (!selectedKey || !rows.some((row) => row.key === selectedKey)) {
-      setSelectedKey(rows[0].key)
+    if (!selectedKey || !visibleRows.some((row) => row.key === selectedKey)) {
+      setSelectedKey(visibleRows[0].key)
     }
-  }, [rows, selectedKey])
+  }, [selectedKey, visibleRows])
 
-  const selectedRow = rows.find((row) => row.key === selectedKey) ?? null
+  const selectedRow = visibleRows.find((row) => row.key === selectedKey) ?? null
   const selectedProduct = selectedRow?.product ?? null
+
+  function setColumnFilter(key: string, value: string) {
+    setColumnFilters((current) => ({ ...current, [key]: value }))
+    setSelectedKey(null)
+  }
+
+  function filterInput(key: string, label: string) {
+    return (
+      <input
+        className="product-view-column-filter"
+        value={columnFilters[key] ?? ''}
+        onChange={(event) => setColumnFilter(key, event.target.value)}
+        aria-label={`Filter ${label}`}
+        title={`Filter ${label}`}
+        autoComplete="off"
+      />
+    )
+  }
 
   const columns = useMemo<PosGridColumn<ProductViewRow>[]>(() => [
     {
       key: 'product_number',
       header: 'Product #',
-      width: 76,
+      width: '5%',
+      filter: filterInput('product_number', 'Product #'),
       render: (row) => row.product.product_number,
     },
     {
       key: 'description',
       header: 'Description',
-      width: 260,
+      width: '20.5%',
+      filter: filterInput('description', 'Description'),
       render: (row) => {
-        const barcode = row.barcode?.barcode ?? row.product.primary_barcode
-        return barcode ? `${barcode} * ${row.product.name}` : row.product.name
+        const description = productDescription(row)
+        return (
+          <span className="product-view-description-cell" title={description}>
+            {description}
+          </span>
+        )
       },
     },
     {
       key: 'category',
       header: 'Category',
-      width: 110,
+      width: '7.5%',
+      filter: filterInput('category', 'Category'),
       render: (row) => row.product.category?.name ?? '—',
     },
     {
       key: 'company',
       header: 'Company',
-      width: 110,
+      width: '7.5%',
+      filter: filterInput('company', 'Company'),
       render: (row) => row.product.brand?.name ?? '—',
     },
     {
       key: 'supplier',
       header: 'Supplier',
-      width: 125,
+      width: '7.5%',
+      filter: filterInput('supplier', 'Supplier'),
       render: (row) => row.product.primary_supplier?.name ?? '—',
     },
     {
       key: 'location',
       header: 'Location',
-      width: 90,
+      width: '5.5%',
+      filter: filterInput('location', 'Location'),
       render: (row) => row.product.rack_location ?? '—',
     },
     {
       key: 'trade',
       header: 'Trade Price',
-      width: 86,
+      width: '5.5%',
       align: 'right',
+      filter: filterInput('trade', 'Trade Price'),
       render: (row) => money(activePrice(row.product, 'wholesale')?.amount),
     },
     {
       key: 'selling',
       header: 'Selling',
-      width: 82,
+      width: '5.5%',
       align: 'right',
+      filter: filterInput('selling', 'Selling'),
       render: (row) => money(activePrice(row.product, 'retail')?.amount),
     },
     {
       key: 'cost',
       header: 'Cost Price',
-      width: 88,
+      width: '5.5%',
       align: 'right',
+      filter: filterInput('cost', 'Cost Price'),
       render: (row) => canViewInventory ? money(row.product.sales_lookup?.average_cost) : '—',
     },
     {
       key: 'reorder',
       header: 'Re Order',
-      width: 76,
+      width: '5%',
       align: 'right',
+      filter: filterInput('reorder', 'Re Order'),
       render: (row) => quantity(row.product.reorder_level),
     },
     {
       key: 'stock',
       header: 'In Stock',
-      width: 82,
+      width: '5%',
       align: 'right',
+      filter: filterInput('stock', 'In Stock'),
       render: (row) => {
         const amount = Number.parseFloat(row.product.sales_lookup?.in_stock ?? '0')
         return (
@@ -229,8 +329,9 @@ export function ProductViewPage() {
     {
       key: 'stock_value_cost',
       header: 'Stock Val (Cost)',
-      width: 110,
+      width: '7%',
       align: 'right',
+      filter: filterInput('stock_value_cost', 'Stock Val (Cost)'),
       render: (row) => (
         <span className="product-view-stock-cell is-value">
           {canViewInventory ? money(row.product.sales_lookup?.stock_value) : '—'}
@@ -240,22 +341,24 @@ export function ProductViewPage() {
     {
       key: 'minimum_sale',
       header: 'Min Sale',
-      width: 82,
+      width: '5.5%',
       align: 'right',
+      filter: filterInput('minimum_sale', 'Min Sale'),
       render: (row) => money(activePrice(row.product, 'minimum_sale')?.amount),
     },
     {
       key: 'stock_value_sale',
       header: 'Stock Val (Sale)',
-      width: 112,
+      width: '7.5%',
       align: 'right',
+      filter: filterInput('stock_value_sale', 'Stock Val (Sale)'),
       render: (row) => (
         <span className="product-view-stock-cell is-value">
           {money(row.product.sales_lookup?.retail_stock_value)}
         </span>
       ),
     },
-  ], [canViewInventory])
+  ], [canViewInventory, columnFilters])
 
   const saleRates = (selectedProduct?.prices ?? []).filter((price) => price.is_active)
 
@@ -388,7 +491,7 @@ export function ProductViewPage() {
         <div className="product-view-grid">
           <PosDataGrid
             columns={columns}
-            rows={rows}
+            rows={visibleRows}
             rowKey={(row) => row.key}
             selectedKey={selectedKey}
             onSelect={(row) => setSelectedKey(row.key)}
@@ -455,7 +558,8 @@ export function ProductViewPage() {
       <footer className="product-view-footer">
         <div className="product-view-counts">
           <strong>{meta?.total ?? 0}</strong> products
-          {!singleProductRow ? <span> · {rows.length} displayed barcode rows</span> : null}
+          {Object.values(columnFilters).some((value) => value.trim()) ? <span> · {visibleRows.length} matching loaded rows</span> : null}
+          {!singleProductRow ? <span> · {visibleRows.length} displayed barcode rows</span> : null}
         </div>
 
         <div className="product-view-totals">
