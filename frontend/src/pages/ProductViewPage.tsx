@@ -1,11 +1,16 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import { useInfiniteQuery } from '@tanstack/react-query'
-import { Eye, RefreshCw } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowDown, ArrowUp, ChevronsUpDown, Eye, RefreshCw } from 'lucide-react'
 import { fetchProducts } from '../api/catalog'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
+import {
+  productViewCacheKey,
+  readProductViewSnapshot,
+  writeProductViewSnapshot,
+  type ProductViewSnapshotMeta,
+} from '../features/productView/productViewCache'
 import type { Product, ProductBarcode, ProductPrice } from '../types/catalog'
 import './ProductViewPage.css'
 
@@ -13,16 +18,6 @@ type ProductViewRow = {
   key: string
   product: Product
   barcode: ProductBarcode | null
-}
-
-type ProductViewMeta = {
-  current_page: number
-  per_page: number
-  total: number
-  last_page: number
-  stock_total?: string | null
-  stock_value_total?: string | null
-  retail_stock_value_total?: string | null
 }
 
 function money(value: string | null | undefined): string {
@@ -88,62 +83,189 @@ function expandedRows(products: Product[], singleProductRow: boolean): ProductVi
   })
 }
 
+function sortValue(
+  row: ProductViewRow,
+  key: string,
+  canViewInventory: boolean,
+): string | number {
+  switch (key) {
+    case 'product_number':
+      return row.product.product_number
+    case 'description':
+      return productDescription(row)
+    case 'category':
+      return row.product.category?.name ?? ''
+    case 'company':
+      return row.product.brand?.name ?? ''
+    case 'supplier':
+      return row.product.primary_supplier?.name ?? ''
+    case 'location':
+      return row.product.rack_location ?? ''
+    case 'trade':
+      return Number.parseFloat(activePrice(row.product, 'wholesale')?.amount ?? '0')
+    case 'selling':
+      return Number.parseFloat(activePrice(row.product, 'retail')?.amount ?? '0')
+    case 'cost':
+      return canViewInventory
+        ? Number.parseFloat(row.product.sales_lookup?.average_cost ?? '0')
+        : 0
+    case 'reorder':
+      return Number.parseFloat(row.product.reorder_level ?? '0')
+    case 'stock':
+      return Number.parseFloat(row.product.sales_lookup?.in_stock ?? '0')
+    case 'stock_value_cost':
+      return canViewInventory
+        ? Number.parseFloat(row.product.sales_lookup?.stock_value ?? '0')
+        : 0
+    case 'minimum_sale':
+      return Number.parseFloat(activePrice(row.product, 'minimum_sale')?.amount ?? '0')
+    case 'stock_value_sale':
+      return Number.parseFloat(row.product.sales_lookup?.retail_stock_value ?? '0')
+    default:
+      return ''
+  }
+}
+
 export function ProductViewPage() {
   const { session } = useAuth()
   const canViewInventory = useCan('inventory.view')
   const [search, setSearch] = useState('')
-  const deferredSearch = useDeferredValue(search)
   const [withBalance, setWithBalance] = useState(false)
   const [activeOnly, setActiveOnly] = useState(false)
   const [lessThanReorder, setLessThanReorder] = useState(false)
   const [singleProductRow, setSingleProductRow] = useState(true)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
+  const [sortState, setSortState] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+  const [products, setProducts] = useState<Product[]>([])
+  const [meta, setMeta] = useState<ProductViewSnapshotMeta | undefined>(undefined)
+  const [isSyncing, setIsSyncing] = useState(false)
 
-  const productsQuery = useInfiniteQuery({
-    queryKey: [
-      'products',
-      'daily-product-view',
-      deferredSearch,
-      withBalance,
-      activeOnly,
-      lessThanReorder,
-    ],
-    initialPageParam: 1,
-    queryFn: ({ pageParam }) =>
-      fetchProducts(
+  const cacheKey = session
+    ? productViewCacheKey(session.tenant.ulid, session.branch.ulid, session.warehouse.ulid)
+    : null
+
+  useEffect(() => {
+    if (!cacheKey) return
+
+    let cancelled = false
+
+    void (async () => {
+      const cached = await readProductViewSnapshot(cacheKey).catch(() => null)
+
+      if (cancelled) return
+
+      if (cached) {
+        setProducts(cached.products)
+        setMeta(cached.meta)
+        return
+      }
+
+      setIsSyncing(true)
+
+      try {
+        const result = await fetchProducts(
+          {
+            lookup_all: true,
+            sales_lookup: true,
+          },
+          { busy: 'none' },
+        )
+
+        if (cancelled) return
+
+        const nextMeta = result.meta as ProductViewSnapshotMeta
+        setProducts(result.data)
+        setMeta(nextMeta)
+
+        await writeProductViewSnapshot({
+          key: cacheKey,
+          products: result.data,
+          meta: nextMeta,
+          saved_at: new Date().toISOString(),
+        }).catch(() => undefined)
+      } finally {
+        if (!cancelled) setIsSyncing(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [cacheKey])
+
+  async function refreshProducts() {
+    if (!cacheKey || isSyncing) return
+
+    setIsSyncing(true)
+
+    try {
+      const result = await fetchProducts(
         {
-          q: deferredSearch.trim() || undefined,
-          page: pageParam,
-          per_page: 100,
+          lookup_all: true,
           sales_lookup: true,
-          with_balance: withBalance,
-          active_only: activeOnly,
-          stock_le_reorder: lessThanReorder,
         },
         { busy: 'none' },
-      ),
-    getNextPageParam: (lastPage) =>
-      lastPage.meta.current_page < lastPage.meta.last_page
-        ? lastPage.meta.current_page + 1
-        : undefined,
-  })
+      )
 
-  const products = productsQuery.data?.pages.flatMap((pageResult) => pageResult.data) ?? []
+      const nextMeta = result.meta as ProductViewSnapshotMeta
+      setProducts(result.data)
+      setMeta(nextMeta)
+      setSelectedKey(null)
+
+      await writeProductViewSnapshot({
+        key: cacheKey,
+        products: result.data,
+        meta: nextMeta,
+        saved_at: new Date().toISOString(),
+      }).catch(() => undefined)
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   const rows = useMemo(
     () => expandedRows(products, singleProductRow),
     [products, singleProductRow],
   )
-  const meta = productsQuery.data?.pages[0]?.meta as ProductViewMeta | undefined
-
   const visibleRows = useMemo(() => {
+    const globalTerm = search.trim().toLocaleLowerCase()
     const activeFilters = Object.entries(columnFilters)
       .map(([key, value]) => [key, value.trim().toLocaleLowerCase()] as const)
       .filter(([, value]) => value.length > 0)
 
-    if (activeFilters.length === 0) return rows
+    const filteredRows = rows.filter((row) => {
+      if (withBalance && Number.parseFloat(row.product.sales_lookup?.in_stock ?? '0') === 0) {
+        return false
+      }
 
-    return rows.filter((row) => activeFilters.every(([key, filter]) => {
+      if (activeOnly && !row.product.is_active) {
+        return false
+      }
+
+      if (lessThanReorder) {
+        const reorder = row.product.reorder_level
+        if (reorder === null || reorder === undefined || reorder === '') return false
+
+        const stock = Number.parseFloat(row.product.sales_lookup?.in_stock ?? '0')
+        const reorderValue = Number.parseFloat(reorder)
+
+        if (!Number.isFinite(reorderValue) || stock > reorderValue) return false
+      }
+
+      if (globalTerm) {
+        const barcodes = row.product.barcodes?.map((barcode) => barcode.barcode).join(' ') ?? ''
+        const globalValue = [
+          row.product.product_number,
+          row.product.sku ?? '',
+          row.product.name,
+          barcodes,
+        ].join(' ').toLocaleLowerCase()
+
+        if (!globalValue.includes(globalTerm)) return false
+      }
+
+      return activeFilters.every(([key, filter]) => {
       let value = ''
 
       switch (key) {
@@ -193,9 +315,40 @@ export function ProductViewPage() {
           value = ''
       }
 
-      return value.toLocaleLowerCase().includes(filter)
-    }))
-  }, [canViewInventory, columnFilters, rows])
+        return value.toLocaleLowerCase().includes(filter)
+      })
+    })
+
+    if (!sortState) return filteredRows
+
+    const sortedRows = [...filteredRows]
+    const direction = sortState.direction === 'asc' ? 1 : -1
+
+    sortedRows.sort((left, right) => {
+      const leftValue = sortValue(left, sortState.key, canViewInventory)
+      const rightValue = sortValue(right, sortState.key, canViewInventory)
+
+      if (typeof leftValue === 'number' && typeof rightValue === 'number') {
+        return (leftValue - rightValue) * direction
+      }
+
+      return String(leftValue).localeCompare(String(rightValue), undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      }) * direction
+    })
+
+    return sortedRows
+  }, [
+    activeOnly,
+    canViewInventory,
+    columnFilters,
+    lessThanReorder,
+    rows,
+    search,
+    sortState,
+    withBalance,
+  ])
 
   useEffect(() => {
     if (visibleRows.length === 0) {
@@ -216,6 +369,42 @@ export function ProductViewPage() {
     setSelectedKey(null)
   }
 
+  function toggleSort(key: string) {
+    setSortState((current) => {
+      if (!current || current.key !== key) {
+        return { key, direction: 'asc' }
+      }
+
+      if (current.direction === 'asc') {
+        return { key, direction: 'desc' }
+      }
+
+      return null
+    })
+  }
+
+  function sortHeader(key: string, label: string) {
+    const direction = sortState?.key === key ? sortState.direction : null
+    const icon = direction === 'asc'
+      ? <ArrowUp size={11} />
+      : direction === 'desc'
+        ? <ArrowDown size={11} />
+        : <ChevronsUpDown size={11} />
+
+    return (
+      <button
+        type="button"
+        className="product-view-sort-header"
+        onClick={() => toggleSort(key)}
+        aria-label={`Sort ${label} ${direction ?? 'normal'}`}
+        title={direction === 'asc' ? 'Ascending' : direction === 'desc' ? 'Descending' : 'Normal'}
+      >
+        <span>{label}</span>
+        {icon}
+      </button>
+    )
+  }
+
   function filterInput(key: string, label: string) {
     return (
       <input
@@ -232,14 +421,14 @@ export function ProductViewPage() {
   const columns = useMemo<PosGridColumn<ProductViewRow>[]>(() => [
     {
       key: 'product_number',
-      header: 'Product #',
+      header: sortHeader('product_number', 'Product #'),
       width: '5%',
       filter: filterInput('product_number', 'Product #'),
       render: (row) => row.product.product_number,
     },
     {
       key: 'description',
-      header: 'Description',
+      header: sortHeader('description', 'Description'),
       width: '20.5%',
       filter: filterInput('description', 'Description'),
       render: (row) => {
@@ -253,35 +442,35 @@ export function ProductViewPage() {
     },
     {
       key: 'category',
-      header: 'Category',
+      header: sortHeader('category', 'Category'),
       width: '7.5%',
       filter: filterInput('category', 'Category'),
       render: (row) => row.product.category?.name ?? '—',
     },
     {
       key: 'company',
-      header: 'Company',
+      header: sortHeader('company', 'Company'),
       width: '7.5%',
       filter: filterInput('company', 'Company'),
       render: (row) => row.product.brand?.name ?? '—',
     },
     {
       key: 'supplier',
-      header: 'Supplier',
+      header: sortHeader('supplier', 'Supplier'),
       width: '7.5%',
       filter: filterInput('supplier', 'Supplier'),
       render: (row) => row.product.primary_supplier?.name ?? '—',
     },
     {
       key: 'location',
-      header: 'Location',
+      header: sortHeader('location', 'Location'),
       width: '5.5%',
       filter: filterInput('location', 'Location'),
       render: (row) => row.product.rack_location ?? '—',
     },
     {
       key: 'trade',
-      header: 'Trade Price',
+      header: sortHeader('trade', 'Trade Price'),
       width: '5.5%',
       align: 'right',
       filter: filterInput('trade', 'Trade Price'),
@@ -289,7 +478,7 @@ export function ProductViewPage() {
     },
     {
       key: 'selling',
-      header: 'Selling',
+      header: sortHeader('selling', 'Selling'),
       width: '5.5%',
       align: 'right',
       filter: filterInput('selling', 'Selling'),
@@ -297,7 +486,7 @@ export function ProductViewPage() {
     },
     {
       key: 'cost',
-      header: 'Cost Price',
+      header: sortHeader('cost', 'Cost Price'),
       width: '5.5%',
       align: 'right',
       filter: filterInput('cost', 'Cost Price'),
@@ -305,7 +494,7 @@ export function ProductViewPage() {
     },
     {
       key: 'reorder',
-      header: 'Re Order',
+      header: sortHeader('reorder', 'Re Order'),
       width: '5%',
       align: 'right',
       filter: filterInput('reorder', 'Re Order'),
@@ -313,7 +502,7 @@ export function ProductViewPage() {
     },
     {
       key: 'stock',
-      header: 'In Stock',
+      header: sortHeader('stock', 'In Stock'),
       width: '5%',
       align: 'right',
       filter: filterInput('stock', 'In Stock'),
@@ -328,7 +517,7 @@ export function ProductViewPage() {
     },
     {
       key: 'stock_value_cost',
-      header: 'Stock Val (Cost)',
+      header: sortHeader('stock_value_cost', 'Stock Val (Cost)'),
       width: '7%',
       align: 'right',
       filter: filterInput('stock_value_cost', 'Stock Val (Cost)'),
@@ -340,7 +529,7 @@ export function ProductViewPage() {
     },
     {
       key: 'minimum_sale',
-      header: 'Min Sale',
+      header: sortHeader('minimum_sale', 'Min Sale'),
       width: '5.5%',
       align: 'right',
       filter: filterInput('minimum_sale', 'Min Sale'),
@@ -348,7 +537,7 @@ export function ProductViewPage() {
     },
     {
       key: 'stock_value_sale',
-      header: 'Stock Val (Sale)',
+      header: sortHeader('stock_value_sale', 'Stock Val (Sale)'),
       width: '7.5%',
       align: 'right',
       filter: filterInput('stock_value_sale', 'Stock Val (Sale)'),
@@ -358,7 +547,7 @@ export function ProductViewPage() {
         </span>
       ),
     },
-  ], [canViewInventory, columnFilters])
+  ], [canViewInventory, columnFilters, sortState])
 
   const saleRates = (selectedProduct?.prices ?? []).filter((price) => price.is_active)
 
@@ -386,7 +575,7 @@ export function ProductViewPage() {
     activeOnly ? 'Active Only' : null,
     lessThanReorder ? 'Less than Reorder' : null,
     singleProductRow ? 'Single row per product' : 'Barcode rows',
-    deferredSearch.trim() ? `Search: "${deferredSearch.trim()}"` : null,
+    search.trim() ? `Search: "${search.trim()}"` : null,
   ].filter(Boolean).join(' · ')
 
   const generatedAt = new Intl.DateTimeFormat(undefined, {
@@ -413,9 +602,9 @@ export function ProductViewPage() {
         <UiButton
           variant="info"
           icon={<RefreshCw size={15} />}
-          label={productsQuery.isFetching ? 'Refreshing…' : 'Refresh'}
-          disabled={productsQuery.isFetching}
-          onClick={() => void productsQuery.refetch()}
+          label={isSyncing ? 'Refreshing…' : 'Refresh'}
+          disabled={isSyncing}
+          onClick={() => void refreshProducts()}
         />
 
         <label className="product-view-filter">
@@ -496,17 +685,6 @@ export function ProductViewPage() {
             selectedKey={selectedKey}
             onSelect={(row) => setSelectedKey(row.key)}
             emptyMessage="No products found"
-            loading={productsQuery.isLoading || productsQuery.isFetchingNextPage}
-            loadingLabel={
-              productsQuery.isFetchingNextPage
-                ? 'Loading more products…'
-                : 'Loading products…'
-            }
-            onEndReached={() => {
-              if (productsQuery.hasNextPage && !productsQuery.isFetchingNextPage) {
-                void productsQuery.fetchNextPage()
-              }
-            }}
           />
         </div>
 
@@ -569,13 +747,7 @@ export function ProductViewPage() {
         </div>
 
         <div className="product-view-pager">
-          <span>
-            {productsQuery.isFetchingNextPage
-              ? 'Loading more products…'
-              : productsQuery.hasNextPage
-                ? `Loaded ${products.length} of ${meta?.total ?? products.length}`
-                : 'All products loaded'}
-          </span>
+          <span>{products.length} products cached locally</span>
         </div>
       </footer>
     </section>
