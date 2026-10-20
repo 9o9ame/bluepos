@@ -5,10 +5,9 @@
 
 @media (max-width: 1100px) {
   .product-reference-screen.product-def {
-    grid-template-columns: 96px minmax(340px, 41%) minmax(350px, 45%);
+    grid-template-columns: 124px minmax(340px, 41%) minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
     column-gap: 4px;
-    justify-content: start;
     min-width: 0;
     overflow: hidden;
   }
