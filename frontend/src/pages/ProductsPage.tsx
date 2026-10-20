@@ -61,6 +61,7 @@ import './ProductsPage.reference.css'
 import './ProductsPage.theme.css'
 import './ProductsPage.functional.css'
 import './ProductsPage.modern.css'
+import './ProductsPage.responsive.css'
 
 type ProductBarcodeDraft = {
   id: string
