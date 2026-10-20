@@ -226,7 +226,10 @@
 .dcp-credit-summary {
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   height: calc(100% - 42px);
+  min-height: 0;
+  overflow: hidden;
   padding: 6px 10px 8px;
   gap: 4px;
 }
