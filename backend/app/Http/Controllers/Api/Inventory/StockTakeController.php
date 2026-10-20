@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Inventory;
 
 use App\Actions\Inventory\CreateStockTakeAction;
 use App\Actions\Inventory\PostStockTakeAction;
+use App\Actions\Inventory\SaveStockTakeDraftAction;
 use App\Actions\Inventory\UpsertStockTakeLineAction;
 use App\Enums\StockTakeStatus;
 use App\Exceptions\ApiException;
@@ -101,6 +102,27 @@ class StockTakeController extends Controller
         });
 
         return new StockTakeResource($document);
+    }
+
+    public function saveDraft(
+        Request $request,
+        string $stockTakeUlid,
+        TenantContext $tenantContext,
+        SaveStockTakeDraftAction $saveDraft,
+    ): StockTakeResource {
+        $document = $this->findDocument($stockTakeUlid, $tenantContext);
+        $this->authorize('update', $document);
+
+        $data = $request->validate([
+            'count_date' => ['required', 'date'],
+            'notes' => ['nullable', 'string', 'max:500'],
+            'lines' => ['required', 'array'],
+            'lines.*.product_ulid' => ['required', 'string', 'size:26', 'distinct'],
+            'lines.*.counted_quantity' => ['required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],
+            'lines.*.notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        return new StockTakeResource($saveDraft->execute($document, $data));
     }
 
     public function destroy(string $stockTakeUlid, TenantContext $tenantContext): JsonResponse
