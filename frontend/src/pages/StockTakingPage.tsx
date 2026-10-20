@@ -246,18 +246,22 @@ export function StockTakingPage() {
     { key: 'delete', header: '', width: 38, align: 'center' },
   ], [])
 
-  const productOptions = localProducts.rows
-    .filter((product) => product.is_active)
-    .map((product) => ({
-      value: product.ulid,
-      label: productLabel(product),
-      columns: [
-        product.product_number,
-        product.primary_barcode ?? product.sku ?? '—',
-        product.name,
-        product.category?.name ?? '—',
-      ],
-    }))
+  const productOptions = useMemo(
+    () =>
+      (localProducts.data ?? [])
+        .filter((product) => product.is_active)
+        .map((product) => ({
+          value: product.ulid,
+          label: productLabel(product),
+          columns: [
+            product.product_number,
+            product.primary_barcode ?? product.sku ?? '—',
+            product.name,
+            product.category?.name ?? '—',
+          ],
+        })),
+    [localProducts.data],
+  )
 
   const selectedProduct = localProducts.data?.find((product) => product.ulid === productUlid) ?? null
   const selectedDocumentLine = document?.lines?.find((line) => line.ulid === selectedLineUlid) ?? null
@@ -529,6 +533,7 @@ export function StockTakingPage() {
                   { header: 'Category', width: '140px' },
                 ]}
                 menuMinWidth={650}
+                menuResultLimit={80}
                 onChange={(value) => {
                   setProductUlid(value)
                                 setLineDirty(true)
