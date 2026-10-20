@@ -1,13 +1,15 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Download, RefreshCw, Save, X } from 'lucide-react'
-import { bulkUpdateProducts, downloadProductTabularExport, fetchProducts } from '../api/catalog'
+import { bulkUpdateProducts, downloadProductTabularExport } from '../api/catalog'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { UiButton } from '../components/ui/UiButton'
 import { UiEditableCombo, type UiEditableComboOption } from '../components/ui/UiEditableCombo'
 import { StockValueBadge } from '../components/ui/StockValueBadge'
 import { UiSimpleDropdown, type UiSelectOption } from '../components/ui/UiSelect'
+import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
+import { useLocalProducts } from '../features/catalog/useLocalCatalog'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import type { Product } from '../types/catalog'
@@ -93,6 +95,7 @@ function marginPercent(product: Product): string {
 export function ProductTabularViewPage() {
   const queryClient = useQueryClient()
   const feedback = useFeedback()
+  const { session } = useAuth()
   const { closeActiveTab } = useWorkspace()
   const canEdit = useCan('products.edit')
   const canPrices = useCan('products.manage_prices')
@@ -110,41 +113,46 @@ export function ProductTabularViewPage() {
   const [activeKey, setActiveKey] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, ProductDraft>>({})
 
-  const productsQuery = useInfiniteQuery({
-    queryKey: [
-      'products',
-      'tabular-view',
-      deferredSearch,
-      activeOnly,
-      withBalance,
-      stockLeReorder,
-      purchaseRateGeSaleRate,
-    ],
-    initialPageParam: 1,
-    queryFn: ({ pageParam }) =>
-      fetchProducts(
-        {
-          q: deferredSearch.trim() || undefined,
-          page: Number(pageParam),
-          per_page: 50,
-          sales_lookup: true,
-          active_only: activeOnly,
-          with_balance: withBalance,
-          stock_le_reorder: stockLeReorder,
-          purchase_rate_ge_sale_rate: canViewStock && purchaseRateGeSaleRate,
-        },
-        { busy: 'none' },
-      ),
-    getNextPageParam: (lastPage) =>
-      lastPage.meta.current_page < lastPage.meta.last_page
-        ? lastPage.meta.current_page + 1
-        : undefined,
-  })
+  const localProducts = useLocalProducts(session, deferredSearch, true, true)
 
-  const rows = productsQuery.data?.pages.flatMap((pageResult) => pageResult.data) ?? []
-  const meta = productsQuery.data?.pages[0]?.meta as
-    | (NonNullable<typeof productsQuery.data>['pages'][number]['meta'] & { stock_total?: string | null })
-    | undefined
+  const rows = useMemo(() => {
+    return localProducts.rows.filter((product) => {
+      if (activeOnly && !product.is_active) return false
+
+      const stock = Number.parseFloat(product.sales_lookup?.in_stock ?? '0')
+      if (withBalance && stock === 0) return false
+
+      if (stockLeReorder) {
+        const reorder = Number.parseFloat(product.reorder_level ?? '')
+        if (!Number.isFinite(reorder) || stock > reorder) return false
+      }
+
+      if (purchaseRateGeSaleRate && canViewStock) {
+        const purchaseRate = Number.parseFloat(product.sales_lookup?.average_cost ?? '')
+        const saleRate = Number.parseFloat(retailPrice(product) ?? '')
+        if (!Number.isFinite(purchaseRate) || !Number.isFinite(saleRate) || purchaseRate < saleRate) {
+          return false
+        }
+      }
+
+      return true
+    })
+  }, [
+    activeOnly,
+    canViewStock,
+    localProducts.rows,
+    purchaseRateGeSaleRate,
+    stockLeReorder,
+    withBalance,
+  ])
+
+  const stockTotal = useMemo(
+    () => localProducts.rows.reduce(
+      (sum, product) => sum + (Number.parseFloat(product.sales_lookup?.in_stock ?? '0') || 0),
+      0,
+    ),
+    [localProducts.rows],
+  )
 
   const stagedCount = Object.keys(drafts).length
   const visibleUlids = useMemo(() => new Set(rows.map((product) => product.ulid)), [rows])
@@ -190,7 +198,7 @@ export function ProductTabularViewPage() {
         <input
           type="checkbox"
           checked={allVisibleSelected}
-          aria-label="Select all products on this page"
+          aria-label="Select all visible products"
           ref={(element) => {
             if (element) element.indeterminate = someVisibleSelected
           }}
@@ -404,7 +412,7 @@ export function ProductTabularViewPage() {
       setSelected(new Set())
       setActiveKey(null)
       await queryClient.invalidateQueries({ queryKey: ['products'] })
-      await productsQuery.refetch()
+      await localProducts.refreshFromServer()
       feedback.success(`Saved changes for ${count} product(s).`, 'Tabular View')
     },
     onError: (error) => {
@@ -426,11 +434,6 @@ export function ProductTabularViewPage() {
       feedback.fromApiError(error, 'Unable to export the filtered product list.')
     }
   }
-
-  const pageStock = rows.reduce(
-    (sum, product) => sum + (Number.parseFloat(product.sales_lookup?.in_stock ?? '0') || 0),
-    0,
-  )
 
   return (
     <section className="product-tabular-page" aria-label="Product Tabular View">
@@ -489,10 +492,10 @@ export function ProductTabularViewPage() {
                   if (!await confirmDiscardIfNeeded()) return
                   setSelected(new Set())
                   setActiveKey(null)
-                  await productsQuery.refetch()
+                  await localProducts.refreshFromServer()
                 })()
               }}
-              disabled={productsQuery.isFetching}
+              disabled={localProducts.isBackgroundRefreshing}
             />
             <UiButton
               variant="primary"
@@ -596,34 +599,23 @@ export function ProductTabularViewPage() {
           selectedKey={activeKey}
           onSelect={(product) => setActiveKey(product.ulid)}
           emptyMessage="No products match the selected filters."
-          loading={productsQuery.isPending || productsQuery.isFetchingNextPage}
-          loadingLabel={
-            productsQuery.isFetchingNextPage
-              ? 'Loading more products…'
-              : 'Loading products…'
-          }
-          onEndReached={() => {
-            if (productsQuery.hasNextPage && !productsQuery.isFetchingNextPage) {
-              void productsQuery.fetchNextPage()
-            }
-          }}
+          loading={localProducts.isLoading}
+          loadingLabel="Loading cached products…"
         />
       </div>
 
       <footer className="product-tabular-footer">
         <span className="product-tabular-pager">
-          {productsQuery.isFetchingNextPage
-            ? 'Loading more…'
-            : productsQuery.hasNextPage
-              ? `Loaded ${rows.length}`
-              : 'All products loaded'}
+          {localProducts.isBackgroundRefreshing
+            ? 'Syncing all products…'
+            : 'All products loaded'}
         </span>
 
-        <strong>{meta?.total ?? rows.length} Items</strong>
+        <strong>{localProducts.total} Items</strong>
 
         <span className="product-tabular-summary">
           {selected.size} selected · {stagedCount} staged ·
-          Stock: {formatDecimal(meta?.stock_total ?? String(pageStock), 6)}
+          Stock: {formatDecimal(String(stockTotal), 6)}
         </span>
       </footer>
     </section>
