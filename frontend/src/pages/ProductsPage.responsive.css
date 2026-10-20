@@ -1,0 +1,172 @@
+/*
+ * Products Definition — laptop responsive geometry.
+ * Page-scoped only: preserve shared controls/theme and the approved field order.
+ */
+
+@media (max-width: 1100px) {
+  .product-reference-screen.product-def {
+    grid-template-columns: 64px minmax(350px, 44%) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .product-reference-screen .product-def-rail {
+    min-width: 0;
+    gap: 3px;
+    padding: 4px 3px;
+  }
+
+  .product-reference-screen .product-def-photo,
+  .product-reference-screen .product-def-image-loader {
+    height: 96px;
+    min-height: 96px;
+    max-height: 96px;
+    padding: 3px;
+  }
+
+  .product-reference-screen .product-def-image-icon {
+    width: 42px;
+    height: 38px;
+  }
+
+  .product-reference-screen .product-def-image-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .product-reference-screen .product-def-rail-btn {
+    min-height: 30px;
+    padding: 2px;
+  }
+
+  .product-reference-screen .product-def-cmd {
+    min-height: 32px;
+    height: 32px;
+    gap: 4px;
+    padding: 0 4px;
+  }
+
+  .product-reference-screen .product-def-cmd-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+  }
+
+  .product-reference-screen .product-def-cmd-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .product-reference-screen .product-def-form,
+  .product-reference-screen .product-def-grid {
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .product-reference-screen .product-def-title {
+    padding: 3px 7px 2px;
+    font-size: 14px;
+  }
+
+  .product-reference-screen .product-def-tabs {
+    gap: 2px;
+    padding: 2px 4px 0;
+  }
+
+  .product-reference-screen .product-def-tabs button {
+    min-height: 22px;
+    padding: 2px 5px 3px;
+  }
+
+  .product-reference-screen .product-def-fields {
+    min-height: 0;
+    gap: 2px;
+    padding: 4px 6px 6px;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .product-reference-screen .pdf-row {
+    grid-template-columns: 78px minmax(0, 1fr);
+    gap: 3px 4px;
+  }
+
+  .product-reference-screen .pdf-row-split {
+    grid-template-columns: 78px minmax(0, 1fr) 68px minmax(0, .9fr);
+  }
+
+  .product-reference-screen .pdf-row-rates {
+    grid-template-columns:
+      78px minmax(0, .72fr)
+      72px minmax(0, .72fr)
+      54px minmax(0, .72fr);
+  }
+
+  .product-reference-screen .pdf-row-check {
+    grid-template-columns: 78px minmax(0, 1fr) 54px minmax(70px, .8fr);
+  }
+
+  .product-reference-screen .pdf-input,
+  .product-reference-screen .pdf-select {
+    min-width: 0;
+    height: 20px;
+  }
+
+  .product-reference-screen .pdf-field-plus {
+    grid-template-columns: minmax(0, 1fr) 22px;
+  }
+
+  .product-reference-screen .pdf-plus-button {
+    width: 22px;
+    min-width: 22px;
+    height: 20px;
+  }
+
+  .product-reference-screen .pdf-barcode-box {
+    min-height: 108px;
+    max-height: 146px;
+    margin-top: 4px;
+  }
+
+  .product-reference-screen .product-def-grid-top {
+    flex-basis: 38px;
+    padding: 4px 6px;
+  }
+
+  .product-reference-screen .product-def-grid-search .pdf-input {
+    height: 27px;
+  }
+
+  .product-reference-screen .product-def-groupbar {
+    min-width: 0;
+    height: 28px;
+    margin: 4px 5px 3px;
+    padding-inline: 7px;
+  }
+
+  .product-reference-screen .product-def-grid .pos-grid-wrap {
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .product-reference-screen .product-def-grid .pos-grid {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .product-reference-screen .product-def-grid .pos-grid th,
+  .product-reference-screen .product-def-grid .pos-grid td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .product-reference-screen .product-def-grid-foot {
+    min-height: 22px;
+    padding-inline: 6px;
+  }
+}
