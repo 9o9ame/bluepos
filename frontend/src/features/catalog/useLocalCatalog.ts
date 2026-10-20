@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { AuthSession } from '../../types/auth'
 import {
@@ -19,8 +19,10 @@ export function useLocalProducts(
   session: AuthSession | null,
   query: string,
   enabled = true,
+  backgroundSync = false,
 ) {
   const queryClient = useQueryClient()
+  const [isBackgroundRefreshing, setIsBackgroundRefreshing] = useState(false)
   const scope = scopeFromSession(session)
   const scopeKey = scope
     ? [scope.tenantUlid, scope.branchUlid, scope.warehouseUlid].join(':')
@@ -42,24 +44,56 @@ export function useLocalProducts(
     if (!enabled || !scope) return
 
     let active = true
-    void refreshProducts(scope)
-      .then((rows) => {
+    let timer: number | null = null
+
+    const sync = async (force: boolean) => {
+      if (active) setIsBackgroundRefreshing(true)
+      try {
+        const rows = await refreshProducts(scope, force ? { force: true } : undefined)
         if (!active) return
         queryClient.setQueryData(['local-catalog', 'products', scopeKey], rows)
-      })
-      .catch(() => undefined)
+      } catch {
+        // Cached catalogue remains usable when the background sync fails.
+      } finally {
+        if (active) setIsBackgroundRefreshing(false)
+      }
+    }
+
+    void sync(backgroundSync)
+
+    if (backgroundSync) {
+      timer = window.setInterval(() => {
+        void sync(true)
+      }, 5 * 60 * 1000)
+    }
 
     return () => {
       active = false
+      if (timer !== null) {
+        window.clearInterval(timer)
+      }
     }
-  }, [enabled, queryClient, scopeKey, scope?.branchUlid, scope?.tenantUlid, scope?.warehouseUlid])
+  }, [
+    backgroundSync,
+    enabled,
+    queryClient,
+    scopeKey,
+    scope?.branchUlid,
+    scope?.tenantUlid,
+    scope?.warehouseUlid,
+  ])
 
   const refreshFromServer = useCallback(async () => {
     if (!scope) return []
 
-    const fresh = await refreshProducts(scope, { force: true })
-    queryClient.setQueryData(['local-catalog', 'products', scopeKey], fresh)
-    return fresh
+    setIsBackgroundRefreshing(true)
+    try {
+      const fresh = await refreshProducts(scope, { force: true })
+      queryClient.setQueryData(['local-catalog', 'products', scopeKey], fresh)
+      return fresh
+    } finally {
+      setIsBackgroundRefreshing(false)
+    }
   }, [
     queryClient,
     scopeKey,
@@ -79,6 +113,7 @@ export function useLocalProducts(
     total: productsQuery.data?.length ?? 0,
     scope,
     refreshFromServer,
+    isBackgroundRefreshing,
   }
 }
 
