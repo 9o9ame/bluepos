@@ -107,8 +107,8 @@ class CatalogTest extends TestCase
 
         $this->postJson('/api/categories', [
             'code' => 'BEV',
-            'name' => 'Duplicate',
-        ])->assertUnprocessable();
+            'name' => 'Second Category',
+        ])->assertCreated()->assertJsonPath('code', 'CAT-000002');
 
         $this->postJson('/api/auth/logout')->assertOk();
         $this->signInOwner('cat-b')->assertOk();
@@ -137,11 +137,11 @@ class CatalogTest extends TestCase
         ])->assertCreated();
         $second->assertJsonPath('code', 'CAT-000002');
 
-        $manual = $this->postJson('/api/categories', [
+        $clientCodeIgnored = $this->postJson('/api/categories', [
             'code' => 'CUSTOM',
-            'name' => 'Manual Code',
+            'name' => 'Client Code Ignored',
         ])->assertCreated();
-        $manual->assertJsonPath('code', 'CUSTOM');
+        $clientCodeIgnored->assertJsonPath('code', 'CAT-000003');
 
         $this->postJson('/api/auth/logout')->assertOk();
         $this->signInOwner('cat-auto-b')->assertOk();
