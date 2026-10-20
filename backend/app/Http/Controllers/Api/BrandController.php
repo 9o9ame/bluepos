@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Catalog\GenerateCatalogMasterCodeAction;
 use App\Catalog\TenantCatalog;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Catalog\StoreBrandRequest;
@@ -29,14 +30,18 @@ class BrandController extends Controller
         );
     }
 
-    public function store(StoreBrandRequest $request, TenantContext $tenantContext): JsonResponse
-    {
+    public function store(
+        StoreBrandRequest $request,
+        TenantContext $tenantContext,
+        GenerateCatalogMasterCodeAction $generateCode,
+    ): JsonResponse {
         $this->authorize('create', Brand::class);
 
-        $brand = DB::transaction(function () use ($request, $tenantContext): Brand {
+        $brand = DB::transaction(function () use ($request, $tenantContext, $generateCode): Brand {
             $brand = Brand::query()->create([
                 'tenant_id' => $tenantContext->tenantId(),
                 ...$request->validated(),
+                'code' => $generateCode->execute(Brand::class, $tenantContext->tenantId(), 'BRD'),
                 'is_active' => $request->boolean('is_active', true),
             ]);
             $this->audit->record('BRAND_CREATED', [
@@ -62,6 +67,7 @@ class BrandController extends Controller
     {
         $brand = $this->catalog->brand($brandUlid);
         $this->authorize('update', $brand);
+
         DB::transaction(function () use ($brand, $request): void {
             $brand->fill($request->validated());
             $brand->save();
