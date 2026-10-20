@@ -122,6 +122,36 @@ class CatalogTest extends TestCase
         $this->deleteJson('/api/categories/'.$ulidA)->assertNotFound();
     }
 
+    public function test_category_code_can_be_server_generated_per_tenant(): void
+    {
+        $this->signInOwner('cat-auto-a')->assertOk();
+
+        $first = $this->postJson('/api/categories', [
+            'name' => 'Auto One',
+        ])->assertCreated();
+        $first->assertJsonPath('code', 'CAT-000001');
+        $this->assertNoInternalIds($first->json());
+
+        $second = $this->postJson('/api/categories', [
+            'name' => 'Auto Two',
+        ])->assertCreated();
+        $second->assertJsonPath('code', 'CAT-000002');
+
+        $manual = $this->postJson('/api/categories', [
+            'code' => 'CUSTOM',
+            'name' => 'Manual Code',
+        ])->assertCreated();
+        $manual->assertJsonPath('code', 'CUSTOM');
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('cat-auto-b')->assertOk();
+
+        $otherTenant = $this->postJson('/api/categories', [
+            'name' => 'Other Tenant Auto',
+        ])->assertCreated();
+        $otherTenant->assertJsonPath('code', 'CAT-000001');
+    }
+
     public function test_subcategory_cannot_use_foreign_category(): void
     {
         $this->signInOwner('sub-a')->assertOk();
