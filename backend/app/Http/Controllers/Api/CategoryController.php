@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Catalog\GenerateCategoryCodeAction;
 use App\Catalog\TenantCatalog;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Catalog\StoreCategoryRequest;
@@ -33,14 +34,21 @@ class CategoryController extends Controller
         return CategoryResource::collection($categories);
     }
 
-    public function store(StoreCategoryRequest $request, TenantContext $tenantContext): JsonResponse
-    {
+    public function store(
+        StoreCategoryRequest $request,
+        TenantContext $tenantContext,
+        GenerateCategoryCodeAction $generateCode,
+    ): JsonResponse {
         $this->authorize('create', Category::class);
 
-        $category = DB::transaction(function () use ($request, $tenantContext): Category {
+        $category = DB::transaction(function () use ($request, $tenantContext, $generateCode): Category {
+            $validated = $request->validated();
+            $code = trim((string) ($validated['code'] ?? ''));
+
             $category = Category::query()->create([
                 'tenant_id' => $tenantContext->tenantId(),
-                ...$request->validated(),
+                ...$validated,
+                'code' => $code !== '' ? $code : $generateCode->execute($tenantContext->tenantId()),
                 'is_active' => $request->boolean('is_active', true),
                 'sort_order' => $request->integer('sort_order'),
             ]);
