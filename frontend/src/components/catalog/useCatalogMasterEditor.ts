@@ -140,14 +140,11 @@ export function useCatalogMasterEditor(
       let item: CatalogMasterRecord
 
       if (kind === 'category') {
-        const categoryCreatePayload = {
-          name: name.trim(),
-          ...(code.trim() ? { code: code.trim() } : {}),
-        }
+        const categoryPayload = { name: name.trim() }
 
         item = created
-          ? await createCategory(categoryCreatePayload)
-          : await updateCategory(selectedKey, payload)
+          ? await createCategory(categoryPayload)
+          : await updateCategory(selectedKey, categoryPayload)
       } else if (kind === 'subcategory') {
         if (!categoryUlid) {
           throw new Error('Select a category before defining a subcategory.')
