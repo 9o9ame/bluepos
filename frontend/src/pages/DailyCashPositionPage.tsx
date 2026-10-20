@@ -363,7 +363,7 @@ export function DailyCashPositionPage() {
       {
         key: 'amount',
         header: 'AMOUNT',
-        width: 150,
+        width: 96,
         align: 'right',
         render: (row) => money(row.amount),
       },
