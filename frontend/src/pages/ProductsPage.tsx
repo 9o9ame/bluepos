@@ -144,7 +144,7 @@ function PdfSelect({
       value={String(value ?? '')}
       options={options}
       disabled={disabled}
-      className={['pdf-select-shell', className].filter(Boolean).join(' ')}
+      className={['product-dropdown', className].filter(Boolean).join(' ')}
       title={title}
       aria-label={ariaLabel}
       onFocus={onFocus ? (event) => onFocus(event as unknown as FocusEvent<HTMLSelectElement>) : undefined}
@@ -1469,7 +1469,7 @@ export function ProductsPage({
                 <UiTableDropdown
                   value={primarySupplierUlid}
                   disabled={!canSave}
-                  className="pdf-select-shell"
+                  className="product-dropdown"
                   aria-label="Supplier"
                   placeholder="—"
                   menuMinWidth={440}
@@ -1741,7 +1741,7 @@ export function ProductsPage({
                         <td>
                           <PdfSelect
                             simple
-                            className="pdf-barcode-input"
+                            className="product-barcode-unit-dropdown"
                             value={row.unit_ulid}
                             disabled={!canSave || !canBarcodes}
                             onFocus={() => setSelectedBarcodeId(row.id)}
