@@ -18,16 +18,86 @@
   background: var(--ui-surface-subtle);
 }
 
+.product-tabular-toolbar {
+  gap: 4px;
+  padding: 5px 6px 6px;
+}
+
+.product-tabular-search,
+.product-tabular-field,
+.product-tabular-set-text {
+  gap: 4px;
+}
+
+.product-tabular-search > span,
+.product-tabular-field > span,
+.product-tabular-set-text > span {
+  font-size: var(--density-font-small, 11px);
+}
+
+.product-tabular-search input,
+.product-tabular-set-text input,
+.product-tabular-field-trigger,
+.product-tabular-set-combo {
+  height: var(--ui-control-h-md, 24px);
+  min-height: var(--ui-control-h-md, 24px);
+}
+
+.product-tabular-set-combo {
+  min-width: 0;
+}
+
+.product-tabular-update-actions,
+.product-tabular-actions {
+  min-height: var(--ui-control-h-md, 24px);
+}
+
+.product-tabular-set-button {
+  min-width: 48px;
+  height: var(--ui-control-h-md, 24px);
+  padding-inline: 10px;
+}
+
+.product-tabular-filters {
+  grid-column: 1 / 3;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0 10px;
+  padding: 0;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.product-tabular-actions {
+  grid-column: 3 / 5;
+  justify-self: end;
+  border-left: 0;
+  padding-left: 0;
+}
+
+.product-tabular-grid .pos-grid-wrap {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.product-tabular-grid .pos-grid th,
+.product-tabular-grid .pos-grid td {
+  min-width: 0;
+  padding-left: 3px !important;
+  padding-right: 3px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .product-tabular-primary-row {
   display: grid;
   grid-template-columns:
-    minmax(170px, .9fr)
-    minmax(180px, .85fr)
-    minmax(260px, 1.35fr)
-    auto
-    minmax(250px, max-content)
+    minmax(150px, 1fr)
+    minmax(150px, .9fr)
+    minmax(220px, 1.35fr)
     auto;
-  gap: 6px;
+  gap: 4px 6px;
   align-items: end;
   min-width: 0;
 }
@@ -208,89 +278,6 @@
 
 :root[data-animations='off'] .product-tabular-page * {
   transition: none !important;
-}
-
-@media (max-width: 1366px) {
-  .product-tabular-toolbar {
-    gap: 4px;
-    padding: 5px 6px 6px;
-  }
-
-  .product-tabular-primary-row {
-    grid-template-columns:
-      minmax(150px, 1fr)
-      minmax(150px, .9fr)
-      minmax(220px, 1.35fr)
-      auto;
-    gap: 4px 6px;
-  }
-
-  .product-tabular-search,
-  .product-tabular-field,
-  .product-tabular-set-text {
-    gap: 4px;
-  }
-
-  .product-tabular-search > span,
-  .product-tabular-field > span,
-  .product-tabular-set-text > span {
-    font-size: var(--density-font-small, 11px);
-  }
-
-  .product-tabular-search input,
-  .product-tabular-set-text input,
-  .product-tabular-field-trigger,
-  .product-tabular-set-combo {
-    height: var(--ui-control-h-md, 24px);
-    min-height: var(--ui-control-h-md, 24px);
-  }
-
-  .product-tabular-set-combo {
-    min-width: 0;
-  }
-
-  .product-tabular-update-actions,
-  .product-tabular-actions {
-    min-height: var(--ui-control-h-md, 24px);
-  }
-
-  .product-tabular-set-button {
-    min-width: 48px;
-    height: var(--ui-control-h-md, 24px);
-    padding-inline: 10px;
-  }
-
-  .product-tabular-filters {
-    grid-column: 1 / 3;
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 0 10px;
-    padding: 0;
-    align-items: center;
-    white-space: nowrap;
-  }
-
-  .product-tabular-actions {
-    grid-column: 3 / 5;
-    justify-self: end;
-    border-left: 0;
-    padding-left: 0;
-  }
-
-  .product-tabular-grid .pos-grid-wrap {
-    overflow-x: hidden;
-    overflow-y: auto;
-  }
-
-  .product-tabular-grid .pos-grid th,
-  .product-tabular-grid .pos-grid td {
-    min-width: 0;
-    padding-left: 3px !important;
-    padding-right: 3px !important;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
 }
 
 @media (max-width: 900px) {
