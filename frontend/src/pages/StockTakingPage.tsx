@@ -114,7 +114,7 @@ export function StockTakingPage() {
   function fillLineForm(line: StockTakeLine) {
     setSelectedLineUlid(line.ulid)
     setProductUlid(line.product?.ulid ?? '')
-    setProductSearch(line.product ? `${line.product.product_number} · ${line.product.name}` : '')
+    setProductSearch('')
     setCountedQuantity(line.counted_quantity)
     setLineNotes(line.notes ?? '')
     setLineDirty(false)
@@ -247,7 +247,7 @@ export function StockTakingPage() {
       ],
     }))
 
-  const selectedProduct = localProducts.rows.find((product) => product.ulid === productUlid) ?? null
+  const selectedProduct = localProducts.data?.find((product) => product.ulid === productUlid) ?? null
   const selectedDocumentLine = document?.lines?.find((line) => line.ulid === selectedLineUlid) ?? null
 
   function focusEntryField(field: 'product' | 'counted' | 'notes') {
@@ -437,6 +437,27 @@ export function StockTakingPage() {
           <span className={`stock-taking-status is-${document?.status ?? 'draft'}`}>
             {(document?.status ?? 'draft').toUpperCase()}
           </span>
+
+          <label className="stock-taking-toolbar-field stock-taking-toolbar-warehouse">
+            <span>Warehouse</span>
+            <input
+              value={document?.warehouse ? `${document.warehouse.code} — ${document.warehouse.name}` : ''}
+              readOnly
+            />
+          </label>
+
+          <label className="stock-taking-toolbar-field stock-taking-toolbar-date">
+            <span>Count Date</span>
+            <input
+              type="date"
+              value={countDate}
+              disabled={!editable}
+              onChange={(event) => {
+                setCountDate(event.target.value)
+                setHeaderDirty(true)
+              }}
+            />
+          </label>
         </div>
 
         <div className="stock-taking-toolbar-right">
@@ -476,40 +497,6 @@ export function StockTakingPage() {
         </div>
       </div>
 
-      <div className="stock-taking-header-card">
-        <label>
-          <span>Warehouse</span>
-          <input
-            value={document?.warehouse ? `${document.warehouse.code} — ${document.warehouse.name}` : ''}
-            readOnly
-          />
-        </label>
-        <label>
-          <span>Count Date</span>
-          <input
-            type="date"
-            value={countDate}
-            disabled={!editable}
-            onChange={(event) => {
-              setCountDate(event.target.value)
-              setHeaderDirty(true)
-            }}
-          />
-        </label>
-        <label className="stock-taking-notes-field">
-          <span>Notes</span>
-          <input
-            value={documentNotes}
-            maxLength={500}
-            disabled={!editable}
-            onChange={(event) => {
-              setDocumentNotes(event.target.value)
-              setHeaderDirty(true)
-            }}
-          />
-        </label>
-      </div>
-
       <div className="stock-taking-line-card">
         <PosEntryGrid
           columns={lineColumns}
@@ -536,8 +523,7 @@ export function StockTakingPage() {
                 }}
                 onChange={(value) => {
                   setProductUlid(value)
-                  const product = localProducts.rows.find((row) => row.ulid === value)
-                  if (product) setProductSearch(productLabel(product))
+                  setProductSearch('')
                   setLineDirty(true)
                   focusEntryField('counted')
                 }}
