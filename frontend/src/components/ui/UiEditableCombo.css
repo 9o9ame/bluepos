@@ -1,6 +1,6 @@
 .ui-editable-combo {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 30px;
+  position: relative;
+  display: block;
   width: 100%;
   min-width: 0;
   height: var(--ui-control-h-md, 24px);
@@ -19,13 +19,16 @@
 
 .ui-editable-combo-input {
   box-sizing: border-box;
+  display: block;
   width: 100%;
   min-width: 0;
   height: 100%;
-  padding: 0 var(--density-control-padding-x, 8px);
+  padding: 0 30px 0 var(--density-control-padding-x, 8px);
   border: 0;
+  border-radius: 0;
   outline: 0;
   background: transparent;
+  box-shadow: none;
   color: var(--ui-text);
   font: inherit;
   font-size: var(--ui-font-md, 12px);
@@ -37,22 +40,26 @@
 }
 
 .ui-editable-combo-toggle {
+  position: absolute;
+  top: 50%;
+  right: 2px;
   display: grid;
   place-items: center;
-  width: 30px;
-  min-width: 30px;
-  height: 100%;
+  width: 20px;
+  min-width: 20px;
+  height: 18px;
+  min-height: 18px;
   margin: 0;
   padding: 0;
   border: 0;
-  border-left: 1px solid var(--ui-control-border, var(--ui-border));
   background: transparent;
   color: var(--ui-text);
   cursor: pointer;
+  transform: translateY(-50%);
 }
 
 .ui-editable-combo-toggle:hover:not(:disabled) {
-  background: var(--ui-control-hover-bg, var(--ui-accent-soft));
+  background: transparent;
 }
 
 .ui-editable-combo-arrow {
