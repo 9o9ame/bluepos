@@ -71,6 +71,29 @@
     overflow: visible;
   }
 
+  .product-reference-screen .product-def-filterbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+  }
+
+  .product-reference-screen .product-def-filterbar .product-def-grid-top {
+    flex: none;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .product-reference-screen .product-def-filterbar .product-def-groupbar {
+    min-width: 0;
+    height: 32px;
+    margin: 0;
+  }
+
+  .product-reference-screen .product-def-filterbar .product-def-grid-search .pdf-input {
+    height: 32px;
+  }
   .product-reference-screen .product-def-form,
   .product-reference-screen .product-def-grid {
     min-width: 0;
@@ -95,15 +118,6 @@
   .product-reference-screen .pdf-select,
   .product-reference-screen .pdf-field-plus {
     min-width: 0;
-  }
-
-  .product-reference-screen .product-def-grid-top {
-    padding-inline: 6px;
-  }
-
-  .product-reference-screen .product-def-groupbar {
-    min-width: 0;
-    margin-inline: 6px;
   }
 
   .product-reference-screen .product-def-grid .pos-grid-wrap {
