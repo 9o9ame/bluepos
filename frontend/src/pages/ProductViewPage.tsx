@@ -691,6 +691,9 @@ export function ProductViewPage() {
             selectedKey={selectedKey}
             onSelect={(row) => setSelectedKey(row.key)}
             emptyMessage="No products found"
+            virtualize
+            estimatedRowHeight={22}
+            overscan={10}
           />
         </div>
 
