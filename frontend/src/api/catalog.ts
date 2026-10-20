@@ -26,7 +26,6 @@ type CatalogMasterPayload = {
 }
 
 type UnitPayload = {
-  code: string
   name: string
   symbol: string
   allows_decimal: boolean
@@ -126,7 +125,6 @@ export function fetchSubcategories(
 export function createSubcategory(
   payload: {
     category_ulid: string
-    code: string
     name: string
     description?: string | null
     is_active?: boolean
@@ -146,7 +144,6 @@ export function updateSubcategory(
   ulid: string,
   payload: Partial<{
     category_ulid: string
-    code: string
     name: string
     description: string | null
     is_active: boolean
@@ -184,7 +181,7 @@ export function fetchBrands() {
 }
 
 export function createBrand(
-  payload: CatalogMasterPayload,
+  payload: Omit<CatalogMasterPayload, 'code'>,
 ) {
   return apiFetch<Brand>('/api/brands', {
     method: 'POST',
@@ -194,7 +191,7 @@ export function createBrand(
 
 export function updateBrand(
   ulid: string,
-  payload: Partial<CatalogMasterPayload>,
+  payload: Partial<Omit<CatalogMasterPayload, 'code'>>,
 ) {
   return apiFetch<Brand>(
     `/api/brands/${ulid}`,
