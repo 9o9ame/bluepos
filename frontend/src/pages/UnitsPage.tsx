@@ -1,4 +1,4 @@
-import { FormEvent } from 'react'
+import { FormEvent, useMemo } from 'react'
 import { Plus, RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { ApiClientError } from '../api/client'
 import { useCatalogMasterEditor } from '../components/catalog/useCatalogMasterEditor'
@@ -10,7 +10,26 @@ import './UnitsPage.css'
 
 export function UnitsPage() {
   const { closeActiveTab } = useWorkspace()
-  const editor = useCatalogMasterEditor('unit', { initialCode: 'PCS' })
+  const editor = useCatalogMasterEditor('unit')
+
+  const filteredRows = useMemo(() => {
+    if (editor.selected) return editor.rows
+
+    const nameQuery = editor.name.trim().toLocaleLowerCase()
+    const symbolQuery = editor.symbol.trim().toLocaleLowerCase()
+
+    if (!nameQuery && !symbolQuery) return editor.rows
+
+    return editor.rows.filter((row) => {
+      const nameMatches =
+        !nameQuery ||
+        row.name.toLocaleLowerCase().includes(nameQuery)
+      const symbolMatches =
+        !symbolQuery ||
+        ('symbol' in row && row.symbol.toLocaleLowerCase().includes(symbolQuery))
+      return nameMatches && symbolMatches
+    })
+  }, [editor.name, editor.rows, editor.selected, editor.symbol])
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -71,9 +90,24 @@ export function UnitsPage() {
       {editor.canCreate || editor.canEdit ? (
         <form id="unit-form" onSubmit={onSubmit}>
           <FormGroup title={editor.selected ? 'Edit unit' : 'New unit'}>
-            <Field label="Code"><input className="desktop-input" value={editor.code} onChange={(e) => editor.setCode(e.target.value)} required /></Field>
-            <Field label="Name"><input className="desktop-input" value={editor.name} onChange={(e) => editor.setName(e.target.value)} required /></Field>
-            <Field label="Symbol"><input className="desktop-input" value={editor.symbol} onChange={(e) => editor.setSymbol(e.target.value)} required /></Field>
+            <Field label="Name">
+              <input
+                className="desktop-input"
+                value={editor.name}
+                placeholder={editor.selected ? 'Unit name' : 'Search or enter unit name'}
+                onChange={(e) => editor.setName(e.target.value)}
+                required
+              />
+            </Field>
+            <Field label="Symbol">
+              <input
+                className="desktop-input"
+                value={editor.symbol}
+                placeholder={editor.selected ? 'Unit symbol' : 'Search or enter symbol'}
+                onChange={(e) => editor.setSymbol(e.target.value)}
+                required
+              />
+            </Field>
             <label className="desktop-field"><span>Decimal qty</span><input type="checkbox" checked={editor.allowsDecimal} onChange={(e) => editor.setAllowsDecimal(e.target.checked)} /></label>
           </FormGroup>
         </form>
@@ -87,7 +121,7 @@ export function UnitsPage() {
             { key: 'decimal', header: 'Decimal', width: 80, align: 'center', render: (row) => ('allows_decimal' in row && row.allows_decimal ? 'Yes' : 'No') },
             { key: 'status', header: 'Status', width: 100, render: (row) => row.is_active ? 'Active' : 'Archived', },
           ]}
-          rows={editor.rows}
+          rows={filteredRows}
           rowKey={(row) => row.ulid}
           selectedKey={editor.selectedKey}
           onSelect={editor.select}
