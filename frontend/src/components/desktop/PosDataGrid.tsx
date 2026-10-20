@@ -6,6 +6,7 @@ export type PosGridColumn<T> = {
   header: ReactNode
   width?: number | string
   align?: 'left' | 'right' | 'center'
+  filter?: ReactNode
   render?: (row: T) => ReactNode
 }
 
@@ -78,6 +79,8 @@ export function PosDataGrid<T>({
     }
   }
 
+  const hasFilterRow = columns.some((column) => column.filter !== undefined)
+
   return (
     <div className="pos-grid-wrap" tabIndex={0} onKeyDown={onKeyDown} onScroll={onScroll} role="grid">
       <table className="pos-grid">
@@ -93,6 +96,15 @@ export function PosDataGrid<T>({
               </th>
             ))}
           </tr>
+          {hasFilterRow ? (
+            <tr className="pos-grid-filter-row">
+              {columns.map((column) => (
+                <th key={column.key} className={column.align === 'right' ? 'is-num' : column.align === 'center' ? 'is-center' : undefined}>
+                  {column.filter ?? null}
+                </th>
+              ))}
+            </tr>
+          ) : null}
         </thead>
         <tbody>
           {rows.map((row) => {
