@@ -28,7 +28,7 @@
 }
 
 .categories-page .form-group-body {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--density-gap, 6px);
 }
 
