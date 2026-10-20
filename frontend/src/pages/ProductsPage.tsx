@@ -13,7 +13,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   createProduct,
   deactivateProduct,
@@ -22,7 +22,6 @@ import {
   fetchBrands,
   fetchCategories,
   fetchProduct,
-  fetchProducts,
   fetchSubcategories,
   fetchSuppliers,
   fetchUnits,
@@ -190,34 +189,12 @@ export function ProductsPage({
   const [pendingImagePreview, setPendingImagePreview] = useState<string | null>(null)
   const [imageRemoveRequested, setImageRemoveRequested] = useState(false)
 
-  const productsQuery = useInfiniteQuery({
-    queryKey: ['products', q, listCategoryUlid, canViewStock],
-    initialPageParam: 1,
-    queryFn: ({ pageParam }) =>
-      fetchProducts({
-        q,
-        page: pageParam,
-        per_page: 50,
-        category_ulid: listCategoryUlid || undefined,
-        sales_lookup: canViewStock,
-      }),
-    getNextPageParam: (lastPage) =>
-      lastPage.meta.current_page < lastPage.meta.last_page
-        ? lastPage.meta.current_page + 1
-        : undefined,
-    enabled: !embedded,
-  })
-
-  const localProducts = useLocalProducts(session, q, embedded)
+  const localProducts = useLocalProducts(session, q, true, !embedded)
   const localSuppliers = useLocalSuppliers(session, embedded)
 
-  const serverProducts =
-    productsQuery.data?.pages.flatMap((pageResult) => pageResult.data) ?? []
-  const products = embedded
-    ? localProducts.rows.filter((product) =>
-        listCategoryUlid ? product.category?.ulid === listCategoryUlid : true,
-      )
-    : serverProducts
+  const products = localProducts.rows.filter((product) =>
+    listCategoryUlid ? product.category?.ulid === listCategoryUlid : true,
+  )
 
   const productQuery = useQuery({
     queryKey: ['product', selectedKey],
@@ -935,7 +912,7 @@ export function ProductsPage({
       setCreating(false)
       setSelectedKey(saved.ulid)
       queryClient.setQueryData(['product', saved.ulid], saved)
-      await queryClient.invalidateQueries({ queryKey: ['products'] })
+      await localProducts.refreshFromServer()
       await queryClient.invalidateQueries({ queryKey: ['product', saved.ulid] })
       onSaved?.(await fetchProduct(saved.ulid))
     },
@@ -965,7 +942,7 @@ export function ProductsPage({
       ; (document.getElementById('inline-product-form') as HTMLFormElement | null)?.requestSubmit()
     },
     refresh: () => {
-      void productsQuery.refetch()
+      void localProducts.refreshFromServer()
       if (canCreate) {
         startNewProduct()
       } else if (selectedKey) {
@@ -975,9 +952,7 @@ export function ProductsPage({
   }, !embedded)
 
   const gridRows = useMemo(() => products, [products])
-  const total = embedded
-    ? products.length
-    : productsQuery.data?.pages[0]?.meta.total ?? products.length
+  const total = products.length
   const productNumber = creating ? 'NEW' : selected?.product_number ?? ''
   const selectedBarcodeIndex = barcodeRows.findIndex(
     (row) => row.id === selectedBarcodeId,
@@ -1174,12 +1149,7 @@ export function ProductsPage({
             className="product-def-cmd is-refresh"
             title={canCreate ? 'Refresh list and start a new product' : 'Refresh product list'}
             onClick={() => {
-              if (embedded && localProducts.scope) {
-                void refreshProducts(localProducts.scope, { force: true })
-                  .then(() => localProducts.refetch())
-              } else {
-                void productsQuery.refetch()
-              }
+              void localProducts.refreshFromServer()
 
               if (canCreate) {
                 startNewProduct()
@@ -1220,9 +1190,7 @@ export function ProductsPage({
                   }
                   void deactivateProduct(selectedKey)
                     .then(async () => {
-                      await queryClient.invalidateQueries({
-                        queryKey: ['products'],
-                      })
+                      await localProducts.refreshFromServer()
 
                       await queryClient.invalidateQueries({
                         queryKey: ['product', selectedKey],
@@ -1247,9 +1215,7 @@ export function ProductsPage({
                 },
               )
                 .then(async () => {
-                  await queryClient.invalidateQueries({
-                    queryKey: ['products'],
-                  })
+                  await localProducts.refreshFromServer()
 
                   await queryClient.invalidateQueries({
                     queryKey: ['product', selectedKey],
@@ -1938,39 +1904,16 @@ export function ProductsPage({
               setSelectedKey(row.ulid)
             }}
             emptyMessage="No products found."
-            loading={
-              embedded
-                ? localProducts.isLoading
-                : productsQuery.isLoading || productsQuery.isFetchingNextPage
-            }
-            loadingLabel={
-              embedded
-                ? 'Loading cached products…'
-                : productsQuery.isFetchingNextPage
-                  ? 'Loading more products…'
-                  : 'Loading products…'
-            }
-            onEndReached={
-              embedded
-                ? undefined
-                : () => {
-                    if (productsQuery.hasNextPage && !productsQuery.isFetchingNextPage) {
-                      void productsQuery.fetchNextPage()
-                    }
-                  }
-            }
+            loading={localProducts.isLoading}
+            loadingLabel="Loading cached products…"
           />
 
           <div className="product-def-grid-foot">
             <span>{total} Products</span>
             <span className="product-def-pager">
-              {embedded
-                ? 'Local catalogue'
-                : productsQuery.isFetchingNextPage
-                  ? 'Loading more…'
-                  : productsQuery.hasNextPage
-                    ? `Loaded ${products.length}`
-                    : 'All products loaded'}
+              {localProducts.isBackgroundRefreshing
+                ? 'Syncing in background…'
+                : 'IndexedDB catalogue'}
             </span>
           </div>
         </section>
