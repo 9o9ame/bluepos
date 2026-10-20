@@ -159,12 +159,13 @@ export function useCatalogMasterEditor(
           ? await createSubcategory(subcategoryPayload)
           : await updateSubcategory(selectedKey, subcategoryPayload)
       } else if (kind === 'brand') {
+        const brandPayload = { name: name.trim() }
         item = created
-          ? await createBrand(payload)
-          : await updateBrand(selectedKey, payload)
+          ? await createBrand(brandPayload)
+          : await updateBrand(selectedKey, brandPayload)
       } else if (kind === 'unit') {
         const unitPayload = {
-          ...payload,
+          name: name.trim(),
           symbol: symbol.trim(),
           allows_decimal: allowsDecimal,
         }
