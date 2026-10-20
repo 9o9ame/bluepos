@@ -225,6 +225,24 @@ export function deleteStockTake(ulid: string) {
   })
 }
 
+export function saveStockTakeDraft(
+  ulid: string,
+  payload: {
+    count_date: string
+    notes?: string | null
+    lines: Array<{
+      product_ulid: string
+      counted_quantity: string
+      notes?: string | null
+    }>
+  },
+) {
+  return apiFetch<StockTake>(`/api/inventory/stock-takes/${ulid}/draft`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function createStockTakeLine(
   documentUlid: string,
   payload: {
