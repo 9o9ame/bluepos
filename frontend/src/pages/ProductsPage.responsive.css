@@ -52,12 +52,21 @@
   }
 
   .product-reference-screen .product-def-cmd-icon svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
+  }
+
+  .product-reference-screen .product-def-cmd-label {
+    font-size: 10px;
+  }
+
+  .product-reference-screen .product-def-cmd-key {
+    font-size: 9px;
   }
 
   .product-reference-screen .product-def-cmd-text {
     min-width: 0;
+    gap: 2px;
     overflow: visible;
   }
 
