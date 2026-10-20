@@ -57,6 +57,7 @@ export type UiSelectProps = {
   maxMenuHeight?: number
   menuColumns?: UiSelectMenuColumn[]
   menuMinWidth?: number
+  menuResultLimit?: number
   menuPlacement?: 'auto' | 'down' | 'up'
   menuMotion?: 'default' | 'reveal'
   'aria-label'?: string
@@ -95,6 +96,7 @@ export function UiSelect({
   maxMenuHeight = 240,
   menuColumns,
   menuMinWidth,
+  menuResultLimit,
   menuPlacement = 'auto',
   menuMotion = 'default',
   'aria-label': ariaLabel,
@@ -116,15 +118,32 @@ export function UiSelect({
 
   const filteredOptions = useMemo(() => {
     const query = search.trim().toLocaleLowerCase()
-    if (!searchable || !query) return options
+    const matches =
+      !searchable || !query
+        ? options
+        : options.filter((option) => {
+            const label = option.label.toLocaleLowerCase()
+            const valueText = option.value.toLocaleLowerCase()
+            const columnsText = option.columns?.join(' ').toLocaleLowerCase() ?? ''
+            return label.includes(query) || valueText.includes(query) || columnsText.includes(query)
+          })
 
-    return options.filter((option) => {
-      const label = option.label.toLocaleLowerCase()
-      const valueText = option.value.toLocaleLowerCase()
-      const columnsText = option.columns?.join(' ').toLocaleLowerCase() ?? ''
-      return label.includes(query) || valueText.includes(query) || columnsText.includes(query)
-    })
-  }, [options, search, searchable])
+    if (!menuResultLimit || matches.length <= menuResultLimit) {
+      return matches
+    }
+
+    const limited = matches.slice(0, menuResultLimit)
+    const selectedMatch = matches.find((option) => option.value === currentValue)
+
+    if (
+      selectedMatch &&
+      !limited.some((option) => option.value === selectedMatch.value)
+    ) {
+      limited[limited.length - 1] = selectedMatch
+    }
+
+    return limited
+  }, [currentValue, menuResultLimit, options, search, searchable])
 
   const selected =
     options.find((option) => option.value === currentValue) ?? null
