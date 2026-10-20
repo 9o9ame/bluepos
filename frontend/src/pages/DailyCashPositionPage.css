@@ -706,7 +706,7 @@
 @media (max-width: 1180px) {
   .dcp-dashboard-body {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(145px, 0.78fr) minmax(190px, 1fr);
+    grid-template-rows: minmax(150px, 0.84fr) minmax(176px, 0.96fr);
     gap: 7px;
   }
 
