@@ -85,7 +85,8 @@
 
 /* Canonical Simple Dropdown: searchable in the main field, but visually one
    control surface. The inner text input must never look like a second field. */
-.ui-simple-dropdown .ui-select-combobox-trigger {
+.ui-simple-dropdown .ui-select-combobox-trigger,
+.ui-table-dropdown .ui-select-combobox-trigger {
   position: relative;
   display: flex;
   align-items: center;
@@ -93,7 +94,8 @@
   padding: 0;
 }
 
-.ui-simple-dropdown .ui-select-trigger-search {
+.ui-simple-dropdown .ui-select-trigger-search,
+.ui-table-dropdown .ui-select-trigger-search {
   box-sizing: border-box;
   display: block;
   width: 100%;
@@ -110,14 +112,16 @@
   appearance: none;
 }
 
-.ui-simple-dropdown .ui-select-trigger-search:focus {
+.ui-simple-dropdown .ui-select-trigger-search:focus,
+.ui-table-dropdown .ui-select-trigger-search:focus {
   border: 0 !important;
   outline: 0;
   background: transparent !important;
   box-shadow: none !important;
 }
 
-.ui-simple-dropdown .ui-select-combobox-toggle {
+.ui-simple-dropdown .ui-select-combobox-toggle,
+.ui-table-dropdown .ui-select-combobox-toggle {
   position: absolute;
   top: 50%;
   right: 2px;
