@@ -142,7 +142,13 @@ export function ProductViewPage() {
   const [isSyncing, setIsSyncing] = useState(false)
 
   const cacheKey = session
-    ? productViewCacheKey(session.tenant.ulid, session.branch.ulid, session.warehouse.ulid)
+    ? productViewCacheKey(
+        session.tenant.ulid,
+        session.membership.ulid,
+        session.branch.ulid,
+        session.warehouse.ulid,
+        canViewInventory,
+      )
     : null
 
   useEffect(() => {
