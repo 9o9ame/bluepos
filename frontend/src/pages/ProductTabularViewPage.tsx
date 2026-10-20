@@ -6,7 +6,7 @@ import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGr
 import { UiButton } from '../components/ui/UiButton'
 import { UiEditableCombo, type UiEditableComboOption } from '../components/ui/UiEditableCombo'
 import { StockValueBadge } from '../components/ui/StockValueBadge'
-import { UiSelect, type UiSelectOption } from '../components/ui/UiSelect'
+import { UiSimpleDropdown, type UiSelectOption } from '../components/ui/UiSelect'
 import { useCan } from '../features/auth/useCan'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
@@ -453,7 +453,7 @@ export function ProductTabularViewPage() {
 
           <label className="product-tabular-field">
             <span>Field To Update</span>
-            <UiSelect
+            <UiSimpleDropdown
               value={fieldToUpdate}
               options={BULK_FIELD_OPTIONS}
               onChange={(value) => {
@@ -461,7 +461,6 @@ export function ProductTabularViewPage() {
                 setSetText('')
               }}
               aria-label="Field to update"
-              searchable={false}
               disabled={!canEdit}
               triggerClassName="product-tabular-field-trigger"
             />
