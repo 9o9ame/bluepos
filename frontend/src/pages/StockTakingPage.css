@@ -10,7 +10,6 @@
 }
 
 .stock-taking-toolbar,
-.stock-taking-header-card,
 .stock-taking-line-card,
 .stock-taking-grid-card,
 .stock-taking-footer {
@@ -46,6 +45,53 @@
   flex: 0 0 auto;
   flex-wrap: nowrap;
   margin-left: auto;
+}
+
+.stock-taking-toolbar-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin-left: 4px;
+}
+
+.stock-taking-toolbar-field > span {
+  color: var(--ui-text-muted);
+  font-size: var(--ui-font-size-xs, 11px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.stock-taking-toolbar-field input {
+  box-sizing: border-box;
+  height: var(--ui-control-h-md, 28px);
+  min-height: var(--ui-control-h-md, 28px);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  padding: 0 6px;
+  font: inherit;
+}
+
+.stock-taking-toolbar-field input:focus-visible {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.stock-taking-toolbar-field input:disabled {
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+}
+
+.stock-taking-toolbar-warehouse input {
+  width: 175px;
+}
+
+.stock-taking-toolbar-date input {
+  width: 122px;
 }
 
 .stock-taking-toolbar-left .ui-select {
@@ -84,13 +130,6 @@
   color: var(--ui-success);
 }
 
-.stock-taking-header-card {
-  display: grid;
-  grid-template-columns: minmax(200px, 280px) 150px minmax(260px, 1fr);
-  gap: 8px;
-  padding: 8px;
-}
-
 .stock-taking-line-card {
   display: flex;
   min-height: 0;
@@ -111,41 +150,10 @@
   height: 100%;
 }
 
-.stock-taking-header-card label {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-}
 
-.stock-taking-header-card label > span {
-  color: var(--ui-text-muted);
-  font-size: var(--ui-font-size-xs, 11px);
-  font-weight: 600;
-}
 
-.stock-taking-header-card input {
-  width: 100%;
-  min-width: 0;
-  height: var(--ui-control-h-md, 28px);
-  border: 1px solid var(--ui-border);
-  border-radius: var(--control-radius);
-  background: var(--ui-surface);
-  color: var(--ui-text);
-  box-shadow: var(--ui-control-shadow);
-  padding: 0 8px;
-  font: inherit;
-}
 
-.stock-taking-header-card input:focus-visible {
-  outline: none;
-  border-color: var(--ui-accent);
-  box-shadow: var(--ui-focus-shadow);
-}
 
-.stock-taking-header-card input:disabled {
-  background: var(--ui-surface-muted);
-  color: var(--ui-text-muted);
-}
 
 .stock-taking-entry-grid {
   flex: 1 1 auto;
@@ -210,22 +218,22 @@
     width: 170px !important;
   }
 
-  .stock-taking-header-card {
-    grid-template-columns: 1fr 150px;
+  .stock-taking-toolbar-field {
+    margin-left: 2px;
+    gap: 3px;
   }
 
-  .stock-taking-notes-field {
-    grid-column: 1 / -1;
+  .stock-taking-toolbar-field > span {
+    font-size: var(--density-font-small, 10px);
+  }
+
+  .stock-taking-toolbar-warehouse input {
+    width: 145px;
+  }
+
+  .stock-taking-toolbar-date input {
+    width: 112px;
   }
 
 }
 
-@media (max-width: 760px) {
-  .stock-taking-header-card {
-    grid-template-columns: 1fr;
-  }
-
-  .stock-taking-notes-field {
-    grid-column: auto;
-  }
-}
