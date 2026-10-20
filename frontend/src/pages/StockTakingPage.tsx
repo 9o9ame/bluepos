@@ -304,6 +304,7 @@ export function StockTakingPage() {
       if (!(target instanceof Element)) return
       if (entryRowRef.current?.contains(target)) return
       if (target.closest('.ui-select-menu')) return
+      if (!target.closest('.stock-taking-line-card')) return
       if (target.closest('.stock-taking-entry-grid tbody tr:not(.is-entry-row)')) return
       if (!productUlid || !countedQuantity.trim() || saveLine.isPending) return
 
