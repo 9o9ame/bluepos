@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\Catalog\GenerateCatalogMasterCodeAction;
 use App\Catalog\TenantCatalog;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Catalog\StoreUnitRequest;
@@ -29,14 +30,18 @@ class UnitController extends Controller
         );
     }
 
-    public function store(StoreUnitRequest $request, TenantContext $tenantContext): JsonResponse
-    {
+    public function store(
+        StoreUnitRequest $request,
+        TenantContext $tenantContext,
+        GenerateCatalogMasterCodeAction $generateCode,
+    ): JsonResponse {
         $this->authorize('create', Unit::class);
 
-        $unit = DB::transaction(function () use ($request, $tenantContext): Unit {
+        $unit = DB::transaction(function () use ($request, $tenantContext, $generateCode): Unit {
             $unit = Unit::query()->create([
                 'tenant_id' => $tenantContext->tenantId(),
                 ...$request->validated(),
+                'code' => $generateCode->execute(Unit::class, $tenantContext->tenantId(), 'UNT'),
                 'is_active' => $request->boolean('is_active', true),
             ]);
             $this->audit->record('UNIT_CREATED', [
@@ -62,6 +67,7 @@ class UnitController extends Controller
     {
         $unit = $this->catalog->unit($unitUlid);
         $this->authorize('update', $unit);
+
         DB::transaction(function () use ($unit, $request): void {
             $unit->fill($request->validated());
             $unit->save();
