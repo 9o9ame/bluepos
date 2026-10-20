@@ -206,7 +206,7 @@ export function ProductTabularViewPage() {
           }}
         />
       ),
-      width: 34,
+      width: 28,
       align: 'center',
       render: (product) => (
         <input
@@ -228,19 +228,19 @@ export function ProductTabularViewPage() {
     {
       key: 'product_number',
       header: 'Product #',
-      width: 84,
+      width: 58,
       render: (product) => product.product_number,
     },
     {
       key: 'code',
       header: 'Code / Barcode',
-      width: 130,
+      width: 90,
       render: (product) => product.primary_barcode ?? product.sku ?? '—',
     },
     {
       key: 'description',
       header: 'Description',
-      width: '28%',
+      width: '24%',
       render: (product) => (
         <span className={drafts[product.ulid] ? 'product-tabular-staged' : undefined}>
           {product.name}
@@ -250,46 +250,46 @@ export function ProductTabularViewPage() {
     {
       key: 'manufacturer',
       header: 'Manufacturer',
-      width: '15%',
+      width: '11%',
       render: (product) => product.brand?.name ?? '—',
     },
     {
       key: 'category',
       header: 'Category',
-      width: '15%',
+      width: '11%',
       render: (product) => product.category?.name ?? '—',
     },
     {
       key: 'unit',
       header: 'U.O.M',
-      width: 82,
+      width: 48,
       render: (product) => product.base_unit?.symbol ?? product.base_unit?.code ?? '—',
     },
     {
       key: 'cost',
       header: 'Cost Price',
-      width: 96,
+      width: 62,
       align: 'right',
       render: (product) => canViewStock ? formatDecimal(product.sales_lookup?.average_cost, 4) : '—',
     },
     {
       key: 'margin',
       header: 'Margin %',
-      width: 82,
+      width: 56,
       align: 'right',
       render: (product) => canViewStock ? marginPercent(product) : '—',
     },
     {
       key: 'selling',
       header: 'Selling',
-      width: 96,
+      width: 62,
       align: 'right',
       render: (product) => formatDecimal(retailPrice(product), 4),
     },
     {
       key: 'stock',
       header: 'In Stock',
-      width: 96,
+      width: 62,
       align: 'right',
       render: (product) => {
         const quantity = product.sales_lookup?.in_stock ?? '0'
