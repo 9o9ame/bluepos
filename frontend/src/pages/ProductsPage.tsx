@@ -1905,8 +1905,6 @@ export function ProductsPage({
               setSelectedKey(row.ulid)
             }}
             emptyMessage="No products found."
-            virtualize
-            estimatedRowHeight={20}
             loading={localProducts.isLoading}
             loadingLabel="Loading cached products…"
           />
