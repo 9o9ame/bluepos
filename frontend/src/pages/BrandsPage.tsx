@@ -1,4 +1,4 @@
-import { FormEvent } from 'react'
+import { FormEvent, useMemo } from 'react'
 import { Plus, RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { ApiClientError } from '../api/client'
 import { useCatalogMasterEditor } from '../components/catalog/useCatalogMasterEditor'
@@ -11,6 +11,15 @@ import './BrandsPage.css'
 export function BrandsPage() {
   const { closeActiveTab } = useWorkspace()
   const editor = useCatalogMasterEditor('brand')
+
+  const filteredRows = useMemo(() => {
+    const query = editor.name.trim().toLocaleLowerCase()
+    if (!query || editor.selected) return editor.rows
+
+    return editor.rows.filter((row) =>
+      row.name.toLocaleLowerCase().includes(query),
+    )
+  }, [editor.name, editor.rows, editor.selected])
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -71,8 +80,15 @@ export function BrandsPage() {
       {editor.canCreate || editor.canEdit ? (
         <form id="brand-form" onSubmit={onSubmit}>
           <FormGroup title={editor.selected ? 'Edit brand' : 'New brand'}>
-            <Field label="Code"><input className="desktop-input" value={editor.code} onChange={(e) => editor.setCode(e.target.value)} required /></Field>
-            <Field label="Name"><input className="desktop-input" value={editor.name} onChange={(e) => editor.setName(e.target.value)} required /></Field>
+            <Field label="Name">
+              <input
+                className="desktop-input"
+                value={editor.name}
+                placeholder={editor.selected ? 'Brand name' : 'Search or enter brand name'}
+                onChange={(e) => editor.setName(e.target.value)}
+                required
+              />
+            </Field>
           </FormGroup>
         </form>
       ) : null}
@@ -83,7 +99,7 @@ export function BrandsPage() {
             { key: 'name', header: 'Name', render: (row) => row.name },
             { key: 'status', header: 'Status', width: 100, render: (row) => row.is_active ? 'Active' : 'Archived', },
           ]}
-          rows={editor.rows}
+          rows={filteredRows}
           rowKey={(row) => row.ulid}
           selectedKey={editor.selectedKey}
           onSelect={editor.select}
