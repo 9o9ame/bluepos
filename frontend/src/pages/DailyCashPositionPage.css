@@ -491,6 +491,18 @@
     grid-template-columns: repeat(4, minmax(110px, 1fr));
   }
 
+  .dcp-credit-grid {
+    flex: 0 1 205px;
+    min-height: 160px;
+    max-height: 205px;
+    overflow: hidden;
+  }
+
+  .dcp-credit-grid .pos-grid-wrap {
+    height: 100%;
+    overflow-y: auto;
+  }
+
   .dcp-credit-total-row {
     grid-template-columns: minmax(220px, 1fr) repeat(4, 130px);
   }
