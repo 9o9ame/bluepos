@@ -43,12 +43,11 @@ class CategoryController extends Controller
 
         $category = DB::transaction(function () use ($request, $tenantContext, $generateCode): Category {
             $validated = $request->validated();
-            $code = trim((string) ($validated['code'] ?? ''));
 
             $category = Category::query()->create([
                 'tenant_id' => $tenantContext->tenantId(),
                 ...$validated,
-                'code' => $code !== '' ? $code : $generateCode->execute($tenantContext->tenantId()),
+                'code' => $generateCode->execute($tenantContext->tenantId()),
                 'is_active' => $request->boolean('is_active', true),
                 'sort_order' => $request->integer('sort_order'),
             ]);
