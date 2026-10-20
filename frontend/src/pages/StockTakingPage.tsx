@@ -637,6 +637,7 @@ export function StockTakingPage() {
                 ref={productLookupAnchorRef}
                 className={[
                   'ui-select',
+                  'ui-table-dropdown',
                   productLookupOpen ? 'is-open' : '',
                 ].filter(Boolean).join(' ')}
               >
