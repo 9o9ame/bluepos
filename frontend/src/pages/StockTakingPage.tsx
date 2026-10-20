@@ -3,15 +3,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Boxes, Plus, RefreshCw, Save, Send, Trash2, X } from 'lucide-react'
 import {
   createStockTake,
-  createStockTakeLine,
   deleteStockTake,
-  deleteStockTakeLine,
   fetchStockTake,
   fetchStockTakes,
   fetchWarehouses,
   postStockTake,
-  updateStockTake,
-  updateStockTakeLine,
+  saveStockTakeDraft,
 } from '../api/inventory'
 import { PosDataGrid, type PosGridColumn } from '../components/desktop/PosDataGrid'
 import { PosEntryGrid, type PosEntryGridColumn } from '../components/desktop/PosEntryGrid'
@@ -34,6 +31,38 @@ function productLabel(product: Product) {
   return `${product.product_number} · ${product.name}`
 }
 
+type StockTakeDraftLine = {
+  key: string
+  product_ulid: string
+  product_number: string
+  sku: string | null
+  product_name: string
+  system_quantity: string
+  counted_quantity: string
+  variance_quantity: string
+  notes: string | null
+}
+
+function retailPrice(product: Product) {
+  return product.prices?.find((price) => price.is_active && price.price_type === 'retail')?.amount ?? '—'
+}
+
+function draftLineFromServer(line: StockTakeLine): StockTakeDraftLine | null {
+  if (!line.product) return null
+
+  return {
+    key: line.product.ulid,
+    product_ulid: line.product.ulid,
+    product_number: line.product.product_number,
+    sku: line.product.sku,
+    product_name: line.product.name,
+    system_quantity: line.system_quantity,
+    counted_quantity: line.counted_quantity,
+    variance_quantity: line.variance_quantity,
+    notes: line.notes,
+  }
+}
+
 export function StockTakingPage() {
   const queryClient = useQueryClient()
   const feedback = useFeedback()
@@ -54,10 +83,12 @@ export function StockTakingPage() {
   const [documentNotes, setDocumentNotes] = useState('')
   const [headerDirty, setHeaderDirty] = useState(false)
 
+  const [draftLines, setDraftLines] = useState<StockTakeDraftLine[]>([])
+  const [draftDirty, setDraftDirty] = useState(false)
   const [productUlid, setProductUlid] = useState('')
-  const [countedQuantity, setCountedQuantity] = useState('')
+  const [countedQuantity, setCountedQuantity] = useState('0.00')
   const [lineNotes, setLineNotes] = useState('')
-  const [selectedLineUlid, setSelectedLineUlid] = useState<string | null>(null)
+  const [selectedDraftKey, setSelectedDraftKey] = useState<string | null>(null)
   const [lineDirty, setLineDirty] = useState(false)
   const entryRowRef = useRef<HTMLTableRowElement | null>(null)
 
@@ -91,10 +122,18 @@ export function StockTakingPage() {
 
   useEffect(() => {
     if (!document) return
+
     setCountDate(document.count_date)
     setDocumentNotes(document.notes ?? '')
     setHeaderDirty(false)
-  }, [document?.ulid, document?.count_date, document?.notes])
+    setDraftLines(
+      (document.lines ?? [])
+        .map(draftLineFromServer)
+        .filter((line): line is StockTakeDraftLine => Boolean(line)),
+    )
+    setDraftDirty(false)
+    clearLineForm()
+  }, [document?.ulid, document?.count_date, document?.notes, document?.lines])
 
   useEffect(() => {
     if (!newWarehouseUlid && session?.warehouse.ulid) {
@@ -104,22 +143,22 @@ export function StockTakingPage() {
 
   function clearLineForm() {
     setProductUlid('')
-    setCountedQuantity('')
+    setCountedQuantity('0.00')
     setLineNotes('')
-    setSelectedLineUlid(null)
+    setSelectedDraftKey(null)
     setLineDirty(false)
   }
 
-  function fillLineForm(line: StockTakeLine) {
-    setSelectedLineUlid(line.ulid)
-    setProductUlid(line.product?.ulid ?? '')
+  function fillLineForm(line: StockTakeDraftLine) {
+    setSelectedDraftKey(line.key)
+    setProductUlid(line.product_ulid)
     setCountedQuantity(line.counted_quantity)
     setLineNotes(line.notes ?? '')
     setLineDirty(false)
   }
 
   async function confirmDiscardDraftInputs() {
-    if (!headerDirty && !lineDirty) return true
+    if (!headerDirty && !draftDirty && !lineDirty) return true
     return feedback.confirm('Discard unsaved Stock Taking form changes?')
   }
 
@@ -145,57 +184,27 @@ export function StockTakingPage() {
     onError: (error) => feedback.fromApiError(error, 'Unable to create Stock Take.'),
   })
 
-  const saveHeader = useMutation({
-    mutationFn: () => updateStockTake(documentUlid as string, {
-      count_date: countDate,
-      notes: documentNotes.trim() || null,
-    }),
-    onSuccess: async () => {
+  const saveDraft = useMutation({
+    mutationFn: (lines: StockTakeDraftLine[]) =>
+      saveStockTakeDraft(documentUlid as string, {
+        count_date: countDate,
+        notes: documentNotes.trim() || null,
+        lines: lines.map((line) => ({
+          product_ulid: line.product_ulid,
+          counted_quantity: line.counted_quantity,
+          notes: line.notes,
+        })),
+      }),
+    onSuccess: async (saved) => {
       setHeaderDirty(false)
-      await queryClient.invalidateQueries({ queryKey: ['inventory-stock-take', documentUlid] })
-      await queryClient.invalidateQueries({ queryKey: ['inventory-stock-takes'] })
-      feedback.success('Stock Take header saved.')
-    },
-    onError: (error) => feedback.fromApiError(error, 'Unable to save Stock Take.'),
-  })
-
-  const saveLine = useMutation({
-    mutationFn: () => {
-      const payload = {
-        product_ulid: productUlid,
-        counted_quantity: countedQuantity.trim(),
-        notes: lineNotes.trim() || null,
-      }
-      return selectedLineUlid
-        ? updateStockTakeLine(documentUlid as string, selectedLineUlid, payload)
-        : createStockTakeLine(documentUlid as string, payload)
-    },
-    onSuccess: async () => {
-      const wasUpdate = Boolean(selectedLineUlid)
+      setDraftDirty(false)
       clearLineForm()
-      await queryClient.invalidateQueries({ queryKey: ['inventory-stock-take', documentUlid] })
+      queryClient.setQueryData(['inventory-stock-take', documentUlid], saved)
       await queryClient.invalidateQueries({ queryKey: ['inventory-stock-takes'] })
-      feedback.success(wasUpdate ? 'Stock Take line updated.' : 'Stock Take line added.')
-      window.setTimeout(() => {
-        entryRowRef.current
-          ?.querySelector<HTMLInputElement>('.ui-select-trigger-search')
-          ?.focus()
-      }, 0)
-    },
-    onError: (error) => feedback.fromApiError(error, 'Unable to save Stock Take line.'),
-  })
-
-  const removeLine = useMutation({
-    mutationFn: (lineUlid: string) =>
-      deleteStockTakeLine(documentUlid as string, lineUlid),
-    onSuccess: async () => {
-      clearLineForm()
-      await queryClient.invalidateQueries({ queryKey: ['inventory-stock-take', documentUlid] })
-      await queryClient.invalidateQueries({ queryKey: ['inventory-stock-takes'] })
-      feedback.success('Stock Take line removed.')
+      feedback.success('Stock Take draft saved.')
       focusEntryField('product')
     },
-    onError: (error) => feedback.fromApiError(error, 'Unable to remove Stock Take line.'),
+    onError: (error) => feedback.fromApiError(error, 'Unable to save Stock Take draft.'),
   })
 
   const postDocument = useMutation({
@@ -203,6 +212,7 @@ export function StockTakingPage() {
     onSuccess: async () => {
       clearLineForm()
       setHeaderDirty(false)
+      setDraftDirty(false)
       await queryClient.invalidateQueries({ queryKey: ['inventory-stock-take', documentUlid] })
       await queryClient.invalidateQueries({ queryKey: ['inventory-stock-takes'] })
       await queryClient.invalidateQueries({ queryKey: ['inventory-stock'] })
@@ -255,16 +265,22 @@ export function StockTakingPage() {
           label: productLabel(product),
           columns: [
             product.product_number,
-            product.primary_barcode ?? product.sku ?? '—',
-            product.name,
-            product.category?.name ?? '—',
+            `${product.primary_barcode ?? product.sku ?? '—'} · ${product.name}`,
+            product.sales_lookup?.in_stock ?? '—',
+            retailPrice(product),
+            product.purchase_rate ?? '—',
+            product.sales_lookup?.average_cost ?? '—',
+            product.base_unit?.code ?? '—',
+            product.rack_location ?? '—',
           ],
         })),
     [localProducts.data],
   )
 
   const selectedProduct = localProducts.data?.find((product) => product.ulid === productUlid) ?? null
-  const selectedDocumentLine = document?.lines?.find((line) => line.ulid === selectedLineUlid) ?? null
+  const selectedDraftLine = selectedDraftKey
+    ? draftLines.find((line) => line.key === selectedDraftKey) ?? null
+    : null
 
   function focusEntryField(field: 'product' | 'counted' | 'notes') {
     window.setTimeout(() => {
@@ -283,17 +299,79 @@ export function StockTakingPage() {
     }, 0)
   }
 
-  function commitEntryLine() {
-    if (!editable || saveLine.isPending) return false
-
-    if (!productUlid || !countedQuantity.trim()) {
-      feedback.info('Select a product and enter the counted quantity.', 'Stock Taking')
-      if (!productUlid) focusEntryField('product')
-      else focusEntryField('counted')
-      return false
+  function buildEntryDraftLine(): StockTakeDraftLine | null {
+    if (!productUlid) {
+      feedback.info('Select a product.', 'Stock Taking')
+      focusEntryField('product')
+      return null
     }
 
-    saveLine.mutate()
+    if (!/^(?:0|[1-9]\d*)(?:\.\d{0,6})?$/.test(countedQuantity.trim())) {
+      feedback.info('Enter a valid counted quantity.', 'Stock Taking')
+      focusEntryField('counted')
+      return null
+    }
+
+    const product = localProducts.data?.find((row) => row.ulid === productUlid)
+    if (!product) {
+      feedback.info('Selected product is no longer available in the local catalogue.', 'Stock Taking')
+      focusEntryField('product')
+      return null
+    }
+
+    const existing =
+      draftLines.find((line) => line.key === selectedDraftKey) ??
+      draftLines.find((line) => line.product_ulid === product.ulid) ??
+      null
+    const system = existing?.system_quantity ?? '—'
+    const systemNumber = Number.parseFloat(system)
+    const countedNumber = Number.parseFloat(countedQuantity)
+    const variance =
+      Number.isFinite(systemNumber) && Number.isFinite(countedNumber)
+        ? (countedNumber - systemNumber).toFixed(6)
+        : '—'
+
+    return {
+      key: product.ulid,
+      product_ulid: product.ulid,
+      product_number: product.product_number,
+      sku: product.sku,
+      product_name: product.name,
+      system_quantity: system,
+      counted_quantity: countedQuantity.trim(),
+      variance_quantity: variance,
+      notes: lineNotes.trim() || null,
+    }
+  }
+
+  function mergeEntryIntoDraft(source: StockTakeDraftLine[]) {
+    const entry = buildEntryDraftLine()
+    if (!entry) return null
+
+    const targetKey = selectedDraftKey ?? entry.key
+    const existingIndex = source.findIndex(
+      (line) => line.key === targetKey || line.product_ulid === entry.product_ulid,
+    )
+
+    if (existingIndex >= 0) {
+      const next = [...source]
+      next[existingIndex] = entry
+      return next
+    }
+
+    return [...source, entry]
+  }
+
+  function commitEntryLine() {
+    if (!editable) return false
+
+    const next = mergeEntryIntoDraft(draftLines)
+    if (!next) return false
+
+    setDraftLines(next)
+    setDraftDirty(true)
+    clearLineForm()
+    focusEntryField('product')
     return true
   }
 
@@ -312,6 +390,19 @@ export function StockTakingPage() {
     commitEntryLine()
   }
 
+  function saveCurrentDraft() {
+    let lines = draftLines
+
+    if (lineDirty) {
+      const merged = mergeEntryIntoDraft(draftLines)
+      if (!merged) return
+      lines = merged
+      setDraftLines(merged)
+    }
+
+    saveDraft.mutate(lines)
+  }
+
   useEffect(() => {
     if (!editable || !lineDirty) return
 
@@ -322,20 +413,20 @@ export function StockTakingPage() {
       if (target.closest('.ui-select-menu')) return
       if (!target.closest('.stock-taking-line-card')) return
       if (target.closest('.stock-taking-entry-grid tbody tr:not(.is-entry-row)')) return
-      if (!productUlid || !countedQuantity.trim() || saveLine.isPending) return
 
-      saveLine.mutate()
+      commitEntryLine()
     }
 
     window.addEventListener('mousedown', handleOutsideEntryRow)
     return () => window.removeEventListener('mousedown', handleOutsideEntryRow)
   }, [
     countedQuantity,
+    draftLines,
     editable,
     lineDirty,
+    lineNotes,
     productUlid,
-    saveLine.isPending,
-    selectedLineUlid,
+    selectedDraftKey,
   ])
 
   if (mode === 'list') {
@@ -479,8 +570,8 @@ export function StockTakingPage() {
         <div className="stock-taking-toolbar-right">
           <UiButton
             variant="success"
-            onClick={() => saveHeader.mutate()}
-            disabled={!editable || !headerDirty || saveHeader.isPending}
+            onClick={saveCurrentDraft}
+            disabled={!editable || (!headerDirty && !draftDirty && !lineDirty) || saveDraft.isPending}
           >
             <Save size={15} /> Save
           </UiButton>
@@ -488,8 +579,8 @@ export function StockTakingPage() {
             variant="success"
             onClick={async () => {
               if (!document || !canPost || document.status !== 'draft') return
-              if (headerDirty) {
-                feedback.info('Save the document header before posting.', 'Stock Taking')
+              if (headerDirty || draftDirty || lineDirty) {
+                feedback.info('Save the Stock Take draft before posting.', 'Stock Taking')
                 return
               }
               if (!await feedback.confirm(
@@ -519,24 +610,66 @@ export function StockTakingPage() {
           className="stock-taking-entry-grid"
           ariaLabel="Stock Taking lines"
         >
+          {draftLines.map((line) => (
+            <tr
+              key={line.key}
+              className={selectedDraftKey === line.key ? 'is-selected' : undefined}
+              onClick={() => fillLineForm(line)}
+              onDoubleClick={() => {
+                fillLineForm(line)
+                focusEntryField('counted')
+              }}
+            >
+              <td>{line.product_number}</td>
+              <td>{line.sku ?? '—'}</td>
+              <td>{line.product_name}</td>
+              <td className="is-num">{line.system_quantity}</td>
+              <td className="is-num">{line.counted_quantity}</td>
+              <td className="is-num">{line.variance_quantity}</td>
+              <td>{line.notes ?? '—'}</td>
+              <td className="stock-taking-delete-cell">
+                {editable ? (
+                  <button
+                    type="button"
+                    className="stock-taking-delete-row"
+                    aria-label="Remove Stock Taking row"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setDraftLines((rows) => rows.filter((row) => row.key !== line.key))
+                      setDraftDirty(true)
+                      if (selectedDraftKey === line.key) clearLineForm()
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                ) : null}
+              </td>
+            </tr>
+          ))}
+
           <tr ref={entryRowRef} className="is-entry-row">
-            <td>{selectedProduct?.product_number ?? selectedDocumentLine?.product?.product_number ?? ''}</td>
-            <td>{selectedProduct?.sku ?? selectedDocumentLine?.product?.sku ?? ''}</td>
+            <td>{selectedProduct?.product_number ?? selectedDraftLine?.product_number ?? ''}</td>
+            <td>{selectedProduct?.sku ?? selectedDraftLine?.sku ?? ''}</td>
             <td>
               <UiTableDropdown
                 value={productUlid}
                 options={productOptions}
                 menuColumns={[
-                  { header: 'Product #', width: '90px' },
-                  { header: 'Barcode / SKU', width: '130px' },
-                  { header: 'Product', width: 'minmax(220px, 1fr)' },
-                  { header: 'Category', width: '140px' },
+                  { header: 'ID', width: '78px' },
+                  { header: 'Description', width: 'minmax(280px, 1fr)' },
+                  { header: 'In Stock', width: '74px' },
+                  { header: 'Unit Price', width: '82px' },
+                  { header: 'Base Rate', width: '82px' },
+                  { header: 'Cost', width: '82px' },
+                  { header: 'Unit', width: '62px' },
+                  { header: 'Location', width: '90px' },
                 ]}
-                menuMinWidth={650}
+                menuMinWidth={920}
                 menuResultLimit={80}
+                maxMenuHeight={280}
                 onChange={(value) => {
                   setProductUlid(value)
-                                setLineDirty(true)
+                  setLineDirty(true)
                   focusEntryField('counted')
                 }}
                 disabled={!editable}
@@ -544,7 +677,7 @@ export function StockTakingPage() {
                 aria-label="Stock Taking product"
               />
             </td>
-            <td className="is-num">{selectedDocumentLine?.system_quantity ?? ''}</td>
+            <td className="is-num">{selectedDraftLine?.system_quantity ?? ''}</td>
             <td className="is-num">
               <input
                 data-stock-field="counted"
@@ -559,7 +692,7 @@ export function StockTakingPage() {
                 aria-label="Counted quantity"
               />
             </td>
-            <td className="is-num">{selectedDocumentLine?.variance_quantity ?? ''}</td>
+            <td className="is-num">{selectedDraftLine?.variance_quantity ?? ''}</td>
             <td>
               <input
                 data-stock-field="notes"
@@ -576,48 +709,11 @@ export function StockTakingPage() {
             </td>
             <td />
           </tr>
-
-          {(document?.lines ?? []).map((line) => (
-            <tr
-              key={line.ulid}
-              className={selectedLineUlid === line.ulid ? 'is-selected' : undefined}
-              onClick={() => fillLineForm(line)}
-              onDoubleClick={() => {
-                fillLineForm(line)
-                focusEntryField('counted')
-              }}
-            >
-              <td>{line.product?.product_number ?? '—'}</td>
-              <td>{line.product?.sku ?? '—'}</td>
-              <td>{line.product?.name ?? '—'}</td>
-              <td className="is-num">{line.system_quantity}</td>
-              <td className="is-num">{line.counted_quantity}</td>
-              <td className="is-num">{line.variance_quantity}</td>
-              <td>{line.notes ?? '—'}</td>
-              <td className="stock-taking-delete-cell">
-                {editable ? (
-                  <button
-                    type="button"
-                    className="stock-taking-delete-row"
-                    aria-label="Remove Stock Taking row"
-                    disabled={removeLine.isPending}
-                    onClick={async (event) => {
-                      event.stopPropagation()
-                      if (!await feedback.confirm('Remove this Stock Take line?')) return
-                      removeLine.mutate(line.ulid)
-                    }}
-                  >
-                    <X size={14} />
-                  </button>
-                ) : null}
-              </td>
-            </tr>
-          ))}
         </PosEntryGrid>
       </div>
 
       <footer className="stock-taking-footer">
-        <span>{document?.lines?.length ?? 0} line(s)</span>
+        <span>{draftLines.length} line(s)</span>
         <span>{document?.warehouse ? `${document.warehouse.code} — ${document.warehouse.name}` : 'No warehouse'}</span>
         {document?.posted_at ? <span>Posted: {new Date(document.posted_at).toLocaleString()}</span> : null}
       </footer>
