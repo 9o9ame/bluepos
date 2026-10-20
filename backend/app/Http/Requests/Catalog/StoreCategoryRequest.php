@@ -22,7 +22,7 @@ class StoreCategoryRequest extends FormRequest
 
         return [
             'code' => [
-                'required',
+                'nullable',
                 'string',
                 'max:64',
                 'alpha_dash',
