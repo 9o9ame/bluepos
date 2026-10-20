@@ -196,11 +196,13 @@ export function UiSelect({
       Math.min(maxMenuHeight, available),
     )
 
+    const menuWidth = Math.max(rect.width, menuMinWidth ?? 0)
+
     setPos({
       top: openUp ? rect.top - gap : rect.bottom + gap,
       left: Math.max(
         8,
-        Math.min(rect.left, window.innerWidth - rect.width - 8),
+        Math.min(rect.left, window.innerWidth - menuWidth - 8),
       ),
       width: rect.width,
       maxHeight: resolvedMaxHeight,
