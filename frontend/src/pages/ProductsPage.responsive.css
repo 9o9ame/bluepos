@@ -73,7 +73,7 @@
 
   .product-reference-screen .product-def-filterbar {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(210px, 34%) minmax(0, 1fr);
     align-items: center;
     gap: 6px;
     padding: 4px 6px;
@@ -89,6 +89,7 @@
     min-width: 0;
     height: 32px;
     margin: 0;
+    padding-inline: 6px;
   }
 
   .product-reference-screen .product-def-filterbar .product-def-grid-search .pdf-input {
