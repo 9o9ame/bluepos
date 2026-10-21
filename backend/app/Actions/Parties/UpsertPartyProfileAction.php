@@ -45,6 +45,12 @@ class UpsertPartyProfileAction
             $accountAccountTypeUlid,
         ): PartyProfile {
             $tenantId = $this->tenantContext->tenantId();
+
+            DB::table('tenants')
+                ->where('id', $tenantId)
+                ->lockForUpdate()
+                ->first();
+
             $isNew = $profile === null;
             $originalCode = $profile?->code;
 
@@ -70,6 +76,7 @@ class UpsertPartyProfileAction
                 $profile->created_by = $this->tenantContext->userId();
             }
 
+            $this->assertProfileNameAvailable($profile);
             $this->assertProfileCodeAvailable($profile, $originalCode);
             $profile->save();
 
@@ -179,6 +186,26 @@ class UpsertPartyProfileAction
         }
 
         return (int) $id;
+    }
+
+    private function assertProfileNameAvailable(PartyProfile $profile): void
+    {
+        $normalized = mb_strtolower(trim((string) $profile->name));
+
+        $exists = PartyProfile::query()
+            ->forTenant($this->tenantContext->tenantId())
+            ->whereRaw(
+                "regexp_replace(lower(btrim(name)), '[[:space:]]+', ' ', 'g') = ?",
+                [$normalized],
+            )
+            ->when($profile->exists, fn ($q) => $q->where('id', '<>', $profile->id))
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'name' => 'A party with this name already exists.',
+            ]);
+        }
     }
 
     private function assertProfileCodeAvailable(PartyProfile $profile, ?string $originalCode): void
