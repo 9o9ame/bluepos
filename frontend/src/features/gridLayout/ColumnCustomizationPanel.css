@@ -273,3 +273,23 @@
 .bp-col-customization-row.is-hidden { color: var(--ui-text-muted) !important; }
 .bp-col-customization-actions .is-hide { color: var(--ui-danger) !important; }
 html[data-animations='off'] .bp-col-customization * { transition: none !important; animation: none !important; }
+
+
+/* Customization dialog close action must remain visible without hover. */
+.bp-col-customization-titlebar > button[aria-label='Close customization'] {
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 48%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-danger) 14%, var(--ui-surface)) !important;
+  color: var(--ui-danger) !important;
+  opacity: 1 !important;
+}
+
+.bp-col-customization-titlebar > button[aria-label='Close customization'] svg {
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+.bp-col-customization-titlebar > button[aria-label='Close customization']:hover {
+  border-color: var(--ui-danger) !important;
+  background: color-mix(in srgb, var(--ui-danger) 24%, var(--ui-surface)) !important;
+  color: var(--ui-danger) !important;
+}
