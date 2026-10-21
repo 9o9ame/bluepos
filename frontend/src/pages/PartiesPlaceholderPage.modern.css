@@ -375,18 +375,15 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-.parties-vca-coa-group td {
-  background: linear-gradient(90deg, #1769aa, #0f7dcc 55%, #2aa3e0) !important;
-}
-
 .parties-vca-coa-toggle {
-  border-radius: 6px;
-  transition: transform 0.12s ease, background 0.12s ease;
+  transition:
+    transform var(--ui-transition-fast),
+    background var(--ui-transition-fast),
+    border-color var(--ui-transition-fast);
 }
 
 .parties-vca-coa-toggle:hover {
-  transform: scale(1.08);
-  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.06);
 }
 
 /* ---- Skins ---- */
