@@ -1284,7 +1284,7 @@
 }
 
 .parties-vca-coa-level-0 td {
-  background: var(--ui-accent) !important;
+  background: color-mix(in srgb, var(--ui-accent) 88%, var(--ui-surface)) !important;
   color: var(--ui-selected-row-text, #fff) !important;
   font-size: calc(var(--ui-font-size, 12px) + 2px);
   font-weight: 900;
@@ -1293,24 +1293,24 @@
 
 .parties-vca-coa-level-1 td {
   padding-left: 30px;
-  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface)) !important;
-  color: var(--ui-accent-strong) !important;
+  background: color-mix(in srgb, var(--ui-accent) 32%, var(--ui-surface)) !important;
+  color: color-mix(in srgb, var(--ui-accent-strong) 88%, var(--ui-text)) !important;
   font-size: calc(var(--ui-font-size, 12px) + 1px);
   font-weight: 850;
 }
 
 .parties-vca-coa-level-2 td {
   padding-left: 58px;
-  background: color-mix(in srgb, var(--ui-info) 12%, var(--ui-surface)) !important;
-  color: var(--ui-info) !important;
+  background: color-mix(in srgb, var(--ui-info) 24%, var(--ui-surface)) !important;
+  color: color-mix(in srgb, var(--ui-info) 82%, var(--ui-text)) !important;
   font-size: var(--ui-font-size, 12px);
   font-weight: 750;
 }
 
 .parties-vca-coa-level-3 td {
   padding-left: 86px;
-  background: var(--ui-surface) !important;
-  color: var(--ui-text) !important;
+  background: color-mix(in srgb, var(--ui-row-alt) 58%, var(--ui-surface)) !important;
+  color: var(--ui-text-muted) !important;
   font-size: calc(var(--ui-font-size, 12px) - 0.5px);
   font-weight: 500;
 }
@@ -1385,40 +1385,33 @@
   box-shadow: var(--ui-control-shadow);
 }
 
+.parties-vca-coa-toggle {
+  background: var(--ui-surface);
+  border-color: var(--ui-border);
+}
+
 .parties-vca-coa-level-0 .parties-vca-coa-toggle.is-open {
-  background: color-mix(in srgb, var(--ui-selected-row-text, #fff) 20%, transparent);
-  color: var(--ui-selected-row-text, #fff);
-  border-color: color-mix(in srgb, var(--ui-selected-row-text, #fff) 78%, transparent);
+  color: var(--ui-success);
 }
 
 .parties-vca-coa-level-0 .parties-vca-coa-toggle.is-closed {
-  background: var(--ui-warning);
-  color: var(--ui-text);
-  border-color: var(--ui-warning);
+  color: var(--ui-warning);
 }
 
 .parties-vca-coa-level-1 .parties-vca-coa-toggle.is-open {
-  background: var(--ui-accent);
-  color: var(--ui-selected-row-text, #fff);
-  border-color: var(--ui-accent);
+  color: var(--ui-accent-strong);
 }
 
 .parties-vca-coa-level-1 .parties-vca-coa-toggle.is-closed {
-  background: var(--ui-warning);
-  color: var(--ui-text);
-  border-color: var(--ui-warning);
+  color: var(--ui-warning);
 }
 
 .parties-vca-coa-level-2 .parties-vca-coa-toggle.is-open {
-  background: var(--ui-info);
-  color: var(--ui-selected-row-text, #fff);
-  border-color: var(--ui-info);
+  color: var(--ui-info);
 }
 
 .parties-vca-coa-level-2 .parties-vca-coa-toggle.is-closed {
-  background: var(--ui-success);
-  color: var(--ui-selected-row-text, #fff);
-  border-color: var(--ui-success);
+  color: var(--ui-success);
 }
 
 .parties-vca-coa-toggle:hover {
