@@ -401,12 +401,12 @@
 .parties-vca-photo {
   position: relative;
   box-sizing: border-box;
-  width: 96px;
-  min-width: 96px;
-  max-width: 96px;
-  height: 100%;
-  min-height: 108px;
-  max-height: 148px;
+  width: 88px;
+  min-width: 88px;
+  max-width: 88px;
+  height: 88px;
+  min-height: 88px;
+  max-height: 88px;
   padding: 4px;
   border: 1px solid color-mix(in srgb, var(--brand-blue, #1769aa) 28%, #c5a0a0);
   border-radius: 10px;
@@ -416,7 +416,7 @@
     0 1px 4px rgba(20, 40, 60, 0.08);
   overflow: hidden;
   justify-self: end;
-  align-self: stretch;
+  align-self: start;
   cursor: pointer;
   user-select: none;
 }
@@ -1293,10 +1293,12 @@ html[data-animations='off'] .classic-workspace.is-parties * {
   }
 
   .parties-vca-photo {
-    width: 76px;
-    min-width: 76px;
-    max-width: 76px;
-    min-height: 92px;
+    width: 72px;
+    min-width: 72px;
+    max-width: 72px;
+    height: 72px;
+    min-height: 72px;
+    max-height: 72px;
   }
 
   .parties-vca-grid .col-no { width: 46px; }
@@ -1359,7 +1361,9 @@ html[data-animations='off'] .classic-workspace.is-parties * {
     width: 64px;
     min-width: 64px;
     max-width: 64px;
-    min-height: 84px;
+    height: 64px;
+    min-height: 64px;
+    max-height: 64px;
   }
 
   .parties-vca-subtabs {
