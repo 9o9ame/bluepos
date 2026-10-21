@@ -2857,125 +2857,144 @@ export function PartiesPlaceholderPage({
                       No leaf accounts yet — save vendors, customers, or manual accounts
                     </div>
                   ) : (
-                    coaGroupedRows.flatMap((main) => {
+                    coaGroupedRows.map((main) => {
                       const mainOpen = expandedCoaMain[main.ulid] !== false
                       const mainDisplay = splitCoaDisplayLabel(main.label)
-                      const out: ReactNode[] = [
-                        <div
-                          key={`m-${main.ulid}`}
-                          className="coa-modern-node coa-modern-node--main"
-                          role="treeitem"
-                          aria-expanded={mainOpen}
-                        >
-                          <div className="coa-modern-node__label">
-                            <button
-                              type="button"
-                              className="coa-modern-node__toggle"
-                              onClick={() => toggleCoaMain(main.ulid)}
-                              aria-label={mainOpen ? 'Collapse heading' : 'Expand heading'}
-                            >
-                              {mainOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </button>
-                            <Folder size={19} className="coa-modern-node__icon" aria-hidden="true" />
-                            <span className="coa-modern-node__title">
-                              {mainDisplay.code ? `${mainDisplay.code} - ` : ''}{mainDisplay.name}
-                            </span>
-                          </div>
-                          <span className="coa-modern-code">{mainDisplay.code || '—'}</span>
-                          <span className="coa-modern-badge coa-modern-badge--main">Heading</span>
-                        </div>,
-                      ]
 
-                      if (!mainOpen) return out
-
-                      for (const head of main.heads) {
-                        const headOpen = expandedCoaHead[head.ulid] !== false
-                        const headDisplay = splitCoaDisplayLabel(head.label)
-                        out.push(
+                      return (
+                        <div key={`m-group-${main.ulid}`} className="coa-modern-group">
                           <div
-                            key={`h-${head.ulid}`}
-                            className="coa-modern-node coa-modern-node--head"
+                            className="coa-modern-node coa-modern-node--main"
                             role="treeitem"
-                            aria-expanded={headOpen}
+                            aria-expanded={mainOpen}
                           >
-                            <div className="coa-modern-node__label coa-modern-node__label--level-1">
-                              <span className="coa-modern-branch coa-modern-branch--level-1" aria-hidden="true" />
+                            <div className="coa-modern-node__label">
                               <button
                                 type="button"
-                                className="coa-modern-node__toggle"
-                                onClick={() => toggleCoaHead(head.ulid)}
-                                aria-label={headOpen ? 'Collapse subheading' : 'Expand subheading'}
+                                className={`coa-modern-node__toggle ${mainOpen ? 'is-open' : 'is-closed'}`}
+                                onClick={() => toggleCoaMain(main.ulid)}
+                                aria-label={mainOpen ? 'Collapse heading' : 'Expand heading'}
                               >
-                                {headOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                                <ChevronRight size={16} />
                               </button>
-                              <Folder size={18} className="coa-modern-node__icon" aria-hidden="true" />
+                              <Folder size={19} className="coa-modern-node__icon" aria-hidden="true" />
                               <span className="coa-modern-node__title">
-                                {headDisplay.code ? `${headDisplay.code} - ` : ''}{headDisplay.name}
+                                {mainDisplay.code ? `${mainDisplay.code} - ` : ''}{mainDisplay.name}
                               </span>
                             </div>
-                            <span className="coa-modern-code">{headDisplay.code || '—'}</span>
-                            <span className="coa-modern-badge coa-modern-badge--head">Subheading</span>
-                          </div>,
-                        )
+                            <span className="coa-modern-code">{mainDisplay.code || '—'}</span>
+                            <span className="coa-modern-badge coa-modern-badge--main">Heading</span>
+                          </div>
 
-                        if (!headOpen) continue
+                          <div
+                            className={`coa-modern-children ${mainOpen ? 'is-open' : 'is-closed'}`}
+                            aria-hidden={!mainOpen}
+                          >
+                            <div className="coa-modern-children__inner">
+                              {main.heads.map((head) => {
+                                const headOpen = expandedCoaHead[head.ulid] !== false
+                                const headDisplay = splitCoaDisplayLabel(head.label)
 
-                        for (const sub of head.sub_heads) {
-                          const subOpen = expandedCoaSub[sub.ulid] !== false
-                          const subDisplay = splitCoaDisplayLabel(sub.label)
-                          out.push(
-                            <div
-                              key={`s-${sub.ulid}`}
-                              className="coa-modern-node coa-modern-node--sub"
-                              role="treeitem"
-                              aria-expanded={subOpen}
-                            >
-                              <div className="coa-modern-node__label coa-modern-node__label--level-2">
-                                <span className="coa-modern-branch coa-modern-branch--level-2" aria-hidden="true" />
-                                <button
-                                  type="button"
-                                  className="coa-modern-node__toggle"
-                                  onClick={() => toggleCoaSub(sub.ulid)}
-                                  aria-label={subOpen ? 'Collapse sub-subheading' : 'Expand sub-subheading'}
-                                >
-                                  {subOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
-                                </button>
-                                <Folder size={18} className="coa-modern-node__icon" aria-hidden="true" />
-                                <span className="coa-modern-node__title">
-                                  {subDisplay.code ? `${subDisplay.code} - ` : ''}{subDisplay.name}
-                                </span>
-                              </div>
-                              <span className="coa-modern-code">{subDisplay.code || '—'}</span>
-                              <span className="coa-modern-badge coa-modern-badge--sub">Sub-subheading</span>
-                            </div>,
-                          )
+                                return (
+                                  <div key={`h-group-${head.ulid}`} className="coa-modern-group">
+                                    <div
+                                      className="coa-modern-node coa-modern-node--head"
+                                      role="treeitem"
+                                      aria-expanded={headOpen}
+                                    >
+                                      <div className="coa-modern-node__label coa-modern-node__label--level-1">
+                                        <span className="coa-modern-branch coa-modern-branch--level-1" aria-hidden="true" />
+                                        <button
+                                          type="button"
+                                          className={`coa-modern-node__toggle ${headOpen ? 'is-open' : 'is-closed'}`}
+                                          onClick={() => toggleCoaHead(head.ulid)}
+                                          aria-label={headOpen ? 'Collapse subheading' : 'Expand subheading'}
+                                        >
+                                          <ChevronRight size={15} />
+                                        </button>
+                                        <Folder size={18} className="coa-modern-node__icon" aria-hidden="true" />
+                                        <span className="coa-modern-node__title">
+                                          {headDisplay.code ? `${headDisplay.code} - ` : ''}{headDisplay.name}
+                                        </span>
+                                      </div>
+                                      <span className="coa-modern-code">{headDisplay.code || '—'}</span>
+                                      <span className="coa-modern-badge coa-modern-badge--head">Subheading</span>
+                                    </div>
 
-                          if (!subOpen) continue
+                                    <div
+                                      className={`coa-modern-children ${headOpen ? 'is-open' : 'is-closed'}`}
+                                      aria-hidden={!headOpen}
+                                    >
+                                      <div className="coa-modern-children__inner">
+                                        {head.sub_heads.map((sub) => {
+                                          const subOpen = expandedCoaSub[sub.ulid] !== false
+                                          const subDisplay = splitCoaDisplayLabel(sub.label)
 
-                          for (const leaf of sub.accounts) {
-                            const leafDisplay = splitCoaDisplayLabel(leaf.label)
-                            out.push(
-                              <div
-                                key={`a-${leaf.ulid}`}
-                                className="coa-modern-node coa-modern-node--account"
-                                role="treeitem"
-                              >
-                                <div className="coa-modern-node__label coa-modern-node__label--level-3">
-                                  <span className="coa-modern-branch coa-modern-branch--level-3" aria-hidden="true" />
-                                  <FileText size={16} className="coa-modern-node__icon" aria-hidden="true" />
-                                  <span className="coa-modern-node__title">
-                                    {leafDisplay.code ? `${leafDisplay.code} - ` : ''}{leafDisplay.name}
-                                  </span>
-                                </div>
-                                <span className="coa-modern-code">{leafDisplay.code || '—'}</span>
-                                <span className="coa-modern-badge coa-modern-badge--account">Account</span>
-                              </div>,
-                            )
-                          }
-                        }
-                      }
+                                          return (
+                                            <div key={`s-group-${sub.ulid}`} className="coa-modern-group">
+                                              <div
+                                                className="coa-modern-node coa-modern-node--sub"
+                                                role="treeitem"
+                                                aria-expanded={subOpen}
+                                              >
+                                                <div className="coa-modern-node__label coa-modern-node__label--level-2">
+                                                  <span className="coa-modern-branch coa-modern-branch--level-2" aria-hidden="true" />
+                                                  <button
+                                                    type="button"
+                                                    className={`coa-modern-node__toggle ${subOpen ? 'is-open' : 'is-closed'}`}
+                                                    onClick={() => toggleCoaSub(sub.ulid)}
+                                                    aria-label={subOpen ? 'Collapse sub-subheading' : 'Expand sub-subheading'}
+                                                  >
+                                                    <ChevronRight size={15} />
+                                                  </button>
+                                                  <Folder size={18} className="coa-modern-node__icon" aria-hidden="true" />
+                                                  <span className="coa-modern-node__title">
+                                                    {subDisplay.code ? `${subDisplay.code} - ` : ''}{subDisplay.name}
+                                                  </span>
+                                                </div>
+                                                <span className="coa-modern-code">{subDisplay.code || '—'}</span>
+                                                <span className="coa-modern-badge coa-modern-badge--sub">Sub-subheading</span>
+                                              </div>
 
-                      return out
+                                              <div
+                                                className={`coa-modern-children ${subOpen ? 'is-open' : 'is-closed'}`}
+                                                aria-hidden={!subOpen}
+                                              >
+                                                <div className="coa-modern-children__inner">
+                                                  {sub.accounts.map((leaf) => {
+                                                    const leafDisplay = splitCoaDisplayLabel(leaf.label)
+                                                    return (
+                                                      <div
+                                                        key={`a-${leaf.ulid}`}
+                                                        className="coa-modern-node coa-modern-node--account"
+                                                        role="treeitem"
+                                                      >
+                                                        <div className="coa-modern-node__label coa-modern-node__label--level-3">
+                                                          <span className="coa-modern-branch coa-modern-branch--level-3" aria-hidden="true" />
+                                                          <FileText size={16} className="coa-modern-node__icon" aria-hidden="true" />
+                                                          <span className="coa-modern-node__title">
+                                                            {leafDisplay.code ? `${leafDisplay.code} - ` : ''}{leafDisplay.name}
+                                                          </span>
+                                                        </div>
+                                                        <span className="coa-modern-code">{leafDisplay.code || '—'}</span>
+                                                        <span className="coa-modern-badge coa-modern-badge--account">Account</span>
+                                                      </div>
+                                                    )
+                                                  })}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )
                     })
                   )}
                 </div>
