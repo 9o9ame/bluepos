@@ -113,6 +113,10 @@ class StockTakeController extends Controller
         $document = $this->findDocument($stockTakeUlid, $tenantContext);
         $this->authorize('update', $document);
 
+        if ($document->status !== StockTakeStatus::Draft) {
+            throw new ApiException('DOCUMENT_POSTED', 'Posted stock takes cannot be edited.', 422);
+        }
+
         $data = $request->validate([
             'count_date' => ['required', 'date'],
             'notes' => ['nullable', 'string', 'max:500'],
