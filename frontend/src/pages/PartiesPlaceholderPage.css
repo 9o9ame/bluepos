@@ -1438,6 +1438,259 @@
   background: var(--ui-row-hover) !important;
 }
 
+
+/* Modern grouped Chart of Accounts */
+.parties-coa-modern-tree {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  overflow: hidden;
+  background: var(--ui-surface);
+}
+
+.parties-coa-modern-tree__head,
+.coa-modern-node {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px 138px;
+  align-items: center;
+}
+
+.parties-coa-modern-tree__head {
+  min-height: 34px;
+  border-bottom: 1px solid var(--ui-border);
+  background: color-mix(in srgb, var(--ui-surface-subtle) 86%, var(--ui-accent-soft));
+  color: var(--ui-text-muted);
+  font-size: calc(var(--ui-font-size, 12px) - 0.5px);
+  font-weight: 700;
+}
+
+.parties-coa-modern-tree__head > div {
+  padding: 7px 12px;
+}
+
+.parties-coa-modern-tree__body {
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  background: var(--ui-surface-subtle);
+}
+
+.coa-modern-node {
+  position: relative;
+  min-height: 36px;
+  border: 1px solid var(--ui-border);
+  border-radius: calc(var(--control-radius) + 2px);
+  overflow: visible;
+  box-shadow: var(--ui-control-shadow);
+}
+
+.coa-modern-node__label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 10px;
+}
+
+.coa-modern-node__label--level-1 {
+  padding-left: 42px;
+}
+
+.coa-modern-node__label--level-2 {
+  padding-left: 78px;
+}
+
+.coa-modern-node__label--level-3 {
+  padding-left: 114px;
+}
+
+.coa-modern-node__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coa-modern-node__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: currentColor;
+  cursor: pointer;
+}
+
+.coa-modern-node__icon {
+  flex: 0 0 auto;
+}
+
+.coa-modern-node--main {
+  background: color-mix(in srgb, var(--ui-info) 20%, var(--ui-surface));
+  border-color: color-mix(in srgb, var(--ui-info) 34%, var(--ui-border));
+  color: color-mix(in srgb, var(--ui-info) 72%, var(--ui-text));
+  font-size: calc(var(--ui-font-size, 12px) + 1.5px);
+  font-weight: 900;
+}
+
+.coa-modern-node--head {
+  background: color-mix(in srgb, var(--ui-success) 16%, var(--ui-surface));
+  border-color: color-mix(in srgb, var(--ui-success) 30%, var(--ui-border));
+  color: color-mix(in srgb, var(--ui-success) 72%, var(--ui-text));
+  font-size: calc(var(--ui-font-size, 12px) + 0.5px);
+  font-weight: 850;
+}
+
+.coa-modern-node--sub {
+  background: color-mix(in srgb, var(--ui-warning) 18%, var(--ui-surface));
+  border-color: color-mix(in srgb, var(--ui-warning) 32%, var(--ui-border));
+  color: color-mix(in srgb, var(--ui-warning) 76%, var(--ui-text));
+  font-size: var(--ui-font-size, 12px);
+  font-weight: 800;
+}
+
+.coa-modern-node--account {
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  font-size: calc(var(--ui-font-size, 12px) - 0.5px);
+  font-weight: 600;
+}
+
+.coa-modern-node--main .coa-modern-node__icon {
+  color: var(--ui-info);
+  fill: color-mix(in srgb, var(--ui-info) 72%, transparent);
+}
+
+.coa-modern-node--head .coa-modern-node__icon {
+  color: var(--ui-success);
+  fill: color-mix(in srgb, var(--ui-success) 72%, transparent);
+}
+
+.coa-modern-node--sub .coa-modern-node__icon {
+  color: var(--ui-warning);
+  fill: color-mix(in srgb, var(--ui-warning) 72%, transparent);
+}
+
+.coa-modern-node--account .coa-modern-node__icon {
+  color: color-mix(in srgb, var(--ui-accent) 74%, var(--ui-text));
+}
+
+.coa-modern-code,
+.coa-modern-badge {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.coa-modern-code {
+  min-width: 58px;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 82%, transparent);
+  background: color-mix(in srgb, var(--ui-surface) 82%, transparent);
+  color: var(--ui-text-muted);
+}
+
+.coa-modern-badge--main {
+  background: color-mix(in srgb, var(--ui-info) 18%, var(--ui-surface));
+  color: color-mix(in srgb, var(--ui-info) 82%, var(--ui-text));
+}
+
+.coa-modern-badge--head {
+  background: color-mix(in srgb, var(--ui-success) 18%, var(--ui-surface));
+  color: color-mix(in srgb, var(--ui-success) 82%, var(--ui-text));
+}
+
+.coa-modern-badge--sub {
+  background: color-mix(in srgb, var(--ui-warning) 22%, var(--ui-surface));
+  color: color-mix(in srgb, var(--ui-warning) 84%, var(--ui-text));
+}
+
+.coa-modern-badge--account {
+  background: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-surface));
+  color: color-mix(in srgb, var(--ui-accent-strong) 82%, var(--ui-text));
+}
+
+.coa-modern-branch {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 18px;
+  border-left: 1px solid color-mix(in srgb, var(--ui-border) 70%, var(--ui-info));
+  pointer-events: none;
+}
+
+.coa-modern-branch::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 18px;
+  border-top: 1px solid currentColor;
+}
+
+.coa-modern-branch--level-1 {
+  left: 18px;
+  color: color-mix(in srgb, var(--ui-success) 54%, var(--ui-border));
+}
+
+.coa-modern-branch--level-2 {
+  left: 54px;
+  color: color-mix(in srgb, var(--ui-warning) 58%, var(--ui-border));
+}
+
+.coa-modern-branch--level-3 {
+  left: 90px;
+  color: color-mix(in srgb, var(--ui-accent) 42%, var(--ui-border));
+}
+
+.coa-modern-node:hover {
+  filter: brightness(1.01);
+  box-shadow: var(--ui-card-shadow);
+}
+
+@media (max-width: 900px) {
+  .parties-coa-modern-tree__head,
+  .coa-modern-node {
+    grid-template-columns: minmax(0, 1fr) 88px 116px;
+  }
+
+  .coa-modern-node__label--level-1 {
+    padding-left: 34px;
+  }
+
+  .coa-modern-node__label--level-2 {
+    padding-left: 62px;
+  }
+
+  .coa-modern-node__label--level-3 {
+    padding-left: 90px;
+  }
+
+  .coa-modern-branch--level-1 {
+    left: 14px;
+  }
+
+  .coa-modern-branch--level-2 {
+    left: 42px;
+  }
+
+  .coa-modern-branch--level-3 {
+    left: 70px;
+  }
+}
+
 /* Dark */
 :root[data-theme='dark'] .parties-vca {
   --vca-border: #4f6578;
