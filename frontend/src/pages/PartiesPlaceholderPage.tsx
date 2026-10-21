@@ -361,6 +361,7 @@ export function PartiesPlaceholderPage({
   const [form, setForm] = useState(() => emptyForm(initialPartyFilter))
   const [parties, setParties] = useState<Party[]>([])
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -410,6 +411,17 @@ export function PartiesPlaceholderPage({
     [parties],
   )
 
+  const filteredRows = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase()
+    if (!query) return rows
+
+    return rows.filter((row) =>
+      [row.no, row.name, row.address, row.type].some((value) =>
+        value.toLocaleLowerCase().includes(query),
+      ),
+    )
+  }, [rows, searchQuery])
+
   const selectedIndex = rows.findIndex((row) => row.key === selectedKey)
   const dirty =
     formSnapshot(form) !== baselineRef.current ||
@@ -419,7 +431,6 @@ export function PartiesPlaceholderPage({
   const canSave =
     !saving &&
     form.name.trim().length > 0 &&
-    form.code.trim().length > 0 &&
     CREATABLE_TYPES.includes(form.type) &&
     (isManualAccount
       ? form.accountTypeUlid.trim().length > 0
@@ -1933,6 +1944,15 @@ export function PartiesPlaceholderPage({
           </section>
 
           <section className="parties-vca-right" aria-label="Party list and classification">
+            <div className="parties-vca-search">
+              <input
+                type="search"
+                value={searchQuery}
+                placeholder="Search parties"
+                aria-label="Search parties"
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+            </div>
             <div className="parties-vca-grid-wrap">
               <table className="parties-vca-grid">
                 <thead>
@@ -1944,14 +1964,14 @@ export function PartiesPlaceholderPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.length === 0 && !loading ? (
+                  {filteredRows.length === 0 && !loading ? (
                     <tr>
                       <td colSpan={4} className="parties-vca-empty">
                         No party records yet
                       </td>
                     </tr>
                   ) : (
-                    rows.map((row) => (
+                    filteredRows.map((row) => (
                       <tr
                         key={row.key}
                         className={row.key === selectedKey ? 'is-selected' : undefined}
@@ -1974,7 +1994,7 @@ export function PartiesPlaceholderPage({
 
             <div className="parties-vca-grid-footer">
               <span className="parties-vca-record-count">
-                {rows.length} {rows.length === 1 ? 'record' : 'records'}
+                {filteredRows.length} {filteredRows.length === 1 ? 'record' : 'records'}
               </span>
               <div className="parties-vca-drcr">
                 <span>Dr</span>
