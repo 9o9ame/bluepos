@@ -993,7 +993,7 @@ html[data-animations='off'] #root *::after {
     var(--ui-info-soft)
   );
 
-  --ui-panel-face: linear-gradient(180deg, #f7fafc 0%, #eef3f8 100%);
+  --ui-panel-face: linear-gradient(180deg, var(--ui-surface) 0%, var(--ui-surface-subtle) 100%);
   --ui-table-header: linear-gradient(
     180deg,
     color-mix(in srgb, var(--ui-accent) 11%, var(--ui-surface)),
@@ -1002,7 +1002,7 @@ html[data-animations='off'] #root *::after {
   --ui-table-header-text: var(--ui-text);
   --ui-table-border: var(--ui-border);
   --ui-row-alt: #f1f5f9;
-  --ui-row-hover: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-surface));
+  --ui-row-hover: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
   --ui-selected-row: var(--selected-row, color-mix(in srgb, var(--ui-accent) 28%, var(--ui-surface)));
   --ui-selected-row-text: var(--ui-text);
   --ui-focus-shadow: 0 0 0 2px color-mix(in srgb, var(--appearance-accent) 34%, transparent);
@@ -1036,7 +1036,7 @@ html[data-animations='off'] #root *::after {
   );
   --ui-control-border: color-mix(in srgb, var(--ui-accent) 34%, var(--ui-border));
   --ui-control-hover-bg: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
-  --ui-control-hover-border: color-mix(in srgb, var(--ui-accent) 58%, var(--ui-border));
+  --ui-control-hover-border: color-mix(in srgb, var(--ui-accent) 66%, var(--ui-border));
 
   --ui-select-arrow-face: linear-gradient(
     180deg,
@@ -1063,7 +1063,7 @@ html[data-animations='off'] #root *::after {
   --ui-table-header-text: var(--ui-text);
   --ui-table-border: var(--ui-border);
   --ui-row-alt: #242c33;
-  --ui-row-hover: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
+  --ui-row-hover: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-surface));
   --ui-selected-row: color-mix(in srgb, var(--ui-accent) 36%, var(--ui-surface));
   --ui-selected-row-text: #fff;
   --ui-accent-strong: color-mix(in srgb, var(--appearance-accent) 78%, white);
