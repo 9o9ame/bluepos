@@ -4682,3 +4682,61 @@ html[data-animations='off'] .sales-reference-screen * {
   color: color-mix(in srgb, var(--ui-success) 82%, var(--ui-text)) !important;
   font-weight: 700 !important;
 }
+
+
+/* Completed-line semantic scan cues. Keep text readable while column position
+   communicates product, stock, quantity, price and amount at a glance. */
+.sales-reference-screen .sales-reference-grid tbody tr.is-completed-entry .col-product {
+  color: color-mix(in srgb, var(--ui-warning) 62%, var(--ui-text)) !important;
+}
+
+.sales-reference-screen .sales-reference-grid tbody tr.is-completed-entry .col-stock {
+  color: color-mix(in srgb, var(--ui-success) 88%, var(--ui-text)) !important;
+  font-weight: 800 !important;
+}
+
+.sales-reference-screen .sales-reference-grid tbody tr.is-completed-entry .col-qty {
+  color: color-mix(in srgb, var(--ui-info) 82%, var(--ui-text)) !important;
+  font-weight: 800 !important;
+}
+
+.sales-reference-screen .sales-reference-grid tbody tr.is-completed-entry .col-price {
+  color: color-mix(in srgb, var(--ui-warning) 82%, var(--ui-text)) !important;
+  font-weight: 800 !important;
+}
+
+.sales-reference-screen .sales-reference-grid tbody tr.is-completed-entry .col-amt {
+  color: color-mix(in srgb, var(--ui-info) 88%, var(--ui-text)) !important;
+  font-weight: 800 !important;
+}
+
+.sales-reference-screen .sales-reference-grid .col-qty > input {
+  background: var(--ui-col-quantity) !important;
+}
+
+.sales-reference-screen .sales-reference-grid .col-price > input {
+  border-color: color-mix(in srgb, var(--ui-warning) 48%, var(--ui-control-border)) !important;
+  background: var(--ui-col-price) !important;
+  color: color-mix(in srgb, var(--ui-warning) 84%, var(--ui-text)) !important;
+  font-weight: 800 !important;
+}
+
+.sales-reference-screen .sales-reference-grid .col-amt > input {
+  border-color: color-mix(in srgb, var(--ui-info) 48%, var(--ui-control-border)) !important;
+  background: var(--ui-col-amount) !important;
+  color: color-mix(in srgb, var(--ui-info) 86%, var(--ui-text)) !important;
+  font-weight: 800 !important;
+}
+
+/* Product lookup uses stronger operational text cues without saturated full-row
+   fills; active/selected rows remain a single theme accent. */
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(4),
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(5) {
+  color: color-mix(in srgb, var(--ui-warning) 82%, var(--ui-text)) !important;
+  font-weight: 750 !important;
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(6) {
+  color: color-mix(in srgb, var(--ui-warning) 58%, var(--ui-text)) !important;
+  font-weight: 700 !important;
+}
