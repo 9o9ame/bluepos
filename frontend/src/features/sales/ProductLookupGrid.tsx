@@ -18,9 +18,10 @@ function productBaseRate(product: Product): string {
   )?.amount ?? '—'
 }
 
-function productStockRowClass(product: Product): string {
+function productStockClass(product: Product): string {
   const value = Number.parseFloat(product.sales_lookup?.in_stock ?? '')
-  return Number.isFinite(value) && value <= 5 ? 'is-stock-low' : ''
+  if (!Number.isFinite(value)) return 'is-stock-unknown'
+  return value > 0 ? 'is-stock-ok' : 'is-stock-low'
 }
 
 const PRODUCT_LOOKUP_ROW_HEIGHT = 24
@@ -273,7 +274,6 @@ export function ProductLookupGrid({
             className={[
               'sales-pos-product-grid-row',
               selectedUlid === row.ulid ? 'is-selected' : '',
-              productStockRowClass(row),
             ].filter(Boolean).join(' ')}
             key={row.ulid}
             data-product-ulid={row.ulid}
@@ -291,7 +291,7 @@ export function ProductLookupGrid({
               <>
                 <span>{row.product_number}</span>
                 <strong>{productLookupDescription(row)}</strong>
-                <span className="product-lookup-stock">
+                <span className={`product-lookup-stock ${productStockClass(row)}`}>
                   {row.sales_lookup
                     ? Number.parseFloat(row.sales_lookup.in_stock).toFixed(3)
                     : '—'}
@@ -312,7 +312,7 @@ export function ProductLookupGrid({
               <>
                 <span>{row.product_number}</span>
                 <strong>{productLookupDescription(row)}</strong>
-                <span className="product-lookup-stock">
+                <span className={`product-lookup-stock ${productStockClass(row)}`}>
                   {row.sales_lookup
                     ? Number.parseFloat(row.sales_lookup.in_stock).toFixed(3)
                     : '—'}
