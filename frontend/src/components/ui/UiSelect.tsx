@@ -25,6 +25,7 @@ export type UiSelectOption = {
 export type UiSelectMenuColumn = {
   header: string
   width?: string
+  tone?: 'identity' | 'stock' | 'quantity' | 'price' | 'cost' | 'amount'
 }
 
 export type UiSelectProps = {
@@ -601,7 +602,12 @@ export function UiSelect({
                   aria-hidden
                 >
                   {menuColumns.map((column, index) => (
-                    <span key={`${column.header}-${index}`}>{column.header}</span>
+                    <span
+                      key={`${column.header}-${index}`}
+                      data-column-tone={column.tone}
+                    >
+                      {column.header}
+                    </span>
                   ))}
                 </div>
               ) : null}
@@ -650,7 +656,11 @@ export function UiSelect({
                       >
                         {menuColumns?.length ? (
                           (option.columns ?? [option.label]).map((value, columnIndex) => (
-                            <span className="ui-select-option-cell" key={`${option.value}-${columnIndex}`}>
+                            <span
+                              className="ui-select-option-cell"
+                              data-column-tone={menuColumns[columnIndex]?.tone}
+                              key={`${option.value}-${columnIndex}`}
+                            >
                               {value}
                             </span>
                           ))
