@@ -63,7 +63,7 @@ export function RibbonCommand({
     <div className="ribbon-command-wrap" ref={rootRef}>
       <button
         type="button"
-        className={`ribbon-command${active ? ' is-active' : ''}${hasMenu ? ' has-menu' : ''}${open ? ' is-menu-open' : ''}`}
+        className={`ribbon-command ribbon-command-${id}${active ? ' is-active' : ''}${hasMenu ? ' has-menu' : ''}${open ? ' is-menu-open' : ''}`}
         disabled={disabled}
         title={title}
         aria-label={label}
