@@ -275,3 +275,40 @@ html[data-animations='off'] .sales-pos-product-results-grid.is-themed,
 html[data-animations='off'] .sales-pos-product-results-grid.is-themed * {
   transition: none !important;
 }
+
+
+/* Keep header tracks aligned with body rows on Windows/Chrome where the
+   vertical scrollbar consumes layout width. The themed scrollbar is 10px. */
+.sales-pos-product-results-grid .sales-pos-product-grid-head {
+  box-sizing: border-box;
+  padding-right: 10px;
+}
+
+.sales-pos-product-results-grid .sales-pos-product-grid-body {
+  scrollbar-gutter: stable;
+}
+
+/* Stock urgency is semantic and remains obvious even with soft themes. */
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-row:not(.is-selected):not(:hover)
+  .product-lookup-stock.is-stock-danger {
+  background: color-mix(in srgb, var(--ui-danger) 82%, #5a0b0b) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+}
+
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-row:not(.is-selected):not(:hover)
+  .product-lookup-stock.is-stock-warning {
+  background: color-mix(in srgb, var(--ui-warning) 78%, #8a4a00) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+}
+
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-row:not(.is-selected):not(:hover)
+  .product-lookup-stock.is-stock-ok {
+  background: color-mix(in srgb, var(--ui-success) 72%, var(--ui-surface)) !important;
+  color: color-mix(in srgb, var(--ui-success) 88%, var(--ui-text)) !important;
+  font-weight: 850 !important;
+}
