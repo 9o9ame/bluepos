@@ -66,13 +66,21 @@ function formatExportValue(value: unknown): string {
 }
 
 function xmlEscape(value: string): string {
-  return value
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+  return stripInvalidXmlControlChars(value)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;')
+}
+
+function stripInvalidXmlControlChars(value: string): string {
+  return Array.from(value)
+    .filter((character) => {
+      const code = character.charCodeAt(0)
+      return code === 0x09 || code === 0x0a || code === 0x0d || code >= 0x20
+    })
+    .join('')
 }
 
 function safeFilename(value: string): string {
