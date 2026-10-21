@@ -288,27 +288,24 @@ html[data-animations='off'] .sales-pos-product-results-grid.is-themed * {
   scrollbar-gutter: stable;
 }
 
-/* Stock urgency is semantic and remains obvious even with soft themes. */
+/* Low/zero/negative stock uses one soft warning row. Normal stock stays neutral. */
 .sales-pos-product-results-grid.is-themed
-  .sales-pos-product-grid-row:not(.is-selected):not(:hover)
-  .product-lookup-stock.is-stock-danger {
-  background: color-mix(in srgb, var(--ui-danger) 82%, #5a0b0b) !important;
-  color: #fff !important;
-  font-weight: 900 !important;
+  .sales-pos-product-grid-row.is-stock-low:not(.is-selected):not(:hover) {
+  background: color-mix(in srgb, var(--ui-warning) 22%, var(--ui-surface)) !important;
+  color: var(--ui-text) !important;
 }
 
 .sales-pos-product-results-grid.is-themed
-  .sales-pos-product-grid-row:not(.is-selected):not(:hover)
-  .product-lookup-stock.is-stock-warning {
-  background: color-mix(in srgb, var(--ui-warning) 78%, #8a4a00) !important;
-  color: #fff !important;
-  font-weight: 900 !important;
+  .sales-pos-product-grid-row.is-stock-low:not(.is-selected):not(:hover) > span,
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-row.is-stock-low:not(.is-selected):not(:hover) > strong {
+  background: transparent !important;
+  color: var(--ui-text) !important;
 }
 
 .sales-pos-product-results-grid.is-themed
-  .sales-pos-product-grid-row:not(.is-selected):not(:hover)
-  .product-lookup-stock.is-stock-ok {
-  background: color-mix(in srgb, var(--ui-success) 72%, var(--ui-surface)) !important;
-  color: color-mix(in srgb, var(--ui-success) 88%, var(--ui-text)) !important;
-  font-weight: 850 !important;
+  .sales-pos-product-grid-row.is-stock-low:not(.is-selected):not(:hover)
+  .product-lookup-stock {
+  color: color-mix(in srgb, var(--ui-warning) 72%, var(--ui-text)) !important;
+  font-weight: 900 !important;
 }
