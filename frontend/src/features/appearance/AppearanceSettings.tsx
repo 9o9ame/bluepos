@@ -79,7 +79,7 @@ export function AppearanceSettings() {
     <div className="appearance-settings-group">
       <label className="appearance-settings-heading" htmlFor="appearance-font">Font Family</label>
       <UiSelect
-        className="desktop-select"
+        triggerClassName="desktop-select"
         aria-label="Font Family"
         value={font}
         options={FONT_OPTIONS}
