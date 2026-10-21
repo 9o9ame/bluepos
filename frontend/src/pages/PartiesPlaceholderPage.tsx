@@ -453,14 +453,7 @@ export function PartiesPlaceholderPage({
   const canSave =
     !saving &&
     form.name.trim().length > 0 &&
-    !duplicateNameRow &&
-    CREATABLE_TYPES.includes(form.type) &&
-    (isManualAccount
-      ? form.accountTypeUlid.trim().length > 0
-      : form.types.length > 0 &&
-        (!form.types.includes('vendor') || form.vendorAccountTypeUlid.trim().length > 0) &&
-        (!form.types.includes('customer') || form.customerAccountTypeUlid.trim().length > 0) &&
-        (!form.types.includes('account') || form.accountAccountTypeUlid.trim().length > 0))
+    !duplicateNameRow
 
   const subTabs = useMemo(
     () =>
@@ -1434,6 +1427,7 @@ export function PartiesPlaceholderPage({
                   id="vca-name"
                   value={form.name}
                   aria-invalid={duplicateNameRow ? true : undefined}
+                  aria-describedby={duplicateNameRow ? 'vca-name-error' : undefined}
                   title={duplicateNameRow ? `Already exists: ${duplicateNameRow.name}` : undefined}
                   onChange={(e) => patchForm('name', e.target.value)}
                 />
@@ -1444,6 +1438,11 @@ export function PartiesPlaceholderPage({
                   onChange={(e) => patchForm('dealsIn', e.target.value)}
                 />
               </div>
+              {duplicateNameRow ? (
+                <div id="vca-name-error" className="parties-vca-name-error" role="alert">
+                  A party named “{duplicateNameRow.name}” already exists.
+                </div>
+              ) : null}
 
               <div className="parties-vca-subtabs" role="tablist" aria-label="Detail sections">
                 {subTabs.map(([key, label]) => (
