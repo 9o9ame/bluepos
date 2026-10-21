@@ -40,6 +40,7 @@ export type SaleItem = {
   conversion_factor: string
   price_type: 'retail' | 'wholesale' | null
   unit_price: string
+  unit_price_override?: string | null
   gross_amount: string
   discount_percent: string
   discount_amount: string
@@ -178,8 +179,12 @@ export type SaleDraftLine = {
   retail_price?: string | null
   wholesale_price?: string | null
 
-  /** Client-side PREVIEW price; the server price wins on save. */
+  /** Effective client preview price. Catalog price wins unless an authorized override is set. */
   unit_price?: string
+  /** Explicit one-document override; never updates the product price master. */
+  unit_price_override?: string | null
+  /** Client-only typed gross amount used to derive a unit price override. */
+  amount_input?: string
 
   /** UI keeps both derived values visible; payload sends only the source field. */
   discount_percent?: string
@@ -238,6 +243,7 @@ export type SaleHoldPayload = {
     scheme_ulid?: string | null
     barcode?: string | null
     quantity: string
+    unit_price_override?: string | null
     discount_percent?: string | null
     discount_amount?: string | null
     notes?: string | null
@@ -257,6 +263,7 @@ export type SalePayload = {
     barcode?: string | null
     unit_ulid?: string | null
     quantity: string
+    unit_price_override?: string | null
     discount_percent?: string | null
     discount_amount?: string | null
     notes?: string | null
