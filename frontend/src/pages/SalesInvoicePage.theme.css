@@ -4051,9 +4051,9 @@ html[data-animations='off'] .sales-reference-screen * {
 /* ==========================================================================
    Sales Invoice responsive phase 7: compact wide-desktop continuity
    Preserve the approved wide layout structure; reduce density only where the
-   1280/1366 screenshots begin to underlap. Keep the same stable composition across wider desktop widths.
+   1280/1366 screenshots begin to underlap. Keep the same stable composition through 1600px.
    ========================================================================== */
-@media (min-width: 1280px) {
+@media (min-width: 1280px) and (max-width: 1600px) {
   .sales-reference-screen {
     font-size: 10px !important;
   }
@@ -4271,9 +4271,9 @@ html[data-animations='off'] .sales-reference-screen * {
 
 /* ==========================================================================
    Sales Invoice responsive phase 8: wrapped wide-desktop continuity
-   Keep the approved compact composition stable across wider desktop widths.
+   Keep the approved compact composition stable through the 1600px boundary.
    ========================================================================== */
-@media (min-width: 1280px) {
+@media (min-width: 1280px) and (max-width: 1600px) {
   /* Invoice Options: move from one crushed row to two controlled rows. */
   .sales-reference-meta {
     height: auto !important;
