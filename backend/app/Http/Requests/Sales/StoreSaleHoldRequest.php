@@ -44,6 +44,13 @@ class StoreSaleHoldRequest extends FormRequest
                 'numeric',
                 'gt:0',
             ],
+            'lines.*.unit_price_override' => [
+                'nullable',
+                'string',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/',
+                'numeric',
+                'gte:0',
+            ],
             'lines.*.discount_percent' => [
                 'nullable',
                 'string',
