@@ -55,6 +55,7 @@ class SaleQuotationResource extends JsonResource
                     'conversion_factor' => $item->conversion_factor,
                     'price_type' => $item->price_type?->value,
                     'unit_price' => $item->unit_price,
+                    'unit_price_override' => $item->unit_price_override,
                     'gross_amount' => $item->gross_amount,
                     'discount_percent' => $item->discount_percent,
                     'discount_amount' => $item->discount_amount,
