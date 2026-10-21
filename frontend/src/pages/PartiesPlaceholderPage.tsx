@@ -916,8 +916,8 @@ export function PartiesPlaceholderPage({
   }
 
   async function save() {
-    if (!form.code.trim() || !form.name.trim()) {
-      setError('Code and Name are required.')
+    if (!form.name.trim()) {
+      setError('Name is required.')
       return
     }
 
@@ -950,7 +950,6 @@ export function PartiesPlaceholderPage({
     setError(null)
 
     const common = {
-      code: form.code.trim(),
       name: form.name.trim(),
       deals_in: form.dealsIn.trim() || null,
       contact_person: form.contactPerson.trim() || null,
@@ -987,7 +986,7 @@ export function PartiesPlaceholderPage({
       if (manualAccount) {
         const payload = {
           party_type: 'account' as const,
-          code: common.code,
+          code: form.code.trim(),
           name: common.name,
           account_type_ulid: form.accountTypeUlid.trim(),
           address: common.address,
@@ -1353,12 +1352,6 @@ export function PartiesPlaceholderPage({
               <div className="parties-vca-field-row parties-vca-id-row">
                 <label htmlFor="vca-id">ID</label>
                 <input id="vca-id" value={form.identityUlid || form.ulid || '—'} readOnly title="Public ULID" />
-                <label htmlFor="vca-code">CODE</label>
-                <input
-                  id="vca-code"
-                  value={form.code}
-                  onChange={(e) => patchForm('code', e.target.value)}
-                />
                 <label>Type</label>
                 {isManualAccount ? (
                   <input value="ACCOUNT" readOnly title="Legacy standalone ledger account." />
