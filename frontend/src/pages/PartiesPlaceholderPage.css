@@ -1032,15 +1032,15 @@
 }
 
 .parties-vca-ledger-group-chip:not(:first-child) {
-  margin-top: -8px;
+  margin-top: -14px;
 }
 
 .parties-vca-ledger-group-chip:not(:first-child)::before {
   content: '';
   position: absolute;
-  left: -8px;
+  left: -48px;
   top: -8px;
-  width: 8px;
+  width: 48px;
   height: 24px;
   border-left: 2px solid var(--ui-accent);
   border-bottom: 2px solid var(--ui-accent);
