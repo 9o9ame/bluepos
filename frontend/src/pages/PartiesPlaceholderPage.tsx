@@ -467,8 +467,18 @@ export function PartiesPlaceholderPage({
     [],
   )
 
+  useEffect(() => {
+    if (!duplicateNameRow) return
+    feedback.error(`A party named "${duplicateNameRow.name}" already exists.`)
+  }, [duplicateNameRow, feedback])
+
   function patchForm<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }))
+  }
+
+  function reportError(message: string) {
+    setError(message)
+    feedback.error(message)
   }
 
   function applyBaseline(next: FormState) {
@@ -524,7 +534,7 @@ export function PartiesPlaceholderPage({
         if (!stillThere) setSelectedKey(null)
       }
     } catch (err) {
-      setError(errMessage(err))
+      reportError(errMessage(err))
       setParties([])
     } finally {
       setLoading(false)
@@ -618,7 +628,7 @@ export function PartiesPlaceholderPage({
       )
     } catch (err) {
       setBulkRows([])
-      setError(errMessage(err))
+      reportError(errMessage(err))
     }
   }
 
@@ -631,7 +641,7 @@ export function PartiesPlaceholderPage({
   async function saveBulkDirty() {
     const dirty = bulkRows.filter((r) => r.dirty)
     if (dirty.length === 0) {
-      setError('No dirty bulk rows to update.')
+      reportError('No dirty bulk rows to update.')
       return
     }
     setBulkSaving(true)
@@ -651,7 +661,7 @@ export function PartiesPlaceholderPage({
       await loadBulkRows()
       await loadParties(listFilter, true)
     } catch (err) {
-      setError(errMessage(err))
+      reportError(errMessage(err))
     } finally {
       setBulkSaving(false)
     }
@@ -665,7 +675,7 @@ export function PartiesPlaceholderPage({
       const preview = await previewPartyExcel(file)
       setExcelPreview(preview)
     } catch (err) {
-      setError(errMessage(err))
+      reportError(errMessage(err))
     }
   }
 
@@ -680,7 +690,7 @@ export function PartiesPlaceholderPage({
       await loadBulkRows()
       await loadParties(listFilter, true)
     } catch (err) {
-      setError(errMessage(err))
+      reportError(errMessage(err))
     }
   }
 
@@ -691,7 +701,7 @@ export function PartiesPlaceholderPage({
       setLedger(data)
     } catch (err) {
       setLedger(null)
-      setError(errMessage(err))
+      reportError(errMessage(err))
     } finally {
       setLedgerLoading(false)
     }
@@ -700,7 +710,7 @@ export function PartiesPlaceholderPage({
   async function onEnsureLeafAccount() {
     const financial = formFinancialContext()
     if (!financial) {
-      setError('Select or save a Vendor, Customer, or Account first.')
+      reportError('Select or save a Vendor, Customer, or Account first.')
       return
     }
     setEnsureBusy(true)
@@ -712,7 +722,7 @@ export function PartiesPlaceholderPage({
         await loadLedger(financial.ulid, financial.type, ledgerPage)
       }
     } catch (err) {
-      setError(errMessage(err))
+      reportError(errMessage(err))
     } finally {
       setEnsureBusy(false)
     }
@@ -957,36 +967,36 @@ export function PartiesPlaceholderPage({
 
   async function save() {
     if (!form.name.trim()) {
-      setError('Name is required.')
+      reportError('Name is required.')
       return
     }
 
     if (duplicateNameRow) {
-      setError(`A party named "${duplicateNameRow.name}" already exists.`)
+      reportError(`A party named "${duplicateNameRow.name}" already exists.`)
       return
     }
 
     const manualAccount = form.type === 'ACCOUNTS' && !form.identityUlid && Boolean(form.ulid)
     if (manualAccount && !form.accountTypeUlid.trim()) {
-      setError('Account Type is required. Create one via + Account Type if needed.')
+      reportError('Account Type is required. Create one via + Account Type if needed.')
       return
     }
 
     if (!manualAccount) {
       if (form.types.length === 0) {
-        setError('Select at least one Type.')
+        reportError('Select at least one Type.')
         return
       }
       if (form.types.includes('vendor') && !form.vendorAccountTypeUlid.trim()) {
-        setError('Vendor Account Type is required.')
+        reportError('Vendor Account Type is required.')
         return
       }
       if (form.types.includes('customer') && !form.customerAccountTypeUlid.trim()) {
-        setError('Customer Account Type is required.')
+        reportError('Customer Account Type is required.')
         return
       }
       if (form.types.includes('account') && !form.accountAccountTypeUlid.trim()) {
-        setError('Account Account Type is required.')
+        reportError('Account Account Type is required.')
         return
       }
     }
@@ -1147,8 +1157,7 @@ export function PartiesPlaceholderPage({
       onSaved?.(finalSaved)
     } catch (err) {
       const message = errMessage(err)
-      setError(message)
-      feedback.error(message)
+      reportError(message)
     } finally {
       setSaving(false)
     }
@@ -1187,7 +1196,7 @@ export function PartiesPlaceholderPage({
       try {
         await deletePartyBankAccount(financial.ulid, financial.type, row.ulid)
       } catch (err) {
-        setError(errMessage(err))
+        reportError(errMessage(err))
         return
       }
     }
@@ -1197,7 +1206,7 @@ export function PartiesPlaceholderPage({
 
   function addOpeningRow() {
     if (!formFinancialContext()) {
-      setError('Save a Vendor, Customer, or Account first, then add opening balances.')
+      reportError('Save a Vendor, Customer, or Account first, then add opening balances.')
       return
     }
     const key = `draft-ob-${Date.now()}`
@@ -1235,11 +1244,11 @@ export function PartiesPlaceholderPage({
     const debit = Number(row.debit) || 0
     const credit = Number(row.credit) || 0
     if (debit > 0 && credit > 0) {
-      setError('Debit and credit cannot both be positive.')
+      reportError('Debit and credit cannot both be positive.')
       return
     }
     if (debit <= 0 && credit <= 0) {
-      setError('Opening amount requires debit or credit.')
+      reportError('Opening amount requires debit or credit.')
       return
     }
     setOpeningBusy(true)
@@ -1258,7 +1267,7 @@ export function PartiesPlaceholderPage({
       }
       await loadOpenings(financial.ulid, financial.type)
     } catch (err) {
-      setError(errMessage(err))
+      reportError(errMessage(err))
     } finally {
       setOpeningBusy(false)
     }
@@ -1269,7 +1278,7 @@ export function PartiesPlaceholderPage({
     const row = openingRows.find((r) => r.key === selectedOpeningKey)
     if (!row) return
     if (row.status === 'posted') {
-      setError('Posted opening balances are immutable.')
+      reportError('Posted opening balances are immutable.')
       return
     }
     const financial = formFinancialContext()
@@ -1277,7 +1286,7 @@ export function PartiesPlaceholderPage({
       try {
         await deletePartyOpeningBalance(financial.ulid, financial.type, row.ulid)
       } catch (err) {
-        setError(errMessage(err))
+        reportError(errMessage(err))
         return
       }
     }
@@ -1289,7 +1298,7 @@ export function PartiesPlaceholderPage({
     const financial = formFinancialContext()
     if (!selectedOpeningKey || !financial) return
     if (!openingEquityConfigured) {
-      setError('Configure Opening Balance Equity Account in Business Settings before posting.')
+      reportError('Configure Opening Balance Equity Account in Business Settings before posting.')
       return
     }
     const row = openingRows.find((r) => r.key === selectedOpeningKey)
@@ -1303,7 +1312,7 @@ export function PartiesPlaceholderPage({
       await postPartyOpeningBalance(financial.ulid, financial.type, row.ulid)
       await loadOpenings(financial.ulid, financial.type)
     } catch (err) {
-      setError(errMessage(err))
+      reportError(errMessage(err))
     } finally {
       setOpeningBusy(false)
     }
@@ -2343,7 +2352,7 @@ export function PartiesPlaceholderPage({
           <div className="parties-vca-bulk-actions">
             <button
               type="button"
-              onClick={() => void downloadPartyExcelTemplate().catch((err) => setError(errMessage(err)))}
+              onClick={() => void downloadPartyExcelTemplate().catch((err) => reportError(errMessage(err)))}
             >
               Export Excel Template
             </button>
