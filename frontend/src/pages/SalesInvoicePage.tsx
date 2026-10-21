@@ -2095,7 +2095,7 @@ export function SalesInvoicePage({
                         if (col.key === 'product') {
                           if (line.line_kind === 'sale') {
                             return (
-                              <td key={col.key} className="sales-reference-yellow sales-product-search-cell">
+                              <td key={col.key} className="sales-reference-yellow sales-product-search-cell col-product">
                                 <button
                                   type="button"
                                   className="sales-pos-product-entry sales-pos-completed-product-trigger"
@@ -2126,7 +2126,7 @@ export function SalesInvoicePage({
                         if (col.key === 'sales_qty') {
                           if (line.line_kind === 'sale') {
                             return (
-                              <td key={col.key}>
+                              <td key={col.key} className="col-qty">
                                 <input
                                   className="sales-pos-line-qty"
                                   data-sale-editable="true"
@@ -2413,7 +2413,7 @@ export function SalesInvoicePage({
 
                               if (col.key === 'sales_qty') {
                                 return (
-                                  <td key={col.key}>
+                                  <td key={col.key} className="col-qty">
                                     <input
                                       className="sales-pos-line-qty"
                                       data-sale-editable="true"
