@@ -18,6 +18,7 @@ class UpsertPartyProfileAction
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly PartyLeafAccountSync $leafSync,
+        private readonly GeneratePartyProfileCodeAction $generateCode,
     ) {}
 
     /**
@@ -57,6 +58,10 @@ class UpsertPartyProfileAction
                 'tenant_id' => $tenantId,
                 'created_by' => $this->tenantContext->userId(),
             ]);
+
+            if ($isNew) {
+                $attributes['code'] = $this->generateCode->execute($tenantId, $types);
+            }
 
             $profile->fill($attributes);
             $profile->tenant_id = $tenantId;
