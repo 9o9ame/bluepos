@@ -30,7 +30,7 @@ export function BranchSwitcher({ session }: BranchSwitcherProps) {
     <label className="titlebar-meta">
       <span>Branch</span>
       <UiSelect
-        className="titlebar-select"
+        triggerClassName="titlebar-select"
         aria-label="Active branch"
         value={session.branch.ulid}
         options={branches.map((branch) => ({
