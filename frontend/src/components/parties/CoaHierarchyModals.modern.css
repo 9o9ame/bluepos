@@ -146,8 +146,10 @@ html[data-animations='off'] .coa-modal * { transition: none !important; animatio
 /* ---------- COMPACT NESTED COA MODAL ---------- */
 /* Only when Account Type Definition is opened inside Vendor/Customer/Accounts. */
 .coa-modal-sheet.is-compact-nested {
-  width: min(1040px, 84vw, calc(100vw - 24px)) !important;
-  max-height: min(760px, 84dvh, calc(100dvh - 24px)) !important;
+  width: min(960px, 76vw, calc(100vw - 48px)) !important;
+  max-width: calc(100vw - 48px) !important;
+  min-width: 0 !important;
+  max-height: min(680px, 76dvh, calc(100dvh - 48px)) !important;
 }
 
 .coa-modal-sheet.is-compact-nested .coa-modal-bar {
@@ -202,8 +204,9 @@ html[data-animations='off'] .coa-modal * { transition: none !important; animatio
 
 @media (max-width: 1050px), (max-height: 700px) {
   .coa-modal-sheet.is-compact-nested {
-    width: min(860px, 84vw, calc(100vw - 20px)) !important;
-    max-height: min(620px, 82dvh, calc(100dvh - 20px)) !important;
+    width: min(780px, 76vw, calc(100vw - 40px)) !important;
+    max-width: calc(100vw - 40px) !important;
+    max-height: min(560px, 74dvh, calc(100dvh - 40px)) !important;
   }
 }
 
@@ -256,4 +259,15 @@ html[data-animations='off'] .coa-modal .bp-fancy-select-menu,
 html[data-animations='off'] .coa-modal .bp-fancy-select-arrow {
   animation: none !important;
   transition: none !important;
+}
+
+.coa-modal-sheet.is-compact-nested .coa-modal-body,
+.coa-modal-sheet.is-compact-nested .coa-sheet-wrap,
+.coa-modal-sheet.is-compact-nested .coa-sheet-foot {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.coa-modal-sheet.is-compact-nested .coa-sheet-wrap {
+  overflow: auto;
 }
