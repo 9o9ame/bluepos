@@ -293,7 +293,7 @@
 }
 
 .parties-vca-id-row {
-  grid-template-columns: 28px minmax(0, 0.55fr) 42px minmax(0, 0.7fr) 36px minmax(0, 1.1fr);
+  grid-template-columns: 28px minmax(0, 0.8fr) 36px minmax(0, 1.2fr);
   margin-top: 0;
 }
 
@@ -524,7 +524,8 @@
   z-index: 1;
   height: 26px;
   padding: 0 6px;
-  border-bottom: 1px solid var(--vca-border);
+  border-right: 1px solid var(--ui-table-border, var(--vca-border));
+  border-bottom: 1px solid var(--ui-table-border, var(--vca-border));
   background: var(--vca-head);
   color: var(--brand-blue, #1769aa);
   font-weight: 800;
@@ -536,7 +537,8 @@
 .parties-vca-shell-grid td {
   height: 24px;
   padding: 0 6px;
-  border-bottom: 1px solid #e4ebf1;
+  border-right: 1px solid var(--ui-table-border, var(--vca-border));
+  border-bottom: 1px solid var(--ui-table-border, #e4ebf1);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1242,103 +1244,147 @@ html[data-animations='off'] .classic-workspace.is-parties * {
   animation: none !important;
 }
 
-/* Responsive layout: preserve desktop split, stack cleanly on small laptops. */
+/* Page-level responsive geometry. Global shell/density media rules apply first. */
 @media (max-width: 1280px) {
+  .parties-vca {
+    padding-inline: 4px;
+  }
+
   .parties-vca-main {
-    grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr);
+    grid-template-columns: minmax(0, 0.37fr) minmax(0, 0.63fr);
+    gap: 5px;
+    padding: 5px;
+  }
+
+  .parties-vca-left,
+  .parties-vca-right {
+    gap: 5px;
+  }
+
+  .parties-vca-panel {
+    padding: 6px 6px 5px;
+  }
+
+  .parties-vca-field-row {
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 3px 5px;
   }
 
   .parties-vca-id-row {
-    grid-template-columns: 28px minmax(0, 1fr) 42px minmax(0, 1fr);
+    grid-template-columns: 24px minmax(0, 0.72fr) 32px minmax(0, 1.28fr);
   }
 
-  .parties-vca-id-row label:nth-of-type(3),
-  .parties-vca-id-row select {
-    grid-column: span 1;
+  .parties-vca-name-deals {
+    grid-template-columns: 38px minmax(0, 1.2fr) 48px minmax(0, 0.8fr);
+  }
+
+  .parties-vca-twin {
+    grid-template-columns: 62px minmax(0, 1fr) minmax(0, 1fr);
   }
 
   .parties-vca-account-grid {
-    grid-template-columns: 52px minmax(0, 1fr) 58px minmax(0, 1fr);
+    grid-template-columns: 42px minmax(0, 1fr) 48px minmax(0, 1fr);
+    gap: 3px 5px;
+  }
+
+  .parties-vca-contact {
+    grid-template-columns: minmax(0, 1fr) 76px;
+    gap: 5px;
+  }
+
+  .parties-vca-photo {
+    width: 76px;
+    min-width: 76px;
+    max-width: 76px;
+    min-height: 92px;
+  }
+
+  .parties-vca-grid .col-no { width: 46px; }
+  .parties-vca-grid .col-name { width: 34%; }
+  .parties-vca-grid .col-address { width: 31%; }
+  .parties-vca-grid .col-type { width: 96px; }
+
+  .parties-vca-mini-grid th,
+  .parties-vca-grid th,
+  .parties-vca-shell-grid th,
+  .parties-vca-mini-grid td,
+  .parties-vca-grid td,
+  .parties-vca-shell-grid td {
+    padding-left: 4px;
+    padding-right: 4px;
   }
 }
 
 @media (max-width: 1100px) {
   .parties-vca-main {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(280px, 1fr);
-    overflow-y: auto;
-    overflow-x: hidden;
+    grid-template-columns: minmax(0, 0.38fr) minmax(0, 0.62fr);
+    gap: 4px;
+    padding: 4px;
+    overflow: hidden;
   }
 
-  .parties-vca-left,
-  .parties-vca-right {
-    overflow: visible;
+  .parties-vca-panel {
+    padding: 5px 5px 4px;
   }
 
-  .parties-vca-left > .parties-vca-panel:first-of-type {
-    flex: 0 0 auto;
-    overflow: visible;
+  .parties-vca-field-row {
+    grid-template-columns: 54px minmax(0, 1fr);
+    gap: 2px 4px;
+    margin-top: 3px;
   }
 
-  .parties-vca-left > .parties-vca-panel:first-of-type > .parties-vca-subpanel {
-    flex: 0 0 auto;
-    overflow: visible;
+  .parties-vca-id-row {
+    grid-template-columns: 20px minmax(0, 0.68fr) 28px minmax(0, 1.32fr);
+  }
+
+  .parties-vca-name-deals {
+    grid-template-columns: 34px minmax(0, 1.15fr) 42px minmax(0, 0.85fr);
+  }
+
+  .parties-vca-twin {
+    grid-template-columns: 54px minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .parties-vca-account-grid {
+    grid-template-columns: 38px minmax(0, 1fr) 42px minmax(0, 1fr);
+    gap: 2px 4px;
   }
 
   .parties-vca-contact {
-    grid-template-columns: minmax(0, 1fr) 88px;
+    grid-template-columns: minmax(0, 1fr) 64px;
+    gap: 4px;
   }
 
   .parties-vca-photo {
-    width: 88px;
-    min-width: 88px;
-    max-width: 88px;
-    min-height: 96px;
-    height: 100%;
-    justify-self: end;
+    width: 64px;
+    min-width: 64px;
+    max-width: 64px;
+    min-height: 84px;
   }
 
-  .parties-vca-right {
-    min-height: 280px;
+  .parties-vca-subtabs {
+    flex-wrap: nowrap;
+    gap: 2px;
+  }
+
+  .parties-vca-subtabs button {
+    min-width: 0;
+    padding-inline: 5px;
+  }
+
+  .parties-vca-grid .col-no { width: 38px; }
+  .parties-vca-grid .col-name { width: 32%; }
+  .parties-vca-grid .col-address { width: 30%; }
+  .parties-vca-grid .col-type { width: 88px; }
+
+  .parties-vca-grid-wrap {
+    overflow-x: hidden;
   }
 }
 
 @media (max-width: 760px) {
   .parties-vca {
+    min-width: 760px;
     overflow: auto;
   }
-
-  .parties-vca-header {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .parties-vca-actions,
-  .parties-vca-tabs,
-  .parties-vca-subtabs {
-    width: 100%;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-  }
-
-  .parties-vca-id-row,
-  .parties-vca-name-deals,
-  .parties-vca-account-grid,
-  .parties-vca-twin {
-    grid-template-columns: max-content minmax(0, 1fr);
-  }
-
-  .parties-vca-contact {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .parties-vca-photo {
-    justify-self: start;
-  }
-
-  .parties-vca-grid-wrap,
-  .parties-vca-shell-grid-wrap {
-    overflow-x: auto;
-  }
 }
-
