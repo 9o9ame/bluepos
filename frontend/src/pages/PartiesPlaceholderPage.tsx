@@ -2829,105 +2829,107 @@ export function PartiesPlaceholderPage({
             <table className="parties-vca-shell-grid parties-vca-coa-grid">
               <thead>
                 <tr>
-                  <th>Main Head</th>
-                  <th>Account</th>
-                  <th>Head</th>
-                  <th>Sub Head</th>
+                  {coaShowGrouped ? (
+                    <>
+                      <th>Main Head</th>
+                      <th>Account</th>
+                      <th>Head</th>
+                      <th>Sub Head</th>
+                    </>
+                  ) : (
+                    <th>Account</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {coaChartLoading ? (
                   <tr>
-                    <td colSpan={4} className="parties-vca-empty">
+                    <td colSpan={coaShowGrouped ? 4 : 1} className="parties-vca-empty">
                       Loading chart…
                     </td>
                   </tr>
-                ) : coaShowGrouped ? (
-                  coaGroupedRows.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="parties-vca-empty">
-                        No leaf accounts yet — save vendors, customers, or manual accounts
-                      </td>
-                    </tr>
-                  ) : (
-                    coaGroupedRows.flatMap((main) => {
-                      const mainOpen = expandedCoaMain[main.ulid] !== false
-                      const out: ReactNode[] = [
-                        <tr key={`m-${main.ulid}`} className="parties-vca-coa-group parties-vca-coa-level-0">
-                          <td colSpan={4}>
-                            <button
-                              type="button"
-                              className={`parties-vca-coa-toggle ${mainOpen ? 'is-open' : 'is-closed'}`}
-                              onClick={() => toggleCoaMain(main.ulid)}
-                            >
-                              {mainOpen ? '−' : '+'}
-                            </button>
-                            {main.label}
-                          </td>
-                        </tr>,
-                      ]
-                      if (!mainOpen) return out
-                      for (const head of main.heads) {
-                        const headOpen = expandedCoaHead[head.ulid] !== false
-                        out.push(
-                          <tr key={`h-${head.ulid}`} className="parties-vca-coa-level-1">
-                            <td colSpan={4}>
-                              <button
-                                type="button"
-                                className={`parties-vca-coa-toggle ${headOpen ? 'is-open' : 'is-closed'}`}
-                                onClick={() => toggleCoaHead(head.ulid)}
-                              >
-                                {headOpen ? '−' : '+'}
-                              </button>
-                              {head.label}
-                            </td>
-                          </tr>,
-                        )
-                        if (!headOpen) continue
-                        for (const sub of head.sub_heads) {
-                          const subOpen = expandedCoaSub[sub.ulid] !== false
-                          out.push(
-                            <tr key={`s-${sub.ulid}`} className="parties-vca-coa-level-2">
-                              <td colSpan={4}>
-                                <button
-                                  type="button"
-                                  className={`parties-vca-coa-toggle ${subOpen ? 'is-open' : 'is-closed'}`}
-                                  onClick={() => toggleCoaSub(sub.ulid)}
-                                >
-                                  {subOpen ? '−' : '+'}
-                                </button>
-                                {sub.label}
-                              </td>
-                            </tr>,
-                          )
-                          if (!subOpen) continue
-                          for (const leaf of sub.accounts) {
-                            out.push(
-                              <tr key={`a-${leaf.ulid}`} className="parties-vca-coa-level-3">
-                                <td colSpan={4}>{leaf.label}</td>
-                              </tr>,
-                            )
-                          }
-                        }
-                      }
-                      return out
-                    })
-                  )
-                ) : coaFlatRows.length === 0 ? (
+                ) : coaGroupedRows.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="parties-vca-empty">
+                    <td colSpan={coaShowGrouped ? 4 : 1} className="parties-vca-empty">
                       No leaf accounts yet — save vendors, customers, or manual accounts
                     </td>
                   </tr>
                 ) : (
-                  coaFlatRows.map((row) => (
-                    <tr key={row.account_ulid}>
-                      <td>{row.main_head_label}</td>
-                      <td>{row.account_label}</td>
-                      <td>{row.head_label}</td>
-                      <td>{row.sub_head_label}</td>
-                    </tr>
-                  ))
+                  coaGroupedRows.flatMap((main) => {
+                    const mainOpen = expandedCoaMain[main.ulid] !== false
+                    const colSpan = coaShowGrouped ? 4 : 1
+                    const out: ReactNode[] = [
+                      <tr key={`m-${main.ulid}`} className="parties-vca-coa-group parties-vca-coa-level-0">
+                        <td colSpan={colSpan}>
+                          <button
+                            type="button"
+                            className={`parties-vca-coa-toggle ${mainOpen ? 'is-open' : 'is-closed'}`}
+                            onClick={() => toggleCoaMain(main.ulid)}
+                          >
+                            {mainOpen ? '−' : '+'}
+                          </button>
+                          <span className="parties-vca-coa-group-label">Main Head: {main.label}</span>
+                        </td>
+                      </tr>,
+                    ]
+                    if (!mainOpen) return out
+
+                    for (const head of main.heads) {
+                      const headOpen = expandedCoaHead[head.ulid] !== false
+                      out.push(
+                        <tr key={`h-${head.ulid}`} className="parties-vca-coa-level-1">
+                          <td colSpan={colSpan}>
+                            <button
+                              type="button"
+                              className={`parties-vca-coa-toggle ${headOpen ? 'is-open' : 'is-closed'}`}
+                              onClick={() => toggleCoaHead(head.ulid)}
+                            >
+                              {headOpen ? '−' : '+'}
+                            </button>
+                            <span className="parties-vca-coa-group-label">Head: {head.label}</span>
+                          </td>
+                        </tr>,
+                      )
+                      if (!headOpen) continue
+
+                      for (const sub of head.sub_heads) {
+                        const subOpen = expandedCoaSub[sub.ulid] !== false
+                        out.push(
+                          <tr key={`s-${sub.ulid}`} className="parties-vca-coa-level-2">
+                            <td colSpan={colSpan}>
+                              <button
+                                type="button"
+                                className={`parties-vca-coa-toggle ${subOpen ? 'is-open' : 'is-closed'}`}
+                                onClick={() => toggleCoaSub(sub.ulid)}
+                              >
+                                {subOpen ? '−' : '+'}
+                              </button>
+                              <span className="parties-vca-coa-group-label">Sub Head: {sub.label}</span>
+                            </td>
+                          </tr>,
+                        )
+                        if (!subOpen) continue
+
+                        for (const leaf of sub.accounts) {
+                          out.push(
+                            <tr key={`a-${leaf.ulid}`} className="parties-vca-coa-level-3">
+                              {coaShowGrouped ? (
+                                <>
+                                  <td>{main.label}</td>
+                                  <td>{leaf.label}</td>
+                                  <td>{head.label}</td>
+                                  <td>{sub.label}</td>
+                                </>
+                              ) : (
+                                <td>{leaf.label}</td>
+                              )}
+                            </tr>,
+                          )
+                        }
+                      }
+                    }
+                    return out
+                  })
                 )}
               </tbody>
             </table>
@@ -2935,8 +2937,8 @@ export function PartiesPlaceholderPage({
           <div className="parties-vca-shell-foot">
             <span>
               {coaShowGrouped
-                ? `Hierarchy ${coaGroupedRows.length} main head(s)`
-                : `Record ${coaFlatRows.length} of ${coaFlatRows.length}`}
+                ? `Hierarchy ${coaGroupedRows.length} main head(s) — grouped columns visible`
+                : `Hierarchy ${coaGroupedRows.length} main head(s) — Account column only`}
             </span>
           </div>
         </div>
