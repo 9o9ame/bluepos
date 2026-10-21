@@ -2882,7 +2882,8 @@ html[data-animations='off'] .sales-reference-screen * {
   column-gap: 4px;
   row-gap: 3px;
   width: 100%;
-  padding-right: 0;
+  box-sizing: border-box;
+  padding-right: 4px;
 }
 
 .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > :nth-child(1) {
