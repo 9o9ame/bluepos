@@ -1528,6 +1528,62 @@
   cursor: pointer;
 }
 
+.coa-modern-node__toggle svg {
+  transform-origin: 50% 50%;
+  transition:
+    transform var(--ui-transition-normal),
+    color var(--ui-transition-fast);
+}
+
+.coa-modern-node__toggle.is-open svg {
+  transform: rotate(90deg);
+}
+
+.coa-modern-node__toggle.is-closed svg {
+  transform: rotate(0deg);
+}
+
+.coa-modern-group {
+  min-width: 0;
+}
+
+.coa-modern-children {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-4px);
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--ui-transition-normal),
+    opacity var(--ui-transition-normal),
+    transform var(--ui-transition-normal),
+    visibility 0s linear var(--ui-transition-normal);
+}
+
+.coa-modern-children.is-open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition:
+    grid-template-rows var(--ui-transition-normal),
+    opacity var(--ui-transition-normal),
+    transform var(--ui-transition-normal),
+    visibility 0s linear 0s;
+}
+
+.coa-modern-children__inner {
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  gap: 4px;
+  padding-top: 4px;
+}
+
+.coa-modern-children.is-closed .coa-modern-children__inner {
+  pointer-events: none;
+}
+
 .coa-modern-node__icon {
   flex: 0 0 auto;
 }
