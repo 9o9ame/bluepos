@@ -446,3 +446,49 @@ html[data-animations='off'] .ui-select-search {
 .ui-select-option {
   min-height: max(28px, var(--ui-control-h-md, 24px));
 }
+
+
+/* Operational Table Dropdown column emphasis.
+   Selected/active rows retain a single strong accent for scan clarity. */
+.ui-select-columns-header > [data-column-tone],
+.ui-select-option:not(.is-selected):not(.is-active) .ui-select-option-cell[data-column-tone] {
+  box-shadow: inset 1px 0 0 color-mix(in srgb, var(--ui-table-border) 72%, transparent);
+}
+
+.ui-select-columns-header > [data-column-tone='identity'],
+.ui-select-option:not(.is-selected):not(.is-active) .ui-select-option-cell[data-column-tone='identity'] {
+  background: var(--ui-col-identity);
+}
+
+.ui-select-columns-header > [data-column-tone='stock'],
+.ui-select-option:not(.is-selected):not(.is-active) .ui-select-option-cell[data-column-tone='stock'] {
+  background: var(--ui-col-stock);
+}
+
+.ui-select-columns-header > [data-column-tone='quantity'],
+.ui-select-option:not(.is-selected):not(.is-active) .ui-select-option-cell[data-column-tone='quantity'] {
+  background: var(--ui-col-quantity);
+}
+
+.ui-select-columns-header > [data-column-tone='price'],
+.ui-select-option:not(.is-selected):not(.is-active) .ui-select-option-cell[data-column-tone='price'] {
+  background: var(--ui-col-price);
+}
+
+.ui-select-columns-header > [data-column-tone='cost'],
+.ui-select-option:not(.is-selected):not(.is-active) .ui-select-option-cell[data-column-tone='cost'] {
+  background: var(--ui-col-cost);
+}
+
+.ui-select-columns-header > [data-column-tone='amount'],
+.ui-select-option:not(.is-selected):not(.is-active) .ui-select-option-cell[data-column-tone='amount'] {
+  background: var(--ui-col-amount);
+}
+
+.ui-select-option-cell[data-column-tone='stock'],
+.ui-select-option-cell[data-column-tone='quantity'],
+.ui-select-option-cell[data-column-tone='price'],
+.ui-select-option-cell[data-column-tone='cost'],
+.ui-select-option-cell[data-column-tone='amount'] {
+  font-variant-numeric: tabular-nums;
+}
