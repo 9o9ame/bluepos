@@ -146,8 +146,8 @@ html[data-animations='off'] .coa-modal * { transition: none !important; animatio
 /* ---------- COMPACT NESTED COA MODAL ---------- */
 /* Only when Account Type Definition is opened inside Vendor/Customer/Accounts. */
 .coa-modal-sheet.is-compact-nested {
-  width: min(940px, calc(100vw - 90px)) !important;
-  max-height: min(66vh, 540px) !important;
+  width: min(1040px, 84vw, calc(100vw - 24px)) !important;
+  max-height: min(760px, 84dvh, calc(100dvh - 24px)) !important;
 }
 
 .coa-modal-sheet.is-compact-nested .coa-modal-bar {
@@ -202,8 +202,8 @@ html[data-animations='off'] .coa-modal * { transition: none !important; animatio
 
 @media (max-width: 1050px), (max-height: 700px) {
   .coa-modal-sheet.is-compact-nested {
-    width: min(900px, calc(100vw - 40px)) !important;
-    max-height: min(70vh, 520px) !important;
+    width: min(860px, 84vw, calc(100vw - 20px)) !important;
+    max-height: min(620px, 82dvh, calc(100dvh - 20px)) !important;
   }
 }
 
