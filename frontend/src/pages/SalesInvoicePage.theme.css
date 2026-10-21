@@ -4663,9 +4663,12 @@ html[data-animations='off'] .sales-reference-screen * {
 .sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(2) {
   background: var(--ui-col-identity) !important;
 }
-.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head > span:nth-child(3),
-.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(3) {
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head > span:nth-child(3) {
   background: var(--ui-col-stock) !important;
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover):not(.is-stock-low) > span:nth-child(3) {
+  background: transparent !important;
 }
 .sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head > span:nth-child(4),
 .sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(4),
@@ -4678,8 +4681,8 @@ html[data-animations='off'] .sales-reference-screen * {
   background: var(--ui-col-cost) !important;
 }
 
-.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(3) {
-  color: color-mix(in srgb, var(--ui-success) 82%, var(--ui-text)) !important;
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover):not(.is-stock-low) > span:nth-child(3) {
+  color: var(--ui-text) !important;
   font-weight: 700 !important;
 }
 
@@ -4784,4 +4787,22 @@ html[data-animations='off'] .sales-reference-screen * {
   background: color-mix(in srgb, var(--ui-warning) 11%, var(--ui-surface-muted)) !important;
   color: color-mix(in srgb, var(--ui-warning) 58%, var(--ui-text)) !important;
   font-weight: 750 !important;
+}
+
+
+/* Low-stock dropdown rows intentionally use one soft warning surface across
+   every column. Normal-stock rows keep their standard neutral body surface. */
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-row.is-stock-low:not(.is-selected):not(:hover) > span,
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-row.is-stock-low:not(.is-selected):not(:hover) > strong {
+  background: transparent !important;
+  color: var(--ui-text) !important;
+}
+
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-row.is-stock-low:not(.is-selected):not(:hover)
+  .product-lookup-stock {
+  color: color-mix(in srgb, var(--ui-warning) 72%, var(--ui-text)) !important;
+  font-weight: 900 !important;
 }
