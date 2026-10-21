@@ -447,7 +447,7 @@ export function useSaleCart() {
           return line
         }
 
-        return syncLineDiscount({ ...line, quantity })
+        return syncLineDiscount({ ...line, quantity, amount_input: undefined })
       }),
     )
   }
