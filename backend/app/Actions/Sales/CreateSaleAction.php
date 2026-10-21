@@ -4,6 +4,7 @@ namespace App\Actions\Sales;
 
 use App\Actions\Inventory\PostStockMovementAction;
 use App\Actions\SaleSchemes\ValidateAppliedSaleOffersAction;
+use App\Authz\PermissionService;
 use App\Catalog\TenantCatalog;
 use App\Enums\PriceType;
 use App\Enums\ProductStatus;
@@ -44,6 +45,7 @@ class CreateSaleAction
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly TenantCatalog $catalog,
+        private readonly PermissionService $permissions,
         private readonly ValidateAppliedSaleOffersAction $validateOffers,
         private readonly PostStockMovementAction $postMovement,
         private readonly PostSaleAccountingAction $postAccounting,
@@ -575,8 +577,9 @@ class CreateSaleAction
     /**
      * Resolve and price paid lines.
      *
-     * Client-sent prices are ignored. The tenant's active retail price
-     * is the only source of truth.
+     * Catalog pricing is authoritative by default. A user with the explicit
+     * sales.override_price permission may provide a one-invoice unit price
+     * override; all dependent money values are still recomputed server-side.
      *
      * @param list<array<string, mixed>> $items
      * @return list<array<string, mixed>>
@@ -646,11 +649,31 @@ class CreateSaleAction
 
             // ProductPrice is stored at base-unit level. A selected pack/carton
             // therefore carries the base price multiplied by its conversion factor.
-            $unitPrice = bcmul(
+            $catalogUnitPrice = bcmul(
                 $baseUnitPrice,
                 $conversionFactor,
                 4
             );
+
+            $overrideRaw = trim((string) ($item['unit_price_override'] ?? ''));
+            $unitPriceOverride = null;
+
+            if ($overrideRaw !== '') {
+                if (! $this->permissions->can('sales.override_price')) {
+                    throw new ApiException(
+                        'FORBIDDEN',
+                        'You do not have permission to override sale prices.',
+                        403,
+                    );
+                }
+
+                $unitPriceOverride = $this->normalizeMoney(
+                    $overrideRaw,
+                    "items.$index.unit_price_override"
+                );
+            }
+
+            $unitPrice = $unitPriceOverride ?? $catalogUnitPrice;
 
             $grossAmount = bcmul(
                 $quantity,
@@ -699,6 +722,7 @@ class CreateSaleAction
                 'line_kind' => SaleLineKind::Sale->value,
                 'sale_scheme_id' => null,
                 'unit_price' => $unitPrice,
+                'unit_price_override' => $unitPriceOverride,
                 'gross_amount' => $grossAmount,
                 'discount_percent' => $discountPercent,
                 'discount_amount' => $discountAmount,
