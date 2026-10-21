@@ -34,8 +34,11 @@ class PartyProfileTest extends TestCase
             'mobile' => '03001234567',
         ])->assertCreated()
             ->assertJsonPath('party_type', 'customer')
-            ->assertJsonPath('code', 'MULTI-001')
             ->assertJsonPath('name', 'Multi Role Party');
+
+        $generatedCode = (string) $response->json('code');
+        $this->assertMatchesRegularExpression('/^PTY-\d{6}$/', $generatedCode);
+        $this->assertNotSame('CLIENT-SUPPLIED-CODE', $generatedCode);
 
         $identityUlid = (string) $response->json('identity_ulid');
         $vendorUlid = (string) $response->json('vendor_ulid');
