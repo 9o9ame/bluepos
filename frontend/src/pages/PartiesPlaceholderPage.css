@@ -333,6 +333,11 @@
   min-height: 42px;
 }
 
+.parties-vca input[aria-invalid='true'] {
+  border-color: var(--ui-danger, #b42323);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-danger, #b42323) 18%, transparent);
+}
+
 .parties-vca input:focus,
 .parties-vca select:focus,
 .parties-vca textarea:focus {
