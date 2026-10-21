@@ -74,6 +74,7 @@ type ViewTab = 'entry' | 'ledger' | 'bulk' | 'coa'
 type PartyType = 'VENDORS' | 'CUSTOMERS' | 'ACCOUNTS' | 'SALES MAN' | 'ALL'
 type LedgerGroupKey = 'trans_no' | 'date' | 'doc' | 'remarks' | 'debit' | 'credit'
 type LedgerColumnKey = LedgerGroupKey | 'balance'
+type LedgerColumnFilters = Record<LedgerColumnKey, string>
 type LedgerRenderItem =
   | { kind: 'group'; key: string; label: string; depth: number }
   | { kind: 'row'; row: PartyLedger['rows'][number] }
@@ -105,6 +106,16 @@ const DEFAULT_LEDGER_COLUMN_ORDER: LedgerGroupKey[] = [
   'debit',
   'credit',
 ]
+
+const EMPTY_LEDGER_COLUMN_FILTERS: LedgerColumnFilters = {
+  trans_no: '',
+  date: '',
+  doc: '',
+  remarks: '',
+  debit: '',
+  credit: '',
+  balance: '',
+}
 
 function ledgerGroupValue(row: PartyLedger['rows'][number], key: LedgerGroupKey): string {
   if (key === 'trans_no') return row.trans_no
@@ -444,6 +455,7 @@ export function PartiesPlaceholderPage({
   const [ledgerLoading, setLedgerLoading] = useState(false)
   const [ledgerPage, setLedgerPage] = useState(1)
   const [ledgerSearch, setLedgerSearch] = useState('')
+  const [ledgerColumnFilters, setLedgerColumnFilters] = useState<LedgerColumnFilters>(EMPTY_LEDGER_COLUMN_FILTERS)
   const [ledgerDateFrom, setLedgerDateFrom] = useState('')
   const [ledgerDateTo, setLedgerDateTo] = useState('')
   const [ledgerGroupKeys, setLedgerGroupKeys] = useState<LedgerGroupKey[]>([])
@@ -493,22 +505,35 @@ export function PartiesPlaceholderPage({
   }, [form.name, rows, searchQuery, selectedKey])
 
   const ledgerVisibleRows = useMemo(() => {
-    const query = ledgerSearch.trim().toLocaleLowerCase()
+    const globalQuery = ledgerSearch.trim().toLocaleLowerCase()
     const source = ledger?.rows ?? []
-    if (!query) return source
 
-    return source.filter((row) =>
-      [
-        row.trans_no,
-        row.date,
-        row.doc,
-        row.remarks ?? '',
-        row.debit,
-        row.credit,
-        row.balance,
-      ].some((value) => String(value).toLocaleLowerCase().includes(query)),
-    )
-  }, [ledger?.rows, ledgerSearch])
+    return source.filter((row) => {
+      const values: Record<LedgerColumnKey, string> = {
+        trans_no: row.trans_no,
+        date: row.date,
+        doc: row.doc,
+        remarks: row.remarks ?? '',
+        debit: row.debit,
+        credit: row.credit,
+        balance: row.balance,
+      }
+
+      const matchesGlobal =
+        !globalQuery ||
+        Object.values(values).some((value) =>
+          value.toLocaleLowerCase().includes(globalQuery),
+        )
+
+      if (!matchesGlobal) return false
+
+      return (Object.keys(ledgerColumnFilters) as LedgerColumnKey[]).every((key) => {
+        if (key === 'date') return true
+        const query = ledgerColumnFilters[key].trim().toLocaleLowerCase()
+        return !query || values[key].toLocaleLowerCase().includes(query)
+      })
+    })
+  }, [ledger?.rows, ledgerSearch, ledgerColumnFilters])
 
   const ledgerRenderItems = useMemo<LedgerRenderItem[]>(() => {
     if (ledgerGroupKeys.length === 0) {
@@ -1047,15 +1072,21 @@ export function PartiesPlaceholderPage({
     setLedgerPage(1)
     setLedgerDateFrom(value)
     setLedgerDateTo(value)
+    patchLedgerColumnFilter('date', value)
   }
 
   function clearLedgerFilters() {
     setLedgerPage(1)
     setLedgerSearch('')
+    setLedgerColumnFilters(EMPTY_LEDGER_COLUMN_FILTERS)
     setLedgerDateFrom('')
     setLedgerDateTo('')
     setLedgerGroupKeys([])
     setLedgerColumnOrder(DEFAULT_LEDGER_COLUMN_ORDER)
+  }
+
+  function patchLedgerColumnFilter(key: LedgerColumnKey, value: string) {
+    setLedgerColumnFilters((current) => ({ ...current, [key]: value }))
   }
 
   function addLedgerGroup(key: LedgerGroupKey) {
@@ -2352,7 +2383,9 @@ export function PartiesPlaceholderPage({
                 if (key) addLedgerGroup(key)
               }}
             >
-              <span>Drag a column header here to group</span>
+              {ledgerGroupKeys.length === 0 ? (
+                <span className="parties-vca-ledger-group-placeholder">Drag a column header here to group</span>
+              ) : null}
               <div className="parties-vca-ledger-group-tree">
                 {ledgerGroupKeys.map((key, index) => (
                   <button
@@ -2440,15 +2473,15 @@ export function PartiesPlaceholderPage({
                           aria-label="Filter ledger by date"
                           onChange={(event) => applyLedgerSingleDate(event.target.value)}
                         />
-                      ) : key === 'remarks' ? (
+                      ) : (
                         <input
                           type="search"
-                          value={ledgerSearch}
-                          aria-label="Filter ledger remarks"
+                          value={ledgerColumnFilters[key]}
+                          aria-label={`Filter ${LEDGER_COLUMN_LABELS[key]}`}
                           placeholder="Filter…"
-                          onChange={(event) => setLedgerSearch(event.target.value)}
+                          onChange={(event) => patchLedgerColumnFilter(key, event.target.value)}
                         />
-                      ) : null}
+                      )}
                     </th>
                   ))}
                 </tr>
@@ -2515,6 +2548,7 @@ export function PartiesPlaceholderPage({
                   setLedgerPage(1)
                   setLedgerDateFrom('')
                   setLedgerDateTo('')
+                  patchLedgerColumnFilter('date', '')
                   setLedgerFilterOpen(false)
                 }}
               >
