@@ -18,6 +18,14 @@ function productBaseRate(product: Product): string {
   )?.amount ?? '—'
 }
 
+function productStockClass(product: Product): string {
+  const value = Number.parseFloat(product.sales_lookup?.in_stock ?? '')
+  if (!Number.isFinite(value)) return 'is-stock-unknown'
+  if (value <= 0) return 'is-stock-danger'
+  if (value <= 5) return 'is-stock-warning'
+  return 'is-stock-ok'
+}
+
 const PRODUCT_LOOKUP_ROW_HEIGHT = 24
 const PRODUCT_LOOKUP_VIEWPORT_HEIGHT = 250
 const PRODUCT_LOOKUP_OVERSCAN = 8
@@ -285,7 +293,7 @@ export function ProductLookupGrid({
               <>
                 <span>{row.product_number}</span>
                 <strong>{productLookupDescription(row)}</strong>
-                <span>
+                <span className={`product-lookup-stock ${productStockClass(row)}`}>
                   {row.sales_lookup
                     ? Number.parseFloat(row.sales_lookup.in_stock).toFixed(3)
                     : '—'}
@@ -306,7 +314,7 @@ export function ProductLookupGrid({
               <>
                 <span>{row.product_number}</span>
                 <strong>{productLookupDescription(row)}</strong>
-                <span>
+                <span className={`product-lookup-stock ${productStockClass(row)}`}>
                   {row.sales_lookup
                     ? Number.parseFloat(row.sales_lookup.in_stock).toFixed(3)
                     : '—'}
