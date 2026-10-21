@@ -4588,22 +4588,19 @@ html[data-animations='off'] .sales-reference-screen * {
 /* ==========================================================================
    Sales Invoice Amounts right-edge containment
    Single source of truth after all responsive overrides.
-   Preserve approved Amounts child order/geometry; only keep the rightmost
-   column clear of the fieldset border at every active width/height mode.
+   Preserve approved Amounts child order/geometry. Inset only the rightmost
+   column directly so later responsive/grid padding rules cannot cancel it.
    ========================================================================== */
 .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid {
   box-sizing: border-box !important;
-  padding-right: 5px !important;
 }
 
 .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > :nth-child(2),
 .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > :nth-child(5),
 .sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > :nth-child(8) {
-  max-width: 100% !important;
-  min-width: 0 !important;
   box-sizing: border-box !important;
-}
-
-.sales-reference-pay > .sales-reference-amounts .sales-reference-amounts-grid > :nth-child(2) {
-  justify-self: stretch;
+  justify-self: start !important;
+  width: calc(100% - 7px) !important;
+  max-width: calc(100% - 7px) !important;
+  min-width: 0 !important;
 }
