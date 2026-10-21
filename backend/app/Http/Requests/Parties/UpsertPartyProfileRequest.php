@@ -20,10 +20,13 @@ class UpsertPartyProfileRequest extends FormRequest
             is_array($this->input('party_types')) ? $this->input('party_types') : []
         )));
 
+        $name = trim((string) $this->input('name'));
+        $name = preg_replace('/\s+/u', ' ', $name) ?? $name;
+
         $this->merge([
             'party_types' => $types,
             'primary_type' => strtolower(trim((string) $this->input('primary_type', $types[0] ?? ''))),
-            'name' => trim((string) $this->input('name')),
+            'name' => $name,
         ]);
     }
 
