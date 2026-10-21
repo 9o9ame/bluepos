@@ -1012,7 +1012,7 @@
   position: relative;
   display: grid;
   justify-items: start;
-  gap: 8px;
+  gap: 0;
   min-width: 0;
   padding-left: 4px;
 }
@@ -1031,12 +1031,16 @@
   cursor: pointer;
 }
 
+.parties-vca-ledger-group-chip:not(:first-child) {
+  margin-top: -10px;
+}
+
 .parties-vca-ledger-group-chip:not(:first-child)::before {
   content: '';
   position: absolute;
-  left: -18px;
+  left: -36px;
   top: -9px;
-  width: 18px;
+  width: 36px;
   height: 23px;
   border-left: 2px solid var(--ui-accent);
   border-bottom: 2px solid var(--ui-accent);
@@ -1048,9 +1052,9 @@
 .parties-vca-ledger-group-chip::after {
   content: '';
   position: absolute;
-  left: -5px;
+  left: -8px;
   top: 50%;
-  width: 5px;
+  width: 8px;
   border-top: 2px solid var(--ui-accent);
   pointer-events: none;
   opacity: 0.8;
