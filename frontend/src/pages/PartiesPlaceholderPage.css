@@ -1315,6 +1315,21 @@
   font-weight: 500;
 }
 
+.parties-vca-coa-grid.is-grouped-columns .parties-vca-coa-level-3 td {
+  padding-left: 8px;
+  color: var(--ui-text) !important;
+  font-weight: 650;
+}
+
+.parties-vca-coa-grid.is-grouped-columns .parties-vca-coa-level-3 td::before,
+.parties-vca-coa-grid.is-grouped-columns .parties-vca-coa-level-3 td::after {
+  display: none;
+}
+
+.parties-vca-coa-grid.is-account-only .parties-vca-coa-level-3 td {
+  padding-left: 86px;
+}
+
 .parties-vca-coa-level-1 td::before,
 .parties-vca-coa-level-2 td::before,
 .parties-vca-coa-level-3 td::before {
