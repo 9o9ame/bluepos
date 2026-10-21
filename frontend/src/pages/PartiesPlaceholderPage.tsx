@@ -73,18 +73,38 @@ type DetailTab = 'contact' | 'bank' | 'others' | 'formulas' | 'opening'
 type ViewTab = 'entry' | 'ledger' | 'bulk' | 'coa'
 type PartyType = 'VENDORS' | 'CUSTOMERS' | 'ACCOUNTS' | 'SALES MAN' | 'ALL'
 type LedgerGroupKey = 'trans_no' | 'date' | 'doc' | 'remarks' | 'debit' | 'credit'
+type LedgerColumnKey = LedgerGroupKey | 'balance'
 type LedgerRenderItem =
   | { kind: 'group'; key: string; label: string; depth: number }
   | { kind: 'row'; row: PartyLedger['rows'][number] }
 
-const LEDGER_GROUP_LABELS: Record<LedgerGroupKey, string> = {
+const LEDGER_COLUMN_LABELS: Record<LedgerColumnKey, string> = {
   trans_no: 'Trans#',
   date: 'Date',
   doc: 'DOC',
   remarks: 'Remarks',
   debit: 'Debit',
   credit: 'Credit',
+  balance: 'Balance',
 }
+
+const LEDGER_GROUP_LABELS: Record<LedgerGroupKey, string> = {
+  trans_no: LEDGER_COLUMN_LABELS.trans_no,
+  date: LEDGER_COLUMN_LABELS.date,
+  doc: LEDGER_COLUMN_LABELS.doc,
+  remarks: LEDGER_COLUMN_LABELS.remarks,
+  debit: LEDGER_COLUMN_LABELS.debit,
+  credit: LEDGER_COLUMN_LABELS.credit,
+}
+
+const DEFAULT_LEDGER_COLUMN_ORDER: LedgerGroupKey[] = [
+  'trans_no',
+  'date',
+  'doc',
+  'remarks',
+  'debit',
+  'credit',
+]
 
 function ledgerGroupValue(row: PartyLedger['rows'][number], key: LedgerGroupKey): string {
   if (key === 'trans_no') return row.trans_no
@@ -427,6 +447,7 @@ export function PartiesPlaceholderPage({
   const [ledgerDateFrom, setLedgerDateFrom] = useState('')
   const [ledgerDateTo, setLedgerDateTo] = useState('')
   const [ledgerGroupKeys, setLedgerGroupKeys] = useState<LedgerGroupKey[]>([])
+  const [ledgerColumnOrder, setLedgerColumnOrder] = useState<LedgerGroupKey[]>(DEFAULT_LEDGER_COLUMN_ORDER)
   const [ledgerFilterOpen, setLedgerFilterOpen] = useState(false)
   const [ensureBusy, setEnsureBusy] = useState(false)
   const baselineRef = useRef(formSnapshot(emptyForm(initialPartyFilter)))
@@ -529,6 +550,14 @@ export function PartiesPlaceholderPage({
     groupRows(ledgerVisibleRows, 0, [])
     return items
   }, [ledgerGroupKeys, ledgerVisibleRows])
+
+  const ledgerVisibleColumns = useMemo<LedgerColumnKey[]>(
+    () => [
+      ...ledgerColumnOrder.filter((key) => !ledgerGroupKeys.includes(key)),
+      'balance',
+    ],
+    [ledgerColumnOrder, ledgerGroupKeys],
+  )
 
   const selectedIndex = rows.findIndex((row) => row.key === selectedKey)
   const dirty =
@@ -1026,6 +1055,7 @@ export function PartiesPlaceholderPage({
     setLedgerDateFrom('')
     setLedgerDateTo('')
     setLedgerGroupKeys([])
+    setLedgerColumnOrder(DEFAULT_LEDGER_COLUMN_ORDER)
   }
 
   function addLedgerGroup(key: LedgerGroupKey) {
@@ -1036,6 +1066,39 @@ export function PartiesPlaceholderPage({
 
   function isLedgerGroupKey(value: string): value is LedgerGroupKey {
     return value in LEDGER_GROUP_LABELS
+  }
+
+  function ledgerDragKey(event: React.DragEvent<HTMLElement>): LedgerGroupKey | null {
+    const raw = event.dataTransfer.getData('text/plain').replace(/^ledger-column:/, '')
+    return isLedgerGroupKey(raw) ? raw : null
+  }
+
+  function placeLedgerColumn(key: LedgerGroupKey, before: LedgerColumnKey | null) {
+    setLedgerGroupKeys((current) => current.filter((item) => item !== key))
+    setLedgerColumnOrder((current) => {
+      const next = current.filter((item) => item !== key)
+      if (!before || before === 'balance') return [...next, key]
+      const index = next.indexOf(before)
+      if (index < 0) return [...next, key]
+      next.splice(index, 0, key)
+      return next
+    })
+  }
+
+  function reorderLedgerGroup(key: LedgerGroupKey, before: LedgerGroupKey) {
+    if (key === before) return
+    setLedgerGroupKeys((current) => {
+      if (!current.includes(key) || !current.includes(before)) return current
+      const next = current.filter((item) => item !== key)
+      const index = next.indexOf(before)
+      next.splice(index, 0, key)
+      return next
+    })
+  }
+
+  function ledgerCellValue(row: PartyLedger['rows'][number], key: LedgerColumnKey): string {
+    if (key === 'balance') return row.balance
+    return ledgerGroupValue(row, key)
   }
 
   function startNew(filter: PartyType = listFilter) {
@@ -2295,10 +2358,18 @@ export function PartiesPlaceholderPage({
                   <button
                     type="button"
                     key={key}
+                    draggable
                     className="parties-vca-ledger-group-chip"
                     style={{ marginLeft: `${index * 18}px` }}
-                    onClick={() => setLedgerGroupKeys((current) => current.filter((item) => item !== key))}
-                    title="Remove group"
+                    onDragStart={(event) => event.dataTransfer.setData('text/plain', `ledger-column:${key}`)}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => {
+                      event.preventDefault()
+                      const dragged = ledgerDragKey(event)
+                      if (dragged) reorderLedgerGroup(dragged, key)
+                    }}
+                    onClick={() => placeLedgerColumn(key, 'balance')}
+                    title="Drag back to the table, drag over another group to reorder, or click to return it before Balance"
                   >
                     {LEDGER_GROUP_LABELS[key]} ×
                   </button>
@@ -2331,99 +2402,73 @@ export function PartiesPlaceholderPage({
             <table className="parties-vca-shell-grid parties-vca-ledger-grid">
               <thead>
                 <tr>
-                  <th
-                    draggable
-                    onDragStart={(event) => event.dataTransfer.setData('text/plain', 'trans_no')}
-                    title="Drag to grouping area"
-                  >
-                    Trans#
-                  </th>
-                  <th
-                    draggable
-                    onDragStart={(event) => event.dataTransfer.setData('text/plain', 'date')}
-                    title="Drag to grouping area"
-                  >
-                    Date
-                  </th>
-                  <th
-                    draggable
-                    onDragStart={(event) => event.dataTransfer.setData('text/plain', 'doc')}
-                    title="Drag to grouping area"
-                  >
-                    DOC
-                  </th>
-                  <th
-                    draggable
-                    onDragStart={(event) => event.dataTransfer.setData('text/plain', 'remarks')}
-                    title="Drag to grouping area"
-                  >
-                    Remarks
-                  </th>
-                  <th
-                    className="is-num"
-                    draggable
-                    onDragStart={(event) => event.dataTransfer.setData('text/plain', 'debit')}
-                    title="Drag to grouping area"
-                  >
-                    Debit
-                  </th>
-                  <th
-                    className="is-num"
-                    draggable
-                    onDragStart={(event) => event.dataTransfer.setData('text/plain', 'credit')}
-                    title="Drag to grouping area"
-                  >
-                    Credit
-                  </th>
-                  <th className="is-num">Balance</th>
+                  {ledgerVisibleColumns.map((key) => (
+                    <th
+                      key={key}
+                      className={key === 'debit' || key === 'credit' || key === 'balance' ? 'is-num' : undefined}
+                      draggable={key !== 'balance'}
+                      onDragStart={
+                        key === 'balance'
+                          ? undefined
+                          : (event) => event.dataTransfer.setData('text/plain', `ledger-column:${key}`)
+                      }
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={(event) => {
+                        event.preventDefault()
+                        const dragged = ledgerDragKey(event)
+                        if (dragged) placeLedgerColumn(dragged, key)
+                      }}
+                      title={key === 'balance' ? 'Balance is fixed' : 'Drag to group or reorder'}
+                    >
+                      {LEDGER_COLUMN_LABELS[key]}
+                    </th>
+                  ))}
                 </tr>
                 <tr className="parties-vca-ledger-filter-row">
-                  <th />
-                  <th>
-                    <input
-                      type="date"
-                      value={ledgerDateFrom === ledgerDateTo ? ledgerDateFrom : ''}
-                      aria-label="Filter ledger by date"
-                      onChange={(event) => applyLedgerSingleDate(event.target.value)}
-                    />
-                  </th>
-                  <th />
-                  <th>
-                    <input
-                      type="search"
-                      value={ledgerSearch}
-                      aria-label="Filter ledger remarks"
-                      placeholder="Filter…"
-                      onChange={(event) => setLedgerSearch(event.target.value)}
-                    />
-                  </th>
-                  <th />
-                  <th />
-                  <th />
+                  {ledgerVisibleColumns.map((key) => (
+                    <th key={`filter:${key}`}>
+                      {key === 'date' ? (
+                        <input
+                          type="date"
+                          value={ledgerDateFrom === ledgerDateTo ? ledgerDateFrom : ''}
+                          aria-label="Filter ledger by date"
+                          onChange={(event) => applyLedgerSingleDate(event.target.value)}
+                        />
+                      ) : key === 'remarks' ? (
+                        <input
+                          type="search"
+                          value={ledgerSearch}
+                          aria-label="Filter ledger remarks"
+                          placeholder="Filter…"
+                          onChange={(event) => setLedgerSearch(event.target.value)}
+                        />
+                      ) : null}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {!form.ulid ? (
                   <tr>
-                    <td colSpan={7} className="parties-vca-empty">
+                    <td colSpan={ledgerVisibleColumns.length} className="parties-vca-empty">
                       Select a party to view ledger
                     </td>
                   </tr>
                 ) : ledgerLoading ? (
                   <tr>
-                    <td colSpan={7} className="parties-vca-empty">
+                    <td colSpan={ledgerVisibleColumns.length} className="parties-vca-empty">
                       Loading ledger…
                     </td>
                   </tr>
                 ) : !ledger || ledger.rows.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="parties-vca-empty">
+                    <td colSpan={ledgerVisibleColumns.length} className="parties-vca-empty">
                       No posted ledger entries.
                     </td>
                   </tr>
                 ) : ledgerRenderItems.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="parties-vca-empty">
+                    <td colSpan={ledgerVisibleColumns.length} className="parties-vca-empty">
                       No ledger rows match the current search.
                     </td>
                   </tr>
@@ -2431,19 +2476,20 @@ export function PartiesPlaceholderPage({
                   ledgerRenderItems.map((item) =>
                     item.kind === 'group' ? (
                       <tr key={`group:${item.key}`} className="parties-vca-ledger-group-row">
-                        <td colSpan={7} style={{ paddingLeft: `${8 + item.depth * 16}px` }}>
+                        <td colSpan={ledgerVisibleColumns.length} style={{ paddingLeft: `${8 + item.depth * 16}px` }}>
                           {item.label}
                         </td>
                       </tr>
                     ) : (
                       <tr key={item.row.line_ulid}>
-                        <td>{item.row.trans_no}</td>
-                        <td>{item.row.date}</td>
-                        <td>{item.row.doc}</td>
-                        <td>{item.row.remarks || '—'}</td>
-                        <td className="is-num">{item.row.debit}</td>
-                        <td className="is-num">{item.row.credit}</td>
-                        <td className="is-num">{item.row.balance}</td>
+                        {ledgerVisibleColumns.map((key) => (
+                          <td
+                            key={key}
+                            className={key === 'debit' || key === 'credit' || key === 'balance' ? 'is-num' : undefined}
+                          >
+                            {ledgerCellValue(item.row, key)}
+                          </td>
+                        ))}
                       </tr>
                     ),
                   )
