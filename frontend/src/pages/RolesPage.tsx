@@ -45,7 +45,8 @@ export function RolesPage() {
 
   useWorkspaceHandlers({
     save: () => {
-      document.getElementById('role-create-form') && (document.getElementById('role-create-form') as HTMLFormElement).requestSubmit()
+      const form = document.getElementById('role-create-form') as HTMLFormElement | null
+      form?.requestSubmit()
     },
     refresh: () => {
       void rolesQuery.refetch()
