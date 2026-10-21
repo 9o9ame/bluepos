@@ -449,7 +449,7 @@ export function VendorCustomerLedgerPage() {
 </head>
 <body>
   ${sections}
-  <script>window.addEventListener('load', () => { window.print(); });<\/script>
+  <script>window.addEventListener('load', () => { window.print(); });</script>
 </body>
 </html>`)
     reportWindow.document.close()
