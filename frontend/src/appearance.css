@@ -1005,6 +1005,14 @@ html[data-animations='off'] #root *::after {
   --ui-row-hover: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
   --ui-selected-row: var(--selected-row, color-mix(in srgb, var(--ui-accent) 28%, var(--ui-surface)));
   --ui-selected-row-text: var(--ui-text);
+
+  /* Operational column emphasis: shared POS/table/dropdown semantics. */
+  --ui-col-identity: color-mix(in srgb, var(--ui-warning) 9%, var(--ui-surface));
+  --ui-col-stock: color-mix(in srgb, var(--ui-success) 12%, var(--ui-surface));
+  --ui-col-quantity: color-mix(in srgb, var(--ui-info) 10%, var(--ui-surface));
+  --ui-col-price: color-mix(in srgb, var(--ui-warning) 14%, var(--ui-surface));
+  --ui-col-cost: color-mix(in srgb, var(--ui-warning) 8%, var(--ui-surface-muted));
+  --ui-col-amount: color-mix(in srgb, var(--ui-info) 12%, var(--ui-surface));
   --ui-focus-shadow: 0 0 0 2px color-mix(in srgb, var(--appearance-accent) 34%, transparent);
   --ui-card-shadow: var(--panel-shadow);
   --ui-control-shadow: var(--button-shadow);
@@ -1066,6 +1074,12 @@ html[data-animations='off'] #root *::after {
   --ui-row-hover: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-surface));
   --ui-selected-row: color-mix(in srgb, var(--ui-accent) 36%, var(--ui-surface));
   --ui-selected-row-text: #fff;
+  --ui-col-identity: color-mix(in srgb, var(--ui-warning) 10%, var(--ui-surface));
+  --ui-col-stock: color-mix(in srgb, var(--ui-success) 13%, var(--ui-surface));
+  --ui-col-quantity: color-mix(in srgb, var(--ui-info) 12%, var(--ui-surface));
+  --ui-col-price: color-mix(in srgb, var(--ui-warning) 15%, var(--ui-surface));
+  --ui-col-cost: color-mix(in srgb, var(--ui-warning) 9%, var(--ui-surface-muted));
+  --ui-col-amount: color-mix(in srgb, var(--ui-info) 14%, var(--ui-surface));
   --ui-accent-strong: color-mix(in srgb, var(--appearance-accent) 78%, white);
 }
 
