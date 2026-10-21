@@ -8456,6 +8456,7 @@ textarea {
    1024-1279 only: group Sales/Purchase into dropdown commands so the approved
    desktop ribbon remains unchanged while avoiding horizontal ribbon scrolling.
    ========================================================================== */
+.ribbon-definition-compact,
 .ribbon-daily-compact {
   display: none;
 }
@@ -8471,10 +8472,14 @@ textarea {
     overflow: visible;
   }
 
+  .ribbon-definition-compact,
   .ribbon-daily-compact {
     display: contents;
   }
 
+  .ribbon-group-products,
+  .ribbon-group-parties,
+  .ribbon-group-later-catalog,
   .ribbon-group-sales,
   .ribbon-group-purchases {
     display: none !important;
