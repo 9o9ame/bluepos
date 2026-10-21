@@ -23,7 +23,6 @@ class UpsertPartyProfileRequest extends FormRequest
         $this->merge([
             'party_types' => $types,
             'primary_type' => strtolower(trim((string) $this->input('primary_type', $types[0] ?? ''))),
-            'code' => strtoupper(trim((string) $this->input('code'))),
             'name' => trim((string) $this->input('name')),
         ]);
     }
@@ -46,7 +45,6 @@ class UpsertPartyProfileRequest extends FormRequest
                     }
                 },
             ],
-            'code' => ['required', 'string', 'max:64'],
             'name' => ['required', 'string', 'max:180'],
             'vendor_account_type_ulid' => [
                 Rule::requiredIf(fn (): bool => in_array('vendor', is_array($types) ? $types : [], true)),
