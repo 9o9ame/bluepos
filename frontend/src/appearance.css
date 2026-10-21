@@ -922,14 +922,14 @@ html[data-animations='off'] #root *::after {
    * Keep the neutral desktop/POS palette stable while Primary Theme controls
    * active, focus and selected states.
    */
-  --ui-bg: #e8eef5;
+  --ui-bg: #e2e8ef;
   --ui-surface: #ffffff;
-  --ui-surface-subtle: #eef3f8;
-  --ui-surface-muted: #dce7f2;
-  --ui-text: #243040;
-  --ui-text-muted: #5a6874;
-  --ui-border: #a8b4c0;
-  --ui-border-soft: #d7e1ea;
+  --ui-surface-subtle: #e9eff5;
+  --ui-surface-muted: #d3dee9;
+  --ui-text: #172331;
+  --ui-text-muted: #465665;
+  --ui-border: #8797a7;
+  --ui-border-soft: #c4d0db;
   --ui-accent: var(--appearance-accent);
   --ui-accent-soft: color-mix(in srgb, var(--appearance-accent) 12%, var(--ui-surface));
   --ui-accent-strong: color-mix(in srgb, var(--appearance-accent) 82%, black);
@@ -947,9 +947,9 @@ html[data-animations='off'] #root *::after {
     var(--ui-surface) 0%,
     color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface-subtle)) 100%
   );
-  --ui-control-border: color-mix(in srgb, var(--ui-accent) 28%, var(--ui-border));
-  --ui-control-hover-bg: color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface));
-  --ui-control-hover-border: color-mix(in srgb, var(--ui-accent) 58%, var(--ui-border));
+  --ui-control-border: color-mix(in srgb, var(--ui-accent) 34%, var(--ui-border));
+  --ui-control-hover-bg: color-mix(in srgb, var(--ui-accent) 10%, var(--ui-surface));
+  --ui-control-hover-border: color-mix(in srgb, var(--ui-accent) 66%, var(--ui-border));
 
   --ui-select-arrow-face: linear-gradient(
     180deg,
@@ -996,16 +996,16 @@ html[data-animations='off'] #root *::after {
   --ui-panel-face: linear-gradient(180deg, #f7fafc 0%, #eef3f8 100%);
   --ui-table-header: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--ui-accent) 6%, var(--ui-surface)),
-    color-mix(in srgb, var(--ui-accent) 13%, var(--ui-surface-subtle))
+    color-mix(in srgb, var(--ui-accent) 11%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 21%, var(--ui-surface-subtle))
   );
   --ui-table-header-text: var(--ui-text);
   --ui-table-border: var(--ui-border);
-  --ui-row-alt: #f7fafc;
-  --ui-row-hover: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface));
-  --ui-selected-row: var(--selected-row, color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface)));
+  --ui-row-alt: #f1f5f9;
+  --ui-row-hover: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-surface));
+  --ui-selected-row: var(--selected-row, color-mix(in srgb, var(--ui-accent) 28%, var(--ui-surface)));
   --ui-selected-row-text: var(--ui-text);
-  --ui-focus-shadow: 0 0 0 2px color-mix(in srgb, var(--appearance-accent) 24%, transparent);
+  --ui-focus-shadow: 0 0 0 2px color-mix(in srgb, var(--appearance-accent) 34%, transparent);
   --ui-card-shadow: var(--panel-shadow);
   --ui-control-shadow: var(--button-shadow);
   --ui-transition-fast: 120ms ease;
@@ -1019,8 +1019,8 @@ html[data-animations='off'] #root *::after {
   --ui-surface-muted: #343c44;
   --ui-text: #edf1f5;
   --ui-text-muted: #aeb8c2;
-  --ui-border: #56616c;
-  --ui-border-soft: #3e4851;
+  --ui-border: #697681;
+  --ui-border-soft: #4a5660;
   --ui-success: #50c878;
   --ui-warning: #f0ad4e;
   --ui-danger: #ff7670;
@@ -1034,7 +1034,7 @@ html[data-animations='off'] #root *::after {
     color-mix(in srgb, var(--ui-accent) 10%, #353c43) 0%,
     #282e34 100%
   );
-  --ui-control-border: color-mix(in srgb, var(--ui-accent) 26%, var(--ui-border));
+  --ui-control-border: color-mix(in srgb, var(--ui-accent) 34%, var(--ui-border));
   --ui-control-hover-bg: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
   --ui-control-hover-border: color-mix(in srgb, var(--ui-accent) 58%, var(--ui-border));
 
@@ -1064,7 +1064,7 @@ html[data-animations='off'] #root *::after {
   --ui-table-border: var(--ui-border);
   --ui-row-alt: #242c33;
   --ui-row-hover: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
-  --ui-selected-row: color-mix(in srgb, var(--ui-accent) 28%, var(--ui-surface));
+  --ui-selected-row: color-mix(in srgb, var(--ui-accent) 36%, var(--ui-surface));
   --ui-selected-row-text: #fff;
   --ui-accent-strong: color-mix(in srgb, var(--appearance-accent) 78%, white);
 }
@@ -1900,8 +1900,8 @@ html[data-animations='off'] :where(.platform-auth-page, .platform-main) * {
   --panel-border: var(--ui-border);
   --panel-header-1: var(--ui-surface);
   --panel-header-2: var(--ui-surface-subtle);
-  --grid-header: color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface));
-  --grid-header-2: color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface-subtle));
+  --grid-header: color-mix(in srgb, var(--ui-accent) 11%, var(--ui-surface));
+  --grid-header-2: color-mix(in srgb, var(--ui-accent) 21%, var(--ui-surface-subtle));
   --grid-border: var(--ui-border);
   --statusbar-bg: var(--ui-surface-subtle);
   --statusbar-bg-2: var(--ui-surface-muted);
@@ -1913,8 +1913,8 @@ html[data-animations='off'] :where(.platform-auth-page, .platform-main) * {
   --input-border: var(--ui-border);
   --disabled-fg: var(--ui-text-muted);
   --pay-panel: var(--ui-surface-subtle);
-  --selected-row: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface));
-  --hover-row: color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface));
+  --selected-row: color-mix(in srgb, var(--ui-accent) 28%, var(--ui-surface));
+  --hover-row: color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface));
 }
 
 
