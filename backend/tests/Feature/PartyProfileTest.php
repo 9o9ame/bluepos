@@ -180,6 +180,33 @@ class PartyProfileTest extends TestCase
         ])->assertNotFound();
     }
 
+    public function test_party_profile_name_is_unique_per_tenant_case_insensitively(): void
+    {
+        $this->signInOwner('party-profile-name-unique')->assertOk();
+
+        $this->postJson('/api/party-profiles', [
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'name' => 'Alpha Traders',
+        ])->assertCreated();
+
+        $this->postJson('/api/party-profiles', [
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'name' => '  alpha   traders  ',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['name']);
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->signInOwner('party-profile-name-unique-other-tenant')->assertOk();
+
+        $this->postJson('/api/party-profiles', [
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'name' => 'Alpha Traders',
+        ])->assertCreated();
+    }
+
     private function accountTypeUlid(string $kind): string
     {
         $tenantId = app(TenantContext::class)->tenantId();
