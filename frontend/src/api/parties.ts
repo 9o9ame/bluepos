@@ -106,7 +106,6 @@ export type PartyPayload = {
 export type PartyProfilePayload = {
   party_types: PartyBusinessType[]
   primary_type: PartyBusinessType
-  code: string
   name: string
   vendor_account_type_ulid?: string | null
   customer_account_type_ulid?: string | null
