@@ -167,7 +167,7 @@ class SalePricingAndUnitTest extends TestCase
 
         $catalogPrice = ProductPrice::query()
             ->where('product_id', $product->id)
-            ->where('price_type', PriceType::Retail)
+            ->where('price_type', PriceType::Retail->value)
             ->value('amount');
 
         $this->assertSame('100.0000', (string) $catalogPrice);
