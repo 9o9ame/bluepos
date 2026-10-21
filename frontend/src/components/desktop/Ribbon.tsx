@@ -3,7 +3,9 @@ import {
   CircleHelp,
   ClipboardList,
   FilePenLine,
+  FolderTree,
   Home,
+  List,
   Settings,
   Wrench,
   type LucideIcon,
@@ -47,6 +49,40 @@ export function Ribbon({ onCalculator, onSoftwareOptions, onRecalculateStock, on
     const module = WORKSPACE_MODULES.find((row) => row.path === path)
     openModule(path, { newInstance: module?.multiInstance === true })
   }
+
+  const definitionProducts = RIBBON_GROUPS.definition
+    .find((group) => group.id === 'products')
+    ?.commands ?? []
+
+  const compactDefinitionPrimary = definitionProducts
+    .filter((command) => ['products', 'tabular', 'stock-taking'].includes(command.id))
+    .filter((command) => canUse(command.permission, command.entitlement))
+
+  const compactDefinitionMasters = definitionProducts
+    .filter((command) => ['categories', 'subcategories', 'brands', 'units', 'sale-schemes'].includes(command.id))
+    .filter((command) => canUse(command.permission, command.entitlement))
+    .map((command) => ({
+      label: command.label,
+      status: command.status,
+      path: command.path ?? WORKSPACE_MODULES.find((row) => row.key === command.moduleKey)?.path,
+    }))
+    .filter((item): item is { label: string; status: 'ready' | 'shell' | 'later'; path: string } => Boolean(item.path))
+
+  const compactDefinitionParties = RIBBON_GROUPS.definition
+    .find((group) => group.id === 'parties')
+    ?.commands
+    .find((command) => canUse(command.permission, command.entitlement))
+
+  const compactDefinitionLists = RIBBON_GROUPS.definition
+    .find((group) => group.id === 'later-catalog')
+    ?.commands
+    .filter((command) => canUse(command.permission, command.entitlement))
+    .map((command) => ({
+      label: command.label,
+      status: command.status,
+      path: command.path ?? WORKSPACE_MODULES.find((row) => row.key === command.moduleKey)?.path,
+    }))
+    .filter((item): item is { label: string; status: 'ready' | 'shell' | 'later'; path: string } => Boolean(item.path)) ?? []
 
   const compactSalesMenu = RIBBON_GROUPS['daily-entries']
     .find((group) => group.id === 'sales')
@@ -103,6 +139,73 @@ export function Ribbon({ onCalculator, onSoftwareOptions, onRecalculateStock, on
         })}
       </div>
       <div className="ribbon-body" role="tabpanel">
+        {ribbonTab === 'definition' ? (
+          <div className="ribbon-definition-compact" aria-label="Compact definition navigation">
+            <RibbonGroup caption="Definitions">
+              {compactDefinitionPrimary.map((command) => (
+                <RibbonCommand
+                  key={command.id}
+                  {...command}
+                  active={Boolean(command.moduleKey && command.moduleKey === activeModule.key)}
+                  onNavigate={openRibbonPath}
+                  onClick={() => {
+                    const path =
+                      command.path ??
+                      WORKSPACE_MODULES.find((module) => module.key === command.moduleKey)?.path
+                    if (path) openRibbonPath(path)
+                  }}
+                />
+              ))}
+
+              {compactDefinitionMasters.length ? (
+                <RibbonCommand
+                  id="definition-masters-compact"
+                  label="Masters"
+                  icon={FolderTree}
+                  status="ready"
+                  tone="blue"
+                  hasMenu
+                  menu={compactDefinitionMasters}
+                  active={['categories', 'subcategories', 'brands', 'units', 'sale-schemes'].includes(activeModule.key)}
+                  onNavigate={openRibbonPath}
+                />
+              ) : null}
+            </RibbonGroup>
+
+            {compactDefinitionParties ? (
+              <RibbonGroup caption="Parties">
+                <RibbonCommand
+                  {...compactDefinitionParties}
+                  active={compactDefinitionParties.moduleKey === activeModule.key}
+                  onNavigate={openRibbonPath}
+                  onClick={() => {
+                    const path =
+                      compactDefinitionParties.path ??
+                      WORKSPACE_MODULES.find((module) => module.key === compactDefinitionParties.moduleKey)?.path
+                    if (path) openRibbonPath(path)
+                  }}
+                />
+              </RibbonGroup>
+            ) : null}
+
+            {compactDefinitionLists.length ? (
+              <RibbonGroup caption="Printing / Lists">
+                <RibbonCommand
+                  id="definition-lists-compact"
+                  label="Lists"
+                  icon={List}
+                  status="ready"
+                  tone="teal"
+                  hasMenu
+                  menu={compactDefinitionLists}
+                  active={['opening-stock', 'barcode-printing', 'price-lists'].includes(activeModule.key)}
+                  onNavigate={openRibbonPath}
+                />
+              </RibbonGroup>
+            ) : null}
+          </div>
+        ) : null}
+
         {ribbonTab === 'daily-entries' ? (
           <div className="ribbon-daily-compact" aria-label="Compact daily entries navigation">
             {compactSalesMenu.length ? (
