@@ -1,4 +1,4 @@
-export type LocalEntityName = 'products' | 'suppliers'
+export type LocalEntityName = 'products' | 'suppliers' | 'parties'
 
 type LocalRecord<T = unknown> = {
   key: string
