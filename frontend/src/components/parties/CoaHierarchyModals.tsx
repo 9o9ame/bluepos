@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   ChevronFirst,
   ChevronLast,
@@ -334,7 +335,7 @@ export function CoaHierarchyModals({
     }
   }
 
-  return (
+  return createPortal(
     <>
       <div className="coa-modal-backdrop" style={{ zIndex: UI_LAYER.nestedModal }}>
         <div
@@ -743,6 +744,7 @@ export function CoaHierarchyModals({
           </div>
         </div>
       ) : null}
-    </>
+    </>,
+    document.body,
   )
 }
