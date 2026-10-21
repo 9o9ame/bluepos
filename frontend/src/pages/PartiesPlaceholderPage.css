@@ -1038,13 +1038,13 @@
 .parties-vca-ledger-group-chip:not(:first-child)::before {
   content: '';
   position: absolute;
-  left: -8px;
-  top: -8px;
-  width: 8px;
-  height: 24px;
+  left: -52px;
+  top: 14px;
+  width: 52px;
+  height: 6px;
   border-left: 2px solid var(--ui-accent);
   border-bottom: 2px solid var(--ui-accent);
-  border-bottom-left-radius: 8px;
+  border-bottom-left-radius: 7px;
   pointer-events: none;
   opacity: 0.8;
 }
