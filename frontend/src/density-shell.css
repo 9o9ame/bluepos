@@ -122,6 +122,16 @@ body {
   line-height: 1.1 !important;
 }
 
+/* Daily Entries: keep the long ledger label inside its command tile. */
+.ribbon-command-ledger {
+  min-width: 150px !important;
+  max-width: 180px !important;
+}
+
+.ribbon-command-ledger .ribbon-command-label {
+  white-space: nowrap !important;
+}
+
 .ribbon-icon-tile {
   width: var(--ui-ribbon-icon-tile) !important;
   height: var(--ui-ribbon-icon-tile) !important;
