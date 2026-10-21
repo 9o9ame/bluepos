@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import {
   BookOpen,
   FileSpreadsheet,
@@ -1068,7 +1068,7 @@ export function PartiesPlaceholderPage({
     return value in LEDGER_GROUP_LABELS
   }
 
-  function ledgerDragKey(event: React.DragEvent<HTMLElement>): LedgerGroupKey | null {
+  function ledgerDragKey(event: DragEvent<HTMLElement>): LedgerGroupKey | null {
     const raw = event.dataTransfer.getData('text/plain').replace(/^ledger-column:/, '')
     return isLedgerGroupKey(raw) ? raw : null
   }
