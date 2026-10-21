@@ -26,7 +26,7 @@ class PartyProfileTest extends TestCase
         $response = $this->postJson('/api/party-profiles', [
             'party_types' => ['vendor', 'customer', 'account', 'salesman'],
             'primary_type' => 'customer',
-            'code' => 'MULTI-001',
+            'code' => 'CLIENT-SUPPLIED-CODE',
             'name' => 'Multi Role Party',
             'vendor_account_type_ulid' => $payable,
             'customer_account_type_ulid' => $receivable,
@@ -63,13 +63,13 @@ class PartyProfileTest extends TestCase
         $this->assertDatabaseHas('accounts', [
             'tenant_id' => $profile->tenant_id,
             'supplier_id' => $supplier->id,
-            'code' => 'MULTI-001-V',
+            'code' => $generatedCode.'-V',
             'is_active' => true,
         ]);
         $this->assertDatabaseHas('accounts', [
             'tenant_id' => $profile->tenant_id,
             'customer_id' => $customer->id,
-            'code' => 'MULTI-001-C',
+            'code' => $generatedCode.'-C',
             'is_active' => true,
         ]);
         $this->assertDatabaseHas('accounts', [
@@ -77,7 +77,7 @@ class PartyProfileTest extends TestCase
             'party_profile_id' => $profile->id,
             'supplier_id' => null,
             'customer_id' => null,
-            'code' => 'MULTI-001-A',
+            'code' => $generatedCode.'-A',
             'is_active' => true,
         ]);
 
@@ -108,20 +108,20 @@ class PartyProfileTest extends TestCase
         $created = $this->postJson('/api/party-profiles', [
             'party_types' => ['vendor', 'customer', 'salesman'],
             'primary_type' => 'vendor',
-            'code' => 'MULTI-002',
             'name' => 'Role Removal Party',
             'vendor_account_type_ulid' => $payable,
             'customer_account_type_ulid' => $receivable,
         ])->assertCreated();
 
         $identityUlid = (string) $created->json('identity_ulid');
+        $generatedCode = (string) $created->json('code');
+        $this->assertMatchesRegularExpression('/^PTY-\d{6}$/', $generatedCode);
         $vendorUlid = (string) $created->json('vendor_ulid');
         $customerUlid = (string) $created->json('customer_ulid');
 
         $updated = $this->patchJson('/api/party-profiles/'.$identityUlid, [
             'party_types' => ['customer', 'salesman'],
             'primary_type' => 'customer',
-            'code' => 'MULTI-002',
             'name' => 'Role Removal Party',
             'customer_account_type_ulid' => $receivable,
         ])->assertOk();
@@ -135,12 +135,12 @@ class PartyProfileTest extends TestCase
 
         $this->assertDatabaseHas('accounts', [
             'customer_id' => $customer->id,
-            'code' => 'MULTI-002',
+            'code' => $generatedCode,
             'is_active' => true,
         ]);
         $this->assertDatabaseHas('accounts', [
             'supplier_id' => $vendor->id,
-            'code' => 'MULTI-002-V',
+            'code' => $generatedCode.'-V',
             'is_active' => false,
         ]);
 
@@ -160,11 +160,11 @@ class PartyProfileTest extends TestCase
         $created = $this->postJson('/api/party-profiles', [
             'party_types' => ['salesman'],
             'primary_type' => 'salesman',
-            'code' => 'SM-ONLY',
             'name' => 'Tenant A Salesman',
         ])->assertCreated();
 
         $identityUlid = (string) $created->json('identity_ulid');
+        $this->assertMatchesRegularExpression('/^SAL-\d{6}$/', (string) $created->json('code'));
 
         $this->postJson('/api/auth/logout')->assertOk();
         $this->signInOwner('party-profile-tenant-b')->assertOk();
@@ -173,7 +173,6 @@ class PartyProfileTest extends TestCase
         $this->patchJson('/api/party-profiles/'.$identityUlid, [
             'party_types' => ['salesman'],
             'primary_type' => 'salesman',
-            'code' => 'SM-ONLY',
             'name' => 'Should Not Update',
         ])->assertNotFound();
     }
