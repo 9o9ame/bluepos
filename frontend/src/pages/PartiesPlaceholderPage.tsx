@@ -72,6 +72,10 @@ import './PartiesPlaceholderPage.modern.css'
 type DetailTab = 'contact' | 'bank' | 'others' | 'formulas' | 'opening'
 type ViewTab = 'entry' | 'ledger' | 'bulk' | 'coa'
 type PartyType = 'VENDORS' | 'CUSTOMERS' | 'ACCOUNTS' | 'SALES MAN' | 'ALL'
+type LedgerGroupKey = 'date' | 'doc'
+type LedgerRenderItem =
+  | { kind: 'group'; key: string; label: string; depth: number }
+  | { kind: 'row'; row: PartyLedger['rows'][number] }
 
 type PartyListRow = {
   key: string
@@ -401,6 +405,11 @@ export function PartiesPlaceholderPage({
   const [ledger, setLedger] = useState<PartyLedger | null>(null)
   const [ledgerLoading, setLedgerLoading] = useState(false)
   const [ledgerPage, setLedgerPage] = useState(1)
+  const [ledgerSearch, setLedgerSearch] = useState('')
+  const [ledgerDateFrom, setLedgerDateFrom] = useState('')
+  const [ledgerDateTo, setLedgerDateTo] = useState('')
+  const [ledgerGroupKeys, setLedgerGroupKeys] = useState<LedgerGroupKey[]>([])
+  const [ledgerFilterOpen, setLedgerFilterOpen] = useState(false)
   const [ensureBusy, setEnsureBusy] = useState(false)
   const baselineRef = useRef(formSnapshot(emptyForm(initialPartyFilter)))
 
@@ -443,6 +452,65 @@ export function PartiesPlaceholderPage({
       ),
     )
   }, [form.name, rows, searchQuery, selectedKey])
+
+  const ledgerVisibleRows = useMemo(() => {
+    const query = ledgerSearch.trim().toLocaleLowerCase()
+    const source = ledger?.rows ?? []
+    if (!query) return source
+
+    return source.filter((row) =>
+      [
+        row.trans_no,
+        row.date,
+        row.doc,
+        row.remarks ?? '',
+        row.debit,
+        row.credit,
+        row.balance,
+      ].some((value) => String(value).toLocaleLowerCase().includes(query)),
+    )
+  }, [ledger?.rows, ledgerSearch])
+
+  const ledgerRenderItems = useMemo<LedgerRenderItem[]>(() => {
+    if (ledgerGroupKeys.length === 0) {
+      return ledgerVisibleRows.map((row) => ({ kind: 'row', row }))
+    }
+
+    const items: LedgerRenderItem[] = []
+    const groupRows = (
+      source: PartyLedger['rows'],
+      depth: number,
+      path: string[],
+    ) => {
+      const groupKey = ledgerGroupKeys[depth]
+      if (!groupKey) {
+        for (const row of source) items.push({ kind: 'row', row })
+        return
+      }
+
+      const buckets = new Map<string, PartyLedger['rows']>()
+      for (const row of source) {
+        const value = groupKey === 'date' ? row.date : row.doc
+        const bucket = buckets.get(value) ?? []
+        bucket.push(row)
+        buckets.set(value, bucket)
+      }
+
+      for (const [value, bucket] of buckets) {
+        const nextPath = [...path, `${groupKey}:${value}`]
+        items.push({
+          kind: 'group',
+          key: nextPath.join('|'),
+          label: `${groupKey === 'date' ? 'Date' : 'DOC'}: ${value} (${bucket.length})`,
+          depth,
+        })
+        groupRows(bucket, depth + 1, nextPath)
+      }
+    }
+
+    groupRows(ledgerVisibleRows, 0, [])
+    return items
+  }, [ledgerGroupKeys, ledgerVisibleRows])
 
   const selectedIndex = rows.findIndex((row) => row.key === selectedKey)
   const dirty =
@@ -589,7 +657,16 @@ export function PartiesPlaceholderPage({
     }
     void loadLedger(financial.ulid, financial.type, ledgerPage)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewTab, form.ulid, form.vendorUlid, form.customerUlid, form.type, ledgerPage])
+  }, [
+    viewTab,
+    form.ulid,
+    form.vendorUlid,
+    form.customerUlid,
+    form.type,
+    ledgerPage,
+    ledgerDateFrom,
+    ledgerDateTo,
+  ])
 
   useEffect(() => {
     if (viewTab !== 'bulk') return
@@ -697,7 +774,10 @@ export function PartiesPlaceholderPage({
   async function loadLedger(partyUlid: string, partyType: PartyTypeApi, page: number) {
     setLedgerLoading(true)
     try {
-      const data = await fetchPartyLedger(partyUlid, partyType, page)
+      const data = await fetchPartyLedger(partyUlid, partyType, page, {
+        date_from: ledgerDateFrom || undefined,
+        date_to: ledgerDateTo || undefined,
+      })
       setLedger(data)
     } catch (err) {
       setLedger(null)
@@ -914,6 +994,26 @@ export function PartiesPlaceholderPage({
       setImageRemoveRequested(true)
     }
     if (imageInputRef.current) imageInputRef.current.value = ''
+  }
+
+  function applyLedgerSingleDate(value: string) {
+    setLedgerPage(1)
+    setLedgerDateFrom(value)
+    setLedgerDateTo(value)
+  }
+
+  function clearLedgerFilters() {
+    setLedgerPage(1)
+    setLedgerSearch('')
+    setLedgerDateFrom('')
+    setLedgerDateTo('')
+    setLedgerGroupKeys([])
+  }
+
+  function addLedgerGroup(key: LedgerGroupKey) {
+    setLedgerGroupKeys((current) =>
+      current.includes(key) ? current : [...current, key],
+    )
   }
 
   function startNew(filter: PartyType = listFilter) {
@@ -2156,17 +2256,93 @@ export function PartiesPlaceholderPage({
               Create Necessary A/Cs
             </button>
           </div>
+
+          <div
+            className="parties-vca-ledger-group-zone"
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault()
+              const key = event.dataTransfer.getData('text/plain')
+              if (key === 'date' || key === 'doc') addLedgerGroup(key)
+            }}
+          >
+            <span>Drag Date or DOC here to group</span>
+            {ledgerGroupKeys.map((key) => (
+              <button
+                type="button"
+                key={key}
+                className="parties-vca-ledger-group-chip"
+                onClick={() => setLedgerGroupKeys((current) => current.filter((item) => item !== key))}
+                title="Remove group"
+              >
+                {key === 'date' ? 'Date' : 'DOC'} ×
+              </button>
+            ))}
+          </div>
+
+          <div className="parties-vca-ledger-search-row">
+            <input
+              type="search"
+              value={ledgerSearch}
+              placeholder="Find in ledger"
+              aria-label="Find in ledger"
+              onChange={(event) => setLedgerSearch(event.target.value)}
+            />
+            <button type="button" className="parties-vca-shell-btn" onClick={() => setLedgerFilterOpen(true)}>
+              Edit Filter
+            </button>
+            <button type="button" className="parties-vca-shell-btn" onClick={clearLedgerFilters}>
+              Clear
+            </button>
+          </div>
+
           <div className="parties-vca-shell-grid-wrap">
             <table className="parties-vca-shell-grid parties-vca-ledger-grid">
               <thead>
                 <tr>
                   <th>Trans#</th>
-                  <th>Date</th>
-                  <th>DOC</th>
+                  <th
+                    draggable
+                    onDragStart={(event) => event.dataTransfer.setData('text/plain', 'date')}
+                    title="Drag to grouping area"
+                  >
+                    Date
+                  </th>
+                  <th
+                    draggable
+                    onDragStart={(event) => event.dataTransfer.setData('text/plain', 'doc')}
+                    title="Drag to grouping area"
+                  >
+                    DOC
+                  </th>
                   <th>Remarks</th>
                   <th className="is-num">Debit</th>
                   <th className="is-num">Credit</th>
                   <th className="is-num">Balance</th>
+                </tr>
+                <tr className="parties-vca-ledger-filter-row">
+                  <th />
+                  <th>
+                    <input
+                      type="date"
+                      value={ledgerDateFrom === ledgerDateTo ? ledgerDateFrom : ''}
+                      aria-label="Filter ledger by date"
+                      onChange={(event) => applyLedgerSingleDate(event.target.value)}
+                    />
+                  </th>
+                  <th />
+                  <th>
+                    <input
+                      type="search"
+                      value={ledgerSearch}
+                      aria-label="Filter ledger remarks"
+                      placeholder="Filter…"
+                      onChange={(event) => setLedgerSearch(event.target.value)}
+                    />
+                  </th>
+                  <th />
+                  <th />
+                  <th />
                 </tr>
               </thead>
               <tbody>
@@ -2188,26 +2364,55 @@ export function PartiesPlaceholderPage({
                       No posted ledger entries.
                     </td>
                   </tr>
+                ) : ledgerRenderItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="parties-vca-empty">
+                      No ledger rows match the current search.
+                    </td>
+                  </tr>
                 ) : (
-                  ledger.rows.map((row) => (
-                    <tr key={row.line_ulid}>
-                      <td>{row.trans_no}</td>
-                      <td>{row.date}</td>
-                      <td>{row.doc}</td>
-                      <td>{row.remarks || '—'}</td>
-                      <td className="is-num">{row.debit}</td>
-                      <td className="is-num">{row.credit}</td>
-                      <td className="is-num">{row.balance}</td>
-                    </tr>
-                  ))
+                  ledgerRenderItems.map((item) =>
+                    item.kind === 'group' ? (
+                      <tr key={`group:${item.key}`} className="parties-vca-ledger-group-row">
+                        <td colSpan={7} style={{ paddingLeft: `${8 + item.depth * 16}px` }}>
+                          {item.label}
+                        </td>
+                      </tr>
+                    ) : (
+                      <tr key={item.row.line_ulid}>
+                        <td>{item.row.trans_no}</td>
+                        <td>{item.row.date}</td>
+                        <td>{item.row.doc}</td>
+                        <td>{item.row.remarks || '—'}</td>
+                        <td className="is-num">{item.row.debit}</td>
+                        <td className="is-num">{item.row.credit}</td>
+                        <td className="is-num">{item.row.balance}</td>
+                      </tr>
+                    ),
+                  )
                 )}
               </tbody>
             </table>
           </div>
+
+          <div className="parties-vca-ledger-filter-summary">
+            <span>
+              {ledgerDateFrom
+                ? ledgerDateFrom === ledgerDateTo
+                  ? `Date = ${ledgerDateFrom}`
+                  : `Date ${ledgerDateFrom || '…'} to ${ledgerDateTo || '…'}`
+                : 'No date filter'}
+            </span>
+            {ledgerSearch ? <span>Find: “{ledgerSearch}”</span> : null}
+            {ledgerGroupKeys.length > 0 ? (
+              <span>Grouped by: {ledgerGroupKeys.map((key) => key === 'date' ? 'Date' : 'DOC').join(' → ')}</span>
+            ) : null}
+          </div>
+
           <div className="parties-vca-shell-foot">
             <span>
               {ledger
-                ? `Record ${ledger.rows.length} of ${ledger.pagination.total}`
+                ? `Record ${ledgerVisibleRows.length} of ${ledger.pagination.total}`
                 : 'Record 0 of 0'}
               {ledger && ledger.pagination.last_page > 1
                 ? ` — Page ${ledger.pagination.page}/${ledger.pagination.last_page}`
@@ -2240,6 +2445,53 @@ export function PartiesPlaceholderPage({
               </span>
             ) : null}
           </div>
+
+          {ledgerFilterOpen ? (
+            <div className="parties-vca-ledger-filter-backdrop" role="presentation">
+              <div className="parties-vca-ledger-filter-dialog" role="dialog" aria-modal="true" aria-label="Ledger Filter Editor">
+                <div className="parties-vca-ledger-filter-title">
+                  <strong>Filter Editor</strong>
+                  <button type="button" onClick={() => setLedgerFilterOpen(false)}>×</button>
+                </div>
+                <div className="parties-vca-ledger-filter-body">
+                  <label>
+                    <span>From date</span>
+                    <input
+                      type="date"
+                      value={ledgerDateFrom}
+                      onChange={(event) => {
+                        setLedgerPage(1)
+                        setLedgerDateFrom(event.target.value)
+                      }}
+                    />
+                  </label>
+                  <label>
+                    <span>To date</span>
+                    <input
+                      type="date"
+                      value={ledgerDateTo}
+                      onChange={(event) => {
+                        setLedgerPage(1)
+                        setLedgerDateTo(event.target.value)
+                      }}
+                    />
+                  </label>
+                  <label>
+                    <span>Find text</span>
+                    <input
+                      type="search"
+                      value={ledgerSearch}
+                      onChange={(event) => setLedgerSearch(event.target.value)}
+                    />
+                  </label>
+                </div>
+                <div className="parties-vca-ledger-filter-actions">
+                  <button type="button" className="parties-vca-shell-btn" onClick={clearLedgerFilters}>Clear</button>
+                  <button type="button" className="parties-vca-shell-btn" onClick={() => setLedgerFilterOpen(false)}>Apply</button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
