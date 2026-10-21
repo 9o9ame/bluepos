@@ -132,6 +132,16 @@ body {
   white-space: nowrap !important;
 }
 
+/* Definition laptop compact ribbon: keep Parties label inside the command tile. */
+.ribbon-command-parties {
+  min-width: 168px !important;
+  max-width: 196px !important;
+}
+
+.ribbon-command-parties .ribbon-command-label {
+  white-space: nowrap !important;
+}
+
 .ribbon-icon-tile {
   width: var(--ui-ribbon-icon-tile) !important;
   height: var(--ui-ribbon-icon-tile) !important;
