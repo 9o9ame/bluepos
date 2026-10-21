@@ -104,6 +104,7 @@ class SaleHoldResource extends JsonResource
             'available_base_stock' => $stock?->quantity ?? '0.000000',
             'retail_price' => $retail?->amount,
             'wholesale_price' => $wholesale?->amount,
+            'unit_price_override' => $item->unit_price_override,
             'discount_percent' => $item->discount_percent,
             'discount_amount' => $item->discount_amount,
             'tax_percent' => $product->is_taxable ? $product->tax_percent : '0.00000000',
