@@ -2393,7 +2393,7 @@ export function PartiesPlaceholderPage({
                     key={key}
                     draggable
                     className="parties-vca-ledger-group-chip"
-                    style={{ marginLeft: `${index * 36}px` }}
+                    style={{ marginLeft: `${index * 96}px` }}
                     onDragStart={(event) => {
                       event.dataTransfer.effectAllowed = 'move'
                       event.dataTransfer.setData('text/plain', `ledger-column:${key}`)
