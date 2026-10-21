@@ -2,6 +2,7 @@
 
 namespace App\Actions\Sales;
 
+use App\Authz\PermissionService;
 use App\Enums\SaleLineKind;
 use App\Exceptions\ApiException;
 use App\Models\Customer;
@@ -21,6 +22,7 @@ class StoreSaleHoldAction
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly AuditLogger $audit,
+        private readonly PermissionService $permissions,
     ) {}
 
     /**
@@ -84,6 +86,7 @@ class StoreSaleHoldAction
                     'line_kind' => $line['line_kind'],
                     'barcode' => $line['barcode'],
                     'quantity' => $line['quantity'],
+                    'unit_price_override' => $line['unit_price_override'],
                     'discount_percent' => $line['discount_percent'],
                     'discount_amount' => $line['discount_amount'],
                     'notes' => $line['notes'],
@@ -233,8 +236,30 @@ class StoreSaleHoldAction
 
             $discountPercent = bcadd((string) ($raw['discount_percent'] ?? '0'), '0', 8);
             $discountAmount = bcadd((string) ($raw['discount_amount'] ?? '0'), '0', 4);
+            $overrideRaw = trim((string) ($raw['unit_price_override'] ?? ''));
+            $unitPriceOverride = null;
+
+            if ($kind === SaleLineKind::Sale && $overrideRaw !== '') {
+                if (! $this->permissions->can('sales.override_price')) {
+                    throw new ApiException(
+                        'FORBIDDEN',
+                        'You do not have permission to override sale prices.',
+                        403,
+                    );
+                }
+
+                if (! preg_match('/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/', $overrideRaw)) {
+                    throw ValidationException::withMessages([
+                        "lines.$index.unit_price_override" =>
+                            'Amount must be a valid non-negative decimal with up to 4 places.',
+                    ]);
+                }
+
+                $unitPriceOverride = bcadd($overrideRaw, '0', 4);
+            }
 
             if ($kind !== SaleLineKind::Sale) {
+                $unitPriceOverride = null;
                 $discountPercent = '0.00000000';
                 $discountAmount = '0.0000';
             } elseif (
@@ -253,6 +278,7 @@ class StoreSaleHoldAction
                 'line_kind' => $kind->value,
                 'barcode' => $barcode !== '' ? $barcode : null,
                 'quantity' => bcadd((string) $raw['quantity'], '0', 6),
+                'unit_price_override' => $unitPriceOverride,
                 'discount_percent' => $discountPercent,
                 'discount_amount' => $discountAmount,
                 'notes' => $raw['notes'] ?? null,
