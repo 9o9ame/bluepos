@@ -1038,30 +1038,15 @@
 .parties-vca-ledger-group-chip:not(:first-child)::before {
   content: '';
   position: absolute;
-  left: -48px;
+  left: -8px;
   top: -8px;
-  width: 48px;
+  width: 8px;
   height: 24px;
   border-left: 2px solid var(--ui-accent);
   border-bottom: 2px solid var(--ui-accent);
   border-bottom-left-radius: 8px;
   pointer-events: none;
   opacity: 0.8;
-}
-
-.parties-vca-ledger-group-chip::after {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 50%;
-  width: 10px;
-  border-top: 2px solid var(--ui-accent);
-  pointer-events: none;
-  opacity: 0.8;
-}
-
-.parties-vca-ledger-group-chip:first-child::after {
-  display: none;
 }
 
 .parties-vca-ledger-find {
