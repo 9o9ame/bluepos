@@ -2348,8 +2348,8 @@ export function PartiesPlaceholderPage({
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => {
                 event.preventDefault()
-                const key = event.dataTransfer.getData('text/plain')
-                if (isLedgerGroupKey(key)) addLedgerGroup(key)
+                const key = ledgerDragKey(event)
+                if (key) addLedgerGroup(key)
               }}
             >
               <span>Drag a column header here to group</span>
@@ -2361,7 +2361,10 @@ export function PartiesPlaceholderPage({
                     draggable
                     className="parties-vca-ledger-group-chip"
                     style={{ marginLeft: `${index * 18}px` }}
-                    onDragStart={(event) => event.dataTransfer.setData('text/plain', `ledger-column:${key}`)}
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = 'move'
+                      event.dataTransfer.setData('text/plain', `ledger-column:${key}`)
+                    }}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={(event) => {
                       event.preventDefault()
@@ -2410,7 +2413,10 @@ export function PartiesPlaceholderPage({
                       onDragStart={
                         key === 'balance'
                           ? undefined
-                          : (event) => event.dataTransfer.setData('text/plain', `ledger-column:${key}`)
+                          : (event) => {
+                              event.dataTransfer.effectAllowed = 'move'
+                              event.dataTransfer.setData('text/plain', `ledger-column:${key}`)
+                            }
                       }
                       onDragOver={(event) => event.preventDefault()}
                       onDrop={(event) => {
