@@ -199,7 +199,7 @@ class PartyProfileTest extends TestCase
             ->assertJsonPath('error.fields.name.0', 'A party with this name already exists.');
 
         $this->postJson('/api/auth/logout')->assertOk();
-        $this->signInOwner('party-profile-name-unique-other-tenant')->assertOk();
+        $this->signInOwner('party-name-unique-b')->assertOk();
 
         $this->postJson('/api/party-profiles', [
             'party_types' => ['salesman'],
