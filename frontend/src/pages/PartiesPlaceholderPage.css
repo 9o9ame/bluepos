@@ -482,8 +482,8 @@
 }
 
 .parties-vca-photo-icon {
-  width: 56px;
-  height: 48px;
+  width: 42px;
+  height: 38px;
   display: grid;
   place-items: center;
   border-radius: 10px;
@@ -494,8 +494,8 @@
 
 .parties-vca-photo-icon svg {
   display: block;
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
 }
 
 .parties-vca-mini-grid-wrap {
