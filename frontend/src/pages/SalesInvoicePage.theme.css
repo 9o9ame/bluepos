@@ -4604,3 +4604,81 @@ html[data-animations='off'] .sales-reference-screen * {
   max-width: calc(100% - 7px) !important;
   min-width: 0 !important;
 }
+
+
+/* ---------- SALES INVOICE OPERATIONAL COLUMN CLARITY ---------- */
+/* Visual-only refinement. Frozen geometry and workflow remain unchanged. */
+.sales-reference-screen .sales-reference-grid th.col-product {
+  background: var(--ui-col-identity) !important;
+}
+.sales-reference-screen .sales-reference-grid th.col-stock {
+  background: var(--ui-col-stock) !important;
+}
+.sales-reference-screen .sales-reference-grid th.col-qty {
+  background: var(--ui-col-quantity) !important;
+}
+.sales-reference-screen .sales-reference-grid th.col-price,
+.sales-reference-screen .sales-reference-grid th.col-disc,
+.sales-reference-screen .sales-reference-grid th.col-discrs {
+  background: var(--ui-col-price) !important;
+}
+.sales-reference-screen .sales-reference-grid th.col-amt,
+.sales-reference-screen .sales-reference-grid th.col-net {
+  background: var(--ui-col-amount) !important;
+}
+.sales-reference-screen .sales-reference-grid th.col-cost-rate,
+.sales-reference-screen .sales-reference-grid th.col-cost-amt {
+  background: var(--ui-col-cost) !important;
+}
+
+.sales-reference-screen .sales-reference-grid tbody tr:not(.is-active-entry) td.col-product {
+  background: var(--ui-col-identity) !important;
+}
+.sales-reference-screen .sales-reference-grid tbody tr:not(.is-active-entry) td.col-stock {
+  background: var(--ui-col-stock) !important;
+}
+.sales-reference-screen .sales-reference-grid tbody tr:not(.is-active-entry) td.col-qty {
+  background: var(--ui-col-quantity) !important;
+}
+.sales-reference-screen .sales-reference-grid tbody tr:not(.is-active-entry) td.col-price,
+.sales-reference-screen .sales-reference-grid tbody tr:not(.is-active-entry) td.col-disc,
+.sales-reference-screen .sales-reference-grid tbody tr:not(.is-active-entry) td.col-discrs {
+  background: var(--ui-col-price) !important;
+}
+.sales-reference-screen .sales-reference-grid tbody tr:not(.is-active-entry) td.col-amt,
+.sales-reference-screen .sales-reference-grid tbody tr:not(.is-active-entry) td.col-net {
+  background: var(--ui-col-amount) !important;
+}
+.sales-reference-screen .sales-reference-grid tbody tr:not(.is-active-entry) td.col-cost-rate,
+.sales-reference-screen .sales-reference-grid tbody tr:not(.is-active-entry) td.col-cost-amt {
+  background: var(--ui-col-cost) !important;
+}
+
+.sales-reference-screen .sales-reference-grid tbody tr:hover td {
+  background: var(--ui-row-hover) !important;
+}
+
+/* Product lookup mirrors the same scan pattern as the entry grid. */
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head > span:nth-child(2),
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(2) {
+  background: var(--ui-col-identity) !important;
+}
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head > span:nth-child(3),
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(3) {
+  background: var(--ui-col-stock) !important;
+}
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head > span:nth-child(4),
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(4),
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head > span:nth-child(5),
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(5) {
+  background: var(--ui-col-price) !important;
+}
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head > span:nth-child(6),
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(6) {
+  background: var(--ui-col-cost) !important;
+}
+
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(3) {
+  color: color-mix(in srgb, var(--ui-success) 82%, var(--ui-text)) !important;
+  font-weight: 700 !important;
+}
