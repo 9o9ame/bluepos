@@ -333,6 +333,13 @@
   min-height: 42px;
 }
 
+.parties-vca-name-error {
+  margin: 3px 0 0 48px;
+  color: var(--ui-danger, #b42323);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
 .parties-vca input[aria-invalid='true'] {
   border-color: var(--ui-danger, #b42323);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-danger, #b42323) 18%, transparent);
