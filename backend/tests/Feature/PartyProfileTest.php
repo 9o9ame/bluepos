@@ -195,7 +195,8 @@ class PartyProfileTest extends TestCase
             'primary_type' => 'salesman',
             'name' => '  alpha   traders  ',
         ])->assertStatus(422)
-            ->assertJsonValidationErrors(['name']);
+            ->assertJsonPath('error.key', 'VALIDATION_ERROR')
+            ->assertJsonPath('error.fields.name.0', 'A party with this name already exists.');
 
         $this->postJson('/api/auth/logout')->assertOk();
         $this->signInOwner('party-profile-name-unique-other-tenant')->assertOk();
