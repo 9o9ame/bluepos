@@ -124,7 +124,7 @@ const SYMBOLOGY: Record<BarcodeType, SymbologyDef> = {
   Code11: {
     bcid: 'code11',
     validate: (value) =>
-      /^[0-9\-]+$/.test(value)
+      /^[0-9-]+$/.test(value)
         ? null
         : 'Code 11 must contain only digits and dashes.',
   },
