@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import {
   BookOpen,
-  ChevronDown,
   ChevronRight,
   FileSpreadsheet,
   FileText,
@@ -441,7 +440,7 @@ export function PartiesPlaceholderPage({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [coaShowGrouped, setCoaShowGrouped] = useState(true)
-  const [coaFlatRows, setCoaFlatRows] = useState<CoaFlatRow[]>([])
+  const [, setCoaFlatRows] = useState<CoaFlatRow[]>([])
   const [coaGroupedRows, setCoaGroupedRows] = useState<CoaGroupedNode[]>([])
   const [coaChartLoading, setCoaChartLoading] = useState(false)
   const [expandedCoaMain, setExpandedCoaMain] = useState<Record<string, boolean>>({})
