@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Authz\PermissionService;
 use App\Enums\PriceType;
 use App\Models\Product;
 use App\Models\ProductBarcode;
+use App\Models\Permission;
 use App\Models\ProductPrice;
 use App\Models\StockBalance;
 use App\Models\Unit;
+use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -140,6 +143,99 @@ class SalePricingAndUnitTest extends TestCase
             ->assertJsonPath('error.key', 'VALIDATION_ERROR');
 
         $this->assertSame('20.000000', $this->stockFor($product));
+    }
+
+    public function test_authorized_user_can_override_unit_price_for_one_sale_only(): void
+    {
+        $this->signInOwner('sale-price-override')->assertOk();
+
+        $product = $this->createProduct('Override Item', '100.0000');
+        $this->giveStock($product, '10');
+
+        $response = $this->postJson('/api/sales', [
+            'items' => [[
+                'product_ulid' => $product->ulid,
+                'quantity' => '2',
+                'unit_price_override' => '125.5000',
+            ]],
+        ], ['Idempotency-Key' => 'sale-price-override-a'])->assertCreated();
+
+        $response->assertJsonPath('items.0.unit_price', '125.5000');
+        $response->assertJsonPath('items.0.gross_amount', '251.0000');
+        $response->assertJsonPath('subtotal', '251.0000');
+        $response->assertJsonPath('grand_total', '251.0000');
+
+        $catalogPrice = ProductPrice::query()
+            ->where('product_id', $product->id)
+            ->where('price_type', PriceType::Retail)
+            ->value('amount');
+
+        $this->assertSame('100.0000', (string) $catalogPrice);
+    }
+
+    public function test_price_override_is_rejected_without_permission(): void
+    {
+        $this->signInOwner('sale-price-forbidden')->assertOk();
+
+        $product = $this->createProduct('Protected Price Item', '100.0000');
+        $this->giveStock($product, '10');
+
+        $permission = Permission::query()
+            ->where('key', 'sales.override_price')
+            ->firstOrFail();
+
+        $membership = app(TenantContext::class)->membership();
+
+        foreach ($membership->roles()->get() as $role) {
+            $role->permissions()->detach($permission->id);
+        }
+
+        app(PermissionService::class)->clearCache();
+
+        $this->postJson('/api/sales', [
+            'items' => [[
+                'product_ulid' => $product->ulid,
+                'quantity' => '1',
+                'unit_price_override' => '75.0000',
+            ]],
+        ], ['Idempotency-Key' => 'sale-price-forbidden-a'])
+            ->assertStatus(403)
+            ->assertJsonPath('error.key', 'FORBIDDEN');
+
+        $this->assertSame('10.000000', $this->stockFor($product));
+    }
+
+    public function test_override_is_preserved_on_hold_and_quotation(): void
+    {
+        $this->signInOwner('sale-price-preserve')->assertOk();
+
+        $product = $this->createProduct('Preserved Price Item', '100.0000');
+        $this->giveStock($product, '10');
+
+        $hold = $this->postJson('/api/sales/holds', [
+            'price_type' => 'default',
+            'lines' => [[
+                'product_ulid' => $product->ulid,
+                'line_kind' => 'sale',
+                'quantity' => '2',
+                'unit_price_override' => '90.0000',
+            ]],
+        ], ['Idempotency-Key' => 'sale-price-preserve-hold'])->assertCreated();
+
+        $hold->assertJsonPath('lines.0.unit_price_override', '90.0000');
+
+        $quotation = $this->postJson('/api/sales/quotations', [
+            'price_type' => 'default',
+            'items' => [[
+                'product_ulid' => $product->ulid,
+                'quantity' => '2',
+                'unit_price_override' => '90.0000',
+            ]],
+        ], ['Idempotency-Key' => 'sale-price-preserve-quotation'])->assertCreated();
+
+        $quotation->assertJsonPath('items.0.unit_price_override', '90.0000');
+        $quotation->assertJsonPath('items.0.unit_price', '90.0000');
+        $quotation->assertJsonPath('subtotal', '180.0000');
     }
 
     private function createProduct(string $name, string $retailPrice): Product
