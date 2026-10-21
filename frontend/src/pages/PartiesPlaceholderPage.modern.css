@@ -584,10 +584,10 @@
 }
 
 .parties-vca-action:hover,
-.parties-vca-tabs button:hover,
-.parties-vca-subtabs button:hover,
+.parties-vca-tabs button:hover:not(.is-active),
+.parties-vca-subtabs button:hover:not(.is-active),
 .parties-vca-shell-btn:hover,
-.parties-vca-account-type-btn:hover {
+.parties-vca-account-type-btn:hover:not(.is-active) {
   border-color: var(--ui-accent) !important;
   background: var(--ui-accent-soft) !important;
 }
