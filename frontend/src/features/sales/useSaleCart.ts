@@ -294,7 +294,12 @@ export function useSaleCart() {
     setLines((current) =>
       current.map((line) => {
         if (line.line_kind !== 'sale') return line
-        const updated = { ...line, unit_price: priceForLine(line, next) }
+        const updated = {
+          ...line,
+          unit_price: priceForLine(line, next),
+          unit_price_override: null,
+          amount_input: undefined,
+        }
         return syncLineDiscount(updated)
       }),
     )
@@ -343,6 +348,7 @@ export function useSaleCart() {
       retail_price: retailPrice,
       wholesale_price: wholesalePrice,
       unit_price: '0.0000',
+      unit_price_override: null,
       discount_percent: '0',
       discount_amount: '0',
       discount_source: null,
@@ -446,6 +452,50 @@ export function useSaleCart() {
     )
   }
 
+  function setUnitPrice(lineKey: string, value: string) {
+    if (value !== '' && !isValidMoneyInput(value)) return
+
+    setLines((current) =>
+      current.map((line) => {
+        if (line.line_key !== lineKey || line.line_kind !== 'sale') return line
+
+        return syncLineDiscount({
+          ...line,
+          unit_price: value,
+          unit_price_override: value === '' ? null : value,
+          amount_input: undefined,
+        })
+      }),
+    )
+  }
+
+  function setLineAmount(lineKey: string, value: string) {
+    if (value !== '' && !isValidMoneyInput(value)) return
+
+    setLines((current) =>
+      current.map((line) => {
+        if (line.line_key !== lineKey || line.line_kind !== 'sale') return line
+
+        const quantity = toNumber(line.quantity)
+        if (value === '' || quantity <= 0) {
+          return {
+            ...line,
+            amount_input: value,
+          }
+        }
+
+        const unitPrice = money4(toNumber(value) / quantity)
+
+        return syncLineDiscount({
+          ...line,
+          unit_price: unitPrice,
+          unit_price_override: unitPrice,
+          amount_input: value,
+        })
+      }),
+    )
+  }
+
   function setLineUnit(lineKey: string, unitUlid: string) {
     setLines((current) =>
       current.map((line) => {
@@ -468,6 +518,8 @@ export function useSaleCart() {
           conversion_factor: option.conversion_factor,
         }
         next.unit_price = priceForLine(next, priceType)
+        next.unit_price_override = null
+        next.amount_input = undefined
         return syncLineDiscount(next)
       }),
     )
@@ -689,9 +741,14 @@ export function useSaleCart() {
       restoredLines.map((line) => {
         if (line.line_kind !== 'sale') return line
 
+        const override = line.unit_price_override
         const updated = {
           ...line,
-          unit_price: priceForLine(line, nextPriceType),
+          unit_price:
+            override !== null && override !== undefined && override !== ''
+              ? override
+              : priceForLine(line, nextPriceType),
+          amount_input: undefined,
         }
         const source =
           line.discount_source
@@ -784,6 +841,7 @@ export function useSaleCart() {
         retail_price: retailPrice,
         wholesale_price: wholesalePrice,
         unit_price: item.line_kind === 'sale' ? item.unit_price : '0.0000',
+        unit_price_override: item.unit_price_override ?? null,
         discount_percent: item.discount_percent,
         discount_amount: item.discount_amount,
         discount_source: toNumber(item.discount_amount) > 0 ? 'amount' : null,
@@ -900,6 +958,7 @@ export function useSaleCart() {
         barcode: line.barcode || undefined,
         unit_ulid: line.unit_ulid || undefined,
         quantity: line.quantity,
+        unit_price_override: line.unit_price_override || undefined,
         discount_percent:
           line.discount_source === 'percent' && toNumber(line.discount_percent) > 0
             ? line.discount_percent
@@ -978,6 +1037,8 @@ export function useSaleCart() {
     addProduct,
     replaceProduct,
     setQuantity,
+    setUnitPrice,
+    setLineAmount,
     setLineUnit,
     setDiscountPercent,
     setDiscountAmount,
