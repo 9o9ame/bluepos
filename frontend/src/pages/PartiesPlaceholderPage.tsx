@@ -2826,7 +2826,7 @@ export function PartiesPlaceholderPage({
             />
           </div>
           <div className="parties-vca-shell-grid-wrap">
-            <table className="parties-vca-shell-grid parties-vca-coa-grid">
+            <table className={`parties-vca-shell-grid parties-vca-coa-grid ${coaShowGrouped ? 'is-grouped-columns' : 'is-account-only'}`}>
               <thead>
                 <tr>
                   {coaShowGrouped ? (
