@@ -102,6 +102,7 @@ class CreateSaleQuotationAction
                     'stock_quantity' => $line['stock_quantity'],
                     'price_type' => $line['price_type'],
                     'unit_price' => $line['unit_price'],
+                    'unit_price_override' => $line['unit_price_override'] ?? null,
                     'gross_amount' => $line['gross_amount'],
                     'discount_percent' => $line['discount_percent'],
                     'discount_amount' => $line['discount_amount'],
