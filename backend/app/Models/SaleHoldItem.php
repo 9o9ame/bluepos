@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'line_kind',
     'barcode',
     'quantity',
+    'unit_price_override',
     'discount_percent',
     'discount_amount',
     'notes',
@@ -31,6 +32,7 @@ class SaleHoldItem extends Model
         return [
             'line_kind' => SaleLineKind::class,
             'quantity' => 'decimal:6',
+            'unit_price_override' => 'decimal:4',
             'discount_percent' => 'decimal:8',
             'discount_amount' => 'decimal:4',
         ];
