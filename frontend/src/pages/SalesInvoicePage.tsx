@@ -134,6 +134,7 @@ export function SalesInvoicePage({
 
   const canSaveRoleDefault = useCan('roles.edit')
   const canCreateSale = useCan('sales.create')
+  const canOverridePrice = useCan('sales.override_price')
   const canHoldSale = useCan('sales.hold')
   const canRecallSale = useCan('sales.recall')
   const canCollectPayment = useCan('payments.create')
@@ -874,6 +875,7 @@ export function SalesInvoicePage({
             scheme_ulid: line.scheme_ulid ?? null,
             barcode: line.barcode ?? null,
             quantity: line.quantity,
+            unit_price_override: line.unit_price_override ?? null,
             discount_percent: line.discount_percent || '0',
             discount_amount: line.discount_amount || '0',
             notes: line.notes ?? null,
@@ -2154,11 +2156,52 @@ export function SalesInvoicePage({
 
                         if (col.key === 'in_stock') {
                           const available = cart.availableStock(line)
-                          return <td key={col.key} className="sales-pos-line-pending">{available === null ? '—' : Number.parseFloat(available).toFixed(3)}</td>
+                          return <td key={col.key} className="sales-pos-line-pending col-stock">{available === null ? '—' : Number.parseFloat(available).toFixed(3)}</td>
                         }
 
-                        if (col.key === 'price') return <td key={col.key} className="sales-pos-line-pending">{line.line_kind === 'sale' ? Number.parseFloat(line.unit_price ?? '0').toFixed(2) : '0.00'}</td>
-                        if (col.key === 'amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.grossAmount}</td>
+                        if (col.key === 'price') {
+                          if (line.line_kind === 'sale' && canOverridePrice) {
+                            return (
+                              <td key={col.key} className="col-price">
+                                <input
+                                  className="sales-pos-line-qty sales-pos-price-override"
+                                  data-sale-editable="true"
+                                  data-sale-field="price"
+                                  inputMode="decimal"
+                                  value={displayEditableNumber(line.unit_price ?? '')}
+                                  onChange={(e) => cart.setUnitPrice(line.line_key, e.target.value)}
+                                  onKeyDown={handleCompletedFieldEnter}
+                                />
+                              </td>
+                            )
+                          }
+
+                          return (
+                            <td key={col.key} className="sales-pos-line-pending col-price">
+                              {line.line_kind === 'sale' ? Number.parseFloat(line.unit_price ?? '0').toFixed(2) : '0.00'}
+                            </td>
+                          )
+                        }
+
+                        if (col.key === 'amt') {
+                          if (line.line_kind === 'sale' && canOverridePrice) {
+                            return (
+                              <td key={col.key} className="col-amt">
+                                <input
+                                  className="sales-pos-line-qty sales-pos-amount-override"
+                                  data-sale-editable="true"
+                                  data-sale-field="amount"
+                                  inputMode="decimal"
+                                  value={line.amount_input ?? linePreview.grossAmount}
+                                  onChange={(e) => cart.setLineAmount(line.line_key, e.target.value)}
+                                  onKeyDown={handleCompletedFieldEnter}
+                                />
+                              </td>
+                            )
+                          }
+
+                          return <td key={col.key} className="sales-pos-line-pending col-amt">{linePreview.grossAmount}</td>
+                        }
 
                         if (col.key === 'disc_pct') {
                           if (line.line_kind === 'sale') {
@@ -2403,15 +2446,47 @@ export function SalesInvoicePage({
 
                               if (col.key === 'in_stock') {
                                 const available = cart.availableStock(line)
-                                return <td key={col.key} className="sales-pos-line-pending">{available === null ? '—' : Number.parseFloat(available).toFixed(3)}</td>
+                                return <td key={col.key} className="sales-pos-line-pending col-stock">{available === null ? '—' : Number.parseFloat(available).toFixed(3)}</td>
                               }
 
                               if (col.key === 'price') {
-                                return <td key={col.key} className="sales-pos-line-pending">{Number.parseFloat(line.unit_price ?? '0').toFixed(2)}</td>
+                                if (canOverridePrice) {
+                                  return (
+                                    <td key={col.key} className="col-price">
+                                      <input
+                                        className="sales-pos-line-qty sales-pos-price-override"
+                                        data-sale-editable="true"
+                                        data-sale-field="price"
+                                        inputMode="decimal"
+                                        value={displayEditableNumber(line.unit_price ?? '')}
+                                        onChange={(e) => cart.setUnitPrice(line.line_key, e.target.value)}
+                                        onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)}
+                                      />
+                                    </td>
+                                  )
+                                }
+
+                                return <td key={col.key} className="sales-pos-line-pending col-price">{Number.parseFloat(line.unit_price ?? '0').toFixed(2)}</td>
                               }
 
                               if (col.key === 'amt') {
-                                return <td key={col.key} className="sales-pos-line-pending">{linePreview.grossAmount}</td>
+                                if (canOverridePrice) {
+                                  return (
+                                    <td key={col.key} className="col-amt">
+                                      <input
+                                        className="sales-pos-line-qty sales-pos-amount-override"
+                                        data-sale-editable="true"
+                                        data-sale-field="amount"
+                                        inputMode="decimal"
+                                        value={line.amount_input ?? linePreview.grossAmount}
+                                        onChange={(e) => cart.setLineAmount(line.line_key, e.target.value)}
+                                        onKeyDown={(e) => handleActiveFieldEnter(e, line.line_key)}
+                                      />
+                                    </td>
+                                  )
+                                }
+
+                                return <td key={col.key} className="sales-pos-line-pending col-amt">{linePreview.grossAmount}</td>
                               }
 
                               if (col.key === 'disc_pct') {
