@@ -4667,7 +4667,7 @@ html[data-animations='off'] .sales-reference-screen * {
   background: var(--ui-col-stock) !important;
 }
 
-.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover):not(.is-stock-low) > span:nth-child(3) {
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(3) {
   background: transparent !important;
 }
 .sales-pos-product-results-grid.is-themed .sales-pos-product-grid-head > span:nth-child(4),
@@ -4681,7 +4681,7 @@ html[data-animations='off'] .sales-reference-screen * {
   background: var(--ui-col-cost) !important;
 }
 
-.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover):not(.is-stock-low) > span:nth-child(3) {
+.sales-pos-product-results-grid.is-themed .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(3) {
   color: var(--ui-text) !important;
   font-weight: 700 !important;
 }
@@ -4790,19 +4790,23 @@ html[data-animations='off'] .sales-reference-screen * {
 }
 
 
-/* Low-stock dropdown rows intentionally use one soft warning surface across
-   every column. Normal-stock rows keep their standard neutral body surface. */
-.sales-pos-product-results-grid.is-themed
-  .sales-pos-product-grid-row.is-stock-low:not(.is-selected):not(:hover) > span,
-.sales-pos-product-results-grid.is-themed
-  .sales-pos-product-grid-row.is-stock-low:not(.is-selected):not(:hover) > strong {
-  background: transparent !important;
-  color: var(--ui-text) !important;
+
+
+/* Reference-style final specificity: completed stock cell is dark green with
+   white text; completed editable Price is red even on WebKit inputs. */
+:root[data-theme='light'] .sales-reference-screen
+  .sales-reference-grid tbody tr.is-completed-entry td.col-stock.sales-pos-line-pending {
+  background: color-mix(in srgb, var(--ui-success) 82%, #174d2b) !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  font-weight: 900 !important;
 }
 
-.sales-pos-product-results-grid.is-themed
-  .sales-pos-product-grid-row.is-stock-low:not(.is-selected):not(:hover)
-  .product-lookup-stock {
-  color: color-mix(in srgb, var(--ui-warning) 72%, var(--ui-text)) !important;
+:root[data-theme='light'] .sales-reference-screen
+  .sales-reference-grid tbody tr.is-completed-entry td.col-price,
+:root[data-theme='light'] .sales-reference-screen
+  .sales-reference-grid tbody tr.is-completed-entry td.col-price > input.sales-pos-line-qty {
+  color: color-mix(in srgb, var(--ui-danger) 90%, #8f0000) !important;
+  -webkit-text-fill-color: color-mix(in srgb, var(--ui-danger) 90%, #8f0000) !important;
   font-weight: 900 !important;
 }
