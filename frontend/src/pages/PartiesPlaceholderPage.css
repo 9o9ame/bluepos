@@ -1019,9 +1019,9 @@
 
 .parties-vca-ledger-group-chip {
   position: relative;
-  min-width: 72px;
-  min-height: 28px;
-  padding: 0 10px;
+  min-width: 88px;
+  min-height: 32px;
+  padding: 0 12px;
   border: 1px solid var(--ui-accent);
   border-radius: var(--control-radius);
   background: var(--ui-accent-soft);
@@ -1032,16 +1032,16 @@
 }
 
 .parties-vca-ledger-group-chip:not(:first-child) {
-  margin-top: -10px;
+  margin-top: -8px;
 }
 
 .parties-vca-ledger-group-chip:not(:first-child)::before {
   content: '';
   position: absolute;
-  left: -36px;
-  top: -9px;
-  width: 36px;
-  height: 23px;
+  left: -48px;
+  top: -8px;
+  width: 48px;
+  height: 24px;
   border-left: 2px solid var(--ui-accent);
   border-bottom: 2px solid var(--ui-accent);
   border-bottom-left-radius: 8px;
@@ -1052,9 +1052,9 @@
 .parties-vca-ledger-group-chip::after {
   content: '';
   position: absolute;
-  left: -8px;
+  left: -10px;
   top: 50%;
-  width: 8px;
+  width: 10px;
   border-top: 2px solid var(--ui-accent);
   pointer-events: none;
   opacity: 0.8;
