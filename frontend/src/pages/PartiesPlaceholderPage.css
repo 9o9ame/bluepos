@@ -1038,9 +1038,9 @@
 .parties-vca-ledger-group-chip:not(:first-child)::before {
   content: '';
   position: absolute;
-  left: -48px;
+  left: -8px;
   top: -8px;
-  width: 48px;
+  width: 8px;
   height: 24px;
   border-left: 2px solid var(--ui-accent);
   border-bottom: 2px solid var(--ui-accent);
