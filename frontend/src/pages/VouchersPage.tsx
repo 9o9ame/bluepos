@@ -79,6 +79,13 @@ function voucherNumberLabel(type: VoucherType): string {
   return 'JV#'
 }
 
+function voucherShortLabel(type: VoucherType): string {
+  if (type === 'opening') return 'OB'
+  if (type === 'payment') return 'CP'
+  if (type === 'receiving') return 'CR'
+  return 'JV'
+}
+
 function signedEffect(account: VoucherAccount | undefined, debit: number, credit: number): number {
   if (!account) return 0
   return account.normal_balance === 'credit' ? credit - debit : debit - credit
@@ -456,8 +463,13 @@ export function VouchersPage() {
 
   return (
     <DesktopPanel
-      className="voucher-workspace"
-      title={heading}
+      className={`voucher-workspace voucher-workspace-${type}`}
+      title={
+        <span className="voucher-title">
+          <span className="voucher-title-badge" aria-hidden="true">{voucherShortLabel(type)}</span>
+          <span>{heading}</span>
+        </span>
+      }
       toolbar={
         <>
           <DesktopButton icon={<Plus size={13} />} label="New" disabled={!canCreate} onClick={() => resetEditor(type)} />
