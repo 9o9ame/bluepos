@@ -4740,3 +4740,48 @@ html[data-animations='off'] .sales-reference-screen * {
   color: color-mix(in srgb, var(--ui-warning) 58%, var(--ui-text)) !important;
   font-weight: 700 !important;
 }
+
+
+/* ---------- SALES INVOICE HIGH-CLARITY FINAL CUES ---------- */
+/* Completed rows: stock is an immediate availability signal; price is a
+   commercial value and intentionally uses a red text cue. */
+.sales-reference-screen .sales-reference-grid tbody tr.is-completed-entry td.col-stock {
+  background: color-mix(in srgb, var(--ui-success) 76%, #123d24) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+}
+
+.sales-reference-screen .sales-reference-grid tbody tr.is-completed-entry td.col-price,
+.sales-reference-screen .sales-reference-grid tbody tr.is-completed-entry td.col-price input {
+  color: color-mix(in srgb, var(--ui-danger) 88%, #8b0000) !important;
+  font-weight: 900 !important;
+}
+
+/* Stronger lookup column identity, still calmer than the legacy saturated
+   full-row palette. Selected/hover rows retain one unified accent. */
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-head > span:nth-child(4),
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(4) {
+  background: color-mix(in srgb, var(--ui-warning) 24%, var(--ui-surface)) !important;
+  color: color-mix(in srgb, var(--ui-warning) 82%, var(--ui-text)) !important;
+  font-weight: 850 !important;
+}
+
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-head > span:nth-child(5),
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(5) {
+  background: color-mix(in srgb, var(--ui-warning) 17%, var(--ui-surface)) !important;
+  color: color-mix(in srgb, var(--ui-warning) 70%, var(--ui-text)) !important;
+  font-weight: 800 !important;
+}
+
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-head > span:nth-child(6),
+.sales-pos-product-results-grid.is-themed
+  .sales-pos-product-grid-row:not(.is-selected):not(:hover) > span:nth-child(6) {
+  background: color-mix(in srgb, var(--ui-warning) 11%, var(--ui-surface-muted)) !important;
+  color: color-mix(in srgb, var(--ui-warning) 58%, var(--ui-text)) !important;
+  font-weight: 750 !important;
+}
