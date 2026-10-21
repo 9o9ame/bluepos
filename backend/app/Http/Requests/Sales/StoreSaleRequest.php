@@ -119,9 +119,17 @@ class StoreSaleRequest extends FormRequest
             'items.*.quantity' => ['required', 'string'],
             'items.*.discount_percent' => ['nullable', 'string'],
             'items.*.discount_amount' => ['nullable', 'string'],
+            'items.*.unit_price_override' => [
+                'nullable',
+                'string',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/',
+                'numeric',
+                'gte:0',
+            ],
 
-            // Unit price, tax and totals are intentionally NOT accepted as
-            // sources of truth. CreateSaleAction calculates them server-side.
+            // Tax and totals are never accepted as sources of truth.
+            // A permitted manual unit price is an explicit input only;
+            // CreateSaleAction still recomputes gross, discount, tax and totals.
 
             // Free lines may not be smuggled in as ordinary items.
             'items.*.line_kind' => [
