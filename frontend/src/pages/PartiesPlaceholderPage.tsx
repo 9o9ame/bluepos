@@ -58,6 +58,8 @@ import {
 import { CoaHierarchyModals } from '../components/parties/CoaHierarchyModals'
 import { PartyTypeMultiSelect } from '../components/parties/PartyTypeMultiSelect'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import { useAuth } from '../features/auth/AuthProvider'
+import { readCachedParties, replaceCachedParties } from '../data/partyCache'
 import { AnimatedSelect } from '../components/ui/AnimatedSelect'
 import { UiSelect } from '../components/ui/UiSelect'
 import { UI_LAYER } from '../components/ui/uiLayers'
@@ -333,6 +335,10 @@ function partyKey(party: Party): string {
   return party.identity_ulid ? `profile:${party.identity_ulid}` : `${party.party_type}:${party.ulid}`
 }
 
+function normalizePartyName(value: string): string {
+  return value.trim().replace(/\s+/g, ' ').toLocaleLowerCase()
+}
+
 function partyTypeSummary(party: Party): string {
   if (party.party_type === 'account' && !party.identity_ulid) return 'ACCOUNT'
   const types = party.party_types ?? [party.party_type as PartyBusinessType]
@@ -352,6 +358,7 @@ export function PartiesPlaceholderPage({
   onSaved?: (party: Party) => void
 } = {}) {
   const { closeActiveTab } = useWorkspace()
+  const { session } = useAuth()
   const feedback = useFeedback()
   const initialPartyFilter: PartyType =
     embedded ? (embeddedPartyType === 'vendor' ? 'VENDORS' : 'CUSTOMERS') : 'ALL'
@@ -411,8 +418,23 @@ export function PartiesPlaceholderPage({
     [parties],
   )
 
+  const duplicateNameRow = useMemo(() => {
+    const normalized = normalizePartyName(form.name)
+    if (!normalized) return null
+
+    return rows.find(
+      (row) => row.key !== selectedKey && normalizePartyName(row.name) === normalized,
+    ) ?? null
+  }, [form.name, rows, selectedKey])
+
   const filteredRows = useMemo(() => {
-    const query = searchQuery.trim().toLocaleLowerCase()
+    const explicitQuery = searchQuery.trim().toLocaleLowerCase()
+    const nameQuery =
+      !explicitQuery && !selectedKey
+        ? normalizePartyName(form.name)
+        : ''
+    const query = explicitQuery || nameQuery
+
     if (!query) return rows
 
     return rows.filter((row) =>
@@ -420,7 +442,7 @@ export function PartiesPlaceholderPage({
         value.toLocaleLowerCase().includes(query),
       ),
     )
-  }, [rows, searchQuery])
+  }, [form.name, rows, searchQuery, selectedKey])
 
   const selectedIndex = rows.findIndex((row) => row.key === selectedKey)
   const dirty =
@@ -431,6 +453,7 @@ export function PartiesPlaceholderPage({
   const canSave =
     !saving &&
     form.name.trim().length > 0 &&
+    !duplicateNameRow &&
     CREATABLE_TYPES.includes(form.type) &&
     (isManualAccount
       ? form.accountTypeUlid.trim().length > 0
@@ -468,6 +491,16 @@ export function PartiesPlaceholderPage({
   async function loadParties(filter: PartyType = listFilter, keepSelection = false) {
     setLoading(true)
     setError(null)
+    const apiFilter = uiTypeToFilter(filter)
+    const tenantUlid = session?.tenant.ulid ?? ''
+
+    if (tenantUlid) {
+      const cached = await readCachedParties(tenantUlid, apiFilter)
+      if (cached.length > 0) {
+        setParties(cached)
+      }
+    }
+
     try {
       let data: Party[]
       if (filter === 'ACCOUNTS') {
@@ -488,6 +521,9 @@ export function PartiesPlaceholderPage({
       }
 
       setParties(data)
+      if (tenantUlid) {
+        await replaceCachedParties(tenantUlid, apiFilter, data)
+      }
       if (!keepSelection) {
         setSelectedKey(null)
       } else if (selectedKey) {
@@ -929,6 +965,11 @@ export function PartiesPlaceholderPage({
   async function save() {
     if (!form.name.trim()) {
       setError('Name is required.')
+      return
+    }
+
+    if (duplicateNameRow) {
+      setError(`A party named "${duplicateNameRow.name}" already exists.`)
       return
     }
 
@@ -1392,6 +1433,8 @@ export function PartiesPlaceholderPage({
                 <input
                   id="vca-name"
                   value={form.name}
+                  aria-invalid={duplicateNameRow ? true : undefined}
+                  title={duplicateNameRow ? `Already exists: ${duplicateNameRow.name}` : undefined}
                   onChange={(e) => patchForm('name', e.target.value)}
                 />
                 <label htmlFor="vca-deals">Deals In</label>
