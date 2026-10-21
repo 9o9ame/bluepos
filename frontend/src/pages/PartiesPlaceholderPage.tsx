@@ -2855,7 +2855,11 @@ export function PartiesPlaceholderPage({
                       const out: ReactNode[] = [
                         <tr key={`m-${main.ulid}`} className="parties-vca-coa-group parties-vca-coa-level-0">
                           <td colSpan={4}>
-                            <button type="button" className="parties-vca-coa-toggle" onClick={() => toggleCoaMain(main.ulid)}>
+                            <button
+                              type="button"
+                              className={`parties-vca-coa-toggle ${mainOpen ? 'is-open' : 'is-closed'}`}
+                              onClick={() => toggleCoaMain(main.ulid)}
+                            >
                               {mainOpen ? '−' : '+'}
                             </button>
                             {main.label}
@@ -2868,7 +2872,11 @@ export function PartiesPlaceholderPage({
                         out.push(
                           <tr key={`h-${head.ulid}`} className="parties-vca-coa-level-1">
                             <td colSpan={4}>
-                              <button type="button" className="parties-vca-coa-toggle" onClick={() => toggleCoaHead(head.ulid)}>
+                              <button
+                                type="button"
+                                className={`parties-vca-coa-toggle ${headOpen ? 'is-open' : 'is-closed'}`}
+                                onClick={() => toggleCoaHead(head.ulid)}
+                              >
                                 {headOpen ? '−' : '+'}
                               </button>
                               {head.label}
@@ -2881,7 +2889,11 @@ export function PartiesPlaceholderPage({
                           out.push(
                             <tr key={`s-${sub.ulid}`} className="parties-vca-coa-level-2">
                               <td colSpan={4}>
-                                <button type="button" className="parties-vca-coa-toggle" onClick={() => toggleCoaSub(sub.ulid)}>
+                                <button
+                                  type="button"
+                                  className={`parties-vca-coa-toggle ${subOpen ? 'is-open' : 'is-closed'}`}
+                                  onClick={() => toggleCoaSub(sub.ulid)}
+                                >
                                   {subOpen ? '−' : '+'}
                                 </button>
                                 {sub.label}
