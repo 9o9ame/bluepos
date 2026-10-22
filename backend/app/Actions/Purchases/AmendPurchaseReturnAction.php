@@ -182,6 +182,10 @@ class AmendPurchaseReturnAction
                 ->first();
         }
 
+        if ((int) ($before['_meta']['revision_number'] ?? 0) > 0) {
+            return null;
+        }
+
         return JournalEntry::query()
             ->forTenant((int) $document->tenant_id)
             ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_RETURN)
