@@ -34,6 +34,7 @@ import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/Worksp
 import type { Sale, SalePaymentMethod } from '../types/sales'
 import type { Product } from '../types/catalog'
 import type { SaleReturn } from '../types/salesReturns'
+import { formatDecimal } from '../utils/formatDecimal'
 import './SalesReturnsPage.css'
 
 type ViewMode = 'entry' | 'search' | 'product'
@@ -72,8 +73,7 @@ function qty(value: string): string {
 }
 
 function money(value: string | number | null | undefined): string {
-  const n = typeof value === 'number' ? value : Number.parseFloat(value ?? '0')
-  return Number.isFinite(n) ? n.toFixed(2) : '0.00'
+  return formatDecimal(value)
 }
 
 function newReturnKey(): string {
@@ -101,7 +101,7 @@ function generalLineAmounts(row: GeneralReturnRow) {
 }
 
 function retailPrice(product: Product): string {
-  return product.prices?.find((row) => row.is_active && row.price_type === 'retail')?.amount ?? '0.0000'
+  return formatDecimal(product.prices?.find((row) => row.is_active && row.price_type === 'retail')?.amount ?? '0')
 }
 
 export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
@@ -409,7 +409,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
 
       const remaining = Number(row.remaining_returnable_quantity) || 0
       if (selected > remaining) {
-        validationError = `Return quantity for ${row.product.name} cannot exceed ${row.remaining_returnable_quantity}.`
+        validationError = `Return quantity for ${row.product.name} cannot exceed ${formatDecimal(row.remaining_returnable_quantity)}.`
         break
       }
 
@@ -496,7 +496,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
     const nextGeneral: GeneralReturnRow[] = []
     for (const line of row.lines ?? []) {
       if (line.original_sale_item_ulid) {
-        nextQty[line.original_sale_item_ulid] = line.quantity
+        nextQty[line.original_sale_item_ulid] = formatDecimal(line.quantity)
       } else if (line.product) {
         nextGeneral.push({
           key: line.ulid,
@@ -505,10 +505,10 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
           product_number: line.product.product_number,
           product_name: line.product.name,
           unit_code: line.unit?.code ?? '—',
-          quantity: line.quantity,
-          unit_price: line.unit_price,
-          discount_percent: line.discount_percent,
-          tax_percent: line.tax_percent,
+          quantity: formatDecimal(line.quantity),
+          unit_price: formatDecimal(line.unit_price),
+          discount_percent: formatDecimal(line.discount_percent),
+          tax_percent: formatDecimal(line.tax_percent),
         })
       }
     }
@@ -642,10 +642,10 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
           product_number: product.product_number,
           product_name: product.name,
           unit_code: product.base_unit?.code ?? '—',
-          quantity: '1.000000',
+          quantity: '1.0',
           unit_price: retailPrice(product),
-          discount_percent: '0.00000000',
-          tax_percent: product.is_taxable ? product.tax_percent : '0.00000000',
+          discount_percent: '0.0',
+          tax_percent: formatDecimal(product.is_taxable ? product.tax_percent : '0'),
         },
       ])
     }
@@ -1347,17 +1347,17 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                 ariaLabel="Invoice-linked sales return lines"
                 minWidth={980}
                 columns={[
-                  { key: 'product', header: 'Item / Product Description' },
-                  { key: 'kind', header: 'Kind', width: 90 },
-                  { key: 'sold', header: 'Sold Qty', width: 86, align: 'right' },
-                  { key: 'returned', header: 'Returned', width: 86, align: 'right' },
-                  { key: 'available', header: 'Available', width: 86, align: 'right' },
-                  { key: 'return', header: 'Return Qty', width: 92, align: 'right' },
-                  { key: 'unit', header: 'Unit', width: 74 },
-                  { key: 'price', header: 'Price', width: 90, align: 'right' },
-                  { key: 'disc', header: 'Disc', width: 90, align: 'right' },
-                  { key: 'tax', header: 'Tax', width: 90, align: 'right' },
-                  { key: 'net', header: 'Net', width: 100, align: 'right' },
+                  { key: 'product', header: 'Item / Product Description', width: '25%' },
+                  { key: 'kind', header: 'Kind', width: '7.5%' },
+                  { key: 'sold', header: 'Sold Qty', width: '7.5%', align: 'right' },
+                  { key: 'returned', header: 'Returned', width: '7.5%', align: 'right' },
+                  { key: 'available', header: 'Available', width: '7.5%', align: 'right' },
+                  { key: 'return', header: 'Return Qty', width: '7.5%', align: 'right' },
+                  { key: 'unit', header: 'Unit', width: '7.5%' },
+                  { key: 'price', header: 'Price', width: '7.5%', align: 'right' },
+                  { key: 'disc', header: 'Disc', width: '7.5%', align: 'right' },
+                  { key: 'tax', header: 'Tax', width: '7.5%', align: 'right' },
+                  { key: 'net', header: 'Net', width: '7.5%', align: 'right' },
                 ]}
               >
                   {returnable.map((row) => (
@@ -1366,12 +1366,12 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                         <strong>{row.product.product_number}</strong> — {row.product.name}
                       </td>
                       <td>{row.line_kind.replace('_', ' ')}</td>
-                      <td className="is-num">{row.original_quantity}</td>
-                      <td className="is-num">{row.already_returned_quantity}</td>
+                      <td className="is-num">{formatDecimal(row.original_quantity)}</td>
+                      <td className="is-num">{formatDecimal(row.already_returned_quantity)}</td>
                       <td className="is-num">{row.remaining_returnable_quantity}</td>
                       <td className="is-num is-edit">
                         {readOnly ? (
-                          lineQty[row.sale_item_ulid] ?? '0'
+                          formatDecimal(lineQty[row.sale_item_ulid] ?? '0')
                         ) : (
                           <input
                             inputMode="decimal"
@@ -1391,7 +1391,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                             onBlur={() => {
                               const value = lineQty[row.sale_item_ulid]
                               if (!value || Number(value) === 0) return
-                              setLineQty((prev) => ({ ...prev, [row.sale_item_ulid]: qty(value) }))
+                              setLineQty((prev) => ({ ...prev, [row.sale_item_ulid]: formatDecimal(value) }))
                             }}
                           />
                         )}
@@ -1420,13 +1420,13 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                 ariaLabel="General sales return lines"
                 minWidth={860}
                 columns={[
-                  { key: 'product', header: 'Item / Product Description' },
-                  { key: 'quantity', header: 'Quantity', width: 100, align: 'right' },
-                  { key: 'price', header: 'Price (C)', width: 100, align: 'right' },
-                  { key: 'amt', header: 'AMT', width: 100, align: 'right' },
-                  { key: 'disc', header: 'Disc%', width: 88, align: 'right' },
-                  { key: 'tax', header: 'Tax', width: 88, align: 'right' },
-                  { key: 'amount', header: 'Amount(Rs)', width: 110, align: 'right' },
+                  { key: 'product', header: 'Item / Product Description', width: '25%' },
+                  { key: 'quantity', header: 'Quantity', width: 'calc((75% - 34px) / 6)', align: 'right' },
+                  { key: 'price', header: 'Price (C)', width: 'calc((75% - 34px) / 6)', align: 'right' },
+                  { key: 'amt', header: 'AMT', width: 'calc((75% - 34px) / 6)', align: 'right' },
+                  { key: 'disc', header: 'Disc%', width: 'calc((75% - 34px) / 6)', align: 'right' },
+                  { key: 'tax', header: 'Tax', width: 'calc((75% - 34px) / 6)', align: 'right' },
+                  { key: 'amount', header: 'Amount(Rs)', width: 'calc((75% - 34px) / 6)', align: 'right' },
                   { key: 'actions', header: '', width: 34, align: 'center' },
                 ]}
               >
@@ -1517,12 +1517,12 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                           )}
                         </td>
                         <td className="is-num is-edit">
-                          {readOnly ? row.quantity : (
+                          {readOnly ? formatDecimal(row.quantity) : (
                             <input
                               inputMode="decimal"
                               data-return-editable="true"
                               data-return-field="quantity"
-                              value={row.quantity}
+                              value={row.quantity === '' ? '' : formatDecimal(row.quantity)}
                               aria-label={`Return quantity for ${row.product_name}`}
                               onFocus={() => setGeneralActiveRowKey(row.key)}
                               onKeyDown={(e) => handleGeneralFieldEnter(e)}
@@ -1540,7 +1540,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                               inputMode="decimal"
                               data-return-editable="true"
                               data-return-field="price"
-                              value={row.unit_price}
+                              value={row.unit_price === '' ? '' : formatDecimal(row.unit_price)}
                               aria-label={`Return price for ${row.product_name}`}
                               onFocus={() => setGeneralActiveRowKey(row.key)}
                               onKeyDown={(e) => handleGeneralFieldEnter(e)}
@@ -1554,12 +1554,12 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                         </td>
                         <td className="is-num">{money(amounts.gross)}</td>
                         <td className="is-num is-edit">
-                          {readOnly ? row.discount_percent : (
+                          {readOnly ? formatDecimal(row.discount_percent) : (
                             <input
                               inputMode="decimal"
                               data-return-editable="true"
                               data-return-field="discount"
-                              value={row.discount_percent}
+                              value={row.discount_percent === '' ? '' : formatDecimal(row.discount_percent)}
                               aria-label={`Discount percent for ${row.product_name}`}
                               onFocus={() => setGeneralActiveRowKey(row.key)}
                               onKeyDown={(e) => handleGeneralFieldEnter(e)}
