@@ -369,6 +369,31 @@ export function SalesInvoicePage({
     saleSoftwareOptions?.show_remarks,
   ])
 
+  const salesColumnWidths = useMemo(() => {
+    const productWidth = 'clamp(110px, 7.3vw, 180px)'
+    const otherColumns = effectiveSalesColumns.filter((col) => col.key !== 'product')
+    const totalOtherWeight = otherColumns.reduce(
+      (sum, col) => sum + Math.max(col.width ?? 72, 36),
+      0,
+    )
+
+    return new Map(
+      effectiveSalesColumns.map((col) => {
+        if (col.key === 'product') {
+          return [col.key, productWidth]
+        }
+
+        const weight = Math.max(col.width ?? 72, 36)
+        const ratio = totalOtherWeight > 0 ? weight / totalOtherWeight : 0
+
+        return [
+          col.key,
+          `calc((100% - ${productWidth}) * ${ratio})`,
+        ]
+      }),
+    )
+  }, [effectiveSalesColumns])
+
   useEffect(() => {
     const nextBelowCost = new Set<string>()
 
@@ -2254,6 +2279,7 @@ export function SalesInvoicePage({
                     <col
                       key={col.key}
                       className={salesColClass(col)}
+                      style={{ width: salesColumnWidths.get(col.key) }}
                     />
                   ))}
                 </colgroup>
