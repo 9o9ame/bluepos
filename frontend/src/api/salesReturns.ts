@@ -43,6 +43,12 @@ export function fetchSaleReturnSourceParties() {
   }).then((response) => response.data)
 }
 
+export function fetchNextSaleReturnDocumentNumber() {
+  return apiFetch<{ document_number: string }>('/api/sales-returns/next-document-number', {
+    busy: 'none',
+  })
+}
+
 export function fetchSaleReturn(returnUlid: string) {
   return apiFetch<SaleReturn>(`/api/sales-returns/${returnUlid}`)
 }
