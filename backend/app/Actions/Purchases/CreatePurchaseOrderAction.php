@@ -75,12 +75,32 @@ class CreatePurchaseOrderAction
         });
     }
 
+    public function previewNextDocumentNumber(): string
+    {
+        return $this->calculateNextDocumentNumber(
+            $this->tenantContext->tenantId(),
+            false,
+        );
+    }
+
     private function nextDocumentNumber(int $tenantId): string
     {
-        $latest = PurchaseOrder::query()
+        return $this->calculateNextDocumentNumber($tenantId, true);
+    }
+
+    private function calculateNextDocumentNumber(
+        int $tenantId,
+        bool $lock,
+    ): string {
+        $query = PurchaseOrder::query()
             ->forTenant($tenantId)
-            ->orderByDesc('id')
-            ->value('document_number');
+            ->orderByDesc('id');
+
+        if ($lock) {
+            Tenant::query()->whereKey($tenantId)->lockForUpdate()->firstOrFail();
+        }
+
+        $latest = $query->value('document_number');
 
         $sequence = 1;
         if (is_string($latest) && preg_match('/PO-(\d+)$/', $latest, $matches) === 1) {
