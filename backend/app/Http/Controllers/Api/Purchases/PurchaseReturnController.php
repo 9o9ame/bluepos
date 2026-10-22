@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api\Purchases;
 
+use App\Actions\Purchases\AmendPurchaseReturnAction;
 use App\Actions\Purchases\CreatePurchaseReturnAction;
 use App\Actions\Purchases\DeletePurchaseReturnLineAction;
 use App\Actions\Purchases\PostPurchaseReturnAction;
 use App\Actions\Purchases\RecalculatePurchaseReturnTotalsAction;
 use App\Actions\Purchases\UpdatePurchaseReturnAction;
 use App\Actions\Purchases\UpsertPurchaseReturnLineAction;
+use App\Authz\PermissionService;
 use App\Enums\PurchaseInvoiceStatus;
 use App\Enums\PurchaseReturnStatus;
 use App\Exceptions\ApiException;
@@ -23,6 +25,21 @@ use Illuminate\Http\Request;
 
 class PurchaseReturnController extends Controller
 {
+    public function nextDocumentNumber(
+        CreatePurchaseReturnAction $create,
+        PermissionService $permissions,
+    ): array {
+        abort_unless(
+            $permissions->can('purchase_returns.create')
+                || $permissions->can('purchase_returns.amend_posted'),
+            403,
+        );
+
+        return [
+            'document_number' => $create->previewNextDocumentNumber(),
+        ];
+    }
+
     public function index(Request $request, TenantContext $tenantContext): mixed
     {
         $this->authorize('viewAny', PurchaseReturn::class);
@@ -32,7 +49,7 @@ class PurchaseReturnController extends Controller
             ->forTenant($tenantContext->tenantId())
             ->where('branch_id', $tenantContext->branchId())
             ->where('warehouse_id', $tenantContext->warehouseId())
-            ->with(['supplier', 'warehouse', 'purchaseInvoice'])
+            ->with(['supplier', 'warehouse', 'purchaseInvoice', 'latestRevision'])
             ->orderByDesc('return_date')
             ->orderByDesc('id');
 
@@ -107,7 +124,7 @@ class PurchaseReturnController extends Controller
         $document = $this->findDocument($returnUlid, $tenantContext);
         $this->authorize('view', $document);
 
-        return new PurchaseReturnResource($document->load(CreatePurchaseReturnAction::with()));
+        return new PurchaseReturnResource($document->load([...CreatePurchaseReturnAction::with(), 'latestRevision']));
     }
 
     public function update(
@@ -129,6 +146,66 @@ class PurchaseReturnController extends Controller
         ]);
 
         return new PurchaseReturnResource($update->execute($document, $data));
+    }
+
+    public function amend(
+        Request $request,
+        string $returnUlid,
+        TenantContext $tenantContext,
+        AmendPurchaseReturnAction $amend,
+    ): PurchaseReturnResource {
+        $document = $this->findDocument($returnUlid, $tenantContext);
+        $this->authorize('amend', $document);
+
+        $data = $request->validate([
+            'revision_reason' => ['required', 'string', 'max:500'],
+            'supplier_reference' => ['nullable', 'string', 'max:100'],
+            'reason' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:5000'],
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.purchase_line_ulid' => ['nullable', 'string', 'size:26'],
+            'lines.*.product_ulid' => ['nullable', 'string', 'size:26'],
+            'lines.*.quantity' => [
+                'required',
+                'string',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/',
+                'numeric',
+                'gt:0',
+            ],
+            'lines.*.unit_cost' => [
+                'nullable',
+                'string',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/',
+                'numeric',
+                'gte:0',
+            ],
+            'lines.*.discount_amount' => [
+                'nullable',
+                'string',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/',
+                'numeric',
+                'gte:0',
+            ],
+            'lines.*.tax_amount' => [
+                'nullable',
+                'string',
+                'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/',
+                'numeric',
+                'gte:0',
+            ],
+            'lines.*.batch_number' => ['nullable', 'string', 'max:100'],
+            'lines.*.expiry_date' => ['nullable', 'date'],
+            'lines.*.reason' => ['nullable', 'string', 'max:255'],
+            'lines.*.notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        return new PurchaseReturnResource(
+            $amend->execute(
+                $document,
+                $data,
+                (string) $request->header('Idempotency-Key', ''),
+            ),
+        );
     }
 
     public function storeLine(
@@ -235,6 +312,7 @@ class PurchaseReturnController extends Controller
     }
 
     public function returnableLines(
+        Request $request,
         string $purchaseUlid,
         TenantContext $tenantContext,
         RecalculatePurchaseReturnTotalsAction $recalculate,
@@ -257,9 +335,28 @@ class PurchaseReturnController extends Controller
             throw new ApiException('DOCUMENT_NOT_POSTED', 'Only posted purchases have returnable lines.', 422);
         }
 
+        $excludeReturnId = null;
+        $excludeReturnUlid = trim((string) $request->query('exclude_return_ulid', ''));
+
+        if ($excludeReturnUlid !== '') {
+            $excludeReturn = PurchaseReturn::query()
+                ->forTenant($tenantContext->tenantId())
+                ->where('purchase_invoice_id', $invoice->id)
+                ->where('branch_id', $tenantContext->branchId())
+                ->where('warehouse_id', $tenantContext->warehouseId())
+                ->where('ulid', $excludeReturnUlid)
+                ->first();
+
+            if (! $excludeReturn) {
+                throw new ApiException('NOT_FOUND', 'The requested Purchase Return was not found.', 404);
+            }
+
+            $excludeReturnId = (int) $excludeReturn->id;
+        }
+
         $rows = [];
         foreach ($invoice->lines as $line) {
-            $remaining = $recalculate->remainingReturnableBase($line);
+            $remaining = $recalculate->remainingReturnableBase($line, $excludeReturnId);
             $returned = bcsub((string) $line->base_quantity, $remaining, 6);
             $rows[] = [
                 'purchase_line_ulid' => $line->ulid,
