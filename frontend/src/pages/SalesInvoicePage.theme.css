@@ -4853,7 +4853,28 @@ html[data-animations='off'] .sales-reference-screen * {
 }
 
 /* Sales Invoice focused interaction refinements.
-   Keep only the intentional non-geometry styling here. */
+   Keep only the intentional local styling here. */
+.sales-reference-received {
+  display: flex !important;
+  align-items: stretch !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.sales-reference-received > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sales-reference-received > input {
+  flex: 0 0 72%;
+  width: 72% !important;
+  box-sizing: border-box;
+  margin: 0 !important;
+  padding-left: 8px !important;
+  padding-right: 6px !important;
+}
+
 .sales-invoice-switch-warning {
   margin: 0;
   color: var(--ui-text);
