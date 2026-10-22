@@ -325,6 +325,20 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
     setQuotationNumberValue(activeQuotation?.document_number ?? null)
   }
 
+  function requestQuotationOpen(quotation: SaleQuotation) {
+    setQuotationNumberValue(quotation.document_number)
+
+    const currentNumber = activeQuotation?.document_number.trim().toLocaleLowerCase() ?? null
+    const requestedKey = quotation.document_number.trim().toLocaleLowerCase()
+
+    if (cart.lines.length > 0 && currentNumber !== requestedKey) {
+      setPendingQuotationLookupNumber(quotation.document_number)
+      return
+    }
+
+    openMutation.mutate(quotation.ulid)
+  }
+
   const customerOptions = useMemo(
     () => [
       {
@@ -1190,7 +1204,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
             ]}
             rows={quotationsQuery.data?.data ?? []}
             rowKey={(row) => row.ulid}
-            onActivate={(row) => openMutation.mutate(row.ulid)}
+            onActivate={(row) => requestQuotationOpen(row)}
             emptyMessage="No quotations found."
           />
         </div>
