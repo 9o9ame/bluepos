@@ -1810,13 +1810,13 @@ export function SalesInvoicePage({
                       placeholder="Posted Invoice #"
                       aria-label="Posted invoice number to edit"
                       title="Enter an exact posted invoice number and press Enter to amend it"
-                      disabled={!canAmendSale || invoiceLookupMutation.isPending || saveMutation.isPending}
-                      onChange={(event) => {
-                        setInvoiceValue(event.target.value)
-                        if (amendingSale) {
-                          setAmendingSale(null)
-                        }
-                      }}
+                      disabled={
+                        !canAmendSale ||
+                        Boolean(amendingSale) ||
+                        invoiceLookupMutation.isPending ||
+                        saveMutation.isPending
+                      }
+                      onChange={(event) => setInvoiceValue(event.target.value)}
                       onKeyDown={(event) => {
                         if (event.key !== 'Enter') return
                         event.preventDefault()
@@ -2215,7 +2215,7 @@ export function SalesInvoicePage({
                   }
                 }}
               >
-                {isBusy ? 'Saving...' : 'Sale'}
+                {isBusy ? (amendingSale ? 'Updating...' : 'Saving...') : (amendingSale ? 'Update' : 'Sale')}
               </button>
 
               <div
@@ -3095,7 +3095,7 @@ export function SalesInvoicePage({
                       }
                     }}
                   >
-                    <span>Save [F9]</span>
+                    <span>{amendingSale ? 'Update [F9]' : 'Save [F9]'}</span>
   
                     <span className="sales-reference-action-icon is-save">
                       <Save />
