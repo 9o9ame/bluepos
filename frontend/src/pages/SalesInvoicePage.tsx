@@ -617,11 +617,12 @@ export function SalesInvoicePage({
         throw new Error('Add at least one paid product before saving a quotation.')
       }
 
+      const cartPayload = cart.buildPayload()
       const payload = {
         price_type: cart.priceType,
-        items: cart.buildPayload().items,
-        free_lines: cart.buildPayload().free_lines,
-        applied_schemes: cart.buildPayload().applied_schemes,
+        items: cartPayload.items,
+        free_lines: cartPayload.free_lines,
+        applied_schemes: cartPayload.applied_schemes,
         customer_ulid: cart.customerUlid,
         salesman_ulid: selectedSalesmanUlid,
         notes: cart.notes || null,
