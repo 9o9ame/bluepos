@@ -218,14 +218,32 @@ class RecalculateSaleReturnTotalsAction
             ]);
         }
 
-        $ratio = bcdiv($returnQuantity, $originalQty, 12);
-
         return [
-            'stock_quantity' => bcmul((string) $saleItem->stock_quantity, $ratio, 6),
-            'gross_amount' => bcmul((string) $saleItem->gross_amount, $ratio, 4),
-            'discount_amount' => bcmul((string) $saleItem->discount_amount, $ratio, 4),
-            'tax_amount' => bcmul((string) $saleItem->tax_amount, $ratio, 4),
-            'line_total' => bcmul((string) $saleItem->line_total, $ratio, 4),
+            'stock_quantity' => bcdiv(
+                bcmul((string) $saleItem->stock_quantity, $returnQuantity, 12),
+                $originalQty,
+                6,
+            ),
+            'gross_amount' => bcdiv(
+                bcmul((string) $saleItem->gross_amount, $returnQuantity, 10),
+                $originalQty,
+                4,
+            ),
+            'discount_amount' => bcdiv(
+                bcmul((string) $saleItem->discount_amount, $returnQuantity, 10),
+                $originalQty,
+                4,
+            ),
+            'tax_amount' => bcdiv(
+                bcmul((string) $saleItem->tax_amount, $returnQuantity, 10),
+                $originalQty,
+                4,
+            ),
+            'line_total' => bcdiv(
+                bcmul((string) $saleItem->line_total, $returnQuantity, 10),
+                $originalQty,
+                4,
+            ),
         ];
     }
 
