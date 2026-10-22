@@ -5,6 +5,7 @@ import {
   fetchBrands,
   fetchCategories,
   fetchProduct,
+  fetchProductStock,
   fetchSuppliers,
 } from '../api/catalog'
 import {
@@ -14,6 +15,7 @@ import {
   fetchPurchaseOrders,
   fetchPurchaseOrderStatus,
   generatePurchaseOrder,
+  updatePurchaseOrder,
 } from '../api/purchases'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
@@ -184,6 +186,7 @@ export function PurchaseOrderPage() {
   const feedback = useFeedback()
   const canCreate = useCan('purchases.create')
   const canEdit = useCan('purchases.edit')
+  const canEditOrder = useCan('purchase_orders.edit')
 
   const [tab, setTab] = useState<'entry' | 'search' | 'status'>('entry')
   const [supplierUlid, setSupplierUlid] = useState('')
@@ -220,7 +223,10 @@ export function PurchaseOrderPage() {
   const requestedGenerationPageRef = useRef(0)
 
   const activeOrder = openedOrder ?? savedOrder
-  const readOnly = Boolean(activeOrder)
+  const editingOpenedOrder = Boolean(
+    openedOrder && openedOrder.status === 'open' && canEditOrder,
+  )
+  const readOnly = Boolean(activeOrder) && !editingOpenedOrder
 
   const suppliersQuery = useQuery({
     queryKey: ['suppliers', 'purchase-order'],
@@ -671,7 +677,7 @@ export function PurchaseOrderPage() {
         throw new Error('At least one line must have an order quantity greater than zero.')
       }
 
-      return createPurchaseOrder({
+      const payload = {
         supplier_ulid: supplierUlid,
         order_date: orderDate,
         notes: notes.trim() || null,
@@ -687,9 +693,32 @@ export function PurchaseOrderPage() {
             ? '0'
             : line.discount_amount,
         })),
-      })
+      }
+
+      if (openedOrder) {
+        if (!canEditOrder) {
+          throw new Error('You do not have permission to edit Purchase Orders.')
+        }
+
+        return updatePurchaseOrder(openedOrder.ulid, {
+          ...payload,
+          revision_reason: 'Purchase Order updated from entry screen',
+        })
+      }
+
+      return createPurchaseOrder(payload)
     },
     onSuccess: (order) => {
+      if (openedOrder) {
+        setOpenedOrder(order)
+        setSavedOrder(null)
+        feedback.success(
+          `Purchase Order ${order.document_number} updated. Revision history was recorded.`,
+          'Purchase Order',
+        )
+        return
+      }
+
       setSavedOrder(order)
       setOpenedOrder(null)
       feedback.success(
@@ -707,7 +736,7 @@ export function PurchaseOrderPage() {
 
   const openMutation = useMutation({
     mutationFn: fetchPurchaseOrder,
-    onSuccess: (order) => {
+    onSuccess: async (order) => {
       setOpenedOrder(order)
       setSavedOrder(null)
       setSupplierUlid(order.supplier?.ulid ?? '')
@@ -715,6 +744,44 @@ export function PurchaseOrderPage() {
       setNotes(order.notes ?? '')
       setProductQuery('')
       setTab('entry')
+
+      if (order.status !== 'open' || !canEditOrder) {
+        setLines([])
+        return
+      }
+
+      const hydrated = await Promise.all(
+        (order.items ?? []).map(async (item): Promise<DraftLine | null> => {
+          if (!item.product || !item.unit) return null
+
+          const [product, stock] = await Promise.all([
+            fetchProduct(item.product.ulid),
+            fetchProductStock(item.product.ulid),
+          ])
+          const unitOptions = buildUnitOptions(product)
+          const unit = unitOptions.find((row) => row.ulid === item.unit?.ulid)
+
+          return {
+            key: item.ulid,
+            product_ulid: product.ulid,
+            product_number: product.product_number,
+            product_name: product.name,
+            unit_ulid: item.unit.ulid,
+            unit_code: unit?.code ?? item.unit.code,
+            unit_options: unitOptions,
+            in_stock: stock.active_warehouse.quantity,
+            stock_value: '0.0000',
+            consumption: '0.000000',
+            difference: '0.000000',
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            discount_percent: item.discount_percent,
+            discount_amount: item.discount_amount,
+          }
+        }),
+      )
+
+      setLines(hydrated.filter((line): line is DraftLine => line !== null))
     },
     onError: (error) => {
       feedback.error(
@@ -758,7 +825,11 @@ export function PurchaseOrderPage() {
             icon={<Save size={15} />}
             label="Save Order"
             variant="success"
-            disabled={!canCreate || readOnly || saveMutation.isPending}
+            disabled={
+              !(openedOrder ? canEditOrder : canCreate) ||
+              readOnly ||
+              saveMutation.isPending
+            }
             onClick={() => saveMutation.mutate()}
           />
           <DesktopButton
