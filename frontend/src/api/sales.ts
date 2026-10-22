@@ -118,6 +118,13 @@ export function fetchSaleQuotations(
   }>(`/api/sales/quotations${query ? `?${query}` : ''}`, { busy: 'none' })
 }
 
+export function fetchNextSaleQuotationDocumentNumber() {
+  return apiFetch<{ document_number: string }>(
+    '/api/sales/quotations/next-document-number',
+    { busy: 'none' },
+  )
+}
+
 export function fetchSaleQuotation(quotationUlid: string) {
   return apiFetch<SaleQuotation>(`/api/sales/quotations/${quotationUlid}`, {
     busy: 'none',
