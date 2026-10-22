@@ -8,6 +8,7 @@ enum StockMovementType: string
     case Purchase = 'purchase';
     case PurchaseReturn = 'purchase_return';
     case Sale = 'sale';
+    case SaleAmendment = 'sale_amendment';
     case SaleReturn = 'sale_return';
     case AdjustmentIn = 'adjustment_in';
     case AdjustmentOut = 'adjustment_out';
