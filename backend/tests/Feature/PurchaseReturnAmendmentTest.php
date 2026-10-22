@@ -130,6 +130,88 @@ class PurchaseReturnAmendmentTest extends TestCase
         $this->assertNoInternalIds($first->json());
     }
 
+    public function test_posted_purchase_return_can_switch_effective_purchase_supplier_and_product(): void
+    {
+        $this->signInOwner('purchase-return-amend-source-switch')->assertOk();
+        $this->configurePurchaseClearing();
+
+        [$returnUlid, , $oldProductUlid] = $this->postedReturn(
+            'Original Return Product',
+            '5.000000',
+            '1.000000',
+            '10.0000',
+        );
+
+        $warehouseUlid = $this->sessionWarehouseUlid();
+        $pcs = $this->unitUlid('PCS');
+
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-SWITCH',
+            'name' => 'Replacement Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $newProductUlid = $this->postJson('/api/products', [
+            'name' => 'Replacement Return Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $purchaseUlid = $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+        ])->assertCreated()->json('ulid');
+
+        $purchaseLineUlid = $this->postJson('/api/purchases/'.$purchaseUlid.'/lines', [
+            'product_ulid' => $newProductUlid,
+            'unit_ulid' => $pcs,
+            'quantity' => '6.000000',
+            'unit_cost' => '12.0000',
+        ])->assertCreated()->json('ulid');
+
+        $this->postJson('/api/purchases/'.$purchaseUlid.'/post')->assertOk();
+
+        $response = $this->patchJson('/api/purchase-returns/'.$returnUlid.'/amend', [
+            'revision_reason' => 'Correct purchase source and supplier',
+            'purchase_ulid' => $purchaseUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'return_date' => now()->toDateString(),
+            'lines' => [[
+                'purchase_line_ulid' => $purchaseLineUlid,
+                'quantity' => '2.000000',
+            ]],
+        ], $this->idem('purchase-return-amend-source-switch'))
+            ->assertOk()
+            ->assertJsonPath('original_purchase.ulid', $purchaseUlid)
+            ->assertJsonPath('supplier.ulid', $supplierUlid)
+            ->assertJsonPath('lines.0.product.ulid', $newProductUlid)
+            ->assertJsonPath('lines.0.quantity', '2.000000')
+            ->assertJsonPath('grand_total', '24.0000')
+            ->assertJsonPath('revision_number', 1);
+
+        $this->assertSame('5.000000', $this->stockFor($oldProductUlid));
+        $this->assertSame('4.000000', $this->stockFor($newProductUlid));
+
+        $document = PurchaseReturn::query()->where('ulid', $returnUlid)->firstOrFail();
+        $journal = JournalEntry::query()
+            ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_RETURN_AMENDMENT)
+            ->where('document_id', $document->id)
+            ->with('lines')
+            ->firstOrFail();
+
+        $this->assertBalanced($journal);
+        $this->assertTrue(
+            $journal->lines->contains(
+                fn ($line) => $line->supplier_id !== null && bccomp((string) $line->debit, '24.0000', 4) === 0,
+            ),
+        );
+
+        $this->getJson('/api/purchases/'.$purchaseUlid.'/returnable-lines')
+            ->assertOk()
+            ->assertJsonPath('data.0.already_returned_base_quantity', '2.000000')
+            ->assertJsonPath('data.0.remaining_returnable_base_quantity', '4.000000');
+
+        $this->assertNoInternalIds($response->json());
+    }
+
     public function test_purchase_return_amendment_requires_idempotency_and_is_tenant_isolated(): void
     {
         $this->signInOwner('purchase-return-amend-tenant-a')->assertOk();
