@@ -167,6 +167,28 @@ export function fetchSale(saleUlid: string) {
   return apiFetch<Sale>(`/api/sales/${saleUlid}`)
 }
 
+export function amendSale(
+  saleUlid: string,
+  payload: Omit<
+    SalePayload,
+    | 'sale_date'
+    | 'customer_ulid'
+    | 'customer_name'
+    | 'customer_phone'
+    | 'salesman_ulid'
+    | 'payment_due'
+    | 'initial_payment'
+    | 'initial_payments'
+  > & { revision_reason: string },
+  idempotencyKey: string,
+) {
+  return apiFetch<Sale>(`/api/sales/${saleUlid}/amend`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    headers: { 'Idempotency-Key': idempotencyKey },
+  })
+}
+
 
 export function fetchSaleHolds() {
   return apiFetch<{ data: SaleHold[]; count: number }>('/api/sales/holds', {
