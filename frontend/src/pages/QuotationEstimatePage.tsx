@@ -73,6 +73,9 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
   const activeQuotation = openedQuotation ?? savedQuotation
   const readOnly = activeQuotation ? !canEditQuotation : !canCreateQuotation
 
+  const quotationOtherColumnCount = readOnly ? 8 : 9
+  const quotationOtherColumnWidth = `${75 / quotationOtherColumnCount}%`
+
   const nextQuotationNumberQuery = useQuery({
     queryKey: ['quotation-estimate', 'next-document-number', session?.branch.ulid, session?.warehouse.ulid],
     queryFn: fetchNextSaleQuotationDocumentNumber,
@@ -796,17 +799,17 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
             ariaLabel="Quotation line items"
             minWidth={820}
             columns={[
-              { key: 'product', header: 'Product' },
-              { key: 'unit', header: 'Unit', width: 72 },
-              { key: 'stock', header: 'In Stock', width: 68, align: 'right' },
-              { key: 'qty', header: 'Qty', width: 60, align: 'right' },
-              { key: 'rate', header: 'Rate', width: 70, align: 'right' },
-              { key: 'disc-pct', header: 'Disc %', width: 60, align: 'right' },
-              { key: 'disc-rs', header: 'Disc Rs', width: 70, align: 'right' },
-              { key: 'tax-pct', header: 'Tax %', width: 60, align: 'right' },
-              { key: 'amount', header: 'Amount', width: 82, align: 'right' },
+              { key: 'product', header: 'Product', width: '25%' },
+              { key: 'unit', header: 'Unit', width: quotationOtherColumnWidth },
+              { key: 'stock', header: 'In Stock', width: quotationOtherColumnWidth, align: 'right' },
+              { key: 'qty', header: 'Qty', width: quotationOtherColumnWidth, align: 'right' },
+              { key: 'rate', header: 'Rate', width: quotationOtherColumnWidth, align: 'right' },
+              { key: 'disc-pct', header: 'Disc %', width: quotationOtherColumnWidth, align: 'right' },
+              { key: 'disc-rs', header: 'Disc Rs', width: quotationOtherColumnWidth, align: 'right' },
+              { key: 'tax-pct', header: 'Tax %', width: quotationOtherColumnWidth, align: 'right' },
+              { key: 'amount', header: 'Amount', width: quotationOtherColumnWidth, align: 'right' },
               ...(!readOnly
-                ? [{ key: 'remove', header: '', width: 30, align: 'center' as const }]
+                ? [{ key: 'remove', header: '', width: quotationOtherColumnWidth, align: 'center' as const }]
                 : []),
             ]}
           >
