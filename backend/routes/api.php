@@ -269,6 +269,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::get('/sales', [SaleController::class, 'index']);
         Route::get('/sales/product-wise', [SaleController::class, 'productWise']);
         Route::get('/sales/quotations', [SaleQuotationController::class, 'index']);
+        Route::get('/sales/quotations/next-document-number', [SaleQuotationController::class, 'nextDocumentNumber']);
         Route::post('/sales/quotations', [SaleQuotationController::class, 'store']);
         Route::patch('/sales/quotations/{quotationUlid}', [SaleQuotationController::class, 'update']);
         Route::get('/sales/quotations/{quotationUlid}', [SaleQuotationController::class, 'show']);
