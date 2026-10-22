@@ -378,6 +378,7 @@ export function PurchasesPage({
   const [otherCharges, setOtherCharges] = useState('0.0000')
   const [notes, setNotes] = useState('')
   const [documentNumber, setDocumentNumber] = useState('')
+  const [loadedDocumentNumber, setLoadedDocumentNumber] = useState('')
   const [documentLookupPending, setDocumentLookupPending] = useState(false)
   const [status, setStatus] = useState<'draft' | 'posted' | 'cancelled'>('draft')
   const [lines, setLines] = useState<DraftLine[]>([])
@@ -1338,6 +1339,7 @@ export function PurchasesPage({
   function applyInvoice(invoice: PurchaseInvoice) {
     setInvoiceUlid(invoice.ulid)
     setDocumentNumber(invoice.document_number)
+    setLoadedDocumentNumber(invoice.document_number)
     setStatus(invoice.status)
     setSupplierUlid(invoice.supplier?.ulid ?? '')
     setWarehouseUlid(invoice.warehouse?.ulid ?? session?.warehouse.ulid ?? '')
@@ -1448,6 +1450,7 @@ export function PurchasesPage({
   function resetEditor() {
     setInvoiceUlid(null)
     setDocumentNumber('')
+    setLoadedDocumentNumber('')
     setDocumentLookupPending(false)
     setStatus('draft')
     setSupplierUlid('')
@@ -1521,15 +1524,15 @@ export function PurchasesPage({
     const requestedNumber = (requestedOverride ?? documentNumber).trim()
     if (!requestedNumber || documentLookupPending) return
 
-    const currentNumber = documentNumber.trim().toLocaleLowerCase()
+    const currentNumber = loadedDocumentNumber.trim().toLocaleLowerCase()
     const requestedKey = requestedNumber.toLocaleLowerCase()
 
-    if (hasCurrentPurchaseData() && currentNumber && currentNumber !== requestedKey) {
+    if (hasCurrentPurchaseData() && currentNumber !== requestedKey) {
       const confirmed = await askConfirm(
         `The current Purchase Invoice contains data. If you fetch ${requestedNumber}, the current data will be lost.`,
       )
       if (!confirmed) {
-        setDocumentNumber(invoiceUlid ? documentNumber : '')
+        setDocumentNumber(loadedDocumentNumber)
         return
       }
     }
