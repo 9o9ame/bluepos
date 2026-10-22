@@ -1221,16 +1221,9 @@
   table-layout: fixed !important;
 }
 
-.sales-reference-grid .col-selector { width: 2.5% !important; }
-.sales-reference-grid .col-product { width: 46% !important; }
-.sales-reference-grid .col-stock { width: 6.5% !important; }
-.sales-reference-grid .col-qty { width: 6.5% !important; }
-.sales-reference-grid .col-price { width: 6.5% !important; }
-.sales-reference-grid .col-amt { width: 7% !important; }
-.sales-reference-grid .col-disc { width: 5.5% !important; }
-.sales-reference-grid .col-discrs { width: 6.5% !important; }
-.sales-reference-grid .col-net { width: 9% !important; }
-.sales-reference-grid .col-delete { width: 3.5% !important; }
+/* Column widths are resolved from the visible column catalog in SalesInvoicePage.
+   Product Description gets a responsive capped width; all other visible columns
+   share the remaining space proportionally, including columns enabled from Customization. */
 
 .sales-reference-grid th,
 .sales-reference-grid td {
