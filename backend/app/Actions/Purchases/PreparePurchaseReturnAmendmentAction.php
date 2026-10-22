@@ -280,6 +280,12 @@ class PreparePurchaseReturnAmendmentAction
             ]);
         }
 
+        if ($product->track_batch || $product->track_expiry) {
+            throw ValidationException::withMessages([
+                "lines.$index.product_ulid" => 'Batch or expiry tracked products must be returned against a posted purchase invoice.',
+            ]);
+        }
+
         $quantity = $this->quantity((string) ($item['quantity'] ?? '0'), "lines.$index.quantity");
         $unitCost = $this->money((string) ($item['unit_cost'] ?? '0'), "lines.$index.unit_cost");
         $discount = $this->money((string) ($item['discount_amount'] ?? '0'), "lines.$index.discount_amount");
