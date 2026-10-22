@@ -298,6 +298,35 @@ class PostSaleAccountingAction
             return $existing;
         }
 
+        $missingCostMovement = StockMovement::query()
+            ->forTenant($tenantId)
+            ->where('warehouse_id', $sale->warehouse_id)
+            ->where(function ($q) use ($sale): void {
+                $q->where(function ($original) use ($sale): void {
+                    $original
+                        ->where('reference_type', 'sale')
+                        ->where('reference_ulid', $sale->ulid);
+                })->orWhere(function ($amendment) use ($sale): void {
+                    $amendment
+                        ->where('reference_type', 'sale_amendment')
+                        ->where('reference_ulid', $sale->ulid);
+                });
+            })
+            ->where('quantity', '!=', 0)
+            ->where(function ($q): void {
+                $q->whereNull('unit_cost')->orWhereNull('total_cost');
+            })
+            ->lockForUpdate()
+            ->exists();
+
+        if ($missingCostMovement) {
+            throw new ApiException(
+                'SALE_COST_REQUIRED',
+                'A stock movement in this invoice history is missing its cost snapshot, so accounting amendment cannot be posted safely.',
+                422,
+            );
+        }
+
         $netRevenue = bcsub(
             bcsub(
                 bcadd((string) ($snapshot['subtotal'] ?? '0'), '0', 4),
