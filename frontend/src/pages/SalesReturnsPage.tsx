@@ -10,6 +10,7 @@ import {
   createSaleReturnLine,
   createSaleReturnRefund,
   deleteSaleReturnLine,
+  fetchNextSaleReturnDocumentNumber,
   fetchReturnableSaleLines,
   fetchSaleReturn,
   fetchSaleReturnSourceParties,
@@ -113,6 +114,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
   const canRefund = useCan('payments.create')
 
   const [view, setView] = useState<ViewMode>('entry')
+  const [returnNumberValue, setReturnNumberValue] = useState<string | null>(null)
   const [document, setDocument] = useState<SaleReturn | null>(null)
   const [saleUlid, setSaleUlid] = useState('')
   const [saleLabel, setSaleLabel] = useState('')
@@ -152,6 +154,23 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
   const refundKeyRef = useRef(newRefundKey())
   const amendingPosted = document?.status === 'posted' && canAmendReturn
   const readOnly = document?.status === 'posted' && !canAmendReturn
+
+  const nextReturnNumberQuery = useQuery({
+    queryKey: ['sales-return', 'next-document-number', session?.branch.ulid, session?.warehouse.ulid],
+    queryFn: fetchNextSaleReturnDocumentNumber,
+    enabled:
+      Boolean(session) &&
+      active &&
+      view === 'entry' &&
+      (canReturn || canAmendReturn),
+    retry: false,
+  })
+
+  const displayedReturnNumber =
+    returnNumberValue ??
+    document?.document_number ??
+    nextReturnNumberQuery.data?.document_number ??
+    'Auto'
 
   const customersQuery = useQuery({
     queryKey: ['sales-return', 'from-parties'],
@@ -423,6 +442,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
   }
 
   function resetEntry() {
+    setReturnNumberValue(null)
     setDocument(null)
     setSaleUlid('')
     setSaleLabel('')
@@ -448,9 +468,11 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
     createKeyRef.current = newReturnKey()
     amendmentKeyRef.current = newReturnKey()
     refundKeyRef.current = newRefundKey()
+    void nextReturnNumberQuery.refetch()
   }
 
   function loadDocument(row: SaleReturn) {
+    setReturnNumberValue(row.document_number)
     setDocument(row)
     setSaleUlid(row.original_sale?.ulid ?? '')
     setSaleLabel(row.original_sale?.document_number ?? '')
@@ -687,6 +709,82 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
     },
     onError: handleError,
   })
+
+  const returnLookupMutation = useMutation({
+    mutationFn: async (requestedNumber: string) => {
+      const lookup = await fetchSaleReturns({
+        q: requestedNumber,
+        per_page: 20,
+      })
+
+      const exact = lookup.data.find(
+        (row) =>
+          row.document_number.trim().toLocaleLowerCase() ===
+          requestedNumber.trim().toLocaleLowerCase(),
+      )
+
+      if (!exact) {
+        throw new Error('No Sales Return with that exact number was found in this branch and warehouse.')
+      }
+
+      return fetchSaleReturn(exact.ulid)
+    },
+    onSuccess: (row) => {
+      loadDocument(row)
+      setView('entry')
+    },
+    onError: handleError,
+  })
+
+  function hasCurrentReturnEntryData(): boolean {
+    return Boolean(
+      document?.ulid ||
+      saleUlid ||
+      generalRows.length > 0 ||
+      Object.values(lineQty).some((value) => Number(value) > 0) ||
+      reason.trim() ||
+      notes.trim(),
+    )
+  }
+
+  async function requestReturnLookup(requestedOverride?: string) {
+    const requestedNumber = (requestedOverride ?? returnNumberValue ?? '').trim()
+    if (!requestedNumber || returnLookupMutation.isPending) return
+
+    const currentNumber = document?.document_number.trim().toLocaleLowerCase() ?? null
+    const requestedKey = requestedNumber.toLocaleLowerCase()
+
+    if (hasCurrentReturnEntryData() && currentNumber !== requestedKey) {
+      const confirmed = await askConfirm(
+        `The current Sales Return contains data. If you fetch ${requestedNumber}, the current data will be lost.`,
+      )
+      if (!confirmed) {
+        setReturnNumberValue(document?.document_number ?? null)
+        return
+      }
+    }
+
+    returnLookupMutation.mutate(requestedNumber)
+  }
+
+  async function requestOpenReturn(row: SaleReturn) {
+    setReturnNumberValue(row.document_number)
+
+    const currentNumber = document?.document_number.trim().toLocaleLowerCase() ?? null
+    const requestedKey = row.document_number.trim().toLocaleLowerCase()
+
+    if (hasCurrentReturnEntryData() && currentNumber !== requestedKey) {
+      const confirmed = await askConfirm(
+        `The current Sales Return contains data. If you fetch ${row.document_number}, the current data will be lost.`,
+      )
+      if (!confirmed) {
+        setReturnNumberValue(document?.document_number ?? null)
+        return
+      }
+    }
+
+    openMutation.mutate(row.ulid)
+  }
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -966,7 +1064,18 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                 <div className="sales-return-fields-left">
                 <div className="sales-return-option-group is-ret">
                   <label>Ret#:</label>
-                  <input value={document?.document_number ?? 'Auto'} readOnly />
+                  <input
+                    value={displayedReturnNumber}
+                    readOnly={!canReturn && !canAmendReturn}
+                    disabled={returnLookupMutation.isPending || saveMutation.isPending || postMutation.isPending}
+                    title="Type an exact Sales Return number and press Enter to load it"
+                    onChange={(e) => setReturnNumberValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter') return
+                      e.preventDefault()
+                      void requestReturnLookup()
+                    }}
+                  />
                 </div>
 
                 <div className="sales-return-option-group is-date">
@@ -1747,7 +1856,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
             rowKey={(row) => row.ulid}
             selectedKey={selectedHistory}
             onSelect={(row) => setSelectedHistory(row.ulid)}
-            onActivate={(row) => void openMutation.mutateAsync(row.ulid)}
+            onActivate={(row) => void requestOpenReturn(row)}
             emptyMessage="No Sales Returns match these filters."
           />
         </div>
