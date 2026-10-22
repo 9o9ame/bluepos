@@ -119,6 +119,10 @@ class AmendSaleAction
             $prepareData['customer_ulid'] = $sale->customer?->ulid;
             $prepareData['salesman_ulid'] = $sale->salesmanParty?->ulid;
             $prepareData['sale_date'] = $sale->sale_date?->toDateString();
+            $prepareData['items'] = $this->preservePriorLinePrices(
+                $prepareData['items'] ?? [],
+                $before['items'] ?? [],
+            );
 
             $prepared = $this->salePreparation->prepareDocument($prepareData);
 
@@ -217,6 +221,63 @@ class AmendSaleAction
                 'latestRevision',
             ]) ?? $sale;
         });
+    }
+
+    /**
+     * Preserve the prior effective price when a line is unchanged by identity.
+     * A genuinely changed client override still flows through sales.override_price.
+     *
+     * @param list<array<string,mixed>> $items
+     * @param list<array<string,mixed>> $beforeItems
+     * @return list<array<string,mixed>>
+     */
+    private function preservePriorLinePrices(array $items, array $beforeItems): array
+    {
+        $queues = [];
+
+        foreach ($beforeItems as $beforeItem) {
+            if (($beforeItem['line_kind'] ?? 'sale') !== 'sale') {
+                continue;
+            }
+
+            $key = $this->lineIdentityKey($beforeItem);
+            $queues[$key] ??= [];
+            $queues[$key][] = $beforeItem;
+        }
+
+        foreach ($items as $index => $item) {
+            $key = $this->lineIdentityKey($item);
+            $prior = array_shift($queues[$key] ?? []);
+
+            if (! is_array($prior)) {
+                continue;
+            }
+
+            $requestedOverride = trim((string) ($item['unit_price_override'] ?? ''));
+            $priorPrice = bcadd((string) ($prior['unit_price'] ?? '0'), '0', 4);
+
+            if (
+                $requestedOverride === ''
+                || bccomp($requestedOverride, $priorPrice, 4) === 0
+            ) {
+                unset($items[$index]['unit_price_override']);
+                $items[$index]['_trusted_prior_unit_price'] = $priorPrice;
+            }
+        }
+
+        return array_values($items);
+    }
+
+    /**
+     * @param array<string,mixed> $line
+     */
+    private function lineIdentityKey(array $line): string
+    {
+        return implode('|', [
+            (string) ($line['product_ulid'] ?? ($line['product']['ulid'] ?? '')),
+            (string) ($line['unit_ulid'] ?? ($line['unit']['ulid'] ?? '')),
+            (string) ($line['barcode'] ?? ''),
+        ]);
     }
 
     /**
