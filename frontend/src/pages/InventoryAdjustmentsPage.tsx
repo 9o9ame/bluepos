@@ -277,8 +277,8 @@ export function InventoryAdjustmentsPage() {
     setProductUlid(line.product?.ulid ?? '')
     setProductSearch(line.product ? `${line.product.product_number} · ${line.product.name}` : '')
     setProductLookupQuery(line.product?.name ?? '')
-    setQtyPlus(line.qty_plus === '0.000000' ? '' : line.qty_plus)
-    setQtyMinus(line.qty_minus === '0.000000' ? '' : line.qty_minus)
+    setQtyPlus(Number(line.qty_plus) === 0 ? '' : formatDecimal(line.qty_plus))
+    setQtyMinus(Number(line.qty_minus) === 0 ? '' : formatDecimal(line.qty_minus))
     setLineRemarks(line.remarks ?? '')
     setProductPickerOpen(false)
 
@@ -300,10 +300,144 @@ export function InventoryAdjustmentsPage() {
     }, 0)
   }
 
-  function openDocument(row: InventoryAdjustment) {
+  function hasCurrentAdjustmentData() {
+    return Boolean(
+      documentUlid ||
+      displayLines.length > 0 ||
+      accountUlid ||
+      documentNotes.trim(),
+    )
+  }
+
+  async function openDocument(row: InventoryAdjustment) {
+    if (
+      hasCurrentAdjustmentData() &&
+      document?.ulid !== row.ulid
+    ) {
+      const confirmed = await feedback.confirm(
+        `The current adjustment contains data. If you fetch ${row.document_number}, the current data will be lost.`,
+      )
+      if (!confirmed) return
+    }
+
+    setDocumentNumberValue(row.document_number)
     setDocumentUlid(row.ulid)
     setTab('invoice')
     clearLineForm()
+  }
+
+  async function lookupDocumentNumber() {
+    const requested = (documentNumberValue ?? '').trim()
+    if (!requested) return
+
+    try {
+      const rows = await fetchInventoryAdjustments({ q: requested })
+      const exact = rows.find(
+        (row) => row.document_number.trim().toLocaleLowerCase() === requested.toLocaleLowerCase(),
+      )
+
+      if (!exact) {
+        feedback.info('No adjustment with that exact number was found in this branch and warehouse.', 'Adjustment')
+        return
+      }
+
+      await openDocument(exact)
+    } catch (error) {
+      feedback.fromApiError(error, 'Unable to find adjustment.')
+    }
+  }
+
+  function stagePostedLine() {
+    if (!document || document.status !== 'posted') return
+    if (!productUlid) {
+      feedback.info('Select a product.', 'Adjustment')
+      return
+    }
+
+    const plus = Number.parseFloat(qtyPlus || '0') || 0
+    const minus = Number.parseFloat(qtyMinus || '0') || 0
+    if ((plus > 0) === (minus > 0)) {
+      feedback.info('Enter either Qty + or Qty - with a value greater than zero.', 'Adjustment')
+      return
+    }
+
+    const existing = displayLines.find((line) => line.ulid === selectedLineUlid)
+    const selectedProduct = productLookupRows.find((row) => row.ulid === productUlid)
+    const product = existing?.product ?? (
+      selectedProduct
+        ? {
+            ulid: selectedProduct.ulid,
+            product_number: selectedProduct.product_number,
+            sku: selectedProduct.sku,
+            name: selectedProduct.name,
+          }
+        : null
+    )
+
+    if (!product) {
+      feedback.info('Select a valid product.', 'Adjustment')
+      return
+    }
+
+    const inStock = Number.parseFloat(
+      existing?.in_stock
+      ?? selectedProduct?.sales_lookup?.in_stock
+      ?? '0',
+    ) || 0
+    const price = Number.parseFloat(
+      existing?.price
+      ?? selectedProduct?.sales_lookup?.average_cost
+      ?? '0',
+    ) || 0
+    const delta = plus - minus
+    const targetUlid =
+      selectedLineUlid
+      ?? displayLines.find((line) => line.product?.ulid === productUlid)?.ulid
+      ?? `amend-${productUlid}-${Date.now()}`
+
+    const staged: InventoryAdjustmentLine = {
+      ulid: targetUlid,
+      in_stock: formatDecimal(inStock),
+      qty_plus: plus > 0 ? formatDecimal(plus) : '0.0',
+      qty_minus: minus > 0 ? formatDecimal(minus) : '0.0',
+      after_stock: formatDecimal(inStock + delta),
+      price: formatDecimal(price),
+      amount: formatDecimal(Math.abs(delta) * price),
+      remarks: lineRemarks.trim() || null,
+      product,
+    }
+
+    setAmendmentLines((current) => {
+      const sameProduct = current.find((line) => line.product?.ulid === productUlid)
+      const replaceUlid = selectedLineUlid ?? sameProduct?.ulid
+      if (replaceUlid) {
+        return current.map((line) => line.ulid === replaceUlid ? staged : line)
+      }
+      return [...current, staged]
+    })
+    setAmendmentDirty(true)
+    clearLineForm(true)
+  }
+
+  function saveCurrentLine() {
+    if (document?.status === 'posted') {
+      stagePostedLine()
+      return
+    }
+    if (!saveLine.isPending) saveLine.mutate()
+  }
+
+  async function removeCurrentLine(lineUlid: string) {
+    if (document?.status === 'posted') {
+      if (!await feedback.confirm('Remove this adjustment line?')) return
+      setAmendmentLines((current) => current.filter((line) => line.ulid !== lineUlid))
+      setAmendmentDirty(true)
+      clearLineForm(true)
+      return
+    }
+
+    if (!await feedback.confirm('Remove this adjustment line?')) return
+    removeLine.mutate(lineUlid)
   }
 
   const saveHeader = useMutation({
@@ -422,6 +556,58 @@ export function InventoryAdjustmentsPage() {
       feedback.success('Adjustment line removed.')
     },
     onError: (error) => feedback.fromApiError(error, 'Unable to remove adjustment line.'),
+  })
+
+  const amendDocument = useMutation({
+    mutationFn: () => {
+      if (!document || document.status !== 'posted') {
+        throw new Error('Only posted adjustments can be amended.')
+      }
+      if (!accountUlid) {
+        throw new Error('Select an adjustment account.')
+      }
+      if (amendmentLines.length === 0) {
+        throw new Error('Add at least one adjustment line.')
+      }
+
+      return amendInventoryAdjustment(
+        document.ulid,
+        {
+          revision_reason: 'Posted inventory adjustment corrected from Adjustment screen',
+          account_ulid: accountUlid,
+          adjustment_date: adjustmentDate,
+          notes: documentNotes.trim() || null,
+          lines: amendmentLines.map((line) => ({
+            product_ulid: line.product?.ulid ?? '',
+            qty_plus: Number(line.qty_plus) > 0 ? line.qty_plus : '0',
+            qty_minus: Number(line.qty_minus) > 0 ? line.qty_minus : '0',
+            notes: line.remarks,
+          })),
+        },
+        amendmentKeyRef.current,
+      )
+    },
+    onSuccess: async (saved) => {
+      setHeaderDirty(false)
+      setAmendmentDirty(false)
+      amendmentKeyRef.current = newAdjustmentKey()
+      clearLineForm()
+      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustment', saved.ulid] })
+      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustments'] })
+      await queryClient.invalidateQueries({ queryKey: ['inventory-stock'] })
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
+      feedback.success(`Adjustment ${saved.document_number} amended.`)
+    },
+    onError: (error) => {
+      if (error instanceof Error && (
+        error.message === 'Select an adjustment account.' ||
+        error.message === 'Add at least one adjustment line.'
+      )) {
+        feedback.info(error.message, 'Adjustment')
+        return
+      }
+      feedback.fromApiError(error, 'Unable to amend adjustment.')
+    },
   })
 
   const postDocument = useMutation({
