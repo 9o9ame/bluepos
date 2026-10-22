@@ -98,15 +98,6 @@ class AmendInventoryAdjustmentAction
 
             $previousJournal = $this->effectiveJournal($document, $before);
 
-            $provisional = $this->snapshots->fromPrepared(
-                $document,
-                $prepared['header'],
-                $effectiveLines,
-                $revisionNumber,
-                null,
-                $idempotencyKey,
-            );
-
             $amendmentJournal = $this->postAccounting->execute(
                 $document,
                 $prepared['header'],
