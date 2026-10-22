@@ -2445,11 +2445,11 @@ export function PurchasesPage({
   )
   const identityEditable = editable && status !== 'posted'
   const selectedLine = lines.find((line) => line.key === selectedLineKey) ?? null
-  const displaySubtotal = liveTotals.subtotal
-  const displayDiscount = liveTotals.discount_amount
-  const displayTax = liveTotals.tax_amount
-  const displayFurther = liveTotals.further_tax_amount
-  const displayGrand = liveTotals.grand_total
+  const displaySubtotal = formatDecimal(liveTotals.subtotal)
+  const displayDiscount = formatDecimal(liveTotals.discount_amount)
+  const displayTax = formatDecimal(liveTotals.tax_amount)
+  const displayFurther = formatDecimal(liveTotals.further_tax_amount)
+  const displayGrand = formatDecimal(liveTotals.grand_total)
   const balancePayable = status === 'posted' ? serverBalancePayable : displayGrand
 
   async function removeSelectedLine() {
@@ -3018,7 +3018,7 @@ export function PurchasesPage({
             <div><span>Other Chg (+)</span><strong>{money(otherCharges)}</strong></div>
             <div><span>Other Disc (−)</span><strong>{money(shellOtherDiscount)}</strong></div>
             <div><span>Trade Offer (−)</span><strong>{money(shellTradeOffer)}</strong></div>
-            <div><span>Withholding</span><strong>{liveTotals.advance_tax_amount}</strong></div>
+            <div><span>Withholding</span><strong>{formatDecimal(liveTotals.advance_tax_amount)}</strong></div>
             <div><span>Round Off</span><strong>{money(shellRoundOff)}</strong></div>
           </div>
           <div className="pie-grand">
