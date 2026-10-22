@@ -52,6 +52,7 @@ import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
 import type { SaleDraftLine } from '../types/sales'
 import type { Product } from '../types/catalog'
+import { formatDecimal } from '../utils/formatDecimal'
 import './SalesInvoicePage.theme.css'
 import './SalesInvoicePage.cart.css'
 
@@ -90,18 +91,7 @@ function salesColClass(col: ResolvedGridColumn): string {
 
 function displayEditableNumber(value: string | null | undefined): string {
   if (value === '' || value == null) return value ?? ''
-
-  const parsed = Number.parseFloat(value)
-  if (!Number.isFinite(parsed)) return value
-  if (parsed === 0) return '0.00'
-
-  const [integerPart, fractionPart = ''] = value.split('.')
-  const meaningfulFraction = fractionPart.replace(/0+$/, '')
-  const normalizedFraction = meaningfulFraction.padEnd(2, '0')
-
-  return normalizedFraction
-    ? `${integerPart}.${normalizedFraction}`
-    : `${integerPart}.00`
+  return formatDecimal(value)
 }
 
 function newSaleKey(): string {
@@ -297,7 +287,7 @@ export function SalesInvoicePage({
     const total = Number.parseFloat(cart.preview.grandTotal) || 0
     const paid = Number.parseFloat(received) || 0
 
-    return Math.max(total - paid, 0).toFixed(2)
+    return formatDecimal(Math.max(total - paid, 0))
   }, [cart.preview.grandTotal, received])
 
 
@@ -2196,7 +2186,7 @@ export function SalesInvoicePage({
                 <>
                   <span className="sales-pos-status-ok">
                     Saved {savedSale.document_number} — total{' '}
-                    {savedSale.grand_total}
+                    {formatDecimal(savedSale.grand_total)}
                   </span>
 
                 </>
@@ -2417,9 +2407,7 @@ export function SalesInvoicePage({
 
                           return (
                             <td key={col.key} className="sales-pos-line-value">
-                              {Number.parseFloat(line.quantity || '0').toFixed(
-                                line.unit_allows_decimal === false ? 0 : 3,
-                              )}
+                              {formatDecimal(line.quantity || '0')}
                             </td>
                           )
                         }
@@ -2432,7 +2420,7 @@ export function SalesInvoicePage({
 
                         if (col.key === 'in_stock') {
                           const available = cart.availableStock(line)
-                          return <td key={col.key} className="sales-pos-line-pending col-stock">{available === null ? '—' : Number.parseFloat(available).toFixed(3)}</td>
+                          return <td key={col.key} className="sales-pos-line-pending col-stock">{available === null ? '—' : formatDecimal(available)}</td>
                         }
 
                         if (col.key === 'price') {
@@ -2454,7 +2442,7 @@ export function SalesInvoicePage({
 
                           return (
                             <td key={col.key} className="sales-pos-line-pending col-price">
-                              {line.line_kind === 'sale' ? Number.parseFloat(line.unit_price ?? '0').toFixed(2) : '0.00'}
+                              {line.line_kind === 'sale' ? formatDecimal(line.unit_price ?? '0') : '0.00'}
                             </td>
                           )
                         }
@@ -2476,7 +2464,7 @@ export function SalesInvoicePage({
                             )
                           }
 
-                          return <td key={col.key} className="sales-pos-line-pending col-amt">{linePreview.grossAmount}</td>
+                          return <td key={col.key} className="sales-pos-line-pending col-amt">{formatDecimal(linePreview.grossAmount)}</td>
                         }
 
                         if (col.key === 'disc_pct') {
@@ -2501,7 +2489,7 @@ export function SalesInvoicePage({
 
                           return (
                             <td key={col.key} className="sales-pos-line-value">
-                              {Number.parseFloat(line.discount_percent ?? '0').toFixed(2)}
+                              {formatDecimal(line.discount_percent ?? '0')}
                             </td>
                           )
                         }
@@ -2528,12 +2516,12 @@ export function SalesInvoicePage({
 
                           return (
                             <td key={col.key} className="sales-pos-line-value">
-                              {Number.parseFloat(line.discount_amount ?? '0').toFixed(2)}
+                              {formatDecimal(line.discount_amount ?? '0')}
                             </td>
                           )
                         }
 
-                        if (col.key === 'net_amt') return <td key={col.key} className="sales-pos-line-pending">{linePreview.netAmount}</td>
+                        if (col.key === 'net_amt') return <td key={col.key} className="sales-pos-line-pending">{formatDecimal(linePreview.netAmount)}</td>
 
                         if (COST_VIEW_COLUMN_KEYS.includes(col.key as (typeof COST_VIEW_COLUMN_KEYS)[number])) {
                           if (line.line_kind !== 'sale') {
@@ -2587,7 +2575,7 @@ export function SalesInvoicePage({
                           )
                         }
 
-                        if (col.key === 's_tax_pct') return <td key={col.key} className="sales-pos-line-pending">{linePreview.taxPercent}</td>
+                        if (col.key === 's_tax_pct') return <td key={col.key} className="sales-pos-line-pending">{formatDecimal(linePreview.taxPercent)}</td>
                         return <td key={col.key} />
                       })}
                     </tr>
@@ -2722,7 +2710,7 @@ export function SalesInvoicePage({
 
                               if (col.key === 'in_stock') {
                                 const available = cart.availableStock(line)
-                                return <td key={col.key} className="sales-pos-line-pending col-stock">{available === null ? '—' : Number.parseFloat(available).toFixed(3)}</td>
+                                return <td key={col.key} className="sales-pos-line-pending col-stock">{available === null ? '—' : formatDecimal(available)}</td>
                               }
 
                               if (col.key === 'price') {
@@ -2742,7 +2730,7 @@ export function SalesInvoicePage({
                                   )
                                 }
 
-                                return <td key={col.key} className="sales-pos-line-pending col-price">{Number.parseFloat(line.unit_price ?? '0').toFixed(2)}</td>
+                                return <td key={col.key} className="sales-pos-line-pending col-price">{formatDecimal(line.unit_price ?? '0')}</td>
                               }
 
                               if (col.key === 'amt') {
@@ -2762,7 +2750,7 @@ export function SalesInvoicePage({
                                   )
                                 }
 
-                                return <td key={col.key} className="sales-pos-line-pending col-amt">{linePreview.grossAmount}</td>
+                                return <td key={col.key} className="sales-pos-line-pending col-amt">{formatDecimal(linePreview.grossAmount)}</td>
                               }
 
                               if (col.key === 'disc_pct') {
@@ -2794,7 +2782,7 @@ export function SalesInvoicePage({
                               }
 
                               if (col.key === 'net_amt') {
-                                return <td key={col.key} className="sales-pos-line-pending">{linePreview.netAmount}</td>
+                                return <td key={col.key} className="sales-pos-line-pending">{formatDecimal(linePreview.netAmount)}</td>
                               }
 
                               if (COST_VIEW_COLUMN_KEYS.includes(col.key as (typeof COST_VIEW_COLUMN_KEYS)[number])) {
@@ -2840,7 +2828,7 @@ export function SalesInvoicePage({
                               }
 
                               if (col.key === 's_tax_pct') {
-                                return <td key={col.key} className="sales-pos-line-pending">{linePreview.taxPercent}</td>
+                                return <td key={col.key} className="sales-pos-line-pending">{formatDecimal(linePreview.taxPercent)}</td>
                               }
 
                               return <td key={col.key} />
@@ -3015,9 +3003,9 @@ export function SalesInvoicePage({
 
               <div className="sales-reference-grid-totals">
                 <div />
-                <strong>{cart.preview.quantity}</strong>
-                <strong>{cart.preview.subtotal}</strong>
-                <strong>{cart.preview.grandTotal}</strong>
+                <strong>{formatDecimal(cart.preview.quantity)}</strong>
+                <strong>{formatDecimal(cart.preview.subtotal)}</strong>
+                <strong>{formatDecimal(cart.preview.grandTotal)}</strong>
               </div>
 
             </div>
@@ -3231,7 +3219,7 @@ export function SalesInvoicePage({
               <span />
 
               <strong className="is-green">
-                {cart.preview.grandTotal}
+                {formatDecimal(cart.preview.grandTotal)}
               </strong>
 
               <button
@@ -3276,7 +3264,7 @@ export function SalesInvoicePage({
               />
 
               <input
-                value={cart.preview.subtotal}
+                value={formatDecimal(cart.preview.subtotal)}
                 readOnly
               />
             </div>
@@ -3310,8 +3298,8 @@ export function SalesInvoicePage({
             </legend>
 
             <div className="sales-reference-pay-head-values">
-              <strong>{cart.preview.subtotal}</strong>
-              <strong>{cart.preview.grandTotal}</strong>
+              <strong>{formatDecimal(cart.preview.subtotal)}</strong>
+              <strong>{formatDecimal(cart.preview.grandTotal)}</strong>
             </div>
 
             <div className="sales-reference-disc-line">
@@ -3391,7 +3379,7 @@ export function SalesInvoicePage({
           <div className="sales-reference-total-block">
             <span>Total:</span>
 
-            <div>{cart.preview.grandTotal}</div>
+            <div>{formatDecimal(cart.preview.grandTotal)}</div>
           </div>
 
           <label className="sales-reference-side-label">
@@ -3423,7 +3411,7 @@ export function SalesInvoicePage({
             </strong>
 
             <strong>
-              {Number.parseFloat(received || '0').toFixed(2)}
+              {formatDecimal(received || '0')}
             </strong>
           </div>
 
@@ -3494,7 +3482,7 @@ export function SalesInvoicePage({
           bodyClassName="sales-payment-modal-body"
         >
           <SaleFinalizePaymentPanel
-            total={cart.preview.grandTotal}
+            total={formatDecimal(cart.preview.grandTotal)}
             accounts={paymentAccountsQuery.data ?? []}
             initialCash={received}
             initialReference={paymentReference}
