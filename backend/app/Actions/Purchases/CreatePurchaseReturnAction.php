@@ -151,13 +151,32 @@ class CreatePurchaseReturnAction
         ];
     }
 
+    public function previewNextDocumentNumber(): string
+    {
+        return $this->calculateNextDocumentNumber(
+            $this->tenantContext->tenantId(),
+            false,
+        );
+    }
+
     private function nextDocumentNumber(int $tenantId): string
     {
-        $latest = PurchaseReturn::query()
+        return $this->calculateNextDocumentNumber($tenantId, true);
+    }
+
+    private function calculateNextDocumentNumber(
+        int $tenantId,
+        bool $lock,
+    ): string {
+        $query = PurchaseReturn::query()
             ->forTenant($tenantId)
-            ->lockForUpdate()
-            ->orderByDesc('id')
-            ->value('document_number');
+            ->orderByDesc('id');
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        $latest = $query->value('document_number');
 
         $seq = 1;
         if (is_string($latest) && preg_match('/PR-(\d+)$/', $latest, $matches) === 1) {
