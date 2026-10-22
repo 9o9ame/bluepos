@@ -210,16 +210,35 @@ class PreparePurchaseReturnAmendmentAction
         }
 
         // Multiply first, then divide to avoid truncating a ratio before applying it.
-        $discount = bcdiv(
+        $proportionalDiscount = bcdiv(
             bcmul((string) $purchaseLine->discount_amount, $quantity, 10),
             $originalQty,
             4,
         );
-        $tax = bcdiv(
+        $proportionalTax = bcdiv(
             bcmul((string) $purchaseLine->tax_amount, $quantity, 10),
             $originalQty,
             4,
         );
+
+        $discount = array_key_exists('discount_amount', $item) && $item['discount_amount'] !== null
+            ? $this->money((string) $item['discount_amount'], "lines.$index.discount_amount")
+            : $proportionalDiscount;
+        $tax = array_key_exists('tax_amount', $item) && $item['tax_amount'] !== null
+            ? $this->money((string) $item['tax_amount'], "lines.$index.tax_amount")
+            : $proportionalTax;
+
+        if (bccomp($discount, (string) $purchaseLine->discount_amount, 4) === 1) {
+            throw ValidationException::withMessages([
+                "lines.$index.discount_amount" => 'Return discount cannot exceed the original purchase line discount.',
+            ]);
+        }
+
+        if (bccomp($tax, (string) $purchaseLine->tax_amount, 4) === 1) {
+            throw ValidationException::withMessages([
+                "lines.$index.tax_amount" => 'Return tax cannot exceed the original purchase line tax.',
+            ]);
+        }
 
         $unitCost = bcadd((string) $purchaseLine->unit_cost, '0', 4);
         $lineTotal = bcadd(
