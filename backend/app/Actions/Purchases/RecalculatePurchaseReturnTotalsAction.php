@@ -128,6 +128,7 @@ class RecalculatePurchaseReturnTotalsAction
     public function remainingReturnableBase(PurchaseInvoiceLine $purchaseLine, ?int $excludeReturnId = null): string
     {
         $returns = PurchaseReturn::query()
+            ->forTenant((int) $purchaseLine->tenant_id)
             ->where('purchase_invoice_id', $purchaseLine->purchase_invoice_id)
             ->where('status', PurchaseReturnStatus::Posted->value)
             ->when(
