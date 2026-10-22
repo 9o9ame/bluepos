@@ -1322,7 +1322,6 @@ export function PurchaseOrderPage() {
                                   </button>
                                 )}
                               </div>
-                            </div>
                           </td>
                           <td className="is-center">
                             <UiSelect
