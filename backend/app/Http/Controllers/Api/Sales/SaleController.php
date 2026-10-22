@@ -37,9 +37,23 @@ class SaleController extends Controller
             ->where('branch_id', $tenantContext->branchId())
             ->with(['customer', 'salesmanParty', 'branch', 'warehouse', 'latestRevision'])
             ->withSum('payments as paid_amount', 'amount')
-            ->withSum([
-                'saleReturns as returned_amount' => fn ($q) => $q->where('status', SaleReturnStatus::Posted->value),
-            ], 'grand_total')
+            ->select('sales.*')
+            ->selectRaw(
+                "(SELECT COALESCE(SUM(COALESCE((
+                    SELECT CAST(dr.after_snapshot->>'grand_total' AS NUMERIC)
+                    FROM document_revisions dr
+                    WHERE dr.tenant_id = sr.tenant_id
+                      AND dr.document_type = 'sale_return'
+                      AND dr.document_ulid = sr.ulid
+                    ORDER BY dr.revision_number DESC
+                    LIMIT 1
+                ), sr.grand_total)), 0)
+                FROM sale_returns sr
+                WHERE sr.sale_id = sales.id
+                  AND sr.tenant_id = sales.tenant_id
+                  AND sr.status = ?) AS returned_amount",
+                [SaleReturnStatus::Posted->value],
+            )
             ->orderByDesc('sale_date')
             ->orderByDesc('id');
 
@@ -98,7 +112,15 @@ class SaleController extends Controller
                         ORDER BY dr.revision_number DESC
                         LIMIT 1
                     ), sales.grand_total) - COALESCE((
-                        SELECT SUM(sr.grand_total)
+                        SELECT SUM(COALESCE((
+                            SELECT CAST(dr2.after_snapshot->>'grand_total' AS NUMERIC)
+                            FROM document_revisions dr2
+                            WHERE dr2.tenant_id = sr.tenant_id
+                              AND dr2.document_type = 'sale_return'
+                              AND dr2.document_ulid = sr.ulid
+                            ORDER BY dr2.revision_number DESC
+                            LIMIT 1
+                        ), sr.grand_total))
                         FROM sale_returns sr
                         WHERE sr.sale_id = sales.id
                           AND sr.tenant_id = sales.tenant_id
