@@ -29,7 +29,8 @@ class PurchaseReturnResource extends JsonResource
             'document_number' => $this->document_number,
             'return_date' => $revisionSnapshot['return_date'] ?? $this->return_date?->toDateString(),
             'status' => $this->status->value,
-            'return_mode' => $this->purchase_invoice_id === null ? 'general' : 'invoice',
+            'return_mode' => $revisionSnapshot['return_mode']
+                ?? ($this->purchase_invoice_id === null ? 'general' : 'invoice'),
             'subtotal' => $revisionSnapshot['subtotal'] ?? $this->subtotal,
             'discount_amount' => $revisionSnapshot['discount_amount'] ?? $this->discount_amount,
             'tax_amount' => $revisionSnapshot['tax_amount'] ?? $this->tax_amount,
