@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
     'document_ulid',
     'revision_number',
     'reason',
+    'idempotency_key',
     'before_snapshot',
     'after_snapshot',
     'created_by',
