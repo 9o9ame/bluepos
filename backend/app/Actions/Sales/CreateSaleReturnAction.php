@@ -209,13 +209,32 @@ class CreateSaleReturnAction
         ];
     }
 
+    public function previewNextDocumentNumber(): string
+    {
+        return $this->calculateNextDocumentNumber(
+            $this->tenantContext->tenantId(),
+            false,
+        );
+    }
+
     private function nextDocumentNumber(int $tenantId): string
     {
-        $latest = SaleReturn::query()
+        return $this->calculateNextDocumentNumber($tenantId, true);
+    }
+
+    private function calculateNextDocumentNumber(
+        int $tenantId,
+        bool $lock,
+    ): string {
+        $query = SaleReturn::query()
             ->forTenant($tenantId)
-            ->lockForUpdate()
-            ->orderByDesc('id')
-            ->value('document_number');
+            ->orderByDesc('id');
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        $latest = $query->value('document_number');
 
         $seq = 1;
         if (is_string($latest) && preg_match('/SR-(\d+)$/', $latest, $matches) === 1) {
