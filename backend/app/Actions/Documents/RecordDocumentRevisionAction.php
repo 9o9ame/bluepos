@@ -4,7 +4,6 @@ namespace App\Actions\Documents;
 
 use App\Models\DocumentRevision;
 use App\Tenancy\TenantContext;
-use Illuminate\Support\Facades\DB;
 
 class RecordDocumentRevisionAction
 {
