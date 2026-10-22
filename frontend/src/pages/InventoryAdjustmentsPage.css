@@ -711,3 +711,50 @@ html[data-animations='off'] .inventory-adjustments-product-arrow > span {
   transition: none;
 }
 
+
+
+/* Existing adjustment rows use the same editable control geometry as the entry row. */
+.inventory-adjustments-inline-product,
+.inventory-adjustments-inline-remarks {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: calc(var(--ui-control-h-md, 28px) - 4px);
+  padding: 0 6px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  box-shadow: var(--ui-control-shadow);
+  font: inherit;
+  font-weight: 600;
+}
+
+.inventory-adjustments-inline-product {
+  display: block;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.inventory-adjustments-inline-product:hover:not(:disabled) {
+  border-color: var(--ui-control-hover-border);
+  background: var(--ui-control-hover-bg);
+}
+
+.inventory-adjustments-inline-product:focus-visible,
+.inventory-adjustments-inline-remarks:focus-visible {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.inventory-adjustments-inline-product:disabled,
+.inventory-adjustments-inline-remarks:disabled,
+.inventory-adjustments-entry-number:disabled {
+  background: var(--ui-surface-muted);
+  color: var(--ui-text-muted);
+  cursor: not-allowed;
+}
