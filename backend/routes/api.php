@@ -371,10 +371,12 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::middleware('entitled:purchase_returns')->group(function () {
         Route::get('/purchase-returns', [PurchaseReturnController::class, 'index']);
+        Route::get('/purchase-returns/next-document-number', [PurchaseReturnController::class, 'nextDocumentNumber']);
         Route::get('/purchase-returns/product-wise', [PurchaseReturnController::class, 'productWise']);
         Route::post('/purchase-returns', [PurchaseReturnController::class, 'store']);
         Route::get('/purchase-returns/{returnUlid}', [PurchaseReturnController::class, 'show']);
         Route::patch('/purchase-returns/{returnUlid}', [PurchaseReturnController::class, 'update']);
+        Route::patch('/purchase-returns/{returnUlid}/amend', [PurchaseReturnController::class, 'amend']);
         Route::post('/purchase-returns/{returnUlid}/lines', [PurchaseReturnController::class, 'storeLine']);
         Route::patch('/purchase-returns/{returnUlid}/lines/{lineUlid}', [PurchaseReturnController::class, 'updateLine']);
         Route::delete('/purchase-returns/{returnUlid}/lines/{lineUlid}', [PurchaseReturnController::class, 'destroyLine']);
