@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Sales;
 
 use App\Actions\Sales\CreateSaleQuotationAction;
 use App\Actions\Sales\UpdateSaleQuotationAction;
+use App\Authz\PermissionService;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StoreSaleQuotationRequest;
@@ -16,6 +17,20 @@ use Illuminate\Http\Request;
 
 class SaleQuotationController extends Controller
 {
+    public function nextDocumentNumber(
+        CreateSaleQuotationAction $action,
+        PermissionService $permissions,
+    ): array {
+        abort_unless(
+            $permissions->can('sales.create') || $permissions->can('sales.quotation.edit'),
+            403,
+        );
+
+        return [
+            'document_number' => $action->previewNextDocumentNumber(),
+        ];
+    }
+
     public function index(Request $request, TenantContext $tenantContext): array
     {
         $this->authorize('viewAny', Sale::class);
