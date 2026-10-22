@@ -354,6 +354,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::post('/purchase-orders/{purchaseOrderUlid}/cancel', [PurchaseOrderController::class, 'cancel']);
 
         Route::get('/purchases', [PurchaseInvoiceController::class, 'index']);
+        Route::get('/purchases/next-document-number', [PurchaseInvoiceController::class, 'nextDocumentNumber']);
         Route::post('/purchases', [PurchaseInvoiceController::class, 'store']);
         Route::get('/purchases/{purchaseUlid}', [PurchaseInvoiceController::class, 'show']);
         Route::patch('/purchases/{purchaseUlid}', [PurchaseInvoiceController::class, 'update']);
