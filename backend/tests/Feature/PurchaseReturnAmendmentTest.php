@@ -122,6 +122,11 @@ class PurchaseReturnAmendmentTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.remaining_returnable_base_quantity', '10.000000');
 
+        $this->getJson('/api/purchases/'.$document->purchaseInvoice->ulid.'/returnable-lines')
+            ->assertOk()
+            ->assertJsonPath('data.0.already_returned_base_quantity', '1.000000')
+            ->assertJsonPath('data.0.remaining_returnable_base_quantity', '9.000000');
+
         $this->assertNoInternalIds($first->json());
     }
 
