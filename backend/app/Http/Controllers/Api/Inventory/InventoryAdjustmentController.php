@@ -54,11 +54,39 @@ class InventoryAdjustmentController extends Controller
         }
 
         if ($request->filled('from_date')) {
-            $query->whereDate('adjustment_date', '>=', (string) $request->string('from_date'));
+            $fromDate = (string) $request->string('from_date');
+            $query->where(function ($effective) use ($fromDate): void {
+                $effective
+                    ->where(function ($base) use ($fromDate): void {
+                        $base
+                            ->whereDoesntHave('latestRevision')
+                            ->whereDate('adjustment_date', '>=', $fromDate);
+                    })
+                    ->orWhereHas('latestRevision', function ($revision) use ($fromDate): void {
+                        $revision->whereRaw(
+                            "(after_snapshot->>'adjustment_date')::date >= ?::date",
+                            [$fromDate],
+                        );
+                    });
+            });
         }
 
         if ($request->filled('to_date')) {
-            $query->whereDate('adjustment_date', '<=', (string) $request->string('to_date'));
+            $toDate = (string) $request->string('to_date');
+            $query->where(function ($effective) use ($toDate): void {
+                $effective
+                    ->where(function ($base) use ($toDate): void {
+                        $base
+                            ->whereDoesntHave('latestRevision')
+                            ->whereDate('adjustment_date', '<=', $toDate);
+                    })
+                    ->orWhereHas('latestRevision', function ($revision) use ($toDate): void {
+                        $revision->whereRaw(
+                            "(after_snapshot->>'adjustment_date')::date <= ?::date",
+                            [$toDate],
+                        );
+                    });
+            });
         }
 
         if ($request->filled('product_ulid')) {
