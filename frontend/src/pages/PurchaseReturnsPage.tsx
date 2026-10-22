@@ -592,6 +592,83 @@ export function PurchaseReturnsPage({
     },
   })
 
+  const returnLookupMutation = useMutation({
+    mutationFn: async (requestedNumber: string) => {
+      const lookup = await fetchPurchaseReturns({
+        q: requestedNumber,
+        per_page: 20,
+      })
+
+      const exact = lookup.data.find(
+        (row) =>
+          row.document_number.trim().toLocaleLowerCase() ===
+          requestedNumber.trim().toLocaleLowerCase(),
+      )
+
+      if (!exact) {
+        throw new Error('No Purchase Return with that exact number was found in this branch and warehouse.')
+      }
+
+      return fetchPurchaseReturn(exact.ulid)
+    },
+    onSuccess: (row) => {
+      loadDocument(row)
+      setView('entry')
+    },
+    onError: handleError,
+  })
+
+  function hasCurrentReturnEntryData(): boolean {
+    return Boolean(
+      document?.ulid ||
+      purchaseUlid ||
+      generalRows.length > 0 ||
+      Object.values(lineQty).some((value) => Number(value) > 0) ||
+      supplierReference.trim() ||
+      reason.trim() ||
+      notes.trim(),
+    )
+  }
+
+  async function requestReturnLookup(requestedOverride?: string) {
+    const requestedNumber = (requestedOverride ?? returnNumberValue ?? '').trim()
+    if (!requestedNumber || returnLookupMutation.isPending) return
+
+    const currentNumber = document?.document_number.trim().toLocaleLowerCase() ?? null
+    const requestedKey = requestedNumber.toLocaleLowerCase()
+
+    if (hasCurrentReturnEntryData() && currentNumber !== requestedKey) {
+      const confirmed = await askConfirm(
+        `The current Purchase Return contains data. If you fetch ${requestedNumber}, the current data will be lost.`,
+      )
+      if (!confirmed) {
+        setReturnNumberValue(document?.document_number ?? null)
+        return
+      }
+    }
+
+    returnLookupMutation.mutate(requestedNumber)
+  }
+
+  async function requestOpenReturn(row: PurchaseReturn) {
+    setReturnNumberValue(row.document_number)
+
+    const currentNumber = document?.document_number.trim().toLocaleLowerCase() ?? null
+    const requestedKey = row.document_number.trim().toLocaleLowerCase()
+
+    if (hasCurrentReturnEntryData() && currentNumber !== requestedKey) {
+      const confirmed = await askConfirm(
+        `The current Purchase Return contains data. If you fetch ${row.document_number}, the current data will be lost.`,
+      )
+      if (!confirmed) {
+        setReturnNumberValue(document?.document_number ?? null)
+        return
+      }
+    }
+
+    openMutation.mutate(row.ulid)
+  }
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!warehouseUlid) throw new Error('Select a warehouse.')
@@ -600,6 +677,49 @@ export function PurchaseReturnsPage({
       }
 
       let current = document
+
+      if (current?.status === 'posted') {
+        if (!canAmend) {
+          throw new Error('You do not have permission to amend posted Purchase Returns.')
+        }
+
+        const amendmentLines = purchaseUlid
+          ? Object.entries(lineQty)
+              .filter(([, quantity]) => Number(quantity) > 0)
+              .map(([purchaseLineUlid, quantity]) => ({
+                purchase_line_ulid: purchaseLineUlid,
+                quantity: qty(quantity),
+                reason: reason || null,
+              }))
+          : generalRows.map((row) => {
+              const previous = current?.lines?.find(
+                (line) => !line.original_purchase_line_ulid && line.product?.ulid === row.product_ulid,
+              )
+
+              return {
+                product_ulid: row.product_ulid,
+                quantity: qty(row.quantity),
+                unit_cost: Number(row.unit_cost || 0).toFixed(4),
+                discount_amount: Number(row.discount_amount || 0).toFixed(4),
+                tax_amount: Number(row.tax_amount || 0).toFixed(4),
+                batch_number: previous?.batch_number ?? null,
+                expiry_date: previous?.expiry_date ?? null,
+                reason: reason || null,
+              }
+            })
+
+        return amendPurchaseReturn(
+          current.ulid,
+          {
+            revision_reason: 'Posted Purchase Return corrected from Purchase Return screen',
+            supplier_reference: supplierReference || null,
+            reason: reason || null,
+            notes: notes || null,
+            lines: amendmentLines,
+          },
+          amendmentKeyRef.current,
+        )
+      }
 
       if (!current?.ulid) {
         current = await createPurchaseReturn({
@@ -728,7 +848,12 @@ export function PurchaseReturnsPage({
   useWorkspaceHandlers(
     {
       save: () => {
-        if (view === 'entry' && !readOnly && (canEdit || canCreate)) {
+        const canSaveCurrent =
+          document?.status === 'posted'
+            ? canAmend
+            : (document?.ulid ? canEdit : canCreate)
+
+        if (view === 'entry' && !readOnly && canSaveCurrent) {
           void saveMutation.mutateAsync().catch(handleError)
         }
       },
@@ -754,7 +879,7 @@ export function PurchaseReturnsPage({
   function remainingPurchaseQty(row: ReturnablePurchaseLine): string {
     const factor = Number(row.conversion_factor) || 1
     const remainingBase = Number(row.remaining_returnable_base_quantity) || 0
-    return (remainingBase / factor).toFixed(6)
+    return formatDecimal(remainingBase / factor)
   }
 
   function alreadyReturnedQty(row: ReturnablePurchaseLine): string {
