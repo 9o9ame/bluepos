@@ -4934,3 +4934,44 @@ html[data-animations='off'] .sales-reference-screen * {
   padding-right: 8px !important;
   line-height: normal !important;
 }
+
+
+/* Container-bound editors: bypass legacy Sales height rules from index.css
+   without changing the frozen outer row/panel geometry. */
+.sales-reference-entry-row > .sales-reference-product-entry-wrap {
+  position: relative !important;
+  overflow: hidden;
+}
+
+.sales-reference-entry-row
+  > .sales-reference-product-entry-wrap
+  > .sales-reference-product-entry[aria-label='Barcode scanner input'] {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+}
+
+.sales-reference-pay > .sales-reference-received {
+  position: relative !important;
+}
+
+.sales-reference-pay
+  > .sales-reference-received
+  > input[aria-label='Received amount'] {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 24% !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
