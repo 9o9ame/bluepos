@@ -151,9 +151,15 @@ class PermissionService
         $keys = [];
         $allBranches = false;
 
+        $hasPrivilegedSystemRole = false;
+
         foreach ($roles as $role) {
             if ($role->branch_access === BranchAccess::AllBranches) {
                 $allBranches = true;
+            }
+
+            if (PermissionCatalogue::isPrivilegedSystemRole((string) $role->code)) {
+                $hasPrivilegedSystemRole = true;
             }
 
             foreach ($role->permissions as $permission) {
@@ -161,6 +167,10 @@ class PermissionService
                     $keys[] = $permission->key;
                 }
             }
+        }
+
+        if ($hasPrivilegedSystemRole) {
+            $keys = array_merge($keys, PermissionCatalogue::tenantKeys());
         }
 
         $this->keys = array_values(array_unique($keys));
