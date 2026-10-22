@@ -4851,3 +4851,47 @@ html[data-animations='off'] .sales-reference-screen * {
     min-width: 94px !important;
   }
 }
+
+
+/* Sales Invoice focused interaction refinements.
+   Preserve the frozen outer geometry; only let the existing editors fill their containers. */
+.sales-reference-product-entry-wrap {
+  display: flex;
+  align-self: stretch;
+  align-items: stretch;
+}
+
+.sales-reference-product-entry[aria-label='Barcode scanner input'] {
+  box-sizing: border-box;
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+.sales-reference-received {
+  display: flex !important;
+  align-items: stretch !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.sales-reference-received > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sales-reference-received > input {
+  flex: 0 0 72%;
+  width: 72% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  box-sizing: border-box;
+  margin: 0 !important;
+  padding-left: 8px !important;
+  padding-right: 6px !important;
+}
+
+.sales-invoice-switch-warning {
+  margin: 0;
+  color: var(--ui-text);
+  line-height: 1.5;
+}
