@@ -800,7 +800,7 @@ export function PurchasesPage({
         <div className="pie-dual-inputs">
           <input
             className={!pctEnabled ? 'is-disabled' : undefined}
-            value={pctValue}
+            value={formatDecimal(pctValue)}
             disabled={!pctEnabled}
             title="%"
             data-purchase-edit="true"
@@ -814,7 +814,7 @@ export function PurchasesPage({
           />
           <input
             className={!rsEnabled ? 'is-disabled' : undefined}
-            value={rsValue}
+            value={formatDecimal(rsValue)}
             disabled={!rsEnabled}
             title="Rs"
             data-purchase-edit="true"
@@ -1100,7 +1100,7 @@ export function PurchasesPage({
               row.quantity
             ) : (
               <input
-                value={row.quantity}
+                value={formatDecimal(row.quantity)}
                 data-purchase-edit="true"
                 data-purchase-field="quantity"
                 onKeyDown={handleLineEnter}
@@ -1155,7 +1155,7 @@ export function PurchasesPage({
           <td className={cls} style={widthStyle}>
             {calcMethod === 'mrp_incl_gst'
               ? money(mrpEx)
-              : editableInput(row.mrp, (value) => patchLine(row.key, { mrp: value, sale_price: value }))}
+              : editableInput(formatDecimal(row.mrp), (value) => patchLine(row.key, { mrp: value, sale_price: value }))}
           </td>
         )
       case 'mrp_in_gst':
@@ -1169,7 +1169,7 @@ export function PurchasesPage({
       case 'trade_price':
         return (
           <td className={cls} style={widthStyle}>
-            {editableInput(row.unit_cost, (value) => {
+            {editableInput(formatDecimal(row.unit_cost), (value) => {
               const patch: Partial<DraftLine> = { unit_cost: value }
               if (autoCalcMrp && Number(row.mrp) <= 0) {
                 patch.mrp = value
@@ -1282,7 +1282,7 @@ export function PurchasesPage({
       case 'sale_price':
         return (
           <td className={cls} style={widthStyle}>
-            {editableInput(row.sale_price ?? row.mrp, (value) =>
+            {editableInput(formatDecimal(row.sale_price ?? row.mrp), (value) =>
               patchLine(row.key, { sale_price: value }),
             )}
           </td>
