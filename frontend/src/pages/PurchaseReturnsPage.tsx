@@ -251,6 +251,14 @@ export function PurchaseReturnsPage({
     view === 'entry' && !readOnly && generalProductPickerOpen,
   )
 
+  const rows = listQuery.data?.data ?? []
+  const suppliers = useMemo(
+    () => (suppliersQuery.data ?? []).filter((row) => row.is_active),
+    [suppliersQuery.data],
+  )
+  const warehouses = warehousesQuery.data ?? []
+  const returnable = returnableQuery.data?.data ?? []
+
   const returnableProductUlids = useMemo(
     () => new Set(returnable.map((row) => row.product.ulid)),
     [returnable],
@@ -262,14 +270,6 @@ export function PurchaseReturnsPage({
       product.status === 'active' &&
       (!invoiceMode || returnableProductUlids.has(product.ulid)),
   )
-
-  const rows = listQuery.data?.data ?? []
-  const suppliers = useMemo(
-    () => (suppliersQuery.data ?? []).filter((row) => row.is_active),
-    [suppliersQuery.data],
-  )
-  const warehouses = warehousesQuery.data ?? []
-  const returnable = returnableQuery.data?.data ?? []
 
   const purchaseOptions = useMemo(() => {
     const rows = purchaseLookup.data?.data ?? []
