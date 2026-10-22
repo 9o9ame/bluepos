@@ -484,10 +484,7 @@
 }
 
 .purchase-order-product-name {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 72px;
-  gap: 4px;
-  align-items: center;
+  min-width: 0;
 }
 
 .purchase-order-product-name strong {
@@ -1519,4 +1516,25 @@ html[data-animations='off'] .purchase-order-load-more svg {
   .purchase-order-totals strong {
     height: 22px !important;
   }
+}
+
+
+/* Unit is a dedicated compact column; keep Product Description visually continuous. */
+.purchase-order-lines .purchase-order-product-cell {
+  min-width: 0;
+}
+
+.purchase-order-lines td.is-center,
+.purchase-order-lines th.is-center {
+  text-align: center;
+}
+
+.purchase-order-lines .purchase-order-unit {
+  width: 100%;
+  min-width: 0;
+}
+
+.purchase-order-lines .purchase-order-unit .ui-select-trigger {
+  min-width: 0;
+  padding-inline: 4px;
 }
