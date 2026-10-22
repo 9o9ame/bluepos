@@ -162,7 +162,9 @@ export function PurchaseReturnsPage({
     document?.status === 'posted'
       ? canAmend
       : (document?.ulid ? canEdit : canCreate)
-  const invoiceMode = Boolean(purchaseUlid || document?.return_mode === 'invoice')
+  const invoiceMode = amendingPosted
+    ? Boolean(purchaseUlid)
+    : Boolean(purchaseUlid || document?.return_mode === 'invoice')
 
   const nextReturnNumberQuery = useQuery({
     queryKey: ['purchase-return', 'next-document-number', session?.branch.ulid, session?.warehouse.ulid],
@@ -213,7 +215,7 @@ export function PurchaseReturnsPage({
   const purchaseLookup = useQuery({
     queryKey: ['posted-purchases-lookup', purchaseSearch],
     queryFn: () => fetchPostedPurchases({ q: purchaseSearch || undefined, per_page: 20 }),
-    enabled: view === 'entry' && !document?.ulid,
+    enabled: view === 'entry' && (!document?.ulid || amendingPosted),
     retry: false,
   })
 
@@ -353,8 +355,8 @@ export function PurchaseReturnsPage({
     : generalRows.length
 
   const selectedSupplierName =
-    document?.supplier?.name ??
     suppliers.find((supplier) => supplier.ulid === supplierUlid)?.name ??
+    document?.supplier?.name ??
     'From purchase'
 
   function handleError(err: unknown) {
@@ -1325,7 +1327,7 @@ export function PurchaseReturnsPage({
                                   ))
                                 }}
                                 onBlur={() => setGeneralRows((current) => current.map((item) =>
-                                  item.key === row.key ? { ...item, quantity: qty(item.quantity) } : item,
+                                  item.key === row.key ? { ...item, quantity: formatDecimal(item.quantity) } : item,
                                 ))}
                               />
                             )}
