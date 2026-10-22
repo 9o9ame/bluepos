@@ -53,6 +53,8 @@ export type PurchaseReturn = {
   reason: string | null
   notes: string | null
   posted_at: string | null
+  revision_number?: number
+  is_amended?: boolean
   original_purchase?: {
     ulid: string
     document_number: string
