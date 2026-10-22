@@ -80,11 +80,43 @@ export function updateSaleReturn(
   })
 }
 
-export function fetchReturnableSaleLines(saleUlid: string) {
+export function fetchReturnableSaleLines(
+  saleUlid: string,
+  excludeReturnUlid?: string | null,
+) {
+  const search = new URLSearchParams()
+  if (excludeReturnUlid) search.set('exclude_return_ulid', excludeReturnUlid)
+  const suffix = search.toString() ? `?${search.toString()}` : ''
+
   return apiFetch<ReturnableSaleResponse>(
-    `/api/sales/${saleUlid}/returnable-lines`,
+    `/api/sales/${saleUlid}/returnable-lines${suffix}`,
     { busy: 'none' },
   )
+}
+
+export function amendSaleReturn(
+  returnUlid: string,
+  payload: {
+    revision_reason: string
+    reason?: string | null
+    notes?: string | null
+    lines: Array<{
+      sale_item_ulid?: string
+      product_ulid?: string
+      quantity: string
+      unit_price?: string
+      discount_percent?: string
+      reason?: string | null
+      notes?: string | null
+    }>
+  },
+  idempotencyKey: string,
+) {
+  return apiFetch<SaleReturn>(`/api/sales-returns/${returnUlid}/amend`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    headers: { 'Idempotency-Key': idempotencyKey },
+  })
 }
 
 export function createSaleReturnLine(
