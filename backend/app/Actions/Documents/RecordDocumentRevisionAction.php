@@ -23,6 +23,7 @@ class RecordDocumentRevisionAction
         array $after,
         ?int $branchId = null,
         ?int $warehouseId = null,
+        ?string $idempotencyKey = null,
     ): DocumentRevision {
         $tenantId = $this->tenantContext->tenantId();
 
@@ -42,6 +43,7 @@ class RecordDocumentRevisionAction
             'document_ulid' => $documentUlid,
             'revision_number' => ((int) ($lastRevision?->revision_number ?? 0)) + 1,
             'reason' => trim($reason),
+            'idempotency_key' => $idempotencyKey,
             'before_snapshot' => $before,
             'after_snapshot' => $after,
             'created_by' => $this->tenantContext->userId(),
