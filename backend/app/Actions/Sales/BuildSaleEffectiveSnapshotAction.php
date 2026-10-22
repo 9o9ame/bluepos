@@ -3,6 +3,7 @@
 namespace App\Actions\Sales;
 
 use App\Models\Sale;
+use App\Models\SaleScheme;
 use Illuminate\Support\Str;
 
 class BuildSaleEffectiveSnapshotAction
@@ -125,6 +126,20 @@ class BuildSaleEffectiveSnapshotAction
     ): array {
         $sale->loadMissing(['customer', 'salesmanParty', 'branch', 'warehouse']);
 
+        $schemeIds = collect($prepared['lines'])
+            ->pluck('sale_scheme_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $schemes = $schemeIds->isEmpty()
+            ? collect()
+            : SaleScheme::query()
+                ->forTenant((int) $sale->tenant_id)
+                ->whereIn('id', $schemeIds->all())
+                ->get()
+                ->keyBy('id');
+
         return [
             'ulid' => $sale->ulid,
             'document_number' => $sale->document_number,
@@ -164,7 +179,11 @@ class BuildSaleEffectiveSnapshotAction
                 'name' => $sale->warehouse->name,
             ] : null,
             'items' => collect($prepared['lines'])->values()->map(
-                function (array $line): array {
+                function (array $line) use ($schemes): array {
+                    $scheme = ! empty($line['sale_scheme_id'])
+                        ? $schemes->get((int) $line['sale_scheme_id'])
+                        : null;
+
                     return [
                         'ulid' => (string) Str::ulid(),
                         'line_kind' => $line['line_kind'],
@@ -194,7 +213,10 @@ class BuildSaleEffectiveSnapshotAction
                             'symbol' => $line['unit']->symbol,
                             'allows_decimal' => $line['unit']->allows_decimal,
                         ],
-                        'sale_scheme' => null,
+                        'sale_scheme' => $scheme ? [
+                            'ulid' => $scheme->ulid,
+                            'name' => $scheme->name,
+                        ] : null,
                     ];
                 }
             )->all(),
