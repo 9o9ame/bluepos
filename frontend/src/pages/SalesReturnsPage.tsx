@@ -1347,17 +1347,17 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                 ariaLabel="Invoice-linked sales return lines"
                 minWidth={980}
                 columns={[
-                  { key: 'product', header: 'Item / Product Description', width: '25%' },
-                  { key: 'kind', header: 'Kind', width: '7.5%' },
-                  { key: 'sold', header: 'Sold Qty', width: '7.5%', align: 'right' },
-                  { key: 'returned', header: 'Returned', width: '7.5%', align: 'right' },
-                  { key: 'available', header: 'Available', width: '7.5%', align: 'right' },
-                  { key: 'return', header: 'Return Qty', width: '7.5%', align: 'right' },
-                  { key: 'unit', header: 'Unit', width: '7.5%' },
-                  { key: 'price', header: 'Price', width: '7.5%', align: 'right' },
-                  { key: 'disc', header: 'Disc', width: '7.5%', align: 'right' },
-                  { key: 'tax', header: 'Tax', width: '7.5%', align: 'right' },
-                  { key: 'net', header: 'Net', width: '7.5%', align: 'right' },
+                  { key: 'product', header: 'Item / Product Description', width: '30%' },
+                  { key: 'kind', header: 'Kind', width: '7%' },
+                  { key: 'sold', header: 'Sold Qty', width: '7%', align: 'right' },
+                  { key: 'returned', header: 'Returned', width: '7%', align: 'right' },
+                  { key: 'available', header: 'Available', width: '7%', align: 'right' },
+                  { key: 'return', header: 'Return Qty', width: '7%', align: 'right' },
+                  { key: 'unit', header: 'Unit', width: '7%' },
+                  { key: 'price', header: 'Price', width: '7%', align: 'right' },
+                  { key: 'disc', header: 'Disc', width: '7%', align: 'right' },
+                  { key: 'tax', header: 'Tax', width: '7%', align: 'right' },
+                  { key: 'net', header: 'Net', width: '7%', align: 'right' },
                 ]}
               >
                   {returnable.map((row) => (
@@ -1420,13 +1420,13 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                 ariaLabel="General sales return lines"
                 minWidth={860}
                 columns={[
-                  { key: 'product', header: 'Item / Product Description', width: '25%' },
-                  { key: 'quantity', header: 'Quantity', width: 'calc((75% - 34px) / 6)', align: 'right' },
-                  { key: 'price', header: 'Price (C)', width: 'calc((75% - 34px) / 6)', align: 'right' },
-                  { key: 'amt', header: 'AMT', width: 'calc((75% - 34px) / 6)', align: 'right' },
-                  { key: 'disc', header: 'Disc%', width: 'calc((75% - 34px) / 6)', align: 'right' },
-                  { key: 'tax', header: 'Tax', width: 'calc((75% - 34px) / 6)', align: 'right' },
-                  { key: 'amount', header: 'Amount(Rs)', width: 'calc((75% - 34px) / 6)', align: 'right' },
+                  { key: 'product', header: 'Item / Product Description', width: '30%' },
+                  { key: 'quantity', header: 'Quantity', width: 'calc((70% - 34px) / 6)', align: 'right' },
+                  { key: 'price', header: 'Price (C)', width: 'calc((70% - 34px) / 6)', align: 'right' },
+                  { key: 'amt', header: 'AMT', width: 'calc((70% - 34px) / 6)', align: 'right' },
+                  { key: 'disc', header: 'Disc%', width: 'calc((70% - 34px) / 6)', align: 'right' },
+                  { key: 'tax', header: 'Tax', width: 'calc((70% - 34px) / 6)', align: 'right' },
+                  { key: 'amount', header: 'Amount(Rs)', width: 'calc((70% - 34px) / 6)', align: 'right' },
                   { key: 'actions', header: '', width: 34, align: 'center' },
                 ]}
               >
