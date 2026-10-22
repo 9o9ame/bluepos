@@ -168,6 +168,16 @@ export function createPurchaseOrder(payload: PurchaseOrderPayload) {
   })
 }
 
+export function updatePurchaseOrder(
+  ulid: string,
+  payload: PurchaseOrderPayload & { revision_reason?: string | null },
+) {
+  return apiFetch<PurchaseOrder>(`/api/purchase-orders/${ulid}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
 
 export function generatePurchaseOrder(payload: PurchaseOrderGeneratePayload) {
   return apiFetch<{
