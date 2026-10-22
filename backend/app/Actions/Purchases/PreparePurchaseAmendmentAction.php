@@ -6,11 +6,13 @@ use App\Catalog\TenantCatalog;
 use App\Enums\ProductStatus;
 use App\Models\ProductBarcode;
 use App\Models\PurchaseInvoice;
+use App\Tenancy\TenantContext;
 use Illuminate\Validation\ValidationException;
 
 class PreparePurchaseAmendmentAction
 {
     public function __construct(
+        private readonly TenantContext $tenantContext,
         private readonly TenantCatalog $catalog,
         private readonly RecalculatePurchaseTotalsAction $recalculate,
     ) {}
@@ -229,7 +231,7 @@ class PreparePurchaseAmendmentAction
         }
 
         $factor = ProductBarcode::query()
-            ->forTenant(app(\App\Tenancy\TenantContext::class)->tenantId())
+            ->forTenant($this->tenantContext->tenantId())
             ->where('product_id', $productId)
             ->where('unit_id', $unitId)
             ->where('is_active', true)
