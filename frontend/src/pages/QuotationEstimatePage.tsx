@@ -2,13 +2,15 @@ import { FileSearch, Plus, Printer, ReceiptText, RefreshCw, Save, X, XCircle } f
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../api/client'
-import { fetchProducts } from '../api/catalog'
+import { fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
 import { fetchParties } from '../api/parties'
 import {
   createSaleQuotation,
+  fetchNextSaleQuotationDocumentNumber,
   fetchSaleQuotation,
   fetchSaleQuotations,
   fetchSalesmen,
+  updateSaleQuotation,
 } from '../api/sales'
 import type { Product } from '../types/catalog'
 import type { SaleQuotation } from '../types/sales'
@@ -16,11 +18,13 @@ import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { PosEntryGrid } from '../components/desktop/PosEntryGrid'
 import { UiButton } from '../components/ui/UiButton'
+import { UiModal } from '../components/ui/UiModal'
 import { UiSimpleDropdown, UiTableDropdown } from '../components/ui/UiSelect'
 import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { printSaleQuotation } from '../features/sales/quotationPrint'
 import { useSaleCart } from '../features/sales/useSaleCart'
 import { useAuth } from '../features/auth/AuthProvider'
+import { useCan } from '../features/auth/useCan'
 import { useLocalProducts } from '../features/catalog/useLocalCatalog'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
@@ -55,11 +59,34 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
   const [activeLineKey, setActiveLineKey] = useState<string | null>(null)
   const [activeProductQuery, setActiveProductQuery] = useState('')
   const [searchText, setSearchText] = useState('')
+  const [quotationNumberValue, setQuotationNumberValue] = useState<string | null>(null)
+  const [pendingQuotationLookupNumber, setPendingQuotationLookupNumber] = useState<string | null>(null)
   const [savedQuotation, setSavedQuotation] = useState<SaleQuotation | null>(null)
   const [openedQuotation, setOpenedQuotation] = useState<SaleQuotation | null>(null)
 
+  const canViewQuotation = useCan('sales.view')
+  const canCreateQuotation = useCan('sales.create')
+  const canEditQuotation = useCan('sales.quotation.edit')
+
   const activeQuotation = openedQuotation ?? savedQuotation
-  const readOnly = Boolean(activeQuotation)
+  const readOnly = activeQuotation ? !canEditQuotation : !canCreateQuotation
+
+  const nextQuotationNumberQuery = useQuery({
+    queryKey: ['quotation-estimate', 'next-document-number', session?.branch.ulid, session?.warehouse.ulid],
+    queryFn: fetchNextSaleQuotationDocumentNumber,
+    enabled:
+      Boolean(session) &&
+      active &&
+      tab === 'entry' &&
+      (canCreateQuotation || canEditQuotation),
+    retry: false,
+  })
+
+  const displayedQuotationNumber =
+    quotationNumberValue ??
+    activeQuotation?.document_number ??
+    nextQuotationNumberQuery.data?.document_number ??
+    'Auto'
 
   const customersQuery = useQuery({
     queryKey: ['quotation-estimate', 'customers'],
@@ -132,6 +159,61 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
     retry: false,
   })
 
+  async function fetchQuotationEditorData(ulid: string) {
+    const quotation = await fetchSaleQuotation(ulid)
+    const productUlids = Array.from(
+      new Set(
+        quotation.items
+          .map((item) => item.product?.ulid)
+          .filter((productUlid): productUlid is string => Boolean(productUlid)),
+      ),
+    )
+
+    const productRows = await Promise.all(
+      productUlids.map(async (productUlid) => {
+        const [product, stock] = await Promise.all([
+          fetchProduct(productUlid),
+          fetchProductStock(productUlid),
+        ])
+
+        return {
+          productUlid,
+          product,
+          stock: stock.active_warehouse.quantity,
+        }
+      }),
+    )
+
+    return {
+      quotation,
+      productsByUlid: Object.fromEntries(
+        productRows.map((row) => [row.productUlid, row.product]),
+      ),
+      stockByProduct: Object.fromEntries(
+        productRows.map((row) => [row.productUlid, row.stock]),
+      ),
+    }
+  }
+
+  function loadQuotationEditor(
+    quotation: SaleQuotation,
+    productsByUlid: Record<string, Product>,
+    stockByProduct: Record<string, string>,
+  ) {
+    cart.restoreSaleDocument(quotation, productsByUlid, stockByProduct)
+    setOpenedQuotation(quotation)
+    setSavedQuotation(null)
+    setQuotationNumberValue(quotation.document_number)
+    setQuotationDate(quotation.quotation_date)
+    setSalesmanUlid(quotation.salesman?.ulid ?? null)
+    setPendingQuotationLookupNumber(null)
+    setProductQuery('')
+    setActiveProductQuery('')
+    setActiveLineKey(null)
+    setProductPickerOpen(false)
+    setTab('entry')
+  }
+
   const saveMutation = useMutation({
     mutationFn: () => {
       if (!cart.hasPaidLines) {
@@ -139,24 +221,47 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
       }
 
       const payload = cart.buildPayload()
+      const quotationPayload = {
+        price_type: cart.priceType,
+        items: payload.items,
+        free_lines: payload.free_lines,
+        applied_schemes: payload.applied_schemes,
+        customer_ulid: cart.customerUlid,
+        salesman_ulid: salesmanUlid,
+        notes: cart.notes || null,
+        quotation_date: quotationDate,
+      }
+
+      if (activeQuotation) {
+        if (!canEditQuotation) {
+          throw new Error('You do not have permission to edit quotations.')
+        }
+
+        return updateSaleQuotation(activeQuotation.ulid, {
+          ...quotationPayload,
+          revision_reason: 'Quotation updated from Quotation / Estimate',
+        })
+      }
+
+      if (!canCreateQuotation) {
+        throw new Error('You do not have permission to create quotations.')
+      }
+
       return createSaleQuotation(
-        {
-          price_type: cart.priceType,
-          items: payload.items,
-          free_lines: payload.free_lines,
-          applied_schemes: payload.applied_schemes,
-          customer_ulid: cart.customerUlid,
-          salesman_ulid: salesmanUlid,
-          notes: cart.notes || null,
-          quotation_date: quotationDate,
-        },
+        quotationPayload,
         idempotencyKeyRef.current,
       )
     },
     onSuccess: (quotation) => {
-      setSavedQuotation(quotation)
+      const wasUpdate = Boolean(activeQuotation)
+      setOpenedQuotation(quotation)
+      setSavedQuotation(null)
+      setQuotationNumberValue(quotation.document_number)
+
       feedback.success(
-        `Estimate ${quotation.document_number} saved. No stock, payment or accounting entry was posted.`,
+        wasUpdate
+          ? `Estimate ${quotation.document_number} updated with revision history.`
+          : `Estimate ${quotation.document_number} saved. No stock, payment or accounting entry was posted.`,
         'Quotation / Estimate',
       )
     },
@@ -164,16 +269,61 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
   })
 
   const openMutation = useMutation({
-    mutationFn: (ulid: string) => fetchSaleQuotation(ulid),
-    onSuccess: (quotation) => {
-      setOpenedQuotation(quotation)
-      setSavedQuotation(null)
-      setQuotationDate(quotation.quotation_date)
-      setSalesmanUlid(quotation.salesman?.ulid ?? null)
-      setTab('entry')
+    mutationFn: (ulid: string) => fetchQuotationEditorData(ulid),
+    onSuccess: ({ quotation, productsByUlid, stockByProduct }) => {
+      loadQuotationEditor(quotation, productsByUlid, stockByProduct)
     },
     onError: (error) => feedback.error(errorMessage(error), 'Quotation / Estimate'),
   })
+
+  const quotationLookupMutation = useMutation({
+    mutationFn: async (requestedNumber: string) => {
+      const lookup = await fetchSaleQuotations({
+        q: requestedNumber,
+        per_page: 20,
+        page: 1,
+      })
+
+      const summary = lookup.data.find(
+        (quotation) =>
+          quotation.document_number.trim().toLocaleLowerCase() ===
+          requestedNumber.trim().toLocaleLowerCase(),
+      )
+
+      if (!summary) {
+        throw new Error('No quotation with that exact number was found in this branch and warehouse.')
+      }
+
+      return fetchQuotationEditorData(summary.ulid)
+    },
+    onSuccess: ({ quotation, productsByUlid, stockByProduct }) => {
+      loadQuotationEditor(quotation, productsByUlid, stockByProduct)
+    },
+    onError: (error) => {
+      setPendingQuotationLookupNumber(null)
+      feedback.error(errorMessage(error), 'Quotation / Estimate')
+    },
+  })
+
+  function requestQuotationLookup() {
+    const requestedNumber = (quotationNumberValue ?? '').trim()
+    if (!requestedNumber || quotationLookupMutation.isPending || !canViewQuotation) return
+
+    const currentNumber = activeQuotation?.document_number.trim().toLocaleLowerCase() ?? null
+    const requestedKey = requestedNumber.toLocaleLowerCase()
+
+    if (cart.lines.length > 0 && currentNumber !== requestedKey) {
+      setPendingQuotationLookupNumber(requestedNumber)
+      return
+    }
+
+    quotationLookupMutation.mutate(requestedNumber)
+  }
+
+  function cancelPendingQuotationLookup() {
+    setPendingQuotationLookupNumber(null)
+    setQuotationNumberValue(activeQuotation?.document_number ?? null)
+  }
 
   const customerOptions = useMemo(
     () => [
@@ -226,9 +376,12 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
     setProductLookupMode('browse')
     setActiveLineKey(null)
     setActiveProductQuery('')
+    setQuotationNumberValue(null)
+    setPendingQuotationLookupNumber(null)
     setSavedQuotation(null)
     setOpenedQuotation(null)
     idempotencyKeyRef.current = newQuotationKey()
+    void nextQuotationNumberQuery.refetch()
     setTab('entry')
   }
 
@@ -429,7 +582,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
           <DesktopButton icon={<Plus size={15} />} label="New" onClick={startNew} />
           <DesktopButton
             icon={<Save size={15} />}
-            label="Save Estimate"
+            label={activeQuotation ? 'Update Estimate' : 'Save Estimate'}
             variant="success"
             disabled={readOnly || saveMutation.isPending || !cart.hasPaidLines}
             onClick={() => saveMutation.mutate()}
@@ -499,6 +652,45 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
         </button>
       </div>
 
+      {pendingQuotationLookupNumber ? (
+        <UiModal
+          open
+          title="Load another quotation?"
+          ariaLabel="Confirm quotation change"
+          size="sm"
+          onClose={() => {
+            if (!quotationLookupMutation.isPending) {
+              cancelPendingQuotationLookup()
+            }
+          }}
+          footer={
+            <>
+              <UiButton
+                variant="info"
+                disabled={quotationLookupMutation.isPending}
+                onClick={cancelPendingQuotationLookup}
+              >
+                Cancel
+              </UiButton>
+              <UiButton
+                variant="warning"
+                disabled={quotationLookupMutation.isPending}
+                onClick={() => {
+                  const requestedNumber = pendingQuotationLookupNumber
+                  if (requestedNumber) {
+                    quotationLookupMutation.mutate(requestedNumber)
+                  }
+                }}
+              >
+                {quotationLookupMutation.isPending ? 'Loading...' : 'Fetch Quotation'}
+              </UiButton>
+            </>
+          }
+        >
+          The current quotation contains data. If you fetch {pendingQuotationLookupNumber}, the current data will be lost.
+        </UiModal>
+      ) : null}
+
       {tab === 'entry' ? (
         <div className="quotation-entry">
           <div className="quotation-entry-head">
@@ -507,8 +699,16 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
               <span>Quotation #</span>
               <input
                 className="desktop-input"
-                value={activeQuotation?.document_number ?? 'Auto'}
-                readOnly
+                value={displayedQuotationNumber}
+                readOnly={!canViewQuotation}
+                disabled={quotationLookupMutation.isPending || saveMutation.isPending}
+                title="Type an exact quotation number and press Enter to load it"
+                onChange={(event) => setQuotationNumberValue(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== 'Enter') return
+                  event.preventDefault()
+                  requestQuotationLookup()
+                }}
               />
             </label>
             <label className="is-date">
@@ -525,7 +725,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
               <span>Customer</span>
               <UiTableDropdown
                 className="quotation-canonical-select"
-                value={activeQuotation?.customer?.ulid ?? cart.customerUlid ?? ''}
+                value={cart.customerUlid ?? ''}
                 disabled={readOnly}
                 options={customerOptions}
                 searchPlaceholder="Search customer"
@@ -542,7 +742,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
               <span>Salesman</span>
               <UiTableDropdown
                 className="quotation-canonical-select"
-                value={activeQuotation?.salesman?.ulid ?? salesmanUlid ?? ''}
+                value={salesmanUlid ?? ''}
                 disabled={readOnly}
                 options={salesmanOptions}
                 searchPlaceholder="Search salesman"
@@ -560,7 +760,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
               <span>Price Type</span>
               <UiSimpleDropdown
                 className="quotation-price-type-select"
-                value={activeQuotation?.price_type ?? cart.priceType}
+                value={cart.priceType}
                 disabled={readOnly}
                 menuMinWidth={150}
                 options={[
@@ -940,7 +1140,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
               <textarea
                 className="desktop-input"
                 rows={2}
-                value={activeQuotation?.notes ?? cart.notes}
+                value={cart.notes}
                 disabled={readOnly}
                 onChange={(event) => cart.setNotes(event.target.value)}
               />
@@ -950,15 +1150,15 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
               <strong className="quotation-amount-options-title">Amount Options</strong>
               <div className="quotation-net-box">
                 <span>Net:</span>
-                <strong>{activeQuotation?.grand_total ?? cart.preview.grandTotal}</strong>
+                <strong>{cart.preview.grandTotal}</strong>
               </div>
             </aside>
 
             <div className="quotation-totals">
-              <div><span>Subtotal</span><strong>{activeQuotation?.subtotal ?? cart.preview.subtotal}</strong></div>
-              <div><span>Discount</span><strong>{activeQuotation?.discount_amount ?? cart.preview.discount}</strong></div>
-              <div><span>Tax</span><strong>{activeQuotation?.tax_amount ?? cart.preview.tax}</strong></div>
-              <div className="is-grand"><span>Estimate Total</span><strong>{activeQuotation?.grand_total ?? cart.preview.grandTotal}</strong></div>
+              <div><span>Subtotal</span><strong>{cart.preview.subtotal}</strong></div>
+              <div><span>Discount</span><strong>{cart.preview.discount}</strong></div>
+              <div><span>Tax</span><strong>{cart.preview.tax}</strong></div>
+              <div className="is-grand"><span>Estimate Total</span><strong>{cart.preview.grandTotal}</strong></div>
             </div>
           </div>
 
