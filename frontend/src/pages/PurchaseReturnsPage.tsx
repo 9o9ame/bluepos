@@ -6,9 +6,11 @@ import { fetchSuppliers } from '../api/catalog'
 import { fetchWarehouses } from '../api/inventory'
 import { fetchPurchase } from '../api/purchases'
 import {
+  amendPurchaseReturn,
   createPurchaseReturn,
   createPurchaseReturnLine,
   deletePurchaseReturnLine,
+  fetchNextPurchaseReturnDocumentNumber,
   fetchPostedPurchases,
   fetchPurchaseReturn,
   fetchPurchaseReturnProductWise,
@@ -33,6 +35,7 @@ import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/Worksp
 import type { Product } from '../types/catalog'
 import type { PurchaseInvoice } from '../types/purchases'
 import type { PurchaseReturn, ReturnablePurchaseLine } from '../types/purchaseReturns'
+import { formatDecimal } from '../utils/formatDecimal'
 import './PurchaseReturnsPage.css'
 
 type ViewMode = 'entry' | 'search' | 'product'
@@ -60,13 +63,15 @@ function qty(value: string): string {
 }
 
 function money4(value: string | number | null | undefined): string {
-  const n = typeof value === 'number' ? value : Number.parseFloat(value ?? '0')
-  return Number.isFinite(n) ? n.toFixed(4) : '0.0000'
+  return formatDecimal(value)
 }
 
 function money(value: string | number | null | undefined): string {
-  const n = typeof value === 'number' ? value : Number.parseFloat(value ?? '0')
-  return Number.isFinite(n) ? n.toFixed(2) : '0.00'
+  return formatDecimal(value)
+}
+
+function newReturnKey(): string {
+  return `purchase-return-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 function generalRowKey(): string {
@@ -111,12 +116,14 @@ export function PurchaseReturnsPage({
   )
 
   const deepLinkHandled = useRef<string | null>(null)
+  const amendmentKeyRef = useRef(newReturnKey())
   const generalProductAnchorRef = useRef<HTMLDivElement | null>(null)
   const generalProductEntryRef = useRef<HTMLInputElement | null>(null)
 
   const canView = useCan('purchase_returns.view')
   const canCreate = useCan('purchase_returns.create')
   const canEdit = useCan('purchase_returns.edit')
+  const canAmend = useCan('purchase_returns.amend_posted')
   const canPost = useCan('purchase_returns.post')
 
   const [view, setView] = useState<ViewMode>('entry')
@@ -130,6 +137,7 @@ export function PurchaseReturnsPage({
   const [productDateTo, setProductDateTo] = useState(today())
 
   const [document, setDocument] = useState<PurchaseReturn | null>(null)
+  const [returnNumberValue, setReturnNumberValue] = useState<string | null>(null)
   const [purchaseUlid, setPurchaseUlid] = useState('')
   const [purchaseLabel, setPurchaseLabel] = useState('')
   const [supplierUlid, setSupplierUlid] = useState('')
@@ -148,8 +156,26 @@ export function PurchaseReturnsPage({
   const [generalProductLookupMode, setGeneralProductLookupMode] = useState<'browse' | 'search'>('browse')
   const [generalProductTargetKey, setGeneralProductTargetKey] = useState<string | null>(null)
 
-  const readOnly = document?.status === 'posted'
+  const amendingPosted = document?.status === 'posted' && canAmend
+  const readOnly = document?.status === 'posted' && !canAmend
   const invoiceMode = Boolean(purchaseUlid || document?.return_mode === 'invoice')
+
+  const nextReturnNumberQuery = useQuery({
+    queryKey: ['purchase-return', 'next-document-number', session?.branch.ulid, session?.warehouse.ulid],
+    queryFn: fetchNextPurchaseReturnDocumentNumber,
+    enabled:
+      Boolean(session) &&
+      active &&
+      view === 'entry' &&
+      (canCreate || canAmend),
+    retry: false,
+  })
+
+  const displayedReturnNumber =
+    returnNumberValue ??
+    document?.document_number ??
+    nextReturnNumberQuery.data?.document_number ??
+    'Auto'
 
   const listQuery = useQuery({
     queryKey: ['purchase-returns', q, statusFilter, supplierFilter, dateFrom, dateTo],
@@ -188,8 +214,11 @@ export function PurchaseReturnsPage({
   })
 
   const returnableQuery = useQuery({
-    queryKey: ['returnable-lines', purchaseUlid],
-    queryFn: () => fetchReturnableLines(purchaseUlid),
+    queryKey: ['returnable-lines', purchaseUlid, amendingPosted ? document?.ulid : null],
+    queryFn: () => fetchReturnableLines(
+      purchaseUlid,
+      amendingPosted ? document?.ulid : null,
+    ),
     enabled: Boolean(purchaseUlid) && view === 'entry',
     retry: false,
   })
@@ -334,6 +363,8 @@ export function PurchaseReturnsPage({
 
   function resetEditor() {
     setDocument(null)
+    setReturnNumberValue(null)
+    amendmentKeyRef.current = newReturnKey()
     setPurchaseUlid('')
     setPurchaseLabel('')
     setPurchaseSearch('')
@@ -350,10 +381,13 @@ export function PurchaseReturnsPage({
     setGeneralProductLookupMode('browse')
     setGeneralProductTargetKey(null)
     setError(null)
+    void nextReturnNumberQuery.refetch()
   }
 
   function loadDocument(invoice: PurchaseReturn) {
     setDocument(invoice)
+    setReturnNumberValue(invoice.document_number)
+    amendmentKeyRef.current = newReturnKey()
     setPurchaseUlid(invoice.original_purchase?.ulid ?? '')
     setPurchaseLabel(
       invoice.original_purchase
@@ -377,7 +411,7 @@ export function PurchaseReturnsPage({
 
     for (const line of invoice.lines ?? []) {
       if (line.original_purchase_line_ulid) {
-        qtyMap[line.original_purchase_line_ulid] = line.quantity
+        qtyMap[line.original_purchase_line_ulid] = formatDecimal(line.quantity)
       } else if (line.product) {
         nextGeneral.push({
           key: line.ulid,
@@ -386,10 +420,10 @@ export function PurchaseReturnsPage({
           product_number: line.product.product_number,
           product_name: line.product.name,
           unit_code: line.unit?.code ?? '—',
-          quantity: line.quantity,
-          unit_cost: line.unit_cost,
-          discount_amount: line.discount_amount,
-          tax_amount: line.tax_amount,
+          quantity: formatDecimal(line.quantity),
+          unit_cost: formatDecimal(line.unit_cost),
+          discount_amount: formatDecimal(line.discount_amount),
+          tax_amount: formatDecimal(line.tax_amount),
         })
       }
     }
