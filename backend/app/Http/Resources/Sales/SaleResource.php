@@ -44,7 +44,21 @@ class SaleResource extends JsonResource
             );
         }
 
-        $netSaleTotal = bcsub((string) $this->grand_total, $returnedAmount, 4);
+        $revisionSnapshot = null;
+        if ($this->relationLoaded('latestRevision') && $this->latestRevision) {
+            $candidate = $this->latestRevision->after_snapshot;
+            if (is_array($candidate)) {
+                $revisionSnapshot = $candidate;
+            }
+        }
+
+        $effectiveGrandTotal = bcadd(
+            (string) ($revisionSnapshot['grand_total'] ?? $this->grand_total),
+            '0',
+            4,
+        );
+
+        $netSaleTotal = bcsub($effectiveGrandTotal, $returnedAmount, 4);
         if (bccomp($netSaleTotal, '0.0000', 4) < 0) {
             $netSaleTotal = '0.0000';
         }
@@ -58,26 +72,28 @@ class SaleResource extends JsonResource
             'ulid' => $this->ulid,
             'document_number' => $this->document_number,
             'status' => $this->status->value,
-            'sale_date' => $this->sale_date?->toDateString(),
-            'price_type' => $this->price_type?->value,
-            'subtotal' => $this->subtotal,
-            'discount_amount' => $this->discount_amount,
-            'invoice_discount_percent' => $this->invoice_discount_percent,
-            'invoice_discount_amount' => $this->invoice_discount_amount,
+            'sale_date' => $revisionSnapshot['sale_date'] ?? $this->sale_date?->toDateString(),
+            'price_type' => $revisionSnapshot['price_type'] ?? $this->price_type?->value,
+            'subtotal' => $revisionSnapshot['subtotal'] ?? $this->subtotal,
+            'discount_amount' => $revisionSnapshot['discount_amount'] ?? $this->discount_amount,
+            'invoice_discount_percent' => $revisionSnapshot['invoice_discount_percent'] ?? $this->invoice_discount_percent,
+            'invoice_discount_amount' => $revisionSnapshot['invoice_discount_amount'] ?? $this->invoice_discount_amount,
             'total_discount_amount' => bcadd(
-                (string) $this->discount_amount,
-                (string) $this->invoice_discount_amount,
+                (string) ($revisionSnapshot['discount_amount'] ?? $this->discount_amount),
+                (string) ($revisionSnapshot['invoice_discount_amount'] ?? $this->invoice_discount_amount),
                 4,
             ),
-            'tax_amount' => $this->tax_amount,
-            'grand_total' => $this->grand_total,
+            'tax_amount' => $revisionSnapshot['tax_amount'] ?? $this->tax_amount,
+            'grand_total' => $effectiveGrandTotal,
             'returned_amount' => $returnedAmount,
             'net_sale_total' => $netSaleTotal,
             'paid_amount' => $paidAmount,
             'balance_due' => $balanceDue,
-            'customer_name' => $this->customer_name,
-            'customer_phone' => $this->customer_phone,
-            'notes' => $this->notes,
+            'customer_name' => $revisionSnapshot['customer_name'] ?? $this->customer_name,
+            'customer_phone' => $revisionSnapshot['customer_phone'] ?? $this->customer_phone,
+            'notes' => $revisionSnapshot['notes'] ?? $this->notes,
+            'revision_number' => (int) ($revisionSnapshot['_meta']['revision_number'] ?? 0),
+            'is_amended' => (int) ($revisionSnapshot['_meta']['revision_number'] ?? 0) > 0,
             'posted_at' => $this->posted_at?->toIso8601String(),
             'salesman' => $this->whenLoaded('salesmanParty', fn () => $this->salesmanParty === null ? null : [
                 'ulid' => $this->salesmanParty->ulid,
@@ -101,7 +117,9 @@ class SaleResource extends JsonResource
                 'code' => $this->warehouse->code,
                 'name' => $this->warehouse->name,
             ]),
-            'items' => SaleItemResource::collection($this->whenLoaded('items')),
+            'items' => $revisionSnapshot !== null
+                ? ($revisionSnapshot['items'] ?? [])
+                : SaleItemResource::collection($this->whenLoaded('items')),
             'payments' => SalePaymentResource::collection($this->whenLoaded('payments')),
         ];
     }
