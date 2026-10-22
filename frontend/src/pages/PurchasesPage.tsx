@@ -1676,6 +1676,7 @@ export function PurchasesPage({
               product_ulid: line.product_ulid,
               unit_ulid: line.unit_ulid,
               quantity: line.quantity || '0',
+              conversion_factor: line.conversion_factor || '1',
               unit_cost: line.unit_cost || '0',
               discount_amount: calc.discount_amount,
               tax_amount: calc.tax_amount,
