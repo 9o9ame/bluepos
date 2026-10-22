@@ -259,16 +259,8 @@ export function PurchaseReturnsPage({
   const warehouses = warehousesQuery.data ?? []
   const returnable = returnableQuery.data?.data ?? []
 
-  const returnableProductUlids = useMemo(
-    () => new Set(returnable.map((row) => row.product.ulid)),
-    [returnable],
-  )
-
   const generalProducts = localGeneralProducts.rows.filter(
-    (product) =>
-      product.is_active &&
-      product.status === 'active' &&
-      (!invoiceMode || returnableProductUlids.has(product.ulid)),
+    (product) => product.is_active && product.status === 'active',
   )
 
   const purchaseOptions = useMemo(() => {
@@ -456,6 +448,18 @@ export function PurchaseReturnsPage({
     }, 0)
   }
 
+  function detachPurchaseSource(nextSupplierUlid?: string) {
+    setPurchaseUlid('')
+    setPurchaseLabel('')
+    setPurchaseSearch('')
+    if (nextSupplierUlid !== undefined) {
+      setSupplierUlid(nextSupplierUlid)
+    }
+    setGeneralRows((current) =>
+      current.map(({ purchase_line_ulid: _purchaseLineUlid, ...row }) => row),
+    )
+  }
+
   function addGeneralProduct(product: Product) {
     if (product.track_batch || product.track_expiry) {
       setError('Batch/expiry tracked products must be returned by selecting their posted Purchase #.')
@@ -494,8 +498,7 @@ export function PurchaseReturnsPage({
       : undefined
 
     if (invoiceMode && !sourceLine) {
-      setError('Select a product from the selected Purchase #.')
-      return
+      detachPurchaseSource()
     }
 
     const rowKey = generalProductTargetKey ?? generalRowKey()
@@ -996,7 +999,7 @@ export function PurchaseReturnsPage({
                   <UiTableDropdown
                     aria-label="Supplier"
                     value={supplierUlid}
-                    disabled={!canModifyCurrent || Boolean(purchaseUlid)}
+                    disabled={!canModifyCurrent}
                     className="purchase-return-canonical-select"
                     triggerClassName="purchase-return-canonical-trigger"
                     placeholder="Select supplier"
@@ -1009,7 +1012,13 @@ export function PurchaseReturnsPage({
                       { header: 'Mobile', width: '130px' },
                     ]}
                     menuMinWidth={720}
-                    onChange={setSupplierUlid}
+                    onChange={(value) => {
+                      if (purchaseUlid && value !== supplierUlid) {
+                        detachPurchaseSource(value)
+                        return
+                      }
+                      setSupplierUlid(value)
+                    }}
                   />
                 </div>
 
@@ -1224,12 +1233,11 @@ export function PurchaseReturnsPage({
                                 data-general-field="cost"
                                 inputMode="decimal"
                                 value={row.unit_cost}
-                                disabled={invoiceMode}
-                                title={invoiceMode ? 'Unit cost is fixed by the selected Purchase #' : undefined}
                                 onKeyDown={handleGeneralEnter}
                                 onChange={(event) => {
                                   const value = event.target.value
                                   if (value !== '' && !/^\d+(?:\.\d{0,4})?$/.test(value)) return
+                                  if (purchaseUlid) detachPurchaseSource()
                                   setGeneralRows((current) => current.map((item) =>
                                     item.key === row.key ? { ...item, unit_cost: value } : item,
                                   ))
