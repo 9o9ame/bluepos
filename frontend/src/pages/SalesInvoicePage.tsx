@@ -1615,6 +1615,10 @@ export function SalesInvoicePage({
   }
 
   const stockIssue = useMemo(() => {
+    if (amendingSale) {
+      return null
+    }
+
     if (businessSettingsQuery.data?.negative_stock_allowed !== false) {
       return null
     }
@@ -1665,7 +1669,7 @@ export function SalesInvoicePage({
     }
 
     return null
-  }, [businessSettingsQuery.data?.negative_stock_allowed, cart.paidLines])
+  }, [amendingSale, businessSettingsQuery.data?.negative_stock_allowed, cart.paidLines])
 
   useEffect(() => {
     if (!active) return
