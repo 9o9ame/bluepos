@@ -2384,12 +2384,12 @@ export function PurchasesPage({
                   <input
                     className="pie-supplier-combo-input"
                     value={supplierMenuOpen ? supplierQuery : (selectedSupplier?.name ?? supplierQuery)}
-                    disabled={!editable}
+                    disabled={!identityEditable}
                     placeholder="Select supplier..."
                     aria-label="Search supplier"
                     autoComplete="off"
                     onFocus={() => {
-                      if (!editable) return
+                      if (!identityEditable) return
                       setSupplierLookupMode('browse')
                       setSupplierQuery(selectedSupplier?.name ?? '')
                       setSupplierMenuOpen(true)
@@ -2420,7 +2420,7 @@ export function PurchasesPage({
                     disabled={!editable}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {
-                      if (!editable) return
+                      if (!identityEditable) return
                       setSupplierLookupMode('browse')
                       setSupplierQuery(selectedSupplier?.name ?? '')
                       setSupplierMenuOpen((open) => !open)
@@ -2455,7 +2455,7 @@ export function PurchasesPage({
                   <button
                     type="button"
                     className="pie-btn is-ghost"
-                    disabled={!editable}
+                    disabled={!identityEditable}
                     title="Create supplier"
                     onClick={() => setSupplierModalOpen(true)}
                   >
@@ -2481,7 +2481,7 @@ export function PurchasesPage({
               <input
                 type="date"
                 value={invoiceDate}
-                disabled={!editable}
+                disabled={!identityEditable}
                 onChange={(e) => setInvoiceDate(e.target.value)}
               />
             </label>
