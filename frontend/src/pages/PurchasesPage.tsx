@@ -173,8 +173,7 @@ function normalizeCalcMethod(value: string | null | undefined): string {
 }
 
 function money(value: string | number | null | undefined) {
-  const n = Number(value ?? 0)
-  return Number.isFinite(n) ? n.toFixed(4) : '0.0000'
+  return formatDecimal(value)
 }
 
 function pctFromAmount(base: number, amount: number) {
