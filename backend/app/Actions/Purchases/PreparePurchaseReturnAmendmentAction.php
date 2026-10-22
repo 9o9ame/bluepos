@@ -2,8 +2,10 @@
 
 namespace App\Actions\Purchases;
 
+use App\Catalog\TenantCatalog;
 use App\Enums\ProductStatus;
 use App\Enums\PurchaseInvoiceStatus;
+use App\Enums\WarehouseStatus;
 use App\Models\Product;
 use App\Models\PurchaseInvoiceLine;
 use App\Models\PurchaseReturn;
@@ -14,6 +16,7 @@ class PreparePurchaseReturnAmendmentAction
 {
     public function __construct(
         private readonly TenantContext $tenantContext,
+        private readonly TenantCatalog $catalog,
         private readonly RecalculatePurchaseReturnTotalsAction $recalculate,
     ) {}
 
@@ -21,14 +24,86 @@ class PreparePurchaseReturnAmendmentAction
      * @param array<string,mixed> $data
      * @return array{lines:list<array<string,mixed>>,totals:array{subtotal:string,discount_amount:string,tax_amount:string,grand_total:string}}
      */
-    public function execute(PurchaseReturn $document, array $data): array
+    public function execute(PurchaseReturn $document, array $data, array $before): array
     {
-        $invoiceMode = $document->purchase_invoice_id !== null;
+        $tenantId = $this->tenantContext->tenantId();
+        $purchaseUlid = trim((string) ($data['purchase_ulid'] ?? $before['original_purchase']['ulid'] ?? ''));
+
+        $invoice = null;
+        $supplier = null;
+
+        if ($purchaseUlid !== '') {
+            $invoice = PurchaseInvoice::query()
+                ->forTenant($tenantId)
+                ->where('branch_id', $this->tenantContext->branchId())
+                ->where('warehouse_id', $this->tenantContext->warehouseId())
+                ->with(['supplier', 'warehouse'])
+                ->where('ulid', $purchaseUlid)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $invoice) {
+                throw ValidationException::withMessages([
+                    'purchase_ulid' => 'The selected posted purchase was not found in the active branch and warehouse.',
+                ]);
+            }
+
+            if ($invoice->status !== PurchaseInvoiceStatus::Posted) {
+                throw ValidationException::withMessages([
+                    'purchase_ulid' => 'Purchase returns can only use posted purchase invoices.',
+                ]);
+            }
+
+            if ($invoice->latestRevision()->exists()) {
+                throw ValidationException::withMessages([
+                    'purchase_ulid' => 'The selected purchase has amendment revisions and cannot be used as a return source yet.',
+                ]);
+            }
+
+            $supplier = $invoice->supplier;
+        } else {
+            $supplierUlid = trim((string) ($data['supplier_ulid'] ?? $before['supplier']['ulid'] ?? ''));
+            if ($supplierUlid === '') {
+                throw ValidationException::withMessages([
+                    'supplier_ulid' => 'Supplier is required for a general Purchase Return amendment.',
+                ]);
+            }
+
+            $supplier = $this->catalog->supplier($supplierUlid);
+            if (! $supplier->is_active) {
+                throw ValidationException::withMessages([
+                    'supplier_ulid' => 'Purchase returns cannot use an inactive supplier.',
+                ]);
+            }
+        }
+
+        $warehouseUlid = trim((string) ($data['warehouse_ulid'] ?? $before['warehouse']['ulid'] ?? ''));
+        $warehouse = $this->catalog->warehouse($warehouseUlid);
+
+        if ($warehouse->status !== WarehouseStatus::Active) {
+            throw ValidationException::withMessages([
+                'warehouse_ulid' => 'Purchase returns cannot use an inactive warehouse.',
+            ]);
+        }
+
+        if ((int) $warehouse->branch_id !== $this->tenantContext->branchId()
+            || (int) $warehouse->id !== $this->tenantContext->warehouseId()) {
+            throw ValidationException::withMessages([
+                'warehouse_ulid' => 'Switch to the selected branch and warehouse before amending this Purchase Return.',
+            ]);
+        }
+
+        if ($invoice && (int) $invoice->warehouse_id !== (int) $warehouse->id) {
+            throw ValidationException::withMessages([
+                'warehouse_ulid' => 'The selected purchase belongs to a different warehouse.',
+            ]);
+        }
+
         $lines = [];
 
         foreach (($data['lines'] ?? []) as $index => $item) {
-            $lines[] = $invoiceMode
-                ? $this->invoiceLine($document, $item, $index)
+            $lines[] = $invoice
+                ? $this->invoiceLine($document, $invoice, $item, $index)
                 : $this->generalLine($item, $index);
         }
 
@@ -61,6 +136,27 @@ class PreparePurchaseReturnAmendmentAction
         }
 
         return [
+            'header' => [
+                'return_date' => (string) ($data['return_date'] ?? $before['return_date'] ?? now()->toDateString()),
+                'supplier_reference' => $data['supplier_reference'] ?? ($before['supplier_reference'] ?? null),
+                'reason' => $data['reason'] ?? ($before['reason'] ?? null),
+                'notes' => $data['notes'] ?? ($before['notes'] ?? null),
+                'original_purchase' => $invoice ? [
+                    'ulid' => $invoice->ulid,
+                    'document_number' => $invoice->document_number,
+                    'supplier_invoice_number' => $invoice->supplier_invoice_number,
+                ] : null,
+                'supplier' => [
+                    'ulid' => $supplier->ulid,
+                    'code' => $supplier->code,
+                    'name' => $supplier->name,
+                ],
+                'warehouse' => [
+                    'ulid' => $warehouse->ulid,
+                    'code' => $warehouse->code,
+                    'name' => $warehouse->name,
+                ],
+            ],
             'lines' => $lines,
             'totals' => [
                 'subtotal' => $subtotal,
@@ -75,17 +171,15 @@ class PreparePurchaseReturnAmendmentAction
      * @param array<string,mixed> $item
      * @return array<string,mixed>
      */
-    private function invoiceLine(PurchaseReturn $document, array $item, int $index): array
-    {
-        if (! $document->purchaseInvoice || $document->purchaseInvoice->status !== PurchaseInvoiceStatus::Posted) {
-            throw ValidationException::withMessages([
-                "lines.$index.purchase_line_ulid" => 'Original purchase invoice is not available for returns.',
-            ]);
-        }
-
+    private function invoiceLine(
+        PurchaseReturn $document,
+        PurchaseInvoice $invoice,
+        array $item,
+        int $index,
+    ): array {
         $purchaseLine = PurchaseInvoiceLine::query()
             ->with(['product', 'unit'])
-            ->where('purchase_invoice_id', $document->purchase_invoice_id)
+            ->where('purchase_invoice_id', $invoice->id)
             ->where('ulid', (string) ($item['purchase_line_ulid'] ?? ''))
             ->lockForUpdate()
             ->first();
