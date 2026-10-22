@@ -158,6 +158,10 @@ export function PurchaseReturnsPage({
 
   const amendingPosted = document?.status === 'posted' && canAmend
   const readOnly = document?.status === 'posted' && !canAmend
+  const canModifyCurrent =
+    document?.status === 'posted'
+      ? canAmend
+      : (document?.ulid ? canEdit : canCreate)
   const invoiceMode = Boolean(purchaseUlid || document?.return_mode === 'invoice')
 
   const nextReturnNumberQuery = useQuery({
@@ -885,7 +889,7 @@ export function PurchaseReturnsPage({
   function alreadyReturnedQty(row: ReturnablePurchaseLine): string {
     const factor = Number(row.conversion_factor) || 1
     const returnedBase = Number(row.already_returned_base_quantity) || 0
-    return (returnedBase / factor).toFixed(6)
+    return formatDecimal(returnedBase / factor)
   }
 
   if (!canView) {
@@ -935,7 +939,18 @@ export function PurchaseReturnsPage({
               <div className="purchase-return-fields">
                 <div className="purchase-return-option-group is-ret">
                   <label>Ret#:</label>
-                  <input value={document?.document_number ?? 'Auto'} readOnly />
+                  <input
+                    value={displayedReturnNumber}
+                    readOnly={!canCreate && !canAmend}
+                    disabled={returnLookupMutation.isPending || saveMutation.isPending}
+                    title="Type an exact Purchase Return number and press Enter to load it"
+                    onChange={(event) => setReturnNumberValue(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter') return
+                      event.preventDefault()
+                      void requestReturnLookup()
+                    }}
+                  />
                 </div>
 
                 <div className="purchase-return-option-group is-date">
@@ -943,7 +958,7 @@ export function PurchaseReturnsPage({
                   <input
                     type="date"
                     value={returnDate}
-                    disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
+                    disabled={document?.status === 'posted' || (!document?.ulid ? !canCreate : !canEdit)}
                     onChange={(event) => setReturnDate(event.target.value)}
                   />
                 </div>
@@ -993,7 +1008,10 @@ export function PurchaseReturnsPage({
                     <UiTableDropdown
                       aria-label="Supplier"
                       value={supplierUlid}
-                      disabled={readOnly || Boolean(document?.ulid && document.return_mode === 'invoice')}
+                      disabled={
+                        document?.status === 'posted' ||
+                        Boolean(document?.ulid && document.return_mode === 'invoice')
+                      }
                       className="purchase-return-canonical-select"
                       triggerClassName="purchase-return-canonical-trigger"
                       placeholder="Select supplier"
@@ -1016,7 +1034,7 @@ export function PurchaseReturnsPage({
                   <UiSimpleDropdown
                     aria-label="Warehouse"
                     value={warehouseUlid}
-                    disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
+                    disabled={document?.status === 'posted' || (!document?.ulid ? !canCreate : !canEdit)}
                     className="purchase-return-canonical-select"
                     triggerClassName="purchase-return-canonical-trigger"
                     searchPlaceholder="Search warehouse"
@@ -1029,7 +1047,7 @@ export function PurchaseReturnsPage({
                   <label>Supp. Ref:</label>
                   <input
                     value={supplierReference}
-                    disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
+                    disabled={!canModifyCurrent}
                     onChange={(event) => setSupplierReference(event.target.value)}
                   />
                 </div>
@@ -1038,7 +1056,7 @@ export function PurchaseReturnsPage({
                   <label>Reason:</label>
                   <input
                     value={reason}
-                    disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
+                    disabled={!canModifyCurrent}
                     onChange={(event) => setReason(event.target.value)}
                   />
                 </div>
@@ -1047,7 +1065,7 @@ export function PurchaseReturnsPage({
                   <label>Remarks:</label>
                   <input
                     value={notes}
-                    disabled={readOnly || (!document?.ulid ? !canCreate : !canEdit)}
+                    disabled={!canModifyCurrent}
                     onChange={(event) => setNotes(event.target.value)}
                   />
                 </div>
@@ -1101,12 +1119,12 @@ export function PurchaseReturnsPage({
                       <td>
                         <strong>{row.product.product_number}</strong> — {row.product.name}
                       </td>
-                      <td className="num">{row.original_quantity}</td>
+                      <td className="num">{formatDecimal(row.original_quantity)}</td>
                       <td className="num">{alreadyReturnedQty(row)}</td>
                       <td className="num">{remainingPurchaseQty(row)}</td>
                       <td className="num is-edit">
                         {readOnly ? (
-                          lineQty[row.purchase_line_ulid] ?? '0'
+                          formatDecimal(lineQty[row.purchase_line_ulid] ?? '0')
                         ) : (
                           <input
                             inputMode="decimal"
@@ -1138,7 +1156,7 @@ export function PurchaseReturnsPage({
                         )}
                       </td>
                       <td>{row.unit?.code ?? '—'}</td>
-                      <td className="num">{row.conversion_factor}</td>
+                      <td className="num">{formatDecimal(row.conversion_factor)}</td>
                       <td className="num">{money(row.unit_cost)}</td>
                     </tr>
                   ))}
@@ -1489,19 +1507,24 @@ export function PurchaseReturnsPage({
             <div className="purchase-return-actions">
               <DesktopButton
                 icon={<Save size={13} />}
-                label="Save Draft"
+                label={document?.status === 'posted' ? 'Amend Return' : 'Save Draft'}
                 shortcut="F9"
                 disabled={
                   readOnly ||
                   saveMutation.isPending ||
-                  (document?.ulid ? !canEdit : !canCreate)
+                  !canModifyCurrent
                 }
                 onClick={() => void saveMutation.mutateAsync().catch(handleError)}
               />
               <DesktopButton
                 icon={<CheckCircle2 size={13} />}
                 label="Post"
-                disabled={readOnly || !canPost || postMutation.isPending}
+                disabled={
+                  document?.status === 'posted' ||
+                  readOnly ||
+                  !canPost ||
+                  postMutation.isPending
+                }
                 onClick={() => {
                   void (async () => {
                     if (!(await askConfirm('Post this purchase return and reduce stock?'))) return
@@ -1653,7 +1676,7 @@ export function PurchaseReturnsPage({
                   header: 'Total',
                   align: 'right',
                   width: 110,
-                  render: (row) => money(row.grand_total),
+                  render: (row) => formatDecimal(row.grand_total),
                 },
                 {
                   key: 'status',
@@ -1666,9 +1689,7 @@ export function PurchaseReturnsPage({
               rowKey={(row) => row.ulid}
               selectedKey={selectedListKey}
               onSelect={(row) => setSelectedListKey(row.ulid)}
-              onActivate={(row) =>
-                void openMutation.mutateAsync(row.ulid).catch(handleError)
-              }
+              onActivate={(row) => void requestOpenReturn(row)}
               emptyMessage={listQuery.isFetching ? 'Loading purchase returns…' : 'No purchase returns yet.'}
             />
           </div>
@@ -1691,8 +1712,9 @@ export function PurchaseReturnsPage({
                 disabled={!selectedListKey}
                 onClick={() => {
                   if (!selectedListKey) return
-                  void openMutation.mutateAsync(selectedListKey).catch(handleError)
-                }}
+                  const row = rows.find((item) => item.ulid === selectedListKey)
+                  if (row) void requestOpenReturn(row)
+                }
               />
               <DesktopButton
                 icon={<X size={13} />}
