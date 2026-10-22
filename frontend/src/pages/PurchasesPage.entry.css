@@ -2113,3 +2113,80 @@ html[data-animations='off'] .purchase-entry-screen * {
 .purchase-entry-screen .purchase-reference-grid td.is-num {
   padding-right: 5px !important;
 }
+
+
+/* ==========================================================================
+   Purchase Invoice contrast refinement.
+   Geometry is intentionally unchanged; only token-based visual hierarchy is
+   strengthened so column boundaries and editable/calculated states scan clearly.
+   ========================================================================== */
+.purchase-entry-screen .purchase-reference-grid-wrap {
+  border-color: var(--ui-table-border) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--ui-card-shadow) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid th {
+  border-color: var(--ui-table-border) !important;
+  background: var(--ui-table-header) !important;
+  color: var(--ui-table-header-text) !important;
+  font-weight: var(--ui-weight-bold, 700) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid td {
+  border-color: color-mix(in srgb, var(--ui-table-border) 88%, var(--ui-text) 12%) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-text) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--ui-row-alt) 82%, var(--ui-surface) 18%) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid td.cell-yellow {
+  background: color-mix(in srgb, var(--ui-warning) 16%, var(--ui-surface)) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid td.cell-cyan {
+  background: color-mix(in srgb, var(--ui-info) 13%, var(--ui-surface)) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid td.col-cost_price,
+.purchase-entry-screen .purchase-reference-grid td.col-sale_price,
+.purchase-entry-screen .purchase-reference-grid td.col-total_amount {
+  background: color-mix(in srgb, var(--ui-success) 11%, var(--ui-surface)) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid td.col-gst,
+.purchase-entry-screen .purchase-reference-grid td.col-further_tax,
+.purchase-entry-screen .purchase-reference-grid td.col-advance_tax {
+  background: color-mix(in srgb, var(--ui-info) 9%, var(--ui-surface)) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid td input,
+.purchase-entry-screen .purchase-reference-grid .pie-dual-inputs input,
+.purchase-entry-screen .purchase-reference-grid .pie-line-select .ui-select-trigger {
+  border-color: var(--ui-control-border) !important;
+  background: var(--ui-control-face) !important;
+  color: var(--ui-text) !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid td input:focus,
+.purchase-entry-screen .purchase-reference-grid .pie-dual-inputs input:focus,
+.purchase-entry-screen .purchase-reference-grid .pie-line-select .ui-select-trigger:focus-visible {
+  border-color: var(--ui-accent) !important;
+  box-shadow: var(--ui-focus-shadow) !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid .pie-dual-inputs input:disabled,
+.purchase-entry-screen .purchase-reference-grid .pie-dual-inputs input.is-disabled {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+  border-color: var(--ui-table-border) !important;
+  box-shadow: none !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid tr.is-selected td:not(.cell-yellow):not(.cell-cyan) {
+  background: color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface)) !important;
+}
