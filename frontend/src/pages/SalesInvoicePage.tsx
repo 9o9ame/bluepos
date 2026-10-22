@@ -651,6 +651,11 @@ export function SalesInvoicePage({
     invoiceLookupMutation.mutate(requestedNumber)
   }
 
+  function cancelPendingInvoiceLookup(): void {
+    setPendingInvoiceLookupNumber(null)
+    setInvoiceValue(amendingSale?.document_number ?? null)
+  }
+
   const copyFromMutation = useMutation({
     mutationFn: async () => {
       const requestedNumber = copyFromValue.trim()
@@ -3442,7 +3447,7 @@ export function SalesInvoicePage({
           size="sm"
           onClose={() => {
             if (!invoiceLookupMutation.isPending) {
-              setPendingInvoiceLookupNumber(null)
+              cancelPendingInvoiceLookup()
             }
           }}
           footer={
@@ -3450,7 +3455,7 @@ export function SalesInvoicePage({
               <UiButton
                 variant="info"
                 disabled={invoiceLookupMutation.isPending}
-                onClick={() => setPendingInvoiceLookupNumber(null)}
+                onClick={cancelPendingInvoiceLookup}
               >
                 Cancel
               </UiButton>
