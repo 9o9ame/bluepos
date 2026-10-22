@@ -11,6 +11,7 @@ import {
 import {
   cancelPurchaseOrder,
   createPurchaseOrder,
+  fetchNextPurchaseOrderDocumentNumber,
   fetchPurchaseOrder,
   fetchPurchaseOrders,
   fetchPurchaseOrderStatus,
@@ -28,7 +29,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
 import { useLocalProducts } from '../features/catalog/useLocalCatalog'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
-import { useFeedback } from '../feedback/FeedbackProvider'
+import { askConfirm, useFeedback } from '../feedback/FeedbackProvider'
 import type { Product } from '../types/catalog'
 import type {
   PurchaseOrder,
@@ -36,6 +37,7 @@ import type {
   PurchaseOrderGeneratePayload,
   PurchaseOrderGenerateRow,
 } from '../types/purchases'
+import { formatDecimal } from '../utils/formatDecimal'
 import './PurchaseOrderPage.css'
 
 type UnitOption = {
@@ -98,7 +100,7 @@ function num(value: string | number | null | undefined): number {
 }
 
 function fixedMoney(value: number): string {
-  return Math.max(value, 0).toFixed(4)
+  return formatDecimal(Math.max(value, 0))
 }
 
 function escapePrintHtml(value: string | null | undefined): string {
@@ -205,6 +207,7 @@ export function PurchaseOrderPage() {
   const [lines, setLines] = useState<DraftLine[]>([])
   const [savedOrder, setSavedOrder] = useState<PurchaseOrder | null>(null)
   const [openedOrder, setOpenedOrder] = useState<PurchaseOrder | null>(null)
+  const [orderNumberValue, setOrderNumberValue] = useState<string | null>(null)
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false)
 
   const [orderType, setOrderType] = useState<PurchaseOrderGenerateMode>('get_all')
@@ -227,6 +230,19 @@ export function PurchaseOrderPage() {
     openedOrder && openedOrder.status === 'open' && canEditOrder,
   )
   const readOnly = Boolean(activeOrder) && !editingOpenedOrder
+
+  const nextOrderNumberQuery = useQuery({
+    queryKey: ['purchase-order', 'next-document-number', session?.branch.ulid, session?.warehouse.ulid],
+    queryFn: fetchNextPurchaseOrderDocumentNumber,
+    enabled: tab === 'entry' && (canCreate || canEditOrder),
+    retry: false,
+  })
+
+  const displayedOrderNumber =
+    orderNumberValue ??
+    activeOrder?.document_number ??
+    nextOrderNumberQuery.data?.document_number ??
+    'Auto'
 
   const suppliersQuery = useQuery({
     queryKey: ['suppliers', 'purchase-order'],
@@ -504,6 +520,7 @@ export function PurchaseOrderPage() {
     setLines([])
     setSavedOrder(null)
     setOpenedOrder(null)
+    setOrderNumberValue(null)
     setTab('entry')
     setOrderType('get_all')
     setLastDays('10')
@@ -516,6 +533,7 @@ export function PurchaseOrderPage() {
     setGenerationPage(0)
     setGenerationLastPage(0)
     requestedGenerationPageRef.current = 0
+    void nextOrderNumberQuery.refetch()
   }
 
   function patchLine(key: string, patch: Partial<DraftLine>) {
@@ -739,6 +757,7 @@ export function PurchaseOrderPage() {
     onSuccess: async (order) => {
       setOpenedOrder(order)
       setSavedOrder(null)
+      setOrderNumberValue(order.document_number)
       setSupplierUlid(order.supplier?.ulid ?? '')
       setOrderDate(order.order_date)
       setNotes(order.notes ?? '')
@@ -769,14 +788,14 @@ export function PurchaseOrderPage() {
             unit_ulid: item.unit.ulid,
             unit_code: unit?.code ?? item.unit.code,
             unit_options: unitOptions,
-            in_stock: stock.active_warehouse.quantity,
-            stock_value: '0.0000',
-            consumption: '0.000000',
-            difference: '0.000000',
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            discount_percent: item.discount_percent,
-            discount_amount: item.discount_amount,
+            in_stock: formatDecimal(stock.active_warehouse.quantity),
+            stock_value: '0.0',
+            consumption: '0.0',
+            difference: '0.0',
+            quantity: formatDecimal(item.quantity),
+            unit_price: formatDecimal(item.unit_price),
+            discount_percent: formatDecimal(item.discount_percent),
+            discount_amount: formatDecimal(item.discount_amount),
           }
         }),
       )
@@ -790,6 +809,67 @@ export function PurchaseOrderPage() {
       )
     },
   })
+
+  function hasCurrentOrderData(): boolean {
+    return Boolean(
+      activeOrder?.ulid ||
+      supplierUlid ||
+      lines.length > 0 ||
+      notes.trim(),
+    )
+  }
+
+  async function requestOrderLookup(requestedOverride?: string) {
+    const requestedNumber = (requestedOverride ?? orderNumberValue ?? '').trim()
+    if (!requestedNumber || openMutation.isPending) return
+
+    const currentNumber = activeOrder?.document_number.trim().toLocaleLowerCase() ?? null
+    const requestedKey = requestedNumber.toLocaleLowerCase()
+
+    if (hasCurrentOrderData() && currentNumber !== requestedKey) {
+      const confirmed = await askConfirm(
+        `The current Purchase Order contains data. If you fetch ${requestedNumber}, the current data will be lost.`,
+      )
+      if (!confirmed) {
+        setOrderNumberValue(activeOrder?.document_number ?? null)
+        return
+      }
+    }
+
+    try {
+      const result = await fetchPurchaseOrders({
+        q: requestedNumber,
+        page: 1,
+        per_page: 20,
+      })
+      const exact = result.data.find(
+        (row) => row.document_number.trim().toLocaleLowerCase() === requestedKey,
+      )
+      if (!exact) {
+        throw new Error('No Purchase Order with that exact number was found in this branch and warehouse.')
+      }
+      openMutation.mutate(exact.ulid)
+    } catch (error) {
+      feedback.error(
+        error instanceof Error ? error.message : 'Unable to find Purchase Order.',
+        'Purchase Order',
+      )
+    }
+  }
+
+  async function requestOpenOrder(order: PurchaseOrder) {
+    const currentNumber = activeOrder?.document_number.trim().toLocaleLowerCase() ?? null
+    const requestedKey = order.document_number.trim().toLocaleLowerCase()
+
+    if (hasCurrentOrderData() && currentNumber !== requestedKey) {
+      const confirmed = await askConfirm(
+        `The current Purchase Order contains data. If you fetch ${order.document_number}, the current data will be lost.`,
+      )
+      if (!confirmed) return
+    }
+
+    openMutation.mutate(order.ulid)
+  }
 
   const cancelMutation = useMutation({
     mutationFn: (orderUlid: string) => cancelPurchaseOrder(orderUlid),
@@ -936,9 +1016,17 @@ export function PurchaseOrderPage() {
                 <label className="po-option-po">
                   <span>PO #</span>
                   <input
-                    value={activeOrder?.document_number ?? 'Auto'}
-                    disabled
+                    value={displayedOrderNumber}
+                    readOnly={!canCreate && !canEditOrder}
+                    disabled={openMutation.isPending || saveMutation.isPending}
                     aria-label="Purchase order number"
+                    title="Type an exact Purchase Order number and press Enter to load it"
+                    onChange={(event) => setOrderNumberValue(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter') return
+                      event.preventDefault()
+                      void requestOrderLookup()
+                    }}
                   />
                 </label>
 
@@ -1067,15 +1155,15 @@ export function PurchaseOrderPage() {
               <div className="purchase-order-section-title">Amount Options</div>
               <div>
                 <span>Net</span>
-                <strong>{netAmount}</strong>
+                <strong>{formatDecimal(netAmount)}</strong>
               </div>
               <div>
                 <span>Paid</span>
-                <strong>0.0000</strong>
+                <strong>0.0</strong>
               </div>
               <div>
                 <span>Diff</span>
-                <strong>{netAmount}</strong>
+                <strong>{formatDecimal(netAmount)}</strong>
               </div>
             </aside>
           </div>
@@ -1141,12 +1229,12 @@ export function PurchaseOrderPage() {
                         <td className="is-num" />
                         <td className="is-num" />
                         <td className="is-num" />
-                        <td className="is-num">{line.quantity}</td>
-                        <td className="is-num">{line.unit_price}</td>
-                        <td className="is-num">{line.gross_amount}</td>
-                        <td className="is-num">{line.discount_percent}</td>
-                        <td className="is-num">{line.discount_amount}</td>
-                        <td className="is-num">{line.line_total}</td>
+                        <td className="is-num">{formatDecimal(line.quantity)}</td>
+                        <td className="is-num">{formatDecimal(line.unit_price)}</td>
+                        <td className="is-num">{formatDecimal(line.gross_amount)}</td>
+                        <td className="is-num">{formatDecimal(line.discount_percent)}</td>
+                        <td className="is-num">{formatDecimal(line.discount_amount)}</td>
+                        <td className="is-num">{formatDecimal(line.line_total)}</td>
                         <td />
                       </tr>
                     ))
@@ -1252,13 +1340,13 @@ export function PurchaseOrderPage() {
                               />
                             </div>
                           </td>
-                          <td className="is-num">{line.in_stock}</td>
-                          <td className="is-num">{line.stock_value}</td>
-                          <td className="is-num">{line.consumption}</td>
-                          <td className="is-num">{line.difference}</td>
+                          <td className="is-num">{formatDecimal(line.in_stock)}</td>
+                          <td className="is-num">{formatDecimal(line.stock_value)}</td>
+                          <td className="is-num">{formatDecimal(line.consumption)}</td>
+                          <td className="is-num">{formatDecimal(line.difference)}</td>
                           <td className="is-num">
                             <input
-                              value={line.quantity}
+                              value={line.quantity === '' ? '' : formatDecimal(line.quantity)}
                               aria-label={`Quantity for ${line.product_name}`}
                               onChange={(event) =>
                                 patchLine(line.key, { quantity: event.target.value })
@@ -1267,7 +1355,7 @@ export function PurchaseOrderPage() {
                           </td>
                           <td className="is-num">
                             <input
-                              value={line.unit_price}
+                              value={line.unit_price === '' ? '' : formatDecimal(line.unit_price)}
                               aria-label={`Price for ${line.product_name}`}
                               onChange={(event) =>
                                 patchLine(line.key, { unit_price: event.target.value })
@@ -1277,7 +1365,7 @@ export function PurchaseOrderPage() {
                           <td className="is-num">{preview.gross}</td>
                           <td className="is-num">
                             <input
-                              value={line.discount_percent}
+                              value={line.discount_percent === '' ? '' : formatDecimal(line.discount_percent)}
                               aria-label={`Discount percent for ${line.product_name}`}
                               onChange={(event) =>
                                 patchLine(line.key, {
@@ -1291,7 +1379,7 @@ export function PurchaseOrderPage() {
                           </td>
                           <td className="is-num">
                             <input
-                              value={line.discount_amount}
+                              value={line.discount_amount === '' ? '' : formatDecimal(line.discount_amount)}
                               aria-label={`Discount amount for ${line.product_name}`}
                               onChange={(event) =>
                                 patchLine(line.key, {
@@ -1437,7 +1525,7 @@ export function PurchaseOrderPage() {
               </div>
               <div className="is-grand">
                 <span>Net Order</span>
-                <strong>{netAmount}</strong>
+                <strong>{formatDecimal(netAmount)}</strong>
               </div>
             </div>
           </div>
@@ -1502,12 +1590,12 @@ export function PurchaseOrderPage() {
                 header: 'Net',
                 width: 150,
                 align: 'right',
-                render: (row) => row.grand_total,
+                render: (row) => formatDecimal(row.grand_total),
               },
             ]}
             rows={ordersQuery.data?.data ?? []}
             rowKey={(row) => row.ulid}
-            onActivate={(row) => openMutation.mutate(row.ulid)}
+            onActivate={(row) => void requestOpenOrder(row)}
             emptyMessage="No purchase orders found."
           />
         </div>
