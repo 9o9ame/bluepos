@@ -1886,7 +1886,7 @@ export function PurchasesPage({
   }
 
   async function onPost() {
-    if (!canPost || readOnly) return
+    if (!canPost || readOnly || status !== 'draft') return
     if (!(await askConfirm('Post this purchase? Stock will be updated and the document becomes immutable.'))) return
     setError(null)
     try {
@@ -2735,7 +2735,7 @@ export function PurchasesPage({
             <button
               type="button"
               className="pie-btn is-post"
-              disabled={readOnly || !canPost || postMutation.isPending}
+              disabled={status !== 'draft' || readOnly || !canPost || postMutation.isPending}
               onClick={() => void onPost()}
             >
               <Send /> Post
