@@ -103,7 +103,7 @@ export const PURCHASE_INVOICE_COLUMNS: GridColumnDef[] = [
 /** Full sales invoice line catalog (POS PLUS parity). */
 export const SALES_INVOICE_COLUMNS: GridColumnDef[] = [
   { key: 'selector', label: '', defaultVisible: true, defaultLocked: true, lockable: false, width: 28 },
-  { key: 'product', label: 'ITEM / PRODUCT DESCRIPTION', defaultVisible: true, defaultLocked: true, lockable: true, width: 260 },
+  { key: 'product', label: 'ITEM / PRODUCT DESCRIPTION', defaultVisible: true, defaultLocked: true, lockable: true, width: 140 },
   { key: 'in_stock', label: 'In Stock', defaultVisible: true, width: 72, align: 'right' },
   { key: 'sales_qty', label: 'Sales Qty', defaultVisible: true, width: 72, align: 'right', cellClass: 'cell-yellow' },
   { key: 'price', label: 'Price', defaultVisible: true, width: 72, align: 'right', cellClass: 'cell-yellow' },
