@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Purchases;
 
 use App\Enums\PurchaseReturnStatus;
+use App\Actions\Purchases\AmendPurchaseInvoiceAction;
 use App\Actions\Purchases\CreatePurchaseInvoiceAction;
 use App\Actions\Purchases\DeletePurchaseInvoiceLineAction;
 use App\Actions\Purchases\PayPurchaseInvoiceAction;
@@ -11,6 +12,7 @@ use App\Actions\Purchases\UpdatePurchaseInvoiceAction;
 use App\Actions\Purchases\UpsertPurchaseInvoiceLineAction;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Purchases\AmendPurchaseInvoiceRequest;
 use App\Http\Requests\Purchases\StorePurchasePaymentRequest;
 use App\Http\Resources\Purchases\PurchaseInvoiceLineResource;
 use App\Http\Resources\Purchases\PurchaseInvoiceResource;
@@ -33,7 +35,7 @@ class PurchaseInvoiceController extends Controller
             ->forTenant($tenantContext->tenantId())
             ->where('branch_id', $tenantContext->branchId())
             ->where('warehouse_id', $tenantContext->warehouseId())
-            ->with(['supplier', 'branch', 'warehouse'])
+            ->with(['supplier', 'branch', 'warehouse', 'latestRevision'])
             ->withSum('payments as paid_amount', 'amount')
             ->withSum([
                 'purchaseReturns as returned_amount' => fn ($query) => $query
@@ -104,7 +106,7 @@ class PurchaseInvoiceController extends Controller
         $this->authorize('view', $invoice);
 
         return new PurchaseInvoiceResource(
-            $invoice->load([...CreatePurchaseInvoiceAction::with(), 'payments'])
+            $invoice->load([...CreatePurchaseInvoiceAction::with(), 'payments', 'latestRevision'])
         );
     }
 
@@ -120,6 +122,26 @@ class PurchaseInvoiceController extends Controller
         $data = $request->validate($this->headerRules(updating: true));
 
         return new PurchaseInvoiceResource($update->execute($invoice, $data));
+    }
+
+    public function amend(
+        AmendPurchaseInvoiceRequest $request,
+        string $purchaseUlid,
+        TenantContext $tenantContext,
+        AmendPurchaseInvoiceAction $amend,
+    ): PurchaseInvoiceResource {
+        $invoice = $this->findInvoice($purchaseUlid, $tenantContext);
+        $this->authorize('amend', $invoice);
+
+        $document = $amend->execute(
+            $invoice,
+            $request->validated(),
+            (string) $request->header('Idempotency-Key', ''),
+        );
+
+        return new PurchaseInvoiceResource(
+            $document->load([...CreatePurchaseInvoiceAction::with(), 'payments', 'latestRevision'])
+        );
     }
 
     public function storeLine(
