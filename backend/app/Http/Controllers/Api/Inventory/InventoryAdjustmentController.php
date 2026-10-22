@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api\Inventory;
 
+use App\Actions\Inventory\AmendInventoryAdjustmentAction;
 use App\Actions\Inventory\CreateInventoryAdjustmentAction;
 use App\Actions\Inventory\PostInventoryAdjustmentAction;
 use App\Actions\Inventory\UpsertInventoryAdjustmentLineAction;
+use App\Authz\PermissionService;
 use App\Enums\InventoryAdjustmentStatus;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
@@ -20,6 +22,15 @@ use Illuminate\Support\Facades\DB;
 
 class InventoryAdjustmentController extends Controller
 {
+    public function nextDocumentNumber(
+        CreateInventoryAdjustmentAction $create,
+        PermissionService $permissions,
+    ): array {
+        abort_unless($permissions->can('inventory.adjust'), 403);
+
+        return ['document_number' => $create->previewNextDocumentNumber()];
+    }
+
     public function index(Request $request, TenantContext $tenantContext): mixed
     {
         $this->authorize('viewAny', InventoryAdjustment::class);
@@ -28,8 +39,15 @@ class InventoryAdjustmentController extends Controller
             ->forTenant($tenantContext->tenantId())
             ->where('branch_id', $tenantContext->branchId())
             ->where('warehouse_id', $tenantContext->warehouseId())
-            ->with(['warehouse', 'account', 'lines.product'])
+            ->with(['warehouse', 'account', 'lines.product', 'latestRevision'])
             ->orderByDesc('id');
+
+        if ($request->filled('q')) {
+            $needle = trim((string) $request->string('q'));
+            if ($needle !== '') {
+                $query->where('document_number', 'ilike', '%'.$needle.'%');
+            }
+        }
 
         if ($request->filled('status')) {
             $query->where('status', (string) $request->string('status'));
@@ -98,7 +116,7 @@ class InventoryAdjustmentController extends Controller
         $this->authorize('view', $document);
 
         return new InventoryAdjustmentResource(
-            $document->load(['warehouse', 'account', 'lines.product']),
+            $document->load(['warehouse', 'account', 'lines.product', 'latestRevision']),
         );
     }
 
@@ -157,6 +175,36 @@ class InventoryAdjustmentController extends Controller
         });
 
         return new InventoryAdjustmentResource($document);
+    }
+
+    public function amend(
+        Request $request,
+        string $adjustmentUlid,
+        TenantContext $tenantContext,
+        AmendInventoryAdjustmentAction $amend,
+    ): InventoryAdjustmentResource {
+        $document = $this->findDocument($adjustmentUlid, $tenantContext);
+        $this->authorize('update', $document);
+
+        $data = $request->validate([
+            'revision_reason' => ['required', 'string', 'max:500'],
+            'account_ulid' => ['required', 'string', 'size:26'],
+            'adjustment_date' => ['required', 'date'],
+            'notes' => ['nullable', 'string', 'max:500'],
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.product_ulid' => ['required', 'string', 'size:26'],
+            'lines.*.qty_plus' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],
+            'lines.*.qty_minus' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],
+            'lines.*.notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        return new InventoryAdjustmentResource(
+            $amend->execute(
+                $document,
+                $data,
+                (string) $request->header('Idempotency-Key', ''),
+            ),
+        );
     }
 
     public function destroy(
