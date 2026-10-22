@@ -139,16 +139,12 @@ class SaleReturnAmendmentTest extends TestCase
         $this->signInOwner('sale-return-amend-refund')->assertOk();
         $this->configureAccounting(true);
 
-        [$saleUlid, $returnUlid, $saleItemUlid] = $this->postedReturn(
+        [, $returnUlid, $saleItemUlid] = $this->postedReturn(
             'Refund Floor Return Item',
             '2.000000',
             '2.000000',
+            '200.0000',
         );
-
-        $this->postJson('/api/sales/'.$saleUlid.'/payments', [
-            'amount' => '200.0000',
-            'method' => 'cash',
-        ], $this->idem('sale-return-amend-payment'))->assertCreated();
 
         $this->postJson('/api/sales-returns/'.$returnUlid.'/refunds', [
             'amount' => '150.0000',
@@ -220,6 +216,7 @@ class SaleReturnAmendmentTest extends TestCase
         string $productName,
         string $saleQty,
         string $returnQty,
+        ?string $paymentBeforeReturn = null,
     ): array {
         $productUlid = $this->createProduct($productName, '100.0000');
         $this->giveStock($productUlid, '10.000000');
@@ -233,6 +230,15 @@ class SaleReturnAmendmentTest extends TestCase
             ->assertCreated();
 
         $saleUlid = (string) $sale->json('ulid');
+
+        if ($paymentBeforeReturn !== null) {
+            $this->postJson('/api/sales/'.$saleUlid.'/payments', [
+                'amount' => $paymentBeforeReturn,
+                'method' => 'cash',
+            ], $this->idem('payment-before-return-'.md5($productName)))
+                ->assertCreated();
+        }
+
         $saleItemUlid = (string) $this->getJson('/api/sales/'.$saleUlid.'/returnable-lines')
             ->assertOk()
             ->json('data.0.sale_item_ulid');
