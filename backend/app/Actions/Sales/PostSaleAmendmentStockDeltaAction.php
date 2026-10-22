@@ -152,7 +152,6 @@ class PostSaleAmendmentStockDeltaAction
                         ->where('reference_ulid', $sale->ulid);
                 });
             })
-            ->lockForUpdate()
             ->sum('total_cost');
 
         $effectiveCost = bcsub('0.0000', bcadd((string) $totalCost, '0', 4), 4);
@@ -180,7 +179,6 @@ class PostSaleAmendmentStockDeltaAction
                         ->where('reference_ulid', $sale->ulid);
                 });
             })
-            ->lockForUpdate()
             ->sum('total_cost');
 
         $cogs = bcsub('0.0000', bcadd((string) $totalCost, '0', 4), 4);
