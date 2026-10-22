@@ -3,6 +3,7 @@
 namespace App\Actions\Sales;
 
 use App\Models\Sale;
+use Illuminate\Support\Str;
 
 class BuildSaleEffectiveSnapshotAction
 {
@@ -163,11 +164,9 @@ class BuildSaleEffectiveSnapshotAction
                 'name' => $sale->warehouse->name,
             ] : null,
             'items' => collect($prepared['lines'])->values()->map(
-                function (array $line, int $index) use ($revisionNumber): array {
-                    $scheme = $line['sale_scheme_id'] ?? null;
-
+                function (array $line): array {
                     return [
-                        'ulid' => 'REV'.str_pad((string) $revisionNumber, 4, '0', STR_PAD_LEFT).'-'.str_pad((string) ($index + 1), 4, '0', STR_PAD_LEFT),
+                        'ulid' => (string) Str::ulid(),
                         'line_kind' => $line['line_kind'],
                         'quantity' => $line['quantity'],
                         'stock_quantity' => $line['stock_quantity'],
@@ -195,7 +194,7 @@ class BuildSaleEffectiveSnapshotAction
                             'symbol' => $line['unit']->symbol,
                             'allows_decimal' => $line['unit']->allows_decimal,
                         ],
-                        'sale_scheme' => $scheme ? ['internal_reference' => (int) $scheme] : null,
+                        'sale_scheme' => null,
                     ];
                 }
             )->all(),
