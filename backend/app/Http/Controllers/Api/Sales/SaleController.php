@@ -35,9 +35,9 @@ class SaleController extends Controller
         $query = Sale::query()
             ->forTenant($tenantContext->tenantId())
             ->where('branch_id', $tenantContext->branchId())
+            ->select('sales.*')
             ->with(['customer', 'salesmanParty', 'branch', 'warehouse', 'latestRevision'])
             ->withSum('payments as paid_amount', 'amount')
-            ->select('sales.*')
             ->selectRaw(
                 "(SELECT COALESCE(SUM(COALESCE((
                     SELECT CAST(dr.after_snapshot->>'grand_total' AS NUMERIC)
