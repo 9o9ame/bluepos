@@ -33,6 +33,12 @@ export function fetchPurchaseReturns(params?: {
   return apiFetch<Paginated<PurchaseReturn>>(`/api/purchase-returns${suffix}`)
 }
 
+export function fetchNextPurchaseReturnDocumentNumber() {
+  return apiFetch<{ document_number: string }>('/api/purchase-returns/next-document-number', {
+    busy: 'none',
+  })
+}
+
 export function fetchPurchaseReturn(ulid: string) {
   return apiFetch<PurchaseReturn>(`/api/purchase-returns/${ulid}`)
 }
@@ -66,6 +72,35 @@ export function updatePurchaseReturn(
   return apiFetch<PurchaseReturn>(`/api/purchase-returns/${ulid}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
+  })
+}
+
+export function amendPurchaseReturn(
+  returnUlid: string,
+  payload: {
+    revision_reason: string
+    supplier_reference?: string | null
+    reason?: string | null
+    notes?: string | null
+    lines: Array<{
+      purchase_line_ulid?: string
+      product_ulid?: string
+      quantity: string
+      unit_cost?: string
+      discount_amount?: string
+      tax_amount?: string
+      batch_number?: string | null
+      expiry_date?: string | null
+      reason?: string | null
+      notes?: string | null
+    }>
+  },
+  idempotencyKey: string,
+) {
+  return apiFetch<PurchaseReturn>(`/api/purchase-returns/${returnUlid}/amend`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    headers: { 'Idempotency-Key': idempotencyKey },
   })
 }
 
@@ -128,9 +163,16 @@ export function postPurchaseReturn(returnUlid: string) {
   })
 }
 
-export function fetchReturnableLines(purchaseUlid: string) {
+export function fetchReturnableLines(
+  purchaseUlid: string,
+  excludeReturnUlid?: string | null,
+) {
+  const search = new URLSearchParams()
+  if (excludeReturnUlid) search.set('exclude_return_ulid', excludeReturnUlid)
+  const suffix = search.toString() ? `?${search.toString()}` : ''
+
   return apiFetch<{ data: ReturnablePurchaseLine[] }>(
-    `/api/purchases/${purchaseUlid}/returnable-lines`,
+    `/api/purchases/${purchaseUlid}/returnable-lines${suffix}`,
   )
 }
 
