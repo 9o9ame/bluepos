@@ -41,6 +41,7 @@ class CollectSalePaymentAction
         private readonly PartyLeafAccountSync $partyAccounts,
         private readonly CashierTransactionLock $cashierLock,
         private readonly BuildSaleEffectiveSnapshotAction $snapshots,
+        private readonly BuildSaleReturnEffectiveSnapshotAction $returnSnapshots,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -209,11 +210,22 @@ class CollectSalePaymentAction
             ->where('sale_id', $sale->id)
             ->sum('amount');
 
-        $returned = (string) SaleReturn::query()
+        $returned = '0.0000';
+        $returns = SaleReturn::query()
             ->where('tenant_id', (int) $sale->tenant_id)
             ->where('sale_id', $sale->id)
             ->where('status', SaleReturnStatus::Posted->value)
-            ->sum('grand_total');
+            ->with('latestRevision')
+            ->get();
+
+        foreach ($returns as $return) {
+            $effectiveReturn = $this->returnSnapshots->current($return);
+            $returned = bcadd(
+                $returned,
+                (string) ($effectiveReturn['grand_total'] ?? $return->grand_total),
+                4,
+            );
+        }
 
         $effective = $this->snapshots->current($sale);
         $netSaleTotal = bcsub(
