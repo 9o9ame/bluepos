@@ -324,6 +324,20 @@ class SaleController extends Controller
             ->all();
     }
 
+    public function nextDocumentNumber(
+        CreateSaleAction $create,
+        PermissionService $permissions,
+    ): array {
+        abort_unless(
+            $permissions->can('sales.create') || $permissions->can('sales.amend_posted'),
+            403,
+        );
+
+        return [
+            'document_number' => $create->previewNextDocumentNumber(),
+        ];
+    }
+
     public function store(
         StoreSaleRequest $request,
         CreateSaleAction $create,
