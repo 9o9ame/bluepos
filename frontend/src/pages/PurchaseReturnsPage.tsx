@@ -350,11 +350,6 @@ export function PurchaseReturnsPage({
 
   const selectedLineCount = generalRows.length
 
-  const selectedSupplierName =
-    suppliers.find((supplier) => supplier.ulid === supplierUlid)?.name ??
-    document?.supplier?.name ??
-    'From purchase'
-
   function handleError(err: unknown) {
     setError(
       err instanceof ApiClientError || err instanceof Error
@@ -1016,31 +1011,24 @@ export function PurchaseReturnsPage({
 
                 <div className="purchase-return-option-group is-supplier">
                   <label>Supplier:</label>
-                  {invoiceMode ? (
-                    <input value={selectedSupplierName} readOnly />
-                  ) : (
-                    <UiTableDropdown
-                      aria-label="Supplier"
-                      value={supplierUlid}
-                      disabled={
-                        !canModifyCurrent ||
-                        Boolean(purchaseUlid)
-                      }
-                      className="purchase-return-canonical-select"
-                      triggerClassName="purchase-return-canonical-trigger"
-                      placeholder="Select supplier"
-                      searchPlaceholder="Search supplier"
-                      options={supplierOptions}
-                      menuColumns={[
-                        { header: 'Code', width: '100px' },
-                        { header: 'Name', width: '220px' },
-                        { header: 'Address', width: '240px' },
-                        { header: 'Mobile', width: '130px' },
-                      ]}
-                      menuMinWidth={720}
-                      onChange={setSupplierUlid}
-                    />
-                  )}
+                  <UiTableDropdown
+                    aria-label="Supplier"
+                    value={supplierUlid}
+                    disabled={!canModifyCurrent || Boolean(purchaseUlid)}
+                    className="purchase-return-canonical-select"
+                    triggerClassName="purchase-return-canonical-trigger"
+                    placeholder="Select supplier"
+                    searchPlaceholder="Search supplier"
+                    options={supplierOptions}
+                    menuColumns={[
+                      { header: 'Code', width: '100px' },
+                      { header: 'Name', width: '220px' },
+                      { header: 'Address', width: '240px' },
+                      { header: 'Mobile', width: '130px' },
+                    ]}
+                    menuMinWidth={720}
+                    onChange={setSupplierUlid}
+                  />
                 </div>
 
                 <div className="purchase-return-option-group is-warehouse">
@@ -1254,6 +1242,8 @@ export function PurchaseReturnsPage({
                                 data-general-field="cost"
                                 inputMode="decimal"
                                 value={row.unit_cost}
+                                disabled={invoiceMode}
+                                title={invoiceMode ? 'Unit cost is fixed by the selected Purchase #' : undefined}
                                 onKeyDown={handleGeneralEnter}
                                 onChange={(event) => {
                                   const value = event.target.value
