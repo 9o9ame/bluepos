@@ -159,6 +159,10 @@ class PurchaseReturnController extends Controller
 
         $data = $request->validate([
             'revision_reason' => ['required', 'string', 'max:500'],
+            'purchase_ulid' => ['nullable', 'string', 'size:26'],
+            'supplier_ulid' => ['nullable', 'string', 'size:26'],
+            'warehouse_ulid' => ['required', 'string', 'size:26'],
+            'return_date' => ['required', 'date'],
             'supplier_reference' => ['nullable', 'string', 'max:100'],
             'reason' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:5000'],
