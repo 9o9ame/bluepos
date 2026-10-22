@@ -379,13 +379,14 @@ export function InventoryAdjustmentsPage() {
       return
     }
 
+    const sameProduct = existing?.product?.ulid === productUlid
     const inStock = Number.parseFloat(
-      existing?.in_stock
+      (sameProduct ? existing?.in_stock : null)
       ?? selectedProduct?.sales_lookup?.in_stock
       ?? '0',
     ) || 0
     const price = Number.parseFloat(
-      existing?.price
+      (sameProduct ? existing?.price : null)
       ?? selectedProduct?.sales_lookup?.average_cost
       ?? '0',
     ) || 0
@@ -1039,15 +1040,21 @@ export function InventoryAdjustmentsPage() {
               </UiButton>
               <UiButton
                 variant="success"
-                onClick={() => saveHeader.mutate()}
+                onClick={() => {
+                  if (document?.status === 'posted') {
+                    amendDocument.mutate()
+                    return
+                  }
+                  saveHeader.mutate()
+                }}
                 disabled={
                   !canAdjust ||
-                  Boolean(document && document.status === 'posted') ||
-                  (!headerDirty && Boolean(document)) ||
-                  saveHeader.isPending
+                  (document?.status === 'posted'
+                    ? (!amendmentDirty && !headerDirty) || amendDocument.isPending
+                    : ((!headerDirty && Boolean(document)) || saveHeader.isPending))
                 }
               >
-                <Save size={15} /> Save
+                <Save size={15} /> {document?.status === 'posted' ? 'Amend Adjustment' : 'Save'}
               </UiButton>
               <UiButton
                 variant="success"
@@ -1058,7 +1065,7 @@ export function InventoryAdjustmentsPage() {
                     return
                   }
                   if (!await feedback.confirm(
-                    `Post ${document.document_number}? Live stock and cost will be re-read. Posted adjustments cannot be edited.`,
+                    `Post ${document.document_number}? Live stock and cost will be re-read and the adjustment will become posted.`,
                   )) return
                   postDocument.mutate()
                 }}
@@ -1069,8 +1076,12 @@ export function InventoryAdjustmentsPage() {
               <UiButton
                 variant="info"
                 onClick={() => {
-                  if (documentUlid) void documentQuery.refetch()
-                  else newDocument()
+                  if (documentUlid) {
+                    clearLineForm()
+                    void documentQuery.refetch()
+                  } else {
+                    newDocument()
+                  }
                 }}
               >
                 <RefreshCw size={15} /> Refresh
