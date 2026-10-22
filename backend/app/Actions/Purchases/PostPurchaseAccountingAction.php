@@ -102,7 +102,7 @@ class PostPurchaseAccountingAction
             'tenant_id' => $tenantId,
             'journal_entry_id' => $journal->id,
             'account_id' => $payable->id,
-            'supplier_id' => $supplier->id,
+            'supplier_id' => $invoice->supplier_id,
             'description' => 'Supplier payable',
             'debit' => '0.0000',
             'credit' => $amount,
