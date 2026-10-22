@@ -58,6 +58,7 @@ class AmendPurchaseInvoiceRequest extends FormRequest
             'lines.*.product_ulid' => ['required', 'string', 'size:26'],
             'lines.*.unit_ulid' => ['required', 'string', 'size:26'],
             'lines.*.quantity' => ['required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,6})?$/'],
+            'lines.*.conversion_factor' => ['nullable', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/'],
             'lines.*.unit_cost' => ['required', 'regex:/^(?:0|[1-9]\d*)(?:\.\d{1,4})?$/'],
             'lines.*.discount_amount' => $money,
             'lines.*.tax_amount' => $money,
