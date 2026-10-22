@@ -370,27 +370,18 @@ export function SalesInvoicePage({
   ])
 
   const salesColumnWidths = useMemo(() => {
-    const productWidth = 'clamp(110px, 7.3vw, 180px)'
+    const productColumn = effectiveSalesColumns.find((col) => col.key === 'product')
     const otherColumns = effectiveSalesColumns.filter((col) => col.key !== 'product')
-    const totalOtherWeight = otherColumns.reduce(
-      (sum, col) => sum + Math.max(col.width ?? 72, 36),
-      0,
-    )
+    const otherCount = otherColumns.length
+
+    const productWidth = productColumn ? '30%' : '0%'
+    const otherWidth = otherCount > 0 ? `${70 / otherCount}%` : '0%'
 
     return new Map(
-      effectiveSalesColumns.map((col) => {
-        if (col.key === 'product') {
-          return [col.key, productWidth]
-        }
-
-        const weight = Math.max(col.width ?? 72, 36)
-        const ratio = totalOtherWeight > 0 ? weight / totalOtherWeight : 0
-
-        return [
-          col.key,
-          `calc((100% - ${productWidth}) * ${ratio})`,
-        ]
-      }),
+      effectiveSalesColumns.map((col) => [
+        col.key,
+        col.key === 'product' ? productWidth : otherWidth,
+      ]),
     )
   }, [effectiveSalesColumns])
 
