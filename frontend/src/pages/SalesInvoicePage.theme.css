@@ -4895,3 +4895,42 @@ html[data-animations='off'] .sales-reference-screen * {
   color: var(--ui-text);
   line-height: 1.5;
 }
+
+
+/* Final inner-editor fill overrides.
+   These selectors intentionally outrank older responsive fixed-height rules
+   without changing the frozen outer Sales Invoice geometry. */
+.sales-reference-entry-row > .sales-reference-product-entry-wrap {
+  align-self: stretch !important;
+  height: 100% !important;
+}
+
+.sales-reference-entry-row
+  > .sales-reference-product-entry-wrap
+  > .sales-reference-product-entry[aria-label='Barcode scanner input'] {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
+  align-self: stretch !important;
+}
+
+.sales-reference-pay > .sales-reference-received {
+  align-items: stretch !important;
+}
+
+.sales-reference-pay
+  > .sales-reference-received
+  > input[aria-label='Received amount'] {
+  display: block !important;
+  align-self: stretch !important;
+  flex: 0 0 76% !important;
+  width: 76% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: none !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+  line-height: normal !important;
+}
