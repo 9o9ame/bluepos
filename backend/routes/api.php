@@ -353,6 +353,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::post('/purchases', [PurchaseInvoiceController::class, 'store']);
         Route::get('/purchases/{purchaseUlid}', [PurchaseInvoiceController::class, 'show']);
         Route::patch('/purchases/{purchaseUlid}', [PurchaseInvoiceController::class, 'update']);
+        Route::patch('/purchases/{purchaseUlid}/amend', [PurchaseInvoiceController::class, 'amend']);
         Route::post('/purchases/{purchaseUlid}/lines', [PurchaseInvoiceController::class, 'storeLine']);
         Route::patch('/purchases/{purchaseUlid}/lines/{lineUlid}', [PurchaseInvoiceController::class, 'updateLine']);
         Route::delete('/purchases/{purchaseUlid}/lines/{lineUlid}', [PurchaseInvoiceController::class, 'destroyLine']);
