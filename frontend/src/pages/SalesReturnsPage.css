@@ -4424,3 +4424,30 @@ html[data-animations='off'] .sales-return-product-combo .sales-product-combo-tog
     margin-top: 5px !important;
   }
 }
+
+
+/* Keep Return Invoice, Balance and Amount option typography on the same scale. */
+.sales-return-head {
+  --sales-return-option-font-size: var(--ui-font-sm, 10px);
+}
+
+.sales-return-option-group > label,
+.sales-return-balances span,
+.sales-return-balances strong,
+.sales-return-amounts span,
+.sales-return-amounts strong,
+.sales-return-amounts .is-net strong {
+  font-size: var(--sales-return-option-font-size) !important;
+}
+
+@media (min-width: 861px) and (max-width: 1439px) {
+  .sales-return-head {
+    --sales-return-option-font-size: 8.5px;
+  }
+}
+
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .sales-return-head {
+    --sales-return-option-font-size: 8px;
+  }
+}
