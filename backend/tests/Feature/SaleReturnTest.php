@@ -294,7 +294,7 @@ class SaleReturnTest extends TestCase
     public function test_refund_method_cannot_exceed_original_collected_method_amount(): void
     {
         $this->signInOwner('sr-refund-method')->assertOk();
-        $this->configureAccounts();
+        $accounts = $this->configureAccounts();
 
         $product = $this->createProduct('Refund Method Product', '100.0000');
         $this->giveStock($product, '10.000000');
@@ -314,6 +314,7 @@ class SaleReturnTest extends TestCase
         $this->postJson('/api/sales/'.$saleUlid.'/payments', [
             'amount' => '200.0000',
             'method' => 'card',
+            'account_ulid' => $accounts['bank']->ulid,
         ], $this->idem('sr-refund-method-card'))->assertCreated();
 
         $saleItemUlid = $this->getJson('/api/sales/'.$saleUlid.'/returnable-lines')
@@ -488,20 +489,35 @@ class SaleReturnTest extends TestCase
         $this->getJson('/api/sales-returns/'.$first->json('ulid'))->assertNotFound();
     }
 
-    /** @return array{cash:Account,clearing:Account} */
+    /** @return array{cash:Account,clearing:Account,bank:Account} */
     private function configureAccounts(): array
     {
         $cash = $this->leafAccount('SR TEST CASH', '9401');
         $clearing = $this->leafAccount('SR TEST CLEARING', '9402');
 
+        $context = app(TenantContext::class);
+        $bankType = \App\Models\AccountType::query()
+            ->forTenant($context->tenantId())
+            ->where('code', '0012')
+            ->firstOrFail();
+
+        $bank = Account::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => '9403',
+            'name' => 'SR TEST BANK',
+            'account_type_id' => $bankType->id,
+            'is_active' => true,
+            'created_by' => $context->userId(),
+        ]);
+
         BusinessSetting::query()
-            ->forTenant(app(TenantContext::class)->tenantId())
+            ->forTenant($context->tenantId())
             ->update([
                 'default_cash_account_id' => $cash->id,
                 'sales_clearing_account_id' => $clearing->id,
             ]);
 
-        return ['cash' => $cash, 'clearing' => $clearing];
+        return ['cash' => $cash, 'clearing' => $clearing, 'bank' => $bank];
     }
 
     private function leafAccount(string $name, string $code): Account
