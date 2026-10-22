@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Api\Sales;
 
+use App\Actions\Sales\AmendSaleAction;
 use App\Actions\Sales\CollectSalePaymentAction;
 use App\Actions\Sales\CreateSaleAction;
 use App\Authz\PermissionService;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Sales\AmendSaleRequest;
 use App\Http\Requests\Sales\StoreSalePaymentRequest;
 use App\Http\Requests\Sales\StoreSaleRequest;
 use App\Http\Resources\Sales\SalePaymentResource;
@@ -33,7 +35,7 @@ class SaleController extends Controller
         $query = Sale::query()
             ->forTenant($tenantContext->tenantId())
             ->where('branch_id', $tenantContext->branchId())
-            ->with(['customer', 'salesmanParty', 'branch', 'warehouse'])
+            ->with(['customer', 'salesmanParty', 'branch', 'warehouse', 'latestRevision'])
             ->withSum('payments as paid_amount', 'amount')
             ->withSum([
                 'saleReturns as returned_amount' => fn ($q) => $q->where('status', SaleReturnStatus::Posted->value),
@@ -87,7 +89,15 @@ class SaleController extends Controller
             $query
                 ->where('status', SaleStatus::Posted->value)
                 ->whereRaw(
-                    '(sales.grand_total - COALESCE((
+                    '(COALESCE((
+                        SELECT CAST(dr.after_snapshot->>\'grand_total\' AS NUMERIC)
+                        FROM document_revisions dr
+                        WHERE dr.tenant_id = sales.tenant_id
+                          AND dr.document_type = \'sale_invoice\'
+                          AND dr.document_ulid = sales.ulid
+                        ORDER BY dr.revision_number DESC
+                        LIMIT 1
+                    ), sales.grand_total) - COALESCE((
                         SELECT SUM(sr.grand_total)
                         FROM sale_returns sr
                         WHERE sr.sale_id = sales.id
@@ -320,7 +330,27 @@ class SaleController extends Controller
         $this->authorize('view', $sale);
 
         return new SaleResource(
-            $sale->load([...CreateSaleAction::with(), 'payments', 'payments.account'])
+            $sale->load([...CreateSaleAction::with(), 'payments', 'payments.account', 'latestRevision'])
+        );
+    }
+
+    public function amend(
+        AmendSaleRequest $request,
+        string $saleUlid,
+        TenantContext $tenantContext,
+        AmendSaleAction $amend,
+    ): SaleResource {
+        $sale = $this->find($saleUlid, $tenantContext);
+        $this->authorize('amend', $sale);
+
+        $document = $amend->execute(
+            $sale,
+            $request->validated(),
+            (string) $request->header('Idempotency-Key', ''),
+        );
+
+        return new SaleResource(
+            $document->load([...CreateSaleAction::with(), 'payments', 'payments.account', 'latestRevision'])
         );
     }
 
