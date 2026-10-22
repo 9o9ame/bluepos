@@ -642,7 +642,7 @@ export function InventoryAdjustmentsPage() {
     { key: 'account', header: 'Account Adjusted', width: '28%', render: (row) => row.account ? `${row.account.code} — ${row.account.name}` : '—' },
     { key: 'status', header: 'Status', width: 90, render: (row) => row.status.toUpperCase() },
     { key: 'qty', header: 'Lines', width: 70, align: 'right', render: (row) => String(row.lines?.length ?? 0) },
-    { key: 'net', header: 'Net', width: 110, align: 'right', render: (row) => row.net_amount },
+    { key: 'net', header: 'Net', width: 110, align: 'right', render: (row) => formatDecimal(row.net_amount) },
   ], [])
 
   const productWiseRows = useMemo<ProductWiseRow[]>(() => {
@@ -663,7 +663,7 @@ export function InventoryAdjustmentsPage() {
           product: line.product ? `${line.product.product_number} · ${line.product.name}` : '—',
           qty_plus: line.qty_plus,
           qty_minus: line.qty_minus,
-          amount: (signedNet(line)).toFixed(4),
+          amount: formatDecimal(signedNet(line)),
           remarks: line.remarks,
         })),
     )
@@ -674,14 +674,14 @@ export function InventoryAdjustmentsPage() {
     { key: 'date', header: 'Date', width: 105, render: (row) => row.date },
     { key: 'account', header: 'Account', width: '24%', render: (row) => row.account },
     { key: 'product', header: 'Product', width: '32%', render: (row) => row.product },
-    { key: 'plus', header: 'Qty (+)', width: 100, align: 'right', render: (row) => row.qty_plus },
-    { key: 'minus', header: 'Qty (-)', width: 100, align: 'right', render: (row) => row.qty_minus },
-    { key: 'amount', header: 'Amount', width: 110, align: 'right', render: (row) => row.amount },
+    { key: 'plus', header: 'Qty (+)', width: 100, align: 'right', render: (row) => formatDecimal(row.qty_plus) },
+    { key: 'minus', header: 'Qty (-)', width: 100, align: 'right', render: (row) => formatDecimal(row.qty_minus) },
+    { key: 'amount', header: 'Amount', width: 110, align: 'right', render: (row) => formatDecimal(row.amount) },
     { key: 'remarks', header: 'Remarks', render: (row) => row.remarks ?? '—' },
   ], [])
 
   const selectedEntryProduct = productLookupRows.find((row) => row.ulid === productUlid) ?? null
-  const selectedExistingLine = (document?.lines ?? []).find((row) => row.ulid === selectedLineUlid) ?? null
+  const selectedExistingLine = displayLines.find((row) => row.ulid === selectedLineUlid) ?? null
 
   const entryPreview = useMemo(() => {
     const inStock = selectedExistingLine?.in_stock
@@ -697,14 +697,18 @@ export function InventoryAdjustmentsPage() {
     const delta = plus - minus
 
     return {
-      inStock,
-      afterStock: (stock + delta).toFixed(6),
-      price,
-      amount: (Math.abs(delta) * cost).toFixed(4),
+      inStock: formatDecimal(inStock),
+      afterStock: formatDecimal(stock + delta),
+      price: formatDecimal(price),
+      amount: formatDecimal(Math.abs(delta) * cost),
     }
   }, [qtyMinus, qtyPlus, selectedEntryProduct, selectedExistingLine])
 
-  const selectedSearchDocument = (listQuery.data ?? []).find((row) => row.ulid === selectedSearchUlid) ?? null
+  const displayNetAmount = formatDecimal(
+    displayLines.reduce((sum, line) => sum + signedNet(line), 0),
+  )
+
+    const selectedSearchDocument = (listQuery.data ?? []).find((row) => row.ulid === selectedSearchUlid) ?? null
 
   function previewProductWise() {
     const root = window.document.documentElement
@@ -757,17 +761,29 @@ export function InventoryAdjustmentsPage() {
               <div className="inventory-adjustments-section-title">Invoice Options</div>
               <label>
                 <span>Adj#:</span>
-                <input value={document?.document_number ?? 'New'} readOnly />
+                <input
+                  value={displayedDocumentNumber}
+                  readOnly={!canAdjust}
+                  disabled={documentQuery.isFetching}
+                  title="Type an exact Adjustment number and press Enter to load it"
+                  onChange={(event) => setDocumentNumberValue(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter') return
+                    event.preventDefault()
+                    void lookupDocumentNumber()
+                  }}
+                />
               </label>
               <label>
                 <span>Date:</span>
                 <input
                   type="date"
                   value={adjustmentDate}
-                  disabled={Boolean(document && document.status === 'posted')}
+                  disabled={!canAdjust}
                   onChange={(event) => {
                     setAdjustmentDate(event.target.value)
                     setHeaderDirty(true)
+                    if (document?.status === 'posted') setAmendmentDirty(true)
                   }}
                 />
               </label>
@@ -779,8 +795,9 @@ export function InventoryAdjustmentsPage() {
                   onChange={(value) => {
                     setAccountUlid(value)
                     setHeaderDirty(true)
+                    if (document?.status === 'posted') setAmendmentDirty(true)
                   }}
-                  disabled={Boolean(document && document.status === 'posted')}
+                  disabled={!canAdjust}
                   placeholder={accountsQuery.isLoading ? 'Loading accounts…' : 'Select account'}
                   searchPlaceholder="Search account"
                   menuColumns={[
@@ -807,7 +824,7 @@ export function InventoryAdjustmentsPage() {
                 <span>Net Amount:</span>
                 <input
                   className="inventory-adjustments-net-amount"
-                  value={document?.net_amount ?? '0.0000'}
+                  value={displayNetAmount}
                   readOnly
                   aria-readonly="true"
                 />
@@ -832,22 +849,22 @@ export function InventoryAdjustmentsPage() {
                   { key: 'remarks', header: 'Remarks', width: '26%' },
                 ]}
               >
-                  {(document?.lines ?? []).map((line) => (
+                  {displayLines.map((line) => (
                     <tr
                       key={line.ulid}
                       className={line.ulid === selectedLineUlid ? 'is-selected' : ''}
-                      title={document?.status === 'draft' ? 'Double-click to edit this line' : undefined}
+                      title={canAdjust ? 'Double-click to edit this line' : undefined}
                       onDoubleClick={() => {
-                        if (document?.status === 'draft' && canAdjust) fillLineForm(line)
+                        if (canAdjust) fillLineForm(line)
                       }}
                     >
                       <td>{line.product ? `${line.product.product_number} · ${line.product.name}` : ''}</td>
-                      <td className="is-num">{line.in_stock}</td>
-                      <td className="is-num">{line.qty_plus}</td>
-                      <td className="is-num">{line.qty_minus}</td>
-                      <td className="is-num">{line.after_stock}</td>
-                      <td className="is-num">{line.price}</td>
-                      <td className="is-num">{line.amount}</td>
+                      <td className="is-num">{formatDecimal(line.in_stock)}</td>
+                      <td className="is-num">{formatDecimal(line.qty_plus)}</td>
+                      <td className="is-num">{formatDecimal(line.qty_minus)}</td>
+                      <td className="is-num">{formatDecimal(line.after_stock)}</td>
+                      <td className="is-num">{formatDecimal(line.price)}</td>
+                      <td className="is-num">{formatDecimal(line.amount)}</td>
                       <td>{line.remarks ?? ''}</td>
                     </tr>
                   ))}
@@ -930,7 +947,7 @@ export function InventoryAdjustmentsPage() {
                           className="inventory-adjustments-entry-number"
                           inputMode="decimal"
                           value={qtyPlus}
-                          placeholder="0.000000"
+                          placeholder="0.0"
                           onChange={(event) => {
                             setQtyPlus(event.target.value)
                             if (event.target.value.trim()) setQtyMinus('')
@@ -949,7 +966,7 @@ export function InventoryAdjustmentsPage() {
                           className="inventory-adjustments-entry-number"
                           inputMode="decimal"
                           value={qtyMinus}
-                          placeholder="0.000000"
+                          placeholder="0.0"
                           onChange={(event) => {
                             setQtyMinus(event.target.value)
                             if (event.target.value.trim()) setQtyPlus('')
@@ -977,7 +994,7 @@ export function InventoryAdjustmentsPage() {
                           onKeyDown={(event) => {
                             if (event.key !== 'Enter') return
                             event.preventDefault()
-                            if (!saveLine.isPending) saveLine.mutate()
+                            saveCurrentLine()
                           }}
                         />
                         {selectedLineUlid ? (
@@ -985,11 +1002,8 @@ export function InventoryAdjustmentsPage() {
                             type="button"
                             className="inventory-adjustments-line-remove"
                             aria-label="Remove adjustment line"
-                            onClick={async () => {
-                              if (!await feedback.confirm('Remove this adjustment line?')) return
-                              removeLine.mutate(selectedLineUlid)
-                            }}
-                            disabled={removeLine.isPending}
+                            onClick={() => void removeCurrentLine(selectedLineUlid)}
+                            disabled={removeLine.isPending || amendDocument.isPending}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -1096,7 +1110,7 @@ export function InventoryAdjustmentsPage() {
             </UiButton>
             <UiButton
               onClick={() => {
-                if (selectedSearchDocument) openDocument(selectedSearchDocument)
+                if (selectedSearchDocument) void openDocument(selectedSearchDocument)
               }}
               disabled={!selectedSearchDocument}
             >
@@ -1110,7 +1124,7 @@ export function InventoryAdjustmentsPage() {
               rowKey={(row) => row.ulid}
               selectedKey={selectedSearchUlid}
               onSelect={(row) => setSelectedSearchUlid(row.ulid)}
-              onActivate={openDocument}
+              onActivate={(row) => void openDocument(row)}
               emptyMessage={listQuery.isLoading ? 'Loading adjustments…' : 'No adjustments found.'}
             />
           </div>
