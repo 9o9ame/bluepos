@@ -1588,7 +1588,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                         key={value}
                         type="button"
                         className={refundMethod === value ? 'is-active' : ''}
-                        disabled={!canRefund || refundMutation.isPending}
+                        disabled={amendingPosted || !canRefund || refundMutation.isPending}
                         onClick={() => setRefundMethod(value)}
                       >
                         <Icon size={12} />
@@ -1601,14 +1601,14 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                     className="sales-return-refund-amount"
                     value={refundAmount}
                     inputMode="decimal"
-                    disabled={!canRefund || refundMutation.isPending}
+                    disabled={amendingPosted || !canRefund || refundMutation.isPending}
                     aria-label="Refund amount"
                     onChange={(e) => setRefundAmount(e.target.value)}
                   />
                   <input
                     className="sales-return-refund-reference"
                     value={refundReference}
-                    disabled={!canRefund || refundMutation.isPending}
+                    disabled={amendingPosted || !canRefund || refundMutation.isPending}
                     placeholder="Reference"
                     onChange={(e) => setRefundReference(e.target.value)}
                   />
@@ -1616,6 +1616,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                     variant="warning"
                     className="sales-return-refund-submit"
                     disabled={
+                      amendingPosted ||
                       !canRefund ||
                       refundMutation.isPending ||
                       !(Number(refundAmount) > 0) ||
