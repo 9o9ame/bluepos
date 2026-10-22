@@ -127,17 +127,47 @@ class RecalculatePurchaseReturnTotalsAction
      */
     public function remainingReturnableBase(PurchaseInvoiceLine $purchaseLine, ?int $excludeReturnId = null): string
     {
-        $query = PurchaseReturnLine::query()
-            ->where('purchase_invoice_line_id', $purchaseLine->id)
-            ->whereHas('purchaseReturn', function ($q) use ($excludeReturnId): void {
-                $q->where('status', PurchaseReturnStatus::Posted->value);
-                if ($excludeReturnId !== null) {
-                    $q->where('id', '!=', $excludeReturnId);
-                }
-            });
+        $returns = PurchaseReturn::query()
+            ->where('purchase_invoice_id', $purchaseLine->purchase_invoice_id)
+            ->where('status', PurchaseReturnStatus::Posted->value)
+            ->when(
+                $excludeReturnId !== null,
+                fn ($query) => $query->where('id', '!=', $excludeReturnId),
+            )
+            ->with([
+                'latestRevision',
+                'lines' => fn ($query) => $query
+                    ->where('purchase_invoice_line_id', $purchaseLine->id),
+            ])
+            ->get();
 
-        $returned = (string) ($query->sum('base_quantity') ?: '0');
-        $remaining = bcsub((string) $purchaseLine->base_quantity, bcadd($returned, '0', 6), 6);
+        $returned = '0.000000';
+
+        foreach ($returns as $return) {
+            $snapshot = $return->latestRevision?->after_snapshot;
+
+            if (is_array($snapshot)) {
+                foreach (($snapshot['lines'] ?? []) as $line) {
+                    if (($line['original_purchase_line_ulid'] ?? null) !== $purchaseLine->ulid) {
+                        continue;
+                    }
+
+                    $returned = bcadd(
+                        $returned,
+                        (string) ($line['base_quantity'] ?? '0'),
+                        6,
+                    );
+                }
+
+                continue;
+            }
+
+            foreach ($return->lines as $line) {
+                $returned = bcadd($returned, (string) $line->base_quantity, 6);
+            }
+        }
+
+        $remaining = bcsub((string) $purchaseLine->base_quantity, $returned, 6);
 
         return bccomp($remaining, '0', 6) === -1 ? '0.000000' : $remaining;
     }
