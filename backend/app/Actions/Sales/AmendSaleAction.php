@@ -247,7 +247,11 @@ class AmendSaleAction
 
         foreach ($items as $index => $item) {
             $key = $this->lineIdentityKey($item);
-            $prior = array_shift($queues[$key] ?? []);
+            $prior = null;
+
+            if (! empty($queues[$key])) {
+                $prior = array_shift($queues[$key]);
+            }
 
             if (! is_array($prior)) {
                 continue;
