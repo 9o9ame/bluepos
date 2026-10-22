@@ -294,6 +294,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::get('/sales-returns/product-wise', [SaleReturnController::class, 'productWise']);
         Route::get('/sales-returns/{returnUlid}', [SaleReturnController::class, 'show']);
         Route::patch('/sales-returns/{returnUlid}', [SaleReturnController::class, 'update']);
+        Route::patch('/sales-returns/{returnUlid}/amend', [SaleReturnController::class, 'amend']);
         Route::post('/sales-returns/{returnUlid}/lines', [SaleReturnController::class, 'storeLine']);
         Route::patch('/sales-returns/{returnUlid}/lines/{lineUlid}', [SaleReturnController::class, 'updateLine']);
         Route::delete('/sales-returns/{returnUlid}/lines/{lineUlid}', [SaleReturnController::class, 'destroyLine']);
