@@ -9,6 +9,7 @@ use App\Actions\Purchases\DeletePurchaseInvoiceLineAction;
 use App\Actions\Purchases\PayPurchaseInvoiceAction;
 use App\Actions\Purchases\PostPurchaseInvoiceAction;
 use App\Actions\Purchases\UpdatePurchaseInvoiceAction;
+use App\Authz\PermissionService;
 use App\Actions\Purchases\UpsertPurchaseInvoiceLineAction;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
@@ -26,6 +27,20 @@ use Illuminate\Http\Request;
 
 class PurchaseInvoiceController extends Controller
 {
+    public function nextDocumentNumber(
+        CreatePurchaseInvoiceAction $create,
+        PermissionService $permissions,
+    ): array {
+        abort_unless(
+            $permissions->can('purchases.create') || $permissions->can('purchases.amend_posted'),
+            403,
+        );
+
+        return [
+            'document_number' => $create->previewNextDocumentNumber(),
+        ];
+    }
+
     public function index(Request $request, TenantContext $tenantContext): mixed
     {
         $this->authorize('viewAny', PurchaseInvoice::class);
