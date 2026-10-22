@@ -74,7 +74,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
   const readOnly = activeQuotation ? !canEditQuotation : !canCreateQuotation
 
   const quotationOtherColumnCount = readOnly ? 8 : 9
-  const quotationOtherColumnWidth = `${75 / quotationOtherColumnCount}%`
+  const quotationOtherColumnWidth = `${70 / quotationOtherColumnCount}%`
 
   const nextQuotationNumberQuery = useQuery({
     queryKey: ['quotation-estimate', 'next-document-number', session?.branch.ulid, session?.warehouse.ulid],
@@ -799,7 +799,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
             ariaLabel="Quotation line items"
             minWidth={820}
             columns={[
-              { key: 'product', header: 'Product', width: '25%' },
+              { key: 'product', header: 'Product', width: '30%' },
               { key: 'unit', header: 'Unit', width: quotationOtherColumnWidth },
               { key: 'stock', header: 'In Stock', width: quotationOtherColumnWidth, align: 'right' },
               { key: 'qty', header: 'Qty', width: quotationOtherColumnWidth, align: 'right' },
