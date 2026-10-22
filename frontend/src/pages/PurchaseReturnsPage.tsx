@@ -1149,7 +1149,7 @@ export function PurchaseReturnsPage({
                               if (!value || Number(value) === 0) return
                               setLineQty((prev) => ({
                                 ...prev,
-                                [row.purchase_line_ulid]: qty(value),
+                                [row.purchase_line_ulid]: formatDecimal(value),
                               }))
                             }}
                           />
