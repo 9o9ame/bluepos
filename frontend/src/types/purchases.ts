@@ -107,6 +107,8 @@ export type PurchaseInvoice = {
   tax_type?: string
   payment_terms?: string
   posted_at: string | null
+  revision_number?: number
+  is_amended?: boolean
   supplier?: PurchaseRef | null
   branch?: PurchaseRef | null
   warehouse?: PurchaseRef | null
