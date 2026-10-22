@@ -3,19 +3,24 @@ import { createPortal } from 'react-dom'
 import { UI_LAYER } from '../../components/ui/uiLayers'
 import type { Product } from '../../types/catalog'
 import type { SalePriceType } from '../../types/sales'
+import { formatDecimal } from '../../utils/formatDecimal'
 import './ProductLookupGrid.css'
 
 function productLookupPrice(product: Product, priceType: SalePriceType): string {
   const type = priceType === 'wholesale' ? 'wholesale' : 'retail'
-  return product.prices?.find(
+  const amount = product.prices?.find(
     (price) => price.is_active && price.price_type === type,
-  )?.amount ?? '—'
+  )?.amount
+
+  return amount == null ? '—' : formatDecimal(amount)
 }
 
 function productBaseRate(product: Product): string {
-  return product.prices?.find(
+  const amount = product.prices?.find(
     (price) => price.is_active && price.price_type === 'minimum_sale',
-  )?.amount ?? '—'
+  )?.amount
+
+  return amount == null ? '—' : formatDecimal(amount)
 }
 
 function productStockClass(product: Product): string {
@@ -293,16 +298,16 @@ export function ProductLookupGrid({
                 <strong>{productLookupDescription(row)}</strong>
                 <span className={`product-lookup-stock ${productStockClass(row)}`}>
                   {row.sales_lookup
-                    ? Number.parseFloat(row.sales_lookup.in_stock).toFixed(3)
+                    ? formatDecimal(row.sales_lookup.in_stock)
                     : '—'}
                 </span>
                 <span>{row.base_unit?.symbol ?? row.base_unit?.code ?? '—'}</span>
                 <span>
                   {row.secondary_unit
-                    ? `${row.secondary_conversion_factor ?? '1'} ${row.secondary_unit.symbol ?? row.secondary_unit.code}`
+                    ? `${formatDecimal(row.secondary_conversion_factor ?? '1')} ${row.secondary_unit.symbol ?? row.secondary_unit.code}`
                     : '—'}
                 </span>
-                <span>{row.purchase_rate ?? row.sales_lookup?.average_cost ?? '—'}</span>
+                <span>{row.purchase_rate ?? row.sales_lookup?.average_cost ? formatDecimal(row.purchase_rate ?? row.sales_lookup?.average_cost) : '—'}</span>
                 <span>{productLookupPrice(row, 'retail')}</span>
                 <span>{row.category?.name ?? '—'}</span>
                 <span>{row.brand?.name ?? '—'}</span>
@@ -314,12 +319,12 @@ export function ProductLookupGrid({
                 <strong>{productLookupDescription(row)}</strong>
                 <span className={`product-lookup-stock ${productStockClass(row)}`}>
                   {row.sales_lookup
-                    ? Number.parseFloat(row.sales_lookup.in_stock).toFixed(3)
+                    ? formatDecimal(row.sales_lookup.in_stock)
                     : '—'}
                 </span>
                 <span>{productLookupPrice(row, priceType)}</span>
                 <span>{productBaseRate(row)}</span>
-                <span>{row.sales_lookup?.average_cost ?? '—'}</span>
+                <span>{row.sales_lookup?.average_cost == null ? '—' : formatDecimal(row.sales_lookup.average_cost)}</span>
                 <span>{row.base_unit?.symbol ?? row.base_unit?.code ?? '—'}</span>
                 <span>{row.rack_location || '—'}</span>
               </>
