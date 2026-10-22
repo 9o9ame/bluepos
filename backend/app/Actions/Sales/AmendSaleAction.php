@@ -126,11 +126,15 @@ class AmendSaleAction
 
             $prepared = $this->salePreparation->prepareDocument($prepareData);
 
+            // The sale row above is the transaction mutex for both amendments
+            // and payment collection. PostgreSQL does not allow FOR UPDATE on
+            // aggregate queries, and CollectSalePaymentAction locks this same
+            // sale row before it can insert a payment, so a plain aggregate is
+            // safe after the sale lock has been acquired.
             $paidAmount = bcadd(
                 (string) SalePayment::query()
                     ->forTenant($tenantId)
                     ->where('sale_id', $sale->id)
-                    ->lockForUpdate()
                     ->sum('amount'),
                 '0',
                 4,
