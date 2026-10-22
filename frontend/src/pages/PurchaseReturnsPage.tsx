@@ -300,7 +300,7 @@ export function PurchaseReturnsPage({
       { value: '', label: 'Select supplier', columns: ['', 'Select supplier', '', ''] },
       ...suppliers.map((supplier) => ({
         value: supplier.ulid,
-        label: `${supplier.code} · ${supplier.name}`,
+        label: supplier.name,
         columns: [
           supplier.code,
           supplier.name,
