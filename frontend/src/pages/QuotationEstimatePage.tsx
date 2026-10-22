@@ -73,7 +73,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
   const activeQuotation = openedQuotation ?? savedQuotation
   const readOnly = activeQuotation ? !canEditQuotation : !canCreateQuotation
 
-  const quotationOtherColumnCount = readOnly ? 8 : 9
+  const quotationOtherColumnCount = 8
   const quotationOtherColumnWidth = `${70 / quotationOtherColumnCount}%`
 
   const nextQuotationNumberQuery = useQuery({
@@ -809,7 +809,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
               { key: 'tax-pct', header: 'Tax %', width: quotationOtherColumnWidth, align: 'right' },
               { key: 'amount', header: 'Amount', width: quotationOtherColumnWidth, align: 'right' },
               ...(!readOnly
-                ? [{ key: 'remove', header: '', width: quotationOtherColumnWidth, align: 'center' as const }]
+                ? [{ key: 'remove', header: '', width: 34, align: 'center' as const }]
                 : []),
             ]}
           >
