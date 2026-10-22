@@ -358,6 +358,7 @@ class SaleReturnController extends Controller
     }
 
     public function returnableLines(
+        Request $request,
         string $saleUlid,
         TenantContext $tenantContext,
         RecalculateSaleReturnTotalsAction $recalculate,
@@ -385,10 +386,29 @@ class SaleReturnController extends Controller
             throw new ApiException('DOCUMENT_NOT_POSTED', 'Only posted sales have returnable lines.', 422);
         }
 
+        $excludeReturnId = null;
+        $excludeReturnUlid = trim((string) $request->query('exclude_return_ulid', ''));
+
+        if ($excludeReturnUlid !== '') {
+            $excludeReturn = SaleReturn::query()
+                ->forTenant($tenantContext->tenantId())
+                ->where('sale_id', $sale->id)
+                ->where('branch_id', $tenantContext->branchId())
+                ->where('warehouse_id', $tenantContext->warehouseId())
+                ->where('ulid', $excludeReturnUlid)
+                ->first();
+
+            if (! $excludeReturn) {
+                throw new ApiException('NOT_FOUND', 'The requested Sales Return was not found.', 404);
+            }
+
+            $excludeReturnId = (int) $excludeReturn->id;
+        }
+
         $rows = [];
 
         foreach ($sale->items as $item) {
-            $remaining = $recalculate->remainingReturnableQuantity($item);
+            $remaining = $recalculate->remainingReturnableQuantity($item, $excludeReturnId);
             $returned = bcsub((string) $item->quantity, $remaining, 6);
 
             $rows[] = [
