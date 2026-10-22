@@ -1583,13 +1583,9 @@ export function SalesInvoicePage({
       feedback.error('Unable to refresh product catalog.', 'Sales Invoice')
     })
 
-    if (savedSale) {
-      void refreshSavedSale(savedSale.ulid)
-      return
-    }
-
     cart.clear()
     setPaymentModalOpen(false)
+    setSavedSale(null)
     setRecalledHoldUlid(null)
     setSelectedCustomer(null)
     setInvoiceCustomerName('')
