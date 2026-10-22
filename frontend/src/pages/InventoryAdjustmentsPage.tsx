@@ -11,12 +11,14 @@ import {
   X,
 } from 'lucide-react'
 import {
+  amendInventoryAdjustment,
   createInventoryAdjustment,
   createInventoryAdjustmentLine,
   deleteInventoryAdjustment,
   deleteInventoryAdjustmentLine,
   fetchInventoryAdjustment,
   fetchInventoryAdjustmentAccounts,
+  fetchNextInventoryAdjustmentDocumentNumber,
   fetchInventoryAdjustments,
   postInventoryAdjustment,
   updateInventoryAdjustment,
@@ -37,6 +39,7 @@ import type {
   InventoryAdjustment,
   InventoryAdjustmentLine,
 } from '../types/inventory'
+import { formatDecimal } from '../utils/formatDecimal'
 import './InventoryAdjustmentsPage.css'
 
 function localIsoDate(date = new Date()) {
@@ -57,6 +60,10 @@ function monthStartIso() {
 
 function productLabel(product: Product) {
   return `${product.product_number} · ${product.name}`
+}
+
+function newAdjustmentKey() {
+  return `inventory-adjustment-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 function signedNet(line: InventoryAdjustmentLine): number {
@@ -89,6 +96,10 @@ export function InventoryAdjustmentsPage() {
 
   const [tab, setTab] = useState<TabKey>('invoice')
   const [documentUlid, setDocumentUlid] = useState<string | null>(null)
+  const [documentNumberValue, setDocumentNumberValue] = useState<string | null>(null)
+  const [amendmentLines, setAmendmentLines] = useState<InventoryAdjustmentLine[]>([])
+  const [amendmentDirty, setAmendmentDirty] = useState(false)
+  const amendmentKeyRef = useRef(newAdjustmentKey())
   const [adjustmentDate, setAdjustmentDate] = useState(todayIso())
   const [accountUlid, setAccountUlid] = useState('')
   const [documentNotes, setDocumentNotes] = useState('')
