@@ -88,6 +88,8 @@ export type Sale = {
   customer_phone: string | null
   notes: string | null
   posted_at: string | null
+  revision_number?: number
+  is_amended?: boolean
   salesman?: SalesmanOption | null
   customer: {
     ulid: string
