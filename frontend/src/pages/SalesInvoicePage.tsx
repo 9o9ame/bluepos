@@ -40,6 +40,7 @@ import type { SaleOfferEvaluation } from '../types/saleSchemes'
 import type { Sale, SaleHold, SalePaymentMethod, SalePayload } from '../types/sales'
 import { ColumnCustomizationPanel } from '../features/gridLayout/ColumnCustomizationPanel'
 import { UiModal } from '../components/ui/UiModal'
+import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import {
   SALES_INVOICE_COLUMNS,
@@ -174,6 +175,7 @@ export function SalesInvoicePage({
   )
 
   const [invoiceValue, setInvoiceValue] = useState<string | null>(null)
+  const [pendingInvoiceLookupNumber, setPendingInvoiceLookupNumber] = useState<string | null>(null)
   const [copyFromValue, setCopyFromValue] = useState('')
   const [quotationValue, setQuotationValue] = useState('')
   const [editingQuotationUlid, setEditingQuotationUlid] = useState<string | null>(null)
@@ -504,15 +506,11 @@ export function SalesInvoicePage({
   const activeProductPickerAnchorRef = useRef<HTMLDivElement | null>(null)
 
   const invoiceLookupMutation = useMutation({
-    mutationFn: async () => {
-      const requestedNumber = invoiceValue?.trim() ?? ''
+    mutationFn: async (requestedNumberOverride?: string) => {
+      const requestedNumber = (requestedNumberOverride ?? invoiceValue ?? '').trim()
 
       if (!requestedNumber) {
         throw new Error('Enter a posted invoice number to edit.')
-      }
-
-      if (cart.lines.length > 0) {
-        throw new Error('Clear the current invoice before loading a posted invoice for editing.')
       }
 
       const lookup = await fetchSales({
@@ -583,6 +581,7 @@ export function SalesInvoicePage({
     },
 
     onSuccess: ({ source, customer, productsByUlid, stockByProduct }) => {
+      setPendingInvoiceLookupNumber(null)
       cart.restoreSaleDocument(source, productsByUlid, stockByProduct)
 
       setInvoiceValue(source.document_number)
@@ -625,6 +624,7 @@ export function SalesInvoicePage({
     },
 
     onError: (err) => {
+      setPendingInvoiceLookupNumber(null)
       setSaveError(
         err instanceof ApiClientError || err instanceof Error
           ? err.message
@@ -632,6 +632,24 @@ export function SalesInvoicePage({
       )
     },
   })
+
+  function requestInvoiceLookup(): void {
+    const requestedNumber = (invoiceValue ?? '').trim()
+
+    if (!requestedNumber || invoiceLookupMutation.isPending) return
+
+    const isDifferentLoadedInvoice =
+      amendingSale === null ||
+      amendingSale.document_number.trim().toLocaleLowerCase() !==
+        requestedNumber.toLocaleLowerCase()
+
+    if (cart.lines.length > 0 && isDifferentLoadedInvoice) {
+      setPendingInvoiceLookupNumber(requestedNumber)
+      return
+    }
+
+    invoiceLookupMutation.mutate(requestedNumber)
+  }
 
   const copyFromMutation = useMutation({
     mutationFn: async () => {
@@ -1851,8 +1869,6 @@ export function SalesInvoicePage({
                     }
                     readOnly={!canAmendSale}
                     disabled={
-                      Boolean(savedSale) ||
-                      Boolean(amendingSale) ||
                       invoiceLookupMutation.isPending ||
                       saveMutation.isPending
                     }
@@ -1860,14 +1876,7 @@ export function SalesInvoicePage({
                     onKeyDown={(event) => {
                       if (event.key !== 'Enter' || !canAmendSale) return
                       event.preventDefault()
-
-                      if (
-                        invoiceValue !== null &&
-                        invoiceValue.trim() !== '' &&
-                        !invoiceLookupMutation.isPending
-                      ) {
-                        invoiceLookupMutation.mutate()
-                      }
+                      requestInvoiceLookup()
                     }}
                   />
 
@@ -3423,6 +3432,48 @@ export function SalesInvoicePage({
             <strong>-</strong>
           </div>
         </aside>
+      ) : null}
+
+      {pendingInvoiceLookupNumber ? (
+        <UiModal
+          open
+          title="Load another Sales Invoice?"
+          ariaLabel="Confirm sales invoice change"
+          size="sm"
+          onClose={() => {
+            if (!invoiceLookupMutation.isPending) {
+              setPendingInvoiceLookupNumber(null)
+            }
+          }}
+          footer={
+            <>
+              <UiButton
+                variant="info"
+                disabled={invoiceLookupMutation.isPending}
+                onClick={() => setPendingInvoiceLookupNumber(null)}
+              >
+                Cancel
+              </UiButton>
+              <UiButton
+                variant="warning"
+                disabled={invoiceLookupMutation.isPending}
+                onClick={() => {
+                  const requestedNumber = pendingInvoiceLookupNumber
+                  if (requestedNumber) {
+                    invoiceLookupMutation.mutate(requestedNumber)
+                  }
+                }}
+              >
+                {invoiceLookupMutation.isPending ? 'Loading...' : 'Fetch Invoice'}
+              </UiButton>
+            </>
+          }
+        >
+          <p className="sales-invoice-switch-warning">
+            Current invoice mein data mojood hai. Agar aap {pendingInvoiceLookupNumber} fetch
+            karenge to current data lose ho jayega.
+          </p>
+        </UiModal>
       ) : null}
 
       {paymentModalOpen && cart.hasPaidLines ? (
