@@ -2,10 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Authz\PermissionService;
 use App\Models\Account;
 use App\Models\AccountType;
 use App\Models\AuditLog;
 use App\Models\BusinessSetting;
+use App\Models\DocumentRevision;
+use App\Models\Permission;
 use App\Models\JournalEntry;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
@@ -151,6 +154,170 @@ class PurchaseOrderTest extends TestCase
         ])->assertNotFound();
 
         $this->assertSame(1, PurchaseOrder::query()->count());
+    }
+
+    public function test_open_purchase_order_can_be_edited_with_revision_history_and_no_posting_side_effect(): void
+    {
+        $this->signInOwner('po-edit')->assertOk();
+
+        $pcs = $this->unitUlid('PCS');
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-PO-EDIT',
+            'name' => 'PO Edit Supplier',
+        ])->assertCreated()->json('ulid');
+
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'PO Edit Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $created = $this->postJson('/api/purchase-orders', [
+            'supplier_ulid' => $supplierUlid,
+            'order_date' => '2026-10-22',
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'unit_ulid' => $pcs,
+                'quantity' => '2.000000',
+                'unit_price' => '100.0000',
+            ]],
+        ])->assertCreated();
+
+        $orderUlid = (string) $created->json('ulid');
+        $documentNumber = (string) $created->json('document_number');
+
+        $updated = $this->patchJson('/api/purchase-orders/'.$orderUlid, [
+            'supplier_ulid' => $supplierUlid,
+            'order_date' => '2026-10-23',
+            'revision_reason' => 'Supplier confirmed revised quantity',
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'unit_ulid' => $pcs,
+                'quantity' => '3.000000',
+                'unit_price' => '90.0000',
+            ]],
+        ])->assertOk()
+            ->assertJsonPath('ulid', $orderUlid)
+            ->assertJsonPath('document_number', $documentNumber)
+            ->assertJsonPath('order_date', '2026-10-23')
+            ->assertJsonPath('subtotal', '270.0000')
+            ->assertJsonPath('grand_total', '270.0000')
+            ->assertJsonPath('items.0.quantity', '3.000000')
+            ->assertJsonPath('items.0.unit_price', '90.0000');
+
+        $revision = DocumentRevision::query()
+            ->where('document_type', 'purchase_order')
+            ->where('document_ulid', $orderUlid)
+            ->firstOrFail();
+
+        $this->assertSame(1, $revision->revision_number);
+        $this->assertSame('Supplier confirmed revised quantity', $revision->reason);
+        $this->assertSame('200.0000', $revision->before_snapshot['grand_total']);
+        $this->assertSame('270.0000', $revision->after_snapshot['grand_total']);
+        $this->assertSame(0, StockMovement::query()->count());
+        $this->assertSame(0, JournalEntry::query()->count());
+        $this->assertNoInternalIds($updated->json());
+    }
+
+    public function test_purchase_order_edit_requires_explicit_permission(): void
+    {
+        $this->signInOwner('po-edit-denied')->assertOk();
+
+        $pcs = $this->unitUlid('PCS');
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-PO-EDIT-DENIED',
+            'name' => 'PO Edit Denied Supplier',
+        ])->assertCreated()->json('ulid');
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'PO Edit Denied Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $created = $this->postJson('/api/purchase-orders', [
+            'supplier_ulid' => $supplierUlid,
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'unit_ulid' => $pcs,
+                'quantity' => '1.000000',
+                'unit_price' => '10.0000',
+            ]],
+        ])->assertCreated();
+
+        $permission = Permission::query()
+            ->where('key', 'purchase_orders.edit')
+            ->firstOrFail();
+
+        $membership = app(TenantContext::class)->membership();
+        foreach ($membership->roles()->get() as $role) {
+            $role->permissions()->detach($permission->id);
+        }
+        app(PermissionService::class)->clearCache();
+
+        $this->patchJson('/api/purchase-orders/'.$created->json('ulid'), [
+            'supplier_ulid' => $supplierUlid,
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'unit_ulid' => $pcs,
+                'quantity' => '2.000000',
+                'unit_price' => '10.0000',
+            ]],
+        ])->assertForbidden();
+
+        $this->assertSame(
+            0,
+            DocumentRevision::query()
+                ->where('document_type', 'purchase_order')
+                ->count(),
+        );
+    }
+
+    public function test_purchase_order_cannot_be_edited_after_receipt_is_linked(): void
+    {
+        $this->signInOwner('po-edit-receipt')->assertOk();
+
+        $pcs = $this->unitUlid('PCS');
+        $warehouseUlid = $this->getJson('/api/auth/me')->assertOk()->json('warehouse.ulid');
+        $supplierUlid = $this->postJson('/api/suppliers', [
+            'code' => 'SUP-PO-EDIT-REC',
+            'name' => 'PO Edit Receipt Supplier',
+        ])->assertCreated()->json('ulid');
+        $productUlid = $this->postJson('/api/products', [
+            'name' => 'PO Edit Receipt Product',
+            'base_unit_ulid' => $pcs,
+        ])->assertCreated()->json('ulid');
+
+        $order = $this->postJson('/api/purchase-orders', [
+            'supplier_ulid' => $supplierUlid,
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'unit_ulid' => $pcs,
+                'quantity' => '5.000000',
+                'unit_price' => '10.0000',
+            ]],
+        ])->assertCreated();
+
+        $this->postJson('/api/purchases', [
+            'supplier_ulid' => $supplierUlid,
+            'warehouse_ulid' => $warehouseUlid,
+            'purchase_order_ulid' => $order->json('ulid'),
+        ])->assertCreated();
+
+        $this->patchJson('/api/purchase-orders/'.$order->json('ulid'), [
+            'supplier_ulid' => $supplierUlid,
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'unit_ulid' => $pcs,
+                'quantity' => '6.000000',
+                'unit_price' => '10.0000',
+            ]],
+        ])->assertStatus(409)
+            ->assertJsonPath('error.key', 'PURCHASE_ORDER_RECEIPT_EXISTS');
+
+        $this->assertSame(
+            '50.0000',
+            PurchaseOrder::query()
+                ->where('ulid', $order->json('ulid'))
+                ->value('grand_total'),
+        );
     }
 
     public function test_purchase_order_generator_uses_posted_sales_and_active_warehouse_stock(): void
