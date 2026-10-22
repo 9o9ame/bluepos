@@ -7,6 +7,7 @@ use App\Models\InventoryAdjustment;
 use App\Models\Product;
 use App\Models\StockBalance;
 use App\Tenancy\TenantContext;
+use Illuminate\Support\Str;
 
 class PostInventoryAdjustmentAmendmentStockDeltaAction
 {
@@ -122,7 +123,7 @@ class PostInventoryAdjustmentAmendmentStockDeltaAction
             $baseline = bcsub($current, $effectiveDelta, 6);
 
             $result[] = [
-                'ulid' => null,
+                'ulid' => (string) Str::ulid(),
                 'in_stock' => $baseline,
                 'qty_plus' => $line['qty_plus'],
                 'qty_minus' => $line['qty_minus'],
