@@ -23,6 +23,7 @@ import {
   createPurchaseLine,
   createPurchasePayment,
   deletePurchaseLine,
+  fetchNextPurchaseDocumentNumber,
   fetchPurchase,
   fetchPurchaseOrder,
   fetchPurchases,
@@ -377,6 +378,7 @@ export function PurchasesPage({
   const [otherCharges, setOtherCharges] = useState('0.0000')
   const [notes, setNotes] = useState('')
   const [documentNumber, setDocumentNumber] = useState('')
+  const [documentLookupPending, setDocumentLookupPending] = useState(false)
   const [status, setStatus] = useState<'draft' | 'posted' | 'cancelled'>('draft')
   const [lines, setLines] = useState<DraftLine[]>([])
   const linesRef = useRef<DraftLine[]>([])
@@ -486,6 +488,20 @@ export function PurchasesPage({
     window.addEventListener('mousedown', handleOutsideProcessingRow)
     return () => window.removeEventListener('mousedown', handleOutsideProcessingRow)
   }, [active, mode, productEditRowKey, readOnly])
+
+  const nextPurchaseNumberQuery = useQuery({
+    queryKey: ['purchases', 'next-document-number', session?.branch.ulid, session?.warehouse.ulid],
+    queryFn: fetchNextPurchaseDocumentNumber,
+    enabled:
+      Boolean(session) &&
+      active &&
+      mode === 'editor' &&
+      (canCreate || canAmendPurchase),
+    retry: false,
+  })
+
+  const displayedDocumentNumber =
+    documentNumber || nextPurchaseNumberQuery.data?.document_number || 'Auto'
 
   const listQuery = useInfiniteQuery({
     queryKey: ['purchases', q, statusFilter, supplierFilter, dateFrom, dateTo],
@@ -1432,6 +1448,7 @@ export function PurchasesPage({
   function resetEditor() {
     setInvoiceUlid(null)
     setDocumentNumber('')
+    setDocumentLookupPending(false)
     setStatus('draft')
     setSupplierUlid('')
     setWarehouseUlid(session?.warehouse.ulid ?? '')
@@ -1476,6 +1493,7 @@ export function PurchasesPage({
     setAutoCalcMrp(true)
     setWithholdingIsPct(false)
     setDualModes({ ...DEFAULT_DUAL_MODES })
+    void nextPurchaseNumberQuery.refetch()
   }
 
   async function openInvoice(ulid: string) {
@@ -1486,6 +1504,66 @@ export function PurchasesPage({
       setMode('editor')
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Unable to open purchase.')
+    }
+  }
+
+  function hasCurrentPurchaseData(): boolean {
+    return Boolean(
+      invoiceUlid ||
+      lines.length > 0 ||
+      supplierUlid ||
+      supplierInvoiceNumber.trim() ||
+      notes.trim(),
+    )
+  }
+
+  async function requestPurchaseLookup(requestedOverride?: string) {
+    const requestedNumber = (requestedOverride ?? documentNumber).trim()
+    if (!requestedNumber || documentLookupPending) return
+
+    const currentNumber = documentNumber.trim().toLocaleLowerCase()
+    const requestedKey = requestedNumber.toLocaleLowerCase()
+
+    if (hasCurrentPurchaseData() && currentNumber && currentNumber !== requestedKey) {
+      const confirmed = await askConfirm(
+        `The current Purchase Invoice contains data. If you fetch ${requestedNumber}, the current data will be lost.`,
+      )
+      if (!confirmed) {
+        setDocumentNumber(invoiceUlid ? documentNumber : '')
+        return
+      }
+    }
+
+    setDocumentLookupPending(true)
+    setError(null)
+
+    try {
+      const lookup = await fetchPurchases({
+        q: requestedNumber,
+        page: 1,
+        per_page: 20,
+      })
+
+      const exact = lookup.data.find(
+        (row) =>
+          row.document_number.trim().toLocaleLowerCase() === requestedKey,
+      )
+
+      if (!exact) {
+        throw new Error('No Purchase Invoice with that exact number was found in this branch and warehouse.')
+      }
+
+      const invoice = await fetchPurchase(exact.ulid)
+      applyInvoice(invoice)
+      setMode('editor')
+    } catch (err) {
+      setError(
+        err instanceof ApiClientError || err instanceof Error
+          ? err.message
+          : 'Unable to load Purchase Invoice.',
+      )
+    } finally {
+      setDocumentLookupPending(false)
     }
   }
 
@@ -2467,7 +2545,18 @@ export function PurchasesPage({
             </label>
             <label className="pie-field">
               <span>Document #</span>
-              <input value={documentNumber || 'Auto'} disabled />
+              <input
+                value={displayedDocumentNumber}
+                readOnly={!canCreate && !canAmendPurchase}
+                disabled={documentLookupPending || saveMutation.isPending || postMutation.isPending}
+                title="Type an exact Purchase Invoice number and press Enter to load it"
+                onChange={(e) => setDocumentNumber(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== 'Enter') return
+                  e.preventDefault()
+                  void requestPurchaseLookup()
+                }}
+              />
             </label>
             <label className="pie-field">
               <span>Supplier Inv #</span>
