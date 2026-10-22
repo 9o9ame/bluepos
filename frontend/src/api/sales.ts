@@ -163,6 +163,12 @@ export function createSalePayment(
   })
 }
 
+export function fetchNextSaleDocumentNumber() {
+  return apiFetch<{ document_number: string }>('/api/sales/next-document-number', {
+    busy: 'none',
+  })
+}
+
 export function fetchSale(saleUlid: string) {
   return apiFetch<Sale>(`/api/sales/${saleUlid}`)
 }
