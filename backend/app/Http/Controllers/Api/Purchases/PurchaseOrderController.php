@@ -32,8 +32,7 @@ class PurchaseOrderController extends Controller
     ): array {
         abort_unless(
             $permissions->can('purchases.create')
-                || $permissions->can('purchase_orders.edit')
-                || $permissions->can('purchases.edit'),
+                || $permissions->can('purchase_orders.edit'),
             403,
         );
 
