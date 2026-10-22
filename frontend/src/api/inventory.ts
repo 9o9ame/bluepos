@@ -289,17 +289,25 @@ export function postStockTake(documentUlid: string) {
 }
 
 
+export function fetchNextInventoryAdjustmentDocumentNumber() {
+  return apiFetch<{ document_number: string }>('/api/inventory/adjustments/next-document-number', {
+    busy: 'none',
+  })
+}
+
 export function fetchInventoryAdjustmentAccounts() {
   return apiFetch<{ data: InventoryAdjustmentAccount[] }>('/api/inventory/adjustments/accounts')
 }
 
 export function fetchInventoryAdjustments(params?: {
+  q?: string
   status?: string
   from_date?: string
   to_date?: string
   product_ulid?: string
 }) {
   const search = new URLSearchParams()
+  if (params?.q) search.set('q', params.q)
   if (params?.status) search.set('status', params.status)
   if (params?.from_date) search.set('from_date', params.from_date)
   if (params?.to_date) search.set('to_date', params.to_date)
@@ -337,6 +345,29 @@ export function updateInventoryAdjustment(
   return apiFetch<InventoryAdjustment>(`/api/inventory/adjustments/${ulid}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
+  })
+}
+
+export function amendInventoryAdjustment(
+  ulid: string,
+  payload: {
+    revision_reason: string
+    account_ulid: string
+    adjustment_date: string
+    notes?: string | null
+    lines: Array<{
+      product_ulid: string
+      qty_plus?: string | null
+      qty_minus?: string | null
+      notes?: string | null
+    }>
+  },
+  idempotencyKey: string,
+) {
+  return apiFetch<InventoryAdjustment>(`/api/inventory/adjustments/${ulid}/amend`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    headers: { 'Idempotency-Key': idempotencyKey },
   })
 }
 
