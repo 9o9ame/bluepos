@@ -20,7 +20,7 @@ import { ApiClientError } from '../api/client'
 import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
 import { fetchParties, fetchParty, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { createSale, createSaleHold, createSaleQuotation, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSalePaymentAccounts, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen, updateSaleQuotation } from '../api/sales'
+import { amendSale, createSale, createSaleHold, createSaleQuotation, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSalePaymentAccounts, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen, updateSaleQuotation } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SaleFinalizePaymentPanel } from '../features/sales/SaleFinalizePaymentPanel'
@@ -134,6 +134,7 @@ export function SalesInvoicePage({
 
   const canSaveRoleDefault = useCan('roles.edit')
   const canCreateSale = useCan('sales.create')
+  const canAmendSale = useCan('sales.amend_posted')
   const canEditQuotation = useCan('sales.quotation.edit')
   const canOverridePrice = useCan('sales.override_price')
   const canHoldSale = useCan('sales.hold')
@@ -172,9 +173,11 @@ export function SalesInvoicePage({
     () => new Date().toISOString().slice(0, 10),
   )
 
+  const [invoiceValue, setInvoiceValue] = useState('')
   const [copyFromValue, setCopyFromValue] = useState('')
   const [quotationValue, setQuotationValue] = useState('')
   const [editingQuotationUlid, setEditingQuotationUlid] = useState<string | null>(null)
+  const [amendingSale, setAmendingSale] = useState<Sale | null>(null)
 
   const [selectedCustomer, setSelectedCustomer] = useState<Party | null>(null)
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
@@ -476,6 +479,7 @@ export function SalesInvoicePage({
   )
 
   const idempotencyKeyRef = useRef(newSaleKey())
+  const amendmentIdempotencyKeyRef = useRef(newSaleKey())
   const holdIdempotencyKeyRef = useRef(newHoldKey())
   const quotationIdempotencyKeyRef = useRef(newSaleKey())
   const receivedRef = useRef<HTMLInputElement | null>(null)
@@ -483,6 +487,136 @@ export function SalesInvoicePage({
   const productPickerAnchorRef = useRef<HTMLDivElement | null>(null)
   const activeProductSearchRef = useRef<HTMLInputElement | null>(null)
   const activeProductPickerAnchorRef = useRef<HTMLDivElement | null>(null)
+
+  const invoiceLookupMutation = useMutation({
+    mutationFn: async () => {
+      const requestedNumber = invoiceValue.trim()
+
+      if (!requestedNumber) {
+        throw new Error('Enter a posted invoice number to edit.')
+      }
+
+      if (cart.lines.length > 0) {
+        throw new Error('Clear the current invoice before loading a posted invoice for editing.')
+      }
+
+      const lookup = await fetchSales({
+        q: requestedNumber,
+        status: 'posted',
+        per_page: 20,
+      })
+
+      const sourceSummary = lookup.data.find(
+        (sale) =>
+          sale.document_number.trim().toLocaleLowerCase() ===
+          requestedNumber.toLocaleLowerCase(),
+      )
+
+      if (!sourceSummary) {
+        throw new Error('No posted invoice with that exact number was found in this branch.')
+      }
+
+      const source = await fetchSale(sourceSummary.ulid)
+      const productUlids = Array.from(
+        new Set(
+          source.items
+            .map((item) => item.product?.ulid)
+            .filter((ulid): ulid is string => Boolean(ulid)),
+        ),
+      )
+
+      const productRows = await Promise.all(
+        productUlids.map(async (productUlid) => {
+          const [product, stock] = await Promise.all([
+            fetchProduct(productUlid),
+            fetchProductStock(productUlid),
+          ])
+
+          const activeWarehouseCost =
+            stock.warehouses.find(
+              (row) => row.warehouse.ulid === stock.active_warehouse.ulid,
+            )?.average_cost ?? null
+
+          return {
+            productUlid,
+            product: {
+              ...product,
+              sales_lookup: {
+                in_stock: stock.active_warehouse.quantity,
+                average_cost: activeWarehouseCost,
+              },
+            },
+            stock: stock.active_warehouse.quantity,
+          }
+        }),
+      )
+
+      const customer = source.customer
+        ? await fetchParty(source.customer.ulid, 'customer')
+        : null
+
+      return {
+        source,
+        customer,
+        productsByUlid: Object.fromEntries(
+          productRows.map((row) => [row.productUlid, row.product]),
+        ),
+        stockByProduct: Object.fromEntries(
+          productRows.map((row) => [row.productUlid, row.stock]),
+        ),
+      }
+    },
+
+    onSuccess: ({ source, customer, productsByUlid, stockByProduct }) => {
+      cart.restoreSaleDocument(source, productsByUlid, stockByProduct)
+
+      setInvoiceValue(source.document_number)
+      setAmendingSale(source)
+      setCopyFromValue('')
+      setQuotationValue('')
+      setEditingQuotationUlid(null)
+      setSelectedCustomer(customer)
+      setCustomerSearch(customer?.name ?? '')
+      setInvoiceCustomerName(
+        source.customer_name ?? (customer && !isCashInHandCustomer(customer) ? customer.name : ''),
+      )
+      setInvoiceCustomerPhone(
+        source.customer_phone ?? (customer && !isCashInHandCustomer(customer) ? partyPhone(customer) : ''),
+      )
+      setSelectedSalesmanUlid(source.salesman?.ulid ?? null)
+      setSalesmanSearch(
+        source.salesman
+          ? `${source.salesman.code ?? ''}${source.salesman.code ? ' — ' : ''}${source.salesman.name}`
+          : '',
+      )
+      setSaleDate(source.sale_date)
+      setPaymentDue(false)
+      setReceived('')
+      setPaymentReference('')
+      setSavedSale(null)
+      setRecalledHoldUlid(null)
+      setSaveError(null)
+      setProductQuery('')
+      setActiveProductQuery('')
+      setActiveProductPickerOpen(false)
+      setBarcodeQuery('')
+      setActiveLineKey(null)
+      amendmentIdempotencyKeyRef.current = newSaleKey()
+
+      feedback.success(
+        `Editing posted invoice ${source.document_number}${source.revision_number ? ` (revision ${source.revision_number})` : ''}. Save will create an audited amendment.`,
+        'Sales Invoice',
+      )
+    },
+
+    onError: (err) => {
+      setSaveError(
+        err instanceof ApiClientError || err instanceof Error
+          ? err.message
+          : 'Unable to load the posted invoice for editing.',
+      )
+    },
+  })
 
   const copyFromMutation = useMutation({
     mutationFn: async () => {
@@ -566,6 +700,8 @@ export function SalesInvoicePage({
     onSuccess: ({ source, customer, productsByUlid, stockByProduct }) => {
       cart.restoreSaleDocument(source, productsByUlid, stockByProduct)
 
+      setInvoiceValue('')
+      setAmendingSale(null)
       setCopyFromValue(source.document_number)
       setQuotationValue('')
       setSelectedCustomer(customer)
@@ -744,6 +880,8 @@ export function SalesInvoicePage({
     onSuccess: ({ source, customer, productsByUlid, stockByProduct }) => {
       cart.restoreSaleDocument(source, productsByUlid, stockByProduct)
 
+      setInvoiceValue('')
+      setAmendingSale(null)
       setQuotationValue(source.document_number)
       setEditingQuotationUlid(source.ulid)
       setCopyFromValue('')
@@ -810,9 +948,28 @@ export function SalesInvoicePage({
     mutationFn: async (
       initialPayments: NonNullable<SalePayload['initial_payments']>,
     ) => {
+      const payload = cart.buildPayload()
+
+      if (amendingSale) {
+        return amendSale(
+          amendingSale.ulid,
+          {
+            price_type: payload.price_type,
+            items: payload.items,
+            free_lines: payload.free_lines,
+            applied_schemes: payload.applied_schemes,
+            invoice_discount_percent: payload.invoice_discount_percent,
+            invoice_discount_amount: payload.invoice_discount_amount,
+            notes: cart.notes || null,
+            revision_reason: 'Posted invoice corrected from Sales Invoice screen',
+          },
+          amendmentIdempotencyKeyRef.current,
+        )
+      }
+
       return createSale(
         {
-          ...cart.buildPayload(),
+          ...payload,
           sale_date: saleDate,
           notes: cart.notes || null,
           customer_ulid: cart.customerUlid,
@@ -828,9 +985,19 @@ export function SalesInvoicePage({
     },
 
     onSuccess: (sale) => {
+      const wasAmendment = amendingSale !== null
       setSavedSale(sale)
+      setAmendingSale(null)
+      setInvoiceValue(sale.document_number)
       setPaymentModalOpen(false)
       setSaveError(null)
+
+      if (wasAmendment) {
+        feedback.success(
+          `Invoice ${sale.document_number} updated as revision ${sale.revision_number ?? 1}. Original posting remains in the audit trail.`,
+          'Sales Invoice',
+        )
+      }
 
       cart.clear()
       setSelectedCustomer(null)
@@ -847,6 +1014,7 @@ export function SalesInvoicePage({
       setQuotationValue('')
 
       idempotencyKeyRef.current = newSaleKey()
+      amendmentIdempotencyKeyRef.current = newSaleKey()
       quotationIdempotencyKeyRef.current = newSaleKey()
 
       if (recalledHoldUlid) {
@@ -1375,6 +1543,8 @@ export function SalesInvoicePage({
         ? (hold.sale_date ?? new Date().toISOString().slice(0, 10))
         : new Date().toISOString().slice(0, 10),
     )
+    setInvoiceValue('')
+    setAmendingSale(null)
     setCopyFromValue('')
     setQuotationValue('')
     setEditingQuotationUlid(null)
@@ -1421,9 +1591,12 @@ export function SalesInvoicePage({
     setCustomerPickerOpen(false)
     setCustomerPickerSearch('')
     setSalesmanPickerOpen(false)
+    setInvoiceValue('')
+    setAmendingSale(null)
     setCopyFromValue('')
     setQuotationValue('')
     setEditingQuotationUlid(null)
+    amendmentIdempotencyKeyRef.current = newSaleKey()
     quotationIdempotencyKeyRef.current = newSaleKey()
   }
 
@@ -1528,12 +1701,16 @@ export function SalesInvoicePage({
         event.preventDefault()
 
         if (
-          canCreateSale &&
+          (amendingSale ? canAmendSale : canCreateSale) &&
           cart.hasPaidLines &&
           !stockIssue &&
           !saveMutation.isPending
         ) {
-          setPaymentModalOpen(true)
+          if (amendingSale) {
+            saveMutation.mutate([])
+          } else {
+            setPaymentModalOpen(true)
+          }
         }
       } else if (event.key === 'F8') {
         event.preventDefault()
@@ -1624,6 +1801,31 @@ export function SalesInvoicePage({
                     />{' '}
                     Retail
                   </label>
+
+                  <div className="sales-reference-amend-invoice">
+                    <span>Inv #:</span>
+
+                    <input
+                      value={invoiceValue}
+                      placeholder="Posted Invoice #"
+                      aria-label="Posted invoice number to edit"
+                      title="Enter an exact posted invoice number and press Enter to amend it"
+                      disabled={!canAmendSale || invoiceLookupMutation.isPending || saveMutation.isPending}
+                      onChange={(event) => {
+                        setInvoiceValue(event.target.value)
+                        if (amendingSale) {
+                          setAmendingSale(null)
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter') return
+                        event.preventDefault()
+                        if (!invoiceLookupMutation.isPending) {
+                          invoiceLookupMutation.mutate()
+                        }
+                      }}
+                    />
+                  </div>
 
                   <div className="sales-reference-copy-from">
                     <span>Copy From:</span>
@@ -2000,12 +2202,18 @@ export function SalesInvoicePage({
                 type="button"
                 className="sales-reference-sale-btn"
                 disabled={
-                  !canCreateSale ||
+                  !(amendingSale ? canAmendSale : canCreateSale) ||
                   !cart.hasPaidLines ||
                   Boolean(stockIssue) ||
                   isBusy
                 }
-                onClick={() => setPaymentModalOpen(true)}
+                onClick={() => {
+                  if (amendingSale) {
+                    saveMutation.mutate([])
+                  } else {
+                    setPaymentModalOpen(true)
+                  }
+                }}
               >
                 {isBusy ? 'Saving...' : 'Sale'}
               </button>
@@ -2014,9 +2222,11 @@ export function SalesInvoicePage({
                 className={`sales-reference-entry-status${stockIssue || barcodeLookupError || saveError ? ' is-error' : cart.hasPaidLines ? ' is-ready' : ''}`}
                 role={stockIssue || barcodeLookupError || saveError ? 'alert' : 'status'}
               >
-                {stockIssue ?? barcodeLookupError ?? saveError ?? (cart.hasPaidLines
-                  ? `${cart.paidLines.length} line(s) ready to save`
-                  : '')}
+                {stockIssue ?? barcodeLookupError ?? saveError ?? (amendingSale
+                  ? `Amending ${amendingSale.document_number} — revision ${(amendingSale.revision_number ?? 0) + 1}`
+                  : cart.hasPaidLines
+                    ? `${cart.paidLines.length} line(s) ready to save`
+                    : '')}
               </div>
             </div>
 
@@ -2873,11 +3083,17 @@ export function SalesInvoicePage({
                   <button
                     type="button"
                     disabled={
-                      !canCreateSale ||
+                      !(amendingSale ? canAmendSale : canCreateSale) ||
                       !cart.hasPaidLines ||
                       isBusy
                     }
-                    onClick={() => setPaymentModalOpen(true)}
+                    onClick={() => {
+                      if (amendingSale) {
+                        saveMutation.mutate([])
+                      } else {
+                        setPaymentModalOpen(true)
+                      }
+                    }}
                   >
                     <span>Save [F9]</span>
   
