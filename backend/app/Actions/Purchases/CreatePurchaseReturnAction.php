@@ -62,6 +62,14 @@ class CreatePurchaseReturnAction
                     ]);
                 }
 
+                if ($invoice->latestRevision()->exists()) {
+                    throw new ApiException(
+                        'PURCHASE_RETURN_SOURCE_AMENDED',
+                        'This purchase has an amendment revision. Return source lines must be revision-aware before a new return can be created.',
+                        409,
+                    );
+                }
+
                 $supplier = $invoice->supplier;
             } else {
                 $supplierUlid = trim((string) ($data['supplier_ulid'] ?? ''));
