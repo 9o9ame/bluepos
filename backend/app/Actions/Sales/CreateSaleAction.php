@@ -297,14 +297,48 @@ class CreateSaleAction
             $data['sale_date'] ?? null,
         );
 
+        $preparedLines = array_merge(
+            $paidLines,
+            $this->offersToLines($offers)
+        );
+
+        $subtotal = '0.0000';
+        $discountTotal = '0.0000';
+        $taxTotal = '0.0000';
+
+        foreach ($preparedLines as $line) {
+            $subtotal = bcadd($subtotal, (string) $line['gross_amount'], 4);
+            $discountTotal = bcadd($discountTotal, (string) $line['discount_amount'], 4);
+            $taxTotal = bcadd($taxTotal, (string) $line['tax_amount'], 4);
+        }
+
+        $netBeforeTax = bcsub($subtotal, $discountTotal, 4);
+        $beforeInvoiceDiscount = bcadd($netBeforeTax, $taxTotal, 4);
+
+        [
+            'percent' => $invoiceDiscountPercent,
+            'amount' => $invoiceDiscountAmount,
+        ] = $this->resolveInvoiceDiscount(
+            $data,
+            $beforeInvoiceDiscount,
+            $netBeforeTax,
+        );
+
         return [
             'warehouse' => $warehouse,
             'customer' => $customer,
             'salesman' => $salesman,
             'price_type' => $priceType,
-            'lines' => array_merge(
-                $paidLines,
-                $this->offersToLines($offers)
+            'lines' => $preparedLines,
+            'subtotal' => $subtotal,
+            'discount_amount' => $discountTotal,
+            'tax_amount' => $taxTotal,
+            'invoice_discount_percent' => $invoiceDiscountPercent,
+            'invoice_discount_amount' => $invoiceDiscountAmount,
+            'grand_total' => bcsub(
+                $beforeInvoiceDiscount,
+                $invoiceDiscountAmount,
+                4,
             ),
         ];
     }
