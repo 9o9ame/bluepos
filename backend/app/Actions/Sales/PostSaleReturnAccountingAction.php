@@ -262,6 +262,219 @@ class PostSaleReturnAccountingAction
         return $journal;
     }
 
+    /**
+     * @param array<string,mixed> $snapshot
+     */
+    public function executeAmendment(
+        SaleReturn $document,
+        array $snapshot,
+        string $returnedCost,
+        string $idempotencyKey,
+        int $revisionNumber,
+    ): ?JournalEntry {
+        $tenantId = $this->tenantContext->tenantId();
+
+        if ((int) $document->tenant_id !== $tenantId) {
+            throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
+        }
+
+        $settings = BusinessSetting::query()
+            ->forTenant($tenantId)
+            ->first();
+
+        if (! $this->hasAnyAccountingControl($settings)) {
+            return null;
+        }
+
+        $existing = JournalEntry::query()
+            ->forTenant($tenantId)
+            ->where('idempotency_key', $idempotencyKey)
+            ->lockForUpdate()
+            ->first();
+
+        if ($existing) {
+            $existing->load('lines');
+            $this->poster->assertBalanced($existing);
+
+            return $existing;
+        }
+
+        $originalJournal = null;
+        if ($document->sale_id !== null) {
+            $originalJournal = JournalEntry::query()
+                ->forTenant($tenantId)
+                ->where('document_type', JournalEntry::DOCUMENT_SALE_INVOICE)
+                ->where('document_id', $document->sale_id)
+                ->where('status', JournalStatus::Posted->value)
+                ->first();
+
+            if (! $originalJournal) {
+                throw new ApiException(
+                    'SALE_ACCOUNTING_REQUIRED',
+                    'The original sale must have posted accounting before its return can be amended.',
+                    422,
+                );
+            }
+        }
+
+        $netRevenue = bcsub(
+            bcadd((string) ($snapshot['subtotal'] ?? '0'), '0', 4),
+            bcadd((string) ($snapshot['discount_amount'] ?? '0'), '0', 4),
+            4,
+        );
+        $tax = bcadd((string) ($snapshot['tax_amount'] ?? '0'), '0', 4);
+        $grandTotal = bcadd((string) ($snapshot['grand_total'] ?? '0'), '0', 4);
+        $returnedCost = bcadd($returnedCost, '0', 4);
+
+        if (
+            bccomp($netRevenue, '0', 4) < 0
+            || bccomp($tax, '0', 4) < 0
+            || bccomp($grandTotal, '0', 4) < 0
+            || bccomp($returnedCost, '0', 4) < 0
+        ) {
+            throw new ApiException(
+                'SALE_RETURN_TOTAL_INVALID',
+                'Sales return amendment totals cannot be negative.',
+                422,
+            );
+        }
+
+        if (bccomp(bcadd($netRevenue, $tax, 4), $grandTotal, 4) !== 0) {
+            throw new ApiException(
+                'SALE_RETURN_TOTAL_INVALID',
+                'Sales return amendment accounting totals do not reconcile.',
+                422,
+            );
+        }
+
+        $settlement = $this->settlementAccount($document, $settings, $tenantId);
+        $revenue = $this->requiredAccount(
+            $settings?->sales_revenue_account_id,
+            $tenantId,
+            'SALES_REVENUE_ACCOUNT_REQUIRED',
+            'Configure a Sales Revenue account before amending sales return accounting.',
+        );
+        $inventory = $this->requiredAccount(
+            $settings?->inventory_account_id,
+            $tenantId,
+            'INVENTORY_ACCOUNT_REQUIRED',
+            'Configure an Inventory Control account before amending sales return accounting.',
+        );
+        $cogs = $this->requiredAccount(
+            $settings?->cogs_account_id,
+            $tenantId,
+            'COGS_ACCOUNT_REQUIRED',
+            'Configure a Cost of Goods Sold account before amending sales return accounting.',
+        );
+
+        $taxPayable = null;
+        if (bccomp($tax, '0', 4) > 0) {
+            $taxPayable = $this->requiredAccount(
+                $settings?->sales_tax_payable_account_id,
+                $tenantId,
+                'SALES_TAX_PAYABLE_ACCOUNT_REQUIRED',
+                'Configure a Sales Tax Payable account before amending taxable sales returns.',
+            );
+        }
+
+        $ids = array_filter([
+            $settlement->id,
+            $revenue->id,
+            $inventory->id,
+            $cogs->id,
+            $taxPayable?->id,
+        ], static fn ($id): bool => $id !== null);
+
+        if (count($ids) !== count(array_unique($ids))) {
+            throw new ApiException(
+                'SALE_ACCOUNTING_CONFIGURATION_INVALID',
+                'Sales accounting control accounts must be distinct.',
+                422,
+            );
+        }
+
+        $journal = JournalEntry::query()->create([
+            'tenant_id' => $tenantId,
+            'branch_id' => $document->branch_id,
+            'document_type' => JournalEntry::DOCUMENT_SALE_RETURN_AMENDMENT,
+            'document_id' => $document->id,
+            'idempotency_key' => $idempotencyKey,
+            'entry_date' => now()->toDateString(),
+            'description' => 'Sales return '.$document->document_number.' amendment '.$revisionNumber,
+            'status' => JournalStatus::Posted,
+            'created_by' => $this->tenantContext->userId(),
+            'posted_by' => $this->tenantContext->userId(),
+            'posted_at' => now(),
+            'reverses_journal_entry_id' => $originalJournal?->id,
+        ]);
+
+        $sort = 0;
+
+        if (bccomp($netRevenue, '0', 4) > 0) {
+            JournalLine::query()->create([
+                'tenant_id' => $tenantId,
+                'journal_entry_id' => $journal->id,
+                'account_id' => $revenue->id,
+                'description' => 'Sales revenue reversal',
+                'debit' => $netRevenue,
+                'credit' => '0.0000',
+                'sort_order' => $sort++,
+            ]);
+        }
+
+        if ($taxPayable && bccomp($tax, '0', 4) > 0) {
+            JournalLine::query()->create([
+                'tenant_id' => $tenantId,
+                'journal_entry_id' => $journal->id,
+                'account_id' => $taxPayable->id,
+                'description' => 'Sales tax payable reversal',
+                'debit' => $tax,
+                'credit' => '0.0000',
+                'sort_order' => $sort++,
+            ]);
+        }
+
+        if (bccomp($grandTotal, '0', 4) > 0) {
+            JournalLine::query()->create([
+                'tenant_id' => $tenantId,
+                'journal_entry_id' => $journal->id,
+                'account_id' => $settlement->id,
+                'customer_id' => $document->customer_id,
+                'description' => $document->customer_id ? 'Customer receivable reversal' : 'Sales clearing reversal',
+                'debit' => '0.0000',
+                'credit' => $grandTotal,
+                'sort_order' => $sort++,
+            ]);
+        }
+
+        if (bccomp($returnedCost, '0', 4) > 0) {
+            JournalLine::query()->create([
+                'tenant_id' => $tenantId,
+                'journal_entry_id' => $journal->id,
+                'account_id' => $inventory->id,
+                'description' => 'Inventory return',
+                'debit' => $returnedCost,
+                'credit' => '0.0000',
+                'sort_order' => $sort++,
+            ]);
+
+            JournalLine::query()->create([
+                'tenant_id' => $tenantId,
+                'journal_entry_id' => $journal->id,
+                'account_id' => $cogs->id,
+                'description' => 'Cost of goods sold reversal',
+                'debit' => '0.0000',
+                'credit' => $returnedCost,
+                'sort_order' => $sort++,
+            ]);
+        }
+
+        $journal->load('lines');
+        $this->poster->assertBalanced($journal);
+
+        return $journal;
+    }
+
     private function settlementAccount(
         SaleReturn $document,
         ?BusinessSetting $settings,
