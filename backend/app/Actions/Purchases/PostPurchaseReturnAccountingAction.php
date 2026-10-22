@@ -10,6 +10,7 @@ use App\Models\Account;
 use App\Models\BusinessSetting;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
+use App\Models\PurchaseInvoice;
 use App\Models\PurchaseReturn;
 use App\Models\Supplier;
 use App\Tenancy\TenantContext;
@@ -208,18 +209,26 @@ class PostPurchaseReturnAccountingAction
             return $existing;
         }
 
-        if ($document->purchase_invoice_id !== null) {
-            $purchaseJournalExists = JournalEntry::query()
+        $effectivePurchaseUlid = (string) ($snapshot['original_purchase']['ulid'] ?? '');
+
+        if ($effectivePurchaseUlid !== '') {
+            $effectivePurchaseId = PurchaseInvoice::query()
                 ->forTenant($tenantId)
-                ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_INVOICE)
-                ->where('document_id', $document->purchase_invoice_id)
-                ->where('status', JournalStatus::Posted->value)
-                ->exists();
+                ->where('ulid', $effectivePurchaseUlid)
+                ->value('id');
+
+            $purchaseJournalExists = $effectivePurchaseId !== null
+                && JournalEntry::query()
+                    ->forTenant($tenantId)
+                    ->where('document_type', JournalEntry::DOCUMENT_PURCHASE_INVOICE)
+                    ->where('document_id', $effectivePurchaseId)
+                    ->where('status', JournalStatus::Posted->value)
+                    ->exists();
 
             if (! $purchaseJournalExists) {
                 throw new ApiException(
                     'PURCHASE_ACCOUNTING_REQUIRED',
-                    'The original purchase accounting journal is required before amending this Purchase Return.',
+                    'The selected purchase accounting journal is required before amending this Purchase Return.',
                     422,
                 );
             }
