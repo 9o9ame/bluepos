@@ -40,24 +40,28 @@ class PurchaseReturnResource extends JsonResource
             'revision_number' => (int) ($revisionSnapshot['_meta']['revision_number'] ?? 0),
             'is_amended' => (int) ($revisionSnapshot['_meta']['revision_number'] ?? 0) > 0,
             'posted_at' => $this->posted_at?->toIso8601String(),
-            'original_purchase' => $this->whenLoaded('purchaseInvoice', function () {
-                if (! $this->purchaseInvoice) {
-                    return null;
-                }
+            'original_purchase' => $revisionSnapshot !== null
+                ? ($revisionSnapshot['original_purchase'] ?? null)
+                : $this->whenLoaded('purchaseInvoice', function () {
+                    if (! $this->purchaseInvoice) {
+                        return null;
+                    }
 
-                return [
-                    'ulid' => $this->purchaseInvoice->ulid,
-                    'document_number' => $this->purchaseInvoice->document_number,
-                    'supplier_invoice_number' => $this->purchaseInvoice->supplier_invoice_number,
-                ];
-            }),
-            'supplier' => $this->whenLoaded('supplier', function () {
-                return [
-                    'ulid' => $this->supplier->ulid,
-                    'code' => $this->supplier->code,
-                    'name' => $this->supplier->name,
-                ];
-            }),
+                    return [
+                        'ulid' => $this->purchaseInvoice->ulid,
+                        'document_number' => $this->purchaseInvoice->document_number,
+                        'supplier_invoice_number' => $this->purchaseInvoice->supplier_invoice_number,
+                    ];
+                }),
+            'supplier' => $revisionSnapshot !== null
+                ? ($revisionSnapshot['supplier'] ?? null)
+                : $this->whenLoaded('supplier', function () {
+                    return [
+                        'ulid' => $this->supplier->ulid,
+                        'code' => $this->supplier->code,
+                        'name' => $this->supplier->name,
+                    ];
+                }),
             'branch' => $this->whenLoaded('branch', function () {
                 return [
                     'ulid' => $this->branch->ulid,
@@ -65,13 +69,15 @@ class PurchaseReturnResource extends JsonResource
                     'name' => $this->branch->name,
                 ];
             }),
-            'warehouse' => $this->whenLoaded('warehouse', function () {
-                return [
-                    'ulid' => $this->warehouse->ulid,
-                    'code' => $this->warehouse->code,
-                    'name' => $this->warehouse->name,
-                ];
-            }),
+            'warehouse' => $revisionSnapshot !== null
+                ? ($revisionSnapshot['warehouse'] ?? null)
+                : $this->whenLoaded('warehouse', function () {
+                    return [
+                        'ulid' => $this->warehouse->ulid,
+                        'code' => $this->warehouse->code,
+                        'name' => $this->warehouse->name,
+                    ];
+                }),
             'lines' => $revisionSnapshot !== null
                 ? ($revisionSnapshot['lines'] ?? [])
                 : PurchaseReturnLineResource::collection($this->whenLoaded('lines')),
