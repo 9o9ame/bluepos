@@ -1714,7 +1714,7 @@ export function PurchaseReturnsPage({
                   if (!selectedListKey) return
                   const row = rows.find((item) => item.ulid === selectedListKey)
                   if (row) void requestOpenReturn(row)
-                }
+                }}
               />
               <DesktopButton
                 icon={<X size={13} />}
