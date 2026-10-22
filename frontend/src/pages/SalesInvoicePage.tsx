@@ -3475,8 +3475,7 @@ export function SalesInvoicePage({
           }
         >
           <p className="sales-invoice-switch-warning">
-            Current invoice mein data mojood hai. Agar aap {pendingInvoiceLookupNumber} fetch
-            karenge to current data lose ho jayega.
+            The current invoice contains data. If you fetch {pendingInvoiceLookupNumber}, the current data will be lost.
           </p>
         </UiModal>
       ) : null}
