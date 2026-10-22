@@ -1133,11 +1133,6 @@ export function SalesInvoicePage({
     },
   })
 
-  async function refreshSavedSale(saleUlid: string) {
-    const fresh = await fetchSale(saleUlid)
-    setSavedSale(fresh)
-  }
-
   function focusLineQuantity(lineKey: string) {
     window.setTimeout(() => {
       const quantity = document.querySelector<HTMLInputElement>(
