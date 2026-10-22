@@ -28,6 +28,7 @@ import { useCan } from '../features/auth/useCan'
 import { useLocalProducts } from '../features/catalog/useLocalCatalog'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useFeedback } from '../feedback/FeedbackProvider'
+import { formatDecimal } from '../utils/formatDecimal'
 import './QuotationEstimatePage.css'
 
 function newQuotationKey(): string {
@@ -58,6 +59,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
   const [productLookupMode, setProductLookupMode] = useState<'browse' | 'search'>('browse')
   const [activeLineKey, setActiveLineKey] = useState<string | null>(null)
   const [activeProductQuery, setActiveProductQuery] = useState('')
+  const [activeNumericEditor, setActiveNumericEditor] = useState<string | null>(null)
   const [searchText, setSearchText] = useState('')
   const [quotationNumberValue, setQuotationNumberValue] = useState<string | null>(null)
   const [pendingQuotationLookupNumber, setPendingQuotationLookupNumber] = useState<string | null>(null)
@@ -864,7 +866,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                             <td className="is-num">
                               {(() => {
                                 const available = cart.availableStock(line)
-                                return available === null ? '—' : Number.parseFloat(available).toFixed(3)
+                                return available === null ? '—' : formatDecimal(available)
                               })()}
                             </td>
                             <td className="is-num">
@@ -872,17 +874,29 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                                 data-quotation-editable="true"
                                 data-quotation-field="quantity"
                                 aria-label={`Quantity for ${line.product_name}`}
-                                value={line.quantity}
+                                value={
+                                  activeNumericEditor === `qty:${line.line_key}`
+                                    ? line.quantity
+                                    : formatDecimal(line.quantity)
+                                }
+                                onFocus={() => setActiveNumericEditor(`qty:${line.line_key}`)}
+                                onBlur={() => setActiveNumericEditor(null)}
                                 onChange={(event) => cart.setQuantity(line.line_key, event.target.value)}
                                 onKeyDown={(event) => handleLineEnter(event, line.line_key, false)}
                               />
                             </td>
-                            <td className="is-num">{line.unit_price ?? '0.0000'}</td>
+                            <td className="is-num">{formatDecimal(line.unit_price)}</td>
                             <td className="is-num">
                               <input
                                 data-quotation-editable="true"
                                 aria-label={`Discount percent for ${line.product_name}`}
-                                value={line.discount_percent ?? '0'}
+                                value={
+                                  activeNumericEditor === `disc-pct:${line.line_key}`
+                                    ? (line.discount_percent ?? '0')
+                                    : formatDecimal(line.discount_percent ?? '0')
+                                }
+                                onFocus={() => setActiveNumericEditor(`disc-pct:${line.line_key}`)}
+                                onBlur={() => setActiveNumericEditor(null)}
                                 onChange={(event) => cart.setDiscountPercent(line.line_key, event.target.value)}
                                 onKeyDown={(event) => handleLineEnter(event, line.line_key, false)}
                               />
@@ -891,13 +905,19 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                               <input
                                 data-quotation-editable="true"
                                 aria-label={`Discount amount for ${line.product_name}`}
-                                value={line.discount_amount ?? '0'}
+                                value={
+                                  activeNumericEditor === `disc-rs:${line.line_key}`
+                                    ? (line.discount_amount ?? '0')
+                                    : formatDecimal(line.discount_amount ?? '0')
+                                }
+                                onFocus={() => setActiveNumericEditor(`disc-rs:${line.line_key}`)}
+                                onBlur={() => setActiveNumericEditor(null)}
                                 onChange={(event) => cart.setDiscountAmount(line.line_key, event.target.value)}
                                 onKeyDown={(event) => handleLineEnter(event, line.line_key, false)}
                               />
                             </td>
-                            <td className="is-num">{line.tax_percent ?? '0'}</td>
-                            <td className="is-num">{preview.netAmount}</td>
+                            <td className="is-num">{formatDecimal(line.tax_percent)}</td>
+                            <td className="is-num">{formatDecimal(preview.netAmount)}</td>
                             <td>
                               <UiButton
                                 variant="danger"
@@ -1010,7 +1030,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                             <td className="is-num">
                               {(() => {
                                 const available = cart.availableStock(line)
-                                return available === null ? '—' : Number.parseFloat(available).toFixed(3)
+                                return available === null ? '—' : formatDecimal(available)
                               })()}
                             </td>
                             <td className="is-num">
@@ -1018,17 +1038,29 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                                 data-quotation-editable="true"
                                 data-quotation-field="quantity"
                                 aria-label={`Quantity for ${line.product_name}`}
-                                value={line.quantity}
+                                value={
+                                  activeNumericEditor === `qty:${line.line_key}`
+                                    ? line.quantity
+                                    : formatDecimal(line.quantity)
+                                }
+                                onFocus={() => setActiveNumericEditor(`qty:${line.line_key}`)}
+                                onBlur={() => setActiveNumericEditor(null)}
                                 onChange={(event) => cart.setQuantity(line.line_key, event.target.value)}
                                 onKeyDown={(event) => handleLineEnter(event, line.line_key, true)}
                               />
                             </td>
-                            <td className="is-num">{line.unit_price ?? '0.0000'}</td>
+                            <td className="is-num">{formatDecimal(line.unit_price)}</td>
                             <td className="is-num">
                               <input
                                 data-quotation-editable="true"
                                 aria-label={`Discount percent for ${line.product_name}`}
-                                value={line.discount_percent ?? '0'}
+                                value={
+                                  activeNumericEditor === `disc-pct:${line.line_key}`
+                                    ? (line.discount_percent ?? '0')
+                                    : formatDecimal(line.discount_percent ?? '0')
+                                }
+                                onFocus={() => setActiveNumericEditor(`disc-pct:${line.line_key}`)}
+                                onBlur={() => setActiveNumericEditor(null)}
                                 onChange={(event) => cart.setDiscountPercent(line.line_key, event.target.value)}
                                 onKeyDown={(event) => handleLineEnter(event, line.line_key, true)}
                               />
@@ -1037,13 +1069,19 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                               <input
                                 data-quotation-editable="true"
                                 aria-label={`Discount amount for ${line.product_name}`}
-                                value={line.discount_amount ?? '0'}
+                                value={
+                                  activeNumericEditor === `disc-rs:${line.line_key}`
+                                    ? (line.discount_amount ?? '0')
+                                    : formatDecimal(line.discount_amount ?? '0')
+                                }
+                                onFocus={() => setActiveNumericEditor(`disc-rs:${line.line_key}`)}
+                                onBlur={() => setActiveNumericEditor(null)}
                                 onChange={(event) => cart.setDiscountAmount(line.line_key, event.target.value)}
                                 onKeyDown={(event) => handleLineEnter(event, line.line_key, true)}
                               />
                             </td>
-                            <td className="is-num">{line.tax_percent ?? '0'}</td>
-                            <td className="is-num">{preview.netAmount}</td>
+                            <td className="is-num">{formatDecimal(line.tax_percent)}</td>
+                            <td className="is-num">{formatDecimal(preview.netAmount)}</td>
                             <td>
                               <UiButton
                                 variant="danger"
@@ -1164,15 +1202,15 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
               <strong className="quotation-amount-options-title">Amount Options</strong>
               <div className="quotation-net-box">
                 <span>Net:</span>
-                <strong>{cart.preview.grandTotal}</strong>
+                <strong>{formatDecimal(cart.preview.grandTotal)}</strong>
               </div>
             </aside>
 
             <div className="quotation-totals">
-              <div><span>Subtotal</span><strong>{cart.preview.subtotal}</strong></div>
-              <div><span>Discount</span><strong>{cart.preview.discount}</strong></div>
-              <div><span>Tax</span><strong>{cart.preview.tax}</strong></div>
-              <div className="is-grand"><span>Estimate Total</span><strong>{cart.preview.grandTotal}</strong></div>
+              <div><span>Subtotal</span><strong>{formatDecimal(cart.preview.subtotal)}</strong></div>
+              <div><span>Discount</span><strong>{formatDecimal(cart.preview.discount)}</strong></div>
+              <div><span>Tax</span><strong>{formatDecimal(cart.preview.tax)}</strong></div>
+              <div className="is-grand"><span>Estimate Total</span><strong>{formatDecimal(cart.preview.grandTotal)}</strong></div>
             </div>
           </div>
 
@@ -1200,7 +1238,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
               { key: 'date', header: 'Date', width: 110, render: (row) => row.quotation_date },
               { key: 'customer', header: 'Customer', render: (row) => row.customer?.name ?? 'Walk-in' },
               { key: 'salesman', header: 'Salesman', render: (row) => row.salesman?.name ?? '—' },
-              { key: 'total', header: 'Total', width: 140, align: 'right', render: (row) => row.grand_total },
+              { key: 'total', header: 'Total', width: 140, align: 'right', render: (row) => formatDecimal(row.grand_total) },
             ]}
             rows={quotationsQuery.data?.data ?? []}
             rowKey={(row) => row.ulid}
