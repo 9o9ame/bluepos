@@ -70,6 +70,8 @@ export type SaleReturn = {
   reason: string | null
   notes: string | null
   posted_at: string | null
+  revision_number?: number
+  is_amended?: boolean
   refunds?: SaleReturnRefund[]
   original_sale?: {
     ulid: string
