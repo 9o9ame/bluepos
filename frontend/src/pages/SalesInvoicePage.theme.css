@@ -4941,15 +4941,20 @@ html[data-animations='off'] .sales-reference-screen * {
 .sales-reference-entry-row > .sales-reference-product-entry-wrap {
   position: relative !important;
   overflow: hidden;
+  height: 100% !important;
 }
 
 .sales-reference-entry-row
   > .sales-reference-product-entry-wrap
   > .sales-reference-product-entry[aria-label='Barcode scanner input'] {
   position: absolute !important;
-  inset: 0 !important;
+  top: 1px !important;
+  right: 0 !important;
+  bottom: auto !important;
+  left: 0 !important;
+  box-sizing: border-box !important;
   width: 100% !important;
-  height: auto !important;
+  height: calc(100% - 2px) !important;
   min-height: 0 !important;
   max-height: none !important;
   margin: 0 !important;
@@ -4963,12 +4968,13 @@ html[data-animations='off'] .sales-reference-screen * {
   > .sales-reference-received
   > input[aria-label='Received amount'] {
   position: absolute !important;
-  top: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
+  top: 1px !important;
+  right: 1px !important;
+  bottom: auto !important;
   left: 24% !important;
+  box-sizing: border-box !important;
   width: auto !important;
-  height: auto !important;
+  height: calc(100% - 2px) !important;
   min-height: 0 !important;
   max-height: none !important;
   margin: 0 !important;
