@@ -2442,7 +2442,7 @@ export function SalesInvoicePage({
 
                           return (
                             <td key={col.key} className="sales-pos-line-pending col-price">
-                              {line.line_kind === 'sale' ? formatDecimal(line.unit_price ?? '0') : '0.00'}
+                              {line.line_kind === 'sale' ? formatDecimal(line.unit_price ?? '0') : '0.0'}
                             </td>
                           )
                         }
@@ -3250,14 +3250,14 @@ export function SalesInvoicePage({
               <input
                 value={
                   Number.parseFloat(cart.preview.qualifyingSubtotal) > 0
-                    ? (
+                    ? formatDecimal(
                         (Number.parseFloat(cart.preview.tax) /
                           Number.parseFloat(
                             cart.preview.qualifyingSubtotal,
                           )) *
-                        100
-                      ).toFixed(2)
-                    : '0.00'
+                          100,
+                      )
+                    : '0.0'
                 }
                 readOnly
                 title="Effective tax rate from product tax settings"
