@@ -16,19 +16,29 @@ class PurchaseReturnResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $revisionSnapshot = null;
+        if ($this->relationLoaded('latestRevision') && $this->latestRevision) {
+            $candidate = $this->latestRevision->after_snapshot;
+            if (is_array($candidate)) {
+                $revisionSnapshot = $candidate;
+            }
+        }
+
         return [
             'ulid' => $this->ulid,
             'document_number' => $this->document_number,
-            'return_date' => $this->return_date?->toDateString(),
+            'return_date' => $revisionSnapshot['return_date'] ?? $this->return_date?->toDateString(),
             'status' => $this->status->value,
             'return_mode' => $this->purchase_invoice_id === null ? 'general' : 'invoice',
-            'subtotal' => $this->subtotal,
-            'discount_amount' => $this->discount_amount,
-            'tax_amount' => $this->tax_amount,
-            'grand_total' => $this->grand_total,
-            'supplier_reference' => $this->supplier_reference,
-            'reason' => $this->reason,
-            'notes' => $this->notes,
+            'subtotal' => $revisionSnapshot['subtotal'] ?? $this->subtotal,
+            'discount_amount' => $revisionSnapshot['discount_amount'] ?? $this->discount_amount,
+            'tax_amount' => $revisionSnapshot['tax_amount'] ?? $this->tax_amount,
+            'grand_total' => $revisionSnapshot['grand_total'] ?? $this->grand_total,
+            'supplier_reference' => $revisionSnapshot['supplier_reference'] ?? $this->supplier_reference,
+            'reason' => $revisionSnapshot['reason'] ?? $this->reason,
+            'notes' => $revisionSnapshot['notes'] ?? $this->notes,
+            'revision_number' => (int) ($revisionSnapshot['_meta']['revision_number'] ?? 0),
+            'is_amended' => (int) ($revisionSnapshot['_meta']['revision_number'] ?? 0) > 0,
             'posted_at' => $this->posted_at?->toIso8601String(),
             'original_purchase' => $this->whenLoaded('purchaseInvoice', function () {
                 if (! $this->purchaseInvoice) {
@@ -62,7 +72,9 @@ class PurchaseReturnResource extends JsonResource
                     'name' => $this->warehouse->name,
                 ];
             }),
-            'lines' => PurchaseReturnLineResource::collection($this->whenLoaded('lines')),
+            'lines' => $revisionSnapshot !== null
+                ? ($revisionSnapshot['lines'] ?? [])
+                : PurchaseReturnLineResource::collection($this->whenLoaded('lines')),
         ];
     }
 }
