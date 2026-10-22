@@ -689,10 +689,18 @@ class CreateSaleAction
                 4
             );
 
+            $trustedPriorPriceRaw = trim((string) ($item['_trusted_prior_unit_price'] ?? ''));
             $overrideRaw = trim((string) ($item['unit_price_override'] ?? ''));
             $unitPriceOverride = null;
 
-            if ($overrideRaw !== '') {
+            if ($trustedPriorPriceRaw !== '') {
+                // Internal-only amendment snapshot price. FormRequest validation
+                // never accepts this key from the client.
+                $unitPrice = $this->normalizeMoney(
+                    $trustedPriorPriceRaw,
+                    "items.$index.unit_price"
+                );
+            } elseif ($overrideRaw !== '') {
                 if (! $this->permissions->can('sales.override_price')) {
                     throw new ApiException(
                         'FORBIDDEN',
@@ -705,9 +713,10 @@ class CreateSaleAction
                     $overrideRaw,
                     "items.$index.unit_price_override"
                 );
+                $unitPrice = $unitPriceOverride;
+            } else {
+                $unitPrice = $catalogUnitPrice;
             }
-
-            $unitPrice = $unitPriceOverride ?? $catalogUnitPrice;
 
             $grossAmount = bcmul(
                 $quantity,
