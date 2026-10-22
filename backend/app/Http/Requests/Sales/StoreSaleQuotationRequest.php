@@ -21,6 +21,7 @@ class StoreSaleQuotationRequest extends StoreSaleRequest
         );
 
         $rules['quotation_date'] = ['nullable', 'date'];
+        $rules['revision_reason'] = ['nullable', 'string', 'max:500'];
 
         return $rules;
     }
