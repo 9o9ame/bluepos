@@ -9,6 +9,7 @@ use App\Actions\Sales\PostSaleReturnAction;
 use App\Actions\Sales\RefundSaleReturnAction;
 use App\Actions\Sales\RecalculateSaleReturnTotalsAction;
 use App\Actions\Sales\UpdateSaleReturnAction;
+use App\Authz\PermissionService;
 use App\Actions\Sales\UpsertSaleReturnLineAction;
 use App\Enums\SaleReturnStatus;
 use App\Enums\SaleStatus;
@@ -32,6 +33,20 @@ use Illuminate\Http\Request;
 
 class SaleReturnController extends Controller
 {
+    public function nextDocumentNumber(
+        CreateSaleReturnAction $create,
+        PermissionService $permissions,
+    ): array {
+        abort_unless(
+            $permissions->can('sales.return') || $permissions->can('sales.return.amend_posted'),
+            403,
+        );
+
+        return [
+            'document_number' => $create->previewNextDocumentNumber(),
+        ];
+    }
+
     public function index(Request $request, TenantContext $tenantContext): array
     {
         $this->authorize('viewAny', SaleReturn::class);
