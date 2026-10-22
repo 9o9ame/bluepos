@@ -17,6 +17,7 @@ class StorePurchaseOrderRequest extends FormRequest
             'supplier_ulid' => ['required', 'string', 'size:26'],
             'order_date' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:5000'],
+            'revision_reason' => ['nullable', 'string', 'max:500'],
             'items' => ['required', 'array', 'min:1', 'max:500'],
             'items.*.product_ulid' => ['required', 'string', 'size:26'],
             'items.*.unit_ulid' => ['required', 'string', 'size:26'],
