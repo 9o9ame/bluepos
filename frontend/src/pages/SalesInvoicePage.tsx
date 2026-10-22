@@ -20,7 +20,7 @@ import { ApiClientError } from '../api/client'
 import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
 import { fetchParties, fetchParty, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { amendSale, createSale, createSaleHold, createSaleQuotation, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSalePaymentAccounts, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen, updateSaleQuotation } from '../api/sales'
+import { amendSale, createSale, createSaleHold, createSaleQuotation, deleteSaleHold, fetchNextSaleDocumentNumber, fetchSale, fetchSaleHolds, fetchSalePaymentAccounts, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen, updateSaleQuotation } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SaleFinalizePaymentPanel } from '../features/sales/SaleFinalizePaymentPanel'
@@ -173,7 +173,7 @@ export function SalesInvoicePage({
     () => new Date().toISOString().slice(0, 10),
   )
 
-  const [invoiceValue, setInvoiceValue] = useState('')
+  const [invoiceValue, setInvoiceValue] = useState<string | null>(null)
   const [copyFromValue, setCopyFromValue] = useState('')
   const [quotationValue, setQuotationValue] = useState('')
   const [editingQuotationUlid, setEditingQuotationUlid] = useState<string | null>(null)
@@ -190,6 +190,21 @@ export function SalesInvoicePage({
   const [partyModalOpen, setPartyModalOpen] = useState(false)
 
   const { session } = useAuth()
+
+  const nextInvoiceNumberQuery = useQuery({
+    queryKey: ['sales', 'next-document-number', session?.branch.ulid],
+    queryFn: fetchNextSaleDocumentNumber,
+    enabled:
+      Boolean(session) &&
+      active &&
+      view === 'pos' &&
+      (canCreateSale || canAmendSale),
+    retry: false,
+  })
+
+  const displayedInvoiceValue =
+    invoiceValue ?? nextInvoiceNumberQuery.data?.document_number ?? ''
+
   const salesProductLookupQuery =
     productLookupMode === 'search'
       ? (activeLineKey ? activeProductQuery : productQuery)
@@ -490,7 +505,7 @@ export function SalesInvoicePage({
 
   const invoiceLookupMutation = useMutation({
     mutationFn: async () => {
-      const requestedNumber = invoiceValue.trim()
+      const requestedNumber = invoiceValue?.trim() ?? ''
 
       if (!requestedNumber) {
         throw new Error('Enter a posted invoice number to edit.')
@@ -700,7 +715,7 @@ export function SalesInvoicePage({
     onSuccess: ({ source, customer, productsByUlid, stockByProduct }) => {
       cart.restoreSaleDocument(source, productsByUlid, stockByProduct)
 
-      setInvoiceValue('')
+      setInvoiceValue(null)
       setAmendingSale(null)
       setCopyFromValue(source.document_number)
       setQuotationValue('')
@@ -880,7 +895,7 @@ export function SalesInvoicePage({
     onSuccess: ({ source, customer, productsByUlid, stockByProduct }) => {
       cart.restoreSaleDocument(source, productsByUlid, stockByProduct)
 
-      setInvoiceValue('')
+      setInvoiceValue(null)
       setAmendingSale(null)
       setQuotationValue(source.document_number)
       setEditingQuotationUlid(source.ulid)
@@ -1543,7 +1558,7 @@ export function SalesInvoicePage({
         ? (hold.sale_date ?? new Date().toISOString().slice(0, 10))
         : new Date().toISOString().slice(0, 10),
     )
-    setInvoiceValue('')
+    setInvoiceValue(null)
     setAmendingSale(null)
     setCopyFromValue('')
     setQuotationValue('')
@@ -1591,7 +1606,8 @@ export function SalesInvoicePage({
     setCustomerPickerOpen(false)
     setCustomerPickerSearch('')
     setSalesmanPickerOpen(false)
-    setInvoiceValue('')
+    setInvoiceValue(null)
+    void nextInvoiceNumberQuery.refetch()
     setAmendingSale(null)
     setCopyFromValue('')
     setQuotationValue('')
@@ -1806,31 +1822,6 @@ export function SalesInvoicePage({
                     Retail
                   </label>
 
-                  <div className="sales-reference-amend-invoice">
-                    <span>Inv #:</span>
-
-                    <input
-                      value={invoiceValue}
-                      placeholder="Posted Invoice #"
-                      aria-label="Posted invoice number to edit"
-                      title="Enter an exact posted invoice number and press Enter to amend it"
-                      disabled={
-                        !canAmendSale ||
-                        Boolean(amendingSale) ||
-                        invoiceLookupMutation.isPending ||
-                        saveMutation.isPending
-                      }
-                      onChange={(event) => setInvoiceValue(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key !== 'Enter') return
-                        event.preventDefault()
-                        if (!invoiceLookupMutation.isPending) {
-                          invoiceLookupMutation.mutate()
-                        }
-                      }}
-                    />
-                  </div>
-
                   <div className="sales-reference-copy-from">
                     <span>Copy From:</span>
 
@@ -1857,9 +1848,36 @@ export function SalesInvoicePage({
 
                   <input
                     className="is-short sales-responsive-invoice-field"
+                    value={displayedInvoiceValue}
                     placeholder="Auto"
-                    readOnly
-                    title="Invoice number is generated by the server"
+                    aria-label="Invoice number"
+                    title={
+                      amendingSale
+                        ? `Editing posted invoice ${amendingSale.document_number}`
+                        : canAmendSale
+                          ? 'Next invoice number. Type an exact posted invoice number and press Enter to edit it.'
+                          : 'Next invoice number is generated by the server.'
+                    }
+                    readOnly={!canAmendSale}
+                    disabled={
+                      Boolean(savedSale) ||
+                      Boolean(amendingSale) ||
+                      invoiceLookupMutation.isPending ||
+                      saveMutation.isPending
+                    }
+                    onChange={(event) => setInvoiceValue(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter' || !canAmendSale) return
+                      event.preventDefault()
+
+                      if (
+                        invoiceValue !== null &&
+                        invoiceValue.trim() !== '' &&
+                        !invoiceLookupMutation.isPending
+                      ) {
+                        invoiceLookupMutation.mutate()
+                      }
+                    }}
                   />
 
                   <label className="sales-responsive-date-label">Date</label>
