@@ -40,6 +40,7 @@ class CollectSalePaymentAction
         private readonly OpeningBalancePoster $poster,
         private readonly PartyLeafAccountSync $partyAccounts,
         private readonly CashierTransactionLock $cashierLock,
+        private readonly BuildSaleEffectiveSnapshotAction $snapshots,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -214,7 +215,12 @@ class CollectSalePaymentAction
             ->where('status', SaleReturnStatus::Posted->value)
             ->sum('grand_total');
 
-        $netSaleTotal = bcsub((string) $sale->grand_total, $returned, 4);
+        $effective = $this->snapshots->current($sale);
+        $netSaleTotal = bcsub(
+            (string) ($effective['grand_total'] ?? $sale->grand_total),
+            $returned,
+            4,
+        );
         if (bccomp($netSaleTotal, '0', 4) < 0) {
             $netSaleTotal = '0.0000';
         }
