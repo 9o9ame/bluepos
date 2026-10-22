@@ -124,6 +124,19 @@ export function fetchSaleQuotation(quotationUlid: string) {
   })
 }
 
+export function updateSaleQuotation(
+  quotationUlid: string,
+  payload: Omit<
+    SalePayload,
+    'sale_date' | 'payment_due' | 'initial_payment'
+  > & { quotation_date?: string | null; revision_reason?: string | null },
+) {
+  return apiFetch<SaleQuotation>(`/api/sales/quotations/${quotationUlid}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function fetchSalesmen() {
   return apiFetch<SalesmanOption[]>('/api/sales/salesmen', { busy: 'none' })
 }
