@@ -23,6 +23,11 @@ function productBaseRate(product: Product): string {
   return amount == null ? '—' : formatDecimal(amount)
 }
 
+function productLookupCost(product: Product): string {
+  const amount = product.purchase_rate ?? product.sales_lookup?.average_cost
+  return amount == null ? '—' : formatDecimal(amount)
+}
+
 function productStockClass(product: Product): string {
   const value = Number.parseFloat(product.sales_lookup?.in_stock ?? '')
   if (!Number.isFinite(value)) return 'is-stock-unknown'
@@ -307,7 +312,7 @@ export function ProductLookupGrid({
                     ? `${formatDecimal(row.secondary_conversion_factor ?? '1')} ${row.secondary_unit.symbol ?? row.secondary_unit.code}`
                     : '—'}
                 </span>
-                <span>{row.purchase_rate ?? row.sales_lookup?.average_cost ? formatDecimal(row.purchase_rate ?? row.sales_lookup?.average_cost) : '—'}</span>
+                <span>{productLookupCost(row)}</span>
                 <span>{productLookupPrice(row, 'retail')}</span>
                 <span>{row.category?.name ?? '—'}</span>
                 <span>{row.brand?.name ?? '—'}</span>
