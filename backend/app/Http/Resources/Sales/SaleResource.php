@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Sales;
 
+use App\Actions\Sales\BuildSaleReturnEffectiveSnapshotAction;
 use App\Enums\SaleReturnStatus;
 use App\Models\SaleReturn;
 use App\Models\Sale;
@@ -33,15 +34,24 @@ class SaleResource extends JsonResource
         if ($this->getAttribute('returned_amount') !== null) {
             $returnedAmount = bcadd((string) $this->getAttribute('returned_amount'), '0', 4);
         } else {
-            $returnedAmount = bcadd(
-                (string) SaleReturn::query()
-                    ->where('tenant_id', (int) $this->tenant_id)
-                    ->where('sale_id', $this->id)
-                    ->where('status', SaleReturnStatus::Posted->value)
-                    ->sum('grand_total'),
-                '0',
-                4,
-            );
+            $returns = SaleReturn::query()
+                ->where('tenant_id', (int) $this->tenant_id)
+                ->where('sale_id', $this->id)
+                ->where('status', SaleReturnStatus::Posted->value)
+                ->with('latestRevision')
+                ->get();
+
+            $returnedAmount = '0.0000';
+            $returnSnapshots = app(BuildSaleReturnEffectiveSnapshotAction::class);
+
+            foreach ($returns as $return) {
+                $effectiveReturn = $returnSnapshots->current($return);
+                $returnedAmount = bcadd(
+                    $returnedAmount,
+                    (string) ($effectiveReturn['grand_total'] ?? $return->grand_total),
+                    4,
+                );
+            }
         }
 
         $revisionSnapshot = null;
