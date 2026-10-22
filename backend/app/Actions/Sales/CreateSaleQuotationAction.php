@@ -141,13 +141,32 @@ class CreateSaleQuotationAction
         ];
     }
 
+    public function previewNextDocumentNumber(): string
+    {
+        return $this->calculateNextDocumentNumber(
+            $this->tenantContext->tenantId(),
+            false,
+        );
+    }
+
     private function nextDocumentNumber(int $tenantId): string
     {
-        $latest = SaleQuotation::query()
+        return $this->calculateNextDocumentNumber($tenantId, true);
+    }
+
+    private function calculateNextDocumentNumber(
+        int $tenantId,
+        bool $lock,
+    ): string {
+        $query = SaleQuotation::query()
             ->forTenant($tenantId)
-            ->lockForUpdate()
-            ->orderByDesc('id')
-            ->value('document_number');
+            ->orderByDesc('id');
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        $latest = $query->value('document_number');
 
         $seq = 1;
 
