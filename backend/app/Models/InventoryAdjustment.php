@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'tenant_id',
@@ -61,5 +62,13 @@ class InventoryAdjustment extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(InventoryAdjustmentLine::class, 'adjustment_id');
+    }
+
+    /** @return HasOne<DocumentRevision, $this> */
+    public function latestRevision(): HasOne
+    {
+        return $this->hasOne(DocumentRevision::class, 'document_ulid', 'ulid')
+            ->where('document_type', 'inventory_adjustment')
+            ->ofMany('revision_number', 'max');
     }
 }
