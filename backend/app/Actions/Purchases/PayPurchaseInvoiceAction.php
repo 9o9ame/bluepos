@@ -29,6 +29,7 @@ class PayPurchaseInvoiceAction
         private readonly OpeningBalancePoster $poster,
         private readonly PartyLeafAccountSync $partyAccounts,
         private readonly CashierTransactionLock $cashierLock,
+        private readonly BuildPurchaseEffectiveSnapshotAction $snapshots,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -243,7 +244,12 @@ class PayPurchaseInvoiceAction
             4,
         );
 
-        $netPayable = bcsub((string) $invoice->grand_total, $returned, 4);
+        $effective = $this->snapshots->current($invoice);
+        $netPayable = bcsub(
+            (string) ($effective['grand_total'] ?? $invoice->grand_total),
+            $returned,
+            4,
+        );
         $outstanding = bcsub($netPayable, $paid, 4);
 
         return bccomp($outstanding, '0', 4) < 0 ? '0.0000' : $outstanding;
