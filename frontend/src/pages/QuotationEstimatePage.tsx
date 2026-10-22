@@ -874,13 +874,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                                 data-quotation-editable="true"
                                 data-quotation-field="quantity"
                                 aria-label={`Quantity for ${line.product_name}`}
-                                value={
-                                  activeNumericEditor === `qty:${line.line_key}`
-                                    ? line.quantity
-                                    : formatDecimal(line.quantity)
-                                }
-                                onFocus={() => setActiveNumericEditor(`qty:${line.line_key}`)}
-                                onBlur={() => setActiveNumericEditor(null)}
+                                value={formatDecimal(line.quantity)}
                                 onChange={(event) => cart.setQuantity(line.line_key, event.target.value)}
                                 onKeyDown={(event) => handleLineEnter(event, line.line_key, false)}
                               />
@@ -1038,13 +1032,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
                                 data-quotation-editable="true"
                                 data-quotation-field="quantity"
                                 aria-label={`Quantity for ${line.product_name}`}
-                                value={
-                                  activeNumericEditor === `qty:${line.line_key}`
-                                    ? line.quantity
-                                    : formatDecimal(line.quantity)
-                                }
-                                onFocus={() => setActiveNumericEditor(`qty:${line.line_key}`)}
-                                onBlur={() => setActiveNumericEditor(null)}
+                                value={formatDecimal(line.quantity)}
                                 onChange={(event) => cart.setQuantity(line.line_key, event.target.value)}
                                 onKeyDown={(event) => handleLineEnter(event, line.line_key, true)}
                               />
