@@ -18,6 +18,7 @@ import { ApiClientError } from '../api/client'
 import { askConfirm } from '../feedback/FeedbackProvider'
 import { fetchProductStock, fetchWarehouses } from '../api/inventory'
 import {
+  amendPurchase,
   createPurchase,
   createPurchaseLine,
   createPurchasePayment,
@@ -349,6 +350,7 @@ export function PurchasesPage({
 
   const canCreate = useCan('purchases.create')
   const canEdit = useCan('purchases.edit')
+  const canAmendPurchase = useCan('purchases.amend_posted')
   const canPost = useCan('purchases.post')
   const canCreatePayment = useCan('payments.create')
   const canCreateReturn = useCan('purchase_returns.create')
@@ -394,6 +396,7 @@ export function PurchasesPage({
   const [paymentMethod, setPaymentMethod] = useState<PurchasePaymentMethod>('cash')
   const [paymentReference, setPaymentReference] = useState('')
   const [paymentIdempotencyKey, setPaymentIdempotencyKey] = useState(() => crypto.randomUUID())
+  const amendmentIdempotencyKeyRef = useRef(crypto.randomUUID())
   const [selectedLineKey, setSelectedLineKey] = useState<string | null>(null)
   const [calcMethod, setCalcMethod] = useState('trade_after_disc')
   const [shellPriceType, setShellPriceType] = useState('trade')
@@ -438,7 +441,8 @@ export function PurchasesPage({
     catalog: PURCHASE_INVOICE_COLUMNS,
   })
 
-  const readOnly = status === 'posted' || status === 'cancelled'
+  const amendingPosted = status === 'posted' && canAmendPurchase
+  const readOnly = status === 'cancelled' || (status === 'posted' && !canAmendPurchase)
   useEffect(() => {
     if (
       !active ||
@@ -1448,6 +1452,7 @@ export function PurchasesPage({
     setPaymentMethod('cash')
     setPaymentReference('')
     setPaymentIdempotencyKey(crypto.randomUUID())
+    amendmentIdempotencyKeyRef.current = crypto.randomUUID()
     setSelectedLineKey(null)
     setCalcMethod('trade_after_disc')
     setShellPriceType('trade')
@@ -1657,6 +1662,85 @@ export function PurchasesPage({
         payment_terms: shellPaymentTerms,
       }
 
+      if (status === 'posted') {
+        if (!invoiceUlid || !canAmendPurchase) {
+          throw new Error('You do not have permission to amend posted Purchase Invoices.')
+        }
+
+        const amendmentLines = lines
+          .filter((line) => line.product_ulid && line.unit_ulid)
+          .map((line) => {
+            const calc = computeLine(line, calcSettings)
+
+            return {
+              product_ulid: line.product_ulid,
+              unit_ulid: line.unit_ulid,
+              quantity: line.quantity || '0',
+              unit_cost: line.unit_cost || '0',
+              discount_amount: calc.discount_amount,
+              tax_amount: calc.tax_amount,
+              supplier_product_code: line.supplier_product_code || null,
+              batch_number: line.batch_number || null,
+              expiry_date: line.expiry_date || null,
+              notes: line.notes || null,
+              brand_label: line.brand_label || null,
+              hs_code: line.hs_code || null,
+              pack_size: line.pack_size || null,
+              qty_ctn: line.qty_ctn || '0',
+              free_pcs: line.free_pcs || '0',
+              price_type: line.price_type || 'trade',
+              mrp: line.mrp || '0',
+              trade_disc_pct: line.trade_disc_pct || '0',
+              regular_disc_pct: calc.regular_disc_pct || '0',
+              regular_disc_amount: calc.regular_disc_rs || '0',
+              special_disc_pct: calc.special_disc_pct || '0',
+              special_disc_amount: calc.special_disc_rs || '0',
+              disc_after_gst_pct: calc.disc_after_gst_pct || '0',
+              disc_after_gst_amount: calc.disc_after_gst_rs || '0',
+              tax_pct:
+                dualModes.gst === 'rs'
+                  ? line.tax_pct || '0'
+                  : calc.tax_pct || '0',
+              further_tax_pct: calc.further_tax_pct || '0',
+              further_tax_amount: calc.further_tax_amount || '0',
+            }
+          })
+
+        return amendPurchase(
+          invoiceUlid,
+          {
+            supplier_invoice_number: supplierInvoiceNumber || null,
+            due_date: dueDate || null,
+            invoice_type: shellInvoiceType,
+            currency_code: shellCurrency,
+            calculation_method: calcMethod,
+            discount_apply_on: discountApplyOn,
+            calculation_modes: dualModes,
+            auto_calc_mrp: autoCalcMrp,
+            withholding_is_pct: withholdingIsPct,
+            withholding_pct: withholdingIsPct ? shellAdvanceTax || '0' : '0',
+            default_sales_tax_pct: shellDefaultSalesTax || '0',
+            default_further_tax_pct: shellDefaultFurtherTax || '0',
+            default_advance_tax_pct: shellDefaultAdvanceTax || '0',
+            default_price_type: shellPriceType,
+            brand_label: shellBrand || null,
+            freight_amount: freightAmount || '0',
+            loading_amount: shellLoading || '0',
+            other_charges: otherCharges || '0',
+            other_discount: shellOtherDiscount || '0',
+            trade_offer: shellTradeOffer || '0',
+            advance_tax_amount: authoritativePreview.advance_tax_amount,
+            round_off: shellRoundOff || '0',
+            notes: notes || null,
+            tax_type: shellTaxType,
+            payment_terms: shellPaymentTerms,
+            revision_reason: 'Posted Purchase Invoice corrected from Purchase Invoice screen',
+            lines: amendmentLines,
+          },
+          amendmentIdempotencyKeyRef.current,
+        )
+      }
+
       let invoice = invoiceUlid
         ? await updatePurchase(invoiceUlid, header)
         : await createPurchase(header)
@@ -1710,6 +1794,7 @@ export function PurchasesPage({
     },
     onSuccess: (invoice) => {
       applyInvoice(invoice)
+      amendmentIdempotencyKeyRef.current = crypto.randomUUID()
       setError(null)
       void queryClient.invalidateQueries({ queryKey: ['purchases'] })
       void queryClient.invalidateQueries({ queryKey: ['purchase-line-stock'] })
@@ -1784,7 +1869,14 @@ export function PurchasesPage({
 
   async function onSave(event?: FormEvent) {
     event?.preventDefault()
-    if (readOnly || (invoiceUlid ? !canEdit : !canCreate)) return
+    if (
+      readOnly ||
+      (status === 'posted'
+        ? !canAmendPurchase
+        : invoiceUlid
+          ? !canEdit
+          : !canCreate)
+    ) return
     setError(null)
     try {
       await saveMutation.mutateAsync()
@@ -2001,7 +2093,11 @@ export function PurchasesPage({
       active &&
       mode === 'editor' &&
       !readOnly &&
-      (invoiceUlid ? canEdit : canCreate) &&
+      (status === 'posted'
+        ? canAmendPurchase
+        : invoiceUlid
+          ? canEdit
+          : canCreate) &&
       !productModalOpen &&
       !supplierModalOpen &&
       !paymentModalOpen &&
@@ -2044,7 +2140,16 @@ export function PurchasesPage({
   }
 
   async function removeLine(line: DraftLine) {
-    if (readOnly || !canEdit) return
+    if (readOnly) return
+
+    if (status === 'posted') {
+      if (!canAmendPurchase) return
+      setLines((prev) => prev.filter((row) => row.key !== line.key))
+      return
+    }
+
+    if (!canEdit) return
+
     if (line.ulid && invoiceUlid) {
       try {
         await deletePurchaseLine(invoiceUlid, line.ulid)
@@ -2055,6 +2160,7 @@ export function PurchasesPage({
       }
       return
     }
+
     setLines((prev) => prev.filter((row) => row.key !== line.key))
   }
 
@@ -2238,7 +2344,14 @@ export function PurchasesPage({
     )
   }
 
-  const editable = !readOnly && (invoiceUlid ? canEdit : canCreate)
+  const editable = !readOnly && (
+    status === 'posted'
+      ? canAmendPurchase
+      : invoiceUlid
+        ? canEdit
+        : canCreate
+  )
+  const identityEditable = editable && status !== 'posted'
   const selectedLine = lines.find((line) => line.key === selectedLineKey) ?? null
   const displaySubtotal = liveTotals.subtotal
   const displayDiscount = liveTotals.discount_amount
@@ -2606,10 +2719,18 @@ export function PurchasesPage({
             <button
               type="button"
               className="pie-btn is-save"
-              disabled={readOnly || saveMutation.isPending || (invoiceUlid ? !canEdit : !canCreate)}
+              disabled={
+                readOnly ||
+                saveMutation.isPending ||
+                (status === 'posted'
+                  ? !canAmendPurchase
+                  : invoiceUlid
+                    ? !canEdit
+                    : !canCreate)
+              }
               onClick={() => void onSave()}
             >
-              <Save /> Save
+              <Save /> {amendingPosted ? 'Update' : 'Save'}
             </button>
             <button
               type="button"
