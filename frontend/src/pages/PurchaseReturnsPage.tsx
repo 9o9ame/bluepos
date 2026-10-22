@@ -488,7 +488,7 @@ export function PurchaseReturnsPage({
           row.key === existing.key
             ? {
                 ...row,
-                quantity: ((Number.parseFloat(row.quantity) || 0) + 1).toFixed(6),
+                quantity: formatDecimal((Number.parseFloat(row.quantity) || 0) + 1),
               }
             : row,
         ),
@@ -1803,14 +1803,14 @@ export function PurchaseReturnsPage({
                   header: 'Qty (-)',
                   width: 100,
                   align: 'right',
-                  render: (row) => row.quantity_out,
+                  render: (row) => formatDecimal(row.quantity_out),
                 },
                 {
                   key: 'amount',
                   header: 'Amount',
                   width: 115,
                   align: 'right',
-                  render: (row) => money(row.amount),
+                  render: (row) => formatDecimal(row.amount),
                 },
               ]}
               rows={productWiseQuery.data?.data ?? []}
