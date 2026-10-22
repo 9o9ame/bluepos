@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Purchases;
 use App\Actions\Purchases\CancelPurchaseOrderAction;
 use App\Actions\Purchases\CreatePurchaseOrderAction;
 use App\Actions\Purchases\UpdatePurchaseOrderAction;
+use App\Authz\PermissionService;
 use App\Catalog\TenantCatalog;
 use App\Enums\ProductStatus;
 use App\Enums\PurchaseInvoiceStatus;
@@ -25,6 +26,20 @@ use Illuminate\Http\Request;
 
 class PurchaseOrderController extends Controller
 {
+    public function nextDocumentNumber(
+        CreatePurchaseOrderAction $create,
+        PermissionService $permissions,
+    ): array {
+        abort_unless(
+            $permissions->can('purchases.create') || $permissions->can('purchase_orders.edit'),
+            403,
+        );
+
+        return [
+            'document_number' => $create->previewNextDocumentNumber(),
+        ];
+    }
+
     public function index(Request $request, TenantContext $tenantContext): mixed
     {
         $this->authorize('viewAny', PurchaseOrder::class);
