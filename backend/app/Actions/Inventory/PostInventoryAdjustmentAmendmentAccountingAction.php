@@ -106,7 +106,7 @@ class PostInventoryAdjustmentAmendmentAccountingAction
             'document_type' => JournalEntry::DOCUMENT_INVENTORY_ADJUSTMENT_AMENDMENT,
             'document_id' => $document->id,
             'idempotency_key' => $idempotencyKey,
-            'entry_date' => (string) $header['adjustment_date'],
+            'entry_date' => now()->toDateString(),
             'description' => 'Inventory adjustment '.$document->document_number.' amendment '.$revisionNumber,
             'status' => JournalStatus::Posted,
             'created_by' => $this->tenantContext->userId(),
