@@ -58,6 +58,7 @@ import type {
 import { PartyModal } from '../components/parties/PartyModal'
 import { ProductModal } from '../components/products/ProductModal'
 import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
+import { formatDecimal } from '../utils/formatDecimal'
 import { SupplierLookupGrid } from '../features/catalog/SupplierLookupGrid'
 import {
   applyCalcToLine,
@@ -2360,8 +2361,18 @@ export function PurchasesPage({
         <div className="purchase-list-grid">
           <PosDataGrid
             columns={[
-              { key: 'document_number', header: 'Document #', width: 110 },
-              { key: 'invoice_date', header: 'Date', width: 100 },
+              {
+                key: 'document_number',
+                header: 'Document #',
+                width: 110,
+                render: (row) => row.document_number || '—',
+              },
+              {
+                key: 'invoice_date',
+                header: 'Date',
+                width: 100,
+                render: (row) => row.invoice_date || '—',
+              },
               {
                 key: 'supplier',
                 header: 'Supplier',
