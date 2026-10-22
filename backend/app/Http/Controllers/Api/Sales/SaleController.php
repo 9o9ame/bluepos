@@ -113,10 +113,10 @@ class SaleController extends Controller
                         LIMIT 1
                     ), sales.grand_total) - COALESCE((
                         SELECT SUM(COALESCE((
-                            SELECT CAST(dr2.after_snapshot->>'grand_total' AS NUMERIC)
+                            SELECT CAST(dr2.after_snapshot->>\'grand_total\' AS NUMERIC)
                             FROM document_revisions dr2
                             WHERE dr2.tenant_id = sr.tenant_id
-                              AND dr2.document_type = 'sale_return'
+                              AND dr2.document_type = \'sale_return\'
                               AND dr2.document_ulid = sr.ulid
                             ORDER BY dr2.revision_number DESC
                             LIMIT 1
