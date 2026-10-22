@@ -113,6 +113,7 @@ class BuildPurchaseReturnEffectiveSnapshotAction
 
         return [
             ...$before,
+            'return_mode' => $header['return_mode'] ?? $before['return_mode'],
             'return_date' => $header['return_date'] ?? $before['return_date'],
             'subtotal' => $totals['subtotal'],
             'discount_amount' => $totals['discount_amount'],
