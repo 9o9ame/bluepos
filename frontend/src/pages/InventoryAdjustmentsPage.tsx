@@ -363,8 +363,10 @@ export function InventoryAdjustmentsPage() {
 
     const existing = displayLines.find((line) => line.ulid === selectedLineUlid)
     const selectedProduct = productLookupRows.find((row) => row.ulid === productUlid)
-    const product = existing?.product ?? (
-      selectedProduct
+    const sameProduct = existing?.product?.ulid === productUlid
+    const product = sameProduct
+      ? existing?.product ?? null
+      : selectedProduct
         ? {
             ulid: selectedProduct.ulid,
             product_number: selectedProduct.product_number,
@@ -372,14 +374,11 @@ export function InventoryAdjustmentsPage() {
             name: selectedProduct.name,
           }
         : null
-    )
 
     if (!product) {
       feedback.info('Select a valid product.', 'Adjustment')
       return
     }
-
-    const sameProduct = existing?.product?.ulid === productUlid
     const inStock = Number.parseFloat(
       (sameProduct ? existing?.in_stock : null)
       ?? selectedProduct?.sales_lookup?.in_stock
