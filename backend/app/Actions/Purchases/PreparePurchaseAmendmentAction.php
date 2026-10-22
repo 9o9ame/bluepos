@@ -46,13 +46,16 @@ class PreparePurchaseAmendmentAction
             }
 
             $unit = $this->catalog->unit((string) $item['unit_ulid']);
-            $conversion = $this->resolveConversionFactor(
-                $product->id,
-                $product->base_unit_id,
-                $product->secondary_unit_id,
-                (string) $product->secondary_conversion_factor,
-                $unit->id,
-            );
+            $conversion = array_key_exists('conversion_factor', $item)
+                && $item['conversion_factor'] !== null
+                ? $this->factor((string) $item['conversion_factor'], "lines.$index.conversion_factor")
+                : $this->resolveConversionFactor(
+                    $product->id,
+                    $product->base_unit_id,
+                    $product->secondary_unit_id,
+                    (string) $product->secondary_conversion_factor,
+                    $unit->id,
+                );
 
             $quantity = $this->qty((string) $item['quantity'], "lines.$index.quantity", false);
             $unitCost = $this->money((string) $item['unit_cost'], "lines.$index.unit_cost");
@@ -245,6 +248,18 @@ class PreparePurchaseAmendmentAction
         }
 
         return bcadd((string) $factor, '0', 8);
+    }
+
+    private function factor(string $value, string $field): string
+    {
+        if (
+            ! preg_match('/^(?:0|[1-9]\\d*)(?:\\.\\d{1,8})?$/', $value)
+            || bccomp($value, '0', 8) !== 1
+        ) {
+            throw ValidationException::withMessages([$field => 'Conversion factor must be greater than zero.']);
+        }
+
+        return bcadd($value, '0', 8);
     }
 
     private function money(string $value, string $field): string
