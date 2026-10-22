@@ -2,11 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Authz\PermissionService;
+use App\Models\DocumentRevision;
+use App\Models\Permission;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleQuotation;
 use App\Models\StockBalance;
 use App\Models\StockMovement;
+use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -126,6 +130,114 @@ class SaleQuotationTest extends TestCase
         $this->getJson('/api/sales/quotations')
             ->assertOk()
             ->assertJsonCount(0, 'data');
+    }
+
+    public function test_saved_quotation_can_be_updated_with_revision_history_and_no_stock_side_effect(): void
+    {
+        $this->signInOwner('sale-quotation-update')->assertOk();
+
+        $productUlid = $this->createProduct(
+            'Editable Quote Product',
+            ['retail' => '100.0000'],
+        );
+        $this->giveStock($productUlid, '20');
+
+        $product = Product::query()->where('ulid', $productUlid)->firstOrFail();
+        $stockBefore = StockBalance::query()
+            ->where('product_id', $product->id)
+            ->sum('quantity');
+        $movementCountBefore = StockMovement::query()->count();
+
+        $created = $this->postJson('/api/sales/quotations', [
+            'quotation_date' => '2026-10-22',
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'quantity' => '1',
+            ]],
+        ], $this->idem('quotation-update-create'))
+            ->assertCreated();
+
+        $quotationUlid = (string) $created->json('ulid');
+        $documentNumber = (string) $created->json('document_number');
+
+        $updated = $this->patchJson('/api/sales/quotations/'.$quotationUlid, [
+            'quotation_date' => '2026-10-23',
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'quantity' => '3',
+            ]],
+            'revision_reason' => 'Customer changed requested quantity',
+        ])
+            ->assertOk()
+            ->assertJsonPath('ulid', $quotationUlid)
+            ->assertJsonPath('document_number', $documentNumber)
+            ->assertJsonPath('quotation_date', '2026-10-23')
+            ->assertJsonPath('subtotal', '300.0000')
+            ->assertJsonPath('grand_total', '300.0000')
+            ->assertJsonPath('items.0.quantity', '3.000000');
+
+        $revision = DocumentRevision::query()
+            ->where('document_type', 'sale_quotation')
+            ->where('document_ulid', $quotationUlid)
+            ->firstOrFail();
+
+        $this->assertSame(1, $revision->revision_number);
+        $this->assertSame('Customer changed requested quantity', $revision->reason);
+        $this->assertSame($documentNumber, $revision->before_snapshot['document_number']);
+        $this->assertSame('100.0000', $revision->before_snapshot['grand_total']);
+        $this->assertSame('300.0000', $revision->after_snapshot['grand_total']);
+
+        $stockAfter = StockBalance::query()
+            ->where('product_id', $product->id)
+            ->sum('quantity');
+
+        $this->assertSame((string) $stockBefore, (string) $stockAfter);
+        $this->assertSame($movementCountBefore, StockMovement::query()->count());
+        $this->assertNoInternalIds($updated->json());
+    }
+
+    public function test_quotation_update_requires_explicit_edit_permission(): void
+    {
+        $this->signInOwner('sale-quotation-update-denied')->assertOk();
+
+        $productUlid = $this->createProduct(
+            'Protected Quote Product',
+            ['retail' => '25.0000'],
+        );
+
+        $created = $this->postJson('/api/sales/quotations', [
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'quantity' => '1',
+            ]],
+        ], $this->idem('quotation-update-denied-create'))
+            ->assertCreated();
+
+        $permission = Permission::query()
+            ->where('key', 'sales.quotation.edit')
+            ->firstOrFail();
+        $membership = app(TenantContext::class)->membership();
+
+        foreach ($membership->roles()->get() as $role) {
+            $role->permissions()->detach($permission->id);
+        }
+
+        app(PermissionService::class)->clearCache();
+
+        $this->patchJson('/api/sales/quotations/'.$created->json('ulid'), [
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'quantity' => '2',
+            ]],
+            'revision_reason' => 'Should not be allowed',
+        ])->assertForbidden();
+
+        $this->assertSame(
+            0,
+            DocumentRevision::query()
+                ->where('document_type', 'sale_quotation')
+                ->count(),
+        );
     }
 
     public function test_quotation_requires_idempotency_key(): void
