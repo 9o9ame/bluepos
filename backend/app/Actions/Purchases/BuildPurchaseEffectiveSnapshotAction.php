@@ -119,6 +119,8 @@ class BuildPurchaseEffectiveSnapshotAction
                     'product_number' => $line->product->product_number,
                     'sku' => $line->product->sku,
                     'name' => $line->product->name,
+                    'track_batch' => (bool) $line->product->track_batch,
+                    'track_expiry' => (bool) $line->product->track_expiry,
                 ] : null,
                 'unit' => $line->unit ? [
                     'ulid' => $line->unit->ulid,
@@ -194,6 +196,8 @@ class BuildPurchaseEffectiveSnapshotAction
                     'product_number' => $line['product']->product_number,
                     'sku' => $line['product']->sku,
                     'name' => $line['product']->name,
+                    'track_batch' => (bool) $line['product']->track_batch,
+                    'track_expiry' => (bool) $line['product']->track_expiry,
                 ],
                 'unit' => [
                     'ulid' => $line['unit']->ulid,
