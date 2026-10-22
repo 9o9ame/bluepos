@@ -313,9 +313,11 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
         Route::get('/inventory/adjustments/accounts', [InventoryAdjustmentController::class, 'accounts']);
         Route::get('/inventory/adjustments', [InventoryAdjustmentController::class, 'index']);
+        Route::get('/inventory/adjustments/next-document-number', [InventoryAdjustmentController::class, 'nextDocumentNumber']);
         Route::post('/inventory/adjustments', [InventoryAdjustmentController::class, 'store']);
         Route::get('/inventory/adjustments/{adjustmentUlid}', [InventoryAdjustmentController::class, 'show']);
         Route::patch('/inventory/adjustments/{adjustmentUlid}', [InventoryAdjustmentController::class, 'update']);
+        Route::patch('/inventory/adjustments/{adjustmentUlid}/amend', [InventoryAdjustmentController::class, 'amend']);
         Route::delete('/inventory/adjustments/{adjustmentUlid}', [InventoryAdjustmentController::class, 'destroy']);
         Route::post('/inventory/adjustments/{adjustmentUlid}/lines', [InventoryAdjustmentController::class, 'storeLine']);
         Route::patch('/inventory/adjustments/{adjustmentUlid}/lines/{lineUlid}', [InventoryAdjustmentController::class, 'updateLine']);
