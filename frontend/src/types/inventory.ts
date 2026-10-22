@@ -65,8 +65,6 @@ export type OpeningBalance = {
   status: 'draft' | 'posted'
   notes: string | null
   posted_at: string | null
-  revision_number?: number
-  is_amended?: boolean
   warehouse?: {
     ulid: string
     code: string
@@ -134,6 +132,8 @@ export type InventoryAdjustment = {
   notes: string | null
   net_amount: string
   posted_at: string | null
+  revision_number?: number
+  is_amended?: boolean
   warehouse?: {
     ulid: string
     code: string
