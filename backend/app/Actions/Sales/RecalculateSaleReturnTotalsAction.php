@@ -16,33 +16,12 @@ class RecalculateSaleReturnTotalsAction
             ->where('sale_return_id', $document->id)
             ->get();
 
-        $subtotal = '0.0000';
-        $discount = '0.0000';
-        $tax = '0.0000';
+        $totals = $this->calculateTotals($document, $lines->all());
 
-        foreach ($lines as $line) {
-            $subtotal = bcadd($subtotal, (string) $line->gross_amount, 4);
-            $discount = bcadd($discount, (string) $line->discount_amount, 4);
-            $tax = bcadd($tax, (string) $line->tax_amount, 4);
-        }
-
-        $lineDiscount = $discount;
-        $invoiceDiscount = $this->proportionalInvoiceDiscount(
-            $document,
-            $subtotal,
-            $lineDiscount,
-            $tax,
-        );
-        $totalDiscount = bcadd($lineDiscount, $invoiceDiscount, 4);
-
-        $document->subtotal = $subtotal;
-        $document->discount_amount = $totalDiscount;
-        $document->tax_amount = $tax;
-        $document->grand_total = bcadd(
-            bcsub($subtotal, $totalDiscount, 4),
-            $tax,
-            4,
-        );
+        $document->subtotal = $totals['subtotal'];
+        $document->discount_amount = $totals['discount_amount'];
+        $document->tax_amount = $totals['tax_amount'];
+        $document->grand_total = $totals['grand_total'];
         $document->refund_amount = '0.0000';
 
         if (bccomp((string) $document->grand_total, '0', 4) === -1) {
@@ -54,6 +33,49 @@ class RecalculateSaleReturnTotalsAction
         $document->save();
 
         return $document;
+    }
+
+    /**
+     * @param list<object|array<string,mixed>> $lines
+     * @return array{subtotal:string,discount_amount:string,tax_amount:string,grand_total:string}
+     */
+    public function calculateTotals(SaleReturn $document, array $lines): array
+    {
+        $subtotal = '0.0000';
+        $lineDiscount = '0.0000';
+        $tax = '0.0000';
+
+        foreach ($lines as $line) {
+            $gross = is_array($line) ? ($line['gross_amount'] ?? '0') : $line->gross_amount;
+            $discount = is_array($line) ? ($line['discount_amount'] ?? '0') : $line->discount_amount;
+            $lineTax = is_array($line) ? ($line['tax_amount'] ?? '0') : $line->tax_amount;
+
+            $subtotal = bcadd($subtotal, (string) $gross, 4);
+            $lineDiscount = bcadd($lineDiscount, (string) $discount, 4);
+            $tax = bcadd($tax, (string) $lineTax, 4);
+        }
+
+        $invoiceDiscount = $this->proportionalInvoiceDiscount(
+            $document,
+            $subtotal,
+            $lineDiscount,
+            $tax,
+        );
+        $totalDiscount = bcadd($lineDiscount, $invoiceDiscount, 4);
+        $grandTotal = bcadd(bcsub($subtotal, $totalDiscount, 4), $tax, 4);
+
+        if (bccomp($grandTotal, '0', 4) < 0) {
+            throw ValidationException::withMessages([
+                'grand_total' => 'Sales return total cannot be negative.',
+            ]);
+        }
+
+        return [
+            'subtotal' => $subtotal,
+            'discount_amount' => $totalDiscount,
+            'tax_amount' => $tax,
+            'grand_total' => $grandTotal,
+        ];
     }
 
     private function proportionalInvoiceDiscount(
