@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Purchases;
 
 use App\Actions\Purchases\CancelPurchaseOrderAction;
 use App\Actions\Purchases\CreatePurchaseOrderAction;
+use App\Actions\Purchases\UpdatePurchaseOrderAction;
 use App\Catalog\TenantCatalog;
 use App\Enums\ProductStatus;
 use App\Enums\PurchaseInvoiceStatus;
@@ -400,6 +401,34 @@ class PurchaseOrderController extends Controller
         $order = $create->execute($request->validated());
 
         return (new PurchaseOrderResource($order))->response()->setStatusCode(201);
+    }
+
+    public function update(
+        StorePurchaseOrderRequest $request,
+        string $purchaseOrderUlid,
+        TenantContext $tenantContext,
+        UpdatePurchaseOrderAction $update,
+    ): PurchaseOrderResource {
+        $order = PurchaseOrder::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
+            ->where('warehouse_id', $tenantContext->warehouseId())
+            ->where('ulid', $purchaseOrderUlid)
+            ->first();
+
+        if (! $order) {
+            throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
+        }
+
+        $this->authorize('edit', $order);
+
+        $data = $request->validated();
+        $reason = trim((string) ($data['revision_reason'] ?? 'Purchase Order updated from entry screen'));
+        unset($data['revision_reason']);
+
+        return new PurchaseOrderResource(
+            $update->execute($order, $data, $reason)
+        );
     }
 
     public function cancel(
