@@ -2100,3 +2100,16 @@ html[data-animations='off'] .purchase-entry-screen * {
   border-color: var(--ui-accent);
   box-shadow: var(--ui-focus-shadow);
 }
+
+
+/* Purchase Invoice numeric cells: keep right-aligned values off the cell edge. */
+.purchase-entry-screen .purchase-reference-grid td.is-num > input,
+.purchase-entry-screen .purchase-reference-grid td.is-num > div > input,
+.purchase-entry-screen .purchase-reference-grid .pie-dual-inputs input,
+.purchase-entry-screen .purchase-reference-grid .pie-dual-inputs span {
+  padding-right: 6px !important;
+}
+
+.purchase-entry-screen .purchase-reference-grid td.is-num {
+  padding-right: 5px !important;
+}
