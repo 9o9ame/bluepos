@@ -43,6 +43,7 @@ type ViewMode = 'entry' | 'search' | 'product'
 type GeneralReturnRow = {
   key: string
   line_ulid?: string
+  purchase_line_ulid?: string
   product_ulid: string
   product_number: string
   product_name: string
@@ -248,11 +249,19 @@ export function PurchaseReturnsPage({
   const localGeneralProducts = useLocalProducts(
     session,
     generalProductLookupQuery,
-    view === 'entry' && !invoiceMode && !readOnly && generalProductPickerOpen,
+    view === 'entry' && !readOnly && generalProductPickerOpen,
+  )
+
+  const returnableProductUlids = useMemo(
+    () => new Set(returnable.map((row) => row.product.ulid)),
+    [returnable],
   )
 
   const generalProducts = localGeneralProducts.rows.filter(
-    (product) => product.is_active && product.status === 'active',
+    (product) =>
+      product.is_active &&
+      product.status === 'active' &&
+      (!invoiceMode || returnableProductUlids.has(product.ulid)),
   )
 
   const rows = listQuery.data?.data ?? []
@@ -323,9 +332,9 @@ export function PurchaseReturnsPage({
     [warehouses],
   )
 
-  const liveTotals = useMemo(() => {
-    if (!invoiceMode) {
-      return generalRows.reduce(
+  const liveTotals = useMemo(
+    () =>
+      generalRows.reduce(
         (acc, row) => {
           const amounts = generalAmounts(row)
           acc.subtotal += amounts.subtotal
@@ -335,24 +344,11 @@ export function PurchaseReturnsPage({
           return acc
         },
         { subtotal: 0, discount: 0, tax: 0, total: 0 },
-      )
-    }
+      ),
+    [generalRows],
+  )
 
-    if (document) {
-      return {
-        subtotal: Number(document.subtotal) || 0,
-        discount: Number(document.discount_amount) || 0,
-        tax: Number(document.tax_amount) || 0,
-        total: Number(document.grand_total) || 0,
-      }
-    }
-
-    return { subtotal: 0, discount: 0, tax: 0, total: 0 }
-  }, [document, generalRows, invoiceMode])
-
-  const selectedLineCount = invoiceMode
-    ? returnable.filter((row) => Number(lineQty[row.purchase_line_ulid] ?? 0) > 0).length
-    : generalRows.length
+  const selectedLineCount = generalRows.length
 
   const selectedSupplierName =
     suppliers.find((supplier) => supplier.ulid === supplierUlid)?.name ??
@@ -412,30 +408,28 @@ export function PurchaseReturnsPage({
     setReason(invoice.reason ?? '')
     setNotes(invoice.notes ?? '')
 
-    const qtyMap: Record<string, string> = {}
-    const nextGeneral: GeneralReturnRow[] = []
+    const nextRows: GeneralReturnRow[] = []
 
     for (const line of invoice.lines ?? []) {
-      if (line.original_purchase_line_ulid) {
-        qtyMap[line.original_purchase_line_ulid] = formatDecimal(line.quantity)
-      } else if (line.product) {
-        nextGeneral.push({
-          key: line.ulid,
-          line_ulid: line.ulid,
-          product_ulid: line.product.ulid,
-          product_number: line.product.product_number,
-          product_name: line.product.name,
-          unit_code: line.unit?.code ?? '—',
-          quantity: formatDecimal(line.quantity),
-          unit_cost: formatDecimal(line.unit_cost),
-          discount_amount: formatDecimal(line.discount_amount),
-          tax_amount: formatDecimal(line.tax_amount),
-        })
-      }
+      if (!line.product) continue
+
+      nextRows.push({
+        key: line.ulid,
+        line_ulid: line.ulid,
+        purchase_line_ulid: line.original_purchase_line_ulid ?? undefined,
+        product_ulid: line.product.ulid,
+        product_number: line.product.product_number,
+        product_name: line.product.name,
+        unit_code: line.unit?.code ?? '—',
+        quantity: formatDecimal(line.quantity),
+        unit_cost: formatDecimal(line.unit_cost),
+        discount_amount: formatDecimal(line.discount_amount),
+        tax_amount: formatDecimal(line.tax_amount),
+      })
     }
 
-    setLineQty(qtyMap)
-    setGeneralRows(nextGeneral)
+    setLineQty({})
+    setGeneralRows(nextRows)
     setGeneralProductPickerOpen(false)
     setGeneralProductLookupMode('browse')
     setGeneralProductTargetKey(null)
@@ -504,15 +498,25 @@ export function PurchaseReturnsPage({
       return
     }
 
+    const sourceLine = invoiceMode
+      ? returnable.find((row) => row.product.ulid === product.ulid)
+      : undefined
+
+    if (invoiceMode && !sourceLine) {
+      setError('Select a product from the selected Purchase #.')
+      return
+    }
+
     const rowKey = generalProductTargetKey ?? generalRowKey()
     const nextRow: GeneralReturnRow = {
       key: rowKey,
+      purchase_line_ulid: sourceLine?.purchase_line_ulid,
       product_ulid: product.ulid,
       product_number: product.product_number,
       product_name: product.name,
-      unit_code: product.base_unit?.code ?? '—',
+      unit_code: sourceLine?.unit?.code ?? product.base_unit?.code ?? '—',
       quantity: '1.0',
-      unit_cost: defaultProductCost(product),
+      unit_cost: formatDecimal(sourceLine?.unit_cost ?? defaultProductCost(product)),
       discount_amount: '0.0',
       tax_amount: '0.0',
     }
