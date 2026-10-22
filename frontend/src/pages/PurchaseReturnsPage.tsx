@@ -693,20 +693,22 @@ export function PurchaseReturnsPage({
           throw new Error('You do not have permission to amend posted Purchase Returns.')
         }
 
-        const amendmentLines = purchaseUlid
-          ? Object.entries(lineQty)
-              .filter(([, quantity]) => Number(quantity) > 0)
-              .map(([purchaseLineUlid, quantity]) => ({
-                purchase_line_ulid: purchaseLineUlid,
-                quantity: qty(quantity),
-                reason: reason || null,
-              }))
-          : generalRows.map((row) => {
-              const previous = current?.lines?.find(
-                (line) => !line.original_purchase_line_ulid && line.product?.ulid === row.product_ulid,
-              )
+        const amendmentLines = generalRows.map((row) => {
+          const previous = current?.lines?.find(
+            (line) => line.product?.ulid === row.product_ulid,
+          )
 
-              return {
+          return purchaseUlid
+            ? {
+                purchase_line_ulid: row.purchase_line_ulid,
+                quantity: qty(row.quantity),
+                discount_amount: Number(row.discount_amount || 0).toFixed(4),
+                tax_amount: Number(row.tax_amount || 0).toFixed(4),
+                batch_number: previous?.batch_number ?? null,
+                expiry_date: previous?.expiry_date ?? null,
+                reason: reason || null,
+              }
+            : {
                 product_ulid: row.product_ulid,
                 quantity: qty(row.quantity),
                 unit_cost: Number(row.unit_cost || 0).toFixed(4),
@@ -716,7 +718,7 @@ export function PurchaseReturnsPage({
                 expiry_date: previous?.expiry_date ?? null,
                 reason: reason || null,
               }
-            })
+        })
 
         return amendPurchaseReturn(
           current.ulid,
@@ -764,20 +766,22 @@ export function PurchaseReturnsPage({
             .filter((line) => line.original_purchase_line_ulid)
             .map((line) => [line.original_purchase_line_ulid as string, line]),
         )
+        const activePurchaseLineUlids = new Set(
+          generalRows.map((row) => row.purchase_line_ulid).filter(Boolean),
+        )
 
-        for (const [purchaseLineUlid, quantity] of Object.entries(lineQty)) {
-          const amount = Number(quantity)
-          if (!Number.isFinite(amount) || amount <= 0) {
-            const existing = existingByPurchaseLine.get(purchaseLineUlid)
-            if (existing) await deletePurchaseReturnLine(current.ulid, existing.ulid)
-            continue
+        for (const row of generalRows) {
+          if (!row.purchase_line_ulid) {
+            throw new Error(`Select a product from the selected Purchase # for ${row.product_name}.`)
           }
 
           const payload = {
-            purchase_line_ulid: purchaseLineUlid,
-            quantity: qty(quantity),
+            purchase_line_ulid: row.purchase_line_ulid,
+            quantity: qty(row.quantity),
+            discount_amount: money4(row.discount_amount),
+            tax_amount: money4(row.tax_amount),
           }
-          const existing = existingByPurchaseLine.get(purchaseLineUlid)
+          const existing = existingByPurchaseLine.get(row.purchase_line_ulid)
           if (existing) {
             await updatePurchaseReturnLine(current.ulid, existing.ulid, payload)
           } else {
@@ -786,7 +790,7 @@ export function PurchaseReturnsPage({
         }
 
         for (const [purchaseLineUlid, existing] of existingByPurchaseLine) {
-          if (!(purchaseLineUlid in lineQty) || Number(lineQty[purchaseLineUlid]) <= 0) {
+          if (!activePurchaseLineUlids.has(purchaseLineUlid)) {
             await deletePurchaseReturnLine(current.ulid, existing.ulid)
           }
         }
