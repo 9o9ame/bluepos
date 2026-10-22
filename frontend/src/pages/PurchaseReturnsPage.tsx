@@ -509,10 +509,10 @@ export function PurchaseReturnsPage({
       product_number: product.product_number,
       product_name: product.name,
       unit_code: product.base_unit?.code ?? '—',
-      quantity: '1.000000',
+      quantity: '1.0',
       unit_cost: defaultProductCost(product),
-      discount_amount: '0.0000',
-      tax_amount: '0.0000',
+      discount_amount: '0.0',
+      tax_amount: '0.0',
     }
 
     if (generalProductTargetKey) {
@@ -716,6 +716,10 @@ export function PurchaseReturnsPage({
           current.ulid,
           {
             revision_reason: 'Posted Purchase Return corrected from Purchase Return screen',
+            purchase_ulid: purchaseUlid || null,
+            supplier_ulid: purchaseUlid ? null : (supplierUlid || null),
+            warehouse_ulid: warehouseUlid,
+            return_date: returnDate,
             supplier_reference: supplierReference || null,
             reason: reason || null,
             notes: notes || null,
@@ -958,7 +962,7 @@ export function PurchaseReturnsPage({
                   <input
                     type="date"
                     value={returnDate}
-                    disabled={document?.status === 'posted' || (!document?.ulid ? !canCreate : !canEdit)}
+                    disabled={!canModifyCurrent}
                     onChange={(event) => setReturnDate(event.target.value)}
                   />
                 </div>
@@ -968,7 +972,7 @@ export function PurchaseReturnsPage({
                   <UiTableDropdown
                     aria-label="Purchase number"
                     value={purchaseUlid}
-                    disabled={Boolean(document?.ulid) || readOnly}
+                    disabled={readOnly || Boolean(document?.ulid && !amendingPosted)}
                     className="purchase-return-canonical-select purchase-return-purchase-select"
                     triggerClassName="purchase-return-canonical-trigger"
                     placeholder="Optional: select posted purchase #"
@@ -1009,8 +1013,8 @@ export function PurchaseReturnsPage({
                       aria-label="Supplier"
                       value={supplierUlid}
                       disabled={
-                        document?.status === 'posted' ||
-                        Boolean(document?.ulid && document.return_mode === 'invoice')
+                        !canModifyCurrent ||
+                        Boolean(purchaseUlid)
                       }
                       className="purchase-return-canonical-select"
                       triggerClassName="purchase-return-canonical-trigger"
@@ -1034,7 +1038,7 @@ export function PurchaseReturnsPage({
                   <UiSimpleDropdown
                     aria-label="Warehouse"
                     value={warehouseUlid}
-                    disabled={document?.status === 'posted' || (!document?.ulid ? !canCreate : !canEdit)}
+                    disabled={!canModifyCurrent}
                     className="purchase-return-canonical-select"
                     triggerClassName="purchase-return-canonical-trigger"
                     searchPlaceholder="Search warehouse"
