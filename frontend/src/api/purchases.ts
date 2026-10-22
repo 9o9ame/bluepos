@@ -55,6 +55,21 @@ export function updatePurchase(ulid: string, payload: Partial<PurchaseHeaderPayl
   })
 }
 
+export function amendPurchase(
+  ulid: string,
+  payload: Partial<PurchaseHeaderPayload> & {
+    revision_reason: string
+    lines: PurchaseLinePayload[]
+  },
+  idempotencyKey: string,
+) {
+  return apiFetch<PurchaseInvoice>(`/api/purchases/${ulid}/amend`, {
+    method: 'PATCH',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify(payload),
+  })
+}
+
 export function createPurchaseLine(purchaseUlid: string, payload: PurchaseLinePayload) {
   return apiFetch<PurchaseInvoiceLine>(`/api/purchases/${purchaseUlid}/lines`, {
     method: 'POST',
