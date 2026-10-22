@@ -273,12 +273,11 @@ class SaleAmendmentTest extends TestCase
         }
 
         $this->assertSame('8.000000', $this->stockFor($productUlid));
-        $this->assertSame(
-            '50.0000',
-            (string) $amendmentJournal->lines
-                ->where('description', 'Cost of goods sold')
-                ->sum('debit'),
-        );
+        $cogsLine = $amendmentJournal->lines
+            ->firstWhere('description', 'Cost of goods sold');
+
+        $this->assertNotNull($cogsLine);
+        $this->assertSame('50.0000', (string) $cogsLine->debit);
     }
 
     private function configureSalesAccounting(): void
