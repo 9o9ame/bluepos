@@ -91,7 +91,7 @@ class AmendPurchaseReturnAction
             $before = $this->snapshots->current($document);
             $revisionNumber = ((int) ($before['_meta']['revision_number'] ?? 0)) + 1;
 
-            $prepared = $this->prepare->execute($document, $data);
+            $prepared = $this->prepare->execute($document, $data, $before);
 
             $this->stockDelta->execute(
                 $document,
@@ -106,9 +106,7 @@ class AmendPurchaseReturnAction
                 $document,
                 $prepared['lines'],
                 $prepared['totals'],
-                (string) ($data['supplier_reference'] ?? $before['supplier_reference'] ?? ''),
-                (string) ($data['reason'] ?? $before['reason'] ?? ''),
-                $data['notes'] ?? ($before['notes'] ?? null),
+                $prepared['header'],
                 $revisionNumber,
                 null,
                 $idempotencyKey,
@@ -133,9 +131,7 @@ class AmendPurchaseReturnAction
                 $document,
                 $prepared['lines'],
                 $prepared['totals'],
-                (string) ($data['supplier_reference'] ?? $before['supplier_reference'] ?? ''),
-                (string) ($data['reason'] ?? $before['reason'] ?? ''),
-                $data['notes'] ?? ($before['notes'] ?? null),
+                $prepared['header'],
                 $revisionNumber,
                 $amendmentJournal?->ulid,
                 $idempotencyKey,
