@@ -79,6 +79,10 @@ export function amendPurchaseReturn(
   returnUlid: string,
   payload: {
     revision_reason: string
+    purchase_ulid?: string | null
+    supplier_ulid?: string | null
+    warehouse_ulid: string
+    return_date: string
     supplier_reference?: string | null
     reason?: string | null
     notes?: string | null
