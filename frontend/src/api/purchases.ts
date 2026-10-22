@@ -37,6 +37,12 @@ export function fetchPurchases(params?: {
   return apiFetch<Paginated<PurchaseInvoice>>(`/api/purchases${suffix}`)
 }
 
+export function fetchNextPurchaseDocumentNumber() {
+  return apiFetch<{ document_number: string }>('/api/purchases/next-document-number', {
+    busy: 'none',
+  })
+}
+
 export function fetchPurchase(ulid: string) {
   return apiFetch<PurchaseInvoice>(`/api/purchases/${ulid}`)
 }
