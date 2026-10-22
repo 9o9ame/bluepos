@@ -280,6 +280,41 @@ class SaleAmendmentTest extends TestCase
         $this->assertSame('50.0000', (string) $cogsLine->debit);
     }
 
+    public function test_next_invoice_number_preview_advances_after_posting_a_sale(): void
+    {
+        $this->signInOwner('sale-next-number')->assertOk();
+
+        $before = $this->getJson('/api/sales/next-document-number')
+            ->assertOk()
+            ->json('document_number');
+
+        $this->assertIsString($before);
+        $this->assertMatchesRegularExpression('/^SAL-\\d{6}$/', $before);
+
+        $productUlid = $this->createProduct('Next Number Item', '10.0000');
+        $this->giveStock($productUlid, '5.000000', '2.0000');
+
+        $created = $this->postJson('/api/sales', [
+            'items' => [[
+                'product_ulid' => $productUlid,
+                'quantity' => '1.000000',
+            ]],
+        ], $this->idem('sale-next-number-create'))
+            ->assertCreated();
+
+        $this->assertSame($before, $created->json('document_number'));
+
+        $after = $this->getJson('/api/sales/next-document-number')
+            ->assertOk()
+            ->json('document_number');
+
+        $this->assertIsString($after);
+        $this->assertSame(
+            ((int) substr($before, 4)) + 1,
+            (int) substr($after, 4),
+        );
+    }
+
     private function configureSalesAccounting(): void
     {
         $clearing = $this->leafAccount('AMEND SALES CLEARING', 'AM-SC');
