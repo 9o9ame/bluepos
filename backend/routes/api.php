@@ -281,6 +281,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::post('/sales/holds', [SaleHoldController::class, 'store']);
         Route::get('/sales/holds/{holdUlid}', [SaleHoldController::class, 'show']);
         Route::delete('/sales/holds/{holdUlid}', [SaleHoldController::class, 'destroy']);
+        Route::get('/sales/next-document-number', [SaleController::class, 'nextDocumentNumber']);
         Route::post('/sales', [SaleController::class, 'store']);
         Route::get('/sales/{saleUlid}', [SaleController::class, 'show']);
         Route::patch('/sales/{saleUlid}/amend', [SaleController::class, 'amend']);
