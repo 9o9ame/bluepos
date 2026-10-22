@@ -174,12 +174,25 @@ class PurchaseAmendmentTest extends TestCase
 
         $invoice = PurchaseInvoice::query()->where('ulid', $purchaseUlid)->firstOrFail();
         $context = app(TenantContext::class);
+        $cashType = AccountType::query()
+            ->forTenant($context->tenantId())
+            ->where('code', '0010')
+            ->firstOrFail();
+
+        $cashAccount = Account::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => 'PUR-AMEND-PAID-CASH',
+            'name' => 'Purchase Amendment Paid Cash',
+            'account_type_id' => $cashType->id,
+            'is_active' => true,
+            'created_by' => $context->userId(),
+        ]);
 
         PurchasePayment::query()->create([
             'tenant_id' => $context->tenantId(),
             'branch_id' => $context->branchId(),
             'purchase_invoice_id' => $invoice->id,
-            'account_id' => null,
+            'account_id' => $cashAccount->id,
             'method' => 'cash',
             'reference' => null,
             'amount' => '80.0000',
