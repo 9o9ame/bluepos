@@ -849,25 +849,115 @@ export function InventoryAdjustmentsPage() {
                   { key: 'remarks', header: 'Remarks', width: '26%' },
                 ]}
               >
-                  {displayLines.map((line) => (
-                    <tr
-                      key={line.ulid}
-                      className={line.ulid === selectedLineUlid ? 'is-selected' : ''}
-                      title={canAdjust ? 'Double-click to edit this line' : undefined}
-                      onDoubleClick={() => {
-                        if (canAdjust) fillLineForm(line)
-                      }}
-                    >
-                      <td>{line.product ? `${line.product.product_number} · ${line.product.name}` : ''}</td>
-                      <td className="is-num">{formatDecimal(line.in_stock)}</td>
-                      <td className="is-num">{formatDecimal(line.qty_plus)}</td>
-                      <td className="is-num">{formatDecimal(line.qty_minus)}</td>
-                      <td className="is-num">{formatDecimal(line.after_stock)}</td>
-                      <td className="is-num">{formatDecimal(line.price)}</td>
-                      <td className="is-num">{formatDecimal(line.amount)}</td>
-                      <td>{line.remarks ?? ''}</td>
-                    </tr>
-                  ))}
+                  {displayLines.map((line) => {
+                    const editing = selectedLineUlid === line.ulid
+
+                    return (
+                      <tr
+                        key={line.ulid}
+                        className={editing ? 'is-selected' : ''}
+                      >
+                        <td>
+                          <button
+                            type="button"
+                            className="inventory-adjustments-inline-product"
+                            disabled={!canAdjust}
+                            title="Click to change product"
+                            onClick={() => {
+                              fillLineForm(line)
+                              window.setTimeout(() => {
+                                productInputRef.current?.focus()
+                                productInputRef.current?.select()
+                              }, 0)
+                            }}
+                          >
+                            {line.product ? `${line.product.product_number} · ${line.product.name}` : ''}
+                          </button>
+                        </td>
+                        <td className="is-num">{formatDecimal(line.in_stock)}</td>
+                        <td>
+                          <input
+                            className="inventory-adjustments-entry-number"
+                            inputMode="decimal"
+                            disabled={!canAdjust}
+                            value={editing ? qtyPlus : (Number(line.qty_plus) > 0 ? formatDecimal(line.qty_plus) : '')}
+                            onFocus={() => {
+                              if (!editing) fillLineForm(line)
+                            }}
+                            onChange={(event) => {
+                              if (!editing) fillLineForm(line)
+                              setQtyPlus(event.target.value)
+                              if (event.target.value.trim()) setQtyMinus('')
+                            }}
+                            onBlur={() => {
+                              if (editing && (qtyPlus.trim() || qtyMinus.trim())) {
+                                saveCurrentLine()
+                              }
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key !== 'Enter') return
+                              event.preventDefault()
+                              saveCurrentLine()
+                            }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="inventory-adjustments-entry-number"
+                            inputMode="decimal"
+                            disabled={!canAdjust}
+                            value={editing ? qtyMinus : (Number(line.qty_minus) > 0 ? formatDecimal(line.qty_minus) : '')}
+                            onFocus={() => {
+                              if (!editing) fillLineForm(line)
+                            }}
+                            onChange={(event) => {
+                              if (!editing) fillLineForm(line)
+                              setQtyMinus(event.target.value)
+                              if (event.target.value.trim()) setQtyPlus('')
+                            }}
+                            onBlur={() => {
+                              if (editing && (qtyPlus.trim() || qtyMinus.trim())) {
+                                saveCurrentLine()
+                              }
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key !== 'Enter') return
+                              event.preventDefault()
+                              saveCurrentLine()
+                            }}
+                          />
+                        </td>
+                        <td className="is-num">{formatDecimal(line.after_stock)}</td>
+                        <td className="is-num">{formatDecimal(line.price)}</td>
+                        <td className="is-num">{formatDecimal(line.amount)}</td>
+                        <td>
+                          <input
+                            className="inventory-adjustments-inline-remarks"
+                            disabled={!canAdjust}
+                            value={editing ? lineRemarks : (line.remarks ?? '')}
+                            maxLength={500}
+                            onFocus={() => {
+                              if (!editing) fillLineForm(line)
+                            }}
+                            onChange={(event) => {
+                              if (!editing) fillLineForm(line)
+                              setLineRemarks(event.target.value)
+                            }}
+                            onBlur={() => {
+                              if (editing && (qtyPlus.trim() || qtyMinus.trim())) {
+                                saveCurrentLine()
+                              }
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.key !== 'Enter') return
+                              event.preventDefault()
+                              saveCurrentLine()
+                            }}
+                          />
+                        </td>
+                      </tr>
+                    )
+                  })}
 
                   {entryEnabled ? (
                     <tr className="is-entry-row">
