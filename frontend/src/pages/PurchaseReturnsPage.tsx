@@ -34,7 +34,7 @@ import { ProductLookupGrid } from '../features/sales/ProductLookupGrid'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Product } from '../types/catalog'
 import type { PurchaseInvoice } from '../types/purchases'
-import type { PurchaseReturn, ReturnablePurchaseLine } from '../types/purchaseReturns'
+import type { PurchaseReturn } from '../types/purchaseReturns'
 import { formatDecimal } from '../utils/formatDecimal'
 import './PurchaseReturnsPage.css'
 
@@ -149,7 +149,6 @@ export function PurchaseReturnsPage({
   const [notes, setNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [purchaseSearch, setPurchaseSearch] = useState('')
-  const [lineQty, setLineQty] = useState<Record<string, string>>({})
 
   const [generalRows, setGeneralRows] = useState<GeneralReturnRow[]>([])
   const [generalProductSearch, setGeneralProductSearch] = useState('')
@@ -371,7 +370,6 @@ export function PurchaseReturnsPage({
     setSupplierReference('')
     setReason('')
     setNotes('')
-    setLineQty({})
     setGeneralRows([])
     setGeneralProductSearch('')
     setGeneralProductPickerOpen(false)
@@ -423,7 +421,6 @@ export function PurchaseReturnsPage({
       })
     }
 
-    setLineQty({})
     setGeneralRows(nextRows)
     setGeneralProductPickerOpen(false)
     setGeneralProductLookupMode('browse')
@@ -441,7 +438,6 @@ export function PurchaseReturnsPage({
     setPurchaseSearch(purchase.document_number)
     setSupplierUlid(purchase.supplier?.ulid ?? '')
     if (purchase.warehouse?.ulid) setWarehouseUlid(purchase.warehouse.ulid)
-    setLineQty({})
     setGeneralRows([])
     setGeneralProductSearch('')
     setGeneralProductPickerOpen(false)
@@ -628,7 +624,6 @@ export function PurchaseReturnsPage({
       document?.ulid ||
       purchaseUlid ||
       generalRows.length > 0 ||
-      Object.values(lineQty).some((value) => Number(value) > 0) ||
       supplierReference.trim() ||
       reason.trim() ||
       notes.trim(),
@@ -889,18 +884,6 @@ export function PurchaseReturnsPage({
     active,
   )
 
-  function remainingPurchaseQty(row: ReturnablePurchaseLine): string {
-    const factor = Number(row.conversion_factor) || 1
-    const remainingBase = Number(row.remaining_returnable_base_quantity) || 0
-    return formatDecimal(remainingBase / factor)
-  }
-
-  function alreadyReturnedQty(row: ReturnablePurchaseLine): string {
-    const factor = Number(row.conversion_factor) || 1
-    const returnedBase = Number(row.already_returned_base_quantity) || 0
-    return formatDecimal(returnedBase / factor)
-  }
-
   if (!canView) {
     return (
       <div className="purchase-return-no-access">
@@ -998,8 +981,7 @@ export function PurchaseReturnsPage({
                         setPurchaseLabel('')
                         setPurchaseSearch('')
                         setSupplierUlid('')
-                        setLineQty({})
-                        setGeneralRows([])
+                                            setGeneralRows([])
                         return
                       }
 
@@ -1460,8 +1442,7 @@ export function PurchaseReturnsPage({
                   icon={<Trash2 size={13} />}
                   label="Clear qty"
                   onClick={() => {
-                    setLineQty({})
-                    setGeneralRows([])
+                                    setGeneralRows([])
                   }}
                 />
               ) : null}
