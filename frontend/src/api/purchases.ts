@@ -130,6 +130,12 @@ export function createPurchasePayment(
 }
 
 
+export function fetchNextPurchaseOrderDocumentNumber() {
+  return apiFetch<{ document_number: string }>('/api/purchase-orders/next-document-number', {
+    busy: 'none',
+  })
+}
+
 export function fetchPurchaseOrders(params?: {
   q?: string
   supplier_ulid?: string
