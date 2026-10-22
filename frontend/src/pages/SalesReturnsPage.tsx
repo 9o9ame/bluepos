@@ -5,6 +5,7 @@ import { ApiClientError } from '../api/client'
 import { fetchSales, fetchSalesmen } from '../api/sales'
 import { fetchProducts } from '../api/catalog'
 import {
+  amendSaleReturn,
   createSaleReturn,
   createSaleReturnLine,
   createSaleReturnRefund,
@@ -108,6 +109,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
   const { session } = useAuth()
   const { closeActiveTab } = useWorkspace()
   const canReturn = useCan('sales.return')
+  const canAmendReturn = useCan('sales.return.amend_posted')
   const canRefund = useCan('payments.create')
 
   const [view, setView] = useState<ViewMode>('entry')
@@ -143,11 +145,13 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
   const [productDateTo, setProductDateTo] = useState(today())
 
   const createKeyRef = useRef(newReturnKey())
+  const amendmentKeyRef = useRef(newReturnKey())
   const generalProductAnchorRef = useRef<HTMLDivElement | null>(null)
   const generalProductEntryRef = useRef<HTMLInputElement | null>(null)
   const salePickerRef = useRef<HTMLDivElement | null>(null)
   const refundKeyRef = useRef(newRefundKey())
-  const readOnly = document?.status === 'posted'
+  const amendingPosted = document?.status === 'posted' && canAmendReturn
+  const readOnly = document?.status === 'posted' && !canAmendReturn
 
   const customersQuery = useQuery({
     queryKey: ['sales-return', 'from-parties'],
@@ -178,8 +182,11 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
   })
 
   const returnableQuery = useQuery({
-    queryKey: ['sales', 'returnable-lines', saleUlid],
-    queryFn: () => fetchReturnableSaleLines(saleUlid),
+    queryKey: ['sales', 'returnable-lines', saleUlid, amendingPosted ? document?.ulid : null],
+    queryFn: () => fetchReturnableSaleLines(
+      saleUlid,
+      amendingPosted ? document?.ulid : null,
+    ),
     enabled: view === 'entry' && Boolean(saleUlid),
     retry: false,
   })
@@ -439,6 +446,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
     setRefundMethod('cash')
     setRefundReference('')
     createKeyRef.current = newReturnKey()
+    amendmentKeyRef.current = newReturnKey()
     refundKeyRef.current = newRefundKey()
   }
 
@@ -692,6 +700,39 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
 
       let current = document
 
+      if (current?.status === 'posted') {
+        if (!canAmendReturn) {
+          throw new Error('You do not have permission to amend posted Sales Returns.')
+        }
+
+        const amendmentLines = saleUlid
+          ? Object.entries(lineQty)
+              .filter(([, quantity]) => Number(quantity) > 0)
+              .map(([saleItemUlid, quantity]) => ({
+                sale_item_ulid: saleItemUlid,
+                quantity: qty(quantity),
+                reason: reason || null,
+              }))
+          : generalRows.map((row) => ({
+              product_ulid: row.product_ulid,
+              quantity: qty(row.quantity),
+              unit_price: Number(row.unit_price || 0).toFixed(4),
+              discount_percent: Number(row.discount_percent || 0).toFixed(8),
+              reason: reason || null,
+            }))
+
+        return amendSaleReturn(
+          current.ulid,
+          {
+            revision_reason: 'Posted Sales Return corrected from Sales Return screen',
+            reason: reason || null,
+            notes: notes || null,
+            lines: amendmentLines,
+          },
+          amendmentKeyRef.current,
+        )
+      }
+
       if (!current?.ulid) {
         current = await createSaleReturn(
           {
@@ -788,6 +829,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
     onSuccess: async (saved) => {
       loadDocument(saved)
       createKeyRef.current = newReturnKey()
+      amendmentKeyRef.current = newReturnKey()
       await queryClient.invalidateQueries({ queryKey: ['sales-returns'] })
       if (saleUlid) {
         await queryClient.invalidateQueries({ queryKey: ['sales', 'returnable-lines', saleUlid] })
@@ -799,6 +841,10 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
 
   const postMutation = useMutation({
     mutationFn: async () => {
+      if (document?.status === 'posted') {
+        throw new Error('Posted Sales Returns are updated with Save, not Post.')
+      }
+
       if (!returnEntryState.hasReturnQuantity) {
         throw new Error('Enter at least one return quantity before posting.')
       }
@@ -928,7 +974,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                   <input
                     type="date"
                     value={returnDate}
-                    disabled={readOnly}
+                    disabled={readOnly || document?.status === 'posted'}
                     onChange={(e) => setReturnDate(e.target.value)}
                   />
                 </div>
@@ -1588,10 +1634,10 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
             <div className="sales-return-actions">
               <DesktopButton
                 icon={<Save size={13} />}
-                label="Save"
+                label={amendingPosted ? 'Update' : 'Save'}
                 disabled={
                   readOnly ||
-                  !saleUlid ||
+                  (!saleUlid && !fromPartyUlid) ||
                   saveMutation.isPending ||
                   postMutation.isPending ||
                   Boolean(returnEntryState.validationError)
@@ -1602,8 +1648,9 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                 icon={<CheckCircle2 size={13} />}
                 label="Post"
                 disabled={
+                  document?.status === 'posted' ||
                   readOnly ||
-                  !saleUlid ||
+                  (!saleUlid && !fromPartyUlid) ||
                   !returnEntryState.hasReturnQuantity ||
                   saveMutation.isPending ||
                   postMutation.isPending ||
