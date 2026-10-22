@@ -30,6 +30,8 @@ class RefundSaleReturnAction
         private readonly OpeningBalancePoster $poster,
         private readonly PartyLeafAccountSync $partyAccounts,
         private readonly CashierTransactionLock $cashierLock,
+        private readonly BuildSaleReturnEffectiveSnapshotAction $returnSnapshots,
+        private readonly BuildSaleEffectiveSnapshotAction $saleSnapshots,
         private readonly AuditLogger $audit,
     ) {}
 
@@ -237,6 +239,12 @@ class RefundSaleReturnAction
         }
 
         $tenantId = (int) $document->tenant_id;
+        $effectiveReturn = $this->returnSnapshots->current($document);
+        $effectiveReturnTotal = bcadd(
+            (string) ($effectiveReturn['grand_total'] ?? $document->grand_total),
+            '0',
+            4,
+        );
 
         if ($document->sale_id === null) {
             $refunded = bcadd(
@@ -248,7 +256,7 @@ class RefundSaleReturnAction
                 4,
             );
 
-            $remaining = bcsub((string) $document->grand_total, $refunded, 4);
+            $remaining = bcsub($effectiveReturnTotal, $refunded, 4);
 
             return bccomp($remaining, '0', 4) < 0 ? '0.0000' : $remaining;
         }
@@ -271,17 +279,29 @@ class RefundSaleReturnAction
             4,
         );
 
-        $postedReturns = bcadd(
-            (string) SaleReturn::query()
-                ->where('tenant_id', $tenantId)
-                ->where('sale_id', $sale->id)
-                ->where('status', SaleReturnStatus::Posted->value)
-                ->sum('grand_total'),
-            '0',
+        $postedReturns = '0.0000';
+        $returns = SaleReturn::query()
+            ->where('tenant_id', $tenantId)
+            ->where('sale_id', $sale->id)
+            ->where('status', SaleReturnStatus::Posted->value)
+            ->with('latestRevision')
+            ->get();
+
+        foreach ($returns as $postedReturn) {
+            $effective = $this->returnSnapshots->current($postedReturn);
+            $postedReturns = bcadd(
+                $postedReturns,
+                (string) ($effective['grand_total'] ?? $postedReturn->grand_total),
+                4,
+            );
+        }
+
+        $effectiveSale = $this->saleSnapshots->current($sale);
+        $netSale = bcsub(
+            (string) ($effectiveSale['grand_total'] ?? $sale->grand_total),
+            $postedReturns,
             4,
         );
-
-        $netSale = bcsub((string) $sale->grand_total, $postedReturns, 4);
         if (bccomp($netSale, '0', 4) < 0) {
             $netSale = '0.0000';
         }
@@ -309,7 +329,7 @@ class RefundSaleReturnAction
             4,
         );
 
-        $thisReturnRemaining = bcsub((string) $document->grand_total, $thisReturnRefunded, 4);
+        $thisReturnRemaining = bcsub($effectiveReturnTotal, $thisReturnRefunded, 4);
         if (bccomp($thisReturnRemaining, '0', 4) < 0) {
             $thisReturnRemaining = '0.0000';
         }
