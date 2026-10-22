@@ -35,6 +35,12 @@ class PurchaseInvoicePolicy extends CatalogPolicy
             && $this->sameTenant((int) $invoice->tenant_id);
     }
 
+    public function amend(User $user, PurchaseInvoice $invoice): bool
+    {
+        return $this->permissions->can('purchases.amend_posted')
+            && $this->sameTenant((int) $invoice->tenant_id);
+    }
+
     public function createPayment(User $user, PurchaseInvoice $invoice): bool
     {
         return $this->permissions->can('payments.create')
