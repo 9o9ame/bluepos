@@ -20,7 +20,7 @@ import { ApiClientError } from '../api/client'
 import { fetchBusinessSettings, fetchProduct, fetchProductStock, fetchProducts } from '../api/catalog'
 import { fetchParties, fetchParty, type Party } from '../api/parties'
 import { evaluateSaleOffers } from '../api/saleSchemes'
-import { createSale, createSaleHold, createSaleQuotation, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSalePaymentAccounts, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen } from '../api/sales'
+import { createSale, createSaleHold, createSaleQuotation, deleteSaleHold, fetchSale, fetchSaleHolds, fetchSalePaymentAccounts, fetchSaleQuotation, fetchSaleQuotations, fetchSales, fetchSalesmen, updateSaleQuotation } from '../api/sales'
 import { previewSaleReceipt, printSaleReceipt } from '../features/sales/saleReceipt'
 import { PackagingPicker } from '../features/sales/PackagingPicker'
 import { SaleFinalizePaymentPanel } from '../features/sales/SaleFinalizePaymentPanel'
@@ -134,6 +134,7 @@ export function SalesInvoicePage({
 
   const canSaveRoleDefault = useCan('roles.edit')
   const canCreateSale = useCan('sales.create')
+  const canEditQuotation = useCan('sales.quotation.edit')
   const canOverridePrice = useCan('sales.override_price')
   const canHoldSale = useCan('sales.hold')
   const canRecallSale = useCan('sales.recall')
@@ -173,6 +174,7 @@ export function SalesInvoicePage({
 
   const [copyFromValue, setCopyFromValue] = useState('')
   const [quotationValue, setQuotationValue] = useState('')
+  const [editingQuotationUlid, setEditingQuotationUlid] = useState<string | null>(null)
 
   const [selectedCustomer, setSelectedCustomer] = useState<Party | null>(null)
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
@@ -615,31 +617,46 @@ export function SalesInvoicePage({
         throw new Error('Add at least one paid product before saving a quotation.')
       }
 
-      const payload = cart.buildPayload()
+      const payload = {
+        price_type: cart.priceType,
+        items: cart.buildPayload().items,
+        free_lines: cart.buildPayload().free_lines,
+        applied_schemes: cart.buildPayload().applied_schemes,
+        customer_ulid: cart.customerUlid,
+        salesman_ulid: selectedSalesmanUlid,
+        notes: cart.notes || null,
+        quotation_date: saleDate,
+      }
+
+      if (editingQuotationUlid) {
+        if (!canEditQuotation) {
+          throw new Error('You do not have permission to edit saved quotations.')
+        }
+
+        return updateSaleQuotation(editingQuotationUlid, {
+          ...payload,
+          revision_reason: 'Quotation updated from Sales Invoice',
+        })
+      }
 
       return createSaleQuotation(
-        {
-          price_type: cart.priceType,
-          items: payload.items,
-          free_lines: payload.free_lines,
-          applied_schemes: payload.applied_schemes,
-          customer_ulid: cart.customerUlid,
-          salesman_ulid: selectedSalesmanUlid,
-          notes: cart.notes || null,
-          quotation_date: saleDate,
-        },
+        payload,
         quotationIdempotencyKeyRef.current,
       )
     },
 
     onSuccess: (quotation) => {
+      const updatedExisting = editingQuotationUlid !== null
       setQuotationValue(quotation.document_number)
+      setEditingQuotationUlid(quotation.ulid)
       setCopyFromValue('')
       setSaveError(null)
       quotationIdempotencyKeyRef.current = newSaleKey()
 
       feedback.success(
-        `Quotation ${quotation.document_number} saved. No stock or payment was posted.`,
+        updatedExisting
+          ? `Quotation ${quotation.document_number} updated. Revision history was recorded.`
+          : `Quotation ${quotation.document_number} saved. No stock or payment was posted.`,
         'Quotation',
       )
     },
@@ -727,6 +744,7 @@ export function SalesInvoicePage({
       cart.restoreSaleDocument(source, productsByUlid, stockByProduct)
 
       setQuotationValue(source.document_number)
+      setEditingQuotationUlid(source.ulid)
       setCopyFromValue('')
       setSelectedCustomer(customer)
       setCustomerSearch(customer?.name ?? '')
@@ -1358,6 +1376,7 @@ export function SalesInvoicePage({
     )
     setCopyFromValue('')
     setQuotationValue('')
+    setEditingQuotationUlid(null)
     setSavedSale(null)
     setRecalledHoldUlid(hold.ulid)
     setReceived('')
@@ -1403,6 +1422,7 @@ export function SalesInvoicePage({
     setSalesmanPickerOpen(false)
     setCopyFromValue('')
     setQuotationValue('')
+    setEditingQuotationUlid(null)
     quotationIdempotencyKeyRef.current = newSaleKey()
   }
 
@@ -1663,10 +1683,20 @@ export function SalesInvoicePage({
                         quotationLookupMutation.isPending ||
                         saveQuotationMutation.isPending
                       }
-                      onChange={(event) => setQuotationValue(event.target.value)}
+                      onChange={(event) => {
+                        setQuotationValue(event.target.value)
+                        setEditingQuotationUlid(null)
+                      }}
                       onKeyDown={(event) => {
                         if (event.key !== 'Enter') return
                         event.preventDefault()
+
+                        if (editingQuotationUlid) {
+                          if (!saveQuotationMutation.isPending) {
+                            saveQuotationMutation.mutate()
+                          }
+                          return
+                        }
 
                         if (quotationValue.trim()) {
                           if (!quotationLookupMutation.isPending) {
@@ -1691,24 +1721,32 @@ export function SalesInvoicePage({
                         (!quotationValue.trim() && !cart.hasPaidLines)
                       }
                       title={
-                        quotationValue.trim()
-                          ? 'Load quotation'
-                          : 'Save current cart as quotation'
+                        editingQuotationUlid
+                          ? 'Update quotation'
+                          : quotationValue.trim()
+                            ? 'Load quotation'
+                            : 'Save current cart as quotation'
                       }
                       aria-label={
-                        quotationValue.trim()
-                          ? 'Load quotation'
-                          : 'Save current cart as quotation'
+                        editingQuotationUlid
+                          ? 'Update quotation'
+                          : quotationValue.trim()
+                            ? 'Load quotation'
+                            : 'Save current cart as quotation'
                       }
                       onClick={() => {
-                        if (quotationValue.trim()) {
+                        if (editingQuotationUlid) {
+                          saveQuotationMutation.mutate()
+                        } else if (quotationValue.trim()) {
                           quotationLookupMutation.mutate()
                         } else {
                           saveQuotationMutation.mutate()
                         }
                       }}
                     >
-                      {quotationValue.trim() ? (
+                      {editingQuotationUlid ? (
+                        <Save size={12} strokeWidth={2.75} />
+                      ) : quotationValue.trim() ? (
                         <ChevronDown size={12} strokeWidth={2.75} />
                       ) : (
                         <Save size={12} strokeWidth={2.75} />
