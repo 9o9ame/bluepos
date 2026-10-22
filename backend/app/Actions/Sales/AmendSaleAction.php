@@ -149,14 +149,6 @@ class AmendSaleAction
 
             $previousJournal = $this->effectiveJournal($sale, $before);
 
-            if ($previousJournal) {
-                $this->reverseJournal->execute(
-                    $previousJournal,
-                    'sale-amend-reverse:'.$sale->ulid.':'.$revisionNumber,
-                    'Reverse previous effective posting for '.$sale->document_number.' revision '.$revisionNumber,
-                );
-            }
-
             // Build a provisional snapshot so accounting uses the exact authoritative totals.
             $provisional = $this->snapshots->fromPrepared(
                 $sale,
@@ -174,6 +166,22 @@ class AmendSaleAction
                 'sale-amend-accounting:'.$sale->ulid.':'.$revisionNumber,
                 $revisionNumber,
             );
+
+            if ($previousJournal && ! $amendmentJournal) {
+                throw new ApiException(
+                    'SALE_ACCOUNTING_CONFIGURATION_REQUIRED',
+                    'The original invoice has accounting entries, so accounting controls must remain configured before it can be amended.',
+                    422,
+                );
+            }
+
+            if ($previousJournal) {
+                $this->reverseJournal->execute(
+                    $previousJournal,
+                    'sale-amend-reverse:'.$sale->ulid.':'.$revisionNumber,
+                    'Reverse previous effective posting for '.$sale->document_number.' revision '.$revisionNumber,
+                );
+            }
 
             $after = $this->snapshots->fromPrepared(
                 $sale,
