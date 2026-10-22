@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'tenant_id',
@@ -107,5 +108,13 @@ class SaleReturn extends Model
     public function refunds(): HasMany
     {
         return $this->hasMany(SaleReturnRefund::class);
+    }
+
+    /** @return HasOne<DocumentRevision, $this> */
+    public function latestRevision(): HasOne
+    {
+        return $this->hasOne(DocumentRevision::class, 'document_ulid', 'ulid')
+            ->where('document_type', 'sale_return')
+            ->ofMany('revision_number', 'max');
     }
 }
