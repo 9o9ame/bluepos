@@ -1107,100 +1107,7 @@ export function PurchaseReturnsPage({
             </fieldset>
           </section>
 
-          {invoiceMode ? (
-            <div className="purchase-return-grid-wrap">
-              <PosEntryGrid
-                className="purchase-return-custom-table"
-                tableClassName="purchase-return-grid"
-                ariaLabel="Purchase return invoice lines"
-                columns={[
-                  { key: 'product', header: 'Item / Product Description', width: '42%' },
-                  { key: 'purchased', header: 'Purchased Qty', width: '10%', align: 'right' },
-                  { key: 'returned', header: 'Already Returned', width: '10%', align: 'right' },
-                  { key: 'remaining', header: 'Remaining', width: '10%', align: 'right' },
-                  { key: 'return', header: 'Return Qty', width: '10%', align: 'right' },
-                  { key: 'unit', header: 'Unit', width: '7%' },
-                  { key: 'factor', header: 'Factor', width: '10%', align: 'right' },
-                  { key: 'cost', header: 'Unit Cost', width: '10%', align: 'right' },
-                ]}
-              >
-                  {returnable.map((row) => (
-                    <tr key={row.purchase_line_ulid}>
-                      <td>
-                        <strong>{row.product.product_number}</strong> — {row.product.name}
-                      </td>
-                      <td className="num">{formatDecimal(row.original_quantity)}</td>
-                      <td className="num">{alreadyReturnedQty(row)}</td>
-                      <td className="num">{remainingPurchaseQty(row)}</td>
-                      <td className="num is-edit">
-                        {readOnly ? (
-                          formatDecimal(lineQty[row.purchase_line_ulid] ?? '0')
-                        ) : (
-                          <input
-                            inputMode="decimal"
-                            value={lineQty[row.purchase_line_ulid] ?? ''}
-                            placeholder="0"
-                            aria-label={`Return quantity for ${row.product.name}`}
-                            aria-invalid={
-                              Number(lineQty[row.purchase_line_ulid] ?? 0) >
-                              Number(remainingPurchaseQty(row))
-                            }
-                            title={`Maximum returnable: ${remainingPurchaseQty(row)}`}
-                            onChange={(event) => {
-                              const value = event.target.value
-                              if (value !== '' && !/^\d+(?:\.\d{0,6})?$/.test(value)) return
-                              setLineQty((prev) => ({
-                                ...prev,
-                                [row.purchase_line_ulid]: value,
-                              }))
-                            }}
-                            onBlur={() => {
-                              const value = lineQty[row.purchase_line_ulid]
-                              if (!value || Number(value) === 0) return
-                              setLineQty((prev) => ({
-                                ...prev,
-                                [row.purchase_line_ulid]: formatDecimal(value),
-                              }))
-                            }}
-                          />
-                        )}
-                      </td>
-                      <td>{row.unit?.code ?? '—'}</td>
-                      <td className="num">{formatDecimal(row.conversion_factor)}</td>
-                      <td className="num">{money(row.unit_cost)}</td>
-                    </tr>
-                  ))}
-
-                  {returnableQuery.isFetching ? (
-                    <tr>
-                      <td colSpan={8} className="purchase-return-empty">
-                        Loading returnable purchase lines…
-                      </td>
-                    </tr>
-                  ) : null}
-
-                  {returnableQuery.isError ? (
-                    <tr>
-                      <td colSpan={8} className="purchase-return-empty">
-                        Could not load returnable purchase lines. Use Refresh and try again.
-                      </td>
-                    </tr>
-                  ) : null}
-
-                  {!returnableQuery.isFetching &&
-                  !returnableQuery.isError &&
-                  returnable.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="purchase-return-empty">
-                        {purchaseUlid
-                          ? 'This purchase has no remaining returnable quantity.'
-                          : 'Select a posted purchase first.'}
-                      </td>
-                    </tr>
-                  ) : null}
-                </PosEntryGrid>
-            </div>
-          ) : (
+          
             <div className="purchase-return-general">
               <div className="purchase-return-grid-wrap">
                 <PosEntryGrid
@@ -1506,8 +1413,6 @@ export function PurchaseReturnsPage({
                 </PosEntryGrid>
               </div>
             </div>
-          )}
-
           {error ? <div className="purchase-return-error">{error}</div> : null}
 
           <footer className="purchase-return-footer">
