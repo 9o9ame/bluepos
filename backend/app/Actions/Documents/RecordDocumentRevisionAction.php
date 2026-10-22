@@ -30,8 +30,9 @@ class RecordDocumentRevisionAction
             ->forTenant($tenantId)
             ->where('document_type', $documentType)
             ->where('document_ulid', $documentUlid)
+            ->orderByDesc('revision_number')
             ->lockForUpdate()
-            ->max('revision_number');
+            ->first(['revision_number']);
 
         return DocumentRevision::query()->create([
             'tenant_id' => $tenantId,
@@ -39,7 +40,7 @@ class RecordDocumentRevisionAction
             'warehouse_id' => $warehouseId,
             'document_type' => $documentType,
             'document_ulid' => $documentUlid,
-            'revision_number' => ((int) $lastRevision) + 1,
+            'revision_number' => ((int) ($lastRevision?->revision_number ?? 0)) + 1,
             'reason' => trim($reason),
             'before_snapshot' => $before,
             'after_snapshot' => $after,
