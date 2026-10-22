@@ -272,7 +272,10 @@ export function InventoryAdjustmentsPage() {
     void nextNumberQuery.refetch()
   }
 
-  function fillLineForm(line: InventoryAdjustmentLine) {
+  function fillLineForm(
+    line: InventoryAdjustmentLine,
+    focusEntryQuantity = true,
+  ) {
     setSelectedLineUlid(line.ulid)
     setProductUlid(line.product?.ulid ?? '')
     setProductSearch(line.product ? `${line.product.product_number} · ${line.product.name}` : '')
@@ -281,6 +284,8 @@ export function InventoryAdjustmentsPage() {
     setQtyMinus(Number(line.qty_minus) === 0 ? '' : formatDecimal(line.qty_minus))
     setLineRemarks(line.remarks ?? '')
     setProductPickerOpen(false)
+
+    if (!focusEntryQuantity) return
 
     window.setTimeout(() => {
       qtyPlusRef.current?.focus()
@@ -864,7 +869,8 @@ export function InventoryAdjustmentsPage() {
                             disabled={!canAdjust}
                             title="Click to change product"
                             onClick={() => {
-                              fillLineForm(line)
+                              fillLineForm(line, false)
+                              setProductPickerOpen(true)
                               window.setTimeout(() => {
                                 productInputRef.current?.focus()
                                 productInputRef.current?.select()
@@ -882,17 +888,12 @@ export function InventoryAdjustmentsPage() {
                             disabled={!canAdjust}
                             value={editing ? qtyPlus : (Number(line.qty_plus) > 0 ? formatDecimal(line.qty_plus) : '')}
                             onFocus={() => {
-                              if (!editing) fillLineForm(line)
+                              if (!editing) fillLineForm(line, false)
                             }}
                             onChange={(event) => {
-                              if (!editing) fillLineForm(line)
+                              if (!editing) fillLineForm(line, false)
                               setQtyPlus(event.target.value)
                               if (event.target.value.trim()) setQtyMinus('')
-                            }}
-                            onBlur={() => {
-                              if (editing && (qtyPlus.trim() || qtyMinus.trim())) {
-                                saveCurrentLine()
-                              }
                             }}
                             onKeyDown={(event) => {
                               if (event.key !== 'Enter') return
@@ -908,17 +909,12 @@ export function InventoryAdjustmentsPage() {
                             disabled={!canAdjust}
                             value={editing ? qtyMinus : (Number(line.qty_minus) > 0 ? formatDecimal(line.qty_minus) : '')}
                             onFocus={() => {
-                              if (!editing) fillLineForm(line)
+                              if (!editing) fillLineForm(line, false)
                             }}
                             onChange={(event) => {
-                              if (!editing) fillLineForm(line)
+                              if (!editing) fillLineForm(line, false)
                               setQtyMinus(event.target.value)
                               if (event.target.value.trim()) setQtyPlus('')
-                            }}
-                            onBlur={() => {
-                              if (editing && (qtyPlus.trim() || qtyMinus.trim())) {
-                                saveCurrentLine()
-                              }
                             }}
                             onKeyDown={(event) => {
                               if (event.key !== 'Enter') return
@@ -937,16 +933,11 @@ export function InventoryAdjustmentsPage() {
                             value={editing ? lineRemarks : (line.remarks ?? '')}
                             maxLength={500}
                             onFocus={() => {
-                              if (!editing) fillLineForm(line)
+                              if (!editing) fillLineForm(line, false)
                             }}
                             onChange={(event) => {
-                              if (!editing) fillLineForm(line)
+                              if (!editing) fillLineForm(line, false)
                               setLineRemarks(event.target.value)
-                            }}
-                            onBlur={() => {
-                              if (editing && (qtyPlus.trim() || qtyMinus.trim())) {
-                                saveCurrentLine()
-                              }
                             }}
                             onKeyDown={(event) => {
                               if (event.key !== 'Enter') return
