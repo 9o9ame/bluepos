@@ -428,12 +428,12 @@ export function PurchaseOrderPage() {
                   ? `${row.product.product_number} — ${row.product.name}`
                   : '—',
               )}</td>
-              <td class="number">${escapePrintHtml(row.order_quantity)}</td>
-              <td class="number">${escapePrintHtml(row.received_quantity)}</td>
-              <td class="number">${escapePrintHtml(row.remaining_quantity)}</td>
-              <td class="number">${escapePrintHtml(row.order_amount)}</td>
-              <td class="number">${escapePrintHtml(row.received_amount)}</td>
-              <td class="number">${escapePrintHtml(row.balance_amount)}</td>
+              <td class="number">${escapePrintHtml(formatDecimal(row.order_quantity))}</td>
+              <td class="number">${escapePrintHtml(formatDecimal(row.received_quantity))}</td>
+              <td class="number">${escapePrintHtml(formatDecimal(row.remaining_quantity))}</td>
+              <td class="number">${escapePrintHtml(formatDecimal(row.order_amount))}</td>
+              <td class="number">${escapePrintHtml(formatDecimal(row.received_amount))}</td>
+              <td class="number">${escapePrintHtml(formatDecimal(row.balance_amount))}</td>
             </tr>`,
         )
         .join('')
@@ -1695,42 +1695,42 @@ export function PurchaseOrderPage() {
                 header: 'Order Qty',
                 width: 95,
                 align: 'right',
-                render: (row) => row.order_quantity,
+                render: (row) => formatDecimal(row.order_quantity),
               },
               {
                 key: 'receive_qty',
                 header: 'Receive Qty',
                 width: 95,
                 align: 'right',
-                render: (row) => row.received_quantity,
+                render: (row) => formatDecimal(row.received_quantity),
               },
               {
                 key: 'remaining_qty',
                 header: 'Rem Qty',
                 width: 90,
                 align: 'right',
-                render: (row) => row.remaining_quantity,
+                render: (row) => formatDecimal(row.remaining_quantity),
               },
               {
                 key: 'order_amount',
                 header: 'Order Amt',
                 width: 110,
                 align: 'right',
-                render: (row) => row.order_amount,
+                render: (row) => formatDecimal(row.order_amount),
               },
               {
                 key: 'received_amount',
                 header: 'Rec Amt',
                 width: 105,
                 align: 'right',
-                render: (row) => row.received_amount,
+                render: (row) => formatDecimal(row.received_amount),
               },
               {
                 key: 'balance_amount',
                 header: 'Bal Amt',
                 width: 110,
                 align: 'right',
-                render: (row) => row.balance_amount,
+                render: (row) => formatDecimal(row.balance_amount),
               },
             ]}
             rows={statusQuery.data?.data ?? []}
@@ -1809,7 +1809,7 @@ export function PurchaseOrderPage() {
             </div>
             <div>
               <dt>Net Order</dt>
-              <dd>{activeOrder?.grand_total ?? '0.0000'}</dd>
+              <dd>{formatDecimal(activeOrder?.grand_total ?? '0')}</dd>
             </div>
           </dl>
 
