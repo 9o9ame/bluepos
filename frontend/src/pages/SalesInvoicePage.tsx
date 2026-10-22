@@ -374,8 +374,8 @@ export function SalesInvoicePage({
     const otherColumns = effectiveSalesColumns.filter((col) => col.key !== 'product')
     const otherCount = otherColumns.length
 
-    const productWidth = productColumn ? '30%' : '0%'
-    const otherWidth = otherCount > 0 ? `${70 / otherCount}%` : '0%'
+    const productWidth = productColumn ? '25%' : '0%'
+    const otherWidth = otherCount > 0 ? `${75 / otherCount}%` : '0%'
 
     return new Map(
       effectiveSalesColumns.map((col) => [
