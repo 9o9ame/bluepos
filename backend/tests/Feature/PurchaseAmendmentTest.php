@@ -172,7 +172,6 @@ class PurchaseAmendmentTest extends TestCase
             '100.0000',
         );
 
-        $invoice = PurchaseInvoice::query()->where('ulid', $purchaseUlid)->firstOrFail();
         $context = app(TenantContext::class);
         $cashType = AccountType::query()
             ->forTenant($context->tenantId())
@@ -188,18 +187,20 @@ class PurchaseAmendmentTest extends TestCase
             'created_by' => $context->userId(),
         ]);
 
-        PurchasePayment::query()->create([
-            'tenant_id' => $context->tenantId(),
-            'branch_id' => $context->branchId(),
-            'purchase_invoice_id' => $invoice->id,
-            'account_id' => $cashAccount->id,
-            'method' => 'cash',
-            'reference' => null,
-            'amount' => '80.0000',
-            'journal_entry_ulid' => null,
-            'idempotency_key' => 'purchase-amend-paid-payment',
-            'created_by' => $context->userId(),
-        ]);
+        BusinessSetting::query()
+            ->forTenant($context->tenantId())
+            ->update(['default_cash_account_id' => $cashAccount->id]);
+
+        $this->postJson(
+            '/api/purchases/'.$purchaseUlid.'/payments',
+            [
+                'amount' => '80.0000',
+                'method' => 'cash',
+                'reference' => 'PUR-AMEND-PAID',
+            ],
+            $this->idem('purchase-amend-paid-payment'),
+        )->assertCreated()
+            ->assertJsonPath('amount', '80.0000');
 
         $this->patchJson('/api/purchases/'.$purchaseUlid.'/amend', [
             'lines' => [[
