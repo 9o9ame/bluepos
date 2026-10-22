@@ -7,6 +7,7 @@ use App\Enums\ProductStatus;
 use App\Enums\PurchaseInvoiceStatus;
 use App\Enums\WarehouseStatus;
 use App\Models\Product;
+use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceLine;
 use App\Models\PurchaseReturn;
 use App\Tenancy\TenantContext;
