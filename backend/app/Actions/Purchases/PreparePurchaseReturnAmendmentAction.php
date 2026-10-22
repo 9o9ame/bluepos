@@ -137,6 +137,7 @@ class PreparePurchaseReturnAmendmentAction
 
         return [
             'header' => [
+                'return_mode' => $invoice ? 'invoice' : 'general',
                 'return_date' => (string) ($data['return_date'] ?? $before['return_date'] ?? now()->toDateString()),
                 'supplier_reference' => $data['supplier_reference'] ?? ($before['supplier_reference'] ?? null),
                 'reason' => $data['reason'] ?? ($before['reason'] ?? null),
