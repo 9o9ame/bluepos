@@ -23,22 +23,32 @@ class SaleReturnResource extends JsonResource
             $refundedAmount = bcadd((string) $this->getAttribute('refunded_amount'), '0', 4);
         }
 
+        $revisionSnapshot = null;
+        if ($this->relationLoaded('latestRevision') && $this->latestRevision) {
+            $candidate = $this->latestRevision->after_snapshot;
+            if (is_array($candidate)) {
+                $revisionSnapshot = $candidate;
+            }
+        }
+
         $refundBalance = app(RefundSaleReturnAction::class)
             ->refundableAmount($this->resource);
 
         return [
             'ulid' => $this->ulid,
             'document_number' => $this->document_number,
-            'return_date' => $this->return_date?->toDateString(),
+            'return_date' => $revisionSnapshot['return_date'] ?? $this->return_date?->toDateString(),
             'status' => $this->status->value,
-            'subtotal' => $this->subtotal,
-            'discount_amount' => $this->discount_amount,
-            'tax_amount' => $this->tax_amount,
-            'grand_total' => $this->grand_total,
+            'subtotal' => $revisionSnapshot['subtotal'] ?? $this->subtotal,
+            'discount_amount' => $revisionSnapshot['discount_amount'] ?? $this->discount_amount,
+            'tax_amount' => $revisionSnapshot['tax_amount'] ?? $this->tax_amount,
+            'grand_total' => $revisionSnapshot['grand_total'] ?? $this->grand_total,
             'refund_amount' => $refundedAmount,
             'balance_due' => $refundBalance,
-            'reason' => $this->reason,
-            'notes' => $this->notes,
+            'reason' => $revisionSnapshot['reason'] ?? $this->reason,
+            'notes' => $revisionSnapshot['notes'] ?? $this->notes,
+            'revision_number' => (int) ($revisionSnapshot['_meta']['revision_number'] ?? 0),
+            'is_amended' => (int) ($revisionSnapshot['_meta']['revision_number'] ?? 0) > 0,
             'posted_at' => $this->posted_at?->toIso8601String(),
             'original_sale' => $this->whenLoaded('sale', fn () => $this->sale ? [
                 'ulid' => $this->sale->ulid,
@@ -72,7 +82,9 @@ class SaleReturnResource extends JsonResource
                 'code' => $this->warehouse->code,
                 'name' => $this->warehouse->name,
             ]),
-            'lines' => SaleReturnLineResource::collection($this->whenLoaded('lines')),
+            'lines' => $revisionSnapshot !== null
+                ? ($revisionSnapshot['lines'] ?? [])
+                : SaleReturnLineResource::collection($this->whenLoaded('lines')),
             'refunds' => SaleReturnRefundResource::collection($this->whenLoaded('refunds')),
         ];
     }
