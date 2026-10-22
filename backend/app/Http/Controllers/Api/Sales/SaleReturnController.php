@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Sales;
 
+use App\Actions\Sales\AmendSaleReturnAction;
 use App\Actions\Sales\CreateSaleReturnAction;
 use App\Actions\Sales\DeleteSaleReturnLineAction;
 use App\Actions\Sales\PostSaleReturnAction;
@@ -13,6 +14,7 @@ use App\Enums\SaleReturnStatus;
 use App\Enums\SaleStatus;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Sales\AmendSaleReturnRequest;
 use App\Http\Requests\Sales\StoreSaleReturnRefundRequest;
 use App\Http\Resources\Sales\SaleReturnLineResource;
 use App\Http\Resources\Sales\SaleReturnRefundResource;
@@ -40,7 +42,7 @@ class SaleReturnController extends Controller
             ->forTenant($tenantContext->tenantId())
             ->where('branch_id', $tenantContext->branchId())
             ->where('warehouse_id', $tenantContext->warehouseId())
-            ->with(['sale', 'customer', 'settlementAccount', 'salesmanParty', 'branch', 'warehouse'])
+            ->with(['sale', 'customer', 'settlementAccount', 'salesmanParty', 'branch', 'warehouse', 'latestRevision'])
             ->withSum('refunds as refunded_amount', 'amount')
             ->orderByDesc('return_date')
             ->orderByDesc('id');
@@ -168,7 +170,7 @@ class SaleReturnController extends Controller
         $document = $this->findDocument($returnUlid, $tenantContext);
         $this->authorize('view', $document);
 
-        return new SaleReturnResource($document->load(CreateSaleReturnAction::with()));
+        return new SaleReturnResource($document->load([...CreateSaleReturnAction::with(), 'latestRevision']));
     }
 
     public function update(
@@ -187,6 +189,26 @@ class SaleReturnController extends Controller
         ]);
 
         return new SaleReturnResource($update->execute($document, $data));
+    }
+
+    public function amend(
+        AmendSaleReturnRequest $request,
+        string $returnUlid,
+        TenantContext $tenantContext,
+        AmendSaleReturnAction $amend,
+    ): SaleReturnResource {
+        $document = $this->findDocument($returnUlid, $tenantContext);
+        $this->authorize('amend', $document);
+
+        $updated = $amend->execute(
+            $document,
+            $request->validated(),
+            (string) $request->header('Idempotency-Key', ''),
+        );
+
+        return new SaleReturnResource(
+            $updated->load([...CreateSaleReturnAction::with(), 'latestRevision'])
+        );
     }
 
     public function storeLine(
