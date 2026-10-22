@@ -291,6 +291,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
         Route::get('/sales/{saleUlid}/returnable-lines', [SaleReturnController::class, 'returnableLines']);
         Route::get('/sales-returns', [SaleReturnController::class, 'index']);
+        Route::get('/sales-returns/next-document-number', [SaleReturnController::class, 'nextDocumentNumber']);
         Route::get('/sales-returns/source-parties', [SaleReturnController::class, 'sourceParties']);
         Route::post('/sales-returns', [SaleReturnController::class, 'store']);
         Route::get('/sales-returns/product-wise', [SaleReturnController::class, 'productWise']);
