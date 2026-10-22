@@ -11,6 +11,7 @@ use App\Models\BusinessSetting;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
 use App\Models\PurchaseReturn;
+use App\Models\Supplier;
 use App\Tenancy\TenantContext;
 
 class PostPurchaseReturnAccountingAction
@@ -224,7 +225,12 @@ class PostPurchaseReturnAccountingAction
             }
         }
 
-        $supplier = $document->supplier;
+        $supplierUlid = (string) ($snapshot['supplier']['ulid'] ?? '');
+        $supplier = Supplier::query()
+            ->forTenant($tenantId)
+            ->where('ulid', $supplierUlid)
+            ->first();
+
         if (! $supplier || ! $supplier->is_active) {
             throw new ApiException(
                 'SUPPLIER_PAYABLE_ACCOUNT_REQUIRED',
