@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Sales;
 
 use App\Actions\Sales\CreateSaleQuotationAction;
+use App\Actions\Sales\UpdateSaleQuotationAction;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sales\StoreSaleQuotationRequest;
@@ -85,6 +86,39 @@ class SaleQuotationController extends Controller
         return (new SaleQuotationResource($quotation))
             ->response()
             ->setStatusCode(201);
+    }
+
+
+    public function update(
+        StoreSaleQuotationRequest $request,
+        string $quotationUlid,
+        TenantContext $tenantContext,
+        UpdateSaleQuotationAction $action,
+    ): SaleQuotationResource {
+        $this->authorize('editQuotation', Sale::class);
+
+        $quotation = SaleQuotation::query()
+            ->forTenant($tenantContext->tenantId())
+            ->where('branch_id', $tenantContext->branchId())
+            ->where('warehouse_id', $tenantContext->warehouseId())
+            ->where('ulid', $quotationUlid)
+            ->first();
+
+        if (! $quotation) {
+            throw new ApiException(
+                'NOT_FOUND',
+                'The requested resource was not found.',
+                404,
+            );
+        }
+
+        $data = $request->validated();
+        $reason = trim((string) ($data['revision_reason'] ?? 'Quotation updated from Sales Invoice'));
+        unset($data['revision_reason']);
+
+        return new SaleQuotationResource(
+            $action->execute($quotation, $data, $reason)
+        );
     }
 
     public function show(
