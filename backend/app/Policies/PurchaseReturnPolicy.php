@@ -34,4 +34,10 @@ class PurchaseReturnPolicy extends CatalogPolicy
         return $this->permissions->can('purchase_returns.post')
             && $this->sameTenant((int) $document->tenant_id);
     }
+
+    public function amend(User $user, PurchaseReturn $document): bool
+    {
+        return $this->permissions->can('purchase_returns.amend_posted')
+            && $this->sameTenant((int) $document->tenant_id);
+    }
 }
