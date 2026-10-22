@@ -128,6 +128,13 @@ export function InventoryAdjustmentsPage() {
   const [productWiseSearch, setProductWiseSearch] = useState('')
   const deferredProductWiseSearch = useDeferredValue(productWiseSearch)
 
+  const nextNumberQuery = useQuery({
+    queryKey: ['inventory-adjustment', 'next-document-number', session?.branch.ulid, session?.warehouse.ulid],
+    queryFn: fetchNextInventoryAdjustmentDocumentNumber,
+    enabled: canAdjust && tab === 'invoice',
+    retry: false,
+  })
+
   const accountsQuery = useQuery({
     queryKey: ['inventory-adjustment-accounts'],
     queryFn: fetchInventoryAdjustmentAccounts,
@@ -158,7 +165,16 @@ export function InventoryAdjustmentsPage() {
   )
 
   const document = documentQuery.data ?? null
-  const entryEnabled = canAdjust && (!document || document.status === 'draft')
+  const displayedDocumentNumber =
+    documentNumberValue ??
+    document?.document_number ??
+    nextNumberQuery.data?.document_number ??
+    'New'
+  const displayLines =
+    document?.status === 'posted'
+      ? amendmentLines
+      : (document?.lines ?? [])
+  const entryEnabled = canAdjust
 
   useEffect(() => {
     if (!productPickerOpen) return
@@ -188,15 +204,33 @@ export function InventoryAdjustmentsPage() {
 
   useEffect(() => {
     if (!document) return
+    setDocumentNumberValue(document.document_number)
     setAdjustmentDate(document.adjustment_date)
     setAccountUlid(document.account?.ulid ?? '')
     setDocumentNotes(document.notes ?? '')
     setHeaderDirty(false)
+    setAmendmentDirty(false)
+    amendmentKeyRef.current = newAdjustmentKey()
+    setAmendmentLines(
+      document.status === 'posted'
+        ? (document.lines ?? []).map((line) => ({
+            ...line,
+            qty_plus: formatDecimal(line.qty_plus),
+            qty_minus: formatDecimal(line.qty_minus),
+            in_stock: formatDecimal(line.in_stock),
+            after_stock: formatDecimal(line.after_stock),
+            price: formatDecimal(line.price),
+            amount: formatDecimal(line.amount),
+          }))
+        : [],
+    )
   }, [
     document?.ulid,
+    document?.document_number,
     document?.adjustment_date,
     document?.account?.ulid,
     document?.notes,
+    document?.revision_number,
   ])
 
   const accountOptions = (accountsQuery.data?.data ?? []).map((account) => ({
@@ -225,12 +259,17 @@ export function InventoryAdjustmentsPage() {
 
   function newDocument() {
     setDocumentUlid(null)
+    setDocumentNumberValue(null)
+    setAmendmentLines([])
+    setAmendmentDirty(false)
+    amendmentKeyRef.current = newAdjustmentKey()
     setAdjustmentDate(todayIso())
     setAccountUlid('')
     setDocumentNotes('')
     setHeaderDirty(false)
     clearLineForm()
     setTab('invoice')
+    void nextNumberQuery.refetch()
   }
 
   function fillLineForm(line: InventoryAdjustmentLine) {
