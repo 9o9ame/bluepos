@@ -3,6 +3,7 @@
 namespace App\Actions\Purchases;
 
 use App\Enums\PurchaseReturnStatus;
+use App\Models\PurchaseInvoice;
 use App\Models\PurchaseInvoiceLine;
 use App\Models\PurchaseReturn;
 use App\Models\PurchaseReturnLine;
@@ -127,10 +128,23 @@ class RecalculatePurchaseReturnTotalsAction
      */
     public function remainingReturnableBase(PurchaseInvoiceLine $purchaseLine, ?int $excludeReturnId = null): string
     {
+        $purchaseUlid = (string) PurchaseInvoice::query()
+            ->forTenant((int) $purchaseLine->tenant_id)
+            ->whereKey($purchaseLine->purchase_invoice_id)
+            ->value('ulid');
+
         $returns = PurchaseReturn::query()
             ->forTenant((int) $purchaseLine->tenant_id)
-            ->where('purchase_invoice_id', $purchaseLine->purchase_invoice_id)
             ->where('status', PurchaseReturnStatus::Posted->value)
+            ->where(function ($query) use ($purchaseLine, $purchaseUlid): void {
+                $query->where('purchase_invoice_id', $purchaseLine->purchase_invoice_id);
+
+                if ($purchaseUlid !== '') {
+                    $query->orWhereHas('latestRevision', function ($revision) use ($purchaseUlid): void {
+                        $revision->where('after_snapshot->original_purchase->ulid', $purchaseUlid);
+                    });
+                }
+            })
             ->when(
                 $excludeReturnId !== null,
                 fn ($query) => $query->where('id', '!=', $excludeReturnId),
