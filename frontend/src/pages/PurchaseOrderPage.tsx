@@ -1202,7 +1202,8 @@ export function PurchaseOrderPage() {
               ariaLabel="Purchase order lines"
               columns={[
                 { key: 'selector', header: '', width: '2.5%', align: 'center', className: 'purchase-order-row-selector' },
-                { key: 'product', header: 'Item / Product Description', width: '43%', className: 'purchase-order-product-heading' },
+                { key: 'product', header: 'Item / Product Description', width: '35%', className: 'purchase-order-product-heading' },
+                { key: 'unit', header: 'Unit', width: '5%', align: 'center' },
                 { key: 'stock', header: 'In Stock', width: '6%', align: 'right' },
                 { key: 'stock-value', header: 'Stock Val', width: '6%', align: 'right' },
                 { key: 'consumption', header: 'Consumption', width: '6.5%', align: 'right' },
@@ -1225,6 +1226,7 @@ export function PurchaseOrderPage() {
                             ? `${line.product.product_number} — ${line.product.name}`
                             : ''}
                         </td>
+                        <td className="is-center">{line.unit?.code ?? '—'}</td>
                         <td className="is-num" />
                         <td className="is-num" />
                         <td className="is-num" />
@@ -1244,11 +1246,10 @@ export function PurchaseOrderPage() {
                         <tr key={line.key}>
                           <td className="purchase-order-row-selector">›</td>
                           <td className="purchase-order-product-cell">
-                            <div className="purchase-order-product-name">
-                              <div className="purchase-order-row-product">
-                                {editingProductKey === line.key ? (
-                                  <>
-                                    <div className="purchase-order-product-combo">
+                            <div className="purchase-order-row-product">
+                              {editingProductKey === line.key ? (
+                                <>
+                                  <div className="purchase-order-product-combo">
                                     <input
                                       ref={productSearchRef}
                                       className="purchase-order-product-input"
@@ -1321,24 +1322,26 @@ export function PurchaseOrderPage() {
                                   </button>
                                 )}
                               </div>
-                              <UiSelect
-                                className="purchase-order-unit"
-                                value={line.unit_ulid}
-                                searchable={false}
-                                options={line.unit_options.map((unit) => ({
-                                  value: unit.ulid,
-                                  label: unit.code,
-                                }))}
-                                onChange={(value) => {
-                                  const unit = line.unit_options.find((row) => row.ulid === value)
-                                  patchLine(line.key, {
-                                    unit_ulid: value,
-                                    unit_code: unit?.code ?? line.unit_code,
-                                  })
-                                }}
-                                aria-label={`Unit for ${line.product_name}`}
-                              />
                             </div>
+                          </td>
+                          <td className="is-center">
+                            <UiSelect
+                              className="purchase-order-unit"
+                              value={line.unit_ulid}
+                              searchable={false}
+                              options={line.unit_options.map((unit) => ({
+                                value: unit.ulid,
+                                label: unit.code,
+                              }))}
+                              onChange={(value) => {
+                                const unit = line.unit_options.find((row) => row.ulid === value)
+                                patchLine(line.key, {
+                                  unit_ulid: value,
+                                  unit_code: unit?.code ?? line.unit_code,
+                                })
+                              }}
+                              aria-label={`Unit for ${line.product_name}`}
+                            />
                           </td>
                           <td className="is-num">{formatDecimal(line.in_stock)}</td>
                           <td className="is-num">{formatDecimal(line.stock_value)}</td>
@@ -1473,7 +1476,8 @@ export function PurchaseOrderPage() {
                         />
                       ) : null}
                     </td>
-                    <td className="is-num" />
+                    <td className="is-center" />
+                          <td className="is-num" />
                     <td className="is-num" />
                     <td className="is-num" />
                     <td className="is-num" />
