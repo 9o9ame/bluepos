@@ -21,17 +21,18 @@
 
 .trial-balance-options-area {
   display: grid;
-  grid-template-columns: minmax(260px, 300px) auto;
-  width: min(560px, calc(100% - 32px));
-  margin: 155px auto 24px;
-  gap: 8px 10px;
+  grid-template-columns: minmax(390px, 430px) minmax(220px, 250px);
+  width: min(700px, calc(100% - 40px));
+  margin: 135px auto 28px;
+  gap: 10px 14px;
   align-items: end;
 }
 
 .trial-balance-options-card {
   display: grid;
-  gap: 6px;
-  padding: 28px 12px 12px;
+  gap: 9px;
+  min-height: 220px;
+  padding: 34px 18px 16px;
   border: 1px solid var(--ui-border);
   border-radius: var(--panel-radius);
   background: var(--ui-surface);
@@ -42,10 +43,10 @@
 .trial-balance-card-title {
   position: absolute;
   inset: 0 0 auto;
-  min-height: 24px;
+  min-height: 28px;
   display: flex;
   align-items: center;
-  padding: 0 8px;
+  padding: 0 12px;
   border-bottom: 1px solid var(--ui-border);
   background: var(--ui-surface-muted);
   font-size: 11px;
@@ -54,9 +55,9 @@
 
 .trial-balance-options-card > label:not(.trial-balance-check) {
   display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
+  grid-template-columns: 132px minmax(0, 1fr);
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   font-size: 11px;
   font-weight: 700;
 }
@@ -76,21 +77,36 @@
 .trial-balance-check {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding-left: 118px;
+  gap: 7px;
+  padding-left: 142px;
+  min-height: 24px;
   font-size: 11px;
   font-weight: 600;
 }
 
 .trial-balance-actions {
   display: grid;
-  gap: 7px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   align-self: end;
+}
+
+.trial-balance-actions > :nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.trial-balance-actions .ui-button {
+  width: 100%;
+  min-height: 34px;
+  justify-content: center;
 }
 
 .trial-balance-major-minor {
   grid-column: 1 / 2;
   width: 100%;
+  min-height: 34px;
+  justify-content: center;
+  font-weight: 700;
 }
 
 .trial-balance-result {
@@ -313,11 +329,20 @@
 @media (max-width: 720px) {
   .trial-balance-options-area {
     grid-template-columns: 1fr;
+    width: min(460px, calc(100% - 24px));
     margin-top: 40px;
   }
 
+  .trial-balance-options-card > label:not(.trial-balance-check) {
+    grid-template-columns: 120px minmax(0, 1fr);
+  }
+
+  .trial-balance-check {
+    padding-left: 130px;
+  }
+
   .trial-balance-actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .trial-balance-major-minor {
