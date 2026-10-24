@@ -110,6 +110,9 @@ class TrialBalanceReportBuilder
         string $endDate,
         string $groupBy = 'level_wise',
         string $arrangeBy = 'code_asc',
+        array $mainHeadUlids = [],
+        array $subHeadUlids = [],
+        array $accountTypeUlids = [],
     ): array {
         $closing = $this->build($tenantId, $branchId, $endDate, $groupBy, $arrangeBy);
 
@@ -129,6 +132,16 @@ class TrialBalanceReportBuilder
             ->groupBy('journal_lines.account_id')
             ->get()
             ->keyBy('account_id');
+
+        // Filtering applies only to hierarchy membership, never to posted ledger amounts.
+        // Rebuild group subtotals after filtering to avoid unfiltered aggregates.
+        $selectedRows = collect($closing['groups'])->flatMap(fn (array $group) => $group['rows'])
+            ->filter(function (array $row) use ($mainHeadUlids, $subHeadUlids, $accountTypeUlids): bool {
+                return (empty($mainHeadUlids) || in_array($row['main_head']['ulid'] ?? null, $mainHeadUlids, true))
+                    && (empty($subHeadUlids) || in_array($row['account_type_head']['ulid'] ?? null, $subHeadUlids, true))
+                    && (empty($accountTypeUlids) || in_array($row['account_type']['ulid'] ?? null, $accountTypeUlids, true));
+            })->values();
+        $closing['groups'] = $this->groupRows($selectedRows, $groupBy, $arrangeBy);
 
         $accountIds = Account::query()->forTenant($tenantId)->pluck('id', 'ulid');
         $zero = '0.0000';
