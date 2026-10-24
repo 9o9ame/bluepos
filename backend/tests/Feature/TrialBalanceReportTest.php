@@ -102,6 +102,36 @@ class TrialBalanceReportTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_six_column_source_and_party_filters_use_posted_branch_entries(): void
+    {
+        $this->signInOwner('trial-balance-six-filters')->assertOk();
+        $context = app(TenantContext::class);
+        [$cash, $revenue] = $this->accounts($context->tenantId());
+
+        $this->journal($context->tenantId(), $context->branchId(), '2026-10-20',
+            JournalStatus::Posted, [[$cash, '50.0000', '0.0000'], [$revenue, '0.0000', '50.0000']], 'sale_invoice');
+        $this->journal($context->tenantId(), $context->branchId(), '2026-10-21',
+            JournalStatus::Posted, [[$cash, '70.0000', '0.0000'], [$revenue, '0.0000', '70.0000']], 'purchase_invoice');
+        $this->journal($context->tenantId(), $context->branchId(), '2026-10-22',
+            JournalStatus::Draft, [[$cash, '200.0000', '0.0000'], [$revenue, '0.0000', '200.0000']], 'sale_invoice');
+
+        $url = '/api/reports/accounting/trial-balance?mode=six_columns&start_date=2026-10-01'
+            .'&end_date=2026-10-24&document_types[0]=sale_invoice&party_categories[0]=accounts';
+        $response = $this->getJson($url)->assertOk()
+            ->assertJsonPath('totals.within_debit', '50.0000')
+            ->assertJsonPath('totals.within_credit', '50.0000')
+            ->assertJsonPath('totals.closing_debit', '50.0000')
+            ->assertJsonPath('totals.closing_credit', '50.0000');
+        $this->assertNoInternalIds($response->json());
+
+        $this->getJson('/api/reports/accounting/trial-balance?mode=six_columns'
+            .'&start_date=2026-10-01&end_date=2026-10-24'
+            .'&document_types[0]=unknown')->assertUnprocessable();
+        $this->getJson('/api/reports/accounting/trial-balance?mode=six_columns'
+            .'&start_date=2026-10-01&end_date=2026-10-24'
+            .'&party_categories[0]=salesman')->assertUnprocessable();
+    }
+
     /**
      * @return array{0:Account,1:Account,2:Account}
      */
@@ -185,11 +215,12 @@ class TrialBalanceReportTest extends TestCase
         string $date,
         JournalStatus $status,
         array $lines,
+        string $documentType = 'trial_balance_test',
     ): void {
         $entry = JournalEntry::query()->create([
             'tenant_id' => $tenantId,
             'branch_id' => $branchId,
-            'document_type' => 'trial_balance_test',
+            'document_type' => $documentType,
             'entry_date' => $date,
             'description' => 'Trial Balance Test',
             'status' => $status,
