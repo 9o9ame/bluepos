@@ -188,7 +188,8 @@ export function PurchaseOrderPage() {
   const feedback = useFeedback()
   const canCreate = useCan('purchases.create')
   const canEdit = useCan('purchases.edit')
-  const canEditOrder = useCan('purchase_orders.edit')
+  const canEditOrderPermission = useCan('purchase_orders.edit')
+  const canEditOrder = canEditOrderPermission || canEdit
 
   const [tab, setTab] = useState<'entry' | 'search' | 'status'>('entry')
   const [supplierUlid, setSupplierUlid] = useState('')
@@ -1321,6 +1322,7 @@ export function PurchaseOrderPage() {
                                           setEditingProductKey(null)
                                           setProductQuery('')
                                           setProductPickerOpen(false)
+                                          setActiveLineKey(line.key)
                                           return
                                         }
                                         if (event.key !== 'Enter') return
@@ -1367,7 +1369,8 @@ export function PurchaseOrderPage() {
                                     className="purchase-order-row-product-button"
                                     onClick={() => {
                                       setEditingProductKey(line.key)
-                                      setProductQuery(line.product_name)
+                                      setActiveLineKey(line.key)
+                                      setProductQuery('')
                                       setProductPickerOpen(true)
                                     }}
                                   >
