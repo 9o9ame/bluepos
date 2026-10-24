@@ -656,91 +656,6 @@ export function InventoryAdjustmentsPage() {
     },
   })
 
-  const saveLine = useMutation({
-    mutationFn: async () => {
-      if (!productUlid) throw new Error('Select a product.')
-      if (!qtyPlus.trim() && !qtyMinus.trim()) {
-        throw new Error('Enter Qty + or Qty -.')
-      }
-
-      let targetDocumentUlid = documentUlid
-      let createdDocumentNumber: string | null = null
-
-      if (!targetDocumentUlid) {
-        if (!accountUlid) throw new Error('Select an adjustment account.')
-
-        const created = await createInventoryAdjustment({
-          account_ulid: accountUlid,
-          adjustment_date: adjustmentDate,
-          adjustment_type: 'stock_adjustment',
-          notes: documentNotes.trim() || null,
-        })
-
-        targetDocumentUlid = created.ulid
-        createdDocumentNumber = created.document_number
-      }
-
-      const payload = {
-        product_ulid: productUlid,
-        qty_plus: qtyPlus.trim() || '0',
-        qty_minus: qtyMinus.trim() || '0',
-        notes: lineRemarks.trim() || null,
-      }
-
-      const line = selectedLineUlid
-        ? await updateInventoryAdjustmentLine(targetDocumentUlid, selectedLineUlid, payload)
-        : await createInventoryAdjustmentLine(targetDocumentUlid, payload)
-
-      return {
-        line,
-        documentUlid: targetDocumentUlid,
-        createdDocumentNumber,
-      }
-    },
-    onSuccess: async (result) => {
-      const wasUpdate = Boolean(selectedLineUlid)
-
-      if (!documentUlid) {
-        setDocumentUlid(result.documentUlid)
-        setHeaderDirty(false)
-      }
-
-      clearLineForm(true)
-      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustment', result.documentUlid] })
-      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustments'] })
-
-      feedback.success(
-        result.createdDocumentNumber
-          ? `Adjustment ${result.createdDocumentNumber} created and line added.`
-          : wasUpdate
-            ? 'Adjustment line updated.'
-            : 'Adjustment line added.',
-      )
-    },
-    onError: (error) => {
-      if (error instanceof Error && (
-        error.message === 'Select an adjustment account.' ||
-        error.message === 'Select a product.' ||
-        error.message === 'Enter Qty + or Qty -.'
-      )) {
-        feedback.info(error.message, 'Adjustment')
-        return
-      }
-      feedback.fromApiError(error, 'Unable to save adjustment line.')
-    },
-  })
-
-  const removeLine = useMutation({
-    mutationFn: (lineUlid: string) => deleteInventoryAdjustmentLine(documentUlid as string, lineUlid),
-    onSuccess: async () => {
-      clearLineForm(true)
-      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustment', documentUlid] })
-      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustments'] })
-      feedback.success('Adjustment line removed.')
-    },
-    onError: (error) => feedback.fromApiError(error, 'Unable to remove adjustment line.'),
-  })
-
   const amendDocument = useMutation({
     mutationFn: () => {
       if (!document || document.status !== 'posted') {
@@ -987,6 +902,16 @@ export function InventoryAdjustmentsPage() {
     window.requestAnimationFrame(() => window.print())
   }
 
+  function focusAdjustmentField(
+    current: HTMLElement,
+    field: 'plus' | 'minus' | 'remarks',
+  ) {
+    const row = current.closest('tr')
+    if (!row) return
+    const target = row.querySelector<HTMLElement>(`[data-adjust-field="${field}"]`)
+    target?.focus()
+  }
+
   const generatedAt = new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -1135,6 +1060,7 @@ export function InventoryAdjustmentsPage() {
                                   : (line.product ? `${line.product.product_number} · ${line.product.name}` : '')
                               }
                               autoComplete="off"
+                              data-adjust-field="product"
                               disabled={!canAdjust}
                               onFocus={() => {
                                 if (!editing) fillLineForm(line, false)
@@ -1153,11 +1079,12 @@ export function InventoryAdjustmentsPage() {
                                   return
                                 }
                                 if (event.key !== 'Enter') return
+                                event.preventDefault()
                                 const first = productLookupRows[0]
-                                if (first) {
-                                  event.preventDefault()
+                                if (first && productSearch.trim()) {
                                   selectEntryProduct(first)
                                 }
+                                window.setTimeout(() => focusAdjustmentField(event.currentTarget, 'plus'), 0)
                               }}
                             />
                             <button
@@ -1187,6 +1114,7 @@ export function InventoryAdjustmentsPage() {
                         <td>
                           <input
                             className="inventory-adjustments-entry-number"
+                            data-adjust-field="plus"
                             inputMode="decimal"
                             disabled={!canAdjust}
                             value={editing ? qtyPlus : (Number(line.qty_plus) > 0 ? formatDecimal(line.qty_plus) : '')}
@@ -1201,13 +1129,14 @@ export function InventoryAdjustmentsPage() {
                             onKeyDown={(event) => {
                               if (event.key !== 'Enter') return
                               event.preventDefault()
-                              saveCurrentLine()
+                              focusAdjustmentField(event.currentTarget, 'minus')
                             }}
                           />
                         </td>
                         <td>
                           <input
                             className="inventory-adjustments-entry-number"
+                            data-adjust-field="minus"
                             inputMode="decimal"
                             disabled={!canAdjust}
                             value={editing ? qtyMinus : (Number(line.qty_minus) > 0 ? formatDecimal(line.qty_minus) : '')}
@@ -1222,7 +1151,7 @@ export function InventoryAdjustmentsPage() {
                             onKeyDown={(event) => {
                               if (event.key !== 'Enter') return
                               event.preventDefault()
-                              saveCurrentLine()
+                              focusAdjustmentField(event.currentTarget, 'remarks')
                             }}
                           />
                         </td>
@@ -1232,6 +1161,7 @@ export function InventoryAdjustmentsPage() {
                         <td>
                           <input
                             className="inventory-adjustments-inline-remarks"
+                            data-adjust-field="remarks"
                             disabled={!canAdjust}
                             value={editing ? lineRemarks : (line.remarks ?? '')}
                             maxLength={500}
