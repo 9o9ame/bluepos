@@ -109,6 +109,15 @@ class DailyCashPositionTest extends TestCase
         $this->assertNoInternalIds($report->json());
     }
 
+    public function test_reports_cash_book_requires_accounting_report_permission(): void
+    {
+        $this->signInOwner('reports-cash-denied')->assertOk();
+        $this->restrictCurrentMembershipWithoutPermission('reports.accounting');
+        $this->getJson('/api/reports/accounting/cash-book/accounts')->assertForbidden();
+        $this->getJson('/api/reports/accounting/cash-book?start_date=2026-10-01'
+            .'&end_date=2026-10-24')->assertForbidden();
+    }
+
     public function test_reports_cash_book_is_posted_branch_scoped_and_validates_selected_accounts(): void
     {
         $this->signInOwner('reports-cash-book')->assertOk();
