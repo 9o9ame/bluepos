@@ -1,0 +1,219 @@
+<?php
+
+namespace App\Accounting;
+
+use App\Enums\JournalStatus;
+use App\Models\Account;
+use App\Models\JournalLine;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
+
+class TrialBalanceReportBuilder
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function build(
+        int $tenantId,
+        int $branchId,
+        string $asOfDate,
+        string $groupBy = 'level_wise',
+        string $arrangeBy = 'code_asc',
+    ): array {
+        $asOf = CarbonImmutable::createFromFormat('Y-m-d', $asOfDate)->endOfDay();
+
+        $balances = JournalLine::query()
+            ->selectRaw(
+                'journal_lines.account_id,
+                 COALESCE(SUM(journal_lines.debit), 0) AS debit_total,
+                 COALESCE(SUM(journal_lines.credit), 0) AS credit_total'
+            )
+            ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
+            ->where('journal_lines.tenant_id', $tenantId)
+            ->where('journal_entries.tenant_id', $tenantId)
+            ->where('journal_entries.branch_id', $branchId)
+            ->where('journal_entries.status', JournalStatus::Posted->value)
+            ->where('journal_entries.entry_date', '<=', $asOf->toDateString())
+            ->groupBy('journal_lines.account_id')
+            ->get()
+            ->keyBy('account_id');
+
+        $accounts = Account::query()
+            ->forTenant($tenantId)
+            ->with(['accountType.subHead.mainHead'])
+            ->orderBy('code')
+            ->orderBy('name')
+            ->get();
+
+        $rows = $accounts->map(function (Account $account) use ($balances): array {
+            $balanceRow = $balances->get($account->id);
+            $debitTotal = bcadd((string) ($balanceRow?->getAttribute('debit_total') ?? '0'), '0', 4);
+            $creditTotal = bcadd((string) ($balanceRow?->getAttribute('credit_total') ?? '0'), '0', 4);
+            $net = bcsub($debitTotal, $creditTotal, 4);
+            $debit = bccomp($net, '0', 4) === 1 ? $net : '0.0000';
+            $credit = bccomp($net, '0', 4) === -1 ? bcmul($net, '-1', 4) : '0.0000';
+
+            $type = $account->accountType;
+            $subHead = $type?->subHead;
+            $mainHead = $subHead?->mainHead;
+
+            return [
+                'account' => [
+                    'ulid' => $account->ulid,
+                    'code' => $account->code,
+                    'name' => $account->name,
+                ],
+                'main_head' => $mainHead ? [
+                    'ulid' => $mainHead->ulid,
+                    'name' => $mainHead->name,
+                    'sort_order' => (int) $mainHead->sort_order,
+                ] : null,
+                'account_type_head' => $subHead ? [
+                    'ulid' => $subHead->ulid,
+                    'name' => $subHead->name,
+                    'sort_order' => (int) $subHead->sort_order,
+                ] : null,
+                'account_type' => $type ? [
+                    'ulid' => $type->ulid,
+                    'code' => $type->code,
+                    'name' => $type->name,
+                    'sort_order' => (int) $type->sort_order,
+                ] : null,
+                'debit' => $debit,
+                'credit' => $credit,
+                'balance' => $net,
+            ];
+        })->values();
+
+        $groups = $this->groupRows($rows, $groupBy, $arrangeBy);
+        $totals = $this->totals($rows);
+
+        return [
+            'as_of_date' => $asOfDate,
+            'group_by' => $groupBy,
+            'arrange_by' => $arrangeBy,
+            'groups' => $groups,
+            'totals' => $totals,
+        ];
+    }
+
+    /**
+     * @param Collection<int, array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    private function groupRows(Collection $rows, string $groupBy, string $arrangeBy): array
+    {
+        $grouped = $rows->groupBy(fn (array $row): string => $this->groupKey($row, $groupBy));
+
+        $groups = $grouped->map(function (Collection $groupRows, string $key) use ($groupBy, $arrangeBy): array {
+            $sorted = $this->sortRows($groupRows->values(), $arrangeBy);
+            $first = $sorted->first();
+
+            return [
+                'key' => $key,
+                'label' => $this->groupLabel($first, $groupBy),
+                'rows' => $sorted->values()->all(),
+                'totals' => $this->totals($sorted),
+            ];
+        })->values();
+
+        if ($groupBy === 'level_wise') {
+            $groups = $groups->sortBy(function (array $group): array {
+                $first = $group['rows'][0] ?? [];
+
+                return [
+                    $first['main_head']['sort_order'] ?? 9999,
+                    $group['label'],
+                ];
+            })->values();
+        } else {
+            $groups = $groups->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)->values();
+        }
+
+        return $groups->all();
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function groupKey(array $row, string $groupBy): string
+    {
+        return match ($groupBy) {
+            'account_type' => (string) ($row['account_type']['ulid'] ?? 'ungrouped'),
+            'account_type_head' => (string) ($row['account_type_head']['ulid'] ?? 'ungrouped'),
+            'main_account', 'level_wise' => (string) ($row['main_head']['ulid'] ?? 'ungrouped'),
+            default => 'ungrouped',
+        };
+    }
+
+    /**
+     * @param array<string, mixed>|null $row
+     */
+    private function groupLabel(?array $row, string $groupBy): string
+    {
+        if (! $row) {
+            return 'Ungrouped';
+        }
+
+        return match ($groupBy) {
+            'account_type' => trim((string) ($row['account_type']['code'] ?? '').' '.(string) ($row['account_type']['name'] ?? '')) ?: 'Ungrouped',
+            'account_type_head' => (string) ($row['account_type_head']['name'] ?? 'Ungrouped'),
+            'main_account', 'level_wise' => (string) ($row['main_head']['name'] ?? 'Ungrouped'),
+            default => 'All Accounts',
+        };
+    }
+
+    /**
+     * @param Collection<int, array<string, mixed>> $rows
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function sortRows(Collection $rows, string $arrangeBy): Collection
+    {
+        $rows = $rows->all();
+
+        usort($rows, function (array $left, array $right) use ($arrangeBy): int {
+            [$field, $direction] = str_ends_with($arrangeBy, '_desc')
+                ? [substr($arrangeBy, 0, -5), 'desc']
+                : [substr($arrangeBy, 0, -4), 'asc'];
+
+            $comparison = match ($field) {
+                'balance' => bccomp((string) $left['balance'], (string) $right['balance'], 4),
+                'debit' => bccomp((string) $left['debit'], (string) $right['debit'], 4),
+                'credit' => bccomp((string) $left['credit'], (string) $right['credit'], 4),
+                'name' => strnatcasecmp((string) $left['account']['name'], (string) $right['account']['name']),
+                default => strnatcasecmp((string) $left['account']['code'], (string) $right['account']['code']),
+            };
+
+            return $direction === 'desc' ? -$comparison : $comparison;
+        });
+
+        return collect($rows);
+    }
+
+    /**
+     * @param Collection<int, array<string, mixed>> $rows
+     * @return array{debit:string,credit:string,difference:string,difference_side:string}
+     */
+    private function totals(Collection $rows): array
+    {
+        $debit = '0.0000';
+        $credit = '0.0000';
+
+        foreach ($rows as $row) {
+            $debit = bcadd($debit, (string) $row['debit'], 4);
+            $credit = bcadd($credit, (string) $row['credit'], 4);
+        }
+
+        $difference = bcsub($debit, $credit, 4);
+        $side = bccomp($difference, '0', 4) >= 0 ? 'Dr' : 'Cr';
+
+        return [
+            'debit' => $debit,
+            'credit' => $credit,
+            'difference' => bccomp($difference, '0', 4) < 0
+                ? bcmul($difference, '-1', 4)
+                : $difference,
+            'difference_side' => $side,
+        ];
+    }
+}
