@@ -56,6 +56,9 @@ export function CashBookReportPage() {
   const report = reportQuery.data
   const rows = (report?.rows ?? []).filter((row) =>
     [row.description, row.trans_no, row.doc, row.account_name].some((v) => v.toLowerCase().includes(search.toLowerCase())))
+    .sort((a, b) => group === 'document'
+      ? a.doc.localeCompare(b.doc) || (a.date ?? '').localeCompare(b.date ?? '')
+      : (a.date ?? '').localeCompare(b.date ?? '') || a.line_ulid.localeCompare(b.line_ulid))
   const receipts = rows.filter((r) => r.debit !== '0.0000')
   const payments = rows.filter((r) => r.credit !== '0.0000')
   const groupLabel = (row: CashBookEntry) => group === 'date' ? asLabel(row.date)
