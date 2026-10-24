@@ -189,7 +189,7 @@ export function CashBookReportPage() {
       <h1 className="cashbook-title">Cash Book</h1>
       <div className="cashbook-selection">
         <div className="cashbook-selection-form">
-          <h2>Date Selection</h2>
+          <h2>Selection Options</h2>
           <div className="cashbook-date-grid">
             <label>From Date<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
             <label>To Date<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
@@ -225,7 +225,6 @@ export function CashBookReportPage() {
           <UiButton variant="info" label="Show Cash Flow" disabled={from > to || !from || !to} onClick={() => launch('cash_flow')} />
           <p className="cashbook-note">Posted journals only · current branch. Unsupported reference filters (area, salesman, purchase/non-cash) are not applied.</p>
         </div>
-        <div className="cashbook-selection-blank" aria-hidden="true" />
       </div>
     </section>
   )
