@@ -1,7 +1,7 @@
 import { Fragment, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Download, Eye, Minus, Plus, Printer, RefreshCw, Search, X } from 'lucide-react'
+import { ArrowLeft, ClipboardCopy, Download, Eye, FileCode, FileText, Minus, Plus, Printer, RefreshCw, Search, X } from 'lucide-react'
 import { fetchTrialBalanceReport } from '../api/reports'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
@@ -256,6 +256,7 @@ export function TrialBalanceReportPage() {
   const [arrangeIds] = useState(false)
   const [viewerSearch, setViewerSearch] = useState('')
   const [viewerZoom, setViewerZoom] = useState(100)
+  const [copyStatus, setCopyStatus] = useState('Copy')
   const reportPaperRef = useRef<HTMLDivElement>(null)
   const viewerCanvasRef = useRef<HTMLDivElement>(null)
 
@@ -353,6 +354,35 @@ export function TrialBalanceReportPage() {
     URL.revokeObjectURL(url)
   }
 
+  const downloadReport = (kind: 'html' | 'txt') => {
+    const paper = reportPaperRef.current
+    const report = viewerQuery.data
+    if (!paper || !report) return
+    const heading = viewParam === 'major_minor' ? 'Trial Balance Major Head' : 'Trial Balance Detailed'
+    const name = `trial-balance-${viewParam === 'major_minor' ? 'major-head' : 'detailed'}-${report.as_of_date}`
+    const body = kind === 'html'
+      ? `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${heading}</title><style>body{font:14px Arial;margin:32px}table{border-collapse:collapse;width:100%;margin:8px 0}td,th{border:1px solid #555;padding:4px 6px}h2,p{text-align:center}</style></head><body>${paper.innerHTML}</body></html>`
+      : (paper.innerText || paper.textContent || '')
+    const blob = new Blob([body], { type: kind === 'html' ? 'text/html;charset=utf-8' : 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${name}.${kind}`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const copyReport = async () => {
+    const paper = reportPaperRef.current
+    if (!paper) return
+    try {
+      await navigator.clipboard.writeText(paper.innerText || paper.textContent || '')
+      setCopyStatus('Copied')
+    } catch {
+      setCopyStatus('Copy failed')
+    }
+  }
+
   if (isViewer) {
     const report = viewerQuery.data
 
@@ -365,6 +395,28 @@ export function TrialBalanceReportPage() {
             label="Print"
             disabled={!report}
             onClick={printReport}
+          />
+          <UiButton
+            variant="default"
+            icon={<ClipboardCopy size={15} />}
+            label={copyStatus}
+            disabled={!report}
+            onClick={() => void copyReport()}
+            title="Copy the report text to the clipboard."
+          />
+          <UiButton
+            variant="default"
+            icon={<FileText size={15} />}
+            label="Text"
+            disabled={!report}
+            onClick={() => downloadReport('txt')}
+          />
+          <UiButton
+            variant="default"
+            icon={<FileCode size={15} />}
+            label="HTML"
+            disabled={!report}
+            onClick={() => downloadReport('html')}
           />
           <UiButton
             variant="info"
