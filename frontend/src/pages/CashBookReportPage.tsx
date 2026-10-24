@@ -15,6 +15,29 @@ function displayMoney(value: string) {
   const [whole, fractional = ''] = value.split('.')
   return whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (fractional.replace(/0+$/, '') ? '.' + fractional.replace(/0+$/, '') : '')
 }
+// All cash flow aggregations use integer minor units (4 decimal places), never floats.
+function moneyUnits(value: string): bigint {
+  const negative = value.startsWith('-')
+  const digits = negative ? value.slice(1) : value
+  const [whole, decimal = ''] = digits.split('.')
+  const units = BigInt(whole || '0') * 10000n + BigInt(decimal.padEnd(4, '0').slice(0, 4) || '0')
+  return negative ? -units : units
+}
+function unitsText(value: bigint): string {
+  const negative = value < 0n
+  const positive = negative ? -value : value
+  return `${negative ? '-' : ''}${positive / 10000n}.${String(positive % 10000n).padStart(4, '0')}`
+}
+const CASH_FLOW_SOURCES = [
+  ['RECEIVING VOUCHER', 'Receiving Voucher'],
+  ['PAYMENT VOUCHER', 'Payments / Expenses'],
+  ['JOURNAL VOUCHER', 'Journal Voucher'],
+  ['PURCHASE RETURN', 'Purchase Return'],
+  ['PURCHASE INVOICE', 'Purchases'],
+  ['SALE INVOICE', 'Sales Invoice'],
+  ['SALE RETURN', 'Sales Return'],
+] as const
+
 function asLabel(date: string | null) {
   if (!date) return ''
   const [year, month, day] = date.split('-')
@@ -59,6 +82,29 @@ export function CashBookReportPage() {
     .sort((a, b) => group === 'document'
       ? a.doc.localeCompare(b.doc) || (a.date ?? '').localeCompare(b.date ?? '')
       : (a.date ?? '').localeCompare(b.date ?? '') || a.line_ulid.localeCompare(b.line_ulid))
+  const dailyCashFlow = (() => {
+    const days = new Map<string, {
+      debit: bigint; credit: bigint; sources: Map<string, bigint>
+    }>()
+    for (const row of rows) {
+      const day = row.date ?? ''
+      if (!day) continue
+      if (!days.has(day)) days.set(day, { debit: 0n, credit: 0n, sources: new Map() })
+      const total = days.get(day)!
+      const debit = moneyUnits(row.debit)
+      const credit = moneyUnits(row.credit)
+      total.debit += debit
+      total.credit += credit
+      total.sources.set(row.doc, (total.sources.get(row.doc) ?? 0n) + debit - credit)
+    }
+    let opening = moneyUnits(report?.totals.opening ?? '0.0000')
+    return [...days.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([day, totals]) => {
+      const closing = opening + totals.debit - totals.credit
+      const result = { day, opening, closing, ...totals }
+      opening = closing
+      return result
+    })
+  })()
   const receipts = rows.filter((r) => r.debit !== '0.0000')
   const payments = rows.filter((r) => r.credit !== '0.0000')
   const groupLabel = (row: CashBookEntry) => group === 'date' ? asLabel(row.date)
@@ -104,14 +150,30 @@ export function CashBookReportPage() {
           </div>
           {cashFlow ? (
             <table className="cashbook-flow-table">
-              <thead><tr><th>Date</th><th>Description</th><th>Opening</th><th>Receiving</th><th>Payments</th><th>Closing</th></tr></thead>
-              <tbody>{rows.map((row) => <tr key={row.line_ulid}>
-                <td>{asLabel(row.date)}</td><td>{row.description}</td><td>—</td>
-                <td className="cashbook-money">{displayMoney(row.debit)}</td>
-                <td className="cashbook-money">{displayMoney(row.credit)}</td><td>—</td>
-              </tr>)}</tbody>
-              <tfoot><tr><th colSpan={3}>Total</th><td>{displayMoney(report.totals.received)}</td>
-                <td>{displayMoney(report.totals.paid)}</td><td>{displayMoney(report.totals.closing)}</td></tr></tfoot>
+              <thead><tr>
+                <th>Date</th><th>Description</th><th>Opening</th>
+                {CASH_FLOW_SOURCES.map(([key, label]) => <th key={key}>{label}</th>)}
+                <th>Debit</th><th>Today Cash</th><th>Credit</th><th>Closing</th>
+              </tr></thead>
+              <tbody>{dailyCashFlow.map((day) => (
+                <tr key={day.day}>
+                  <td>{asLabel(day.day)}</td><td>Daily Cash Flow</td>
+                  <td className="cashbook-money">{displayMoney(unitsText(day.opening))}</td>
+                  {CASH_FLOW_SOURCES.map(([key]) => <td className="cashbook-money" key={key}>
+                    {displayMoney(unitsText(day.sources.get(key) ?? 0n))}
+                  </td>)}
+                  <td className="cashbook-money">{displayMoney(unitsText(day.debit))}</td>
+                  <td className="cashbook-money">{displayMoney(unitsText(day.debit - day.credit))}</td>
+                  <td className="cashbook-money">{displayMoney(unitsText(day.credit))}</td>
+                  <td className="cashbook-money">{displayMoney(unitsText(day.closing))}</td>
+                </tr>
+              ))}</tbody>
+              <tfoot><tr><th colSpan={10}>Total / Closing</th>
+                <td className="cashbook-money">{displayMoney(report.totals.received)}</td>
+                <td className="cashbook-money">{displayMoney(unitsText(moneyUnits(report.totals.received) - moneyUnits(report.totals.paid)))}</td>
+                <td className="cashbook-money">{displayMoney(report.totals.paid)}</td>
+                <td className="cashbook-money">{displayMoney(report.totals.closing)}</td>
+              </tr></tfoot>
             </table>
           ) : <div className="cashbook-dual">
             <section><h3>Receivings</h3>{entries(receipts, 'debit')}</section>
