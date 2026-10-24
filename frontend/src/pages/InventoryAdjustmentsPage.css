@@ -801,3 +801,31 @@ html[data-animations='off'] .inventory-adjustments-product-arrow > span {
 .inventory-adjustments-product-entry > input {
   padding-right: 28px;
 }
+
+
+/* Product dropdown uses the exact canonical UiSelect caret surface. */
+.inventory-adjustments-product-arrow.ui-select-combobox-toggle {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  width: 20px;
+  min-width: 20px;
+  height: 18px;
+  min-height: 18px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  box-shadow: none;
+}
+
+.inventory-adjustments-product-arrow.ui-select-combobox-toggle:hover {
+  background: transparent;
+  filter: none;
+}
+
+.inventory-adjustments-product-arrow[aria-expanded='true'] > .ui-select-arrow {
+  transform: rotate(180deg);
+}
