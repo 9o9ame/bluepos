@@ -71,3 +71,23 @@ export type TrialBalanceReport = {
   groups: TrialBalanceGroup[]
   totals: TrialBalanceTotals
 }
+
+export type TrialBalanceSixColumns = {
+  previous_debit: string
+  previous_credit: string
+  within_debit: string
+  within_credit: string
+  closing_debit: string
+  closing_credit: string
+}
+
+export type TrialBalanceSixColumnReport = {
+  start_date: string
+  end_date: string
+  group_by: TrialBalanceGroupBy
+  arrange_by: TrialBalanceArrangeBy
+  groups: Array<Omit<TrialBalanceGroup, 'rows'> & {
+    rows: Array<TrialBalanceRow & { six_columns: TrialBalanceSixColumns }>
+  }>
+  totals: TrialBalanceSixColumns
+}
