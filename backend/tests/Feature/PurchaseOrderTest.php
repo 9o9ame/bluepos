@@ -242,15 +242,7 @@ class PurchaseOrderTest extends TestCase
             ]],
         ])->assertCreated();
 
-        $permission = Permission::query()
-            ->where('key', 'purchase_orders.edit')
-            ->firstOrFail();
-
-        $membership = app(TenantContext::class)->membership();
-        foreach ($membership->roles()->get() as $role) {
-            $role->permissions()->detach($permission->id);
-        }
-        app(PermissionService::class)->clearCache();
+        $this->restrictCurrentMembershipWithoutPermission('purchase_orders.edit');
 
         $this->patchJson('/api/purchase-orders/'.$created->json('ulid'), [
             'supplier_ulid' => $supplierUlid,
