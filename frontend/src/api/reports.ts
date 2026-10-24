@@ -28,8 +28,20 @@ export function fetchTrialBalanceSixColumns(params: {
   end_date: string
   group_by: TrialBalanceGroupBy
   arrange_by: TrialBalanceArrangeBy
+  main_heads?: string[]
+  sub_heads?: string[]
+  account_types?: string[]
 }): Promise<TrialBalanceSixColumnReport> {
-  const query = new URLSearchParams({ mode: 'six_columns', ...params })
+  const query = new URLSearchParams({
+    mode: 'six_columns',
+    start_date: params.start_date,
+    end_date: params.end_date,
+    group_by: params.group_by,
+    arrange_by: params.arrange_by,
+  })
+  params.main_heads?.forEach((ulid, index) => query.set(`main_heads[${index}]`, ulid))
+  params.sub_heads?.forEach((ulid, index) => query.set(`sub_heads[${index}]`, ulid))
+  params.account_types?.forEach((ulid, index) => query.set(`account_types[${index}]`, ulid))
   return apiFetch<TrialBalanceSixColumnReport>(
     `/api/reports/accounting/trial-balance?${query.toString()}`,
     { busy: 'fetch' },
