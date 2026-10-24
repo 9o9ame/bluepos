@@ -116,6 +116,8 @@ class TrialBalanceReportBuilder
         array $accountTypeUlids = [],
         array $documentTypes = [],
         array $partyCategories = [],
+        ?string $closingOperator = null,
+        string $closingAmount = '0.0000',
     ): array {
         $closing = $this->build($tenantId, $branchId, $endDate, $groupBy, $arrangeBy);
 
@@ -191,6 +193,41 @@ class TrialBalanceReportBuilder
             unset($row);
         }
         unset($group);
+
+        if ($closingOperator !== null) {
+            $comparison = static function (string $value) use ($closingOperator, $closingAmount): bool {
+                $cmp = bccomp($value, $closingAmount, 4);
+                return match ($closingOperator) {
+                    'eq' => $cmp === 0, 'ne' => $cmp !== 0,
+                    'lt' => $cmp < 0, 'lte' => $cmp <= 0,
+                    'gt' => $cmp > 0, 'gte' => $cmp >= 0,
+                    default => false,
+                };
+            };
+            foreach ($closing['groups'] as &$filteredGroup) {
+                $filteredGroup['rows'] = array_values(array_filter(
+                    $filteredGroup['rows'],
+                    static fn (array $row): bool => $comparison(bcsub(
+                        $row['six_columns']['closing_debit'],
+                        $row['six_columns']['closing_credit'], 4
+                    ))
+                ));
+            }
+            unset($filteredGroup);
+            $closing['groups'] = array_values(array_filter(
+                $closing['groups'],
+                static fn (array $group): bool => count($group['rows']) > 0
+            ));
+            $totals = array_fill_keys(array_keys($totals), $zero);
+            foreach ($closing['groups'] as $filteredGroup) {
+                foreach ($filteredGroup['rows'] as $row) {
+                    foreach ($totals as $key => &$total) {
+                        $total = bcadd($total, $row['six_columns'][$key], 4);
+                    }
+                    unset($total);
+                }
+            }
+        }
 
         return [
             'start_date' => $startDate,
