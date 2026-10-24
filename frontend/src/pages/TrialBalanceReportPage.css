@@ -66,8 +66,8 @@
 .trial-balance-options-card input[type='date'] {
   box-sizing: border-box;
   width: 100%;
-  height: 34px;
-  min-height: 34px;
+  height: 30px;
+  min-height: 30px;
   font-size: 14px;
   border: 1px solid var(--ui-control-border);
   border-radius: var(--control-radius);
@@ -78,8 +78,8 @@
 }
 
 .trial-balance-options-card .ui-select-trigger {
-  height: 34px;
-  min-height: 34px;
+  height: 30px;
+  min-height: 30px;
   font-size: 14px;
 }
 
@@ -118,6 +118,26 @@
   justify-content: center;
   font-size: 15px;
   font-weight: 800;
+}
+
+/* The selection screen uses a slightly richer theme-derived action face
+   without changing the shared UiButton component or other modules. */
+.trial-balance-page:not(.trial-balance-viewer-page) .trial-balance-actions .ui-button.is-info:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-info) 10%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-info) 20%, var(--ui-surface))
+  );
+}
+
+.trial-balance-page:not(.trial-balance-viewer-page) button.trial-balance-major-minor:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ui-accent) 45%, var(--ui-border));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent) 12%, var(--ui-surface)),
+    color-mix(in srgb, var(--ui-accent) 26%, var(--ui-surface))
+  );
+  color: var(--ui-text);
 }
 
 .trial-balance-viewer-page {
