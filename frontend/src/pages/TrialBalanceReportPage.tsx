@@ -257,6 +257,7 @@ export function TrialBalanceReportPage() {
   const [viewerSearch, setViewerSearch] = useState('')
   const [viewerZoom, setViewerZoom] = useState(100)
   const [copyStatus, setCopyStatus] = useState('Copy')
+  const [sectionIndex, setSectionIndex] = useState(0)
   const reportPaperRef = useRef<HTMLDivElement>(null)
   const viewerCanvasRef = useRef<HTMLDivElement>(null)
 
@@ -383,8 +384,17 @@ export function TrialBalanceReportPage() {
     }
   }
 
+  const moveToSection = (next: number) => {
+    const groups = reportPaperRef.current?.querySelectorAll('.trial-balance-group')
+    if (!groups?.length) return
+    const bounded = Math.max(0, Math.min(groups.length - 1, next))
+    setSectionIndex(bounded)
+    groups[bounded]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   if (isViewer) {
     const report = viewerQuery.data
+    const sectionCount = viewParam === 'major_minor' ? 0 : (report?.groups.length ?? 0)
 
     return (
       <section className="trial-balance-page trial-balance-viewer-page" aria-label="Trial Balance Report">
@@ -392,9 +402,10 @@ export function TrialBalanceReportPage() {
           <UiButton
             variant="info"
             icon={<Printer size={15} />}
-            label="Print"
+            label="Print / PDF"
             disabled={!report}
             onClick={printReport}
+            title="Use the browser print dialog to print or save as PDF."
           />
           <UiButton
             variant="default"
@@ -426,6 +437,24 @@ export function TrialBalanceReportPage() {
             onClick={exportCsv}
             title="Open the exported CSV in Excel or another spreadsheet app."
           />
+          <UiSelect
+            className="trial-balance-export-choice"
+            aria-label="Export report format"
+            value=""
+            searchable={false}
+            options={[
+              { value: '', label: 'Export as…' },
+              { value: 'csv', label: 'CSV (Excel compatible)' },
+              { value: 'html', label: 'HTML document' },
+              { value: 'txt', label: 'Plain text' },
+              { value: 'pdf', label: 'PDF (browser print)' },
+            ]}
+            onChange={(format) => {
+              if (format === 'csv') exportCsv()
+              else if (format === 'html' || format === 'txt') downloadReport(format)
+              else if (format === 'pdf') printReport()
+            }}
+          />
           <div className="trial-balance-viewer-search">
             <Search size={14} aria-hidden />
             <input
@@ -443,6 +472,15 @@ export function TrialBalanceReportPage() {
             <UiButton variant="default" icon={<Plus size={14} />} aria-label="Zoom in" disabled={viewerZoom >= 200} onClick={() => setViewerZoom((current) => Math.min(200, current + 25))} />
             <UiButton variant="default" label="Fit" onClick={() => setViewerZoom(100)} />
           </div>
+          {sectionCount > 0 ? (
+            <div className="trial-balance-viewer-zoom" aria-label="Report section navigation">
+              <UiButton variant="default" label="First" disabled={sectionIndex === 0} onClick={() => moveToSection(0)} />
+              <UiButton variant="default" label="Prev" disabled={sectionIndex === 0} onClick={() => moveToSection(sectionIndex - 1)} />
+              <span className="trial-balance-section-count">Section {sectionIndex + 1} / {sectionCount}</span>
+              <UiButton variant="default" label="Next" disabled={sectionIndex >= sectionCount - 1} onClick={() => moveToSection(sectionIndex + 1)} />
+              <UiButton variant="default" label="Last" disabled={sectionIndex >= sectionCount - 1} onClick={() => moveToSection(sectionCount - 1)} />
+            </div>
+          ) : null}
           <UiButton
             variant="info"
             icon={<RefreshCw size={15} />}
