@@ -247,7 +247,14 @@ abstract class TestCase extends BaseTestCase
             ->pluck('id')
             ->all();
 
-        $role->permissions()->sync($permissionIds);
+        $permissionSync = [];
+        foreach ($permissionIds as $permissionId) {
+            $permissionSync[(int) $permissionId] = [
+                'ulid' => (string) Str::ulid(),
+            ];
+        }
+
+        $role->permissions()->sync($permissionSync);
         $membership->roles()->sync([$role->id]);
 
         app(PermissionService::class)->clearCache();
