@@ -98,6 +98,7 @@ export function InventoryAdjustmentsPage() {
   const [documentUlid, setDocumentUlid] = useState<string | null>(null)
   const [documentNumberValue, setDocumentNumberValue] = useState<string | null>(null)
   const [amendmentLines, setAmendmentLines] = useState<InventoryAdjustmentLine[]>([])
+  const [newLines, setNewLines] = useState<InventoryAdjustmentLine[]>([])
   const [amendmentDirty, setAmendmentDirty] = useState(false)
   const amendmentKeyRef = useRef(newAdjustmentKey())
   const [adjustmentDate, setAdjustmentDate] = useState(todayIso())
@@ -173,7 +174,9 @@ export function InventoryAdjustmentsPage() {
   const displayLines =
     document?.status === 'posted'
       ? amendmentLines
-      : (document?.lines ?? [])
+      : document
+        ? (document.lines ?? [])
+        : newLines
   const entryEnabled = canAdjust
 
   useEffect(() => {
@@ -261,6 +264,7 @@ export function InventoryAdjustmentsPage() {
     setDocumentUlid(null)
     setDocumentNumberValue(null)
     setAmendmentLines([])
+    setNewLines([])
     setAmendmentDirty(false)
     amendmentKeyRef.current = newAdjustmentKey()
     setAdjustmentDate(todayIso())
@@ -352,18 +356,17 @@ export function InventoryAdjustmentsPage() {
     }
   }
 
-  function stagePostedLine() {
-    if (!document || document.status !== 'posted') return
+  function buildStagedLine(): InventoryAdjustmentLine | null {
     if (!productUlid) {
       feedback.info('Select a product.', 'Adjustment')
-      return
+      return null
     }
 
     const plus = Number.parseFloat(qtyPlus || '0') || 0
     const minus = Number.parseFloat(qtyMinus || '0') || 0
     if ((plus > 0) === (minus > 0)) {
       feedback.info('Enter either Qty + or Qty - with a value greater than zero.', 'Adjustment')
-      return
+      return null
     }
 
     const existing = displayLines.find((line) => line.ulid === selectedLineUlid)
@@ -382,8 +385,9 @@ export function InventoryAdjustmentsPage() {
 
     if (!product) {
       feedback.info('Select a valid product.', 'Adjustment')
-      return
+      return null
     }
+
     const inStock = Number.parseFloat(
       (sameProduct ? existing?.in_stock : null)
       ?? selectedProduct?.sales_lookup?.in_stock
@@ -395,13 +399,12 @@ export function InventoryAdjustmentsPage() {
       ?? '0',
     ) || 0
     const delta = plus - minus
-    const targetUlid =
-      selectedLineUlid
-      ?? displayLines.find((line) => line.product?.ulid === productUlid)?.ulid
-      ?? `amend-${productUlid}-${Date.now()}`
 
-    const staged: InventoryAdjustmentLine = {
-      ulid: targetUlid,
+    return {
+      ulid:
+        selectedLineUlid
+        ?? displayLines.find((line) => line.product?.ulid === productUlid)?.ulid
+        ?? `local-${productUlid}-${Date.now()}`,
       in_stock: formatDecimal(inStock),
       qty_plus: plus > 0 ? formatDecimal(plus) : '0.0',
       qty_minus: minus > 0 ? formatDecimal(minus) : '0.0',
@@ -411,12 +414,35 @@ export function InventoryAdjustmentsPage() {
       remarks: lineRemarks.trim() || null,
       product,
     }
+  }
+
+  function stageNewLine() {
+    const staged = buildStagedLine()
+    if (!staged) return
+
+    setNewLines((current) => {
+      const existing = current.find((line) =>
+        line.ulid === selectedLineUlid || line.product?.ulid === staged.product?.ulid,
+      )
+      if (existing) {
+        return current.map((line) => line.ulid === existing.ulid ? staged : line)
+      }
+      return [...current, staged]
+    })
+    clearLineForm(true)
+  }
+
+  function stagePostedLine() {
+    if (!document || document.status !== 'posted') return
+    const staged = buildStagedLine()
+    if (!staged) return
 
     setAmendmentLines((current) => {
-      const sameProduct = current.find((line) => line.product?.ulid === productUlid)
-      const replaceUlid = selectedLineUlid ?? sameProduct?.ulid
-      if (replaceUlid) {
-        return current.map((line) => line.ulid === replaceUlid ? staged : line)
+      const existing = current.find((line) =>
+        line.ulid === selectedLineUlid || line.product?.ulid === staged.product?.ulid,
+      )
+      if (existing) {
+        return current.map((line) => line.ulid === existing.ulid ? staged : line)
       }
       return [...current, staged]
     })
@@ -425,7 +451,11 @@ export function InventoryAdjustmentsPage() {
   }
 
   function saveCurrentLine() {
-    if (document?.status === 'posted') {
+    if (!document) {
+      stageNewLine()
+      return
+    }
+    if (document.status === 'posted') {
       stagePostedLine()
       return
     }
@@ -433,7 +463,13 @@ export function InventoryAdjustmentsPage() {
   }
 
   async function removeCurrentLine(lineUlid: string) {
-    if (document?.status === 'posted') {
+    if (!document) {
+      setNewLines((current) => current.filter((line) => line.ulid !== lineUlid))
+      clearLineForm(true)
+      return
+    }
+
+    if (document.status === 'posted') {
       if (!await feedback.confirm('Remove this adjustment line?')) return
       setAmendmentLines((current) => current.filter((line) => line.ulid !== lineUlid))
       setAmendmentDirty(true)
