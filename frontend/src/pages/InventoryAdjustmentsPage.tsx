@@ -1089,7 +1089,7 @@ export function InventoryAdjustmentsPage() {
                             />
                             <button
                               type="button"
-                              className="inventory-adjustments-product-arrow"
+                              className="ui-select-combobox-toggle inventory-adjustments-product-arrow"
                               aria-label="Open product list"
                               aria-expanded={editing && productPickerOpen}
                               disabled={!canAdjust}
@@ -1102,7 +1102,7 @@ export function InventoryAdjustmentsPage() {
                                 setProductPickerOpen((open) => !open)
                               }}
                             >
-                              <span aria-hidden>
+                              <span className="ui-select-arrow bp-fancy-select-arrow vca-select-caret" aria-hidden>
                                 <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
                                   <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
                                 </svg>
@@ -1233,7 +1233,7 @@ export function InventoryAdjustmentsPage() {
                           />
                           <button
                             type="button"
-                            className="inventory-adjustments-product-arrow"
+                            className="ui-select-combobox-toggle inventory-adjustments-product-arrow"
                             aria-label="Open product list"
                             aria-expanded={productPickerOpen}
                             onMouseDown={(event) => {
@@ -1245,7 +1245,7 @@ export function InventoryAdjustmentsPage() {
                               window.setTimeout(() => productInputRef.current?.focus(), 0)
                             }}
                           >
-                            <span aria-hidden>
+                            <span className="ui-select-arrow bp-fancy-select-arrow vca-select-caret" aria-hidden>
                               <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
                                 <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
                               </svg>
