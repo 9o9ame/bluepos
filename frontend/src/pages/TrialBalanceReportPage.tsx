@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Eye, Printer, X } from 'lucide-react'
 import { fetchTrialBalanceReport } from '../api/reports'
@@ -105,20 +105,14 @@ function TrialBalancePreview({
 
               {report.group_by === 'level_wise' && group.sections
                 ? group.sections.map((section, sectionIndex) => (
-                    <>
-                      <tr
-                        className="trial-balance-sub-head"
-                        key={`section-${section.account_type_head?.ulid ?? sectionIndex}`}
-                      >
+                    <Fragment key={`section-${section.account_type_head?.ulid ?? sectionIndex}`}>
+                      <tr className="trial-balance-sub-head">
                         <td colSpan={3}>{section.account_type_head?.name ?? 'Ungrouped'}</td>
                       </tr>
 
                       {section.account_types.map((typeSection, typeIndex) => (
-                        <>
-                          <tr
-                            className="trial-balance-account-type"
-                            key={`type-${typeSection.account_type?.ulid ?? typeIndex}`}
-                          >
+                        <Fragment key={`type-${typeSection.account_type?.ulid ?? typeIndex}`}>
+                          <tr className="trial-balance-account-type">
                             <td colSpan={3}>
                               {[typeSection.account_type?.code, typeSection.account_type?.name]
                                 .filter(Boolean)
@@ -135,7 +129,7 @@ function TrialBalancePreview({
                             <td>{amount(typeSection.totals.debit)}</td>
                             <td>{amount(typeSection.totals.credit)}</td>
                           </tr>
-                        </>
+                        </Fragment>
                       ))}
 
                       <tr className="trial-balance-subtotal">
@@ -143,7 +137,7 @@ function TrialBalancePreview({
                         <td>{amount(section.totals.debit)}</td>
                         <td>{amount(section.totals.credit)}</td>
                       </tr>
-                    </>
+                    </Fragment>
                   ))
                 : group.rows.map((row) => (
                     <AccountRow key={row.account.ulid} row={row} />
