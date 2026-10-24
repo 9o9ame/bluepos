@@ -6,10 +6,14 @@ use App\Actions\Auth\ProvisionTenantAction;
 use App\Actions\Platform\AssignTenantPlanAction;
 use App\Actions\Platform\CreatePlatformAdminAction;
 use App\Auth\AuthenticatedSession;
+use App\Authz\PermissionService;
+use App\Enums\BranchAccess;
 use App\Enums\DeviceStatus;
 use App\Enums\PlatformUserStatus;
 use App\Models\AccountType;
 use App\Models\Device;
+use App\Models\Permission;
+use App\Models\Role;
 use App\Models\Platform\PlatformPermission;
 use App\Models\Platform\PlatformRole;
 use App\Models\Platform\PlatformUser;
@@ -220,6 +224,38 @@ abstract class TestCase extends BaseTestCase
             'username' => 'owner',
             'password' => 'password123',
         ]);
+    }
+
+    protected function restrictCurrentMembershipWithoutPermission(string $permissionKey): void
+    {
+        $context = app(TenantContext::class);
+        $membership = $context->membership();
+
+        $role = Role::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'name' => 'Restricted Test Role',
+            'code' => 'test_restricted_'.substr(hash('sha256', $permissionKey), 0, 12),
+            'description' => 'Test-only non-privileged role',
+            'branch_access' => BranchAccess::AllBranches,
+            'is_system' => false,
+            'is_active' => true,
+        ]);
+
+        $permissionIds = Permission::query()
+            ->where('is_platform', false)
+            ->where('key', '!=', $permissionKey)
+            ->pluck('id')
+            ->all();
+
+        $role->permissions()->sync($permissionIds);
+        $membership->roles()->sync([$role->id]);
+
+        app(PermissionService::class)->clearCache();
+
+        $this->assertFalse(
+            app(PermissionService::class)->can($permissionKey),
+            'Restricted test role unexpectedly retained permission '.$permissionKey,
+        );
     }
 
     protected function loginAs(string $suffix, string $username, string $password = 'password123'): TestResponse
