@@ -327,6 +327,9 @@ export function TrialBalanceReportPage() {
   const [startDate, setStartDate] = useState(params.get('start_date') || today().slice(0, 8) + '01')
   const [endDate, setEndDate] = useState(params.get('end_date') || today())
   const [sixGrouping, setSixGrouping] = useState<TrialBalanceGroupBy>((params.get('group_by') || 'level_wise') as TrialBalanceGroupBy)
+  const [sixArrange, setSixArrange] = useState<TrialBalanceArrangeBy>((params.get('arrange_by') || 'code_asc') as TrialBalanceArrangeBy)
+  const [sixTab, setSixTab] = useState<'selection' | 'additional'>('selection')
+  const [sixTitle, setSixTitle] = useState(params.get('report_title') || 'Trial Balance (Complete)')
   const [sectionIndex, setSectionIndex] = useState(0)
   const reportPaperRef = useRef<HTMLDivElement>(null)
   const viewerCanvasRef = useRef<HTMLDivElement>(null)
@@ -349,15 +352,15 @@ export function TrialBalanceReportPage() {
   })
 
   const sixQuery = useQuery({
-    queryKey: ['reports', 'trial-balance', 'six-columns', startDate, endDate, sixGrouping],
+    queryKey: ['reports', 'trial-balance', 'six-columns', startDate, endDate, sixGrouping, sixArrange],
     queryFn: () => fetchTrialBalanceSixColumns({
-      start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: 'code_asc',
+      start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange,
     }),
     enabled: isSixViewer,
   })
 
   const openSixView = (view: 'six_columns' | 'dr_cr_separate') => {
-    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping })
+    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle })
     openModule(`/reports/accounts/trial-balance?${query.toString()}`)
   }
 
@@ -476,24 +479,87 @@ export function TrialBalanceReportPage() {
   }
 
   if (isSixOptions) {
+    const disabledHint = 'This selection requires verified backend accounting/report support before it can affect results.'
     return (
-      <section className="trial-balance-page" aria-label="Trial Balance Six Columns">
+      <section className="trial-balance-page tb6-options-page" aria-label="Trial Balance Six Columns">
         <header className="trial-balance-title"><h1>Trial Balance (6 Columns Format)</h1></header>
-        <div className="tb6-options">
-          <h2>Selection</h2>
-          <div className="tb6-dates">
-            <label>Start Date <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
-            <label>Ending Date <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label>
+        <div className="tb6-workspace">
+          <div className="tb6-tabs" role="tablist" aria-label="Trial Balance options">
+            <UiButton variant={sixTab === 'selection' ? 'primary' : 'default'} role="tab"
+              aria-selected={sixTab === 'selection'} label="Selection" onClick={() => setSixTab('selection')} />
+            <UiButton variant={sixTab === 'additional' ? 'primary' : 'default'} role="tab"
+              aria-selected={sixTab === 'additional'} label="Additional Selection" onClick={() => setSixTab('additional')} />
           </div>
-          <label>Report Grouping
-            <UiSelect searchable={false} value={sixGrouping} options={GROUP_OPTIONS}
-              onChange={(value) => setSixGrouping(value as TrialBalanceGroupBy)} />
-          </label>
-          {startDate > endDate ? <p role="alert">Start Date must be on or before Ending Date.</p> : null}
-          <div className="tb6-options-actions">
-            <UiButton variant="info" label="Preview 6 Columns" disabled={!startDate || !endDate || startDate > endDate} onClick={() => openSixView('six_columns')} />
-            <UiButton variant="info" label="Dr / Cr Separate" disabled={!startDate || !endDate || startDate > endDate} onClick={() => openSixView('dr_cr_separate')} />
-            <UiButton variant="default" label="Close" onClick={closeActiveTab} />
+          {sixTab === 'selection' ? (
+            <div className="tb6-selection-grid" role="tabpanel">
+              <aside className="tb6-sidebar">
+                <div className="tb6-dates">
+                  <label>Start Date<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
+                  <label>Ending Date<input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label>
+                </div>
+                <label>Report Grouping
+                  <UiSelect searchable={false} value={sixGrouping} options={GROUP_OPTIONS}
+                    onChange={(value) => setSixGrouping(value as TrialBalanceGroupBy)} />
+                </label>
+                <label className="tb6-checkbox"><input type="checkbox" disabled title={disabledHint} /> 2 Column Format</label>
+                <label className="tb6-checkbox"><input type="checkbox" disabled title={disabledHint} /> Each Group on Separate Page</label>
+                <label className="tb6-checkbox"><input type="checkbox" disabled title={disabledHint} /> Include Stocks in Report</label>
+                <label className="tb6-checkbox"><input type="checkbox" disabled title={disabledHint} /> Re-Evaluate Stock Using FIFO</label>
+                <label>Summary By Group<UiSelect value="" searchable={false} options={[{value:'',label:'Not configured'}]} disabled onChange={() => undefined} /></label>
+                <label>Title On Report
+                  <input type="text" maxLength={120} value={sixTitle} onChange={(event) => setSixTitle(event.target.value)} />
+                </label>
+                <fieldset className="tb6-unavailable" disabled title={disabledHint}>
+                  <legend>Having Closing Balance</legend>
+                  <label>Condition<input value="Not available" readOnly /></label>
+                  <label>Amount<input value="0.00" readOnly /></label>
+                </fieldset>
+                <div className="tb6-sidebar-bottom">
+                  <label>Show<UiSelect searchable={false} value="code" options={[{value:'code',label:'CODE'}]} onChange={() => undefined} /></label>
+                  <label>Arrange By<UiSelect searchable={false} value={sixArrange} options={ARRANGE_OPTIONS}
+                    onChange={(value) => setSixArrange(value as TrialBalanceArrangeBy)} /></label>
+                </div>
+              </aside>
+              <div className="tb6-filter-stack">
+                <div className="tb6-filter-panel">
+                  <h3>Head Account Type</h3>
+                  <p>Account heads can be filtered when server-side hierarchy filtering is enabled.</p>
+                  <label className="tb6-checkbox"><input type="checkbox" disabled /> All heads</label>
+                </div>
+                <div className="tb6-filter-panel"><h3>Account Type Heads</h3>
+                  <p>Individual sub-head filters are not yet available.</p>
+                </div>
+              </div>
+              <div className="tb6-filter-stack">
+                <div className="tb6-filter-panel">
+                  <h3>Account Type</h3>
+                  <p>Account-type filtering requires a server-side filter before totals are calculated.</p>
+                </div>
+                <div className="tb6-filter-panel"><h3>Voucher / Transaction Types</h3>
+                  <p>Not available until transaction-type mapping is verified.</p>
+                </div>
+              </div>
+              <div className="tb6-filter-panel tb6-nonaccounting">
+                <h3>Non Accounting Group Type</h3>
+                <p>Customers, vendors and other non-accounting group filters need their own validated mappings.</p>
+              </div>
+            </div>
+          ) : (
+            <section className="tb6-additional" role="tabpanel">
+              <h3>Additional Selection</h3>
+              <p>Additional stock, voucher and non-accounting filters are pending verified BluePOS reporting support. They will not silently alter financial totals.</p>
+              <label>Report Title
+                <input type="text" value={sixTitle} maxLength={120} onChange={(event) => setSixTitle(event.target.value)} />
+              </label>
+            </section>
+          )}
+          <div className="tb6-footer">
+            <span role="status">{startDate > endDate ? 'Start Date must be on or before Ending Date.' : 'Posted journals only · current tenant and branch'}</span>
+            <div className="tb6-options-actions">
+              <UiButton variant="info" label="Preview 6 Columns" disabled={!startDate || !endDate || startDate > endDate} onClick={() => openSixView('six_columns')} />
+              <UiButton variant="info" label="Dr / Cr Separate" disabled={!startDate || !endDate || startDate > endDate} onClick={() => openSixView('dr_cr_separate')} />
+              <UiButton variant="default" label="Close" onClick={closeActiveTab} />
+            </div>
           </div>
         </div>
       </section>
@@ -510,7 +576,7 @@ export function TrialBalanceReportPage() {
             window.print()
           }} />
           <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh" disabled={sixQuery.isFetching} onClick={() => void sixQuery.refetch()} />
-          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping }).toString()}`)} />
+          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle }).toString()}`)} />
           <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
         </div>
         <div className="trial-balance-viewer-canvas">
