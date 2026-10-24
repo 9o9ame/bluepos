@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { Eye, Printer, X } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { ArrowLeft, Eye, Printer, RefreshCw, X } from 'lucide-react'
 import { fetchTrialBalanceReport } from '../api/reports'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
@@ -237,45 +238,121 @@ function TrialBalancePreview({
 
 export function TrialBalanceReportPage() {
   const { session } = useAuth()
-  const { closeActiveTab } = useWorkspace()
-  const [asOfDate, setAsOfDate] = useState(today())
-  const [groupBy, setGroupBy] = useState<TrialBalanceGroupBy>('level_wise')
-  const [arrangeBy, setArrangeBy] = useState<TrialBalanceArrangeBy>('code_asc')
-  const [separatePages, setSeparatePages] = useState(false)
-  const [arrangeIds] = useState(false)
-  const [report, setReport] = useState<TrialBalanceReport | null>(null)
-  const [reportView, setReportView] = useState<'detail' | 'major_minor'>('detail')
+  const { closeActiveTab, openModule } = useWorkspace()
+  const location = useLocation()
+  const params = new URLSearchParams(location.search)
+  const viewParam = params.get('view')
+  const isViewer = viewParam === 'detail' || viewParam === 'major_minor'
 
-  const previewMutation = useMutation({
-    mutationFn: fetchTrialBalanceReport,
-    onSuccess: setReport,
+  const initialDate = params.get('as_of_date') || today()
+  const initialGroup = (params.get('group_by') || 'level_wise') as TrialBalanceGroupBy
+  const initialArrange = (params.get('arrange_by') || 'code_asc') as TrialBalanceArrangeBy
+  const initialSeparatePages = params.get('separate_pages') === '1'
+
+  const [asOfDate, setAsOfDate] = useState(initialDate)
+  const [groupBy, setGroupBy] = useState<TrialBalanceGroupBy>(initialGroup)
+  const [arrangeBy, setArrangeBy] = useState<TrialBalanceArrangeBy>(initialArrange)
+  const [separatePages, setSeparatePages] = useState(initialSeparatePages)
+  const [arrangeIds] = useState(false)
+
+  const viewerQuery = useQuery({
+    queryKey: [
+      'reports',
+      'trial-balance',
+      viewParam,
+      initialDate,
+      initialGroup,
+      initialArrange,
+    ],
+    queryFn: () => fetchTrialBalanceReport({
+      as_of_date: initialDate,
+      group_by: viewParam === 'major_minor' ? 'level_wise' : initialGroup,
+      arrange_by: viewParam === 'major_minor' ? 'code_asc' : initialArrange,
+    }),
+    enabled: isViewer,
   })
 
-  const preview = () => {
-    setReportView('detail')
-    previewMutation.mutate({
+  const openReportView = (view: 'detail' | 'major_minor') => {
+    const query = new URLSearchParams({
+      view,
       as_of_date: asOfDate,
-      group_by: groupBy,
-      arrange_by: arrangeBy,
+      group_by: view === 'major_minor' ? 'level_wise' : groupBy,
+      arrange_by: view === 'major_minor' ? 'code_asc' : arrangeBy,
+      separate_pages: separatePages ? '1' : '0',
     })
-  }
-
-  const previewMajorMinor = () => {
-    setReportView('major_minor')
-    previewMutation.mutate({
-      as_of_date: asOfDate,
-      group_by: 'level_wise',
-      arrange_by: 'code_asc',
-    })
+    openModule(`/reports/accounts/trial-balance?${query.toString()}`)
   }
 
   const printReport = () => {
-    if (!report) return
+    if (!viewerQuery.data) return
     const root = document.documentElement
     root.setAttribute('data-trial-balance-print', 'true')
     const cleanup = () => root.removeAttribute('data-trial-balance-print')
     window.addEventListener('afterprint', cleanup, { once: true })
     window.requestAnimationFrame(() => window.print())
+  }
+
+  if (isViewer) {
+    const report = viewerQuery.data
+
+    return (
+      <section className="trial-balance-page trial-balance-viewer-page" aria-label="Trial Balance Report">
+        <div className="trial-balance-viewer-toolbar">
+          <UiButton
+            variant="info"
+            icon={<Printer size={15} />}
+            label="Print"
+            disabled={!report}
+            onClick={printReport}
+          />
+          <UiButton
+            variant="info"
+            icon={<RefreshCw size={15} />}
+            label={viewerQuery.isFetching ? 'Refreshing…' : 'Refresh'}
+            disabled={viewerQuery.isFetching}
+            onClick={() => void viewerQuery.refetch()}
+          />
+          <UiButton
+            variant="default"
+            icon={<ArrowLeft size={15} />}
+            label="Edit Options"
+            onClick={() => openModule('/reports/accounts/trial-balance')}
+          />
+          <UiButton
+            variant="info"
+            icon={<X size={15} />}
+            label="Close"
+            onClick={closeActiveTab}
+          />
+        </div>
+
+        {viewerQuery.isError ? (
+          <div className="trial-balance-error" role="alert">
+            Unable to load Trial Balance. Please check the selected options and try again.
+          </div>
+        ) : null}
+
+        <div className="trial-balance-viewer-canvas">
+          {viewerQuery.isLoading ? (
+            <div className="trial-balance-viewer-loading">Loading report…</div>
+          ) : report ? (
+            <div className="trial-balance-result">
+              <div className="trial-balance-business-heading">
+                <strong>{session?.tenant.name ?? 'BluePOS'}</strong>
+                <span>
+                  {session?.branch.code ?? '—'} — {session?.branch.name ?? '—'}
+                </span>
+              </div>
+              {viewParam === 'major_minor' ? (
+                <MajorMinorHeadWisePreview report={report} />
+              ) : (
+                <TrialBalancePreview report={report} separatePages={initialSeparatePages} />
+              )}
+            </div>
+          ) : null}
+        </div>
+      </section>
+    )
   }
 
   return (
@@ -354,16 +431,16 @@ export function TrialBalanceReportPage() {
           <UiButton
             variant="info"
             icon={<Eye size={15} />}
-            label={previewMutation.isPending ? 'Loading…' : 'Preview'}
-            disabled={previewMutation.isPending || !asOfDate}
-            onClick={preview}
+            label="Preview"
+            disabled={!asOfDate}
+            onClick={() => openReportView('detail')}
           />
           <UiButton
             variant="info"
             icon={<Printer size={15} />}
             label="Print"
-            disabled={!report}
-            onClick={printReport}
+            disabled
+            title="Open Preview first, then print from the report tab."
           />
           <UiButton
             variant="info"
@@ -376,33 +453,11 @@ export function TrialBalanceReportPage() {
         <UiButton
           className="trial-balance-major-minor"
           variant="default"
-          label={previewMutation.isPending && reportView === 'major_minor' ? 'Loading…' : 'Major / Minor Head Wise'}
-          disabled={previewMutation.isPending || !asOfDate}
-          onClick={previewMajorMinor}
+          label="Major / Minor Head Wise"
+          disabled={!asOfDate}
+          onClick={() => openReportView('major_minor')}
         />
       </div>
-
-      {previewMutation.isError ? (
-        <div className="trial-balance-error" role="alert">
-          Unable to load Trial Balance. Please check the selected options and try again.
-        </div>
-      ) : null}
-
-      {report ? (
-        <div className="trial-balance-result">
-          <div className="trial-balance-business-heading">
-            <strong>{session?.tenant.name ?? 'BluePOS'}</strong>
-            <span>
-              {session?.branch.code ?? '—'} — {session?.branch.name ?? '—'}
-            </span>
-          </div>
-          {reportView === 'major_minor' ? (
-            <MajorMinorHeadWisePreview report={report} />
-          ) : (
-            <TrialBalancePreview report={report} separatePages={separatePages} />
-          )}
-        </div>
-      ) : null}
     </section>
   )
 }
