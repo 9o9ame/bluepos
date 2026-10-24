@@ -160,6 +160,18 @@
   min-width: 92px;
 }
 
+.trial-balance-export-choice {
+  min-width: 154px;
+}
+
+.trial-balance-export-choice .ui-select-trigger {
+  min-height: 29px;
+}
+
+.trial-balance-viewer-zoom .trial-balance-section-count {
+  min-width: 96px;
+}
+
 .trial-balance-viewer-search,
 .trial-balance-viewer-zoom {
   display: inline-flex;
