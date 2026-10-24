@@ -106,13 +106,24 @@ class TrialBalanceReportBuilder
         $grouped = $rows->groupBy(fn (array $row): string => $this->groupKey($row, $groupBy));
 
         $groups = $grouped->map(function (Collection $groupRows, string $key) use ($groupBy, $arrangeBy): array {
-            $sorted = $this->sortRows($groupRows->values(), $arrangeBy);
+            if ($groupBy === 'level_wise') {
+                $sections = $this->levelWiseSections($groupRows->values(), $arrangeBy);
+                $sorted = collect($sections)
+                    ->flatMap(fn (array $section) => collect($section['account_types'])
+                        ->flatMap(fn (array $type) => $type['rows']))
+                    ->values();
+            } else {
+                $sections = null;
+                $sorted = $this->sortRows($groupRows->values(), $arrangeBy);
+            }
+
             $first = $sorted->first();
 
             return [
                 'key' => $key,
                 'label' => $this->groupLabel($first, $groupBy),
                 'rows' => $sorted->values()->all(),
+                'sections' => $sections,
                 'totals' => $this->totals($sorted),
             ];
         })->values();
@@ -161,6 +172,53 @@ class TrialBalanceReportBuilder
             'main_account', 'level_wise' => (string) ($row['main_head']['name'] ?? 'Ungrouped'),
             default => 'All Accounts',
         };
+    }
+
+    /**
+     * @param Collection<int, array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    private function levelWiseSections(Collection $rows, string $arrangeBy): array
+    {
+        return $rows
+            ->groupBy(fn (array $row): string => (string) ($row['account_type_head']['ulid'] ?? 'ungrouped'))
+            ->map(function (Collection $sectionRows) use ($arrangeBy): array {
+                $firstSectionRow = $sectionRows->first();
+
+                $types = $sectionRows
+                    ->groupBy(fn (array $row): string => (string) ($row['account_type']['ulid'] ?? 'ungrouped'))
+                    ->map(function (Collection $typeRows) use ($arrangeBy): array {
+                        $sorted = $this->sortRows($typeRows->values(), $arrangeBy);
+                        $firstTypeRow = $sorted->first();
+
+                        return [
+                            'account_type' => $firstTypeRow['account_type'] ?? null,
+                            'rows' => $sorted->values()->all(),
+                            'totals' => $this->totals($sorted),
+                        ];
+                    })
+                    ->sortBy(function (array $type): array {
+                        return [
+                            $type['account_type']['sort_order'] ?? 9999,
+                            $type['account_type']['name'] ?? '',
+                        ];
+                    })
+                    ->values();
+
+                return [
+                    'account_type_head' => $firstSectionRow['account_type_head'] ?? null,
+                    'account_types' => $types->all(),
+                    'totals' => $this->totals($sectionRows),
+                ];
+            })
+            ->sortBy(function (array $section): array {
+                return [
+                    $section['account_type_head']['sort_order'] ?? 9999,
+                    $section['account_type_head']['name'] ?? '',
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     /**
