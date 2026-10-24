@@ -225,6 +225,8 @@ export function PurchaseOrderPage() {
   const [generationLastPage, setGenerationLastPage] = useState(0)
 
   const productSearchRef = useRef<HTMLInputElement | null>(null)
+  const entryProductAnchorRef = useRef<HTMLDivElement | null>(null)
+  const editingProductAnchorRef = useRef<HTMLDivElement | null>(null)
   const requestedGenerationPageRef = useRef(0)
 
   const activeOrder = openedOrder ?? savedOrder
@@ -1309,7 +1311,10 @@ export function PurchaseOrderPage() {
                             <div className="purchase-order-row-product">
                               {editingProductKey === line.key ? (
                                 <>
-                                  <div className="purchase-order-product-combo">
+                                  <div
+                                    ref={editingProductAnchorRef}
+                                    className="purchase-order-product-combo"
+                                  >
                                     <input
                                       ref={productSearchRef}
                                       className="purchase-order-product-input"
@@ -1363,7 +1368,7 @@ export function PurchaseOrderPage() {
                                         priceType="retail"
                                         mode="purchase"
                                         themed
-                                        portalAnchorRef={productSearchRef}
+                                        portalAnchorRef={editingProductAnchorRef}
                                         onRequestClose={() => setProductPickerOpen(false)}
                                         onSelect={(product) => void addProduct(product)}
                                       />
@@ -1506,7 +1511,10 @@ export function PurchaseOrderPage() {
                   <tr className="purchase-order-entry-row is-entry-row">
                     <td className="purchase-order-row-selector">›</td>
                     <td className="purchase-order-product-cell">
-                      <div className="purchase-order-product-combo">
+                      <div
+                        ref={entryProductAnchorRef}
+                        className="purchase-order-product-combo"
+                      >
                         <input
                           ref={productSearchRef}
                           className="purchase-order-product-input"
@@ -1562,7 +1570,7 @@ export function PurchaseOrderPage() {
                           priceType="retail"
                           mode="purchase"
                           themed
-                          portalAnchorRef={productSearchRef}
+                          portalAnchorRef={entryProductAnchorRef}
                           onRequestClose={() => setProductPickerOpen(false)}
                           onSelect={(product) => void addProduct(product)}
                         />
