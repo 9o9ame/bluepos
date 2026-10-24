@@ -137,15 +137,7 @@ class PurchaseAmendmentTest extends TestCase
             '20.0000',
         );
 
-        $permission = Permission::query()
-            ->where('key', 'purchases.amend_posted')
-            ->firstOrFail();
-        $membership = app(TenantContext::class)->membership();
-
-        foreach ($membership->roles()->get() as $role) {
-            $role->permissions()->detach($permission->id);
-        }
-        app(PermissionService::class)->clearCache();
+        $this->restrictCurrentMembershipWithoutPermission('purchases.amend_posted');
 
         $this->patchJson('/api/purchases/'.$purchaseUlid.'/amend', [
             'lines' => [[
