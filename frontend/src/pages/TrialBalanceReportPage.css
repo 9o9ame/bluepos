@@ -218,9 +218,18 @@
   font-weight: 600;
 }
 
+.trial-balance-subtotal td,
 .trial-balance-group-total td {
   font-weight: 800;
   background: var(--ui-surface-subtle);
+}
+
+.trial-balance-subtotal td:first-child {
+  padding-left: 18px;
+}
+
+.trial-balance-group-total td {
+  border-top-width: 2px;
 }
 
 .trial-balance-grand-total {
