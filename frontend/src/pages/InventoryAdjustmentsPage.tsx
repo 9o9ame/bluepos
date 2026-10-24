@@ -482,7 +482,7 @@ export function InventoryAdjustmentsPage() {
   }
 
   const saveHeader = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!accountUlid) {
         throw new Error('Select an adjustment account.')
       }
@@ -494,19 +494,42 @@ export function InventoryAdjustmentsPage() {
         notes: documentNotes.trim() || null,
       }
 
-      return documentUlid
-        ? updateInventoryAdjustment(documentUlid, payload)
-        : createInventoryAdjustment(payload)
+      if (documentUlid) {
+        return updateInventoryAdjustment(documentUlid, payload)
+      }
+
+      if (newLines.length === 0) {
+        throw new Error('Add at least one adjustment line.')
+      }
+
+      const created = await createInventoryAdjustment(payload)
+
+      for (const line of newLines) {
+        if (!line.product?.ulid) continue
+        await createInventoryAdjustmentLine(created.ulid, {
+          product_ulid: line.product.ulid,
+          qty_plus: Number(line.qty_plus) > 0 ? line.qty_plus : '0',
+          qty_minus: Number(line.qty_minus) > 0 ? line.qty_minus : '0',
+          notes: line.remarks,
+        })
+      }
+
+      return fetchInventoryAdjustment(created.ulid)
     },
     onSuccess: async (saved) => {
       setDocumentUlid(saved.ulid)
+      setDocumentNumberValue(saved.document_number)
+      setNewLines([])
       setHeaderDirty(false)
       await queryClient.invalidateQueries({ queryKey: ['inventory-adjustments'] })
       await queryClient.invalidateQueries({ queryKey: ['inventory-adjustment', saved.ulid] })
-      feedback.success(documentUlid ? 'Adjustment header saved.' : `Adjustment ${saved.document_number} created.`)
+      feedback.success(documentUlid ? 'Adjustment header saved.' : `Adjustment ${saved.document_number} saved.`)
     },
     onError: (error) => {
-      if (error instanceof Error && error.message === 'Select an adjustment account.') {
+      if (error instanceof Error && (
+        error.message === 'Select an adjustment account.' ||
+        error.message === 'Add at least one adjustment line.'
+      )) {
         feedback.info(error.message, 'Adjustment')
         return
       }
@@ -648,6 +671,61 @@ export function InventoryAdjustmentsPage() {
         return
       }
       feedback.fromApiError(error, 'Unable to amend adjustment.')
+    },
+  })
+
+  const saveAndPostFresh = useMutation({
+    mutationFn: async () => {
+      if (document) {
+        throw new Error('Fresh adjustment expected.')
+      }
+      if (!accountUlid) {
+        throw new Error('Select an adjustment account.')
+      }
+      if (newLines.length === 0) {
+        throw new Error('Add at least one adjustment line.')
+      }
+
+      const created = await createInventoryAdjustment({
+        account_ulid: accountUlid,
+        adjustment_date: adjustmentDate,
+        adjustment_type: 'stock_adjustment',
+        notes: documentNotes.trim() || null,
+      })
+
+      for (const line of newLines) {
+        if (!line.product?.ulid) continue
+        await createInventoryAdjustmentLine(created.ulid, {
+          product_ulid: line.product.ulid,
+          qty_plus: Number(line.qty_plus) > 0 ? line.qty_plus : '0',
+          qty_minus: Number(line.qty_minus) > 0 ? line.qty_minus : '0',
+          notes: line.remarks,
+        })
+      }
+
+      return postInventoryAdjustment(created.ulid)
+    },
+    onSuccess: async (saved) => {
+      setDocumentUlid(saved.ulid)
+      setDocumentNumberValue(saved.document_number)
+      setNewLines([])
+      setHeaderDirty(false)
+      clearLineForm()
+      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustment', saved.ulid] })
+      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustments'] })
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
+      await queryClient.invalidateQueries({ queryKey: ['inventory-stock'] })
+      feedback.success(`Adjustment ${saved.document_number} posted.`)
+    },
+    onError: (error) => {
+      if (error instanceof Error && (
+        error.message === 'Select an adjustment account.' ||
+        error.message === 'Add at least one adjustment line.'
+      )) {
+        feedback.info(error.message, 'Adjustment')
+        return
+      }
+      feedback.fromApiError(error, 'Unable to save and post adjustment.')
     },
   })
 
