@@ -790,19 +790,6 @@ export function InventoryAdjustmentsPage() {
     },
   })
 
-  const postDocument = useMutation({
-    mutationFn: () => postInventoryAdjustment(documentUlid as string),
-    onSuccess: async () => {
-      clearLineForm()
-      setHeaderDirty(false)
-      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustment', documentUlid] })
-      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustments'] })
-      await queryClient.invalidateQueries({ queryKey: ['products'] })
-      await queryClient.invalidateQueries({ queryKey: ['inventory-stock'] })
-      feedback.success('Adjustment posted. Stock movements and accounting are final.')
-    },
-    onError: (error) => feedback.fromApiError(error, 'Unable to post adjustment.'),
-  })
 
   const removeDocument = useMutation({
     mutationFn: (ulid: string) => deleteInventoryAdjustment(ulid),
@@ -1396,7 +1383,6 @@ export function InventoryAdjustmentsPage() {
                   !canAdjust ||
                   document?.status === 'posted' ||
                   (!document && newLines.length === 0) ||
-                  postDocument.isPending ||
                   saveAndPostDraft.isPending ||
                   saveAndPostFresh.isPending
                 }
