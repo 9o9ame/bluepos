@@ -326,7 +326,7 @@ export function TrialBalanceReportPage() {
   const [copyStatus, setCopyStatus] = useState('Copy')
   const [startDate, setStartDate] = useState(params.get('start_date') || today().slice(0, 8) + '01')
   const [endDate, setEndDate] = useState(params.get('end_date') || today())
-  const [sixGrouping, setSixGrouping] = useState<TrialBalanceGroupBy>('level_wise')
+  const [sixGrouping, setSixGrouping] = useState<TrialBalanceGroupBy>((params.get('group_by') || 'level_wise') as TrialBalanceGroupBy)
   const [sectionIndex, setSectionIndex] = useState(0)
   const reportPaperRef = useRef<HTMLDivElement>(null)
   const viewerCanvasRef = useRef<HTMLDivElement>(null)
@@ -357,7 +357,7 @@ export function TrialBalanceReportPage() {
   })
 
   const openSixView = (view: 'six_columns' | 'dr_cr_separate') => {
-    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate })
+    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping })
     openModule(`/reports/accounts/trial-balance?${query.toString()}`)
   }
 
@@ -510,7 +510,7 @@ export function TrialBalanceReportPage() {
             window.print()
           }} />
           <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh" disabled={sixQuery.isFetching} onClick={() => void sixQuery.refetch()} />
-          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule('/reports/accounts/trial-balance?view=six_options')} />
+          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping }).toString()}`)} />
           <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
         </div>
         <div className="trial-balance-viewer-canvas">
