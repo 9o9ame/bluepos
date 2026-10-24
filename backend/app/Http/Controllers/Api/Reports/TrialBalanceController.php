@@ -25,7 +25,10 @@ class TrialBalanceController extends Controller
         }
 
         $data = $request->validate([
-            'as_of_date' => ['required', 'date_format:Y-m-d'],
+            'as_of_date' => ['required_unless:mode,six_columns', 'date_format:Y-m-d'],
+            'mode' => ['nullable', Rule::in(['six_columns'])],
+            'start_date' => ['required_if:mode,six_columns', 'date_format:Y-m-d'],
+            'end_date' => ['required_if:mode,six_columns', 'date_format:Y-m-d', 'after_or_equal:start_date'],
             'group_by' => ['nullable', Rule::in([
                 'account_type',
                 'account_type_head',
@@ -45,6 +48,17 @@ class TrialBalanceController extends Controller
                 'name_desc',
             ])],
         ]);
+
+        if (($data['mode'] ?? null) === 'six_columns') {
+            return response()->json($this->builder->buildSixColumns(
+                $tenantContext->tenantId(),
+                $tenantContext->branchId(),
+                (string) $data['start_date'],
+                (string) $data['end_date'],
+                (string) ($data['group_by'] ?? 'level_wise'),
+                (string) ($data['arrange_by'] ?? 'code_asc'),
+            ));
+        }
 
         return response()->json($this->builder->build(
             $tenantContext->tenantId(),
