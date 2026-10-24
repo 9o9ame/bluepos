@@ -512,6 +512,63 @@
 }
 
 
+
+/* Wide six-column selection workspace, using BluePOS theme tokens. */
+.tb6-workspace {
+  margin: 12px;
+  min-height: calc(100vh - 250px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface-subtle);
+}
+.tb6-tabs { display: flex; gap: 4px; padding: 8px 10px 0; border-bottom: 1px solid var(--ui-border); }
+.tb6-tabs .ui-button { min-height: 34px; }
+.tb6-selection-grid {
+  display: grid;
+  grid-template-columns: 235px minmax(185px, 1fr) minmax(200px, 1.14fr) minmax(220px, 2fr);
+  gap: 7px;
+  flex: 1;
+  padding: 8px;
+  min-height: 480px;
+}
+.tb6-sidebar { display: flex; flex-direction: column; align-items: stretch; gap: 10px; padding: 4px; }
+.tb6-sidebar > label:not(.tb6-checkbox), .tb6-sidebar-bottom > label, .tb6-additional > label {
+  display: grid; gap: 4px; font-weight: 700; font-size: 12px;
+}
+.tb6-sidebar .tb6-dates { gap: 6px; flex-wrap: nowrap; }
+.tb6-sidebar .tb6-dates label { min-width: 0; width: 50%; font-size: 12px; }
+.tb6-sidebar input[type='date'] { width: 100%; min-width: 0; box-sizing: border-box; }
+.tb6-sidebar input[type='text'], .tb6-additional input[type='text'], .tb6-unavailable input {
+  width: 100%; min-height: 30px; box-sizing: border-box;
+  border: 1px solid var(--ui-control-border); border-radius: var(--control-radius);
+  background: var(--ui-control-face); color: var(--ui-text); padding: 0 6px;
+}
+.tb6-sidebar .tb6-checkbox { display: flex; gap: 6px; align-items: center; font-size: 12px; font-weight: 600; }
+.tb6-unavailable { padding: 6px; border: 1px solid var(--ui-border); }
+.tb6-unavailable label { display: grid; gap: 4px; font-size: 11px; }
+.tb6-sidebar-bottom { display: grid; gap: 8px; margin-top: auto; }
+.tb6-filter-stack { display: grid; grid-template-rows: minmax(150px, 1fr) minmax(230px, 2fr); gap: 7px; }
+.tb6-filter-panel { min-width: 0; padding: 0 8px 8px; border: 1px solid var(--ui-border); background: var(--ui-surface); }
+.tb6-filter-panel h3 { margin: 0 -8px 8px; padding: 6px; font-size: 13px; background: var(--ui-surface-muted); }
+.tb6-filter-panel p { font-size: 12px; color: var(--ui-text-muted); line-height: 1.45; }
+.tb6-filter-panel .tb6-checkbox { font-size: 12px; }
+.tb6-nonaccounting { align-self: stretch; }
+.tb6-additional { flex: 1; padding: 22px; }
+.tb6-additional > label { max-width: 420px; }
+.tb6-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--ui-border); font-size: 12px; }
+.tb6-footer .tb6-options-actions { margin-left: auto; }
+@media (max-width: 1050px) {
+  .tb6-selection-grid { grid-template-columns: 220px minmax(190px, 1fr) minmax(190px, 1fr); }
+  .tb6-nonaccounting { grid-column: 2 / -1; min-height: 130px; }
+}
+@media (max-width: 700px) {
+  .tb6-selection-grid { grid-template-columns: 1fr; }
+  .tb6-filter-stack { grid-template-rows: auto auto; }
+  .tb6-nonaccounting { grid-column: auto; }
+}
+
 /* Six-column report: only page geometry is local; theme controls remain shared. */
 .tb6-options {
   width: min(840px, calc(100% - 32px));
