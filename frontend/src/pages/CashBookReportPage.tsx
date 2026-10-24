@@ -81,9 +81,7 @@ export function CashBookReportPage() {
     openModule(`/reports/accounts/cash-book?${q}`)
   }
   const report = reportQuery.data
-  const rows = (report?.rows ?? []).filter((row) =>
-    [row.description, row.trans_no, row.doc, row.account_name].some((v) => v.toLowerCase().includes(search.toLowerCase())))
-    .sort((a, b) => group === 'document'
+  const rows = [...(report?.rows ?? [])].sort((a, b) => group === 'document'
       ? a.doc.localeCompare(b.doc) || (a.date ?? '').localeCompare(b.date ?? '')
       : (a.date ?? '').localeCompare(b.date ?? '') || a.line_ulid.localeCompare(b.line_ulid))
   const dailyCashFlow = (() => {
@@ -117,13 +115,13 @@ export function CashBookReportPage() {
     let mime: string
     if (format === 'csv') {
       const escapeCell = (value: string) => {
-        const safe = /^[\\s]*[=+@-]/.test(value) ? "'" + value : value
+        const safe = /^\s*[=+@-]/.test(value) ? "'" + value : value
         return '"' + safe.replace(/"/g, '""') + '"'
       }
       const data = [['Date', 'Reference', 'Voucher', 'Account', 'Description', 'Debit', 'Credit'],
         ...(report.rows.map((row) => [row.date ?? '', row.trans_no, row.doc,
           row.account_name, row.description, row.debit, row.credit]))]
-      content = '\\uFEFF' + data.map((line) => line.map(escapeCell).join(',')).join('\\r\\n')
+      content = '\uFEFF' + data.map((line) => line.map(escapeCell).join(',')).join('\r\n')
       mime = 'text/csv;charset=utf-8'
     } else if (format === 'html') {
       content = '<!doctype html><html><head><meta charset="utf-8"><title>Cash Book</title></head><body>' +
