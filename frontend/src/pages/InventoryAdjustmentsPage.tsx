@@ -126,6 +126,8 @@ export function InventoryAdjustmentsPage() {
 
   const [fromDate, setFromDate] = useState(monthStartIso())
   const [toDate, setToDate] = useState(todayIso())
+  const [searchQuery, setSearchQuery] = useState('')
+  const deferredSearchQuery = useDeferredValue(searchQuery)
   const [statusFilter, setStatusFilter] = useState('')
   const [selectedSearchUlid, setSelectedSearchUlid] = useState<string | null>(null)
   const [productWiseSearch, setProductWiseSearch] = useState('')
@@ -150,8 +152,9 @@ export function InventoryAdjustmentsPage() {
   })
 
   const listQuery = useQuery({
-    queryKey: ['inventory-adjustments', fromDate, toDate, statusFilter],
+    queryKey: ['inventory-adjustments', deferredSearchQuery, fromDate, toDate, statusFilter],
     queryFn: () => fetchInventoryAdjustments({
+      q: deferredSearchQuery.trim() || undefined,
       from_date: fromDate || undefined,
       to_date: toDate || undefined,
       status: statusFilter || undefined,
@@ -1413,6 +1416,15 @@ export function InventoryAdjustmentsPage() {
       {tab === 'search' ? (
         <>
           <div className="inventory-adjustments-report-toolbar">
+            <label className="inventory-adjustments-search-field">
+              <span>Search:</span>
+              <input
+                type="search"
+                value={searchQuery}
+                placeholder="Search adjustment #"
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+            </label>
             <label>
               <span>From:</span>
               <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
