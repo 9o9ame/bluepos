@@ -11,6 +11,7 @@ import type {
   TrialBalanceGroupBy,
   TrialBalanceReport,
   TrialBalanceRow,
+  TrialBalanceTotals,
 } from '../types/reports'
 import './TrialBalanceReportPage.css'
 
@@ -62,6 +63,12 @@ function reportDate(value: string): string {
   return `${day}-${month}-${year}`
 }
 
+function signedBalance(totals: TrialBalanceTotals): string {
+  if (totals.difference === '0.0000') return '—'
+  const formatted = amount(totals.difference)
+  return totals.difference_side === 'Cr' ? `(${formatted})` : formatted
+}
+
 function AccountRow({ row }: { row: TrialBalanceRow }) {
   return (
     <tr className="trial-balance-account-row">
@@ -74,6 +81,58 @@ function AccountRow({ row }: { row: TrialBalanceRow }) {
     </tr>
   )
 }
+function MajorMinorHeadWisePreview({ report }: { report: TrialBalanceReport }) {
+  const sections = report.groups.flatMap((group) => group.sections ?? [])
+
+  return (
+    <section className="trial-balance-preview trial-balance-head-wise">
+      <header className="trial-balance-report-heading">
+        <h2>TRIAL BALANCE (MAJOR HEAD WISE)</h2>
+        <p>For The Period Ended on: {reportDate(report.as_of_date)}</p>
+      </header>
+
+      <table className="trial-balance-head-wise-table">
+        <thead>
+          <tr>
+            <th colSpan={2}>DESCRIPTION</th>
+            <th>DEBIT</th>
+            <th>CREDIT</th>
+            <th>BALANCE</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sections.flatMap((section, sectionIndex) => {
+            const rows = section.account_types
+            if (!rows.length) return []
+
+            return rows.map((typeSection, typeIndex) => (
+              <tr key={`${section.account_type_head?.ulid ?? sectionIndex}-${typeSection.account_type?.ulid ?? typeIndex}`}>
+                {typeIndex === 0 ? (
+                  <td className="trial-balance-major-head" rowSpan={rows.length}>
+                    {section.account_type_head?.name ?? 'Ungrouped'}
+                  </td>
+                ) : null}
+                <td className="trial-balance-minor-head">
+                  {typeSection.account_type?.name ?? 'Ungrouped'}
+                </td>
+                <td>{amount(typeSection.totals.debit)}</td>
+                <td>{amount(typeSection.totals.credit)}</td>
+                <td>{signedBalance(typeSection.totals)}</td>
+              </tr>
+            ))
+          })}
+          <tr className="trial-balance-head-wise-total">
+            <th colSpan={2}>Grand Total:</th>
+            <td>{amount(report.totals.debit)}</td>
+            <td>{amount(report.totals.credit)}</td>
+            <td>{signedBalance(report.totals)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  )
+}
+
 function TrialBalancePreview({
   report,
   separatePages,
@@ -185,6 +244,7 @@ export function TrialBalanceReportPage() {
   const [separatePages, setSeparatePages] = useState(false)
   const [arrangeIds] = useState(false)
   const [report, setReport] = useState<TrialBalanceReport | null>(null)
+  const [reportView, setReportView] = useState<'detail' | 'major_minor'>('detail')
 
   const previewMutation = useMutation({
     mutationFn: fetchTrialBalanceReport,
@@ -192,10 +252,20 @@ export function TrialBalanceReportPage() {
   })
 
   const preview = () => {
+    setReportView('detail')
     previewMutation.mutate({
       as_of_date: asOfDate,
       group_by: groupBy,
       arrange_by: arrangeBy,
+    })
+  }
+
+  const previewMajorMinor = () => {
+    setReportView('major_minor')
+    previewMutation.mutate({
+      as_of_date: asOfDate,
+      group_by: 'level_wise',
+      arrange_by: 'code_asc',
     })
   }
 
@@ -306,9 +376,9 @@ export function TrialBalanceReportPage() {
         <UiButton
           className="trial-balance-major-minor"
           variant="default"
-          label="Major / Minor Head Wise"
-          disabled
-          title="Reference output semantics for this alternate report are not mapped yet."
+          label={previewMutation.isPending && reportView === 'major_minor' ? 'Loading…' : 'Major / Minor Head Wise'}
+          disabled={previewMutation.isPending || !asOfDate}
+          onClick={previewMajorMinor}
         />
       </div>
 
@@ -326,7 +396,11 @@ export function TrialBalanceReportPage() {
               {session?.branch.code ?? '—'} — {session?.branch.name ?? '—'}
             </span>
           </div>
-          <TrialBalancePreview report={report} separatePages={separatePages} />
+          {reportView === 'major_minor' ? (
+            <MajorMinorHeadWisePreview report={report} />
+          ) : (
+            <TrialBalancePreview report={report} separatePages={separatePages} />
+          )}
         </div>
       ) : null}
     </section>
