@@ -27,3 +27,15 @@
 .cashbook-group{display:block;padding:3px 0;color:var(--ui-text-muted)}
 @media(max-width:700px){.cashbook-selection-blank{display:none}.cashbook-dual{grid-template-columns:1fr}.cashbook-paper{padding:12px}}
 @media print{.cashbook-tools{display:none!important}.cashbook-page,.cashbook-view{height:auto;overflow:visible;background:#fff}.cashbook-paper{width:100%;max-width:none;border:0;margin:0;padding:0;color:#000}.cashbook-entries th,.cashbook-entries td{border-bottom:1px solid #aaa}.cashbook-entries thead,.cashbook-flow-table thead{display:table-header-group}.cashbook-entries tr{break-inside:avoid}.cashbook-dual{grid-template-columns:1fr 1fr}}
+
+/* Hide workspace chrome only while printing an active Cash Book preview. */
+@media print {
+  body:has(.cashbook-view) * { visibility: hidden !important; }
+  body:has(.cashbook-view) .cashbook-paper,
+  body:has(.cashbook-view) .cashbook-paper * { visibility: visible !important; }
+  body:has(.cashbook-view) .cashbook-paper {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+}
