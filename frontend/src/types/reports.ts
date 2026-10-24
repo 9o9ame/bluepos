@@ -44,10 +44,23 @@ export type TrialBalanceTotals = {
   difference_side: 'Dr' | 'Cr'
 }
 
+export type TrialBalanceAccountTypeSection = {
+  account_type: TrialBalanceHierarchyRef | null
+  rows: TrialBalanceRow[]
+  totals: TrialBalanceTotals
+}
+
+export type TrialBalanceAccountTypeHeadSection = {
+  account_type_head: TrialBalanceHierarchyRef | null
+  account_types: TrialBalanceAccountTypeSection[]
+  totals: TrialBalanceTotals
+}
+
 export type TrialBalanceGroup = {
   key: string
   label: string
   rows: TrialBalanceRow[]
+  sections: TrialBalanceAccountTypeHeadSection[] | null
   totals: TrialBalanceTotals
 }
 
