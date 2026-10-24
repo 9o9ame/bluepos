@@ -27,6 +27,12 @@ class TrialBalanceController extends Controller
         $data = $request->validate([
             'as_of_date' => ['required_unless:mode,six_columns', 'date_format:Y-m-d'],
             'mode' => ['nullable', Rule::in(['six_columns'])],
+            'main_heads' => ['sometimes', 'array', 'max:200'],
+            'main_heads.*' => ['required', 'string', 'ulid', 'distinct'],
+            'sub_heads' => ['sometimes', 'array', 'max:200'],
+            'sub_heads.*' => ['required', 'string', 'ulid', 'distinct'],
+            'account_types' => ['sometimes', 'array', 'max:500'],
+            'account_types.*' => ['required', 'string', 'ulid', 'distinct'],
             'start_date' => ['required_if:mode,six_columns', 'date_format:Y-m-d'],
             'end_date' => ['required_if:mode,six_columns', 'date_format:Y-m-d', 'after_or_equal:start_date'],
             'group_by' => ['nullable', Rule::in([
@@ -57,6 +63,9 @@ class TrialBalanceController extends Controller
                 (string) $data['end_date'],
                 (string) ($data['group_by'] ?? 'level_wise'),
                 (string) ($data['arrange_by'] ?? 'code_asc'),
+                $data['main_heads'] ?? [],
+                $data['sub_heads'] ?? [],
+                $data['account_types'] ?? [],
             ));
         }
 
