@@ -238,6 +238,19 @@ function TrialBalancePreview({
 }
 
 
+const TB6_VOUCHER_OPTIONS = [
+  ['sale_invoice', 'Sales Invoice'], ['sale_return', 'Sales Return'],
+  ['purchase_invoice', 'Purchase Invoice'], ['purchase_return', 'Purchase Return'],
+  ['purchase_payment', 'Purchase Payment'], ['payment_voucher', 'Payment Voucher'],
+  ['receiving_voucher', 'Receiving Voucher'], ['journal_voucher', 'Journal Voucher'],
+  ['opening_balance', 'Opening Voucher'], ['inventory_adjustment', 'Stock Adjustment'],
+  ['sale_invoice_amendment', 'Sale Invoice Amendment'],
+  ['sale_return_amendment', 'Sale Return Amendment'],
+  ['purchase_invoice_amendment', 'Purchase Invoice Amendment'],
+  ['purchase_return_amendment', 'Purchase Return Amendment'],
+  ['inventory_adjustment_amendment', 'Stock Adjustment Amendment'],
+] as const
+
 const SIX_FIELDS = [
   'previous_debit', 'previous_credit', 'within_debit',
   'within_credit', 'closing_debit', 'closing_credit',
@@ -334,6 +347,8 @@ export function TrialBalanceReportPage() {
   const [selectedMainHeads, setSelectedMainHeads] = useState<string[]>(params.get('main_heads')?.split(',').filter(Boolean) ?? [])
   const [selectedSubHeads, setSelectedSubHeads] = useState<string[]>(params.get('sub_heads')?.split(',').filter(Boolean) ?? [])
   const [selectedAccountTypes, setSelectedAccountTypes] = useState<string[]>(params.get('account_types')?.split(',').filter(Boolean) ?? [])
+  const [selectedDocumentTypes, setSelectedDocumentTypes] = useState<string[]>(params.get('document_types')?.split(',').filter(Boolean) ?? [])
+  const [selectedPartyCategories, setSelectedPartyCategories] = useState<string[]>(params.get('party_categories')?.split(',').filter(Boolean) ?? [])
   const toggleHierarchy = (items: string[], setItems: (next: string[]) => void, ulid: string) => {
     setItems(items.includes(ulid) ? items.filter((value) => value !== ulid) : [...items, ulid])
   }
@@ -398,16 +413,17 @@ export function TrialBalanceReportPage() {
   }
 
   const sixQuery = useQuery({
-    queryKey: ['reports', 'trial-balance', 'six-columns', startDate, endDate, sixGrouping, sixArrange, selectedMainHeads, selectedSubHeads, selectedAccountTypes],
+    queryKey: ['reports', 'trial-balance', 'six-columns', startDate, endDate, sixGrouping, sixArrange, selectedMainHeads, selectedSubHeads, selectedAccountTypes, selectedDocumentTypes, selectedPartyCategories],
     queryFn: () => fetchTrialBalanceSixColumns({
       start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange,
       main_heads: selectedMainHeads, sub_heads: selectedSubHeads, account_types: selectedAccountTypes,
+      document_types: selectedDocumentTypes, party_categories: selectedPartyCategories,
     }),
     enabled: isSixViewer,
   })
 
   const openSixView = (view: 'six_columns' | 'dr_cr_separate') => {
-    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(',') })
+    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(',') })
     openModule(`/reports/accounts/trial-balance?${query.toString()}`)
   }
 
@@ -596,12 +612,33 @@ export function TrialBalanceReportPage() {
                   ))}
                 </div>
                 <div className="tb6-filter-panel"><h3>Voucher / Transaction Types</h3>
-                  <p>Voucher types are not exposed by the accounting report API yet.</p>
+                  {TB6_VOUCHER_OPTIONS.map(([value, label]) => (
+                    <label className="tb6-checkbox" key={value}>
+                      <input type="checkbox" checked={selectedDocumentTypes.includes(value)}
+                        onChange={() => toggleHierarchy(selectedDocumentTypes, setSelectedDocumentTypes, value)} />
+                      {label}
+                    </label>
+                  ))}
                 </div>
               </div>
               <div className="tb6-filter-panel tb6-nonaccounting">
                 <h3>Non Accounting Group Type</h3>
-                <p>Customer/vendor groups require their own authorized mapping endpoint; no group options available yet.</p>
+                {([
+                  ['all', 'ALL'], ['accounts', 'ACCOUNTS'], ['customers', 'CUSTOMERS'],
+                  ['vendors', 'VENDORS'],
+                ] as const).map(([value, label]) => (
+                  <label className="tb6-checkbox" key={value}>
+                    <input type="checkbox" checked={selectedPartyCategories.includes(value)}
+                      onChange={() => setSelectedPartyCategories((current) =>
+                        value === 'all' ? (current.includes('all') ? [] : ['all']) :
+                        current.includes(value) ? current.filter((item) => item !== value) :
+                        [...current.filter((item) => item !== 'all'), value])} />
+                    {label}
+                  </label>
+                ))}
+                <label className="tb6-checkbox" title="No verified salesperson ledger mapping">
+                  <input type="checkbox" disabled /> SALES MAN (not mapped)
+                </label>
               </div>
             </div>
           ) : (
@@ -713,7 +750,7 @@ export function TrialBalanceReportPage() {
             <UiButton variant="default" label="Fit" onClick={() => setViewerZoom(100)} />
           </div>
           <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh" disabled={sixQuery.isFetching} onClick={() => void sixQuery.refetch()} />
-          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(',') }).toString()}`)} />
+          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(',') }).toString()}`)} />
           <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
         </div>
         <div className="trial-balance-viewer-canvas">
