@@ -246,6 +246,60 @@
   text-align: right;
 }
 
+.trial-balance-head-wise-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.trial-balance-head-wise-table th,
+.trial-balance-head-wise-table td {
+  border: 1px solid var(--ui-table-border);
+  padding: 4px 6px;
+  font-size: 11px;
+}
+
+.trial-balance-head-wise-table thead th {
+  background: var(--ui-table-header);
+  color: var(--ui-table-header-text);
+  font-weight: 800;
+}
+
+.trial-balance-head-wise-table th:nth-child(1) {
+  width: 25%;
+}
+
+.trial-balance-head-wise-table th:nth-child(2) {
+  width: 27%;
+}
+
+.trial-balance-head-wise-table th:nth-child(n+3),
+.trial-balance-head-wise-table td:nth-child(n+3) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.trial-balance-major-head,
+.trial-balance-minor-head {
+  text-transform: uppercase;
+}
+
+.trial-balance-major-head {
+  vertical-align: top;
+  font-weight: 800;
+}
+
+.trial-balance-minor-head {
+  font-weight: 700;
+}
+
+.trial-balance-head-wise-total th,
+.trial-balance-head-wise-total td {
+  border-top-width: 2px;
+  background: var(--ui-surface-subtle);
+  font-weight: 900;
+}
+
 .trial-balance-error {
   width: min(560px, calc(100% - 32px));
   margin: 0 auto 16px;
@@ -296,7 +350,9 @@
   html[data-trial-balance-print='true'] .trial-balance-group th,
   html[data-trial-balance-print='true'] .trial-balance-group td,
   html[data-trial-balance-print='true'] .trial-balance-grand-total th,
-  html[data-trial-balance-print='true'] .trial-balance-grand-total td {
+  html[data-trial-balance-print='true'] .trial-balance-grand-total td,
+  html[data-trial-balance-print='true'] .trial-balance-head-wise-table th,
+  html[data-trial-balance-print='true'] .trial-balance-head-wise-table td {
     border-color: #222;
     color: black;
     background: white;
