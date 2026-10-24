@@ -2,7 +2,7 @@ import { Fragment, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, ClipboardCopy, Download, Eye, FileCode, FileText, Minus, Plus, Printer, RefreshCw, Search, X } from 'lucide-react'
-import { fetchTrialBalanceReport } from '../api/reports'
+import { fetchTrialBalanceReport, fetchTrialBalanceSixColumns } from '../api/reports'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -11,6 +11,7 @@ import type {
   TrialBalanceArrangeBy,
   TrialBalanceGroupBy,
   TrialBalanceReport,
+  TrialBalanceSixColumnReport,
   TrialBalanceRow,
   TrialBalanceTotals,
 } from '../types/reports'
@@ -236,6 +237,70 @@ function TrialBalancePreview({
   )
 }
 
+
+const SIX_FIELDS = [
+  'previous_debit', 'previous_credit', 'within_debit',
+  'within_credit', 'closing_debit', 'closing_credit',
+] as const
+
+function SixColumnPreview({ report, separate }: {
+  report: TrialBalanceSixColumnReport
+  separate: boolean
+}) {
+  const allRows = report.groups.flatMap((group) => group.rows)
+  const renderNumber = (value: string) => <td className="tb6-number">{amount(value)}</td>
+  return (
+    <div className="tb6-document">
+      <header className="trial-balance-business-heading">
+        <strong>Trial Balance</strong>
+        <span>{reportDate(report.start_date)} to {reportDate(report.end_date)}</span>
+      </header>
+      {separate ? (
+        <>
+          <h2>Dr / Cr Separate — Closing Balances</h2>
+          <div className="tb6-separate">
+            {(['closing_debit', 'closing_credit'] as const).map((side) => (
+              <table key={side}>
+                <thead><tr><th>{side === 'closing_debit' ? 'Total Debits' : 'Total Credits'}</th><th>Amount</th></tr></thead>
+                <tbody>
+                  {allRows.filter((row) => row.six_columns[side] !== '0.0000').map((row) => (
+                    <tr key={row.account.ulid}><td>{row.account.name}</td>{renderNumber(row.six_columns[side])}</tr>
+                  ))}
+                  <tr className="tb6-total"><th>Grand Total</th>{renderNumber(report.totals[side])}</tr>
+                </tbody>
+              </table>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <h2>Trial Balance (6 Columns Format)</h2>
+          <table className="tb6-table">
+            <thead>
+              <tr><th rowSpan={2}>Account Name</th><th colSpan={2}>Previous</th><th colSpan={2}>Within</th><th colSpan={2}>Closing</th></tr>
+              <tr>{SIX_FIELDS.map((field) => <th key={field}>{field.endsWith('debit') ? 'Debit' : 'Credit'}</th>)}</tr>
+            </thead>
+            <tbody>
+              {report.groups.map((group) => (
+                <Fragment key={group.key}>
+                  <tr className="tb6-group"><th colSpan={7}>{group.label}</th></tr>
+                  {group.rows.map((row) => (
+                    <tr key={row.account.ulid}>
+                      <td>{row.account.code} — {row.account.name}</td>
+                      {SIX_FIELDS.map((field) => <Fragment key={field}>{renderNumber(row.six_columns[field])}</Fragment>)}
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+              <tr className="tb6-total"><th>Grand Total</th>{SIX_FIELDS.map((field) => <Fragment key={field}>{renderNumber(report.totals[field])}</Fragment>)}</tr>
+            </tbody>
+          </table>
+        </>
+      )}
+    </div>
+  )
+}
+
 export function TrialBalanceReportPage() {
   const { session } = useAuth()
   const { closeActiveTab, openModule } = useWorkspace()
@@ -243,6 +308,8 @@ export function TrialBalanceReportPage() {
   const params = new URLSearchParams(location.search)
   const viewParam = params.get('view')
   const isViewer = viewParam === 'detail' || viewParam === 'major_minor'
+  const isSixViewer = viewParam === 'six_columns' || viewParam === 'dr_cr_separate'
+  const isSixOptions = viewParam === 'six_options'
 
   const initialDate = params.get('as_of_date') || today()
   const initialGroup = (params.get('group_by') || 'level_wise') as TrialBalanceGroupBy
@@ -257,6 +324,9 @@ export function TrialBalanceReportPage() {
   const [viewerSearch, setViewerSearch] = useState('')
   const [viewerZoom, setViewerZoom] = useState(100)
   const [copyStatus, setCopyStatus] = useState('Copy')
+  const [startDate, setStartDate] = useState(params.get('start_date') || today().slice(0, 8) + '01')
+  const [endDate, setEndDate] = useState(params.get('end_date') || today())
+  const [sixGrouping, setSixGrouping] = useState<TrialBalanceGroupBy>('level_wise')
   const [sectionIndex, setSectionIndex] = useState(0)
   const reportPaperRef = useRef<HTMLDivElement>(null)
   const viewerCanvasRef = useRef<HTMLDivElement>(null)
@@ -277,6 +347,19 @@ export function TrialBalanceReportPage() {
     }),
     enabled: isViewer,
   })
+
+  const sixQuery = useQuery({
+    queryKey: ['reports', 'trial-balance', 'six-columns', startDate, endDate, sixGrouping],
+    queryFn: () => fetchTrialBalanceSixColumns({
+      start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: 'code_asc',
+    }),
+    enabled: isSixViewer,
+  })
+
+  const openSixView = (view: 'six_columns' | 'dr_cr_separate') => {
+    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate })
+    openModule(`/reports/accounts/trial-balance?${query.toString()}`)
+  }
 
   const openReportView = (view: 'detail' | 'major_minor') => {
     const query = new URLSearchParams({
@@ -390,6 +473,53 @@ export function TrialBalanceReportPage() {
     const bounded = Math.max(0, Math.min(groups.length - 1, next))
     setSectionIndex(bounded)
     groups[bounded]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  if (isSixOptions) {
+    return (
+      <section className="trial-balance-page" aria-label="Trial Balance Six Columns">
+        <header className="trial-balance-title"><h1>Trial Balance (6 Columns Format)</h1></header>
+        <div className="tb6-options">
+          <h2>Selection</h2>
+          <div className="tb6-dates">
+            <label>Start Date <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
+            <label>Ending Date <input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label>
+          </div>
+          <label>Report Grouping
+            <UiSelect searchable={false} value={sixGrouping} options={GROUP_OPTIONS}
+              onChange={(value) => setSixGrouping(value as TrialBalanceGroupBy)} />
+          </label>
+          {startDate > endDate ? <p role="alert">Start Date must be on or before Ending Date.</p> : null}
+          <div className="tb6-options-actions">
+            <UiButton variant="info" label="Preview 6 Columns" disabled={!startDate || !endDate || startDate > endDate} onClick={() => openSixView('six_columns')} />
+            <UiButton variant="info" label="Dr / Cr Separate" disabled={!startDate || !endDate || startDate > endDate} onClick={() => openSixView('dr_cr_separate')} />
+            <UiButton variant="default" label="Close" onClick={closeActiveTab} />
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (isSixViewer) {
+    return (
+      <section className="trial-balance-page trial-balance-viewer-page" aria-label="Six Column Trial Balance Report">
+        <div className="trial-balance-viewer-toolbar">
+          <UiButton variant="info" icon={<Printer size={15}/>} label="Print / Save PDF" disabled={!sixQuery.data} onClick={() => {
+            document.documentElement.setAttribute('data-trial-balance-print', 'true')
+            window.addEventListener('afterprint', () => document.documentElement.removeAttribute('data-trial-balance-print'), { once: true })
+            window.print()
+          }} />
+          <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh" disabled={sixQuery.isFetching} onClick={() => void sixQuery.refetch()} />
+          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule('/reports/accounts/trial-balance?view=six_options')} />
+          <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
+        </div>
+        <div className="trial-balance-viewer-canvas">
+          {sixQuery.isLoading ? <div className="trial-balance-viewer-loading">Loading report…</div> : null}
+          {sixQuery.isError ? <div className="trial-balance-error" role="alert">Unable to load six-column Trial Balance.</div> : null}
+          {sixQuery.data ? <div className="trial-balance-result"><SixColumnPreview report={sixQuery.data} separate={viewParam === 'dr_cr_separate'}/></div> : null}
+        </div>
+      </section>
+    )
   }
 
   if (isViewer) {
@@ -626,6 +756,11 @@ export function TrialBalanceReportPage() {
           />
         </div>
 
+        <UiButton
+          variant="info"
+          label="Trial Balance (6 Columns Format)"
+          onClick={() => openModule('/reports/accounts/trial-balance?view=six_options')}
+        />
         <UiButton
           className="trial-balance-major-minor"
           variant="default"
