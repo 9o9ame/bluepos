@@ -547,8 +547,14 @@ export function PurchaseOrderPage() {
 
   async function addProduct(productRow: Product) {
     try {
-      const product = await fetchProduct(productRow.ulid)
-      const unitOptions = buildUnitOptions(product)
+      let product = productRow
+      let unitOptions = buildUnitOptions(product)
+
+      if (unitOptions.length === 0) {
+        product = await fetchProduct(productRow.ulid)
+        unitOptions = buildUnitOptions(product)
+      }
+
       const unit = unitOptions[0]
 
       if (!unit) {
@@ -1547,7 +1553,7 @@ export function PurchaseOrderPage() {
                         </button>
                       </div>
 
-                      {productPickerOpen && productLookupRows.length ? (
+                      {productPickerOpen ? (
                         <ProductLookupGrid
                           rows={productLookupRows}
                           total={productLookupRows.length}
