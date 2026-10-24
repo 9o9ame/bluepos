@@ -256,15 +256,17 @@ const SIX_FIELDS = [
   'within_credit', 'closing_debit', 'closing_credit',
 ] as const
 
-function SixColumnPreview({ report, separate, title, separatePages, datesOnly }: {
+function SixColumnPreview({ report, separate, title, separatePages, datesOnly, twoColumn }: {
   report: TrialBalanceSixColumnReport
   separate: boolean
   title: string
   separatePages: boolean
   datesOnly: boolean
+  twoColumn: boolean
 }) {
   const allRows = report.groups.flatMap((group) => group.rows)
   const renderNumber = (value: string) => <td className="tb6-number">{amount(value)}</td>
+  const visibleFields = twoColumn ? (['closing_debit', 'closing_credit'] as const) : SIX_FIELDS
   return (
     <div className="tb6-document">
       <header className="trial-balance-business-heading">
@@ -296,22 +298,28 @@ function SixColumnPreview({ report, separate, title, separatePages, datesOnly }:
           <h2>{title || 'Trial Balance (6 Columns Format)'}</h2>
           <table className="tb6-table">
             <thead>
-              <tr><th rowSpan={2}>Account Name</th><th colSpan={2}>Previous</th><th colSpan={2}>Within</th><th colSpan={2}>Closing</th></tr>
-              <tr>{SIX_FIELDS.map((field) => <th key={field}>{field.endsWith('debit') ? 'Debit' : 'Credit'}</th>)}</tr>
+              {twoColumn ? (
+                <tr><th>Account Name</th><th>Closing Debit</th><th>Closing Credit</th></tr>
+              ) : (
+                <>
+                  <tr><th rowSpan={2}>Account Name</th><th colSpan={2}>Previous</th><th colSpan={2}>Within</th><th colSpan={2}>Closing</th></tr>
+                  <tr>{SIX_FIELDS.map((field) => <th key={field}>{field.endsWith('debit') ? 'Debit' : 'Credit'}</th>)}</tr>
+                </>
+              )}
             </thead>
             {report.groups.map((group, index) => (
                 <tbody key={group.key} className={separatePages && index > 0 ? 'tb6-break-group' : undefined}>
-                  <tr className="tb6-group"><th colSpan={7}>{group.label}</th></tr>
+                  <tr className="tb6-group"><th colSpan={twoColumn ? 3 : 7}>{group.label}</th></tr>
                   {group.rows.map((row) => (
                     <tr key={row.account.ulid}>
                       <td>{row.account.code} — {row.account.name}</td>
-                      {SIX_FIELDS.map((field) => <Fragment key={field}>{renderNumber(row.six_columns[field])}</Fragment>)}
+                      {visibleFields.map((field) => <Fragment key={field}>{renderNumber(row.six_columns[field])}</Fragment>)}
                     </tr>
                   ))}
                 </tbody>
               ))}
             <tbody>
-              <tr className="tb6-total"><th>Grand Total</th>{SIX_FIELDS.map((field) => <Fragment key={field}>{renderNumber(report.totals[field])}</Fragment>)}</tr>
+              <tr className="tb6-total"><th>Grand Total</th>{visibleFields.map((field) => <Fragment key={field}>{renderNumber(report.totals[field])}</Fragment>)}</tr>
             </tbody>
           </table>
         </>
@@ -351,6 +359,7 @@ export function TrialBalanceReportPage() {
   const [sixTitle, setSixTitle] = useState(params.get('report_title') || 'Trial Balance (Complete)')
   const [sixSeparatePages, setSixSeparatePages] = useState(params.get('separate_pages') === '1')
   const [sixDatesOnly, setSixDatesOnly] = useState(params.get('dates_only') === '1')
+  const [sixTwoColumn, setSixTwoColumn] = useState(params.get('two_column') === '1')
   const [closingOperator, setClosingOperator] = useState(params.get('closing_operator') || '')
   const [closingAmount, setClosingAmount] = useState(params.get('closing_amount') || '0.00')
   const [selectedMainHeads, setSelectedMainHeads] = useState<string[]>(params.get('main_heads')?.split(',').filter(Boolean) ?? [])
@@ -433,7 +442,7 @@ export function TrialBalanceReportPage() {
   })
 
   const openSixView = (view: 'six_columns' | 'dr_cr_separate') => {
-    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, separate_pages: sixSeparatePages ? '1' : '0', dates_only: sixDatesOnly ? '1' : '0', main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount })
+    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, separate_pages: sixSeparatePages ? '1' : '0', dates_only: sixDatesOnly ? '1' : '0', two_column: sixTwoColumn ? '1' : '0', main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount })
     openModule(`/reports/accounts/trial-balance?${query.toString()}`)
   }
 
@@ -574,7 +583,7 @@ export function TrialBalanceReportPage() {
                   <UiSelect searchable={false} value={sixGrouping} options={GROUP_OPTIONS}
                     onChange={(value) => setSixGrouping(value as TrialBalanceGroupBy)} />
                 </label>
-                <label className="tb6-checkbox"><input type="checkbox" disabled title={disabledHint} /> 2 Column Format</label>
+                <label className="tb6-checkbox"><input type="checkbox" checked={sixTwoColumn} onChange={(event) => setSixTwoColumn(event.target.checked)} /> 2 Column Format (Closing Dr / Cr)</label>
                 <label className="tb6-checkbox"><input type="checkbox" checked={sixSeparatePages} onChange={(event) => setSixSeparatePages(event.target.checked)} /> Each Group on Separate Page (print)</label>
                 <label className="tb6-checkbox"><input type="checkbox" disabled title={disabledHint} /> Include Stocks in Report</label>
                 <label className="tb6-checkbox"><input type="checkbox" disabled title={disabledHint} /> Re-Evaluate Stock Using FIFO</label>
@@ -787,7 +796,7 @@ export function TrialBalanceReportPage() {
         <div className="trial-balance-viewer-canvas">
           {sixQuery.isLoading ? <div className="trial-balance-viewer-loading">Loading report…</div> : null}
           {sixQuery.isError ? <div className="trial-balance-error" role="alert">Unable to load six-column Trial Balance.</div> : null}
-          {report ? <div className="trial-balance-result" ref={reportPaperRef} style={{ zoom: `${viewerZoom}%` }}><SixColumnPreview report={report} separate={viewParam === 'dr_cr_separate'} title={sixTitle} separatePages={sixSeparatePages} datesOnly={sixDatesOnly}/></div> : null}
+          {report ? <div className="trial-balance-result" ref={reportPaperRef} style={{ zoom: `${viewerZoom}%` }}><SixColumnPreview report={report} separate={viewParam === 'dr_cr_separate'} title={sixTitle} separatePages={sixSeparatePages} datesOnly={sixDatesOnly} twoColumn={sixTwoColumn}/></div> : null}
         </div>
       </section>
     )
