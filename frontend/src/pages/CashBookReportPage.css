@@ -1,0 +1,29 @@
+.cashbook-page{display:flex;flex-direction:column;min-height:0;height:100%;background:var(--ui-surface-subtle);color:var(--ui-text)}
+.cashbook-title{text-align:center;font-size:21px;font-weight:800;padding:9px;margin:8px 10px 0;background:var(--ui-accent-soft);border:1px solid var(--ui-border)}
+.cashbook-selection{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;gap:6px;padding:24px}
+.cashbook-selection-form{width:270px;display:grid;gap:8px;padding:10px;border:1px solid var(--ui-border);background:var(--ui-surface);font-size:12px}
+.cashbook-selection-form h2{background:var(--ui-surface-muted);margin:-10px -10px 4px;padding:6px 10px;font-size:13px}
+.cashbook-selection-form label:not(.cashbook-check){font-weight:700;display:grid;gap:4px}
+.cashbook-date-grid{display:grid;gap:7px}
+.cashbook-selection-form input[type=date],.cashbook-tools input{width:100%;box-sizing:border-box;min-height:30px;background:var(--ui-control-face);color:var(--ui-text);border:1px solid var(--ui-control-border);border-radius:var(--control-radius);padding:3px 6px}
+.cashbook-check{display:flex;gap:5px;align-items:center;font-weight:600}
+.cashbook-actions{display:flex;gap:8px;justify-content:space-between}
+.cashbook-selection-blank{width:270px;height:305px;background:var(--ui-surface);border:1px solid var(--ui-border)}
+.cashbook-note{font-size:10px;color:var(--ui-text-muted);line-height:1.5;margin:0}
+.cashbook-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px;border-bottom:1px solid var(--ui-border)}
+.cashbook-tools input{max-width:220px}
+.cashbook-view{overflow:auto}
+.cashbook-paper{background:var(--ui-surface);color:var(--ui-text);padding:24px 28px;max-width:1240px;width:calc(100% - 32px);box-sizing:border-box;margin:16px auto;border:1px solid var(--ui-border)}
+.cashbook-paper header{text-align:center}
+.cashbook-paper header h2{font-size:20px;margin:4px 0}
+.cashbook-paper header p{font-size:12px;margin:6px 0}
+.cashbook-balances{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:12px;margin:14px 0;border-bottom:1px solid var(--ui-border);padding-bottom:10px}
+.cashbook-dual{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.cashbook-dual h3{text-align:center;margin:2px 0 7px;font-size:14px}
+.cashbook-entries,.cashbook-flow-table{border-collapse:collapse;width:100%;font-size:11px}
+.cashbook-entries th,.cashbook-entries td,.cashbook-flow-table th,.cashbook-flow-table td{padding:4px;border-bottom:1px solid var(--ui-border);text-align:left;vertical-align:top}
+.cashbook-entries th,.cashbook-flow-table th{background:var(--ui-table-header);color:var(--ui-table-header-text)}
+.cashbook-entries th:last-child,.cashbook-money{text-align:right!important;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cashbook-group{display:block;padding:3px 0;color:var(--ui-text-muted)}
+@media(max-width:700px){.cashbook-selection-blank{display:none}.cashbook-dual{grid-template-columns:1fr}.cashbook-paper{padding:12px}}
+@media print{.cashbook-tools{display:none!important}.cashbook-page,.cashbook-view{height:auto;overflow:visible;background:#fff}.cashbook-paper{width:100%;max-width:none;border:0;margin:0;padding:0;color:#000}.cashbook-entries th,.cashbook-entries td{border-bottom:1px solid #aaa}.cashbook-entries thead,.cashbook-flow-table thead{display:table-header-group}.cashbook-entries tr{break-inside:avoid}.cashbook-dual{grid-template-columns:1fr 1fr}}
