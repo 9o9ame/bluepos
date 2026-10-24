@@ -33,6 +33,19 @@ class TrialBalanceController extends Controller
             'sub_heads.*' => ['required', 'string', 'ulid', 'distinct'],
             'account_types' => ['sometimes', 'array', 'max:500'],
             'account_types.*' => ['required', 'string', 'ulid', 'distinct'],
+            'document_types' => ['sometimes', 'array', 'max:25'],
+            'document_types.*' => ['required', 'string', 'distinct', Rule::in([
+                'opening_balance', 'purchase_invoice', 'purchase_invoice_amendment',
+                'purchase_return', 'purchase_return_amendment', 'purchase_payment',
+                'sale_invoice', 'sale_invoice_amendment', 'sale_return',
+                'sale_return_amendment', 'inventory_adjustment',
+                'inventory_adjustment_amendment', 'payment_voucher',
+                'receiving_voucher', 'journal_voucher',
+            ])],
+            'party_categories' => ['sometimes', 'array', 'max:4'],
+            'party_categories.*' => ['required', 'string', 'distinct', Rule::in([
+                'all', 'accounts', 'customers', 'vendors',
+            ])],
             'start_date' => ['required_if:mode,six_columns', 'date_format:Y-m-d'],
             'end_date' => ['required_if:mode,six_columns', 'date_format:Y-m-d', 'after_or_equal:start_date'],
             'group_by' => ['nullable', Rule::in([
@@ -66,6 +79,8 @@ class TrialBalanceController extends Controller
                 $data['main_heads'] ?? [],
                 $data['sub_heads'] ?? [],
                 $data['account_types'] ?? [],
+                $data['document_types'] ?? [],
+                $data['party_categories'] ?? [],
             ));
         }
 
