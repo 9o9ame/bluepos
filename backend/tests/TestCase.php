@@ -255,7 +255,11 @@ abstract class TestCase extends BaseTestCase
         }
 
         $role->permissions()->sync($permissionSync);
-        $membership->roles()->sync([$role->id]);
+        $membership->roles()->sync([
+            $role->id => [
+                'ulid' => (string) Str::ulid(),
+            ],
+        ]);
 
         app(PermissionService::class)->clearCache();
 
