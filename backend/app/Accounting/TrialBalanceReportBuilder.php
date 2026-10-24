@@ -82,6 +82,7 @@ class TrialBalanceReportBuilder
                 'debit' => $debit,
                 'credit' => $credit,
                 'balance' => $net,
+                'party_category' => $account->customer_id ? 'customers' : ($account->supplier_id ? 'vendors' : 'accounts'),
             ];
         })->values();
 
@@ -113,6 +114,8 @@ class TrialBalanceReportBuilder
         array $mainHeadUlids = [],
         array $subHeadUlids = [],
         array $accountTypeUlids = [],
+        array $documentTypes = [],
+        array $partyCategories = [],
     ): array {
         $closing = $this->build($tenantId, $branchId, $endDate, $groupBy, $arrangeBy);
 
@@ -128,6 +131,7 @@ class TrialBalanceReportBuilder
             ->where('journal_entries.tenant_id', $tenantId)
             ->where('journal_entries.branch_id', $branchId)
             ->where('journal_entries.status', JournalStatus::Posted->value)
+            ->when($documentTypes !== [], fn ($query) => $query->whereIn('journal_entries.document_type', $documentTypes))
             ->where('journal_entries.entry_date', '<=', $endDate)
             ->groupBy('journal_lines.account_id')
             ->get()
@@ -136,7 +140,11 @@ class TrialBalanceReportBuilder
         // Filtering applies only to hierarchy membership, never to posted ledger amounts.
         // Rebuild group subtotals after filtering to avoid unfiltered aggregates.
         $selectedRows = collect($closing['groups'])->flatMap(fn (array $group) => $group['rows'])
-            ->filter(function (array $row) use ($mainHeadUlids, $subHeadUlids, $accountTypeUlids): bool {
+            ->filter(function (array $row) use ($mainHeadUlids, $subHeadUlids, $accountTypeUlids, $partyCategories): bool {
+                if ($partyCategories !== [] && ! in_array('all', $partyCategories, true)) {
+                    $category = $row['party_category'] ?? 'accounts';
+                    if (! in_array($category, $partyCategories, true)) return false;
+                }
                 return (empty($mainHeadUlids) || in_array($row['main_head']['ulid'] ?? null, $mainHeadUlids, true))
                     && (empty($subHeadUlids) || in_array($row['account_type_head']['ulid'] ?? null, $subHeadUlids, true))
                     && (empty($accountTypeUlids) || in_array($row['account_type']['ulid'] ?? null, $accountTypeUlids, true));
@@ -164,9 +172,17 @@ class TrialBalanceReportBuilder
                     'previous_credit' => bccomp($previousNet, $zero, 4) < 0 ? bcmul($previousNet, '-1', 4) : $zero,
                     'within_debit' => bcadd((string) ($source?->getAttribute('within_debit') ?? $zero), $zero, 4),
                     'within_credit' => bcadd((string) ($source?->getAttribute('within_credit') ?? $zero), $zero, 4),
-                    'closing_debit' => $row['debit'],
-                    'closing_credit' => $row['credit'],
+                    'closing_debit' => $documentTypes === [] ? $row['debit'] : $zero,
+                    'closing_credit' => $documentTypes === [] ? $row['credit'] : $zero,
                 ];
+                if ($documentTypes !== []) {
+                    $net = bcsub(
+                        bcadd($previousNet, $row['six_columns']['within_debit'], 4),
+                        $row['six_columns']['within_credit'], 4
+                    );
+                    $row['six_columns']['closing_debit'] = bccomp($net, $zero, 4) > 0 ? $net : $zero;
+                    $row['six_columns']['closing_credit'] = bccomp($net, $zero, 4) < 0 ? bcmul($net, '-1', 4) : $zero;
+                }
                 foreach ($totals as $key => &$total) {
                     $total = bcadd($total, $row['six_columns'][$key], 4);
                 }
