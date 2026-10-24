@@ -98,6 +98,82 @@ class TrialBalanceReportBuilder
     }
 
     /**
+     * Six-column period report. All figures come from posted journal entries
+     * in the server-resolved tenant and branch context.
+     *
+     * @return array<string, mixed>
+     */
+    public function buildSixColumns(
+        int $tenantId,
+        int $branchId,
+        string $startDate,
+        string $endDate,
+        string $groupBy = 'level_wise',
+        string $arrangeBy = 'code_asc',
+    ): array {
+        $closing = $this->build($tenantId, $branchId, $endDate, $groupBy, $arrangeBy);
+
+        $periods = JournalLine::query()
+            ->selectRaw("journal_lines.account_id,
+                COALESCE(SUM(CASE WHEN journal_entries.entry_date < ? THEN journal_lines.debit ELSE 0 END), 0) AS previous_debit,
+                COALESCE(SUM(CASE WHEN journal_entries.entry_date < ? THEN journal_lines.credit ELSE 0 END), 0) AS previous_credit,
+                COALESCE(SUM(CASE WHEN journal_entries.entry_date >= ? THEN journal_lines.debit ELSE 0 END), 0) AS within_debit,
+                COALESCE(SUM(CASE WHEN journal_entries.entry_date >= ? THEN journal_lines.credit ELSE 0 END), 0) AS within_credit",
+                [$startDate, $startDate, $startDate, $startDate])
+            ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
+            ->where('journal_lines.tenant_id', $tenantId)
+            ->where('journal_entries.tenant_id', $tenantId)
+            ->where('journal_entries.branch_id', $branchId)
+            ->where('journal_entries.status', JournalStatus::Posted->value)
+            ->where('journal_entries.entry_date', '<=', $endDate)
+            ->groupBy('journal_lines.account_id')
+            ->get()
+            ->keyBy('account_id');
+
+        $accountIds = Account::query()->forTenant($tenantId)->pluck('id', 'ulid');
+        $zero = '0.0000';
+        $totals = array_fill_keys([
+            'previous_debit', 'previous_credit', 'within_debit',
+            'within_credit', 'closing_debit', 'closing_credit',
+        ], $zero);
+
+        foreach ($closing['groups'] as &$group) {
+            foreach ($group['rows'] as &$row) {
+                $accountId = $accountIds->get($row['account']['ulid']);
+                $source = $accountId ? $periods->get($accountId) : null;
+                $previousNet = bcsub(
+                    (string) ($source?->getAttribute('previous_debit') ?? $zero),
+                    (string) ($source?->getAttribute('previous_credit') ?? $zero),
+                    4
+                );
+                $row['six_columns'] = [
+                    'previous_debit' => bccomp($previousNet, $zero, 4) > 0 ? $previousNet : $zero,
+                    'previous_credit' => bccomp($previousNet, $zero, 4) < 0 ? bcmul($previousNet, '-1', 4) : $zero,
+                    'within_debit' => bcadd((string) ($source?->getAttribute('within_debit') ?? $zero), $zero, 4),
+                    'within_credit' => bcadd((string) ($source?->getAttribute('within_credit') ?? $zero), $zero, 4),
+                    'closing_debit' => $row['debit'],
+                    'closing_credit' => $row['credit'],
+                ];
+                foreach ($totals as $key => &$total) {
+                    $total = bcadd($total, $row['six_columns'][$key], 4);
+                }
+                unset($total);
+            }
+            unset($row);
+        }
+        unset($group);
+
+        return [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'group_by' => $groupBy,
+            'arrange_by' => $arrangeBy,
+            'groups' => $closing['groups'],
+            'totals' => $totals,
+        ];
+    }
+
+    /**
      * @param Collection<int, array<string, mixed>> $rows
      * @return list<array<string, mixed>>
      */
