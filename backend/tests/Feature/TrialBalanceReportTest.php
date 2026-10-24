@@ -156,6 +156,37 @@ class TrialBalanceReportTest extends TestCase
             .'&closing_operator=bad&closing_amount=0.0000')->assertUnprocessable();
     }
 
+    public function test_six_column_prior_period_and_closing_reconcile_with_branch_isolation(): void
+    {
+        $this->signInOwner('tb6-period-reconciliation')->assertOk();
+        $context = app(TenantContext::class);
+        [$cash, $revenue] = $this->accounts($context->tenantId());
+
+        $this->journal($context->tenantId(), $context->branchId(), '2026-09-30',
+            JournalStatus::Posted, [[$cash, '125.2500', '0.0000'], [$revenue, '0.0000', '125.2500']], 'journal_voucher');
+        $this->journal($context->tenantId(), $context->branchId(), '2026-10-05',
+            JournalStatus::Posted, [[$cash, '0.0000', '25.1000'], [$revenue, '25.1000', '0.0000']], 'journal_voucher');
+
+        $otherBranch = Branch::factory()->create(['tenant_id' => $context->tenantId()]);
+        $this->journal($context->tenantId(), (int) $otherBranch->id, '2026-10-05',
+            JournalStatus::Posted, [[$cash, '500.0000', '0.0000'], [$revenue, '0.0000', '500.0000']], 'journal_voucher');
+
+        $response = $this->getJson('/api/reports/accounting/trial-balance?mode=six_columns'
+            .'&start_date=2026-10-01&end_date=2026-10-24')->assertOk()
+            ->assertJsonPath('totals.previous_debit', '125.2500')
+            ->assertJsonPath('totals.previous_credit', '125.2500')
+            ->assertJsonPath('totals.within_debit', '25.1000')
+            ->assertJsonPath('totals.within_credit', '25.1000')
+            ->assertJsonPath('totals.closing_debit', '100.1500')
+            ->assertJsonPath('totals.closing_credit', '100.1500');
+        $rows = collect($response->json('groups'))->flatMap(fn (array $group) => $group['rows']);
+        $cashRow = $rows->firstWhere('account.ulid', $cash->ulid);
+        $this->assertSame('125.2500', $cashRow['six_columns']['previous_debit']);
+        $this->assertSame('25.1000', $cashRow['six_columns']['within_credit']);
+        $this->assertSame('100.1500', $cashRow['six_columns']['closing_debit']);
+        $this->assertNoInternalIds($response->json());
+    }
+
     /**
      * @return array{0:Account,1:Account,2:Account}
      */
