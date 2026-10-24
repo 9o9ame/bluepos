@@ -331,6 +331,12 @@ export function TrialBalanceReportPage() {
   const [sixArrange, setSixArrange] = useState<TrialBalanceArrangeBy>((params.get('arrange_by') || 'code_asc') as TrialBalanceArrangeBy)
   const [sixTab, setSixTab] = useState<'selection' | 'additional'>('selection')
   const [sixTitle, setSixTitle] = useState(params.get('report_title') || 'Trial Balance (Complete)')
+  const [selectedMainHeads, setSelectedMainHeads] = useState<string[]>(params.get('main_heads')?.split(',').filter(Boolean) ?? [])
+  const [selectedSubHeads, setSelectedSubHeads] = useState<string[]>(params.get('sub_heads')?.split(',').filter(Boolean) ?? [])
+  const [selectedAccountTypes, setSelectedAccountTypes] = useState<string[]>(params.get('account_types')?.split(',').filter(Boolean) ?? [])
+  const toggleHierarchy = (items: string[], setItems: (next: string[]) => void, ulid: string) => {
+    setItems(items.includes(ulid) ? items.filter((value) => value !== ulid) : [...items, ulid])
+  }
   const [sectionIndex, setSectionIndex] = useState(0)
   const reportPaperRef = useRef<HTMLDivElement>(null)
   const viewerCanvasRef = useRef<HTMLDivElement>(null)
@@ -371,15 +377,16 @@ export function TrialBalanceReportPage() {
   }
 
   const sixQuery = useQuery({
-    queryKey: ['reports', 'trial-balance', 'six-columns', startDate, endDate, sixGrouping, sixArrange],
+    queryKey: ['reports', 'trial-balance', 'six-columns', startDate, endDate, sixGrouping, sixArrange, selectedMainHeads, selectedSubHeads, selectedAccountTypes],
     queryFn: () => fetchTrialBalanceSixColumns({
       start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange,
+      main_heads: selectedMainHeads, sub_heads: selectedSubHeads, account_types: selectedAccountTypes,
     }),
     enabled: isSixViewer,
   })
 
   const openSixView = (view: 'six_columns' | 'dr_cr_separate') => {
-    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle })
+    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(',') })
     openModule(`/reports/accounts/trial-balance?${query.toString()}`)
   }
 
@@ -544,16 +551,16 @@ export function TrialBalanceReportPage() {
                   <h3>Head Account Type</h3>
                   {hierarchyQuery.isLoading ? <p>Loading account heads…</p> : null}
                   {uniqueHierarchy('main_head').map(([ulid, name]) => (
-                    <label className="tb6-checkbox" key={ulid} title={disabledHint}>
-                      <input type="checkbox" disabled /> {name}
+                    <label className="tb6-checkbox" key={ulid}>
+                      <input type="checkbox" checked={selectedMainHeads.includes(ulid)} onChange={() => toggleHierarchy(selectedMainHeads, setSelectedMainHeads, ulid)} /> {name}
                     </label>
                   ))}
                   {!hierarchyQuery.isLoading && uniqueHierarchy('main_head').length === 0 ? <p>No account heads found.</p> : null}
                 </div>
                 <div className="tb6-filter-panel"><h3>Account Type Heads</h3>
                   {uniqueHierarchy('account_type_head').map(([ulid, name]) => (
-                    <label className="tb6-checkbox" key={ulid} title={disabledHint}>
-                      <input type="checkbox" disabled /> {name}
+                    <label className="tb6-checkbox" key={ulid}>
+                      <input type="checkbox" checked={selectedSubHeads.includes(ulid)} onChange={() => toggleHierarchy(selectedSubHeads, setSelectedSubHeads, ulid)} /> {name}
                     </label>
                   ))}
                 </div>
@@ -562,8 +569,8 @@ export function TrialBalanceReportPage() {
                 <div className="tb6-filter-panel">
                   <h3>Account Type</h3>
                   {uniqueHierarchy('account_type').map(([ulid, name]) => (
-                    <label className="tb6-checkbox" key={ulid} title={disabledHint}>
-                      <input type="checkbox" disabled /> {name}
+                    <label className="tb6-checkbox" key={ulid}>
+                      <input type="checkbox" checked={selectedAccountTypes.includes(ulid)} onChange={() => toggleHierarchy(selectedAccountTypes, setSelectedAccountTypes, ulid)} /> {name}
                     </label>
                   ))}
                 </div>
@@ -673,7 +680,7 @@ export function TrialBalanceReportPage() {
             <UiButton variant="default" label="Fit" onClick={() => setViewerZoom(100)} />
           </div>
           <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh" disabled={sixQuery.isFetching} onClick={() => void sixQuery.refetch()} />
-          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle }).toString()}`)} />
+          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(',') }).toString()}`)} />
           <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
         </div>
         <div className="trial-balance-viewer-canvas">
