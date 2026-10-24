@@ -109,6 +109,35 @@ class DailyCashPositionTest extends TestCase
         $this->assertNoInternalIds($report->json());
     }
 
+    public function test_reports_cash_book_is_posted_branch_scoped_and_validates_selected_accounts(): void
+    {
+        $this->signInOwner('reports-cash-book')->assertOk();
+        $cash = $this->leafAccount('Reports Cash', 'REP-CASH', '0010');
+        $revenue = $this->leafAccount('Reports Revenue', 'REP-REV', '0040');
+
+        $this->postReceiving($cash, $revenue, '2026-09-30', '100.0000', true, 'rep-opening');
+        $this->postReceiving($cash, $revenue, '2026-10-08', '25.2500', true, 'rep-in');
+        $this->postReceiving($cash, $revenue, '2026-10-08', '500.0000', false, 'rep-draft');
+
+        $this->getJson('/api/reports/accounting/cash-book/accounts')->assertOk()
+            ->assertJsonFragment(['ulid' => $cash->ulid]);
+
+        $url = '/api/reports/accounting/cash-book?start_date=2026-10-01&end_date=2026-10-24'
+            .'&account_ulids[0]='.$cash->ulid;
+        $response = $this->getJson($url)->assertOk()
+            ->assertJsonPath('totals.opening', '100.0000')
+            ->assertJsonPath('totals.received', '25.2500')
+            ->assertJsonPath('totals.paid', '0.0000')
+            ->assertJsonPath('totals.closing', '125.2500')
+            ->assertJsonCount(1, 'rows');
+        $this->assertNoInternalIds($response->json());
+
+        $this->getJson('/api/reports/accounting/cash-book?start_date=2026-10-24'
+            .'&end_date=2026-10-01')->assertUnprocessable();
+        $this->getJson('/api/reports/accounting/cash-book?start_date=2026-10-01'
+            .'&end_date=2026-10-24&account_ulids[0]='.$revenue->ulid)->assertNotFound();
+    }
+
     public function test_cash_credit_summary_uses_supported_posted_journals_and_marks_missing_sales_accounting(): void
     {
         $this->signInOwner('daily-cash-summary')->assertOk();
