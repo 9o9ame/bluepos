@@ -679,6 +679,16 @@
 }
 
 @media print {
+  html[data-trial-balance-print='true'] .tb6-break-group {
+    break-before: page;
+    page-break-before: always;
+  }
+  html[data-trial-balance-print='true'] .tb6-table thead {
+    display: table-header-group;
+  }
+  html[data-trial-balance-print='true'] .tb6-table tr {
+    break-inside: avoid;
+  }
   html[data-trial-balance-print='true'] body * {
     visibility: hidden !important;
   }
