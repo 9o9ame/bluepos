@@ -1356,7 +1356,7 @@ export function PurchaseOrderPage() {
                                       </span>
                                     </button>
                                     </div>
-                                    {productPickerOpen && productLookupRows.length ? (
+                                    {productPickerOpen ? (
                                       <ProductLookupGrid
                                         rows={productLookupRows}
                                         total={productLookupRows.length}
