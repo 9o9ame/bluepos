@@ -33,6 +33,8 @@ export function fetchTrialBalanceSixColumns(params: {
   account_types?: string[]
   document_types?: string[]
   party_categories?: string[]
+  closing_operator?: string
+  closing_amount?: string
 }): Promise<TrialBalanceSixColumnReport> {
   const query = new URLSearchParams({
     mode: 'six_columns',
@@ -46,6 +48,10 @@ export function fetchTrialBalanceSixColumns(params: {
   params.account_types?.forEach((ulid, index) => query.set(`account_types[${index}]`, ulid))
   params.document_types?.forEach((type, index) => query.set(`document_types[${index}]`, type))
   params.party_categories?.forEach((type, index) => query.set(`party_categories[${index}]`, type))
+  if (params.closing_operator) {
+    query.set('closing_operator', params.closing_operator)
+    query.set('closing_amount', params.closing_amount ?? '0.0000')
+  }
   return apiFetch<TrialBalanceSixColumnReport>(
     `/api/reports/accounting/trial-balance?${query.toString()}`,
     { busy: 'fetch' },
