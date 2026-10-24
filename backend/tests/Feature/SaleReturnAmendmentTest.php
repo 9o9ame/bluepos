@@ -112,15 +112,7 @@ class SaleReturnAmendmentTest extends TestCase
             '1.000000',
         );
 
-        $permission = Permission::query()
-            ->where('key', 'sales.return.amend_posted')
-            ->firstOrFail();
-
-        $membership = app(TenantContext::class)->membership();
-        foreach ($membership->roles()->get() as $role) {
-            $role->permissions()->detach($permission->id);
-        }
-        app(PermissionService::class)->clearCache();
+        $this->restrictCurrentMembershipWithoutPermission('sales.return.amend_posted');
 
         $this->patchJson('/api/sales-returns/'.$returnUlid.'/amend', [
             'revision_reason' => 'Should be denied',
