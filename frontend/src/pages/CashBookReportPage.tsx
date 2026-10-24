@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
+import { ClipboardCopy, Download, FileCode, FileText, Minus, Plus, Printer, RefreshCw, Search, ArrowLeft, X } from 'lucide-react'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
@@ -58,6 +59,9 @@ export function CashBookReportPage() {
   const [group, setGroup] = useState<'none' | 'date' | 'document'>((params.get('group_by') as 'none' | 'date' | 'document') || 'none')
   const [accountUlids, setAccountUlids] = useState<string[]>(params.get('account_ulids')?.split(',').filter(Boolean) ?? [])
   const [search, setSearch] = useState('')
+  const [zoom, setZoom] = useState(100)
+  const [copyLabel, setCopyLabel] = useState('Copy')
+  const paperRef = useRef<HTMLElement>(null)
   const accountsQuery = useQuery({ queryKey: ['cash-book-accounts'], queryFn: fetchCashBookAccounts })
   const accounts = (accountsQuery.data?.accounts ?? []).filter((a) => includeBank || a.is_cash)
   const reportQuery = useQuery({
@@ -105,6 +109,53 @@ export function CashBookReportPage() {
       return result
     })
   })()
+  const exportFile = (format: 'txt' | 'html' | 'csv') => {
+    const paper = paperRef.current
+    if (!paper || !report) return
+    const filename = `${cashFlow ? 'cash-flow' : 'cash-book'}-${report.start_date}-${report.end_date}`
+    let content: string
+    let mime: string
+    if (format === 'csv') {
+      const escapeCell = (value: string) => {
+        const safe = /^[\\s]*[=+@-]/.test(value) ? "'" + value : value
+        return '"' + safe.replace(/"/g, '""') + '"'
+      }
+      const data = [['Date', 'Reference', 'Voucher', 'Account', 'Description', 'Debit', 'Credit'],
+        ...(report.rows.map((row) => [row.date ?? '', row.trans_no, row.doc,
+          row.account_name, row.description, row.debit, row.credit]))]
+      content = '\\uFEFF' + data.map((line) => line.map(escapeCell).join(',')).join('\\r\\n')
+      mime = 'text/csv;charset=utf-8'
+    } else if (format === 'html') {
+      content = '<!doctype html><html><head><meta charset="utf-8"><title>Cash Book</title></head><body>' +
+        paper.innerHTML + '</body></html>'
+      mime = 'text/html;charset=utf-8'
+    } else {
+      content = paper.innerText || paper.textContent || ''
+      mime = 'text/plain;charset=utf-8'
+    }
+    const url = URL.createObjectURL(new Blob([content], { type: mime }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${filename}.${format}`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+  const copyReport = async () => {
+    if (!paperRef.current) return
+    try {
+      await navigator.clipboard.writeText(paperRef.current.innerText || paperRef.current.textContent || '')
+      setCopyLabel('Copied')
+    } catch {
+      setCopyLabel('Copy failed')
+    }
+  }
+  const findReport = () => {
+    const term = search.trim().toLocaleLowerCase()
+    if (!term) return
+    const cells = paperRef.current?.querySelectorAll('td, th, h2, h3, p')
+    Array.from(cells ?? []).find((cell) => cell.textContent?.toLocaleLowerCase().includes(term))
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
   const receipts = rows.filter((r) => r.debit !== '0.0000')
   const payments = rows.filter((r) => r.credit !== '0.0000')
   const groupLabel = (row: CashBookEntry) => group === 'date' ? asLabel(row.date)
@@ -129,16 +180,45 @@ export function CashBookReportPage() {
   if (preview || cashFlow) {
     return (
       <section className="cashbook-page cashbook-view">
-        <div className="cashbook-tools">
-          <UiButton variant="info" label="Print / PDF" disabled={!report} onClick={() => window.print()} />
-          <input aria-label="Search entries" placeholder="Search entries…" value={search} onChange={(e) => setSearch(e.target.value)} />
-          <UiButton variant="info" label="Refresh" onClick={() => void reportQuery.refetch()} />
-          <UiButton variant="default" label="Options" onClick={() => openModule('/reports/accounts/cash-book')} />
-          <UiButton variant="default" label="Close" onClick={closeActiveTab} />
+        <div className="trial-balance-viewer-toolbar cashbook-tools">
+          <UiButton variant="info" icon={<Printer size={15}/>} label="Print / PDF" disabled={!report} onClick={() => window.print()} />
+          <UiButton variant="default" icon={<ClipboardCopy size={15}/>} label={copyLabel} disabled={!report} onClick={() => void copyReport()} />
+          <UiButton variant="default" icon={<FileText size={15}/>} label="Text" disabled={!report} onClick={() => exportFile('txt')} />
+          <UiButton variant="default" icon={<FileCode size={15}/>} label="HTML" disabled={!report} onClick={() => exportFile('html')} />
+          <UiButton variant="info" icon={<Download size={15}/>} label="Export CSV" disabled={!report} onClick={() => exportFile('csv')} />
+          <UiSelect className="trial-balance-export-choice" aria-label="Export report format"
+            value="" searchable={false} options={[
+              {value:'',label:'Export as…'}, {value:'csv',label:'CSV (Excel compatible)'},
+              {value:'html',label:'HTML document'}, {value:'txt',label:'Plain text'},
+              {value:'pdf',label:'PDF (browser print)'},
+            ]} onChange={(format) => {
+              if (format === 'csv' || format === 'html' || format === 'txt') exportFile(format)
+              else if (format === 'pdf') window.print()
+            }} />
+          <div className="trial-balance-viewer-search">
+            <Search size={14} aria-hidden />
+            <input aria-label="Search report text" placeholder="Search report…" value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onKeyDown={(event) => { if (event.key === 'Enter') findReport() }} />
+            <UiButton variant="default" label="Find" disabled={!report || !search.trim()} onClick={findReport} />
+          </div>
+          <div className="trial-balance-viewer-zoom">
+            <UiButton variant="default" icon={<Minus size={14}/>} aria-label="Zoom out" disabled={zoom <= 50}
+              onClick={() => setZoom((value) => Math.max(50, value - 25))} />
+            <span>{zoom}%</span>
+            <UiButton variant="default" icon={<Plus size={14}/>} aria-label="Zoom in" disabled={zoom >= 200}
+              onClick={() => setZoom((value) => Math.min(200, value + 25))} />
+            <UiButton variant="default" label="Fit" onClick={() => setZoom(100)} />
+          </div>
+          <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh" disabled={reportQuery.isFetching}
+            onClick={() => void reportQuery.refetch()} />
+          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options"
+            onClick={() => openModule('/reports/accounts/cash-book')} />
+          <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
         </div>
         {reportQuery.isLoading ? <p>Loading Cash Book…</p> : null}
         {reportQuery.isError ? <p role="alert">Unable to load Cash Book. Please check the selected accounts and dates.</p> : null}
-        {report ? <article className="cashbook-paper">
+        {report ? <article className="cashbook-paper" ref={paperRef} style={{ zoom: `${zoom}%` }}>
           <header><h2>{cashFlow ? 'Cash Flow Statement' : 'CASH BOOK'}</h2>
             <p>From: {asLabel(report.start_date)} to: {asLabel(report.end_date)}</p>
           </header>
