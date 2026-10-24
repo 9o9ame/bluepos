@@ -243,9 +243,10 @@ const SIX_FIELDS = [
   'within_credit', 'closing_debit', 'closing_credit',
 ] as const
 
-function SixColumnPreview({ report, separate }: {
+function SixColumnPreview({ report, separate, title }: {
   report: TrialBalanceSixColumnReport
   separate: boolean
+  title: string
 }) {
   const allRows = report.groups.flatMap((group) => group.rows)
   const renderNumber = (value: string) => <td className="tb6-number">{amount(value)}</td>
@@ -274,7 +275,7 @@ function SixColumnPreview({ report, separate }: {
         </>
       ) : (
         <>
-          <h2>Trial Balance (6 Columns Format)</h2>
+          <h2>{title || 'Trial Balance (6 Columns Format)'}</h2>
           <table className="tb6-table">
             <thead>
               <tr><th rowSpan={2}>Account Name</th><th colSpan={2}>Previous</th><th colSpan={2}>Within</th><th colSpan={2}>Closing</th></tr>
@@ -582,7 +583,7 @@ export function TrialBalanceReportPage() {
         <div className="trial-balance-viewer-canvas">
           {sixQuery.isLoading ? <div className="trial-balance-viewer-loading">Loading report…</div> : null}
           {sixQuery.isError ? <div className="trial-balance-error" role="alert">Unable to load six-column Trial Balance.</div> : null}
-          {sixQuery.data ? <div className="trial-balance-result"><SixColumnPreview report={sixQuery.data} separate={viewParam === 'dr_cr_separate'}/></div> : null}
+          {sixQuery.data ? <div className="trial-balance-result"><SixColumnPreview report={sixQuery.data} separate={viewParam === 'dr_cr_separate'} title={sixTitle}/></div> : null}
         </div>
       </section>
     )
