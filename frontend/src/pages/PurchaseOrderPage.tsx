@@ -267,7 +267,7 @@ export function PurchaseOrderPage() {
   const localProductLookup = useLocalProducts(
     session,
     productQuery,
-    !readOnly && productPickerOpen,
+    tab === 'entry' && !readOnly,
   )
   const productLookupRows = localProductLookup.rows.filter(
     (product) => product.is_active && product.status === 'active',
@@ -1515,6 +1515,7 @@ export function PurchaseOrderPage() {
                         autoComplete="off"
                         onFocus={() => {
                           setEditingProductKey(null)
+                          if (!productQuery.trim()) setProductQuery('')
                           setProductPickerOpen(true)
                         }}
                         onChange={(event) => {
@@ -1542,6 +1543,7 @@ export function PurchaseOrderPage() {
                         }}
                         onClick={() => {
                           setEditingProductKey(null)
+                          if (!productPickerOpen) setProductQuery('')
                           setProductPickerOpen((open) => !open)
                         }}
                       >
