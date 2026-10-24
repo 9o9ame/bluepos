@@ -132,6 +132,30 @@ class TrialBalanceReportTest extends TestCase
             .'&party_categories[0]=salesman')->assertUnprocessable();
     }
 
+    public function test_six_column_closing_balance_comparison_recalculates_totals(): void
+    {
+        $this->signInOwner('tb6-closing-balance')->assertOk();
+        $context = app(TenantContext::class);
+        [$cash, $revenue, $unused] = $this->accounts($context->tenantId());
+        $this->journal($context->tenantId(), $context->branchId(), '2026-10-20',
+            JournalStatus::Posted, [[$cash, '75.2500', '0.0000'], [$revenue, '0.0000', '75.2500']],
+            'journal_voucher');
+
+        $response = $this->getJson('/api/reports/accounting/trial-balance?mode=six_columns'
+            .'&start_date=2026-10-01&end_date=2026-10-24'
+            .'&closing_operator=gt&closing_amount=0.0000')->assertOk()
+            ->assertJsonPath('totals.closing_debit', '75.2500')
+            ->assertJsonPath('totals.closing_credit', '0.0000');
+        $rows = collect($response->json('groups'))->flatMap(fn ($group) => $group['rows']);
+        $this->assertCount(1, $rows);
+        $this->assertSame($cash->ulid, $rows->first()['account']['ulid']);
+        $this->assertNoInternalIds($response->json());
+
+        $this->getJson('/api/reports/accounting/trial-balance?mode=six_columns'
+            .'&start_date=2026-10-01&end_date=2026-10-24'
+            .'&closing_operator=bad&closing_amount=0.0000')->assertUnprocessable();
+    }
+
     /**
      * @return array{0:Account,1:Account,2:Account}
      */
