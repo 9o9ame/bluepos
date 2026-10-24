@@ -62,38 +62,18 @@ function reportDate(value: string): string {
   return `${day}-${month}-${year}`
 }
 
-function RowHierarchy({
-  row,
-  previous,
-  levelWise,
-}: {
-  row: TrialBalanceRow
-  previous: TrialBalanceRow | null
-  levelWise: boolean
-}) {
-  if (!levelWise) return null
-
-  const nodes = []
-  if (row.account_type_head?.ulid !== previous?.account_type_head?.ulid) {
-    nodes.push(
-      <tr className="trial-balance-sub-head" key={`sub-${row.account_type_head?.ulid ?? 'none'}`}>
-        <td colSpan={3}>{row.account_type_head?.name ?? 'Ungrouped'}</td>
-      </tr>,
-    )
-  }
-  if (row.account_type?.ulid !== previous?.account_type?.ulid) {
-    nodes.push(
-      <tr className="trial-balance-account-type" key={`type-${row.account_type?.ulid ?? 'none'}`}>
-        <td colSpan={3}>
-          {[row.account_type?.code, row.account_type?.name].filter(Boolean).join(' — ') || 'Ungrouped'}
-        </td>
-      </tr>,
-    )
-  }
-
-  return <>{nodes}</>
+function AccountRow({ row }: { row: TrialBalanceRow }) {
+  return (
+    <tr className="trial-balance-account-row">
+      <td>
+        <span>{row.account.code}</span>
+        <strong>{row.account.name}</strong>
+      </td>
+      <td>{amount(row.debit)}</td>
+      <td>{amount(row.credit)}</td>
+    </tr>
+  )
 }
-
 function TrialBalancePreview({
   report,
   separatePages,
@@ -122,34 +102,59 @@ function TrialBalancePreview({
               <tr className="trial-balance-main-head">
                 <td colSpan={3}>{group.label}</td>
               </tr>
-              {group.rows.map((row, index) => {
-                const previous = index > 0 ? group.rows[index - 1] : null
-                return (
-                  <tr key={row.account.ulid} className="trial-balance-account-wrap">
-                    <td colSpan={3}>
-                      <table className="trial-balance-inner-table">
-                        <tbody>
-                          <RowHierarchy
-                            row={row}
-                            previous={previous}
-                            levelWise={report.group_by === 'level_wise'}
-                          />
-                          <tr className="trial-balance-account-row">
-                            <td>
-                              <span>{row.account.code}</span>
-                              <strong>{row.account.name}</strong>
+
+              {report.group_by === 'level_wise' && group.sections
+                ? group.sections.map((section, sectionIndex) => (
+                    <>
+                      <tr
+                        className="trial-balance-sub-head"
+                        key={`section-${section.account_type_head?.ulid ?? sectionIndex}`}
+                      >
+                        <td colSpan={3}>{section.account_type_head?.name ?? 'Ungrouped'}</td>
+                      </tr>
+
+                      {section.account_types.map((typeSection, typeIndex) => (
+                        <>
+                          <tr
+                            className="trial-balance-account-type"
+                            key={`type-${typeSection.account_type?.ulid ?? typeIndex}`}
+                          >
+                            <td colSpan={3}>
+                              {[typeSection.account_type?.code, typeSection.account_type?.name]
+                                .filter(Boolean)
+                                .join(' — ') || 'Ungrouped'}
                             </td>
-                            <td>{amount(row.debit)}</td>
-                            <td>{amount(row.credit)}</td>
                           </tr>
-                        </tbody>
-                      </table>
-                    </td>
-                  </tr>
-                )
-              })}
+
+                          {typeSection.rows.map((row) => (
+                            <AccountRow key={row.account.ulid} row={row} />
+                          ))}
+
+                          <tr className="trial-balance-subtotal">
+                            <td>Account Type Wise Total:</td>
+                            <td>{amount(typeSection.totals.debit)}</td>
+                            <td>{amount(typeSection.totals.credit)}</td>
+                          </tr>
+                        </>
+                      ))}
+
+                      <tr className="trial-balance-subtotal">
+                        <td>Account Type Head Wise Total:</td>
+                        <td>{amount(section.totals.debit)}</td>
+                        <td>{amount(section.totals.credit)}</td>
+                      </tr>
+                    </>
+                  ))
+                : group.rows.map((row) => (
+                    <AccountRow key={row.account.ulid} row={row} />
+                  ))}
+
               <tr className="trial-balance-group-total">
-                <td>Group Total:</td>
+                <td>
+                  {report.group_by === 'level_wise'
+                    ? 'Main Head Wise Sub Total:'
+                    : 'Group Total:'}
+                </td>
                 <td>{amount(group.totals.debit)}</td>
                 <td>{amount(group.totals.credit)}</td>
               </tr>
@@ -184,7 +189,7 @@ export function TrialBalanceReportPage() {
   const [groupBy, setGroupBy] = useState<TrialBalanceGroupBy>('level_wise')
   const [arrangeBy, setArrangeBy] = useState<TrialBalanceArrangeBy>('code_asc')
   const [separatePages, setSeparatePages] = useState(false)
-  const [arrangeIds, setArrangeIds] = useState(false)
+  const [arrangeIds] = useState(false)
   const [report, setReport] = useState<TrialBalanceReport | null>(null)
 
   const previewMutation = useMutation({
@@ -196,9 +201,7 @@ export function TrialBalanceReportPage() {
     previewMutation.mutate({
       as_of_date: asOfDate,
       group_by: groupBy,
-      arrange_by: arrangeIds
-        ? arrangeBy.startsWith('code_') ? arrangeBy : 'code_asc'
-        : arrangeBy,
+      arrange_by: arrangeBy,
     })
   }
 
@@ -249,15 +252,11 @@ export function TrialBalanceReportPage() {
             <span>Each Group on Separate Page</span>
           </label>
 
-          <label className="trial-balance-check">
-            <input
-              type="checkbox"
-              checked={arrangeIds}
-              onChange={(event) => {
-                setArrangeIds(event.target.checked)
-                if (event.target.checked) setArrangeBy('code_asc')
-              }}
-            />
+          <label
+            className="trial-balance-check"
+            title="Legacy Arrange By IDs semantics are not mapped to a safe BluePOS business key yet."
+          >
+            <input type="checkbox" checked={arrangeIds} disabled />
             <span>Arrange By IDs</span>
           </label>
 
@@ -281,7 +280,6 @@ export function TrialBalanceReportPage() {
             <UiSelect
               value={arrangeBy}
               searchable={false}
-              disabled={arrangeIds}
               options={ARRANGE_OPTIONS}
               onChange={(value) => setArrangeBy(value as TrialBalanceArrangeBy)}
             />
