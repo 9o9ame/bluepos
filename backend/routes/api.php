@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\Reports\ProductLedgerController;
 use App\Http\Controllers\Api\Reports\ProductStockStatusController;
 use App\Http\Controllers\Api\Reports\TrialBalanceController;
+use App\Http\Controllers\Api\Reports\CashBookReportController;
 use App\Http\Controllers\Api\ReportHeadingController;
 use App\Http\Controllers\Api\Purchases\PurchaseInvoiceController;
 use App\Http\Controllers\Api\Purchases\PurchaseOrderController;
@@ -307,6 +308,8 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     });
 
     Route::get('/reports/accounting/trial-balance', TrialBalanceController::class);
+    Route::get('/reports/accounting/cash-book/accounts', [CashBookReportController::class, 'accounts']);
+    Route::get('/reports/accounting/cash-book', CashBookReportController::class);
 
     Route::middleware('entitled:inventory')->group(function () {
         Route::get('/reports/products/stock-status', ProductStockStatusController::class);
