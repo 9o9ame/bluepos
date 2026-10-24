@@ -188,8 +188,7 @@ export function PurchaseOrderPage() {
   const feedback = useFeedback()
   const canCreate = useCan('purchases.create')
   const canEdit = useCan('purchases.edit')
-  const canEditOrderPermission = useCan('purchase_orders.edit')
-  const canEditOrder = canEditOrderPermission || canEdit
+  const canEditOrder = useCan('purchase_orders.edit')
 
   const [tab, setTab] = useState<'entry' | 'search' | 'status'>('entry')
   const [supplierUlid, setSupplierUlid] = useState('')
