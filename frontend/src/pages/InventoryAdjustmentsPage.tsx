@@ -98,7 +98,9 @@ export function InventoryAdjustmentsPage() {
   const [documentUlid, setDocumentUlid] = useState<string | null>(null)
   const [documentNumberValue, setDocumentNumberValue] = useState<string | null>(null)
   const [amendmentLines, setAmendmentLines] = useState<InventoryAdjustmentLine[]>([])
+  const [draftLines, setDraftLines] = useState<InventoryAdjustmentLine[]>([])
   const [newLines, setNewLines] = useState<InventoryAdjustmentLine[]>([])
+  const [draftDirty, setDraftDirty] = useState(false)
   const [amendmentDirty, setAmendmentDirty] = useState(false)
   const amendmentKeyRef = useRef(newAdjustmentKey())
   const [adjustmentDate, setAdjustmentDate] = useState(todayIso())
@@ -174,8 +176,8 @@ export function InventoryAdjustmentsPage() {
   const displayLines =
     document?.status === 'posted'
       ? amendmentLines
-      : document
-        ? (document.lines ?? [])
+      : document?.status === 'draft'
+        ? draftLines
         : newLines
   const entryEnabled = canAdjust
 
@@ -212,21 +214,22 @@ export function InventoryAdjustmentsPage() {
     setAccountUlid(document.account?.ulid ?? '')
     setDocumentNotes(document.notes ?? '')
     setHeaderDirty(false)
+    setDraftDirty(false)
     setAmendmentDirty(false)
     amendmentKeyRef.current = newAdjustmentKey()
-    setAmendmentLines(
-      document.status === 'posted'
-        ? (document.lines ?? []).map((line) => ({
-            ...line,
-            qty_plus: formatDecimal(line.qty_plus),
-            qty_minus: formatDecimal(line.qty_minus),
-            in_stock: formatDecimal(line.in_stock),
-            after_stock: formatDecimal(line.after_stock),
-            price: formatDecimal(line.price),
-            amount: formatDecimal(line.amount),
-          }))
-        : [],
-    )
+
+    const normalizedLines = (document.lines ?? []).map((line) => ({
+      ...line,
+      qty_plus: formatDecimal(line.qty_plus),
+      qty_minus: formatDecimal(line.qty_minus),
+      in_stock: formatDecimal(line.in_stock),
+      after_stock: formatDecimal(line.after_stock),
+      price: formatDecimal(line.price),
+      amount: formatDecimal(line.amount),
+    }))
+
+    setDraftLines(document.status === 'draft' ? normalizedLines : [])
+    setAmendmentLines(document.status === 'posted' ? normalizedLines : [])
   }, [
     document?.ulid,
     document?.document_number,
@@ -264,7 +267,9 @@ export function InventoryAdjustmentsPage() {
     setDocumentUlid(null)
     setDocumentNumberValue(null)
     setAmendmentLines([])
+    setDraftLines([])
     setNewLines([])
+    setDraftDirty(false)
     setAmendmentDirty(false)
     amendmentKeyRef.current = newAdjustmentKey()
     setAdjustmentDate(todayIso())
@@ -434,6 +439,24 @@ export function InventoryAdjustmentsPage() {
     clearLineForm(true)
   }
 
+  function stageDraftLine() {
+    if (!document || document.status !== 'draft') return
+    const staged = buildStagedLine()
+    if (!staged) return
+
+    setDraftLines((current) => {
+      const existing = current.find((line) =>
+        line.ulid === selectedLineUlid || line.product?.ulid === staged.product?.ulid,
+      )
+      if (existing) {
+        return current.map((line) => line.ulid === existing.ulid ? staged : line)
+      }
+      return [...current, staged]
+    })
+    setDraftDirty(true)
+    clearLineForm(true)
+  }
+
   function stagePostedLine() {
     if (!document || document.status !== 'posted') return
     const staged = buildStagedLine()
@@ -461,7 +484,7 @@ export function InventoryAdjustmentsPage() {
       stagePostedLine()
       return
     }
-    if (!saveLine.isPending) saveLine.mutate()
+    stageDraftLine()
   }
 
   async function removeCurrentLine(lineUlid: string) {
@@ -480,7 +503,9 @@ export function InventoryAdjustmentsPage() {
     }
 
     if (!await feedback.confirm('Remove this adjustment line?')) return
-    removeLine.mutate(lineUlid)
+    setDraftLines((current) => current.filter((line) => line.ulid !== lineUlid))
+    setDraftDirty(true)
+    clearLineForm(true)
   }
 
   const saveHeader = useMutation({
