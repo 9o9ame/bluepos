@@ -829,3 +829,8 @@ html[data-animations='off'] .inventory-adjustments-product-arrow > span {
 .inventory-adjustments-product-arrow[aria-expanded='true'] > .ui-select-arrow {
   transform: rotate(180deg);
 }
+
+
+.inventory-adjustments-search-field {
+  width: min(300px, 30vw) !important;
+}
