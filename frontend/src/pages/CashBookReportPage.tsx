@@ -194,6 +194,12 @@ export function CashBookReportPage() {
             <label>From Date<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
             <label>To Date<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
           </div>
+          <label className="cashbook-check" title="Purchase-source inclusion is pending verified accounting mapping">
+            <input type="checkbox" disabled /> Show Purchase also
+          </label>
+          <label className="cashbook-check" title="Non-cash transaction classification is pending verification">
+            <input type="checkbox" disabled /> Non Cash Also
+          </label>
           <label className="cashbook-check"><input type="checkbox" checked={includeBank}
             onChange={(e) => { setIncludeBank(e.target.checked); setAccountUlids([]) }} /> Include Bank Book</label>
           <label className="cashbook-check"><input type="checkbox" checked={summaryOnly}
