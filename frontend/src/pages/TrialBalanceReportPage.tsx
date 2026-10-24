@@ -256,10 +256,11 @@ const SIX_FIELDS = [
   'within_credit', 'closing_debit', 'closing_credit',
 ] as const
 
-function SixColumnPreview({ report, separate, title }: {
+function SixColumnPreview({ report, separate, title, separatePages }: {
   report: TrialBalanceSixColumnReport
   separate: boolean
   title: string
+  separatePages: boolean
 }) {
   const allRows = report.groups.flatMap((group) => group.rows)
   const renderNumber = (value: string) => <td className="tb6-number">{amount(value)}</td>
@@ -294,9 +295,8 @@ function SixColumnPreview({ report, separate, title }: {
               <tr><th rowSpan={2}>Account Name</th><th colSpan={2}>Previous</th><th colSpan={2}>Within</th><th colSpan={2}>Closing</th></tr>
               <tr>{SIX_FIELDS.map((field) => <th key={field}>{field.endsWith('debit') ? 'Debit' : 'Credit'}</th>)}</tr>
             </thead>
-            <tbody>
-              {report.groups.map((group) => (
-                <Fragment key={group.key}>
+            {report.groups.map((group, index) => (
+                <tbody key={group.key} className={separatePages && index > 0 ? 'tb6-break-group' : undefined}>
                   <tr className="tb6-group"><th colSpan={7}>{group.label}</th></tr>
                   {group.rows.map((row) => (
                     <tr key={row.account.ulid}>
@@ -304,8 +304,9 @@ function SixColumnPreview({ report, separate, title }: {
                       {SIX_FIELDS.map((field) => <Fragment key={field}>{renderNumber(row.six_columns[field])}</Fragment>)}
                     </tr>
                   ))}
-                </Fragment>
+                </tbody>
               ))}
+            <tbody>
               <tr className="tb6-total"><th>Grand Total</th>{SIX_FIELDS.map((field) => <Fragment key={field}>{renderNumber(report.totals[field])}</Fragment>)}</tr>
             </tbody>
           </table>
@@ -344,6 +345,7 @@ export function TrialBalanceReportPage() {
   const [sixArrange, setSixArrange] = useState<TrialBalanceArrangeBy>((params.get('arrange_by') || 'code_asc') as TrialBalanceArrangeBy)
   const [sixTab, setSixTab] = useState<'selection' | 'additional'>('selection')
   const [sixTitle, setSixTitle] = useState(params.get('report_title') || 'Trial Balance (Complete)')
+  const [sixSeparatePages, setSixSeparatePages] = useState(params.get('separate_pages') === '1')
   const [closingOperator, setClosingOperator] = useState(params.get('closing_operator') || '')
   const [closingAmount, setClosingAmount] = useState(params.get('closing_amount') || '0.00')
   const [selectedMainHeads, setSelectedMainHeads] = useState<string[]>(params.get('main_heads')?.split(',').filter(Boolean) ?? [])
@@ -426,7 +428,7 @@ export function TrialBalanceReportPage() {
   })
 
   const openSixView = (view: 'six_columns' | 'dr_cr_separate') => {
-    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount })
+    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, separate_pages: sixSeparatePages ? '1' : '0', main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount })
     openModule(`/reports/accounts/trial-balance?${query.toString()}`)
   }
 
@@ -568,7 +570,7 @@ export function TrialBalanceReportPage() {
                     onChange={(value) => setSixGrouping(value as TrialBalanceGroupBy)} />
                 </label>
                 <label className="tb6-checkbox"><input type="checkbox" disabled title={disabledHint} /> 2 Column Format</label>
-                <label className="tb6-checkbox"><input type="checkbox" disabled title={disabledHint} /> Each Group on Separate Page</label>
+                <label className="tb6-checkbox"><input type="checkbox" checked={sixSeparatePages} onChange={(event) => setSixSeparatePages(event.target.checked)} /> Each Group on Separate Page (print)</label>
                 <label className="tb6-checkbox"><input type="checkbox" disabled title={disabledHint} /> Include Stocks in Report</label>
                 <label className="tb6-checkbox"><input type="checkbox" disabled title={disabledHint} /> Re-Evaluate Stock Using FIFO</label>
                 <label>Summary By Group<UiSelect value="" searchable={false} options={[{value:'',label:'Not configured'}]} disabled onChange={() => undefined} /></label>
@@ -776,7 +778,7 @@ export function TrialBalanceReportPage() {
         <div className="trial-balance-viewer-canvas">
           {sixQuery.isLoading ? <div className="trial-balance-viewer-loading">Loading report…</div> : null}
           {sixQuery.isError ? <div className="trial-balance-error" role="alert">Unable to load six-column Trial Balance.</div> : null}
-          {report ? <div className="trial-balance-result" ref={reportPaperRef} style={{ zoom: `${viewerZoom}%` }}><SixColumnPreview report={report} separate={viewParam === 'dr_cr_separate'} title={sixTitle}/></div> : null}
+          {report ? <div className="trial-balance-result" ref={reportPaperRef} style={{ zoom: `${viewerZoom}%` }}><SixColumnPreview report={report} separate={viewParam === 'dr_cr_separate'} title={sixTitle} separatePages={sixSeparatePages}/></div> : null}
         </div>
       </section>
     )
