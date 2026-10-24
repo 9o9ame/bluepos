@@ -30,9 +30,9 @@
 
 .trial-balance-options-card {
   display: grid;
-  gap: 18px;
-  min-height: 370px;
-  padding: 58px 36px 34px;
+  gap: 14px;
+  min-height: 340px;
+  padding: 52px 36px 28px;
   border: 1px solid var(--ui-border);
   border-radius: var(--panel-radius);
   background: var(--ui-surface-subtle);
@@ -58,7 +58,7 @@
   grid-template-columns: 154px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  min-height: 42px;
+  min-height: 36px;
   font-size: 14px;
   font-weight: 700;
 }
@@ -66,7 +66,8 @@
 .trial-balance-options-card input[type='date'] {
   box-sizing: border-box;
   width: 100%;
-  min-height: 40px;
+  height: 34px;
+  min-height: 34px;
   font-size: 14px;
   border: 1px solid var(--ui-control-border);
   border-radius: var(--control-radius);
@@ -77,7 +78,8 @@
 }
 
 .trial-balance-options-card .ui-select-trigger {
-  min-height: 40px;
+  height: 34px;
+  min-height: 34px;
   font-size: 14px;
 }
 
@@ -86,7 +88,7 @@
   align-items: center;
   gap: 8px;
   padding-left: 166px;
-  min-height: 34px;
+  min-height: 30px;
   font-size: 13px;
   font-weight: 600;
 }
@@ -97,17 +99,21 @@
   gap: 12px;
 }
 
-.trial-balance-actions .ui-button {
+.trial-balance-page .trial-balance-actions button.ui-button {
   width: 100%;
-  min-height: 58px;
+  height: 48px;
+  min-height: 48px;
+  padding-block: 10px;
   justify-content: center;
   font-size: 15px;
   font-weight: 700;
 }
 
-.trial-balance-major-minor {
+.trial-balance-page button.trial-balance-major-minor {
   width: 100%;
-  min-height: 58px;
+  height: 48px;
+  min-height: 48px;
+  padding-block: 10px;
   margin-top: 0;
   justify-content: center;
   font-size: 15px;
