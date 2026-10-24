@@ -41,13 +41,19 @@ function today(): string {
 }
 
 function amount(value: string): string {
-  if (Number(value) === 0) return '—'
-  const parsed = Number(value)
-  if (!Number.isFinite(parsed)) return value
-  return parsed.toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 4,
-  })
+  const normalized = value.trim()
+  if (!/^-?\d+(?:\.\d+)?$/.test(normalized)) return value
+
+  const negative = normalized.startsWith('-')
+  const unsigned = negative ? normalized.slice(1) : normalized
+  const [integerRaw, fractionRaw = ''] = unsigned.split('.')
+  const fraction = fractionRaw.replace(/0+$/, '')
+  const integer = integerRaw.replace(/^0+(?=\d)/, '') || '0'
+
+  if (integer === '0' && fraction === '') return '—'
+
+  const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return `${negative ? '-' : ''}${grouped}${fraction ? `.${fraction}` : ''}`
 }
 
 function reportDate(value: string): string {
