@@ -3,6 +3,7 @@ import type {
   TrialBalanceArrangeBy,
   TrialBalanceGroupBy,
   TrialBalanceReport,
+  TrialBalanceSixColumnReport,
 } from '../types/reports'
 
 export function fetchTrialBalanceReport(params: {
@@ -17,6 +18,19 @@ export function fetchTrialBalanceReport(params: {
   })
 
   return apiFetch<TrialBalanceReport>(
+    `/api/reports/accounting/trial-balance?${query.toString()}`,
+    { busy: 'fetch' },
+  )
+}
+
+export function fetchTrialBalanceSixColumns(params: {
+  start_date: string
+  end_date: string
+  group_by: TrialBalanceGroupBy
+  arrange_by: TrialBalanceArrangeBy
+}): Promise<TrialBalanceSixColumnReport> {
+  const query = new URLSearchParams({ mode: 'six_columns', ...params })
+  return apiFetch<TrialBalanceSixColumnReport>(
     `/api/reports/accounting/trial-balance?${query.toString()}`,
     { busy: 'fetch' },
   )
