@@ -46,6 +46,8 @@ class TrialBalanceController extends Controller
             'party_categories.*' => ['required', 'string', 'distinct', Rule::in([
                 'all', 'accounts', 'customers', 'vendors',
             ])],
+            'closing_operator' => ['nullable', Rule::in(['eq', 'ne', 'lt', 'lte', 'gt', 'gte'])],
+            'closing_amount' => ['required_with:closing_operator', 'numeric', 'between:-9999999999999999,9999999999999999', 'decimal:0,4'],
             'start_date' => ['required_if:mode,six_columns', 'date_format:Y-m-d'],
             'end_date' => ['required_if:mode,six_columns', 'date_format:Y-m-d', 'after_or_equal:start_date'],
             'group_by' => ['nullable', Rule::in([
@@ -81,6 +83,8 @@ class TrialBalanceController extends Controller
                 $data['account_types'] ?? [],
                 $data['document_types'] ?? [],
                 $data['party_categories'] ?? [],
+                $data['closing_operator'] ?? null,
+                (string) ($data['closing_amount'] ?? '0.0000'),
             ));
         }
 
