@@ -44,3 +44,21 @@
     width: 100%;
   }
 }
+
+/* Cash Flow Statement: reference-style dense, full-width daily grid. */
+.cashbook-flow-view{background:var(--ui-surface);overflow:hidden}
+.cashbook-flow-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:9px 16px;background:var(--ui-surface);border-bottom:1px solid var(--ui-border)}
+.cashbook-flow-heading h1{font-size:19px;font-weight:800;margin:0}
+.cashbook-flow-heading span{font-size:12px;font-weight:700}
+.cashbook-flow-view .cashbook-paper{max-width:none;width:100%;margin:0;padding:0 12px;box-shadow:none;border:0;overflow:auto;flex:1;min-height:0}
+.cashbook-flow-view .cashbook-flow-print-heading,.cashbook-flow-view .cashbook-flow-balances{display:none}
+.cashbook-flow-grid{overflow:auto;width:100%;max-height:100%}
+.cashbook-flow-view .cashbook-flow-table{width:100%;min-width:1300px;font-size:12px;border-collapse:separate;border-spacing:0}
+.cashbook-flow-table th,.cashbook-flow-table td{border-right:1px solid var(--ui-table-border);border-bottom:1px solid var(--ui-table-border);padding:4px 6px;white-space:nowrap}
+.cashbook-flow-table thead th{position:sticky;top:0;z-index:1;background:var(--ui-table-header);color:var(--ui-table-header-text);text-align:center;font-weight:800}
+.cashbook-flow-table tbody td:first-child{font-weight:700;text-align:center;background:var(--ui-surface-muted)}
+.cashbook-flow-table tbody td:nth-child(2),.cashbook-flow-table tbody td:nth-child(3){font-weight:700}
+.cashbook-flow-table tbody tr:nth-child(even){background:var(--ui-row-alt)}
+.cashbook-flow-table tbody tr:hover{background:var(--ui-row-hover)}
+.cashbook-flow-table tfoot th,.cashbook-flow-table tfoot td{position:sticky;bottom:0;background:var(--ui-surface-muted);font-weight:800;border-top:2px solid var(--ui-table-border)}
+@media print{.cashbook-flow-view .cashbook-flow-print-heading{display:block}.cashbook-flow-view .cashbook-paper{overflow:visible;padding:0}.cashbook-flow-grid{overflow:visible}.cashbook-flow-table thead th,.cashbook-flow-table tfoot td,.cashbook-flow-table tfoot th{position:static}}
