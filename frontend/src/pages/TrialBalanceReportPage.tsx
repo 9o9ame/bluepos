@@ -344,6 +344,8 @@ export function TrialBalanceReportPage() {
   const [sixArrange, setSixArrange] = useState<TrialBalanceArrangeBy>((params.get('arrange_by') || 'code_asc') as TrialBalanceArrangeBy)
   const [sixTab, setSixTab] = useState<'selection' | 'additional'>('selection')
   const [sixTitle, setSixTitle] = useState(params.get('report_title') || 'Trial Balance (Complete)')
+  const [closingOperator, setClosingOperator] = useState(params.get('closing_operator') || '')
+  const [closingAmount, setClosingAmount] = useState(params.get('closing_amount') || '0.00')
   const [selectedMainHeads, setSelectedMainHeads] = useState<string[]>(params.get('main_heads')?.split(',').filter(Boolean) ?? [])
   const [selectedSubHeads, setSelectedSubHeads] = useState<string[]>(params.get('sub_heads')?.split(',').filter(Boolean) ?? [])
   const [selectedAccountTypes, setSelectedAccountTypes] = useState<string[]>(params.get('account_types')?.split(',').filter(Boolean) ?? [])
@@ -413,17 +415,18 @@ export function TrialBalanceReportPage() {
   }
 
   const sixQuery = useQuery({
-    queryKey: ['reports', 'trial-balance', 'six-columns', startDate, endDate, sixGrouping, sixArrange, selectedMainHeads, selectedSubHeads, selectedAccountTypes, selectedDocumentTypes, selectedPartyCategories],
+    queryKey: ['reports', 'trial-balance', 'six-columns', startDate, endDate, sixGrouping, sixArrange, selectedMainHeads, selectedSubHeads, selectedAccountTypes, selectedDocumentTypes, selectedPartyCategories, closingOperator, closingAmount],
     queryFn: () => fetchTrialBalanceSixColumns({
       start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange,
       main_heads: selectedMainHeads, sub_heads: selectedSubHeads, account_types: selectedAccountTypes,
       document_types: selectedDocumentTypes, party_categories: selectedPartyCategories,
+      closing_operator: closingOperator || undefined, closing_amount: closingAmount,
     }),
     enabled: isSixViewer,
   })
 
   const openSixView = (view: 'six_columns' | 'dr_cr_separate') => {
-    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(',') })
+    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount })
     openModule(`/reports/accounts/trial-balance?${query.toString()}`)
   }
 
@@ -570,12 +573,29 @@ export function TrialBalanceReportPage() {
                 <label className="tb6-checkbox"><input type="checkbox" disabled title={disabledHint} /> Re-Evaluate Stock Using FIFO</label>
                 <label>Summary By Group<UiSelect value="" searchable={false} options={[{value:'',label:'Not configured'}]} disabled onChange={() => undefined} /></label>
                 <label>Title On Report
-                  <input type="text" maxLength={120} value={sixTitle} onChange={(event) => setSixTitle(event.target.value)} />
+                  <input type="text" list="tb6-title-suggestions" maxLength={120} value={sixTitle}
+                    onChange={(event) => setSixTitle(event.target.value)} />
+                  <datalist id="tb6-title-suggestions">
+                    <option value="TRIAL BALANCE (COMPLETE)" />
+                    <option value="INCOME STATEMENT" />
+                    <option value="BALANCE SHEET" />
+                    <option value="TRIAL BALANCE" />
+                  </datalist>
                 </label>
-                <fieldset className="tb6-unavailable" disabled title={disabledHint}>
+                <fieldset className="tb6-unavailable">
                   <legend>Having Closing Balance</legend>
-                  <label>Condition<input value="Not available" readOnly /></label>
-                  <label>Amount<input value="0.00" readOnly /></label>
+                  <label>Condition
+                    <UiSelect searchable={false} value={closingOperator} options={[
+                      {value:'', label:'All balances'},
+                      {value:'eq',label:'= (EQUAL TO)'}, {value:'ne',label:'<> (NOT EQUAL TO)'},
+                      {value:'lt',label:'< (LESS THAN)'}, {value:'lte',label:'<= (LESS THAN OR EQUAL TO)'},
+                      {value:'gt',label:'> (GREATER THAN)'}, {value:'gte',label:'>= (GREATER THAN OR EQUAL TO)'},
+                    ]} onChange={setClosingOperator} />
+                  </label>
+                  <label>Amount
+                    <input type="number" step="0.0001" value={closingAmount}
+                      onChange={(event) => setClosingAmount(event.target.value)} disabled={!closingOperator} />
+                  </label>
                 </fieldset>
                 <div className="tb6-sidebar-bottom">
                   <label>Show<UiSelect searchable={false} value="code" options={[{value:'code',label:'CODE'}]} onChange={() => undefined} /></label>
@@ -653,8 +673,8 @@ export function TrialBalanceReportPage() {
           <div className="tb6-footer">
             <span role="status">{startDate > endDate ? 'Start Date must be on or before Ending Date.' : 'Posted journals only · current tenant and branch'}</span>
             <div className="tb6-options-actions">
-              <UiButton variant="info" label="Preview 6 Columns" disabled={!startDate || !endDate || startDate > endDate} onClick={() => openSixView('six_columns')} />
-              <UiButton variant="info" label="Dr / Cr Separate" disabled={!startDate || !endDate || startDate > endDate} onClick={() => openSixView('dr_cr_separate')} />
+              <UiButton variant="info" label="Preview 6 Columns" disabled={!startDate || !endDate || startDate > endDate || (Boolean(closingOperator) && (!closingAmount || !Number.isFinite(Number(closingAmount))))} onClick={() => openSixView('six_columns')} />
+              <UiButton variant="info" label="Dr / Cr Separate" disabled={!startDate || !endDate || startDate > endDate || (Boolean(closingOperator) && (!closingAmount || !Number.isFinite(Number(closingAmount))))} onClick={() => openSixView('dr_cr_separate')} />
               <UiButton variant="default" label="Close" onClick={closeActiveTab} />
             </div>
           </div>
@@ -750,7 +770,7 @@ export function TrialBalanceReportPage() {
             <UiButton variant="default" label="Fit" onClick={() => setViewerZoom(100)} />
           </div>
           <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh" disabled={sixQuery.isFetching} onClick={() => void sixQuery.refetch()} />
-          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(',') }).toString()}`)} />
+          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount }).toString()}`)} />
           <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
         </div>
         <div className="trial-balance-viewer-canvas">
