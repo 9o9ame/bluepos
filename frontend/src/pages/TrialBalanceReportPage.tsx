@@ -666,6 +666,18 @@ export function TrialBalanceReportPage() {
           <UiButton variant="default" icon={<FileText size={15}/>} label="Text" disabled={!report} onClick={() => downloadSix('txt')} />
           <UiButton variant="default" icon={<FileCode size={15}/>} label="HTML" disabled={!report} onClick={() => downloadSix('html')} />
           <UiButton variant="info" icon={<Download size={15}/>} label="Export CSV" disabled={!report} onClick={() => downloadSix('csv')} />
+          <UiSelect className="trial-balance-export-choice" aria-label="Export report format"
+            value="" searchable={false} options={[
+              { value: '', label: 'Export as…' },
+              { value: 'csv', label: 'CSV (Excel compatible)' },
+              { value: 'html', label: 'HTML document' },
+              { value: 'txt', label: 'Plain text' },
+              { value: 'pdf', label: 'PDF (browser print)' },
+            ]}
+            onChange={(format) => {
+              if (format === 'csv' || format === 'html' || format === 'txt') downloadSix(format)
+              else if (format === 'pdf') printSix()
+            }} />
           <div className="trial-balance-viewer-search">
             <Search size={14} aria-hidden />
             <input aria-label="Search report text" placeholder="Search report…" value={viewerSearch}
