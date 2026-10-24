@@ -256,13 +256,14 @@ const SIX_FIELDS = [
   'within_credit', 'closing_debit', 'closing_credit',
 ] as const
 
-function SixColumnPreview({ report, separate, title, separatePages, datesOnly, twoColumn }: {
+function SixColumnPreview({ report, separate, title, separatePages, datesOnly, twoColumn, displayCode }: {
   report: TrialBalanceSixColumnReport
   separate: boolean
   title: string
   separatePages: boolean
   datesOnly: boolean
   twoColumn: boolean
+  displayCode: boolean
 }) {
   const allRows = report.groups.flatMap((group) => group.rows)
   const renderNumber = (value: string) => <td className="tb6-number">{amount(value)}</td>
@@ -284,7 +285,7 @@ function SixColumnPreview({ report, separate, title, separatePages, datesOnly, t
                 <thead><tr><th>{direction === 'debit' ? 'Total Debits' : 'Total Credits'}</th><th>Amount</th></tr></thead>
                 <tbody>
                   {allRows.filter((row) => row.six_columns[side] !== '0.0000').map((row) => (
-                    <tr key={row.account.ulid}><td>{row.account.name}</td>{renderNumber(row.six_columns[side])}</tr>
+                    <tr key={row.account.ulid}><td>{displayCode ? `${row.account.code} — ` : ''}{row.account.name}</td>{renderNumber(row.six_columns[side])}</tr>
                   ))}
                   <tr className="tb6-total"><th>Grand Total</th>{renderNumber(report.totals[side])}</tr>
                 </tbody>
@@ -312,7 +313,7 @@ function SixColumnPreview({ report, separate, title, separatePages, datesOnly, t
                   <tr className="tb6-group"><th colSpan={twoColumn ? 3 : 7}>{group.label}</th></tr>
                   {group.rows.map((row) => (
                     <tr key={row.account.ulid}>
-                      <td>{row.account.code} — {row.account.name}</td>
+                      <td>{displayCode ? `${row.account.code} — ` : ''}{row.account.name}</td>
                       {visibleFields.map((field) => <Fragment key={field}>{renderNumber(row.six_columns[field])}</Fragment>)}
                     </tr>
                   ))}
@@ -360,6 +361,7 @@ export function TrialBalanceReportPage() {
   const [sixSeparatePages, setSixSeparatePages] = useState(params.get('separate_pages') === '1')
   const [sixDatesOnly, setSixDatesOnly] = useState(params.get('dates_only') === '1')
   const [sixTwoColumn, setSixTwoColumn] = useState(params.get('two_column') === '1')
+  const [sixShowCode, setSixShowCode] = useState(params.get('show') !== 'name')
   const [closingOperator, setClosingOperator] = useState(params.get('closing_operator') || '')
   const [closingAmount, setClosingAmount] = useState(params.get('closing_amount') || '0.00')
   const [selectedMainHeads, setSelectedMainHeads] = useState<string[]>(params.get('main_heads')?.split(',').filter(Boolean) ?? [])
@@ -442,7 +444,7 @@ export function TrialBalanceReportPage() {
   })
 
   const openSixView = (view: 'six_columns' | 'dr_cr_separate') => {
-    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, separate_pages: sixSeparatePages ? '1' : '0', dates_only: sixDatesOnly ? '1' : '0', two_column: sixTwoColumn ? '1' : '0', main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount })
+    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, separate_pages: sixSeparatePages ? '1' : '0', dates_only: sixDatesOnly ? '1' : '0', two_column: sixTwoColumn ? '1' : '0', show: sixShowCode ? 'code' : 'name', main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount })
     openModule(`/reports/accounts/trial-balance?${query.toString()}`)
   }
 
@@ -618,7 +620,7 @@ export function TrialBalanceReportPage() {
                   </label>
                 </fieldset>
                 <div className="tb6-sidebar-bottom">
-                  <label>Show<UiSelect searchable={false} value="code" options={[{value:'code',label:'CODE'}]} onChange={() => undefined} /></label>
+                  <label>Show<UiSelect searchable={false} value={sixShowCode ? 'code' : 'name'} options={[{value:'code',label:'Account CODE + Name'}, {value:'name',label:'Account Name only'}]} onChange={(value) => setSixShowCode(value === 'code')} /></label>
                   <label>Arrange By<UiSelect searchable={false} value={sixArrange} options={ARRANGE_OPTIONS}
                     onChange={(value) => setSixArrange(value as TrialBalanceArrangeBy)} /></label>
                 </div>
@@ -796,7 +798,7 @@ export function TrialBalanceReportPage() {
         <div className="trial-balance-viewer-canvas">
           {sixQuery.isLoading ? <div className="trial-balance-viewer-loading">Loading report…</div> : null}
           {sixQuery.isError ? <div className="trial-balance-error" role="alert">Unable to load six-column Trial Balance.</div> : null}
-          {report ? <div className="trial-balance-result" ref={reportPaperRef} style={{ zoom: `${viewerZoom}%` }}><SixColumnPreview report={report} separate={viewParam === 'dr_cr_separate'} title={sixTitle} separatePages={sixSeparatePages} datesOnly={sixDatesOnly} twoColumn={sixTwoColumn}/></div> : null}
+          {report ? <div className="trial-balance-result" ref={reportPaperRef} style={{ zoom: `${viewerZoom}%` }}><SixColumnPreview report={report} separate={viewParam === 'dr_cr_separate'} title={sixTitle} separatePages={sixSeparatePages} datesOnly={sixDatesOnly} twoColumn={sixTwoColumn} displayCode={sixShowCode}/></div> : null}
         </div>
       </section>
     )
