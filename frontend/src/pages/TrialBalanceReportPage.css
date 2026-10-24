@@ -21,21 +21,18 @@
 
 .trial-balance-options-area {
   display: grid;
-  grid-template-columns: minmax(500px, 560px) minmax(250px, 290px);
-  grid-template-rows: auto auto;
-  width: min(900px, calc(100% - 48px));
-  min-height: 430px;
-  margin: 78px auto 32px;
-  gap: 10px 18px;
+  grid-template-columns: minmax(0, 1fr);
+  width: min(760px, calc(100% - 48px));
+  margin: 66px auto 32px;
+  gap: 14px;
   align-content: start;
-  align-items: start;
 }
 
 .trial-balance-options-card {
   display: grid;
-  gap: 12px;
-  min-height: 286px;
-  padding: 42px 24px 22px;
+  gap: 16px;
+  min-height: 340px;
+  padding: 54px 36px 32px;
   border: 1px solid var(--ui-border);
   border-radius: var(--panel-radius);
   background: var(--ui-surface-subtle);
@@ -90,28 +87,21 @@
 
 .trial-balance-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  align-self: start;
-  padding-top: 74px;
-}
-
-.trial-balance-actions > :nth-child(3) {
-  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .trial-balance-actions .ui-button {
   width: 100%;
-  min-height: 44px;
+  min-height: 52px;
   justify-content: center;
   font-size: 12px;
   font-weight: 700;
 }
 
 .trial-balance-major-minor {
-  grid-column: 1;
   width: 100%;
-  min-height: 34px;
+  min-height: 52px;
   margin-top: 0;
   justify-content: center;
   font-size: 12px;
@@ -389,8 +379,11 @@
     grid-template-columns: 1fr;
     grid-template-rows: auto;
     width: min(560px, calc(100% - 24px));
-    min-height: 0;
     margin-top: 36px;
+  }
+
+  .trial-balance-options-card {
+    padding: 48px 18px 24px;
   }
 
   .trial-balance-options-card > label:not(.trial-balance-check) {
@@ -402,12 +395,8 @@
   }
 
   .trial-balance-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    padding-top: 0;
-  }
-
-  .trial-balance-major-minor {
-    grid-column: 1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
   }
 
   .trial-balance-viewer-toolbar {
