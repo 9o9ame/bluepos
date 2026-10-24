@@ -31,6 +31,8 @@ export function fetchTrialBalanceSixColumns(params: {
   main_heads?: string[]
   sub_heads?: string[]
   account_types?: string[]
+  document_types?: string[]
+  party_categories?: string[]
 }): Promise<TrialBalanceSixColumnReport> {
   const query = new URLSearchParams({
     mode: 'six_columns',
@@ -42,6 +44,8 @@ export function fetchTrialBalanceSixColumns(params: {
   params.main_heads?.forEach((ulid, index) => query.set(`main_heads[${index}]`, ulid))
   params.sub_heads?.forEach((ulid, index) => query.set(`sub_heads[${index}]`, ulid))
   params.account_types?.forEach((ulid, index) => query.set(`account_types[${index}]`, ulid))
+  params.document_types?.forEach((type, index) => query.set(`document_types[${index}]`, type))
+  params.party_categories?.forEach((type, index) => query.set(`party_categories[${index}]`, type))
   return apiFetch<TrialBalanceSixColumnReport>(
     `/api/reports/accounting/trial-balance?${query.toString()}`,
     { busy: 'fetch' },
