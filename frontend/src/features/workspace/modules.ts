@@ -727,6 +727,17 @@ export function moduleTabIdentity(
     }
   }
 
+  if (module.key === 'report-cash-book') {
+    const view = new URLSearchParams(search).get('view')
+    if (view === 'preview' || view === 'cash_flow') {
+      return {
+        key: `report-cash-book:${view}`,
+        title: view === 'preview' ? 'Cash Book Preview' : 'Cash Flow Statement',
+        path: pathname + search,
+      }
+    }
+  }
+
   if (module.key === 'report-trial-balance') {
     const params = new URLSearchParams(search)
     const view = params.get('view')
