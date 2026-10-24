@@ -302,7 +302,45 @@ export function InventoryAdjustmentsPage() {
     }, 0)
   }
 
+  function incrementExistingProduct(product: Product): boolean {
+    if (selectedLineUlid) return false
+
+    const existing = displayLines.find((line) => line.product?.ulid === product.ulid)
+    if (!existing) return false
+
+    const currentPlus = Number.parseFloat(existing.qty_plus || '0') || 0
+    const currentMinus = Number.parseFloat(existing.qty_minus || '0') || 0
+    const nextPlus = currentPlus > 0 || currentMinus <= 0 ? currentPlus + 1 : 0
+    const nextMinus = currentMinus > 0 ? currentMinus + 1 : 0
+    const inStock = Number.parseFloat(existing.in_stock || '0') || 0
+    const price = Number.parseFloat(existing.price || '0') || 0
+    const signedQty = nextPlus > 0 ? nextPlus : -nextMinus
+
+    const updated: InventoryAdjustmentLine = {
+      ...existing,
+      qty_plus: nextPlus > 0 ? formatDecimal(nextPlus) : '0.0',
+      qty_minus: nextMinus > 0 ? formatDecimal(nextMinus) : '0.0',
+      after_stock: formatDecimal(inStock + signedQty),
+      amount: formatDecimal(Math.abs(signedQty) * price),
+    }
+
+    if (!document) {
+      setNewLines((current) => current.map((line) => line.ulid === existing.ulid ? updated : line))
+    } else if (document.status === 'posted') {
+      setAmendmentLines((current) => current.map((line) => line.ulid === existing.ulid ? updated : line))
+      setAmendmentDirty(true)
+    } else {
+      setDraftLines((current) => current.map((line) => line.ulid === existing.ulid ? updated : line))
+      setDraftDirty(true)
+    }
+
+    clearLineForm(true)
+    return true
+  }
+
   function selectEntryProduct(product: Product) {
+    if (incrementExistingProduct(product)) return
+
     setProductUlid(product.ulid)
     setProductSearch(productLabel(product))
     setProductLookupQuery(product.name)
@@ -508,6 +546,55 @@ export function InventoryAdjustmentsPage() {
     clearLineForm(true)
   }
 
+  async function persistLoadedDraft() {
+    if (!document || document.status !== 'draft') {
+      throw new Error('Draft adjustment expected.')
+    }
+    if (!accountUlid) {
+      throw new Error('Select an adjustment account.')
+    }
+    if (draftLines.length === 0) {
+      throw new Error('Add at least one adjustment line.')
+    }
+
+    await updateInventoryAdjustment(document.ulid, {
+      account_ulid: accountUlid,
+      adjustment_date: adjustmentDate,
+      adjustment_type: 'stock_adjustment',
+      notes: documentNotes.trim() || null,
+    })
+
+    const originalLines = document.lines ?? []
+    const originalByUlid = new Map(originalLines.map((line) => [line.ulid, line]))
+    const retainedUlids = new Set<string>()
+
+    for (const line of draftLines) {
+      if (!line.product?.ulid) continue
+
+      const payload = {
+        product_ulid: line.product.ulid,
+        qty_plus: Number(line.qty_plus) > 0 ? line.qty_plus : '0',
+        qty_minus: Number(line.qty_minus) > 0 ? line.qty_minus : '0',
+        notes: line.remarks,
+      }
+
+      if (originalByUlid.has(line.ulid)) {
+        retainedUlids.add(line.ulid)
+        await updateInventoryAdjustmentLine(document.ulid, line.ulid, payload)
+      } else {
+        await createInventoryAdjustmentLine(document.ulid, payload)
+      }
+    }
+
+    for (const line of originalLines) {
+      if (!retainedUlids.has(line.ulid)) {
+        await deleteInventoryAdjustmentLine(document.ulid, line.ulid)
+      }
+    }
+
+    return fetchInventoryAdjustment(document.ulid)
+  }
+
   const saveHeader = useMutation({
     mutationFn: async () => {
       if (!accountUlid) {
@@ -519,6 +606,10 @@ export function InventoryAdjustmentsPage() {
         adjustment_date: adjustmentDate,
         adjustment_type: 'stock_adjustment' as const,
         notes: documentNotes.trim() || null,
+      }
+
+      if (document?.status === 'draft') {
+        return persistLoadedDraft()
       }
 
       if (documentUlid) {
@@ -547,6 +638,7 @@ export function InventoryAdjustmentsPage() {
       setDocumentUlid(saved.ulid)
       setDocumentNumberValue(saved.document_number)
       setNewLines([])
+      setDraftDirty(false)
       setHeaderDirty(false)
       await queryClient.invalidateQueries({ queryKey: ['inventory-adjustments'] })
       await queryClient.invalidateQueries({ queryKey: ['inventory-adjustment', saved.ulid] })
@@ -698,6 +790,33 @@ export function InventoryAdjustmentsPage() {
         return
       }
       feedback.fromApiError(error, 'Unable to amend adjustment.')
+    },
+  })
+
+  const saveAndPostDraft = useMutation({
+    mutationFn: async () => {
+      const saved = await persistLoadedDraft()
+      return postInventoryAdjustment(saved.ulid)
+    },
+    onSuccess: async (saved) => {
+      setDraftDirty(false)
+      setHeaderDirty(false)
+      clearLineForm()
+      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustment', saved.ulid] })
+      await queryClient.invalidateQueries({ queryKey: ['inventory-adjustments'] })
+      await queryClient.invalidateQueries({ queryKey: ['products'] })
+      await queryClient.invalidateQueries({ queryKey: ['inventory-stock'] })
+      feedback.success(`Adjustment ${saved.document_number} posted.`)
+    },
+    onError: (error) => {
+      if (error instanceof Error && (
+        error.message === 'Select an adjustment account.' ||
+        error.message === 'Add at least one adjustment line.'
+      )) {
+        feedback.info(error.message, 'Adjustment')
+        return
+      }
+      feedback.fromApiError(error, 'Unable to save and post adjustment.')
     },
   })
 
@@ -1136,7 +1255,7 @@ export function InventoryAdjustmentsPage() {
                             className="inventory-adjustments-row-delete"
                             aria-label="Delete adjustment row"
                             title="Delete row"
-                            disabled={!canAdjust || removeLine.isPending || amendDocument.isPending}
+                            disabled={!canAdjust || amendDocument.isPending || saveHeader.isPending}
                             onClick={() => void removeCurrentLine(line.ulid)}
                           >
                             <Trash2 size={13} />
@@ -1317,7 +1436,9 @@ export function InventoryAdjustmentsPage() {
                   !canAdjust ||
                   (document?.status === 'posted'
                     ? (!amendmentDirty && !headerDirty) || amendDocument.isPending
-                    : ((!headerDirty && Boolean(document)) || saveHeader.isPending))
+                    : (document?.status === 'draft'
+                        ? (!draftDirty && !headerDirty) || saveHeader.isPending
+                        : ((!headerDirty && Boolean(document)) || saveHeader.isPending)))
                 }
               >
                 <Save size={15} /> {document?.status === 'posted' ? 'Amend Adjustment' : 'Save'}
@@ -1336,20 +1457,17 @@ export function InventoryAdjustmentsPage() {
                   }
 
                   if (document.status !== 'draft') return
-                  if (headerDirty) {
-                    feedback.info('Save the header before posting.', 'Adjustment')
-                    return
-                  }
                   if (!await feedback.confirm(
-                    `Post ${document.document_number}? Live stock and cost will be re-read and the adjustment will become posted.`,
+                    `Post ${document.document_number}? Staged row changes will be saved first, then live stock and cost will be re-read.`,
                   )) return
-                  postDocument.mutate()
+                  saveAndPostDraft.mutate()
                 }}
                 disabled={
                   !canAdjust ||
                   document?.status === 'posted' ||
                   (!document && newLines.length === 0) ||
                   postDocument.isPending ||
+                  saveAndPostDraft.isPending ||
                   saveAndPostFresh.isPending
                 }
               >
