@@ -370,10 +370,31 @@ export function TrialBalanceReportPage() {
   const uniqueHierarchy = (key: 'main_head' | 'account_type_head' | 'account_type') => {
     const found = new Map<string, string>()
     for (const row of hierarchyRows) {
+      if (key !== 'main_head' && selectedMainHeads.length && !selectedMainHeads.includes(row.main_head?.ulid ?? '')) continue
+      if (key === 'account_type' && selectedSubHeads.length && !selectedSubHeads.includes(row.account_type_head?.ulid ?? '')) continue
       const item = row[key]
       if (item) found.set(item.ulid, item.name)
     }
     return [...found].sort((a, b) => a[1].localeCompare(b[1]))
+  }
+  const toggleMainHead = (ulid: string) => {
+    const next = selectedMainHeads.includes(ulid)
+      ? selectedMainHeads.filter((value) => value !== ulid)
+      : [...selectedMainHeads, ulid]
+    setSelectedMainHeads(next)
+    const relevant = hierarchyRows.filter((row) => !next.length || next.includes(row.main_head?.ulid ?? ''))
+    setSelectedSubHeads((current) => current.filter((value) => relevant.some((row) => row.account_type_head?.ulid === value)))
+    setSelectedAccountTypes((current) => current.filter((value) => relevant.some((row) => row.account_type?.ulid === value)))
+  }
+  const toggleSubHead = (ulid: string) => {
+    const next = selectedSubHeads.includes(ulid)
+      ? selectedSubHeads.filter((value) => value !== ulid)
+      : [...selectedSubHeads, ulid]
+    setSelectedSubHeads(next)
+    const relevant = hierarchyRows.filter((row) =>
+      (!selectedMainHeads.length || selectedMainHeads.includes(row.main_head?.ulid ?? '')) &&
+      (!next.length || next.includes(row.account_type_head?.ulid ?? '')))
+    setSelectedAccountTypes((current) => current.filter((value) => relevant.some((row) => row.account_type?.ulid === value)))
   }
 
   const sixQuery = useQuery({
@@ -552,7 +573,7 @@ export function TrialBalanceReportPage() {
                   {hierarchyQuery.isLoading ? <p>Loading account heads…</p> : null}
                   {uniqueHierarchy('main_head').map(([ulid, name]) => (
                     <label className="tb6-checkbox" key={ulid}>
-                      <input type="checkbox" checked={selectedMainHeads.includes(ulid)} onChange={() => toggleHierarchy(selectedMainHeads, setSelectedMainHeads, ulid)} /> {name}
+                      <input type="checkbox" checked={selectedMainHeads.includes(ulid)} onChange={() => toggleMainHead(ulid)} /> {name}
                     </label>
                   ))}
                   {!hierarchyQuery.isLoading && uniqueHierarchy('main_head').length === 0 ? <p>No account heads found.</p> : null}
@@ -560,7 +581,7 @@ export function TrialBalanceReportPage() {
                 <div className="tb6-filter-panel"><h3>Account Type Heads</h3>
                   {uniqueHierarchy('account_type_head').map(([ulid, name]) => (
                     <label className="tb6-checkbox" key={ulid}>
-                      <input type="checkbox" checked={selectedSubHeads.includes(ulid)} onChange={() => toggleHierarchy(selectedSubHeads, setSelectedSubHeads, ulid)} /> {name}
+                      <input type="checkbox" checked={selectedSubHeads.includes(ulid)} onChange={() => toggleSubHead(ulid)} /> {name}
                     </label>
                   ))}
                 </div>
