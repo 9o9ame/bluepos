@@ -719,6 +719,27 @@ export function moduleTabIdentity(
     }
   }
 
+  if (module.key === 'report-trial-balance') {
+    const params = new URLSearchParams(search)
+    const view = params.get('view')
+
+    if (view === 'detail') {
+      return {
+        key: 'report-trial-balance:detail',
+        title: 'Trial Balance Detailed',
+        path: pathname + search,
+      }
+    }
+
+    if (view === 'major_minor') {
+      return {
+        key: 'report-trial-balance:major',
+        title: 'Trial Balance Major Head',
+        path: pathname + search,
+      }
+    }
+  }
+
   if (module.key === 'vouchers') {
     const type = new URLSearchParams(search).get('type')
 
