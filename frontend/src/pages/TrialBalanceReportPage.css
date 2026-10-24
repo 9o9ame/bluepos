@@ -159,6 +159,45 @@
   min-width: 92px;
 }
 
+.trial-balance-viewer-search,
+.trial-balance-viewer-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 5px;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface-subtle);
+}
+
+.trial-balance-viewer-search input {
+  width: clamp(110px, 12vw, 210px);
+  min-height: 26px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-control-face);
+  color: var(--ui-text);
+  padding-inline: 6px;
+}
+
+.trial-balance-viewer-search .ui-button,
+.trial-balance-viewer-zoom .ui-button {
+  min-width: 30px;
+}
+
+.trial-balance-viewer-zoom span {
+  min-width: 42px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+@media print {
+  html[data-trial-balance-print='true'] .trial-balance-result {
+    zoom: 1 !important;
+  }
+}
+
 .trial-balance-viewer-canvas {
   min-height: calc(100vh - 210px);
   padding: 24px;
