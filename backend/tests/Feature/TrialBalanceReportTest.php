@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\BranchAccess;
 use App\Enums\JournalStatus;
 use App\Models\Account;
 use App\Models\AccountMainHead;
