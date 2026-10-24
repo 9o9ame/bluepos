@@ -569,11 +569,13 @@ export function PurchaseOrderPage() {
         unit_price: productRow.sales_lookup?.average_cost ?? '0.0000',
       }
 
-      let focusKey: string | null = null
+      const existing = !editingProductKey
+        ? lines.find((line) => line.product_ulid === product.ulid)
+        : null
+      const focusKey = editingProductKey ?? existing?.key ?? crypto.randomUUID()
 
       setLines((current) => {
         if (editingProductKey) {
-          focusKey = editingProductKey
           return current.map((line) =>
             line.key === editingProductKey
               ? {
@@ -584,9 +586,7 @@ export function PurchaseOrderPage() {
           )
         }
 
-        const existing = current.find((line) => line.product_ulid === product.ulid)
         if (existing) {
-          focusKey = existing.key
           return current.map((line) =>
             line.key === existing.key
               ? {
@@ -597,12 +597,10 @@ export function PurchaseOrderPage() {
           )
         }
 
-        const key = crypto.randomUUID()
-        focusKey = key
         return [
           ...current,
           {
-            key,
+            key: focusKey,
             ...productPatch,
             quantity: '1.000000',
             discount_percent: '0',
