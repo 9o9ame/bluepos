@@ -77,7 +77,14 @@ class TrialBalanceReportTest extends TestCase
             ->assertJsonPath('totals.difference', '0.0000')
             ->assertJsonPath('totals.difference_side', 'Dr');
 
-        $rows = collect($response->json('groups'))->flatMap(fn (array $group) => $group['rows']);
+        $groups = collect($response->json('groups'));
+        $rows = $groups->flatMap(fn (array $group) => $group['rows']);
+
+        $assetGroup = $groups->firstWhere('label', 'TEST ASSETS');
+        $this->assertIsArray($assetGroup);
+        $this->assertSame('150.0000', $assetGroup['totals']['debit']);
+        $this->assertSame('150.0000', $assetGroup['sections'][0]['totals']['debit']);
+        $this->assertSame('150.0000', $assetGroup['sections'][0]['account_types'][0]['totals']['debit']);
 
         $this->assertSame('150.0000', $rows->firstWhere('account.ulid', $cash->ulid)['debit']);
         $this->assertSame('150.0000', $rows->firstWhere('account.ulid', $revenue->ulid)['credit']);
