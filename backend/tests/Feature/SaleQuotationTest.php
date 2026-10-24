@@ -213,16 +213,7 @@ class SaleQuotationTest extends TestCase
         ], $this->idem('quotation-update-denied-create'))
             ->assertCreated();
 
-        $permission = Permission::query()
-            ->where('key', 'sales.quotation.edit')
-            ->firstOrFail();
-        $membership = app(TenantContext::class)->membership();
-
-        foreach ($membership->roles()->get() as $role) {
-            $role->permissions()->detach($permission->id);
-        }
-
-        app(PermissionService::class)->clearCache();
+        $this->restrictCurrentMembershipWithoutPermission('sales.quotation.edit');
 
         $this->patchJson('/api/sales/quotations/'.$created->json('ulid'), [
             'items' => [[
