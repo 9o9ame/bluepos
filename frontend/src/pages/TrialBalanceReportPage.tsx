@@ -352,6 +352,24 @@ export function TrialBalanceReportPage() {
     enabled: isViewer,
   })
 
+  // The existing protected report endpoint supplies real account hierarchy names.
+  const hierarchyQuery = useQuery({
+    queryKey: ['reports', 'trial-balance', 'hierarchy-options', endDate],
+    queryFn: () => fetchTrialBalanceReport({
+      as_of_date: endDate, group_by: 'level_wise', arrange_by: 'code_asc',
+    }),
+    enabled: isSixOptions,
+  })
+  const hierarchyRows = hierarchyQuery.data?.groups.flatMap((group) => group.rows) ?? []
+  const uniqueHierarchy = (key: 'main_head' | 'account_type_head' | 'account_type') => {
+    const found = new Map<string, string>()
+    for (const row of hierarchyRows) {
+      const item = row[key]
+      if (item) found.set(item.ulid, item.name)
+    }
+    return [...found].sort((a, b) => a[1].localeCompare(b[1]))
+  }
+
   const sixQuery = useQuery({
     queryKey: ['reports', 'trial-balance', 'six-columns', startDate, endDate, sixGrouping, sixArrange],
     queryFn: () => fetchTrialBalanceSixColumns({
@@ -524,25 +542,38 @@ export function TrialBalanceReportPage() {
               <div className="tb6-filter-stack">
                 <div className="tb6-filter-panel">
                   <h3>Head Account Type</h3>
-                  <p>Account heads can be filtered when server-side hierarchy filtering is enabled.</p>
-                  <label className="tb6-checkbox"><input type="checkbox" disabled /> All heads</label>
+                  {hierarchyQuery.isLoading ? <p>Loading account heads…</p> : null}
+                  {uniqueHierarchy('main_head').map(([ulid, name]) => (
+                    <label className="tb6-checkbox" key={ulid} title={disabledHint}>
+                      <input type="checkbox" disabled /> {name}
+                    </label>
+                  ))}
+                  {!hierarchyQuery.isLoading && uniqueHierarchy('main_head').length === 0 ? <p>No account heads found.</p> : null}
                 </div>
                 <div className="tb6-filter-panel"><h3>Account Type Heads</h3>
-                  <p>Individual sub-head filters are not yet available.</p>
+                  {uniqueHierarchy('account_type_head').map(([ulid, name]) => (
+                    <label className="tb6-checkbox" key={ulid} title={disabledHint}>
+                      <input type="checkbox" disabled /> {name}
+                    </label>
+                  ))}
                 </div>
               </div>
               <div className="tb6-filter-stack">
                 <div className="tb6-filter-panel">
                   <h3>Account Type</h3>
-                  <p>Account-type filtering requires a server-side filter before totals are calculated.</p>
+                  {uniqueHierarchy('account_type').map(([ulid, name]) => (
+                    <label className="tb6-checkbox" key={ulid} title={disabledHint}>
+                      <input type="checkbox" disabled /> {name}
+                    </label>
+                  ))}
                 </div>
                 <div className="tb6-filter-panel"><h3>Voucher / Transaction Types</h3>
-                  <p>Not available until transaction-type mapping is verified.</p>
+                  <p>Voucher types are not exposed by the accounting report API yet.</p>
                 </div>
               </div>
               <div className="tb6-filter-panel tb6-nonaccounting">
                 <h3>Non Accounting Group Type</h3>
-                <p>Customers, vendors and other non-accounting group filters need their own validated mappings.</p>
+                <p>Customer/vendor groups require their own authorized mapping endpoint; no group options available yet.</p>
               </div>
             </div>
           ) : (
@@ -568,14 +599,79 @@ export function TrialBalanceReportPage() {
   }
 
   if (isSixViewer) {
+    const report = sixQuery.data
+    const filename = `trial-balance-${viewParam === 'dr_cr_separate' ? 'dr-cr' : 'six-columns'}-${endDate}`
+    const getPaperText = () => reportPaperRef.current?.innerText || reportPaperRef.current?.textContent || ''
+    const downloadSix = (format: 'txt' | 'html' | 'csv') => {
+      if (!report || !reportPaperRef.current) return
+      let content = getPaperText()
+      let mime = 'text/plain;charset=utf-8'
+      if (format === 'html') {
+        // Export rendered, React-escaped HTML, not raw user HTML.
+        content = '<!doctype html><html><head><meta charset="utf-8"><title>Trial Balance</title><style>body{font:12px Arial}table{border-collapse:collapse;width:100%}td,th{border:1px solid;padding:4px}</style></head><body>' + reportPaperRef.current.innerHTML + '</body></html>'
+        mime = 'text/html;charset=utf-8'
+      }
+      if (format === 'csv') {
+        const escapeCell = (value: string) => {
+          const safe = /^\s*[=+@-]/.test(value) ? "'" + value : value
+          return '"' + safe.replace(/"/g, '""') + '"'
+        }
+        const rows: string[][] = [['Account', 'Previous Debit', 'Previous Credit', 'Within Debit', 'Within Credit', 'Closing Debit', 'Closing Credit']]
+        report.groups.forEach((group) => group.rows.forEach((row) => rows.push([
+          row.account.name, ...SIX_FIELDS.map((field) => row.six_columns[field]),
+        ])))
+        rows.push(['Grand Total', ...SIX_FIELDS.map((field) => report.totals[field])])
+        content = '\uFEFF' + rows.map((row) => row.map(escapeCell).join(',')).join('\r\n')
+        mime = 'text/csv;charset=utf-8'
+      }
+      const url = URL.createObjectURL(new Blob([content], { type: mime }))
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename + '.' + format
+      link.click()
+      URL.revokeObjectURL(url)
+    }
+    const copySix = async () => {
+      try {
+        await navigator.clipboard.writeText(getPaperText())
+        setCopyStatus('Copied')
+      } catch {
+        setCopyStatus('Copy failed')
+      }
+    }
+    const findSix = () => {
+      const query = viewerSearch.trim().toLocaleLowerCase()
+      if (!query) return
+      const cells = reportPaperRef.current?.querySelectorAll('td, th')
+      Array.from(cells || []).find((cell) => cell.textContent?.toLocaleLowerCase().includes(query))?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    const printSix = () => {
+      if (!report) return
+      document.documentElement.setAttribute('data-trial-balance-print', 'true')
+      window.addEventListener('afterprint', () => document.documentElement.removeAttribute('data-trial-balance-print'), { once: true })
+      window.print()
+    }
     return (
       <section className="trial-balance-page trial-balance-viewer-page" aria-label="Six Column Trial Balance Report">
         <div className="trial-balance-viewer-toolbar">
-          <UiButton variant="info" icon={<Printer size={15}/>} label="Print / Save PDF" disabled={!sixQuery.data} onClick={() => {
-            document.documentElement.setAttribute('data-trial-balance-print', 'true')
-            window.addEventListener('afterprint', () => document.documentElement.removeAttribute('data-trial-balance-print'), { once: true })
-            window.print()
-          }} />
+          <UiButton variant="info" icon={<Printer size={15}/>} label="Print / PDF" disabled={!report} onClick={printSix} />
+          <UiButton variant="default" icon={<ClipboardCopy size={15}/>} label={copyStatus} disabled={!report} onClick={() => void copySix()} />
+          <UiButton variant="default" icon={<FileText size={15}/>} label="Text" disabled={!report} onClick={() => downloadSix('txt')} />
+          <UiButton variant="default" icon={<FileCode size={15}/>} label="HTML" disabled={!report} onClick={() => downloadSix('html')} />
+          <UiButton variant="info" icon={<Download size={15}/>} label="Export CSV" disabled={!report} onClick={() => downloadSix('csv')} />
+          <div className="trial-balance-viewer-search">
+            <Search size={14} aria-hidden />
+            <input aria-label="Search report text" placeholder="Search report…" value={viewerSearch}
+              onChange={(event) => setViewerSearch(event.target.value)}
+              onKeyDown={(event) => { if (event.key === 'Enter') findSix() }} />
+            <UiButton variant="default" label="Find" disabled={!report || !viewerSearch.trim()} onClick={findSix} />
+          </div>
+          <div className="trial-balance-viewer-zoom">
+            <UiButton variant="default" icon={<Minus size={14}/>} aria-label="Zoom out" disabled={viewerZoom <= 50} onClick={() => setViewerZoom((value) => Math.max(50, value - 25))} />
+            <span>{viewerZoom}%</span>
+            <UiButton variant="default" icon={<Plus size={14}/>} aria-label="Zoom in" disabled={viewerZoom >= 200} onClick={() => setViewerZoom((value) => Math.min(200, value + 25))} />
+            <UiButton variant="default" label="Fit" onClick={() => setViewerZoom(100)} />
+          </div>
           <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh" disabled={sixQuery.isFetching} onClick={() => void sixQuery.refetch()} />
           <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle }).toString()}`)} />
           <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
@@ -583,7 +679,7 @@ export function TrialBalanceReportPage() {
         <div className="trial-balance-viewer-canvas">
           {sixQuery.isLoading ? <div className="trial-balance-viewer-loading">Loading report…</div> : null}
           {sixQuery.isError ? <div className="trial-balance-error" role="alert">Unable to load six-column Trial Balance.</div> : null}
-          {sixQuery.data ? <div className="trial-balance-result"><SixColumnPreview report={sixQuery.data} separate={viewParam === 'dr_cr_separate'} title={sixTitle}/></div> : null}
+          {report ? <div className="trial-balance-result" ref={reportPaperRef} style={{ zoom: `${viewerZoom}%` }}><SixColumnPreview report={report} separate={viewParam === 'dr_cr_separate'} title={sixTitle}/></div> : null}
         </div>
       </section>
     )
