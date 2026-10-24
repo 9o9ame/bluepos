@@ -297,7 +297,8 @@
 .inventory-adjustments-entry-grid th:nth-child(5) { width: 8%; }
 .inventory-adjustments-entry-grid th:nth-child(6) { width: 7%; }
 .inventory-adjustments-entry-grid th:nth-child(7) { width: 8%; }
-.inventory-adjustments-entry-grid th:nth-child(8) { width: 26%; }
+.inventory-adjustments-entry-grid th:nth-child(8) { width: 23%; }
+.inventory-adjustments-entry-grid th:nth-child(9) { width: 36px; min-width: 36px; max-width: 36px; }
 
 .inventory-adjustments-entry-grid tbody tr:nth-child(even):not(.is-entry-row) {
   background: var(--ui-row-alt);
@@ -757,4 +758,46 @@ html[data-animations='off'] .inventory-adjustments-product-arrow > span {
   background: var(--ui-surface-muted);
   color: var(--ui-text-muted);
   cursor: not-allowed;
+}
+
+
+.inventory-adjustments-delete-cell {
+  width: 36px;
+  min-width: 36px;
+  max-width: 36px;
+  padding: 2px !important;
+  text-align: center;
+}
+
+.inventory-adjustments-row-delete {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--ui-danger) 42%, var(--ui-border));
+  border-radius: var(--control-radius);
+  background: color-mix(in srgb, var(--ui-danger) 8%, var(--ui-surface));
+  color: var(--ui-danger);
+  cursor: pointer;
+}
+
+.inventory-adjustments-row-delete:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-danger) 15%, var(--ui-surface));
+}
+
+.inventory-adjustments-row-delete:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-shadow);
+}
+
+.inventory-adjustments-row-delete:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+/* Completed rows intentionally reuse the exact product-entry arrow geometry. */
+.inventory-adjustments-entry-grid tbody tr:not(.is-entry-row)
+.inventory-adjustments-product-entry > input {
+  padding-right: 28px;
 }
