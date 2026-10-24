@@ -256,11 +256,12 @@ const SIX_FIELDS = [
   'within_credit', 'closing_debit', 'closing_credit',
 ] as const
 
-function SixColumnPreview({ report, separate, title, separatePages }: {
+function SixColumnPreview({ report, separate, title, separatePages, datesOnly }: {
   report: TrialBalanceSixColumnReport
   separate: boolean
   title: string
   separatePages: boolean
+  datesOnly: boolean
 }) {
   const allRows = report.groups.flatMap((group) => group.rows)
   const renderNumber = (value: string) => <td className="tb6-number">{amount(value)}</td>
@@ -272,11 +273,13 @@ function SixColumnPreview({ report, separate, title, separatePages }: {
       </header>
       {separate ? (
         <>
-          <h2>Dr / Cr Separate — Closing Balances</h2>
+          <h2>{datesOnly ? 'Dr / Cr Separate — Period Movements' : 'Dr / Cr Separate — Closing Balances'}</h2>
           <div className="tb6-separate">
-            {(['closing_debit', 'closing_credit'] as const).map((side) => (
+            {(['debit', 'credit'] as const).map((direction) => {
+              const side = `${datesOnly ? 'within' : 'closing'}_${direction}` as const
+              return (
               <table key={side}>
-                <thead><tr><th>{side === 'closing_debit' ? 'Total Debits' : 'Total Credits'}</th><th>Amount</th></tr></thead>
+                <thead><tr><th>{direction === 'debit' ? 'Total Debits' : 'Total Credits'}</th><th>Amount</th></tr></thead>
                 <tbody>
                   {allRows.filter((row) => row.six_columns[side] !== '0.0000').map((row) => (
                     <tr key={row.account.ulid}><td>{row.account.name}</td>{renderNumber(row.six_columns[side])}</tr>
@@ -284,7 +287,8 @@ function SixColumnPreview({ report, separate, title, separatePages }: {
                   <tr className="tb6-total"><th>Grand Total</th>{renderNumber(report.totals[side])}</tr>
                 </tbody>
               </table>
-            ))}
+              )
+            })}
           </div>
         </>
       ) : (
@@ -346,6 +350,7 @@ export function TrialBalanceReportPage() {
   const [sixTab, setSixTab] = useState<'selection' | 'additional'>('selection')
   const [sixTitle, setSixTitle] = useState(params.get('report_title') || 'Trial Balance (Complete)')
   const [sixSeparatePages, setSixSeparatePages] = useState(params.get('separate_pages') === '1')
+  const [sixDatesOnly, setSixDatesOnly] = useState(params.get('dates_only') === '1')
   const [closingOperator, setClosingOperator] = useState(params.get('closing_operator') || '')
   const [closingAmount, setClosingAmount] = useState(params.get('closing_amount') || '0.00')
   const [selectedMainHeads, setSelectedMainHeads] = useState<string[]>(params.get('main_heads')?.split(',').filter(Boolean) ?? [])
@@ -428,7 +433,7 @@ export function TrialBalanceReportPage() {
   })
 
   const openSixView = (view: 'six_columns' | 'dr_cr_separate') => {
-    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, separate_pages: sixSeparatePages ? '1' : '0', main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount })
+    const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, separate_pages: sixSeparatePages ? '1' : '0', dates_only: sixDatesOnly ? '1' : '0', main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount })
     openModule(`/reports/accounts/trial-balance?${query.toString()}`)
   }
 
@@ -583,6 +588,10 @@ export function TrialBalanceReportPage() {
                     <option value="BALANCE SHEET" />
                     <option value="TRIAL BALANCE" />
                   </datalist>
+                </label>
+                <label className="tb6-checkbox">
+                  <input type="checkbox" checked={sixDatesOnly} onChange={(event) => setSixDatesOnly(event.target.checked)} />
+                  For Dates Only (Dr / Cr Separate)
                 </label>
                 <fieldset className="tb6-unavailable">
                   <legend>Having Closing Balance</legend>
@@ -772,13 +781,13 @@ export function TrialBalanceReportPage() {
             <UiButton variant="default" label="Fit" onClick={() => setViewerZoom(100)} />
           </div>
           <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh" disabled={sixQuery.isFetching} onClick={() => void sixQuery.refetch()} />
-          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount }).toString()}`)} />
+          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, dates_only: sixDatesOnly ? '1' : '0', main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount }).toString()}`)} />
           <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
         </div>
         <div className="trial-balance-viewer-canvas">
           {sixQuery.isLoading ? <div className="trial-balance-viewer-loading">Loading report…</div> : null}
           {sixQuery.isError ? <div className="trial-balance-error" role="alert">Unable to load six-column Trial Balance.</div> : null}
-          {report ? <div className="trial-balance-result" ref={reportPaperRef} style={{ zoom: `${viewerZoom}%` }}><SixColumnPreview report={report} separate={viewParam === 'dr_cr_separate'} title={sixTitle} separatePages={sixSeparatePages}/></div> : null}
+          {report ? <div className="trial-balance-result" ref={reportPaperRef} style={{ zoom: `${viewerZoom}%` }}><SixColumnPreview report={report} separate={viewParam === 'dr_cr_separate'} title={sixTitle} separatePages={sixSeparatePages} datesOnly={sixDatesOnly}/></div> : null}
         </div>
       </section>
     )
