@@ -196,6 +196,7 @@ export function PurchaseOrderPage() {
   const [notes, setNotes] = useState('')
   const [productQuery, setProductQuery] = useState('')
   const [editingProductKey, setEditingProductKey] = useState<string | null>(null)
+  const [activeLineKey, setActiveLineKey] = useState<string | null>(null)
   const [productPickerOpen, setProductPickerOpen] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [searchFrom, setSearchFrom] = useState(daysAgoIso(30))
@@ -516,6 +517,7 @@ export function PurchaseOrderPage() {
     setNotes('')
     setProductQuery('')
     setEditingProductKey(null)
+    setActiveLineKey(null)
     setProductPickerOpen(false)
     setLines([])
     setSavedOrder(null)
@@ -567,8 +569,11 @@ export function PurchaseOrderPage() {
         unit_price: productRow.sales_lookup?.average_cost ?? '0.0000',
       }
 
+      let focusKey: string | null = null
+
       setLines((current) => {
         if (editingProductKey) {
+          focusKey = editingProductKey
           return current.map((line) =>
             line.key === editingProductKey
               ? {
@@ -579,10 +584,25 @@ export function PurchaseOrderPage() {
           )
         }
 
+        const existing = current.find((line) => line.product_ulid === product.ulid)
+        if (existing) {
+          focusKey = existing.key
+          return current.map((line) =>
+            line.key === existing.key
+              ? {
+                  ...line,
+                  quantity: formatDecimal(num(line.quantity) + 1),
+                }
+              : line,
+          )
+        }
+
+        const key = crypto.randomUUID()
+        focusKey = key
         return [
           ...current,
           {
-            key: crypto.randomUUID(),
+            key,
             ...productPatch,
             quantity: '1.000000',
             discount_percent: '0',
@@ -590,15 +610,41 @@ export function PurchaseOrderPage() {
           },
         ]
       })
+
       setProductQuery('')
       setEditingProductKey(null)
+      setActiveLineKey(focusKey)
       setProductPickerOpen(false)
+
+      window.setTimeout(() => {
+        if (!focusKey) return
+        document
+          .querySelector<HTMLInputElement>(`[data-po-line="${focusKey}"][data-po-field="quantity"]`)
+          ?.focus()
+      }, 0)
     } catch (error) {
       feedback.error(
         error instanceof Error ? error.message : 'Unable to add product.',
         'Purchase Order',
       )
     }
+  }
+
+  function finishActiveLine(lineKey: string) {
+    if (activeLineKey !== lineKey) return
+    setActiveLineKey(null)
+    window.setTimeout(() => {
+      productSearchRef.current?.focus()
+      productSearchRef.current?.select()
+    }, 0)
+  }
+
+  function moveLineFocus(
+    current: HTMLElement,
+    field: 'price' | 'discount_percent' | 'discount_amount',
+  ) {
+    const row = current.closest('tr')
+    row?.querySelector<HTMLElement>(`[data-po-field="${field}"]`)?.focus()
   }
 
   function currentGenerationPayload(): PurchaseOrderGeneratePayload {
@@ -1243,7 +1289,16 @@ export function PurchaseOrderPage() {
                   : lines.map((line) => {
                       const preview = linePreview(line)
                       return (
-                        <tr key={line.key}>
+                        <tr
+                          key={line.key}
+                          className={activeLineKey === line.key ? 'is-selected' : ''}
+                          onBlur={(event) => {
+                            if (activeLineKey !== line.key) return
+                            const next = event.relatedTarget
+                            if (next instanceof Node && event.currentTarget.contains(next)) return
+                            finishActiveLine(line.key)
+                          }}
+                        >
                           <td className="purchase-order-row-selector">›</td>
                           <td className="purchase-order-product-cell">
                             <div className="purchase-order-row-product">
@@ -1348,27 +1403,44 @@ export function PurchaseOrderPage() {
                           <td className="is-num">{formatDecimal(line.difference)}</td>
                           <td className="is-num">
                             <input
+                              data-po-line={line.key}
+                              data-po-field="quantity"
                               value={line.quantity === '' ? '' : formatDecimal(line.quantity)}
                               aria-label={`Quantity for ${line.product_name}`}
+                              onFocus={() => setActiveLineKey(line.key)}
                               onChange={(event) =>
                                 patchLine(line.key, { quantity: event.target.value })
                               }
+                              onKeyDown={(event) => {
+                                if (event.key !== 'Enter') return
+                                event.preventDefault()
+                                moveLineFocus(event.currentTarget, 'price')
+                              }}
                             />
                           </td>
                           <td className="is-num">
                             <input
+                              data-po-field="price"
                               value={line.unit_price === '' ? '' : formatDecimal(line.unit_price)}
                               aria-label={`Price for ${line.product_name}`}
+                              onFocus={() => setActiveLineKey(line.key)}
                               onChange={(event) =>
                                 patchLine(line.key, { unit_price: event.target.value })
                               }
+                              onKeyDown={(event) => {
+                                if (event.key !== 'Enter') return
+                                event.preventDefault()
+                                moveLineFocus(event.currentTarget, 'discount_percent')
+                              }}
                             />
                           </td>
                           <td className="is-num">{preview.gross}</td>
                           <td className="is-num">
                             <input
+                              data-po-field="discount_percent"
                               value={line.discount_percent === '' ? '' : formatDecimal(line.discount_percent)}
                               aria-label={`Discount percent for ${line.product_name}`}
+                              onFocus={() => setActiveLineKey(line.key)}
                               onChange={(event) =>
                                 patchLine(line.key, {
                                   discount_percent: event.target.value,
@@ -1377,12 +1449,19 @@ export function PurchaseOrderPage() {
                                     : line.discount_amount,
                                 })
                               }
+                              onKeyDown={(event) => {
+                                if (event.key !== 'Enter') return
+                                event.preventDefault()
+                                moveLineFocus(event.currentTarget, 'discount_amount')
+                              }}
                             />
                           </td>
                           <td className="is-num">
                             <input
+                              data-po-field="discount_amount"
                               value={line.discount_amount === '' ? '' : formatDecimal(line.discount_amount)}
                               aria-label={`Discount amount for ${line.product_name}`}
+                              onFocus={() => setActiveLineKey(line.key)}
                               onChange={(event) =>
                                 patchLine(line.key, {
                                   discount_amount: event.target.value,
@@ -1391,6 +1470,11 @@ export function PurchaseOrderPage() {
                                     : line.discount_percent,
                                 })
                               }
+                              onKeyDown={(event) => {
+                                if (event.key !== 'Enter') return
+                                event.preventDefault()
+                                finishActiveLine(line.key)
+                              }}
                             />
                           </td>
                           <td className="is-num">{preview.total}</td>
@@ -1411,7 +1495,7 @@ export function PurchaseOrderPage() {
                       )
                     })}
 
-                {!readOnly ? (
+                {!readOnly && !activeLineKey ? (
                   <tr className="purchase-order-entry-row is-entry-row">
                     <td className="purchase-order-row-selector">›</td>
                     <td className="purchase-order-product-cell">
