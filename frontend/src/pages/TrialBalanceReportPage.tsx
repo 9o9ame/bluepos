@@ -307,7 +307,11 @@ export function TrialBalanceReportPage() {
   const exportCsv = () => {
     const report = viewerQuery.data
     if (!report) return
-    const csvCell = (value: string) => '"' + value.replace(/"/g, '""') + '"'
+    // Treat all exported cells as data, never spreadsheet formulas.
+    const csvCell = (value: string) => {
+      const safe = /^[\\s]*[=+@\\-]/.test(value) ? "'" + value : value
+      return '"' + safe.replace(/"/g, '""') + '"'
+    }
     const rows: string[][] = [
       [viewParam === 'major_minor' ? 'Trial Balance Major Head' : 'Trial Balance Detailed'],
       ['As of', report.as_of_date],
