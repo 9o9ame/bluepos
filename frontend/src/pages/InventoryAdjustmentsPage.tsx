@@ -965,7 +965,8 @@ export function InventoryAdjustmentsPage() {
                   { key: 'after', header: 'After Stock', width: '8%', align: 'right' },
                   { key: 'price', header: 'Price', width: '7%', align: 'right' },
                   { key: 'amount', header: 'Amount', width: '8%', align: 'right' },
-                  { key: 'remarks', header: 'Remarks', width: '26%' },
+                  { key: 'remarks', header: 'Remarks', width: '23%' },
+                  { key: 'delete', header: '', width: '36px', align: 'center' },
                 ]}
               >
                   {displayLines.map((line) => {
@@ -976,23 +977,65 @@ export function InventoryAdjustmentsPage() {
                         key={line.ulid}
                         className={editing ? 'is-selected' : ''}
                       >
-                        <td>
-                          <button
-                            type="button"
-                            className="inventory-adjustments-inline-product"
-                            disabled={!canAdjust}
-                            title="Click to change product"
-                            onClick={() => {
-                              fillLineForm(line, false)
-                              setProductPickerOpen(true)
-                              window.setTimeout(() => {
-                                productInputRef.current?.focus()
-                                productInputRef.current?.select()
-                              }, 0)
-                            }}
+                        <td className="inventory-adjustments-product-cell">
+                          <div
+                            ref={editing ? productAnchorRef : undefined}
+                            className="inventory-adjustments-product-entry"
                           >
-                            {line.product ? `${line.product.product_number} · ${line.product.name}` : ''}
-                          </button>
+                            <input
+                              value={
+                                editing
+                                  ? productSearch
+                                  : (line.product ? `${line.product.product_number} · ${line.product.name}` : '')
+                              }
+                              autoComplete="off"
+                              disabled={!canAdjust}
+                              onFocus={() => {
+                                if (!editing) fillLineForm(line, false)
+                              }}
+                              onChange={(event) => {
+                                if (!editing) fillLineForm(line, false)
+                                setProductSearch(event.target.value)
+                                setProductLookupQuery(event.target.value)
+                                setProductUlid('')
+                                setProductPickerOpen(true)
+                              }}
+                              onKeyDown={(event) => {
+                                if (event.key === 'ArrowDown') {
+                                  event.preventDefault()
+                                  setProductPickerOpen(true)
+                                  return
+                                }
+                                if (event.key !== 'Enter') return
+                                const first = productLookupRows[0]
+                                if (first) {
+                                  event.preventDefault()
+                                  selectEntryProduct(first)
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              className="inventory-adjustments-product-arrow"
+                              aria-label="Open product list"
+                              aria-expanded={editing && productPickerOpen}
+                              disabled={!canAdjust}
+                              onMouseDown={(event) => {
+                                event.preventDefault()
+                                event.stopPropagation()
+                              }}
+                              onClick={() => {
+                                if (!editing) fillLineForm(line, false)
+                                setProductPickerOpen((open) => !open)
+                              }}
+                            >
+                              <span aria-hidden>
+                                <svg viewBox="0 0 12 8" width="10" height="7" focusable="false">
+                                  <path d="M1.1 1.2 6 6l4.9-4.8 1 1.1L6 8.2.1 2.3z" fill="currentColor" />
+                                </svg>
+                              </span>
+                            </button>
+                          </div>
                         </td>
                         <td className="is-num">{formatDecimal(line.in_stock)}</td>
                         <td>
@@ -1060,6 +1103,18 @@ export function InventoryAdjustmentsPage() {
                             }}
                           />
                         </td>
+                        <td className="inventory-adjustments-delete-cell">
+                          <button
+                            type="button"
+                            className="inventory-adjustments-row-delete"
+                            aria-label="Delete adjustment row"
+                            title="Delete row"
+                            disabled={!canAdjust || removeLine.isPending || amendDocument.isPending}
+                            onClick={() => void removeCurrentLine(line.ulid)}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
                       </tr>
                     )
                   })}
@@ -1067,7 +1122,7 @@ export function InventoryAdjustmentsPage() {
                   {entryEnabled ? (
                     <tr className="is-entry-row">
                       <td className="inventory-adjustments-product-cell">
-                        <div ref={productAnchorRef} className="inventory-adjustments-product-entry">
+                        <div ref={selectedLineUlid ? undefined : productAnchorRef} className="inventory-adjustments-product-entry">
                           <input
                             ref={productInputRef}
                             value={productSearch}
@@ -1192,18 +1247,8 @@ export function InventoryAdjustmentsPage() {
                             saveCurrentLine()
                           }}
                         />
-                        {selectedLineUlid ? (
-                          <button
-                            type="button"
-                            className="inventory-adjustments-line-remove"
-                            aria-label="Remove adjustment line"
-                            onClick={() => void removeCurrentLine(selectedLineUlid)}
-                            disabled={removeLine.isPending || amendDocument.isPending}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        ) : null}
                       </td>
+                      <td className="inventory-adjustments-delete-cell" />
                     </tr>
                   ) : null}
               </PosEntryGrid>
@@ -1253,7 +1298,17 @@ export function InventoryAdjustmentsPage() {
               <UiButton
                 variant="success"
                 onClick={async () => {
-                  if (!document || document.status !== 'draft') return
+                  if (!canAdjust) return
+
+                  if (!document) {
+                    if (!await feedback.confirm(
+                      `Post ${displayedDocumentNumber}? All staged rows will be saved and posted.`,
+                    )) return
+                    saveAndPostFresh.mutate()
+                    return
+                  }
+
+                  if (document.status !== 'draft') return
                   if (headerDirty) {
                     feedback.info('Save the header before posting.', 'Adjustment')
                     return
@@ -1263,7 +1318,13 @@ export function InventoryAdjustmentsPage() {
                   )) return
                   postDocument.mutate()
                 }}
-                disabled={!document || document.status !== 'draft' || !canAdjust || postDocument.isPending}
+                disabled={
+                  !canAdjust ||
+                  document?.status === 'posted' ||
+                  (!document && newLines.length === 0) ||
+                  postDocument.isPending ||
+                  saveAndPostFresh.isPending
+                }
               >
                 <Send size={15} /> Post
               </UiButton>
