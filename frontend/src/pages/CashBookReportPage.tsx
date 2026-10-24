@@ -194,6 +194,7 @@ export function CashBookReportPage() {
             <label>From Date<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
             <label>To Date<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
           </div>
+          <div className="cashbook-checkbox-grid">
           <label className="cashbook-check" title="Purchase-source inclusion is pending verified accounting mapping">
             <input type="checkbox" disabled /> Show Purchase also
           </label>
@@ -206,6 +207,7 @@ export function CashBookReportPage() {
             onChange={(e) => setSummaryOnly(e.target.checked)} /> Only Summary</label>
           <label className="cashbook-check"><input type="checkbox" checked={!showDetails}
             onChange={(e) => setShowDetails(!e.target.checked)} /> Don't Show Detail</label>
+          </div>
           <label>Cash Book Group By
             <UiSelect value={group} searchable={false} onChange={(value) => setGroup(value as typeof group)}
               options={[{value:'none',label:'No Grouping'}, {value:'date',label:'Date'}, {value:'document',label:'Document'}]} />
@@ -218,12 +220,14 @@ export function CashBookReportPage() {
               onChange={(value) => setAccountUlids(value ? [value] : [])} />
           </label>
           {accountsQuery.isError ? <p role="alert">Unable to load cash accounts.</p> : null}
+          <p className="cashbook-note">Posted journals only · current branch. Unsupported reference filters (area, salesman, purchase/non-cash) are not applied.</p>
+        </div>
+        <div className="cashbook-footer-actions">
           <div className="cashbook-actions">
             <UiButton variant="info" label="Preview" disabled={from > to || !from || !to} onClick={() => launch('preview')} />
             <UiButton variant="default" label="Close" onClick={closeActiveTab} />
           </div>
           <UiButton variant="info" label="Show Cash Flow" disabled={from > to || !from || !to} onClick={() => launch('cash_flow')} />
-          <p className="cashbook-note">Posted journals only · current branch. Unsupported reference filters (area, salesman, purchase/non-cash) are not applied.</p>
         </div>
       </div>
     </section>
