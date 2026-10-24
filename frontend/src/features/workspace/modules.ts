@@ -353,6 +353,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-cash-book',
+    title: 'Cash Book',
+    path: '/reports/accounts/cash-book',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
     key: 'report-stock-status',
     title: 'Stock Status',
     path: '/reports/products/stock-status',
@@ -558,7 +566,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
           menu: [
             { label: 'Trial Balance', status: 'ready', path: '/reports/accounts/trial-balance' },
             { label: 'Trial Balance 6 Cols / Side by Side', status: 'ready', path: '/reports/accounts/trial-balance?view=six_options' },
-            { label: 'Cash Book', ...LATER },
+            { label: 'Cash Book', status: 'ready', path: '/reports/accounts/cash-book' },
             { label: 'Daily Business Summary', ...LATER },
             { label: 'Top Products / Vendor / Customers', ...LATER },
             { label: 'Total Turnover Report', ...LATER },
