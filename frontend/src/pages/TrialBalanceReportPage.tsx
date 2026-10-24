@@ -309,7 +309,7 @@ export function TrialBalanceReportPage() {
     if (!report) return
     // Treat all exported cells as data, never spreadsheet formulas.
     const csvCell = (value: string) => {
-      const safe = /^[\\s]*[=+@\\-]/.test(value) ? "'" + value : value
+      const safe = /^\s*[=+@-]/.test(value) ? "'" + value : value
       return '"' + safe.replace(/"/g, '""') + '"'
     }
     const rows: string[][] = [
