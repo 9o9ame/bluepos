@@ -557,7 +557,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
           hasMenu: true,
           menu: [
             { label: 'Trial Balance', status: 'ready', path: '/reports/accounts/trial-balance' },
-            { label: 'Trial Balance 6 Cols / Side by Side', ...LATER },
+            { label: 'Trial Balance 6 Cols / Side by Side', status: 'ready', path: '/reports/accounts/trial-balance?view=six_options' },
             { label: 'Cash Book', ...LATER },
             { label: 'Daily Business Summary', ...LATER },
             { label: 'Top Products / Vendor / Customers', ...LATER },
@@ -722,6 +722,22 @@ export function moduleTabIdentity(
   if (module.key === 'report-trial-balance') {
     const params = new URLSearchParams(search)
     const view = params.get('view')
+
+    if (view === 'six_options') {
+      return {
+        key: 'report-trial-balance:six-options',
+        title: 'Trial Balance (6 Columns Format)',
+        path: pathname + search,
+      }
+    }
+
+    if (view === 'six_columns' || view === 'dr_cr_separate') {
+      return {
+        key: `report-trial-balance:${view}`,
+        title: view === 'six_columns' ? 'Trial Balance 6 Columns' : 'Trial Balance Dr / Cr Separate',
+        path: pathname + search,
+      }
+    }
 
     if (view === 'detail') {
       return {
