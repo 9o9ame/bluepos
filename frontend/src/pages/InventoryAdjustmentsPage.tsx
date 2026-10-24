@@ -301,7 +301,9 @@ export function InventoryAdjustmentsPage() {
     setProductUlid(product.ulid)
     setProductSearch(productLabel(product))
     setProductLookupQuery(product.name)
-    setProductPickerOpen(true)
+    setProductPickerOpen(false)
+
+    if (selectedLineUlid) return
 
     window.setTimeout(() => {
       qtyPlusRef.current?.focus()
