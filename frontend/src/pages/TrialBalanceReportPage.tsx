@@ -1,7 +1,7 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Eye, Printer, RefreshCw, X } from 'lucide-react'
+import { ArrowLeft, Download, Eye, Minus, Plus, Printer, RefreshCw, Search, X } from 'lucide-react'
 import { fetchTrialBalanceReport } from '../api/reports'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
@@ -254,6 +254,10 @@ export function TrialBalanceReportPage() {
   const [arrangeBy, setArrangeBy] = useState<TrialBalanceArrangeBy>(initialArrange)
   const [separatePages, setSeparatePages] = useState(initialSeparatePages)
   const [arrangeIds] = useState(false)
+  const [viewerSearch, setViewerSearch] = useState('')
+  const [viewerZoom, setViewerZoom] = useState(100)
+  const reportPaperRef = useRef<HTMLDivElement>(null)
+  const viewerCanvasRef = useRef<HTMLDivElement>(null)
 
   const viewerQuery = useQuery({
     queryKey: [
@@ -292,6 +296,59 @@ export function TrialBalanceReportPage() {
     window.requestAnimationFrame(() => window.print())
   }
 
+  const jumpToMatch = () => {
+    const query = viewerSearch.trim().toLocaleLowerCase()
+    if (!query || !reportPaperRef.current) return
+    const cells = Array.from(reportPaperRef.current.querySelectorAll('td, th, strong'))
+    const match = cells.find((cell) => cell.textContent?.toLocaleLowerCase().includes(query))
+    match?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  const exportCsv = () => {
+    const report = viewerQuery.data
+    if (!report) return
+    const csvCell = (value: string) => '"' + value.replace(/"/g, '""') + '"'
+    const rows: string[][] = [
+      [viewParam === 'major_minor' ? 'Trial Balance Major Head' : 'Trial Balance Detailed'],
+      ['As of', report.as_of_date],
+      [],
+      ['Description', 'Debit', 'Credit', 'Balance'],
+    ]
+    if (viewParam === 'major_minor') {
+      report.groups.forEach((group) => group.sections?.forEach((section) => {
+        section.account_types.forEach((type) => rows.push([
+          [section.account_type_head?.name ?? 'Ungrouped', type.account_type?.name ?? 'Ungrouped'].join(' / '),
+          type.totals.debit, type.totals.credit, signedBalance(type.totals),
+        ]))
+      }))
+    } else {
+      report.groups.forEach((group) => {
+        rows.push([group.label, '', '', ''])
+        const sections = group.sections
+        if (report.group_by === 'level_wise' && sections) {
+          sections.forEach((section) => {
+            rows.push([section.account_type_head?.name ?? 'Ungrouped', '', '', ''])
+            section.account_types.forEach((type) => {
+              rows.push([type.account_type?.name ?? 'Ungrouped', '', '', ''])
+              type.rows.forEach((row) => rows.push([row.account.code + ' - ' + row.account.name, row.debit, row.credit, '']))
+            })
+          })
+        } else {
+          group.rows.forEach((row) => rows.push([row.account.code + ' - ' + row.account.name, row.debit, row.credit, '']))
+        }
+      })
+    }
+    rows.push(['Grand Total', report.totals.debit, report.totals.credit, signedBalance(report.totals)])
+    const csv = '\uFEFF' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `trial-balance-${viewParam === 'major_minor' ? 'major-head' : 'detailed'}-${report.as_of_date}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (isViewer) {
     const report = viewerQuery.data
 
@@ -305,6 +362,31 @@ export function TrialBalanceReportPage() {
             disabled={!report}
             onClick={printReport}
           />
+          <UiButton
+            variant="info"
+            icon={<Download size={15} />}
+            label="Export CSV"
+            disabled={!report}
+            onClick={exportCsv}
+            title="Open the exported CSV in Excel or another spreadsheet app."
+          />
+          <div className="trial-balance-viewer-search">
+            <Search size={14} aria-hidden />
+            <input
+              aria-label="Search report text"
+              placeholder="Search report…"
+              value={viewerSearch}
+              onChange={(event) => setViewerSearch(event.target.value)}
+              onKeyDown={(event) => { if (event.key === 'Enter') jumpToMatch() }}
+            />
+            <UiButton variant="default" label="Find" disabled={!report || !viewerSearch.trim()} onClick={jumpToMatch} />
+          </div>
+          <div className="trial-balance-viewer-zoom">
+            <UiButton variant="default" icon={<Minus size={14} />} aria-label="Zoom out" disabled={viewerZoom <= 50} onClick={() => setViewerZoom((current) => Math.max(50, current - 25))} />
+            <span aria-live="polite">{viewerZoom}%</span>
+            <UiButton variant="default" icon={<Plus size={14} />} aria-label="Zoom in" disabled={viewerZoom >= 200} onClick={() => setViewerZoom((current) => Math.min(200, current + 25))} />
+            <UiButton variant="default" label="Fit" onClick={() => setViewerZoom(100)} />
+          </div>
           <UiButton
             variant="info"
             icon={<RefreshCw size={15} />}
@@ -332,11 +414,11 @@ export function TrialBalanceReportPage() {
           </div>
         ) : null}
 
-        <div className="trial-balance-viewer-canvas">
+        <div className="trial-balance-viewer-canvas" ref={viewerCanvasRef}>
           {viewerQuery.isLoading ? (
             <div className="trial-balance-viewer-loading">Loading report…</div>
           ) : report ? (
-            <div className="trial-balance-result">
+            <div className="trial-balance-result" ref={reportPaperRef} style={{ zoom: `${viewerZoom}%` }}>
               <div className="trial-balance-business-heading">
                 <strong>{session?.tenant.name ?? 'BluePOS'}</strong>
                 <span>
