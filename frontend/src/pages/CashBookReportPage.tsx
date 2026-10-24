@@ -39,6 +39,11 @@ const CASH_FLOW_SOURCES = [
   ['SALE RETURN', 'Sales Return'],
 ] as const
 
+function weekdayLabel(date: string) {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(year, month - 1, day)))
+}
 function asLabel(date: string | null) {
   if (!date) return ''
   const [year, month, day] = date.split('-')
@@ -177,7 +182,7 @@ export function CashBookReportPage() {
   )
   if (preview || cashFlow) {
     return (
-      <section className="cashbook-page cashbook-view">
+      <section className={cashFlow ? "cashbook-page cashbook-view cashbook-flow-view" : "cashbook-page cashbook-view"}>
         <div className="trial-balance-viewer-toolbar cashbook-tools">
           <UiButton variant="info" icon={<Printer size={15}/>} label="Print / PDF" disabled={!report} onClick={() => window.print()} />
           <UiButton variant="default" icon={<ClipboardCopy size={15}/>} label={copyLabel} disabled={!report} onClick={() => void copyReport()} />
@@ -214,45 +219,58 @@ export function CashBookReportPage() {
             onClick={() => openModule('/reports/accounts/cash-book')} />
           <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
         </div>
+        {cashFlow ? <div className="cashbook-flow-heading">
+          <h1>Cash Flow Statement</h1>
+          <span>From: {asLabel(from)}　To: {asLabel(to)}</span>
+        </div> : null}
         {reportQuery.isLoading ? <p>Loading Cash Book…</p> : null}
         {reportQuery.isError ? <p role="alert">Unable to load Cash Book. Please check the selected accounts and dates.</p> : null}
         {report ? <article className="cashbook-paper" ref={paperRef} style={{ zoom: `${zoom}%` }}>
-          <header><h2>{cashFlow ? 'Cash Flow Statement' : 'CASH BOOK'}</h2>
+          <header className={cashFlow ? "cashbook-flow-print-heading" : undefined}><h2>{cashFlow ? 'Cash Flow Statement' : 'CASH BOOK'}</h2>
             <p>From: {asLabel(report.start_date)} to: {asLabel(report.end_date)}</p>
           </header>
-          <div className="cashbook-balances">
+          <div className={cashFlow ? "cashbook-balances cashbook-flow-balances" : "cashbook-balances"}>
             <span>Previous Balance: <b>{displayMoney(report.totals.opening)}</b></span>
             <span>Total Income: <b>{displayMoney(report.totals.received)}</b></span>
             <span>Total Payments: <b>{displayMoney(report.totals.paid)}</b></span>
             <span>Closing Balance: <b>{displayMoney(report.totals.closing)}</b></span>
           </div>
           {cashFlow ? (
-            <table className="cashbook-flow-table">
-              <thead><tr>
-                <th>Date</th><th>Description</th><th>Opening</th>
-                {CASH_FLOW_SOURCES.map(([key, label]) => <th key={key}>{label}</th>)}
-                <th>Debit</th><th>Today Cash</th><th>Credit</th><th>Closing</th>
-              </tr></thead>
-              <tbody>{dailyCashFlow.map((day) => (
-                <tr key={day.day}>
-                  <td>{asLabel(day.day)}</td><td>Daily Cash Flow</td>
-                  <td className="cashbook-money">{displayMoney(unitsText(day.opening))}</td>
-                  {CASH_FLOW_SOURCES.map(([key]) => <td className="cashbook-money" key={key}>
-                    {displayMoney(unitsText(day.sources.get(key) ?? 0n))}
+            <div className="cashbook-flow-grid">
+              <table className="cashbook-flow-table">
+                <thead><tr>
+                  <th>#</th><th>Date</th><th>Description</th><th>Opening</th>
+                  {CASH_FLOW_SOURCES.map(([key, label]) => <th key={key}>{label}</th>)}
+                  <th>Debit</th><th>Today Cash</th><th>Credit</th><th>Closing</th>
+                </tr></thead>
+                <tbody>{dailyCashFlow.map((day, index) => (
+                  <tr key={day.day}>
+                    <td>{index + 1}</td>
+                    <td>{asLabel(day.day)}</td>
+                    <td>{weekdayLabel(day.day)}</td>
+                    <td className="cashbook-money">{displayMoney(unitsText(day.opening))}</td>
+                    {CASH_FLOW_SOURCES.map(([key]) => <td className="cashbook-money" key={key}>
+                      {(day.sources.get(key) ?? 0n) === 0n ? '–' : displayMoney(unitsText(day.sources.get(key)!))}
+                    </td>)}
+                    <td className="cashbook-money">{displayMoney(unitsText(day.debit))}</td>
+                    <td className="cashbook-money">{displayMoney(unitsText(day.opening + day.debit))}</td>
+                    <td className="cashbook-money">{displayMoney(unitsText(day.credit))}</td>
+                    <td className="cashbook-money">{displayMoney(unitsText(day.closing))}</td>
+                  </tr>
+                ))}</tbody>
+                <tfoot><tr>
+                  <th colSpan={3}>{dailyCashFlow.length} Entries</th>
+                  <td className="cashbook-money">{displayMoney(unitsText(dailyCashFlow.reduce((sum, d) => sum + d.opening, 0n)))}</td>
+                  {CASH_FLOW_SOURCES.map(([key]) => <td key={key} className="cashbook-money">
+                    {displayMoney(unitsText(dailyCashFlow.reduce((sum, d) => sum + (d.sources.get(key) ?? 0n), 0n)))}
                   </td>)}
-                  <td className="cashbook-money">{displayMoney(unitsText(day.debit))}</td>
-                  <td className="cashbook-money">{displayMoney(unitsText(day.debit - day.credit))}</td>
-                  <td className="cashbook-money">{displayMoney(unitsText(day.credit))}</td>
-                  <td className="cashbook-money">{displayMoney(unitsText(day.closing))}</td>
-                </tr>
-              ))}</tbody>
-              <tfoot><tr><th colSpan={10}>Total / Closing</th>
-                <td className="cashbook-money">{displayMoney(report.totals.received)}</td>
-                <td className="cashbook-money">{displayMoney(unitsText(moneyUnits(report.totals.received) - moneyUnits(report.totals.paid)))}</td>
-                <td className="cashbook-money">{displayMoney(report.totals.paid)}</td>
-                <td className="cashbook-money">{displayMoney(report.totals.closing)}</td>
-              </tr></tfoot>
-            </table>
+                  <td className="cashbook-money">{displayMoney(report.totals.received)}</td>
+                  <td className="cashbook-money">{displayMoney(unitsText(dailyCashFlow.reduce((sum, d) => sum + d.opening + d.debit, 0n)))}</td>
+                  <td className="cashbook-money">{displayMoney(report.totals.paid)}</td>
+                  <td className="cashbook-money">{displayMoney(unitsText(dailyCashFlow.reduce((sum, d) => sum + d.closing, 0n)))}</td>
+                </tr></tfoot>
+              </table>
+            </div>
           ) : <div className="cashbook-dual">
             <section><h3>Receivings</h3>{entries(receipts, 'debit')}</section>
             <section><h3>Payments</h3>{entries(payments, 'credit')}</section>
