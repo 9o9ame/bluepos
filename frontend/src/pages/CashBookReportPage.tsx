@@ -60,6 +60,8 @@ export function CashBookReportPage() {
   const [from, setFrom] = useState(params.get('start_date') || localDay().slice(0, 8) + '01')
   const [to, setTo] = useState(params.get('end_date') || localDay())
   const [includeBank, setIncludeBank] = useState(params.get('include_bank') === '1')
+  const [showPurchase, setShowPurchase] = useState(params.get('show_purchase') === '1')
+  const [nonCashAlso, setNonCashAlso] = useState(params.get('non_cash_also') === '1')
   const [summaryOnly, setSummaryOnly] = useState(params.get('summary_only') === '1')
   const [showDetails, setShowDetails] = useState(params.get('detail') !== '0')
   const [group, setGroup] = useState<'none' | 'date' | 'document'>((params.get('group_by') as 'none' | 'date' | 'document') || 'none')
@@ -71,9 +73,9 @@ export function CashBookReportPage() {
   const accountsQuery = useQuery({ queryKey: ['cash-book-accounts'], queryFn: fetchCashBookAccounts })
   const accounts = (accountsQuery.data?.accounts ?? []).filter((a) => includeBank || a.is_cash)
   const reportQuery = useQuery({
-    queryKey: ['cash-book-report', from, to, includeBank, summaryOnly, group, accountUlids],
+    queryKey: ['cash-book-report', from, to, includeBank, showPurchase, nonCashAlso, summaryOnly, group, accountUlids],
     queryFn: () => fetchCashBookReport({
-      start_date: from, end_date: to, include_bank: includeBank, summary_only: summaryOnly,
+      start_date: from, end_date: to, include_bank: includeBank, show_purchase: showPurchase, non_cash_also: nonCashAlso, summary_only: summaryOnly,
       group_by: group, account_ulids: accountUlids,
     }),
     enabled: (preview || cashFlow) && Boolean(from && to && from <= to),
@@ -81,6 +83,7 @@ export function CashBookReportPage() {
   const launch = (view: 'preview' | 'cash_flow' | 'cash_flow_preview') => {
     const q = new URLSearchParams({
       view, start_date: from, end_date: to, include_bank: includeBank ? '1' : '0',
+      show_purchase: showPurchase ? '1' : '0', non_cash_also: nonCashAlso ? '1' : '0',
       summary_only: summaryOnly ? '1' : '0', detail: showDetails ? '1' : '0',
       group_by: group, account_ulids: accountUlids.join(','),
     })
@@ -285,6 +288,14 @@ export function CashBookReportPage() {
             <section><h3>Receivings</h3>{entries(receipts, 'debit')}</section>
             <section><h3>Payments</h3>{entries(payments, 'credit')}</section>
           </div>}
+          {(report.supplementary?.length ?? 0) > 0 ? <section className="cashbook-supplementary">
+            <h3>Additional posted transactions (non-cash; excluded from cash balances)</h3>
+            <table className="cashbook-entries"><thead><tr><th>Date</th><th>Voucher</th><th>Reference</th><th>Description</th></tr></thead>
+              <tbody>{report.supplementary.map((item) => <tr key={item.entry_ulid}>
+                <td>{asLabel(item.date)}</td><td>{item.doc}</td><td>{item.trans_no}</td><td>{item.description}</td>
+              </tr>)}</tbody>
+            </table>
+          </section> : null}
           {summaryOnly ? <p>Summary only — transaction details hidden.</p> : null}
         </article> : null}
         {cashFlow && !flowPreview ? <div className="cashbook-flow-footer">
@@ -305,11 +316,11 @@ export function CashBookReportPage() {
             <label>To Date<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
           </div>
           <div className="cashbook-checkbox-grid">
-          <label className="cashbook-check" title="Purchase-source inclusion is pending verified accounting mapping">
-            <input type="checkbox" disabled /> Show Purchase also
+          <label className="cashbook-check" title="Show posted purchase documents without cash/bank movements separately">
+            <input type="checkbox" checked={showPurchase} onChange={(e) => setShowPurchase(e.target.checked)} /> Show Purchase also
           </label>
-          <label className="cashbook-check" title="Non-cash transaction classification is pending verification">
-            <input type="checkbox" disabled /> Non Cash Also
+          <label className="cashbook-check" title="Show posted journals without cash/bank movements separately">
+            <input type="checkbox" checked={nonCashAlso} onChange={(e) => setNonCashAlso(e.target.checked)} /> Non Cash Also
           </label>
           <label className="cashbook-check"><input type="checkbox" checked={includeBank}
             onChange={(e) => { setIncludeBank(e.target.checked); setAccountUlids([]) }} /> Include Bank Book</label>
@@ -330,7 +341,7 @@ export function CashBookReportPage() {
               onChange={(value) => setAccountUlids(value ? [value] : [])} />
           </label>
           {accountsQuery.isError ? <p role="alert">Unable to load cash accounts.</p> : null}
-          <p className="cashbook-note">Posted journals only · current branch. Unsupported reference filters (area, salesman, purchase/non-cash) are not applied.</p>
+          <p className="cashbook-note">Posted journals only · current branch. Purchase / non-cash transactions are supplementary and do not change cash totals. Area and salesman filters are not available.</p>
         </div>
         <div className="cashbook-footer-actions">
           <div className="cashbook-actions">
