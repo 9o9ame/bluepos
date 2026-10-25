@@ -100,26 +100,43 @@ class TotalTurnoverReportController extends Controller
         $customerIds = $accounts->pluck('customer_id')->filter()->unique()->all();
         $supplierIds = $accounts->pluck('supplier_id')->filter()->unique()->all();
         $sales = $customerIds ? DB::table('sales')
-            ->where('tenant_id',$tenant)->where('branch_id',$branch)->where('status','posted')
-            ->whereBetween('sale_date', [$data['from'],$data['to']])
+            ->where('tenant_id', $tenant)->where('branch_id', $branch)->where('status', 'posted')
+            ->whereBetween('sale_date', [$data['from'], $data['to']])
+            ->whereIn('customer_id', $customerIds)
+            ->groupBy('customer_id')->selectRaw('customer_id, SUM(grand_total)::numeric(20,4) as total')
+            ->get()->keyBy('customer_id') : collect();
+        $saleReturns = $customerIds ? DB::table('sale_returns')
+            ->where('tenant_id', $tenant)->where('branch_id', $branch)->where('status', 'posted')
+            ->whereBetween('return_date', [$data['from'], $data['to']])
             ->whereIn('customer_id', $customerIds)
             ->groupBy('customer_id')->selectRaw('customer_id, SUM(grand_total)::numeric(20,4) as total')
             ->get()->keyBy('customer_id') : collect();
         $purchases = $supplierIds ? DB::table('purchase_invoices')
-            ->where('tenant_id',$tenant)->where('branch_id',$branch)->where('status','posted')
-            ->whereBetween('invoice_date', [$data['from'],$data['to']])
+            ->where('tenant_id', $tenant)->where('branch_id', $branch)->where('status', 'posted')
+            ->whereBetween('invoice_date', [$data['from'], $data['to']])
+            ->whereIn('supplier_id', $supplierIds)
+            ->groupBy('supplier_id')->selectRaw('supplier_id, SUM(grand_total)::numeric(20,4) as total')
+            ->get()->keyBy('supplier_id') : collect();
+        $purchaseReturns = $supplierIds ? DB::table('purchase_returns')
+            ->where('tenant_id', $tenant)->where('branch_id', $branch)->where('status', 'posted')
+            ->whereBetween('return_date', [$data['from'], $data['to']])
             ->whereIn('supplier_id', $supplierIds)
             ->groupBy('supplier_id')->selectRaw('supplier_id, SUM(grand_total)::numeric(20,4) as total')
             ->get()->keyBy('supplier_id') : collect();
         $above = (string) ($data['above'] ?? '0');
-        $rows = $accounts->map(function ($a) use ($balances, $received, $periodMovements, $sales, $purchases) {
+        $rows = $accounts->map(function ($a) use ($balances, $received, $periodMovements, $sales, $saleReturns, $purchases, $purchaseReturns) {
+            $grossSales = (string) ($sales->get($a->customer_id)->total ?? '0.0000');
+            $returns = (string) ($saleReturns->get($a->customer_id)->total ?? '0.0000');
+            $grossPurchases = (string) ($purchases->get($a->supplier_id)->total ?? '0.0000');
+            $purchaseReversals = (string) ($purchaseReturns->get($a->supplier_id)->total ?? '0.0000');
             return [
                 'name' => $a->name,
                 'received' => (string) ($received->get($a->id)->received ?? '0.0000'),
-                'sales_returns' => (string) ($periodMovements->get($a->id)->movement ?? '0.0000'),
+                'sales_returns' => bcsub($grossSales, $returns, 4),
+                'ledger_movement' => (string) ($periodMovements->get($a->id)->movement ?? '0.0000'),
                 'receivable' => (string) ($balances->get($a->id)->balance ?? '0.0000'),
-                'sales' => (string) ($sales->get($a->customer_id)->total ?? '0.0000'),
-                'purchases' => (string) ($purchases->get($a->supplier_id)->total ?? '0.0000'),
+                'sales' => $grossSales,
+                'purchases' => bcsub($grossPurchases, $purchaseReversals, 4),
             ];
         })->filter(fn ($row) => bccomp(ltrim($row['sales_returns'], '-'), $above, 4) > 0
             || bccomp($row['received'], $above, 4) > 0
