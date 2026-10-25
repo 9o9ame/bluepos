@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import { apiFetch } from '../api/client'
-import { Download, FileText, FileCode, Minus, Plus, Search } from 'lucide-react'
+import { ReportViewerToolbar } from '../components/reports/ReportViewerToolbar'
 import { UiButton } from '../components/ui/UiButton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import './DailyBusinessActivityPage.css'
@@ -87,23 +87,21 @@ export function DailyBusinessActivityPage() {
       ?.scrollIntoView({ block: 'center' })
   }
   if (preview) return <section className="dba-page dba-preview">
-    <div className="dba-toolbar">
-      <UiButton variant="info" label="Print / PDF" onClick={() => window.print()} />
-      <UiButton variant="default" label="Copy" onClick={() => void copyReport()} />
-      <UiButton variant="default" icon={<FileText size={14}/>} label="Text" onClick={() => exportReport('txt')} />
-      <UiButton variant="default" icon={<FileCode size={14}/>} label="HTML" onClick={() => exportReport('html')} />
-      <UiButton variant="info" icon={<Download size={14}/>} label="Export CSV" onClick={() => exportReport('csv')} />
-      <label className="dba-toolbar-search"><Search size={14}/><input aria-label="Search report" placeholder="Search report…" value={search}
-        onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') findReport() }}/></label>
-      <UiButton variant="default" label="Find" disabled={!search.trim()} onClick={findReport} />
-      <UiButton variant="default" icon={<Minus size={14}/>} aria-label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((n) => Math.max(50,n-25))}/>
-      <span>{zoom}%</span>
-      <UiButton variant="default" icon={<Plus size={14}/>} aria-label="Zoom in" disabled={zoom >= 200} onClick={() => setZoom((n) => Math.min(200,n+25))}/>
-      <UiButton variant="default" label="Fit" onClick={() => setZoom(100)} />
-      <UiButton variant="info" label="Refresh" onClick={() => void reportQuery.refetch()} />
-      <UiButton variant="default" label="Edit Options" onClick={() => openModule('/reports/daily/business-activity')} />
-      <UiButton variant="default" label="Close" onClick={closeActiveTab} />
-    </div>
+    <ReportViewerToolbar
+      ready={Boolean(reportQuery.data)}
+      busy={reportQuery.isFetching}
+      search={search}
+      onSearchChange={setSearch}
+      onFind={findReport}
+      zoom={zoom}
+      onZoomChange={setZoom}
+      onPrint={() => window.print()}
+      onCopy={() => void copyReport()}
+      onExport={exportReport}
+      onRefresh={() => void reportQuery.refetch()}
+      onEditOptions={() => openModule('/reports/daily/business-activity')}
+      onClose={closeActiveTab}
+    />
     {reportQuery.isLoading && <p>Loading daily ledger report…</p>}
     {reportQuery.isError && <p role="alert">Unable to load report.</p>}
     {reportQuery.data && <article className="dba-paper" ref={paperRef} style={{ zoom: `${zoom}%` }}>
