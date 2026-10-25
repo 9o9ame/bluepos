@@ -77,11 +77,17 @@ export function TotalTurnoverReportPage() {
     {data && <article ref={paperRef} className="turnover-paper" style={{zoom:zoom+'%'}}>
       <header><h1>PARTIES, PRODUCT WISE (RECEIVABLE &amp; PAYABLE SUMMARY WITH TURNOVER)</h1>
         <p>From {data.from} to {data.to}</p></header>
-      <table><thead><tr><th rowSpan={2}>PARTY NAME</th><th colSpan={2}>PURCHASES</th><th>SALES</th><th colSpan={2}>RECOVERY POSITION</th><th colSpan={2}>TOTAL</th></tr>
+      {data.mode === 'simple' ? <table><thead><tr>
+        <th>PARTY NAME</th><th>PURCHASES</th><th>SALES TURNOVER</th><th>RECEIVED</th><th>RECEIVABLE</th>
+      </tr></thead><tbody>{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td><td>{fmt(r.purchases)}</td>
+        <td>{fmt(r.sales)}</td><td>{fmt(r.received)}</td><td>{fmt(r.receivable)}</td></tr>)}</tbody>
+      <tfoot><tr><th>TOTAL</th><th>{fmt(data.totals.purchases)}</th><th>{fmt(data.totals.sales)}</th>
+        <th>{fmt(data.totals.received)}</th><th>{fmt(data.totals.receivable)}</th></tr></tfoot></table>
+      : <table><thead><tr><th rowSpan={2}>PARTY NAME</th><th colSpan={2}>PURCHASES</th><th>SALES</th><th colSpan={2}>RECOVERY POSITION</th><th colSpan={2}>TOTAL</th></tr>
       <tr><th>Amount</th><th>Qty</th><th>Amount</th><th>Received</th><th>%age</th><th>Turnover</th><th>RECEIVABLE</th></tr></thead>
       <tbody>{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td>
         <td>{fmt(r.purchases)}</td><td>—</td><td>{fmt(r.sales)}</td><td>{fmt(r.received)}</td><td>—</td><td>{fmt(r.sales)}</td><td>{fmt(r.receivable)}</td></tr>)}
-      </tbody><tfoot><tr><th>TOTAL</th><th>{fmt(data.totals.purchases)}</th><th>—</th><th>{fmt(data.totals.sales)}</th><th>{fmt(data.totals.received)}</th><th>—</th><th>{fmt(data.totals.sales)}</th><th>{fmt(data.totals.receivable)}</th></tr></tfoot></table>
+      </tbody><tfoot><tr><th>TOTAL</th><th>{fmt(data.totals.purchases)}</th><th>—</th><th>{fmt(data.totals.sales)}</th><th>{fmt(data.totals.received)}</th><th>—</th><th>{fmt(data.totals.sales)}</th><th>{fmt(data.totals.receivable)}</th></tr></tfoot></table>}
       <p className="turnover-disclaimer">Posted transactions only. Product-wise litres and recovery percentages are not yet mapped; these fields are not calculated.</p>
     </article>}
   </section>
