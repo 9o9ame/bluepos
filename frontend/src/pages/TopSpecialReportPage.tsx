@@ -147,18 +147,22 @@ export function TopSpecialReportPage() {
           items={options?.categories || []} selected={categoryIds} onChange={setCategoryIds}/></div>
         <div className="top-special-controls">
           <strong>Top List Selection</strong>
-          <label><input type="checkbox" checked={purchasing} onChange={(e) => {
-            setPurchasing(e.target.checked);setKind(e.target.checked ? 'vendors' : 'customers');setPartyIds([])
-          }}/> For Purchasing</label>
-          <label><input type="checkbox" checked={quantity} onChange={(e) => setQuantity(e.target.checked)}/> For Quantity</label>
+          <div className="top-special-flags">
+            <label><input type="checkbox" checked={purchasing} onChange={(e) => {
+              setPurchasing(e.target.checked);setKind(e.target.checked ? 'vendors' : 'customers');setPartyIds([])
+            }}/> For Purchasing</label>
+            <label><input type="checkbox" checked={quantity} onChange={(e) => setQuantity(e.target.checked)}/> For Quantity</label>
+          </div>
           <label>Show Top <input type="number" min="1" max="100" value={top} onChange={(e) => setTop(e.target.value)}/></label>
           <UiSelect searchable={false} value={kind} onChange={(v) => {setKind(v as Kind);setPartyIds([])}}
             options={[{value:'customers',label:'Customers',disabled:purchasing},
               {value:'vendors',label:'Vendors',disabled:!purchasing},
               {value:'products',label:'Products'},
               {value:'salespeople',label:'Sales Man',disabled:purchasing}]}/>
-          <label>From <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}/></label>
-          <label>To <input type="date" value={to} onChange={(e) => setTo(e.target.value)}/></label>
+          <div className="top-special-date-row">
+            <label>From<input type="date" value={from} onChange={(e) => setFrom(e.target.value)}/></label>
+            <label>To<input type="date" value={to} onChange={(e) => setTo(e.target.value)}/></label>
+          </div>
           <UiSelect searchable={false} value={format} onChange={setFormat} options={[
             {value:'standard',label:'Standard Format'}, {value:'format1',label:'Format1'}]}/>
         </div>
