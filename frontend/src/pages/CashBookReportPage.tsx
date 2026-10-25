@@ -55,7 +55,8 @@ export function CashBookReportPage() {
   const location = useLocation()
   const params = new URLSearchParams(location.search)
   const preview = params.get('view') === 'preview'
-  const cashFlow = params.get('view') === 'cash_flow'
+  const flowPreview = params.get('view') === 'cash_flow_preview'
+  const cashFlow = params.get('view') === 'cash_flow' || flowPreview
   const [from, setFrom] = useState(params.get('start_date') || localDay().slice(0, 8) + '01')
   const [to, setTo] = useState(params.get('end_date') || localDay())
   const [includeBank, setIncludeBank] = useState(params.get('include_bank') === '1')
@@ -75,9 +76,9 @@ export function CashBookReportPage() {
       start_date: from, end_date: to, include_bank: includeBank, summary_only: summaryOnly,
       group_by: group, account_ulids: accountUlids,
     }),
-    enabled: preview || cashFlow,
+    enabled: (preview || cashFlow) && Boolean(from && to && from <= to),
   })
-  const launch = (view: 'preview' | 'cash_flow') => {
+  const launch = (view: 'preview' | 'cash_flow' | 'cash_flow_preview') => {
     const q = new URLSearchParams({
       view, start_date: from, end_date: to, include_bank: includeBank ? '1' : '0',
       summary_only: summaryOnly ? '1' : '0', detail: showDetails ? '1' : '0',
@@ -183,7 +184,7 @@ export function CashBookReportPage() {
   if (preview || cashFlow) {
     return (
       <section className={cashFlow ? "cashbook-page cashbook-view cashbook-flow-view" : "cashbook-page cashbook-view"}>
-        <div className="trial-balance-viewer-toolbar cashbook-tools">
+        {(!cashFlow || flowPreview) ? <div className="trial-balance-viewer-toolbar cashbook-tools">
           <UiButton variant="info" icon={<Printer size={15}/>} label="Print / PDF" disabled={!report} onClick={() => window.print()} />
           <UiButton variant="default" icon={<ClipboardCopy size={15}/>} label={copyLabel} disabled={!report} onClick={() => void copyReport()} />
           <UiButton variant="default" icon={<FileText size={15}/>} label="Text" disabled={!report} onClick={() => exportFile('txt')} />
@@ -218,14 +219,23 @@ export function CashBookReportPage() {
           <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options"
             onClick={() => openModule('/reports/accounts/cash-book')} />
           <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
-        </div>
+        </div> : null}
         {cashFlow ? <div className="cashbook-flow-heading">
           <h1>Cash Flow Statement</h1>
-          <span>From: {asLabel(from)}　To: {asLabel(to)}</span>
+          {flowPreview ? <span>From: {asLabel(from)}　To: {asLabel(to)}</span> : (
+            <div className="cashbook-flow-filters">
+              <label>From: <input aria-label="Cash flow from date" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
+              <label>To: <input aria-label="Cash flow to date" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
+              <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh"
+                disabled={reportQuery.isFetching || !from || !to || from > to}
+                onClick={() => void reportQuery.refetch()} />
+            </div>
+          )}
         </div> : null}
+        {cashFlow && from > to ? <p role="alert">From Date must not exceed To Date.</p> : null}
         {reportQuery.isLoading ? <p>Loading Cash Book…</p> : null}
         {reportQuery.isError ? <p role="alert">Unable to load Cash Book. Please check the selected accounts and dates.</p> : null}
-        {report ? <article className="cashbook-paper" ref={paperRef} style={{ zoom: `${zoom}%` }}>
+        {report ? <article className="cashbook-paper" ref={paperRef} style={{ zoom: `${flowPreview || preview ? zoom : 100}%` }}>
           <header className={cashFlow ? "cashbook-flow-print-heading" : undefined}><h2>{cashFlow ? 'Cash Flow Statement' : 'CASH BOOK'}</h2>
             <p>From: {asLabel(report.start_date)} to: {asLabel(report.end_date)}</p>
           </header>
@@ -277,6 +287,10 @@ export function CashBookReportPage() {
           </div>}
           {summaryOnly ? <p>Summary only — transaction details hidden.</p> : null}
         </article> : null}
+        {cashFlow && !flowPreview ? <div className="cashbook-flow-footer">
+          <UiButton variant="info" label="Preview" disabled={!report || reportQuery.isFetching || from > to}
+            onClick={() => launch('cash_flow_preview')} />
+        </div> : null}
       </section>
     )
   }
