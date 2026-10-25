@@ -9,7 +9,7 @@ import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import './TotalTurnoverReportPage.css'
 
 type AccountType = { ulid: string; name: string }
-type Row = { name: string; purchases: string; sales: string; sales_returns: string; received: string; receivable: string }
+type Row = { name: string; purchases: string; sales: string; sales_returns: string; net_sales: string; received: string; receivable: string }
 type Result = { from: string; to: string; mode: string; rows: Row[]; totals: Omit<Row, 'name'> }
 type Period = 'this_month' | 'previous_month' | 'today' | 'yesterday' | 'custom'
 const dateString = (d: Date) => {
@@ -116,7 +116,7 @@ export function TotalTurnoverReportPage() {
           <th>{fmt(data.totals.received)}</th><th>0%</th><th>—</th>
           <th>{fmt(data.totals.receivable)}</th></tr></tfoot>
       </table></div>}
-      <p className="turnover-disclaimer">Sales − Returns = posted sales less posted returns; Recovery %age = Recovery ÷ net sales × 100 (0% when net sales is zero). Product-wise litres, allocations and corresponding turnover are unmapped; these show — rather than invented totals.</p>
+      <p className="turnover-disclaimer">In Simple Turn Over, Sales − Returns is signed posted party-ledger movement, and %age = Recovery ÷ that movement × 100 (0% if the movement is zero). Net invoice sales are calculated separately for turnover filtering. Product-wise litres and allocations remain unmapped.</p>
     </article>}
   </section>
   const valid=!!from&&!!to&&from<=to&&/^\d+(\.\d{1,4})?$/.test(above)
