@@ -87,7 +87,7 @@ class BalanceSheetReportController extends Controller
                 $debit = bcadd($debit, $section['debit'], 4);
                 $credit = bcadd($credit, $section['credit'], 4);
             }
-            $groups[] = ['name' => $head['main_head']['name'] ?? 'Unclassified',
+            $groups[] = ['name' => $head['label'] ?? 'Unclassified',
                 'sections' => $sections, 'debit' => $debit, 'credit' => $credit];
             $totalDebit = bcadd($totalDebit, $debit, 4);
             $totalCredit = bcadd($totalCredit, $credit, 4);
@@ -98,7 +98,7 @@ class BalanceSheetReportController extends Controller
             'summarized' => (bool) ($data['summarized'] ?? true),
             'groups' => $groups,
             'totals' => ['debit' => $totalDebit, 'credit' => $totalCredit,
-                'difference' => ltrim($difference, '-') , 'difference_side' => bccomp($difference, '0', 4) >= 0 ? 'Dr' : 'Cr'],
+                'difference' => bccomp($difference, '0', 4) < 0 ? bcmul($difference, '-1', 4) : $difference , 'difference_side' => bccomp($difference, '0', 4) >= 0 ? 'Dr' : 'Cr'],
             'limitations' => ['Ending Stock FIFO revaluation and Income/Loss adjustments are not inferred or injected. This report reflects posted ledger balances only.'],
         ]);
     }
