@@ -41,14 +41,14 @@ class DailyBusinessActivityController extends Controller
         $data = $request->validate([
             'start_date' => ['required', 'date_format:Y-m-d'],
             'end_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:start_date'],
-            'account_type_ulids' => ['required', 'array', 'min:1', 'max:100'],
+            'account_type_ulids' => ['sometimes', 'array', 'max:100'],
             'account_type_ulids.*' => ['required', 'string', 'ulid', 'distinct'],
         ]);
 
         $types = AccountType::query()->forTenant($context->tenantId())
-            ->where('is_active', true)->whereIn('ulid', $data['account_type_ulids'])
+            ->where('is_active', true)->when(! empty($data['account_type_ulids']), fn ($query) => $query->whereIn('ulid', $data['account_type_ulids']))
             ->get(['id', 'ulid']);
-        if ($types->count() !== count($data['account_type_ulids'])) {
+        if (! empty($data['account_type_ulids']) && $types->count() !== count($data['account_type_ulids'])) {
             throw new ApiException('ACCOUNT_TYPE_NOT_FOUND', 'Selected account type is unavailable.', 404);
         }
 
