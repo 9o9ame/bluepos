@@ -1,0 +1,24 @@
+.is-page{color:var(--ui-text);background:var(--ui-surface-subtle)}
+.is-options{height:calc(100dvh - 225px);min-height:430px;box-sizing:border-box;display:grid;grid-template-rows:minmax(0,1fr) 48px;gap:20px;padding:10px 14px 14px;overflow:hidden}
+.is-panel{display:flex;flex-direction:column;min-height:0;border:1px solid var(--ui-border);border-radius:var(--panel-radius);overflow:hidden}
+.is-panel>h2{margin:0;min-height:40px;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--ui-table-header);color:var(--ui-table-header-text);border-bottom:1px solid var(--ui-border)}
+.is-date-card{width:min(720px,calc(100% - 48px));min-height:260px;max-height:calc(100% - 35px);box-sizing:border-box;display:flex;flex-direction:column;gap:18px;margin:auto;padding:26px;border:1px solid var(--ui-border);border-radius:var(--panel-radius);background:var(--ui-surface-muted);overflow:auto;font-size:13px}
+.is-date-card>strong{font-size:14px}.is-date-card label{display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px;align-items:center;font-weight:700}
+.is-date-card input{min-width:0;width:100%;height:38px;box-sizing:border-box;border:1px solid var(--ui-control-border);background:var(--ui-control-face);border-radius:var(--control-radius);box-shadow:var(--ui-control-shadow);color:var(--ui-text);padding:0 12px;font:inherit}
+.is-date-card p{font-size:12px;color:var(--ui-text-muted)}
+.is-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;width:min(600px,100%);height:48px;margin:0 auto}
+.is-actions button.ui-button{height:48px;width:100%;justify-content:center;font-size:15px;font-weight:700}
+.is-preview{height:100%;min-height:0;overflow:auto}
+.is-paper{box-sizing:border-box;width:min(1100px,calc(100% - 40px));margin:20px auto;min-height:720px;padding:36px 30px;background:var(--ui-surface);border:1px solid var(--ui-border)}
+.is-paper header{text-align:center;margin-bottom:24px}
+.is-paper header h1{font-size:20px;letter-spacing:.2em;margin:0}
+.is-paper table{border-collapse:collapse;width:100%;font-size:13px}
+.is-paper th,.is-paper td{padding:7px;border-bottom:1px solid var(--ui-table-border)}
+.is-paper thead th{background:var(--ui-table-header);color:var(--ui-table-header-text);border:1px solid var(--ui-table-border)}
+.is-paper td:first-child,.is-paper th:first-child{text-align:left}
+.is-paper td:not(:first-child),.is-paper th:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.is-paper .is-section th{text-align:left;font-size:14px;padding-top:15px;border-bottom:2px solid var(--ui-table-border)}
+.is-paper .is-total th,.is-paper tfoot th{border-top:2px solid var(--ui-table-border);font-weight:800}
+.is-note{font-size:11px;color:var(--ui-text-muted)}
+@media(max-width:650px){.is-options{height:auto;display:flex;flex-direction:column}.is-panel{min-height:370px}.is-date-card{min-height:0}.is-actions{width:100%}.is-paper{padding:12px}}
+@media print{@page{size:A4 portrait;margin:10mm}body:has(.is-preview) *{visibility:hidden!important}body:has(.is-preview) .is-paper,body:has(.is-preview) .is-paper *{visibility:visible!important}.is-paper{position:static;margin:0;padding:0;min-height:0;width:100%;border:0;zoom:1!important;color:black;background:white}.is-paper tr{break-inside:avoid}.is-paper thead{display:table-header-group}}
