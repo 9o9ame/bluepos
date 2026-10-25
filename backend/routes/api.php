@@ -315,8 +315,10 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::get('/reports/accounting/cash-book', CashBookReportController::class);
     Route::get('/reports/accounting/daily-business-activity/types', [DailyBusinessActivityController::class, 'types']);
     Route::get('/reports/accounting/daily-business-activity', [DailyBusinessActivityController::class, 'report']);
+    Route::post('/reports/accounting/daily-business-activity/preview', [DailyBusinessActivityController::class, 'report']);
     Route::get('/reports/top-special/options', [TopSpecialReportController::class, 'options']);
     Route::get('/reports/top-special', [TopSpecialReportController::class, 'report']);
+    Route::post('/reports/top-special/preview', [TopSpecialReportController::class, 'report']);
     Route::get('/reports/accounting/total-turnover/options', [TotalTurnoverReportController::class, 'options']);
     Route::get('/reports/accounting/total-turnover', [TotalTurnoverReportController::class, 'report']);
 
