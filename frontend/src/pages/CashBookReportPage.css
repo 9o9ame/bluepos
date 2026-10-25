@@ -69,3 +69,9 @@
 .cashbook-flow-footer{display:flex;justify-content:flex-end;padding:8px 14px;border-top:1px solid var(--ui-border);background:var(--ui-surface)}
 .cashbook-flow-footer button.ui-button{min-width:110px;min-height:36px}
 @media(max-width:780px){.cashbook-flow-heading{align-items:flex-start;flex-direction:column}.cashbook-flow-filters{width:100%}}
+
+/* Preview opens separately with a printable report surface and the standard viewer toolbar. */
+.cashbook-flow-preview .cashbook-flow-heading{display:none}
+.cashbook-flow-preview .cashbook-paper{max-width:1240px;width:calc(100% - 36px);margin:16px auto;padding:18px;background:var(--ui-surface);border:1px solid var(--ui-border)}
+.cashbook-flow-preview .cashbook-flow-print-heading{display:block;text-align:center;margin-bottom:12px}
+@media print{.cashbook-flow-preview .cashbook-paper{max-width:none;width:100%;margin:0;padding:0;border:0}}
