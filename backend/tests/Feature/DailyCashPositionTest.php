@@ -31,6 +31,30 @@ class DailyCashPositionTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_cash_book_post_preview_uses_same_authorization_and_validation(): void
+    {
+        $this->signInOwner('cash-book-post-preview')->assertOk();
+        $this->postJson('/api/reports/accounting/cash-book/preview', [
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-25',
+            'include_bank' => false,
+            'show_purchase' => false,
+            'non_cash_also' => false,
+            'summary_only' => false,
+            'group_by' => 'none',
+            'account_ulids' => [],
+        ])->assertOk()->assertJsonStructure(['rows', 'totals']);
+        $this->postJson('/api/reports/accounting/cash-book/preview', [
+            'start_date' => '2026-10-26',
+            'end_date' => '2026-10-01',
+        ])->assertUnprocessable();
+        $this->restrictCurrentMembershipWithoutPermission('reports.accounting');
+        $this->postJson('/api/reports/accounting/cash-book/preview', [
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-25',
+        ])->assertForbidden();
+    }
+
     public function test_cash_book_uses_posted_branch_scoped_journals_and_authoritative_totals(): void
     {
         $this->signInOwner('daily-cash-book')->assertOk();
