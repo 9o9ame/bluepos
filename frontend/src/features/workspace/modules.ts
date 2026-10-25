@@ -353,6 +353,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-total-turnover',
+    title: 'Total Turnover Report',
+    path: '/reports/accounts/total-turnover',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
     key: 'report-top-special',
     title: 'Top Products / Vendor / Customers',
     path: '/reports/accounts/top-special',
@@ -585,7 +593,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Cash Book', status: 'ready', path: '/reports/accounts/cash-book' },
             { label: 'Daily Business Summary', status: 'ready', path: '/reports/daily/business-activity' },
             { label: 'Top Products / Vendor / Customers', status: 'ready', path: '/reports/accounts/top-special' },
-            { label: 'Total Turnover Report', ...LATER },
+            { label: 'Total Turnover Report', status: 'ready', path: '/reports/accounts/total-turnover' },
             { label: 'Balance Sheet', ...LATER },
             { label: 'Income Statement', ...LATER },
             { label: 'Income Statement (Daily, Monthly)', ...LATER },
@@ -743,6 +751,9 @@ export function moduleTabIdentity(
     }
   }
 
+  if (module.key === 'report-total-turnover' && new URLSearchParams(search).get('view') === 'preview') {
+    return { key: 'report-total-turnover:preview', title: 'Total Turnover Preview', path: pathname + search }
+  }
   if (module.key === 'report-top-special' && new URLSearchParams(search).get('view') === 'preview') {
     return { key: 'report-top-special:preview', title: 'Top Special Preview', path: pathname + search }
   }
