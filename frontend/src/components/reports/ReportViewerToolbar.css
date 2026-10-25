@@ -1,0 +1,11 @@
+/* Canonical viewer geometry based on approved Trial Balance toolbar. */
+.report-viewer-toolbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:6px;min-height:38px;padding:4px 8px;border-bottom:1px solid var(--ui-border);background:var(--ui-surface)}
+.report-viewer-toolbar .ui-button{min-width:92px}
+.report-viewer-toolbar>*{flex-shrink:0}
+.report-viewer-export-choice{flex:0 0 154px;width:154px;min-width:154px;max-width:154px}
+.report-viewer-export-choice .ui-select-trigger{min-height:29px}
+.report-viewer-search,.report-viewer-zoom{display:inline-flex;align-items:center;gap:5px;padding:3px 5px;border:1px solid var(--ui-border);border-radius:var(--control-radius);background:var(--ui-surface-subtle)}
+.report-viewer-search input{width:clamp(110px,12vw,210px);min-height:26px;border:1px solid var(--ui-control-border);border-radius:var(--control-radius);background:var(--ui-control-face);color:var(--ui-text);padding-inline:6px}
+.report-viewer-search .ui-button,.report-viewer-zoom .ui-button{min-width:30px}
+.report-viewer-zoom span{min-width:42px;text-align:center;font-variant-numeric:tabular-nums;font-weight:700}
+@media print{.report-viewer-toolbar{display:none!important}}
