@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import { RefreshCw } from 'lucide-react'
@@ -7,8 +7,16 @@ import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { fetchCashBookAccounts, fetchCashBookReport, type CashBookEntry } from '../api/cashBookReport'
+import { readPreviewSelection, savePreviewSelection } from '../features/reports/previewSelection'
 import './CashBookReportPage.css'
 
+type CashSelection = {
+  from: string; to: string; includeBank: boolean; showPurchase: boolean
+  nonCashAlso: boolean; summaryOnly: boolean; showDetails: boolean
+  group: 'none' | 'date' | 'document' | 'user' | 'area' | 'salesperson'
+  accountUlids: string[]
+}
+const selectionKey = (view: string) => 'cash-book:' + view
 function localDay() {
   const now = new Date()
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
@@ -68,6 +76,8 @@ export function CashBookReportPage() {
   const preview = params.get('view') === 'preview'
   const flowPreview = params.get('view') === 'cash_flow_preview'
   const cashFlow = params.get('view') === 'cash_flow' || flowPreview
+  const activeView = params.get('view') || ''
+  const stored = (preview || cashFlow) ? readPreviewSelection<CashSelection>(selectionKey(activeView)) : null
   const [from, setFrom] = useState(params.get('start_date') || localDay().slice(0, 8) + '01')
   const [to, setTo] = useState(params.get('end_date') || localDay())
   const [includeBank, setIncludeBank] = useState(params.get('include_bank') === '1')
@@ -77,6 +87,16 @@ export function CashBookReportPage() {
   const [showDetails, setShowDetails] = useState(params.get('detail') !== '0')
   const [group, setGroup] = useState<'none' | 'date' | 'document' | 'user' | 'area' | 'salesperson'>((params.get('group_by') as 'none' | 'date' | 'document' | 'user' | 'area' | 'salesperson') || 'none')
   const [accountUlids, setAccountUlids] = useState<string[]>(params.get('account_ulids')?.split(',').filter(Boolean) ?? [])
+  useEffect(() => {
+    if (!stored) return
+    setFrom(stored.from); setTo(stored.to)
+    setIncludeBank(stored.includeBank); setShowPurchase(stored.showPurchase)
+    setNonCashAlso(stored.nonCashAlso); setSummaryOnly(stored.summaryOnly)
+    setShowDetails(stored.showDetails); setGroup(stored.group)
+    setAccountUlids(stored.accountUlids)
+  // Restore when workspace switches among the three report modes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeView])
   const [search, setSearch] = useState('')
   const [groupFieldsOpen, setGroupFieldsOpen] = useState(false)
   const [zoom, setZoom] = useState(100)
@@ -91,16 +111,14 @@ export function CashBookReportPage() {
       start_date: from, end_date: to, include_bank: includeBank, show_purchase: showPurchase, non_cash_also: nonCashAlso, summary_only: summaryOnly,
       group_by: group, account_ulids: accountUlids,
     }),
-    enabled: (preview || cashFlow) && Boolean(from && to && from <= to),
+    enabled: (preview || cashFlow) && Boolean(stored && from && to && from <= to),
   })
   const launch = (view: 'preview' | 'cash_flow' | 'cash_flow_preview') => {
-    const q = new URLSearchParams({
-      view, start_date: from, end_date: to, include_bank: includeBank ? '1' : '0',
-      show_purchase: showPurchase ? '1' : '0', non_cash_also: nonCashAlso ? '1' : '0',
-      summary_only: summaryOnly ? '1' : '0', detail: showDetails ? '1' : '0',
-      group_by: group, account_ulids: accountUlids.join(','),
+    savePreviewSelection<CashSelection>(selectionKey(view), {
+      from, to, includeBank, showPurchase, nonCashAlso, summaryOnly,
+      showDetails, group, accountUlids,
     })
-    openModule(`/reports/accounts/cash-book?${q}`)
+    openModule('/reports/accounts/cash-book?view=' + view)
   }
   const report = reportQuery.data
   const groupValue = (row: CashBookEntry) => {
@@ -259,7 +277,8 @@ export function CashBookReportPage() {
           )}
         </div> : null}
         {cashFlow && from > to ? <p role="alert">From Date must not exceed To Date.</p> : null}
-        {reportQuery.isLoading ? <p>Loading Cash Book…</p> : null}
+        {!stored ? <p role="status">Report filters are not available in this browser session. Use Edit Options to select them and open the report again.</p> : null}
+        {stored && reportQuery.isLoading ? <p>Loading Cash Book…</p> : null}
         {reportQuery.isError ? <p role="alert">Unable to load Cash Book. Please check the selected accounts and dates.</p> : null}
         {report ? <article className="cashbook-paper" ref={paperRef} style={{ zoom: `${flowPreview || preview ? zoom : 100}%` }}>
           <header className={cashFlow ? "cashbook-flow-print-heading" : undefined}><h2>{cashFlow ? 'Cash Flow Statement' : 'CASH BOOK'}</h2>
