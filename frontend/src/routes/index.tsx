@@ -31,6 +31,7 @@ import { ProductStockStatusReportPage } from '../pages/ProductStockStatusReportP
 import { ProductLedgerReportPage } from '../pages/ProductLedgerReportPage'
 import { TrialBalanceReportPage } from '../pages/TrialBalanceReportPage'
 import { BalanceSheetReportPage } from '../pages/BalanceSheetReportPage'
+import { IncomeStatementReportPage } from '../pages/IncomeStatementReportPage'
 import { CashBookReportPage } from '../pages/CashBookReportPage'
 import { DailyBusinessActivityPage } from '../pages/DailyBusinessActivityPage'
 import { TopSpecialReportPage } from '../pages/TopSpecialReportPage'
@@ -113,6 +114,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="reports.accounting" />}>
             <Route path="/reports/accounts/trial-balance" element={<TrialBalanceReportPage />} />
             <Route path="/reports/accounts/balance-sheet" element={<BalanceSheetReportPage />} />
+            <Route path="/reports/accounts/income-statement" element={<IncomeStatementReportPage />} />
             <Route path="/reports/accounts/cash-book" element={<CashBookReportPage />} />
             <Route path="/reports/daily/business-activity" element={<DailyBusinessActivityPage />} />
             <Route path="/reports/accounts/top-special" element={<TopSpecialReportPage />} />
