@@ -36,6 +36,8 @@ Page-specific code must not invent a separate visual language for:
 
 If a shared BluePOS UI component already exists, reuse it. Do not create a local replacement unless the shared component cannot support the required behavior.
 
+Report viewers: use `frontend/src/components/reports/ReportViewerToolbar.tsx` and its shared stylesheet for Print/PDF, Copy, Text, HTML, CSV export, Search, Zoom, Refresh, Edit Options, and Close. The approved Trial Balance viewer is the visual reference. Individual reports own their data and callbacks; do not duplicate or locally restyle the toolbar. Frozen report layouts and specialized section navigation remain unchanged until separately approved.
+
 ## 2. Theme & Appearance is authoritative
 
 All migrated and new UI must respond to the user-selected Theme & Appearance settings:
