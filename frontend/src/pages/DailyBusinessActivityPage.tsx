@@ -9,7 +9,7 @@ import './DailyBusinessActivityPage.css'
 type AccountType = { ulid: string; name: string }
 type LedgerRow = { line_ulid: string; date: string; trans_no: string; doc: string; narration: string; debit: string; credit: string; balance: string }
 type LedgerSection = {
-  account: { ulid: string; name: string; address: string | null; area: string | null; account_type: string | null }
+  account: { ulid: string; name: string; address: string | null; area: string | null; account_type: string | null; normal_balance: 'debit' | 'credit' | null }
   opening: string; debit: string; credit: string; closing: string; rows: LedgerRow[]
 }
 type LedgerReport = { start_date: string; end_date: string; sections: LedgerSection[] }
@@ -57,8 +57,7 @@ export function DailyBusinessActivityPage() {
         <p>From {reportQuery.data.start_date} to {reportQuery.data.end_date}</p></header>
       {reportQuery.data.sections.length === 0 && <p>No posted ledger transactions for the selected account types and period.</p>}
       {reportQuery.data.sections.map((section) => {
-        const creditNormal = section.account.account_type
-          ? /^(revenue|liabilit|capital|credit)/i.test(section.account.account_type) : false
+        const creditNormal = section.account.normal_balance === 'credit'
         return <div className="dba-account" key={section.account.ulid}>
           <div className="dba-account-title"><strong>{section.account.name}</strong>
             <span>For the date: {reportQuery.data.end_date}</span></div>
