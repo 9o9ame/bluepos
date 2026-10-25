@@ -313,6 +313,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::get('/reports/accounting/trial-balance', TrialBalanceController::class);
     Route::get('/reports/accounting/cash-book/accounts', [CashBookReportController::class, 'accounts']);
     Route::get('/reports/accounting/cash-book', CashBookReportController::class);
+    Route::post('/reports/accounting/cash-book/preview', CashBookReportController::class);
     Route::get('/reports/accounting/daily-business-activity/types', [DailyBusinessActivityController::class, 'types']);
     Route::get('/reports/accounting/daily-business-activity', [DailyBusinessActivityController::class, 'report']);
     Route::post('/reports/accounting/daily-business-activity/preview', [DailyBusinessActivityController::class, 'report']);
