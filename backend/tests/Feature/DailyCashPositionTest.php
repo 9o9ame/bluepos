@@ -31,6 +31,31 @@ class DailyCashPositionTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_balance_sheet_post_preview_is_branch_authorized_and_validates_filters(): void
+    {
+        $this->signInOwner('balance-sheet-preview')->assertOk();
+        $this->getJson('/api/reports/accounting/balance-sheet/options')
+            ->assertOk()->assertJsonStructure(['account_types']);
+        $response = $this->postJson('/api/reports/accounting/balance-sheet/preview', [
+            'as_of_date' => '2026-10-25',
+            'summarized' => true,
+            'party_groups' => ['all'],
+        ])->assertOk()->assertJsonStructure(['groups', 'totals' => [
+            'debit', 'credit', 'difference', 'difference_side',
+        ]]);
+        $this->assertNoInternalIds($response->json());
+        $this->postJson('/api/reports/accounting/balance-sheet/preview', [
+            'as_of_date' => '2026-10-25', 'account_type_ulids' => ['01ARZ3NDEKTSV4RRFFQ69G5FAV'],
+        ])->assertNotFound();
+        $this->postJson('/api/reports/accounting/balance-sheet/preview', [
+            'as_of_date' => 'invalid',
+        ])->assertUnprocessable();
+        $this->restrictCurrentMembershipWithoutPermission('reports.accounting');
+        $this->postJson('/api/reports/accounting/balance-sheet/preview', [
+            'as_of_date' => '2026-10-25',
+        ])->assertForbidden();
+    }
+
     public function test_trial_balance_post_preview_validates_both_report_modes_and_permissions(): void
     {
         $this->signInOwner('trial-balance-post-preview')->assertOk();
