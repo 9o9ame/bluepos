@@ -31,6 +31,7 @@ import { ProductStockStatusReportPage } from '../pages/ProductStockStatusReportP
 import { ProductLedgerReportPage } from '../pages/ProductLedgerReportPage'
 import { TrialBalanceReportPage } from '../pages/TrialBalanceReportPage'
 import { CashBookReportPage } from '../pages/CashBookReportPage'
+import { DailyBusinessActivityPage } from '../pages/DailyBusinessActivityPage'
 import { ReportHeadingsPage } from '../pages/ReportHeadingsPage'
 import { RoleEditorPage } from '../pages/RoleEditorPage'
 import { RolesPage } from '../pages/RolesPage'
@@ -109,6 +110,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="reports.accounting" />}>
             <Route path="/reports/accounts/trial-balance" element={<TrialBalanceReportPage />} />
             <Route path="/reports/accounts/cash-book" element={<CashBookReportPage />} />
+            <Route path="/reports/daily/business-activity" element={<DailyBusinessActivityPage />} />
           </Route>
           <Route element={<RequirePermission permission="reports.inventory" />}>
             <Route path="/reports/products/stock-status" element={<ProductStockStatusReportPage />} />
