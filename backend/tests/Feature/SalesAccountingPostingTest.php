@@ -19,6 +19,27 @@ class SalesAccountingPostingTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_unconfigured_sales_accounting_can_post_a_sale_without_an_invoice_journal(): void
+    {
+        $this->signInOwner('sales-accounting-unconfigured')->assertOk();
+        $context = app(TenantContext::class);
+        $settings = BusinessSetting::query()->forTenant($context->tenantId())->firstOrFail();
+        foreach (['sales_revenue_account_id', 'sales_tax_payable_account_id', 'inventory_account_id', 'cogs_account_id'] as $field) {
+            $this->assertNull($settings->getAttribute($field));
+        }
+        $product = $this->createProduct('Unconfigured Accounting Item', '100.0000', false, '0.00000000');
+        $this->giveStock($product, '2.000000', '25.0000');
+        $response = $this->postJson('/api/sales', [
+            'items' => [['product_ulid' => $product->ulid, 'quantity' => '1.000000']],
+        ], $this->idem('sales-accounting-unconfigured'))->assertCreated();
+        $sale = Sale::query()->forTenant($context->tenantId())->where('ulid', $response->json('ulid'))->firstOrFail();
+        $this->assertSame('posted', $sale->status->value);
+        $this->assertSame('1.000000', $this->stock($product));
+        $this->assertSame(0, JournalEntry::query()->forTenant($context->tenantId())
+            ->where('branch_id', $context->branchId())->where('document_type', 'sale_invoice')
+            ->where('document_id', $sale->id)->count());
+    }
+
     public function test_taxable_sale_posts_balanced_revenue_tax_cogs_and_inventory_journal_idempotently(): void
     {
         $this->signInOwner('sales-accounting-post')->assertOk();

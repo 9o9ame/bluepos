@@ -6,6 +6,7 @@ use App\Authz\PermissionService;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Models\AccountType;
+use App\Models\BusinessSetting;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,6 +44,7 @@ class TotalTurnoverReportController extends Controller
             'above' => ['sometimes', 'string', 'regex:/^\\d{1,16}(\\.\\d{1,4})?$/'],
             'period' => ['sometimes', 'in:this_month,previous_month,today,yesterday,custom'],
             'mode' => ['sometimes', 'in:detailed,simple'],
+            'salesman_ulid' => ['prohibited'],
             'group' => ['sometimes', 'in:accounts,all,customers,vendors'],
         ]);
         $tenant = $context->tenantId();
@@ -55,6 +57,25 @@ class TotalTurnoverReportController extends Controller
             throw new ApiException('INVALID_ACCOUNT_TYPE', 'Selected account type unavailable.', 404);
         }
 
+        // Manual parties require an explicit party role and AR/AP classification.
+        // A ledger's name or lack of customer/supplier links is not sufficient.
+        $manual = function ($q) use ($tenant) {
+            $q->whereNull('a.customer_id')->whereNull('a.supplier_id')
+                ->whereExists(fn ($profile) => $profile->selectRaw('1')
+                    ->from('party_profiles as p')
+                    ->join('party_profile_types as pt', 'pt.party_profile_id', '=', 'p.id')
+                    ->whereColumn('p.id', 'a.party_profile_id')
+                    ->where('p.tenant_id', $tenant)->where('pt.type', 'account'))
+                ->whereExists(fn ($type) => $type->selectRaw('1')
+                    ->from('account_types as t')->whereColumn('t.id', 'a.account_type_id')
+                    ->where('t.tenant_id', $tenant)->where('t.is_cash', false)->where('t.is_bank', false)
+                    ->where(fn ($flags) => $flags->where('t.is_receivable', true)->orWhere('t.is_payable', true)));
+        };
+        $settings = BusinessSetting::query()->forTenant($tenant)->first();
+        $controls = collect(['opening_balance_equity_account_id', 'default_cash_account_id',
+            'sales_clearing_account_id', 'purchase_clearing_account_id', 'sales_revenue_account_id',
+            'sales_tax_payable_account_id', 'inventory_account_id', 'cogs_account_id'])
+            ->map(fn ($field) => $settings?->getAttribute($field))->filter()->unique()->values()->all();
         // Work with a single party/account row; never join sales line items to
         // payments/journals (which would multiply money movements).
         $accounts = DB::table('accounts as a')
@@ -62,7 +83,7 @@ class TotalTurnoverReportController extends Controller
             ->whereIn('a.account_type_id', $types->pluck('id'))
             // A party turnover report must not include cash, tax, stock or
             // other internal ledgers simply because no type was selected.
-            ->where(function ($q) use ($tenant) {
+            ->where(function ($q) use ($tenant, $manual) {
                 $q->whereExists(fn ($linked) => $linked->selectRaw('1')
                     ->from('customers as c')
                     ->whereColumn('c.id', 'a.customer_id')
@@ -70,16 +91,24 @@ class TotalTurnoverReportController extends Controller
                   ->orWhereExists(fn ($linked) => $linked->selectRaw('1')
                     ->from('suppliers as s')
                     ->whereColumn('s.id', 'a.supplier_id')
-                    ->where('s.tenant_id', $tenant));
+                    ->where('s.tenant_id', $tenant))
+                  ->orWhere($manual);
             })
+            ->whereNotIn('a.id', $controls)
+            ->when(($data['group'] ?? 'accounts') === 'accounts', fn ($q) => $q->where($manual))
             ->when(($data['group'] ?? 'accounts') === 'customers', fn ($q) => $q->whereNotNull('a.customer_id'))
             ->when(($data['group'] ?? 'accounts') === 'vendors', fn ($q) => $q->whereNotNull('a.supplier_id'))
-            ->select('a.id','a.name','a.customer_id','a.supplier_id','a.account_type_id')
+            ->select('a.party_profile_id','a.id','a.name','a.customer_id','a.supplier_id','a.account_type_id')
+            ->selectSub(DB::table('customers')->select('party_profile_id')
+                ->whereColumn('id', 'a.customer_id')->where('tenant_id', $tenant), 'customer_profile_id')
+            ->selectSub(DB::table('suppliers')->select('party_profile_id')
+                ->whereColumn('id', 'a.supplier_id')->where('tenant_id', $tenant), 'supplier_profile_id')
             ->orderBy('a.name')->get();
         $ids = $accounts->pluck('id')->all();
         $balances = collect();
         $received = collect();
         $periodMovements = collect();
+        $trading = collect();
         if ($ids !== []) {
             $ledger = DB::table('journal_lines as l')
                 ->join('journal_entries as e', function ($join) use ($tenant, $branch) {
@@ -100,61 +129,59 @@ class TotalTurnoverReportController extends Controller
                 ->groupBy('l.account_id')
                 ->selectRaw('l.account_id, SUM(l.debit - l.credit)::numeric(20,4) as movement')
                 ->get()->keyBy('account_id');
-            // Recovery is a credit posted to a linked party account during
-            // the selected period. Do not count sale invoice credits as receipts.
+            // Net receipt credits and reversing debits. Returns, refunds and
+            // payment vouchers are separate classifications.
             $received = (clone $ledger)->whereDate('e.entry_date', '>=', $data['from'])
-                ->whereIn('e.document_type', ['receiving_voucher', 'sale_payment'])
+                ->whereIn('e.document_type', ['receiving_voucher', 'sale_payment',
+                    'receiving_voucher_reversal', 'sale_payment_reversal'])
                 ->groupBy('l.account_id')
-                ->selectRaw('l.account_id, SUM(l.credit)::numeric(20,4) as received')
+                ->selectRaw('l.account_id, SUM(l.credit - l.debit)::numeric(20,4) as received')
                 ->get()->keyBy('account_id');
         }
-        $customerIds = $accounts->pluck('customer_id')->filter()->unique()->all();
-        $supplierIds = $accounts->pluck('supplier_id')->filter()->unique()->all();
-        $sales = $customerIds ? DB::table('sales')
-            ->where('tenant_id', $tenant)->where('branch_id', $branch)->where('status', 'posted')
-            ->whereBetween('sale_date', [$data['from'], $data['to']])
-            ->whereIn('customer_id', $customerIds)
-            ->groupBy('customer_id')->selectRaw('customer_id, SUM(grand_total)::numeric(20,4) as total')
-            ->get()->keyBy('customer_id') : collect();
-        $saleReturns = $customerIds ? DB::table('sale_returns')
-            ->where('tenant_id', $tenant)->where('branch_id', $branch)->where('status', 'posted')
-            ->whereBetween('return_date', [$data['from'], $data['to']])
-            ->whereIn('customer_id', $customerIds)
-            ->groupBy('customer_id')->selectRaw('customer_id, SUM(grand_total)::numeric(20,4) as total')
-            ->get()->keyBy('customer_id') : collect();
-        $purchases = $supplierIds ? DB::table('purchase_invoices')
-            ->where('tenant_id', $tenant)->where('branch_id', $branch)->where('status', 'posted')
-            ->whereBetween('invoice_date', [$data['from'], $data['to']])
-            ->whereIn('supplier_id', $supplierIds)
-            ->groupBy('supplier_id')->selectRaw('supplier_id, SUM(grand_total)::numeric(20,4) as total')
-            ->get()->keyBy('supplier_id') : collect();
-        $purchaseReturns = $supplierIds ? DB::table('purchase_returns')
-            ->where('tenant_id', $tenant)->where('branch_id', $branch)->where('status', 'posted')
-            ->whereBetween('return_date', [$data['from'], $data['to']])
-            ->whereIn('supplier_id', $supplierIds)
-            ->groupBy('supplier_id')->selectRaw('supplier_id, SUM(grand_total)::numeric(20,4) as total')
-            ->get()->keyBy('supplier_id') : collect();
+        // Immutable headers omit amendments. Signed journals include corrections
+        // on their accounting dates, with tax/discount matching grand_total.
+        if ($ids !== []) {
+            $trading = (clone $ledger)->whereDate('e.entry_date', '>=', $data['from'])
+                ->groupBy('l.account_id')
+                ->selectRaw("l.account_id,
+                    SUM(CASE WHEN e.document_type IN ('sale_invoice', 'sale_invoice_amendment',
+                        'sale_invoice_reversal', 'sale_invoice_amendment_reversal')
+                        THEN l.debit - l.credit ELSE 0 END)::numeric(20,4) as sales,
+                    SUM(CASE WHEN e.document_type IN ('sale_return', 'sale_return_amendment',
+                        'sale_return_reversal', 'sale_return_amendment_reversal')
+                        THEN l.credit - l.debit ELSE 0 END)::numeric(20,4) as returns,
+                    SUM(CASE WHEN e.document_type IN ('purchase_invoice', 'purchase_invoice_amendment',
+                        'purchase_invoice_reversal', 'purchase_invoice_amendment_reversal',
+                        'purchase_return', 'purchase_return_amendment',
+                        'purchase_return_reversal', 'purchase_return_amendment_reversal')
+                        THEN l.credit - l.debit ELSE 0 END)::numeric(20,4) as purchases")
+                ->get()->keyBy('account_id');
+        }
         $above = (string) ($data['above'] ?? '0');
-        $rows = $accounts->map(function ($a) use ($balances, $received, $periodMovements, $sales, $saleReturns, $purchases, $purchaseReturns) {
-            $grossSales = (string) ($sales->get($a->customer_id)->total ?? '0.0000');
-            $returns = (string) ($saleReturns->get($a->customer_id)->total ?? '0.0000');
-            $grossPurchases = (string) ($purchases->get($a->supplier_id)->total ?? '0.0000');
-            $purchaseReversals = (string) ($purchaseReturns->get($a->supplier_id)->total ?? '0.0000');
+        $rows = $accounts->map(function ($a) use ($balances, $received, $periodMovements, $trading) {
+            $grossSales = (string) ($trading->get($a->id)->sales ?? '0.0000');
+            $returns = (string) ($trading->get($a->id)->returns ?? '0.0000');
+            $purchases = (string) ($trading->get($a->id)->purchases ?? '0.0000');
+            $profile = $a->party_profile_id ?? $a->customer_profile_id ?? $a->supplier_profile_id;
             return [
-                '_party_key' => $a->customer_id !== null ? 'customer:'.$a->customer_id : 'supplier:'.$a->supplier_id,
+                '_party_key' => $profile !== null ? 'profile:'.$profile
+                    : ($a->customer_id !== null ? 'customer:'.$a->customer_id
+                        : ($a->supplier_id !== null ? 'supplier:'.$a->supplier_id : 'account:'.$a->id)),
                 'name' => $a->name,
                 'received' => (string) ($received->get($a->id)->received ?? '0.0000'),
                 'sales_returns' => (string) ($periodMovements->get($a->id)->movement ?? '0.0000'),
                 'net_sales' => bcsub($grossSales, $returns, 4),
                 'receivable' => (string) ($balances->get($a->id)->balance ?? '0.0000'),
                 'sales' => $grossSales,
-                'purchases' => bcsub($grossPurchases, $purchaseReversals, 4),
+                'purchases' => $purchases,
             ];
         })->groupBy('_party_key')->map(function ($partyAccounts) {
-            // A customer or supplier can have multiple ledger accounts. Invoice
-            // totals belong to the party once, while ledger balances/recoveries
-            // must be summed across the selected accounts.
+            // Aggregate selected account postings once per party.
             $first = $partyAccounts->first();
+            foreach (['sales', 'net_sales', 'purchases'] as $field) {
+                $first[$field] = $partyAccounts->reduce(
+                    fn ($sum, $row) => bcadd($sum, $row[$field], 4), '0.0000');
+            }
             $first['sales_returns'] = $partyAccounts->reduce(
                 fn ($sum, $row) => bcadd($sum, $row['sales_returns'], 4), '0.0000');
             $first['received'] = $partyAccounts->reduce(
@@ -173,6 +200,7 @@ class TotalTurnoverReportController extends Controller
                 return $trading;
             }
             return $trading
+                || bccomp(ltrim($row['sales_returns'], '-'), '0', 4) > 0
                 || bccomp(ltrim($row['received'], '-'), '0', 4) > 0
                 || bccomp(ltrim($row['receivable'], '-'), '0', 4) > 0;
         })->values();

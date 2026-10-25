@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import { apiFetch } from '../api/client'
 import { UiButton } from '../components/ui/UiButton'
-import { UiSelect } from '../components/ui/UiSelect'
+import { useAuth } from '../features/auth/AuthProvider'
 import { ReportViewerToolbar } from '../components/reports/ReportViewerToolbar'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import './TotalTurnoverReportPage.css'
@@ -46,6 +46,7 @@ const recoveryPercent = (movement: string, recovery: string) => {
   return (negative ? '-' : '') + String(abs / 100n) + (fraction ? '.' + fraction : '') + '%'
 }
 export function TotalTurnoverReportPage() {
+  const { session } = useAuth()
   const { openModule, closeActiveTab } = useWorkspace()
   const params = new URLSearchParams(useLocation().search)
   const preview = params.get('view') === 'preview'
@@ -54,7 +55,7 @@ export function TotalTurnoverReportPage() {
   const [from,setFrom] = useState(params.get('from') || periodDates('this_month')[0])
   const [to,setTo] = useState(params.get('to') || periodDates('this_month')[1])
   const [above,setAbove] = useState(params.get('above') || '0')
-  const [mode,setMode] = useState(params.get('mode') || 'detailed')
+  const mode = params.get('mode') || 'detailed'
   const [groups,setGroups] = useState<string[]>(params.get('types')?.split(',').filter(Boolean) || [])
   const [partyGroup,setPartyGroup] = useState(params.get('group') || 'accounts')
   const [search,setSearch] = useState('')
@@ -76,7 +77,7 @@ export function TotalTurnoverReportPage() {
   const exportFile = (kind:'txt'|'html'|'csv') => {
     if (!paperRef.current || !data) return
     const safe = (s:string)=>'"'+(/^\s*[=+@-]/.test(s)?"'":'')+s.replace(/"/g,'""')+'"'
-    const txt=kind==='csv' ? '\uFEFF'+(mode==='simple' ? [['Party Name','Sales - Returns','Recovery','Recovery %age','Turnover','Receivable'], ...data.rows.map(x=>[x.name,x.sales_returns,x.received,recoveryPercent(x.sales_returns,x.received),'—',x.receivable])] : [['Party Name',...Array.from({length:6},()=>['Ltrs','Amount']).flat(),'Received','Recovery %age','Turnover','Receivable'], ...data.rows.map(x=>[x.name,...Array.from({length:12},()=>''),x.received,'0%','',x.receivable])]).map(x=>x.map(safe).join(',')).join('\r\n') : kind==='html'? '<!doctype html><meta charset="utf-8">'+paperRef.current.innerHTML: paperRef.current.innerText
+    const txt=kind==='csv' ? '\uFEFF'+(mode==='simple' ? [['Party Name','Sales - Returns','Recovery','Recovery %age','Turnover','Receivable'], ...data.rows.map(x=>[x.name,x.sales_returns,x.received,recoveryPercent(x.sales_returns,x.received),'—',x.receivable])] : [['Party Name',...Array.from({length:6},()=>['Ltrs','Amount']).flat(),'Received','Recovery %age','Turnover','Receivable'], ...data.rows.map(x=>[x.name,...Array.from({length:12},()=>''),x.received,'Unavailable','',x.receivable])]).map(x=>x.map(safe).join(',')).join('\r\n') : kind==='html'? '<!doctype html><meta charset="utf-8">'+paperRef.current.innerHTML: paperRef.current.innerText
     const url=URL.createObjectURL(new Blob([txt],{type:kind==='csv'?'text/csv;charset=utf-8':kind==='html'?'text/html;charset=utf-8':'text/plain;charset=utf-8'}))
     const a=document.createElement('a');a.href=url;a.download='total-turnover.'+kind;a.click();URL.revokeObjectURL(url)
   }
@@ -90,36 +91,37 @@ export function TotalTurnoverReportPage() {
     {resultQuery.isLoading && <p>Loading turnover…</p>}
     {resultQuery.isError && <p role="alert">Unable to load turnover report.</p>}
     {data && <article ref={paperRef} className={`turnover-paper ${mode === 'detailed' ? 'turnover-paper--detailed' : ''}`} style={{zoom:zoom+'%'}}>
-      <header><h1>PARTIES, PRODUCT WISE (RECEIVABLE &amp; PAYABLE SUMMARY WITH TURNOVER)</h1>
+      <header><strong>{session?.tenant.name}</strong>
+        <p>{session?.branch.code} / {session?.branch.name}</p><h1>PARTIES, PRODUCT WISE (RECEIVABLE &amp; PAYABLE SUMMARY WITH TURNOVER)</h1>
         <p>From {data.from} to {data.to}</p></header>
       {mode === 'simple' ? <table className="turnover-simple-table"><thead>
         <tr><th rowSpan={2}>PARTY NAME</th><th colSpan={3}>RECOVERY POSITION</th><th colSpan={2}>TOTAL</th></tr>
         <tr><th>Sales - Returns</th><th>Recovery</th><th>%age</th><th>Turnover</th><th>RECEIVABLE</th></tr>
-      </thead><tbody>{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td>
+      </thead><tbody>{data.rows.length === 0 && <tr><td colSpan={6}><p role="status">No matching parties for the selected branch, dates, group, account types and turnover threshold. Review the selection options and posted party-ledger activity.</p></td></tr>}{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td>
         <td>{fmt(r.sales_returns)}</td><td>{fmt(r.received)}</td>
         <td>{recoveryPercent(r.sales_returns,r.received)}</td><td>—</td>
         <td>{fmt(r.receivable)}</td></tr>)}</tbody>
-      <tfoot><tr><th>TOTAL</th><th>{fmt(data.totals.sales_returns)}</th>
+      {data.rows.length > 0 && <tfoot><tr><th>TOTAL</th><th>{fmt(data.totals.sales_returns)}</th>
         <th>{fmt(data.totals.received)}</th><th></th><th>—</th>
-        <th>{fmt(data.totals.receivable)}</th></tr></tfoot></table>
+        <th>{fmt(data.totals.receivable)}</th></tr></tfoot>}</table>
       : <div className="turnover-detailed-scroll"><table className="turnover-detailed-table"><thead>
         <tr><th rowSpan={2}>PARTY NAME</th><th colSpan={2}>PURCHASES</th>
           {Array.from({length:5},(_,i)=><th key={i} colSpan={2}></th>)}
           <th colSpan={2}>RECOVERY POSITION</th><th colSpan={2}>TOTAL</th></tr>
         <tr>{Array.from({length:6},(_,i)=><Fragment key={i}><th>Ltrs</th><th>AMOUNT</th></Fragment>)}
           <th>Received</th><th>%age</th><th>Turnover</th><th>RECEIVABLE</th></tr></thead>
-        <tbody>{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td>
+        <tbody>{data.rows.length === 0 && <tr><td colSpan={17}><p role="status">No matching parties for the selected branch, dates, group, account types and turnover threshold. Review the selection options and posted party-ledger activity.</p></td></tr>}{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td>
           {Array.from({length:6},(_,j)=><Fragment key={j}><td>—</td><td>—</td></Fragment>)}
-          <td>{fmt(r.received)}</td><td>0%</td><td>—</td><td>{fmt(r.receivable)}</td></tr>)}</tbody>
-        <tfoot><tr><th>TOTAL</th>
+          <td>{fmt(r.received)}</td><td>Unavailable</td><td>—</td><td>{fmt(r.receivable)}</td></tr>)}</tbody>
+        {data.rows.length > 0 && <tfoot><tr><th>TOTAL</th>
           {Array.from({length:12},(_,i)=><th key={i}>—</th>)}
-          <th>{fmt(data.totals.received)}</th><th>0%</th><th>—</th>
-          <th>{fmt(data.totals.receivable)}</th></tr></tfoot>
+          <th>{fmt(data.totals.received)}</th><th>Unavailable</th><th>—</th>
+          <th>{fmt(data.totals.receivable)}</th></tr></tfoot>}
       </table></div>}
-      <p className="turnover-disclaimer">In Simple Turn Over, Sales − Returns is signed posted party-ledger movement, and %age = Recovery ÷ that movement × 100 (0% if the movement is zero). Net invoice sales are calculated separately for turnover filtering. Product-wise litres and allocations remain unmapped.</p>
+      <p className="turnover-disclaimer">In Simple Turn Over, Sales − Returns is signed posted party-ledger movement, and %age = Recovery ÷ that movement × 100 (0% if the movement is zero). Turnover filtering uses net posted sales or purchases on accounting dates, including amendments and reversals. Receivable is the signed debit minus credit closing balance (negative denotes payable/credit). Product pairs, detailed recovery percentage and Total Turnover are unavailable: six product-group assignments, litre conversion rules and the Total Turnover formula are not configured.</p>
     </article>}
   </section>
-  const valid=!!from&&!!to&&from<=to&&/^\d+(\.\d{1,4})?$/.test(above)
+  const valid=!!from&&!!to&&from<=to&&/^\d{1,16}(\.\d{1,4})?$/.test(above)
   return <section className="turnover-page">
     <div className="turnover-panel"><h2>Selection Options</h2>
       <div className="turnover-grid">

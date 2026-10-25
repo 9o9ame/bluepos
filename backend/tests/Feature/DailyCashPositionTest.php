@@ -166,11 +166,31 @@ class DailyCashPositionTest extends TestCase
         ]);
         $url = '/api/reports/accounting/total-turnover?mode=simple&group=vendors'
             .'&from=2026-10-01&to=2026-10-25';
+        $clearing = $this->leafAccount('Purchase Clearing', 'TURN-CLEAR', '0030');
+        $this->postedJournal('purchase_invoice', '2026-10-04',
+            [[$clearing, '125.0000', '0.0000'], [$payable, '0.0000', '125.0000']], 'Purchase');
+        $this->postedJournal('purchase_return', '2026-10-06',
+            [[$payable, '25.0000', '0.0000'], [$clearing, '0.0000', '25.0000']], 'Purchase return');
         $response = $this->getJson($url)->assertOk()->assertJsonCount(1, 'rows');
         $this->assertSame('100.0000', $response->json('rows.0.purchases'));
         $this->assertSame('100.0000', $response->json('totals.purchases'));
         $this->getJson($url.'&above=100.0000')->assertJsonCount(0, 'rows');
         $this->assertNoInternalIds($response->json());
+        foreach ([
+            ['purchase_invoice_reversal', '125.0000', '0.0000'],
+            ['purchase_invoice_amendment', '0.0000', '150.0000'],
+            ['purchase_return_reversal', '0.0000', '25.0000'],
+            ['purchase_return_amendment', '35.0000', '0.0000'],
+            // Voiding another invoice retains both posted entries, net zero.
+            ['purchase_invoice', '0.0000', '77.0000'],
+            ['purchase_invoice_reversal', '77.0000', '0.0000'],
+        ] as [$type, $debit, $credit]) {
+            $this->postedJournal($type, '2026-10-25',
+                [[$payable, $debit, $credit], [$clearing, $credit, $debit]], $type);
+        }
+        $this->getJson($url)->assertOk()
+            ->assertJsonPath('totals.purchases', '115.0000')
+            ->assertJsonPath('totals.receivable', '-115.0000');
     }
 
     public function test_total_turnover_requires_accounting_report_permission(): void
@@ -178,7 +198,7 @@ class DailyCashPositionTest extends TestCase
         $this->signInOwner('total-turnover-denied')->assertOk();
         $this->restrictCurrentMembershipWithoutPermission('reports.accounting');
         $this->getJson('/api/reports/accounting/total-turnover/options')->assertForbidden();
-        $this->getJson('/api/reports/accounting/total-turnover?from=2026-10-01&to=2026-10-25')
+        $this->getJson('/api/reports/accounting/total-turnover?group=customers&from=2026-10-01&to=2026-10-25')
             ->assertForbidden();
     }
 
@@ -198,6 +218,8 @@ class DailyCashPositionTest extends TestCase
         $this->getJson($base.'&above=-10')->assertUnprocessable();
         $this->getJson($base.'&above=1.00001')->assertUnprocessable();
         $this->getJson($base.'&above=1e10')->assertUnprocessable();
+        $this->getJson($base.'&group=salesman')->assertUnprocessable();
+        $this->getJson($base.'&salesman_ulid=01ARZ3NDEKTSV4RRFFQ69G5FAV')->assertUnprocessable();
     }
 
     public function test_total_turnover_nets_posted_returns_and_does_not_duplicate_party_sales(): void
@@ -212,9 +234,10 @@ class DailyCashPositionTest extends TestCase
             'created_by' => $context->userId(),
         ]);
         $first = $this->leafAccount('Turnover Party A', 'TURN-A', '0010');
-        $second = $this->leafAccount('Turnover Party B', 'TURN-B', '0010');
         $first->update(['customer_id' => $customer->id]);
-        $second->update(['customer_id' => $customer->id]);
+        // Persisted schema permits one linked account per customer. Two
+        // invoices and a return must still aggregate without join fan-out.
+        $second = $first;
         $cash = $this->leafAccount('Turnover Receipt Cash', 'TURN-CASH', '0010');
         $revenue = $this->leafAccount('Turnover Sales', 'TURN-SALES', '0040');
 
@@ -257,7 +280,7 @@ class DailyCashPositionTest extends TestCase
         $this->postedJournal('receiving_voucher', '2026-10-08',
             [[$cash, '25.0000', '0.0000'], [$second, '0.0000', '25.0000']], 'Recovery');
 
-        $base = '/api/reports/accounting/total-turnover?mode=simple'
+        $base = '/api/reports/accounting/total-turnover?mode=simple&group=customers'
             .'&from=2026-10-01&to=2026-10-25';
         $result = $this->getJson($base)->assertOk();
         $this->assertCount(1, $result->json('rows'));
@@ -270,6 +293,226 @@ class DailyCashPositionTest extends TestCase
         $this->assertNoInternalIds($result->json());
         $this->getJson($base.'&above=270.0000')->assertJsonCount(0, 'rows');
         $this->getJson($base.'&above=269.9999')->assertJsonCount(1, 'rows');
+    }
+
+    public function test_turnover_reconciles_amendments_reversals_dates_and_isolation(): void
+    {
+        $this->signInOwner('turnover-corrections')->assertOk();
+        $context = app(TenantContext::class);
+        $customer = Customer::query()->create([
+            'tenant_id' => $context->tenantId(), 'code' => 'CORR', 'name' => 'Corrections',
+            'is_active' => true, 'created_by' => $context->userId(),
+        ]);
+        $party = $this->leafAccount('Corrections Ledger', 'CORR', '0010');
+        $party->update(['customer_id' => $customer->id]);
+        $offset = $this->leafAccount('Corrections Offset', 'CORR-OFF', '0040');
+        foreach ([
+            ['opening_balance', '2026-09-30', '50.0000', '0.0000'],
+            ['sale_invoice', '2026-10-01', '100.0000', '0.0000'],
+            ['sale_invoice_reversal', '2026-10-15', '0.0000', '100.0000'],
+            ['sale_invoice_amendment', '2026-10-15', '140.0000', '0.0000'],
+            ['sale_return', '2026-10-16', '0.0000', '20.0000'],
+            ['sale_return_reversal', '2026-10-17', '20.0000', '0.0000'],
+            ['sale_return_amendment', '2026-10-17', '0.0000', '30.0000'],
+            ['receiving_voucher', '2026-10-18', '0.0000', '25.0000'],
+            ['receiving_voucher_reversal', '2026-10-19', '25.0000', '0.0000'],
+            ['sale_payment', '2026-10-25', '0.0000', '10.1250'],
+            ['sale_payment_reversal', '2026-10-25', '2.0000', '0.0000'],
+            ['payment_voucher', '2026-10-25', '3.0000', '0.0000'],
+            ['sale_payment', '2026-10-26', '0.0000', '999.0000'],
+            ['sale_invoice', '2026-10-25', '77.0000', '0.0000'],
+            ['sale_invoice_reversal', '2026-10-25', '0.0000', '77.0000'],
+        ] as [$type, $date, $debit, $credit]) {
+            $this->postedJournal($type, $date,
+                [[$party, $debit, $credit], [$offset, $credit, $debit]], $type);
+        }
+        $otherBranch = Branch::query()->create([
+            'tenant_id' => $context->tenantId(), 'code' => 'CORR-OTHER',
+            'name' => 'Other Branch', 'status' => BranchStatus::Active, 'is_default' => false,
+        ]);
+        $entry = JournalEntry::query()->create([
+            'tenant_id' => $context->tenantId(), 'branch_id' => $otherBranch->id,
+            'document_type' => 'sale_invoice', 'entry_date' => '2026-10-01',
+            'status' => 'posted', 'created_by' => $context->userId(),
+        ]);
+        foreach ([[$party, '999.0000', '0.0000'], [$offset, '0.0000', '999.0000']] as $i => [$account, $debit, $credit]) {
+            JournalLine::query()->create([
+                'tenant_id' => $context->tenantId(), 'journal_entry_id' => $entry->id,
+                'account_id' => $account->id, 'debit' => $debit, 'credit' => $credit, 'sort_order' => $i,
+            ]);
+        }
+        $base = '/api/reports/accounting/total-turnover?from=2026-10-01&to=2026-10-25';
+        $result = $this->getJson($base.'&group=customers')->assertOk()->assertJsonCount(1, 'rows')
+            ->assertJsonPath('totals.sales', '140.0000')
+            ->assertJsonPath('totals.net_sales', '110.0000')
+            ->assertJsonPath('totals.received', '8.1250')
+            ->assertJsonPath('totals.sales_returns', '104.8750')
+            ->assertJsonPath('totals.receivable', '154.8750');
+        $this->assertNoInternalIds($result->json());
+        $this->getJson($base.'&group=vendors')->assertOk()->assertJsonCount(0, 'rows');
+        $this->getJson($base.'&group=customers&above=110')->assertOk()->assertJsonCount(0, 'rows');
+        $this->getJson($base.'&group=customers&above=109.9999')->assertOk()->assertJsonCount(1, 'rows');
+        $this->getJson($base.'&group=customers&account_type_ulids[0]='.$offset->accountType->ulid)
+            ->assertOk()->assertJsonCount(0, 'rows');
+        $this->getJson('/api/reports/accounting/total-turnover?group=customers&from=2026-10-01&to=2026-10-14')
+            ->assertOk()->assertJsonPath('totals.net_sales', '100.0000');
+        $this->getJson('/api/reports/accounting/total-turnover?group=customers&from=2026-10-15&to=2026-10-15')
+            ->assertOk()->assertJsonPath('totals.net_sales', '40.0000');
+        // Recovery-only periods legitimately have negative signed movement.
+        $this->getJson('/api/reports/accounting/total-turnover?group=customers&from=2026-10-18&to=2026-10-18')
+            ->assertOk()->assertJsonPath('totals.sales_returns', '-25.0000')
+            ->assertJsonPath('totals.received', '25.0000');
+        $this->postJson('/api/auth/logout')->assertSuccessful();
+        $this->signInOwner('turnover-isolated')->assertOk();
+        $this->getJson($base.'&group=all')->assertOk()->assertJsonCount(0, 'rows');
+        $this->getJson($base.'&account_type_ulids[0]='.$party->accountType->ulid)->assertNotFound();
+    }
+
+    public function test_total_turnover_group_modes_only_include_verified_parties_without_duplicates(): void
+    {
+        $this->signInOwner('turnover-groups')->assertOk();
+        $context = app(TenantContext::class);
+        $offset = $this->leafAccount('Group Offset', 'GROUP-OFF', '0040');
+        $customer = Customer::query()->create([
+            'tenant_id' => $context->tenantId(), 'code' => 'GROUP-C', 'name' => 'Customer',
+            'is_active' => true, 'created_by' => $context->userId(),
+        ]);
+        $supplier = Supplier::query()->create([
+            'tenant_id' => $context->tenantId(), 'code' => 'GROUP-V', 'name' => 'Vendor',
+            'is_active' => true, 'created_by' => $context->userId(),
+        ]);
+        $customerAccount = $this->leafAccount('Group Customer', 'GROUP-C', '0011');
+        $customerAccount->update(['customer_id' => $customer->id]);
+        $vendorAccount = $this->leafAccount('Group Vendor', 'GROUP-V', '0020');
+        $vendorAccount->update(['supplier_id' => $supplier->id]);
+        $this->postedJournal('sale_invoice', '2026-10-10',
+            [[$customerAccount, '100.0000', '0.0000'], [$offset, '0.0000', '100.0000']], 'Customer');
+        $this->postedJournal('purchase_invoice', '2026-10-10',
+            [[$vendorAccount, '0.0000', '200.0000'], [$offset, '200.0000', '0.0000']], 'Vendor');
+        foreach ([
+            ['Manual A', '0011', 'account', '10.0000'],
+            ['Manual B', '0020', 'account', '20.0000'],
+            ['Internal Cash', '0010', 'account', '999.0000'],
+            ['Internal Bank', '0012', 'account', '999.0000'],
+            ['Internal Revenue', '0040', 'account', '999.0000'],
+            ['Internal Expense', '0030', 'account', '999.0000'],
+            ['Internal Tax', '0031', 'account', '999.0000'],
+            ['Internal Stock', '0060', 'account', '999.0000'],
+            ['Unclassified Ledger', '0011', null, '999.0000'],
+            ['Salesman Only', '0011', 'salesman', '999.0000'],
+            ['Configured Control', '0011', 'account', '999.0000'],
+        ] as $i => [$name, $type, $role, $amount]) {
+            $account = $this->leafAccount($name, 'GROUP-M-'.$i, $type);
+            if ($role !== null) {
+                $profile = \App\Models\PartyProfile::query()->create([
+                    'tenant_id' => $context->tenantId(), 'code' => 'GROUP-P-'.$i, 'name' => $name,
+                    'is_active' => true, 'created_by' => $context->userId(),
+                ]);
+                $profile->types()->create(['type' => $role]);
+                // Extra profile roles must not fan out journal totals.
+                if ($name === 'Manual A') {
+                    $profile->types()->create(['type' => 'customer']);
+                    $profile->types()->create(['type' => 'vendor']);
+                    $customer->update(['party_profile_id' => $profile->id]);
+                    $supplier->update(['party_profile_id' => $profile->id]);
+                }
+                $account->update(['party_profile_id' => $profile->id]);
+            }
+            if ($name === 'Configured Control') {
+                \App\Models\BusinessSetting::query()->forTenant($context->tenantId())->firstOrFail()
+                    ->update(['inventory_account_id' => $account->id]);
+            }
+            $this->postedJournal('journal_voucher', '2026-10-10',
+                [[$account, $amount, '0.0000'], [$offset, '0.0000', $amount]], $name);
+            if ($name === 'Manual A') {
+                $branch = Branch::query()->create([
+                    'tenant_id' => $context->tenantId(), 'code' => 'MANUAL-OTHER',
+                    'name' => 'Other Manual Branch', 'status' => BranchStatus::Active, 'is_default' => false,
+                ]);
+                $entry = JournalEntry::query()->create([
+                    'tenant_id' => $context->tenantId(), 'branch_id' => $branch->id,
+                    'document_type' => 'journal_voucher', 'entry_date' => '2026-10-10',
+                    'status' => 'posted', 'created_by' => $context->userId(),
+                ]);
+                foreach ([[$account, '999.0000', '0.0000'], [$offset, '0.0000', '999.0000']] as $j => [$ledger, $debit, $credit]) {
+                    JournalLine::query()->create([
+                        'tenant_id' => $context->tenantId(), 'journal_entry_id' => $entry->id,
+                        'account_id' => $ledger->id, 'debit' => $debit, 'credit' => $credit, 'sort_order' => $j,
+                    ]);
+                }
+            }
+        }
+        $base = '/api/reports/accounting/total-turnover?from=2026-10-01&to=2026-10-25';
+        foreach ([
+            'accounts' => [['Manual A', 'Manual B'], '30.0000', '0.0000', '0.0000'],
+            'customers' => [['Group Customer'], '100.0000', '100.0000', '0.0000'],
+            'vendors' => [['Group Vendor'], '-200.0000', '0.0000', '200.0000'],
+            'all' => [['Group Customer', 'Manual B'], '-70.0000', '100.0000', '200.0000'],
+        ] as $group => [$names, $balance, $sales, $purchases]) {
+            $result = $this->getJson($base.'&group='.$group)->assertOk()
+                ->assertJsonCount(count($names), 'rows')
+                ->assertJsonPath('totals.receivable', $balance)
+                ->assertJsonPath('totals.sales', $sales)
+                ->assertJsonPath('totals.purchases', $purchases);
+            $this->assertSame($names, array_column($result->json('rows'), 'name'));
+            $this->assertNoInternalIds($result->json());
+        }
+        $this->getJson($base)->assertOk()->assertJsonCount(2, 'rows');
+        $this->getJson($base.'&group=accounts&account_type_ulids[0]='.$vendorAccount->accountType->ulid)
+            ->assertOk()->assertJsonCount(1, 'rows')->assertJsonPath('rows.0.name', 'Manual B');
+        $this->postJson('/api/auth/logout')->assertSuccessful();
+        $this->signInOwner('turnover-groups-other')->assertOk();
+        foreach (['accounts', 'customers', 'vendors', 'all'] as $group) {
+            $this->getJson($base.'&group='.$group)->assertOk()->assertJsonCount(0, 'rows');
+        }
+    }
+
+    public function test_total_turnover_empty_result_excludes_controls_and_fully_offset_trading(): void
+    {
+        $this->signInOwner('turnover-empty')->assertOk();
+        $context = app(TenantContext::class);
+        $offset = $this->leafAccount('Empty Offset', 'EMPTY-OFF', '0040');
+        foreach (['trading', 'clearing', 'equity'] as $key) {
+            $supplier = Supplier::query()->create([
+                'tenant_id' => $context->tenantId(), 'code' => 'EMPTY-'.$key, 'name' => $key,
+                'is_active' => true, 'created_by' => $context->userId(),
+            ]);
+            $account = $this->leafAccount('Empty '.$key, 'EMPTY-'.$key, '0020');
+            $account->update(['supplier_id' => $supplier->id]);
+            if ($key === 'trading') {
+                $this->postedJournal('purchase_invoice', '2026-10-08',
+                    [[$account, '0.0000', '902.7000'], [$offset, '902.7000', '0.0000']], 'Purchase');
+                $this->postedJournal('purchase_return', '2026-10-08',
+                    [[$account, '902.7000', '0.0000'], [$offset, '0.0000', '902.7000']], 'Return');
+            } else {
+                $field = $key === 'clearing' ? 'sales_clearing_account_id' : 'opening_balance_equity_account_id';
+                \App\Models\BusinessSetting::query()->forTenant($context->tenantId())->firstOrFail()
+                    ->update([$field => $account->id]);
+                $this->postedJournal($key === 'clearing' ? 'sale_payment' : 'opening_balance', '2026-10-10',
+                    [[$account, '100.0000', '0.0000'], [$offset, '0.0000', '100.0000']], 'Control');
+            }
+        }
+        foreach (['0010', '0013'] as $type) {
+            $profile = \App\Models\PartyProfile::query()->create([
+                'tenant_id' => $context->tenantId(), 'code' => 'EMPTY-P-'.$type, 'name' => 'Unmapped manual',
+                'is_active' => true, 'created_by' => $context->userId(),
+            ]);
+            $profile->types()->create(['type' => 'account']);
+            $manual = $this->leafAccount('Empty Manual '.$type, 'EMPTY-M-'.$type, $type);
+            $manual->update(['party_profile_id' => $profile->id]);
+            $this->postedJournal('journal_voucher', '2026-10-10',
+                [[$manual, '50.0000', '0.0000'], [$offset, '0.0000', '50.0000']], 'Ineligible manual');
+        }
+        foreach (['simple', 'detailed'] as $mode) {
+            foreach (['accounts', 'customers', 'vendors', 'all'] as $group) {
+                $result = $this->getJson('/api/reports/accounting/total-turnover?from=2026-10-01&to=2026-10-31'
+                    .'&above=0&mode='.$mode.'&group='.$group)->assertOk()->assertJsonCount(0, 'rows');
+                foreach (['received', 'sales_returns', 'net_sales', 'receivable', 'sales', 'purchases'] as $field) {
+                    $result->assertJsonPath('totals.'.$field, '0.0000');
+                }
+                $this->assertNoInternalIds($result->json());
+            }
+        }
     }
 
     public function test_simple_turnover_uses_posted_period_ledger_movements(): void

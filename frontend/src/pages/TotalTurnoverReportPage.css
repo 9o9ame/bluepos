@@ -57,3 +57,15 @@
   .turnover-preview .turnover-paper--detailed{width:100%;margin:0;padding:0}
   .turnover-paper--detailed .turnover-detailed-table{font-size:7px}
 }
+
+@media print {
+  @page turnover-simple { size: A4 portrait; margin: 10mm; }
+  @page turnover-detailed { size: A4 landscape; margin: 10mm; }
+  .turnover-preview { display: block; height: auto; overflow: visible; }
+  .turnover-paper { page: turnover-simple; position: static; color: black; background: white; }
+  .turnover-paper--detailed { page: turnover-detailed; }
+  .turnover-paper thead { display: table-header-group; }
+  .turnover-paper tfoot { display: table-row-group; }
+  .turnover-paper tr { break-inside: avoid; }
+  .turnover-paper header { break-after: avoid; }
+}
