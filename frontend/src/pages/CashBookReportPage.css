@@ -75,3 +75,28 @@
 .cashbook-flow-preview .cashbook-paper{max-width:1240px;width:calc(100% - 36px);margin:16px auto;padding:18px;background:var(--ui-surface);border:1px solid var(--ui-border)}
 .cashbook-flow-preview .cashbook-flow-print-heading{display:block;text-align:center;margin-bottom:12px}
 @media print{.cashbook-flow-preview .cashbook-paper{max-width:none;width:100%;margin:0;padding:0;border:0}}
+
+/* Fit all Cash Flow columns into the printable preview instead of horizontal scrolling. */
+.cashbook-flow-preview .cashbook-paper{overflow-x:hidden}
+.cashbook-flow-preview .cashbook-flow-grid{overflow-x:hidden;width:100%}
+.cashbook-flow-preview .cashbook-flow-table{
+  min-width:0;
+  width:100%;
+  table-layout:fixed;
+  font-size:clamp(7px,0.58vw,10px);
+}
+.cashbook-flow-preview .cashbook-flow-table th,
+.cashbook-flow-preview .cashbook-flow-table td{
+  padding:3px 2px;
+  overflow:hidden;
+  text-overflow:clip;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.cashbook-flow-preview .cashbook-flow-table th:first-child{width:2.5%}
+.cashbook-flow-preview .cashbook-flow-table th:nth-child(2){width:8%}
+.cashbook-flow-preview .cashbook-flow-table th:nth-child(3){width:7%}
+@media print{
+  .cashbook-flow-preview .cashbook-flow-table{font-size:8px}
+  .cashbook-flow-preview .cashbook-flow-grid{overflow:visible}
+}
