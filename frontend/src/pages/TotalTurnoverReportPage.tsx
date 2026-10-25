@@ -64,11 +64,23 @@ export function TotalTurnoverReportPage() {
   const typesQuery = useQuery({ queryKey:['total-turnover-types'],
     queryFn:()=>apiFetch<{account_types:AccountType[]}>('/api/reports/accounting/total-turnover/options'),
     enabled:!preview })
-  const resultQuery = useQuery({queryKey:['total-turnover',params.toString()],enabled:preview,queryFn:()=>{
-    const sp = new URLSearchParams({from,to,above,mode,period,group:partyGroup})
-    groups.forEach((id,i)=>sp.set('account_type_ulids['+i+']',id))
-    return apiFetch<Result>('/api/reports/accounting/total-turnover?'+sp)
-  }})
+  // Preview URLs are authoritative: workspace tabs can reuse a mounted page
+  // while switching modes, dates or group filters.
+  const previewQuery = new URLSearchParams({
+    from: params.get('from') || from,
+    to: params.get('to') || to,
+    above: params.get('above') || '0',
+    mode: params.get('mode') === 'simple' ? 'simple' : 'detailed',
+    period: params.get('period') || period,
+    group: params.get('group') || partyGroup,
+  })
+  ;(params.get('types')?.split(',').filter(Boolean) || []).forEach((id, i) =>
+    previewQuery.set('account_type_ulids[' + i + ']', id))
+  const resultQuery = useQuery({
+    queryKey: ['total-turnover', previewQuery.toString()],
+    enabled: preview,
+    queryFn: () => apiFetch<Result>('/api/reports/accounting/total-turnover?' + previewQuery.toString()),
+  })
   const data = resultQuery.data
   const openPreview = (selectedMode:string) => {
     const sp = new URLSearchParams({view:'preview',from,to,above,mode:selectedMode,period,group:partyGroup,types:groups.join(',')})
