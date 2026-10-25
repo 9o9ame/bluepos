@@ -43,7 +43,7 @@ class TotalTurnoverReportController extends Controller
             'above' => ['sometimes', 'numeric', 'min:0'],
             'period' => ['sometimes', 'in:this_month,previous_month,today,yesterday,custom'],
             'mode' => ['sometimes', 'in:detailed,simple'],
-            'group' => ['sometimes', 'in:accounts,all,customers,vendors,salesman'],
+            'group' => ['sometimes', 'in:accounts,all,customers,vendors'],
         ]);
         $tenant = $context->tenantId();
         $branch = $context->branchId();
@@ -60,6 +60,10 @@ class TotalTurnoverReportController extends Controller
         $accounts = DB::table('accounts as a')
             ->where('a.tenant_id', $tenant)->where('a.is_active', true)
             ->whereIn('a.account_type_id', $types->pluck('id'))
+            // A party turnover report must not include cash, tax, stock or
+            // other internal ledgers simply because no type was selected.
+            ->where(fn ($q) => $q->whereNotNull('a.customer_id')
+                ->orWhereNotNull('a.supplier_id'))
             ->when(($data['group'] ?? 'accounts') === 'customers', fn ($q) => $q->whereNotNull('a.customer_id'))
             ->when(($data['group'] ?? 'accounts') === 'vendors', fn ($q) => $q->whereNotNull('a.supplier_id'))
             ->select('a.id','a.name','a.customer_id','a.supplier_id','a.account_type_id')
