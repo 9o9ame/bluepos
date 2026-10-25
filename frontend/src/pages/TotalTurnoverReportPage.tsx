@@ -116,7 +116,7 @@ export function TotalTurnoverReportPage() {
           <th>{fmt(data.totals.received)}</th><th>0%</th><th>—</th>
           <th>{fmt(data.totals.receivable)}</th></tr></tfoot>
       </table></div>}
-      <p className="turnover-disclaimer">Posted entries only. In Simple Turn Over, Sales − Returns shows net posted account movement in the selected period, and %age = Recovery ÷ that movement × 100. Product-wise litres remain unmapped.</p>
+      <p className="turnover-disclaimer">Simple Turn Over: Sales − Returns = posted sales less posted sale returns; %age = Recovery ÷ net sales × 100 when net sales is nonzero. Product-wise litres and their allocations are not mapped yet.</p>
     </article>}
   </section>
   const valid=!!from&&!!to&&from<=to&&/^\d+(\.\d{1,4})?$/.test(above)
