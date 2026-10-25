@@ -77,8 +77,10 @@ class CashBookReportBuilder
                 'journal_entries.voucher_number',
                 'journal_entries.document_type',
                 'journal_entries.description as entry_description',
+                'users.name as creator_name',
             ])
             ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
+            ->leftJoin('users', 'users.id', '=', 'journal_entries.created_by')
             ->where('journal_lines.tenant_id', $tenantId)
             ->where('journal_lines.account_id', $account->id)
             ->where('journal_entries.tenant_id', $tenantId)
@@ -124,6 +126,7 @@ class CashBookReportBuilder
                     ? \Illuminate\Support\Carbon::parse($line->entry_date)->format('Y-m-d')
                     : null,
                 'doc' => $this->documentLabel((string) $line->document_type),
+                'creator_name' => $line->creator_name ?: '(NONE)',
                 'description' => $line->line_description
                     ?: $line->entry_description
                     ?: $this->documentLabel((string) $line->document_type),
