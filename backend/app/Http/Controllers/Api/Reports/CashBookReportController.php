@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api\Reports;
 use App\Accounting\CashBookReportBuilder;
 use App\Enums\JournalStatus;
 use App\Models\JournalEntry;
+use App\Models\Sale;
+use App\Models\SaleReturn;
+use App\Models\SalePayment;
 use App\Authz\PermissionService;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
@@ -34,7 +37,7 @@ class CashBookReportController extends Controller
             'show_purchase' => ['sometimes', 'boolean'],
             'non_cash_also' => ['sometimes', 'boolean'],
             'summary_only' => ['sometimes', 'boolean'],
-            'group_by' => ['sometimes', 'in:none,date,document,user'],
+            'group_by' => ['sometimes', 'in:none,date,document,user,area,salesperson'],
         ]);
 
         $accounts = $this->builder->cashAccounts($context->tenantId())
@@ -68,6 +71,46 @@ class CashBookReportController extends Controller
             ->map(fn ($row) => [...$row, 'account_ulid' => $report['account']['ulid'],
                 'account_name' => $report['account']['name']]))
             ->sortBy([['date', 'asc'], ['line_ulid', 'asc']])->values();
+
+        // Attribute only vouchers with a verified source relationship.
+        // A sale can contain multiple products/categories; never duplicate its
+        // cash line into product-category groups.
+        $saleIds = $entries->filter(fn ($row) => in_array($row['_source_type'], [
+            'sale_invoice', 'sale_invoice_amendment',
+        ], true) && $row['_source_id'] !== null)->pluck('_source_id')->unique()->values();
+        $returnIds = $entries->filter(fn ($row) => in_array($row['_source_type'], [
+            'sale_return', 'sale_return_amendment',
+        ], true) && $row['_source_id'] !== null)->pluck('_source_id')->unique()->values();
+        $paymentUlids = $entries->pluck('_journal_ulid')->filter()->unique()->values();
+
+        $sales = Sale::query()->where('tenant_id', $context->tenantId())
+            ->where('branch_id', $context->branchId())
+            ->whereIn('id', $saleIds)->with(['salesmanParty', 'customer.partyProfile'])
+            ->get()->keyBy('id');
+        $returns = SaleReturn::query()->where('tenant_id', $context->tenantId())
+            ->where('branch_id', $context->branchId())
+            ->whereIn('id', $returnIds)->with(['salesmanParty', 'customer.partyProfile'])
+            ->get()->keyBy('id');
+        $payments = SalePayment::query()->where('tenant_id', $context->tenantId())
+            ->where('branch_id', $context->branchId())
+            ->whereIn('journal_entry_ulid', $paymentUlids)->with(['sale.salesmanParty', 'sale.customer.partyProfile'])
+            ->get()->keyBy('journal_entry_ulid');
+        $entries = $entries->map(function (array $row) use ($sales, $returns, $payments) {
+            $source = match ($row['_source_type']) {
+                'sale_invoice', 'sale_invoice_amendment' => $sales->get($row['_source_id']),
+                'sale_return', 'sale_return_amendment' => $returns->get($row['_source_id']),
+                'sale_payment' => $payments->get($row['_journal_ulid'])?->sale,
+                default => null,
+            };
+            $area = $source?->customer?->partyProfile?->area
+                ?: $source?->customer?->area;
+            $salesperson = $source?->salesmanParty?->name;
+            unset($row['_source_type'], $row['_source_id'], $row['_journal_ulid']);
+            return [...$row,
+                'area_name' => $area ?: '(NONE)',
+                'salesperson_name' => $salesperson ?: '(NONE)',
+            ];
+        });
 
         // Supplementary transactions never alter authoritative cash/bank balances.
         // Select one representative journal entry per non-cash posting to avoid
