@@ -353,6 +353,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-daily-business-activity',
+    title: 'Daily Business Activity Account wise',
+    path: '/reports/daily/business-activity',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
     key: 'report-cash-book',
     title: 'Cash Book',
     path: '/reports/accounts/cash-book',
@@ -587,7 +595,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
           menu: [
             { label: 'Report workspace', status: 'shell', path: '/reports' },
             { label: 'Profit & Loss Report', ...LATER },
-            { label: 'Daily Business Activity', ...LATER },
+            { label: 'Daily Business Activity Account wise', status: 'ready', path: '/reports/daily/business-activity' },
             { label: 'Detail Sale + Stock + Profit Loss Report', ...LATER },
             { label: 'Business By Group', ...LATER },
             { label: 'Day Book (Daily Business Summary)', ...LATER },
@@ -725,6 +733,10 @@ export function moduleTabIdentity(
         path: pathname + search,
       }
     }
+  }
+
+  if (module.key === 'report-daily-business-activity' && new URLSearchParams(search).get('view') === 'preview') {
+    return { key: 'report-daily-business-activity:preview', title: 'Daily Ledger Wise Activity', path: pathname + search }
   }
 
   if (module.key === 'report-cash-book') {
