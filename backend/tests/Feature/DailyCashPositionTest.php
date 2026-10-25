@@ -140,6 +140,12 @@ class DailyCashPositionTest extends TestCase
         $this->assertSame('55.1250', $section['closing']);
         $this->assertCount(1, $section['rows']);
         $this->assertNoInternalIds($response->json());
+        $all = $this->getJson('/api/reports/accounting/daily-business-activity?start_date=2026-10-01'
+            .'&end_date=2026-10-24')->assertOk();
+        $allSections = collect($all->json('sections'));
+        $this->assertNotNull($allSections->firstWhere('account.ulid', $cash->ulid));
+        $this->assertNotNull($allSections->firstWhere('account.ulid', $revenue->ulid));
+        $this->assertNoInternalIds($all->json());
     }
 
     public function test_reports_cash_book_is_posted_branch_scoped_and_validates_selected_accounts(): void
