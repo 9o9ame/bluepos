@@ -43,3 +43,17 @@
 .turnover-detailed-table th:not(:first-child),.turnover-detailed-table td:not(:first-child){min-width:62px;text-align:right;white-space:nowrap}
 .turnover-detailed-table thead tr:first-child th{text-align:center}
 @media print{.turnover-detailed-scroll{overflow:visible}.turnover-detailed-table{min-width:0;width:100%;font-size:8px}.turnover-detailed-table th:first-child,.turnover-detailed-table td:first-child{min-width:120px;width:120px}}
+
+/* Detailed Total Turnover: maximize report paper width and fit all columns without a horizontal scrollbar. */
+.turnover-preview .turnover-paper--detailed{width:calc(100% - 24px);max-width:none;margin:12px auto;padding:20px 12px}
+.turnover-paper--detailed .turnover-detailed-scroll{overflow-x:visible;width:100%}
+.turnover-paper--detailed .turnover-detailed-table{width:100%;min-width:0;table-layout:fixed;font-size:clamp(8px,.67vw,11px)}
+.turnover-paper--detailed .turnover-detailed-table th:first-child,
+.turnover-paper--detailed .turnover-detailed-table td:first-child{width:17%;min-width:0;overflow-wrap:anywhere}
+.turnover-paper--detailed .turnover-detailed-table th:not(:first-child),
+.turnover-paper--detailed .turnover-detailed-table td:not(:first-child){min-width:0;width:auto;padding:4px 2px;white-space:normal;overflow-wrap:anywhere}
+.turnover-paper--detailed .turnover-detailed-table thead th{line-height:1.2}
+@media print{
+  .turnover-preview .turnover-paper--detailed{width:100%;margin:0;padding:0}
+  .turnover-paper--detailed .turnover-detailed-table{font-size:7px}
+}
