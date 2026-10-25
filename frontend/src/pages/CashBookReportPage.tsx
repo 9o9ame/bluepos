@@ -82,7 +82,8 @@ export function CashBookReportPage() {
   const [copyLabel, setCopyLabel] = useState('Copy')
   const paperRef = useRef<HTMLElement>(null)
   const accountsQuery = useQuery({ queryKey: ['cash-book-accounts'], queryFn: fetchCashBookAccounts })
-  const accounts = (accountsQuery.data?.accounts ?? []).filter((a) => includeBank || a.is_cash)
+  // Match Sales Invoice finalize payment account choices, including bank accounts.
+  const accounts = [...(accountsQuery.data?.accounts ?? [])].sort((a, b) => a.name.localeCompare(b.name))
   const reportQuery = useQuery({
     queryKey: ['cash-book-report', from, to, includeBank, showPurchase, nonCashAlso, summaryOnly, group, accountUlids],
     queryFn: () => fetchCashBookReport({
@@ -356,7 +357,10 @@ export function CashBookReportPage() {
               options={[{value:'',label:'ALL CASH ACCOUNTS'}, ...accounts.map((a) => ({
                 value:a.ulid, label:`${a.code} — ${a.name}`,
               }))]}
-              onChange={(value) => setAccountUlids(value ? [value] : [])} />
+              onChange={(value) => {
+                setAccountUlids(value ? [value] : [])
+                if (value && accounts.find((account) => account.ulid === value)?.is_bank) setIncludeBank(true)
+              }} />
           </label>
           {accountsQuery.isError ? <p role="alert">Unable to load cash accounts.</p> : null}
           <p className="cashbook-note">Posted journals only · current branch. Purchase / non-cash transactions are supplementary and do not change cash totals. Area and salesman filters are not available.</p>
