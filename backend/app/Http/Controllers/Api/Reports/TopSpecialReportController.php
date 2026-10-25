@@ -124,13 +124,24 @@ class TopSpecialReportController extends Controller
             $query->whereNotNull('party.id');
             if ($partyIds !== []) $query->whereIn($key, $partyIds);
         }
-        $rows = $query->groupBy($key, $name)
+        // Customer contact fields are taken only from the selected tenant's
+        // actual customer row (not placeholder values or generated contact data).
+        if ($kind === 'customers') {
+            $query->addSelect('party.contact_person', 'party.cnic', 'party.mobile');
+            $groupColumns = [$key, $name, 'party.contact_person', 'party.cnic', 'party.mobile'];
+        } else {
+            $groupColumns = [$key, $name];
+        }
+        $rows = $query->groupBy(...$groupColumns)
             ->selectRaw("$name as description, SUM(li.quantity) as qty, SUM(li.line_total) as amount")
             ->orderByRaw(($data['by_quantity'] ?? false) ? 'SUM(li.quantity) DESC' : 'SUM(li.line_total) DESC')
             ->orderBy($name)->limit($data['top'])->get()
             ->map(fn ($row, $index) => [
                 'rank' => $index + 1, 'description' => $row->description,
                 'qty' => (string) $row->qty, 'amount' => (string) $row->amount,
+                'contact_person' => $row->contact_person ?? null,
+                'cnic' => $row->cnic ?? null,
+                'contact' => $row->mobile ?? null,
             ])->values();
         return response()->json([
             'from' => $data['from'], 'to' => $data['to'], 'kind' => $kind,
