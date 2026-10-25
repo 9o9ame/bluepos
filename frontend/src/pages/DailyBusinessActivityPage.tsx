@@ -22,7 +22,7 @@ const money = (value: string) => {
   const negative = value.startsWith('-')
   const digits = negative ? value.slice(1) : value
   const [whole, fractional = ''] = digits.split('.')
-  const formatted = (whole || '0').replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',')
+  const formatted = (whole || '0').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
   const cents = fractional.slice(0, 4).replace(/0+$/, '')
   return (negative ? '-' : '') + formatted + (cents ? '.' + cents : '')
 }
@@ -58,7 +58,7 @@ export function DailyBusinessActivityPage() {
     const paper = paperRef.current
     if (!paper || !reportQuery.data) return
     const safe = (value: string) => {
-      const guarded = /^\\s*[=+@-]/.test(value) ? "'" + value : value
+      const guarded = /^\s*[=+@-]/.test(value) ? "'" + value : value
       return '"' + guarded.replace(/"/g, '""') + '"'
     }
     const content = format === 'csv'
