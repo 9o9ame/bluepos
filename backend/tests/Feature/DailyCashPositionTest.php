@@ -31,6 +31,30 @@ class DailyCashPositionTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_general_journal_post_preview_validates_filters_and_permissions(): void
+    {
+        $this->signInOwner('general-journal-post-preview')->assertOk();
+        $this->getJson('/api/reports/accounting/general-journal/options')
+            ->assertOk()->assertJsonStructure(['document_types']);
+        $response = $this->postJson('/api/reports/accounting/general-journal/preview', [
+            'from' => '2026-10-01', 'to' => '2026-10-25',
+            'narration' => true, 'print_format' => 'transaction_wise',
+        ])->assertOk()->assertJsonStructure([
+            'entries', 'totals' => ['debit', 'credit', 'difference'], 'has_more', 'limit',
+        ]);
+        $this->assertNoInternalIds($response->json());
+        $this->postJson('/api/reports/accounting/general-journal/preview', [
+            'from' => '2026-10-26', 'to' => '2026-10-01',
+        ])->assertUnprocessable();
+        $this->postJson('/api/reports/accounting/general-journal/preview', [
+            'from' => '2026-10-01', 'to' => '2026-10-25', 'document_types' => ['not-a-type'],
+        ])->assertUnprocessable();
+        $this->restrictCurrentMembershipWithoutPermission('reports.accounting');
+        $this->postJson('/api/reports/accounting/general-journal/preview', [
+            'from' => '2026-10-01', 'to' => '2026-10-25',
+        ])->assertForbidden();
+    }
+
     public function test_period_income_statement_post_preview_validates_dates_and_permissions(): void
     {
         $this->signInOwner('period-income-report')->assertOk();
