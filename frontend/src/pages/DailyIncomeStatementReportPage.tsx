@@ -101,7 +101,7 @@ export function DailyIncomeStatementReportPage() {
         </>)}</tbody>
         <tfoot><tr><th>Net Income</th><th>{fmt(report.data.net_income)}</th><th></th></tr></tfoot>
       </table>
-      {report.data.sections.length===0&&<p>No posted revenue or expense activity as of the selected date.</p>}
+      {report.data.sections.length===0&&<p>No posted revenue or expense activity for the selected period.</p>}
       <p className="is-note">{report.data.limitations.join(' ')}</p>
     </article>}
   </section>
