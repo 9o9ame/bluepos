@@ -12,6 +12,26 @@ type AccountType = { ulid: string; name: string }
 type Row = { name: string; purchases: string; sales: string; sales_returns: string; net_sales: string; received: string; receivable: string }
 type Result = { from: string; to: string; mode: string; rows: Row[]; totals: Omit<Row, 'name'> }
 type Period = 'this_month' | 'previous_month' | 'today' | 'yesterday' | 'custom'
+type TurnoverSelection = {
+  from: string; to: string; above: string; period: Period; group: string; types: string[]
+}
+const selectionKey = (mode: string) => 'bluepos:total-turnover:' + mode
+const readSelection = (mode: string): TurnoverSelection | null => {
+  try {
+    const saved = sessionStorage.getItem(selectionKey(mode))
+    if (!saved) return null
+    const parsed: unknown = JSON.parse(saved)
+    if (!parsed || typeof parsed !== 'object') return null
+    const value = parsed as Partial<TurnoverSelection>
+    if (typeof value.from !== 'string' || typeof value.to !== 'string'
+      || typeof value.above !== 'string' || typeof value.period !== 'string'
+      || typeof value.group !== 'string' || !Array.isArray(value.types)
+      || !value.types.every(id => typeof id === 'string')) return null
+    return value as TurnoverSelection
+  } catch {
+    return null
+  }
+}
 const dateString = (d: Date) => {
   const x = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
   return x.toISOString().slice(0, 10)
@@ -64,27 +84,29 @@ export function TotalTurnoverReportPage() {
   const typesQuery = useQuery({ queryKey:['total-turnover-types'],
     queryFn:()=>apiFetch<{account_types:AccountType[]}>('/api/reports/accounting/total-turnover/options'),
     enabled:!preview })
-  // Preview URLs are authoritative: workspace tabs can reuse a mounted page
-  // while switching modes, dates or group filters.
-  const previewQuery = new URLSearchParams({
-    from: params.get('from') || from,
-    to: params.get('to') || to,
-    above: params.get('above') || '0',
-    mode: params.get('mode') === 'simple' ? 'simple' : 'detailed',
-    period: params.get('period') || period,
-    group: params.get('group') || partyGroup,
-  })
-  ;(params.get('types')?.split(',').filter(Boolean) || []).forEach((id, i) =>
-    previewQuery.set('account_type_ulids[' + i + ']', id))
+  // Keep filter selections out of the address bar. Each preview mode has its
+  // own same-tab session snapshot so workspace switching and refresh are stable.
+  const selection = preview ? readSelection(mode) : null
+  const previewQuery = new URLSearchParams()
+  if (selection) {
+    previewQuery.set('from', selection.from)
+    previewQuery.set('to', selection.to)
+    previewQuery.set('above', selection.above)
+    previewQuery.set('mode', mode)
+    previewQuery.set('period', selection.period)
+    previewQuery.set('group', selection.group)
+    selection.types.forEach((id, i) => previewQuery.set('account_type_ulids[' + i + ']', id))
+  }
   const resultQuery = useQuery({
-    queryKey: ['total-turnover', previewQuery.toString()],
-    enabled: preview,
+    queryKey: ['total-turnover', mode, previewQuery.toString()],
+    enabled: preview && Boolean(selection),
     queryFn: () => apiFetch<Result>('/api/reports/accounting/total-turnover?' + previewQuery.toString()),
   })
   const data = resultQuery.data
-  const openPreview = (selectedMode:string) => {
-    const sp = new URLSearchParams({view:'preview',from,to,above,mode:selectedMode,period,group:partyGroup,types:groups.join(',')})
-    openModule('/reports/accounts/total-turnover?'+sp)
+  const openPreview = (selectedMode: string) => {
+    const snapshot: TurnoverSelection = {from, to, above, period, group: partyGroup, types: groups}
+    sessionStorage.setItem(selectionKey(selectedMode), JSON.stringify(snapshot))
+    openModule('/reports/accounts/total-turnover?view=preview&mode=' + selectedMode)
   }
   const exportFile = (kind:'txt'|'html'|'csv') => {
     if (!paperRef.current || !data) return
@@ -100,7 +122,8 @@ export function TotalTurnoverReportPage() {
       onCopy={()=>{if(paperRef.current)void navigator.clipboard.writeText(paperRef.current.innerText)}}
       onExport={exportFile} onRefresh={()=>void resultQuery.refetch()}
       onEditOptions={()=>openModule('/reports/accounts/total-turnover')} onClose={closeActiveTab}/>
-    {resultQuery.isLoading && <p>Loading turnover…</p>}
+    {!selection && <p role="status">Report selection is not available in this browser session. Use Edit Options to select dates and filters, then open the preview again.</p>}
+    {selection && resultQuery.isLoading && <p>Loading turnover…</p>}
     {resultQuery.isError && <p role="alert">Unable to load turnover report.</p>}
     {data && <article ref={paperRef} className={`turnover-paper ${mode === 'detailed' ? 'turnover-paper--detailed' : ''}`} style={{zoom:zoom+'%'}}>
       <header><strong>{session?.tenant.name}</strong>
