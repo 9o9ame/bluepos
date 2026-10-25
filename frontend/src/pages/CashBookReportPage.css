@@ -112,3 +112,8 @@
 .cashbook-group-modal th,.cashbook-group-modal td{border-bottom:1px solid var(--ui-border);padding:9px 12px;text-align:left}
 .cashbook-group-modal th{background:var(--ui-surface-muted)}
 .cashbook-group-modal-actions{display:flex;justify-content:flex-end;padding:10px 14px}
+
+/* Group headings and side-specific counts/totals mirror the reference Cash Book. */
+.cashbook-group-heading th{background:var(--ui-surface-muted);font-weight:800;text-align:left;padding:8px 6px}
+.cashbook-group-subtotal th{border-top:1px solid var(--ui-border);font-weight:700;background:var(--ui-surface-muted)}
+.cashbook-grand-total th{border-top:2px solid var(--ui-border);font-weight:800;background:var(--ui-surface-muted)}
