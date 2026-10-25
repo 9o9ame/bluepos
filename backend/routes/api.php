@@ -311,6 +311,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     });
 
     Route::get('/reports/accounting/trial-balance', TrialBalanceController::class);
+    Route::post('/reports/accounting/trial-balance/preview', TrialBalanceController::class);
     Route::get('/reports/accounting/cash-book/accounts', [CashBookReportController::class, 'accounts']);
     Route::get('/reports/accounting/cash-book', CashBookReportController::class);
     Route::post('/reports/accounting/cash-book/preview', CashBookReportController::class);
