@@ -317,6 +317,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::get('/reports/accounting/balance-sheet/options', [BalanceSheetReportController::class, 'options']);
     Route::post('/reports/accounting/balance-sheet/preview', [BalanceSheetReportController::class, 'preview']);
     Route::post('/reports/accounting/income-statement/preview', [IncomeStatementReportController::class, 'preview']);
+    Route::post('/reports/accounting/income-statement/period-preview', [IncomeStatementReportController::class, 'periodPreview']);
     Route::get('/reports/accounting/cash-book/accounts', [CashBookReportController::class, 'accounts']);
     Route::get('/reports/accounting/cash-book', CashBookReportController::class);
     Route::post('/reports/accounting/cash-book/preview', CashBookReportController::class);
