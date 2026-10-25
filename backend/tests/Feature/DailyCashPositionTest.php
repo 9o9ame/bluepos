@@ -147,6 +147,35 @@ class DailyCashPositionTest extends TestCase
             .'&end_date=2026-10-24&account_ulids[0]='.$revenue->ulid)->assertNotFound();
     }
 
+    public function test_cash_book_optional_purchase_and_non_cash_documents_do_not_change_cash_totals(): void
+    {
+        $this->signInOwner('cashbook-optional-types')->assertOk();
+        $cash = $this->leafAccount('Cash Optional', 'CB-OPT-CASH', '0010');
+        $expense = $this->leafAccount('Expense Optional', 'CB-OPT-EXP', '0030');
+        $payable = $this->leafAccount('Payable Optional', 'CB-OPT-PAY', '0020');
+
+        $purchase = $this->postedJournal('purchase_invoice', '2026-10-10',
+            [[$expense, '75.0000', '0.0000'], [$payable, '0.0000', '75.0000']], 'Credit purchase');
+        $other = $this->postedJournal('journal_voucher', '2026-10-10',
+            [[$expense, '20.0000', '0.0000'], [$payable, '0.0000', '20.0000']], 'Noncash adjustment');
+        $this->postedJournal('payment_voucher', '2026-10-10',
+            [[$expense, '5.0000', '0.0000'], [$cash, '0.0000', '5.0000']], 'Cash payment');
+
+        $base = '/api/reports/accounting/cash-book?start_date=2026-10-01&end_date=2026-10-24'
+            .'&account_ulids[0]='.$cash->ulid;
+        $this->getJson($base)->assertOk()->assertJsonCount(0, 'supplementary')
+            ->assertJsonPath('totals.paid', '5.0000');
+        $purchaseResponse = $this->getJson($base.'&show_purchase=1')->assertOk()
+            ->assertJsonCount(1, 'supplementary')
+            ->assertJsonPath('totals.paid', '5.0000');
+        $this->assertSame($purchase->ulid, $purchaseResponse->json('supplementary.0.entry_ulid'));
+
+        $all = $this->getJson($base.'&non_cash_also=1')->assertOk()
+            ->assertJsonCount(2, 'supplementary')->assertJsonPath('totals.paid', '5.0000');
+        $this->assertContains($other->ulid, array_column($all->json('supplementary'), 'entry_ulid'));
+        $this->assertNoInternalIds($all->json());
+    }
+
     public function test_cash_credit_summary_uses_supported_posted_journals_and_marks_missing_sales_accounting(): void
     {
         $this->signInOwner('daily-cash-summary')->assertOk();
