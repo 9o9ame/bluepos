@@ -25,3 +25,12 @@
 .turnover-disclaimer{font-size:11px;color:var(--ui-text-muted)}
 @media(max-width:650px){.turnover-grid{grid-template-columns:1fr 1fr}.turnover-grid>div:nth-child(3){grid-column:1/-1}.turnover-account-types{grid-column:1/-1}}
 @media print{body:has(.turnover-preview) *{visibility:hidden!important}body:has(.turnover-preview) .turnover-paper,body:has(.turnover-preview) .turnover-paper *{visibility:visible!important}.turnover-paper{position:absolute;inset:0;width:100%;margin:0;padding:0;border:0;min-height:0;zoom:1!important}}
+
+/* Simple turnover matches the reference's six-column Recovery Position matrix. */
+.turnover-simple-table{table-layout:fixed}
+.turnover-simple-table th:first-child{width:43%}
+.turnover-simple-table tbody td:first-child{font-weight:700;text-align:left}
+.turnover-simple-table tbody td:not(:first-child){white-space:nowrap}
+.turnover-simple-table thead tr:first-child th{padding:9px 6px}
+.turnover-simple-table thead tr:nth-child(2) th{padding:6px}
+@media print{.turnover-simple-table{font-size:10px}.turnover-simple-table td,.turnover-simple-table th{padding:3px 5px}}
