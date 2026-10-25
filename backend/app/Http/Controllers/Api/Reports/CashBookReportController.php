@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Reports;
 
 use App\Accounting\CashBookReportBuilder;
+use App\Enums\JournalStatus;
+use App\Models\JournalEntry;
 use App\Authz\PermissionService;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
@@ -29,6 +31,8 @@ class CashBookReportController extends Controller
             'account_ulids' => ['sometimes', 'array', 'max:100'],
             'account_ulids.*' => ['required', 'string', 'ulid', 'distinct'],
             'include_bank' => ['sometimes', 'boolean'],
+            'show_purchase' => ['sometimes', 'boolean'],
+            'non_cash_also' => ['sometimes', 'boolean'],
             'summary_only' => ['sometimes', 'boolean'],
             'group_by' => ['sometimes', 'in:none,date,document'],
         ]);
@@ -65,6 +69,39 @@ class CashBookReportController extends Controller
                 'account_name' => $report['account']['name']]))
             ->sortBy([['date', 'asc'], ['line_ulid', 'asc']])->values();
 
+        // Supplementary transactions never alter authoritative cash/bank balances.
+        // Select one representative journal entry per non-cash posting to avoid
+        // double-counting its debit and credit legs as separate cash events.
+        $supplementary = collect();
+        if (($data['show_purchase'] ?? false) || ($data['non_cash_also'] ?? false)) {
+            $cashIds = $this->builder->cashAccounts($context->tenantId())->pluck('id')->all();
+            $types = ['purchase_invoice', 'purchase_invoice_amendment',
+                'purchase_return', 'purchase_return_amendment', 'purchase_payment'];
+            $journalQuery = JournalEntry::query()
+                ->where('tenant_id', $context->tenantId())
+                ->where('branch_id', $context->branchId())
+                ->where('status', JournalStatus::Posted->value)
+                ->whereDate('entry_date', '>=', $data['start_date'])
+                ->whereDate('entry_date', '<=', $data['end_date'])
+                ->whereDoesntHave('lines', fn ($query) => $query
+                    ->where('tenant_id', $context->tenantId())
+                    ->whereIn('account_id', $cashIds));
+            if (! ($data['non_cash_also'] ?? false)) {
+                $journalQuery->whereIn('document_type', $types);
+            }
+            $supplementary = $journalQuery
+                ->orderBy('entry_date')->orderBy('id')
+                ->get(['ulid', 'entry_date', 'voucher_number', 'document_type', 'description'])
+                ->map(fn ($entry) => [
+                    'entry_ulid' => $entry->ulid,
+                    'date' => $entry->entry_date?->format('Y-m-d'),
+                    'trans_no' => $entry->voucher_number ?: '-',
+                    'doc' => strtoupper(str_replace('_', ' ', $entry->document_type)),
+                    'description' => $entry->description ?: '-',
+                    'type' => 'non_cash',
+                ])->values();
+        }
+
         if ($data['summary_only'] ?? false) {
             $entries = collect();
         }
@@ -78,6 +115,7 @@ class CashBookReportController extends Controller
             'group_by' => $data['group_by'] ?? 'none',
             'totals' => $totals,
             'rows' => $entries->values(),
+            'supplementary' => $supplementary,
         ]);
     }
 
