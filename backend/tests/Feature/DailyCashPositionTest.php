@@ -144,10 +144,8 @@ class DailyCashPositionTest extends TestCase
         $this->postReceiving($cash, $revenue, '2026-10-08', '500.0000', false, 'draft');
         $response = $this->getJson('/api/reports/accounting/total-turnover?mode=simple'
             .'&from=2026-10-01&to=2026-10-25')->assertOk();
-        $row = collect($response->json('rows'))->firstWhere('name', $cash->name);
-        $this->assertNotNull($row);
-        $this->assertSame('15.1250', $row['sales_returns']);
-        $this->assertSame('55.1250', $row['receivable']);
+        $this->assertNull(collect($response->json('rows'))->firstWhere('name', $cash->name));
+        $this->assertNull(collect($response->json('rows'))->firstWhere('name', $revenue->name));
         $this->assertNoInternalIds($response->json());
     }
 
