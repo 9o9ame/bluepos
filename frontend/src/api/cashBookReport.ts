@@ -21,13 +21,9 @@ export function fetchCashBookReport(params: {
   start_date: string; end_date: string; account_ulids: string[]
   include_bank: boolean; show_purchase: boolean; non_cash_also: boolean; summary_only: boolean; group_by: 'none' | 'date' | 'document' | 'user' | 'area' | 'salesperson'
 }) {
-  const query = new URLSearchParams({
-    start_date: params.start_date, end_date: params.end_date,
-    include_bank: params.include_bank ? '1' : '0',
-    show_purchase: params.show_purchase ? '1' : '0',
-    non_cash_also: params.non_cash_also ? '1' : '0',
-    summary_only: params.summary_only ? '1' : '0', group_by: params.group_by,
+  return apiFetch<CashBookResult>('/api/reports/accounting/cash-book/preview', {
+    method: 'POST',
+    busy: 'fetch',
+    body: JSON.stringify(params),
   })
-  params.account_ulids.forEach((ulid, index) => query.set(`account_ulids[${index}]`, ulid))
-  return apiFetch<CashBookResult>(`/api/reports/accounting/cash-book?${query.toString()}`, { busy: 'fetch' })
 }
