@@ -353,6 +353,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-balance-sheet',
+    title: 'Balance Sheet',
+    path: '/reports/accounts/balance-sheet',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
     key: 'report-total-turnover',
     title: 'Total Turnover Report',
     path: '/reports/accounts/total-turnover',
@@ -594,7 +602,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Daily Business Summary', status: 'ready', path: '/reports/daily/business-activity' },
             { label: 'Top Products / Vendor / Customers', status: 'ready', path: '/reports/accounts/top-special' },
             { label: 'Total Turnover Report', status: 'ready', path: '/reports/accounts/total-turnover' },
-            { label: 'Balance Sheet', ...LATER },
+            { label: 'Balance Sheet', status: 'ready', path: '/reports/accounts/balance-sheet' },
             { label: 'Income Statement', ...LATER },
             { label: 'Income Statement (Daily, Monthly)', ...LATER },
             { label: 'General Journal Report', ...LATER },
@@ -776,6 +784,10 @@ export function moduleTabIdentity(
         path: pathname + search,
       }
     }
+  }
+
+  if (module.key === 'report-balance-sheet' && new URLSearchParams(search).get('view') === 'preview') {
+    return { key: 'report-balance-sheet:preview', title: 'Balance Sheet Preview', path: pathname + search }
   }
 
   if (module.key === 'report-trial-balance') {
