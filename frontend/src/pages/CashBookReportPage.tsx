@@ -355,7 +355,7 @@ export function CashBookReportPage() {
           <label>Cash / Bank Accounts
             <UiSelect value={accountUlids.length === 1 ? accountUlids[0] : ''}
               options={[{value:'',label:'ALL CASH ACCOUNTS'}, ...accounts.map((a) => ({
-                value:a.ulid, label:`${a.code} — ${a.name}`,
+                value:a.ulid, label:a.name,
               }))]}
               onChange={(value) => {
                 setAccountUlids(value ? [value] : [])
