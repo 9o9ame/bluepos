@@ -118,6 +118,30 @@ class DailyCashPositionTest extends TestCase
             .'&end_date=2026-10-24')->assertForbidden();
     }
 
+    public function test_daily_business_activity_uses_posted_ledgers_and_preserves_opening_balance(): void
+    {
+        $this->signInOwner('daily-business-activity')->assertOk();
+        $cash = $this->leafAccount('Activity Cash', 'ACT-CASH', '0010');
+        $revenue = $this->leafAccount('Activity Revenue', 'ACT-REV', '0040');
+        $this->postReceiving($cash, $revenue, '2026-09-30', '40.0000', true, 'act-opening');
+        $this->postReceiving($cash, $revenue, '2026-10-08', '15.1250', true, 'act-posted');
+        $this->postReceiving($cash, $revenue, '2026-10-08', '500.0000', false, 'act-draft');
+        $type = $cash->accountType()->firstOrFail();
+        $this->getJson('/api/reports/accounting/daily-business-activity/types')
+            ->assertOk()->assertJsonFragment(['ulid' => $type->ulid]);
+        $url = '/api/reports/accounting/daily-business-activity?start_date=2026-10-01'
+            .'&end_date=2026-10-24&account_type_ulids[0]='.$type->ulid;
+        $response = $this->getJson($url)->assertOk();
+        $sections = collect($response->json('sections'));
+        $section = $sections->firstWhere('account.ulid', $cash->ulid);
+        $this->assertNotNull($section);
+        $this->assertSame('40.0000', $section['opening']);
+        $this->assertSame('15.1250', $section['debit']);
+        $this->assertSame('55.1250', $section['closing']);
+        $this->assertCount(1, $section['rows']);
+        $this->assertNoInternalIds($response->json());
+    }
+
     public function test_reports_cash_book_is_posted_branch_scoped_and_validates_selected_accounts(): void
     {
         $this->signInOwner('reports-cash-book')->assertOk();
