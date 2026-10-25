@@ -113,7 +113,7 @@ export function BalanceSheetReportPage() {
         <button type="button" aria-pressed={tab==='additional'} onClick={()=>setTab('additional')}>Additional Selection</button></div>
       {tab==='main'?<div className="bs-main">
         <strong>Show Balance Sheet as on:</strong>
-        <label>Date <input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
+        <label className="bs-date-field"><span>Date</span><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
         <label><input type="checkbox" checked={summarized} onChange={e=>setSummarized(e.target.checked)}/> Summarized Form</label>
         <label title="Original ordering rule is not yet mapped"><input type="checkbox" checked={arrangeIds} disabled/> Arrange By IDs (pending mapping)</label>
         <p>FIFO stock revaluation is not offered until a verified valuation source is available.</p>
