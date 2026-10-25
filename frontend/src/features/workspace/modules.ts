@@ -729,10 +729,10 @@ export function moduleTabIdentity(
 
   if (module.key === 'report-cash-book') {
     const view = new URLSearchParams(search).get('view')
-    if (view === 'preview' || view === 'cash_flow') {
+    if (view === 'preview' || view === 'cash_flow' || view === 'cash_flow_preview') {
       return {
         key: `report-cash-book:${view}`,
-        title: view === 'preview' ? 'Cash Book Preview' : 'Cash Flow Statement',
+        title: view === 'preview' ? 'Cash Book Preview' : view === 'cash_flow_preview' ? 'Cash Flow Preview' : 'Cash Flow Statement',
         path: pathname + search,
       }
     }
