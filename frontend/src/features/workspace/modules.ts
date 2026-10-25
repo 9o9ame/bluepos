@@ -353,6 +353,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-top-special',
+    title: 'Top Products / Vendor / Customers',
+    path: '/reports/accounts/top-special',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
     key: 'report-daily-business-activity',
     title: 'Daily Business Activity Account wise',
     path: '/reports/daily/business-activity',
@@ -576,7 +584,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Trial Balance 6 Cols / Side by Side', status: 'ready', path: '/reports/accounts/trial-balance?view=six_options' },
             { label: 'Cash Book', status: 'ready', path: '/reports/accounts/cash-book' },
             { label: 'Daily Business Summary', status: 'ready', path: '/reports/daily/business-activity' },
-            { label: 'Top Products / Vendor / Customers', ...LATER },
+            { label: 'Top Products / Vendor / Customers', status: 'ready', path: '/reports/accounts/top-special' },
             { label: 'Total Turnover Report', ...LATER },
             { label: 'Balance Sheet', ...LATER },
             { label: 'Income Statement', ...LATER },
@@ -733,6 +741,10 @@ export function moduleTabIdentity(
         path: pathname + search,
       }
     }
+  }
+
+  if (module.key === 'report-top-special' && new URLSearchParams(search).get('view') === 'preview') {
+    return { key: 'report-top-special:preview', title: 'Top Special Preview', path: pathname + search }
   }
 
   if (module.key === 'report-daily-business-activity' && new URLSearchParams(search).get('view') === 'preview') {
