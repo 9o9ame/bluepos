@@ -40,7 +40,7 @@ class TotalTurnoverReportController extends Controller
             'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from'],
             'account_type_ulids' => ['sometimes', 'array', 'max:100'],
             'account_type_ulids.*' => ['required', 'ulid', 'distinct'],
-            'above' => ['sometimes', 'numeric', 'min:0'],
+            'above' => ['sometimes', 'string', 'regex:/^\\d{1,16}(\\.\\d{1,4})?$/'],
             'period' => ['sometimes', 'in:this_month,previous_month,today,yesterday,custom'],
             'mode' => ['sometimes', 'in:detailed,simple'],
             'group' => ['sometimes', 'in:accounts,all,customers,vendors'],
@@ -62,8 +62,16 @@ class TotalTurnoverReportController extends Controller
             ->whereIn('a.account_type_id', $types->pluck('id'))
             // A party turnover report must not include cash, tax, stock or
             // other internal ledgers simply because no type was selected.
-            ->where(fn ($q) => $q->whereNotNull('a.customer_id')
-                ->orWhereNotNull('a.supplier_id'))
+            ->where(function ($q) use ($tenant) {
+                $q->whereExists(fn ($linked) => $linked->selectRaw('1')
+                    ->from('customers as c')
+                    ->whereColumn('c.id', 'a.customer_id')
+                    ->where('c.tenant_id', $tenant))
+                  ->orWhereExists(fn ($linked) => $linked->selectRaw('1')
+                    ->from('suppliers as s')
+                    ->whereColumn('s.id', 'a.supplier_id')
+                    ->where('s.tenant_id', $tenant));
+            })
             ->when(($data['group'] ?? 'accounts') === 'customers', fn ($q) => $q->whereNotNull('a.customer_id'))
             ->when(($data['group'] ?? 'accounts') === 'vendors', fn ($q) => $q->whereNotNull('a.supplier_id'))
             ->select('a.id','a.name','a.customer_id','a.supplier_id','a.account_type_id')
