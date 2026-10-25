@@ -176,6 +176,7 @@ class DailyCashPositionTest extends TestCase
             'warehouse_id' => $context->warehouseId(),
             'customer_id' => $customer->id,
             'document_number' => 'TURNOVER-RETURN',
+            'idempotency_key' => 'turnover-return-test',
             'return_date' => '2026-10-07',
             'status' => 'posted',
             'subtotal' => '30.0000',
