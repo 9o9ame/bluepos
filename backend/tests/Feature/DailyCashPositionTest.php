@@ -118,6 +118,22 @@ class DailyCashPositionTest extends TestCase
             .'&end_date=2026-10-24')->assertForbidden();
     }
 
+    public function test_top_special_validates_rankings_and_never_accepts_cross_tenant_filter_ids(): void
+    {
+        $this->signInOwner('top-special-reports')->assertOk();
+        $this->getJson('/api/reports/top-special/options')->assertOk()
+            ->assertJsonStructure(['customers', 'suppliers', 'categories', 'brands', 'salespeople', 'areas']);
+        $base = '/api/reports/top-special?from=2026-10-01&to=2026-10-25&top=10&kind=customers';
+        $response = $this->getJson($base)->assertOk()
+            ->assertJsonStructure(['ranking', 'kind', 'from', 'to']);
+        $this->assertNoInternalIds($response->json());
+        $this->getJson($base.'&party_ulids[0]=01ARZ3NDEKTSV4RRFFQ69G5FAV')->assertNotFound();
+        $this->getJson('/api/reports/top-special?from=2026-10-26&to=2026-10-01'
+            .'&top=10&kind=customers')->assertUnprocessable();
+        $this->getJson($base.'&top=1000')->assertUnprocessable();
+        $this->getJson($base.'&kind=vendors')->assertStatus(422);
+    }
+
     public function test_daily_business_activity_uses_posted_ledgers_and_preserves_opening_balance(): void
     {
         $this->signInOwner('daily-business-activity')->assertOk();
