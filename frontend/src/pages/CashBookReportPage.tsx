@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import { ClipboardCopy, Download, FileCode, FileText, Minus, Plus, Printer, RefreshCw, Search, ArrowLeft, X } from 'lucide-react'
@@ -179,23 +179,44 @@ export function CashBookReportPage() {
   const payments = rows.filter((r) => r.credit !== '0.0000')
   const groupLabel = (row: CashBookEntry) => group === 'date' ? asLabel(row.date)
     : group === 'document' ? row.doc : ''
-  const entries = (items: CashBookEntry[], kind: 'debit' | 'credit') => (
-    <table className="cashbook-entries">
-      <thead><tr><th>Ref</th><th>#</th><th>Date</th><th>Detail / Narration</th><th>Amount</th></tr></thead>
-      <tbody>
-        {items.map((row, index) => (
-          <tr key={row.line_ulid}>
-            <td>{row.doc}</td><td>{row.trans_no}</td><td>{asLabel(row.date)}</td>
-            <td>{group !== 'none' && (index === 0 || groupLabel(items[index - 1]) !== groupLabel(row))
-              ? <strong className="cashbook-group">{groupLabel(row)}</strong> : null}
-              {showDetails ? row.description : row.account_name}
-            </td>
-            <td className="cashbook-money">{displayMoney(row[kind])}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  )
+  const entries = (items: CashBookEntry[], kind: 'debit' | 'credit') => {
+    const groups = new Map<string, CashBookEntry[]>()
+    for (const row of items) {
+      const label = group === 'none' ? '' : (groupLabel(row) || '(NONE)')
+      const groupRows = groups.get(label) ?? []
+      groupRows.push(row)
+      groups.set(label, groupRows)
+    }
+    const grandTotal = items.reduce((total, row) => total + moneyUnits(row[kind]), 0n)
+    return (
+      <table className="cashbook-entries">
+        <thead><tr><th>Ref</th><th>#</th><th>Date</th><th>Detail / Narration</th><th>Amount</th></tr></thead>
+        <tbody>
+          {[...groups.entries()].map(([label, groupRows]) => {
+            const subtotal = groupRows.reduce((total, row) => total + moneyUnits(row[kind]), 0n)
+            return (
+              <Fragment key={label}>
+                {group !== 'none' ? <tr className="cashbook-group-heading"><th colSpan={5}>{label}</th></tr> : null}
+                {groupRows.map((row) => <tr key={row.line_ulid}>
+                  <td>{row.doc}</td><td>{row.trans_no}</td><td>{asLabel(row.date)}</td>
+                  <td>{showDetails ? row.description : row.account_name}</td>
+                  <td className="cashbook-money">{displayMoney(row[kind])}</td>
+                </tr>)}
+                {group !== 'none' ? <tr className="cashbook-group-subtotal">
+                  <th colSpan={2}>Cnt: {groupRows.length}</th>
+                  <th colSpan={2}>Group total:</th>
+                  <th className="cashbook-money">{displayMoney(unitsText(subtotal))}</th>
+                </tr> : null}
+              </Fragment>
+            )
+          })}
+          <tr className="cashbook-grand-total"><th colSpan={2}>Cnt: {items.length}</th>
+            <th colSpan={2}>Total Amount:</th>
+            <th className="cashbook-money">{displayMoney(unitsText(grandTotal))}</th></tr>
+        </tbody>
+      </table>
+    )
+  }
   if (preview || cashFlow) {
     return (
       <section className={flowPreview ? "cashbook-page cashbook-view cashbook-flow-view cashbook-flow-preview" : cashFlow ? "cashbook-page cashbook-view cashbook-flow-view" : "cashbook-page cashbook-view"}>
