@@ -1,7 +1,8 @@
 import { Fragment, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
-import { ClipboardCopy, Download, FileCode, FileText, Minus, Plus, Printer, RefreshCw, Search, ArrowLeft, X } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
+import { ReportViewerToolbar } from '../components/reports/ReportViewerToolbar'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
@@ -229,43 +230,23 @@ export function CashBookReportPage() {
   if (preview || cashFlow) {
     return (
       <section className={flowPreview ? "cashbook-page cashbook-view cashbook-flow-view cashbook-flow-preview" : cashFlow ? "cashbook-page cashbook-view cashbook-flow-view" : "cashbook-page cashbook-view"}>
-        {(!cashFlow || flowPreview) ? <div className="trial-balance-viewer-toolbar cashbook-tools">
-          <UiButton variant="info" icon={<Printer size={15}/>} label="Print / PDF" disabled={!report} onClick={() => window.print()} />
-          <UiButton variant="default" icon={<ClipboardCopy size={15}/>} label={copyLabel} disabled={!report} onClick={() => void copyReport()} />
-          <UiButton variant="default" icon={<FileText size={15}/>} label="Text" disabled={!report} onClick={() => exportFile('txt')} />
-          <UiButton variant="default" icon={<FileCode size={15}/>} label="HTML" disabled={!report} onClick={() => exportFile('html')} />
-          <UiButton variant="info" icon={<Download size={15}/>} label="Export CSV" disabled={!report} onClick={() => exportFile('csv')} />
-          <UiSelect className="trial-balance-export-choice" aria-label="Export report format"
-            value="" searchable={false} options={[
-              {value:'',label:'Export as…'}, {value:'csv',label:'CSV (Excel compatible)'},
-              {value:'html',label:'HTML document'}, {value:'txt',label:'Plain text'},
-              {value:'pdf',label:'PDF (browser print)'},
-            ]} onChange={(format) => {
-              if (format === 'csv' || format === 'html' || format === 'txt') exportFile(format)
-              else if (format === 'pdf') window.print()
-            }} />
-          <div className="trial-balance-viewer-search">
-            <Search size={14} aria-hidden />
-            <input aria-label="Search report text" placeholder="Search report…" value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => { if (event.key === 'Enter') findReport() }} />
-            <UiButton variant="default" label="Find" disabled={!report || !search.trim()} onClick={findReport} />
-          </div>
-          <div className="trial-balance-viewer-zoom">
-            <UiButton variant="default" icon={<Minus size={14}/>} aria-label="Zoom out" disabled={zoom <= 50}
-              onClick={() => setZoom((value) => Math.max(50, value - 25))} />
-            <span>{zoom}%</span>
-            <UiButton variant="default" icon={<Plus size={14}/>} aria-label="Zoom in" disabled={zoom >= 200}
-              onClick={() => setZoom((value) => Math.min(200, value + 25))} />
-            <UiButton variant="default" label="Fit" onClick={() => setZoom(100)} />
-          </div>
-          <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh" disabled={reportQuery.isFetching}
-            onClick={() => void reportQuery.refetch()} />
-          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options"
-            onClick={() => openModule('/reports/accounts/cash-book')} />
-          <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
-        </div> : null}
-        {cashFlow ? <div className="cashbook-flow-heading">
+        {(!cashFlow || flowPreview) ? <ReportViewerToolbar
+          ready={Boolean(report)}
+          busy={reportQuery.isFetching}
+          search={search}
+          onSearchChange={setSearch}
+          onFind={findReport}
+          zoom={zoom}
+          onZoomChange={setZoom}
+          onPrint={() => window.print()}
+          onCopy={() => void copyReport()}
+          copyLabel={copyLabel}
+          onExport={exportFile}
+          onRefresh={() => void reportQuery.refetch()}
+          onEditOptions={() => openModule('/reports/accounts/cash-book')}
+          onClose={closeActiveTab}
+        /> : null}
+                {cashFlow ? <div className="cashbook-flow-heading">
           <h1>Cash Flow Statement</h1>
           {flowPreview ? <span>From: {asLabel(from)}　To: {asLabel(to)}</span> : (
             <div className="cashbook-flow-filters">
