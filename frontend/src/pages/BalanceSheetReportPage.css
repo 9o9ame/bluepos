@@ -1,12 +1,12 @@
 /* Balance Sheet options: fill the reports workspace, not a floating mini-card. */
-.bs-page:not(.bs-preview){padding:12px 14px 18px;align-items:stretch;gap:30px;overflow:hidden}
+.bs-page:not(.bs-preview){height:calc(100dvh - 207px);max-height:calc(100dvh - 207px);min-height:0;box-sizing:border-box;padding:10px 14px 14px;align-items:stretch;gap:18px;overflow:hidden}
 .bs-page:not(.bs-preview) .bs-panel{width:100%;max-width:none;min-height:0;flex:1;max-height:100%;display:flex;flex-direction:column;overflow:hidden;border-radius:var(--panel-radius);background:var(--ui-surface-subtle)}
 .bs-panel>h2{margin:0;min-height:40px;display:flex;align-items:center;justify-content:center;padding:6px 12px;box-sizing:border-box;font-size:20px;font-weight:800;background:var(--ui-table-header);color:var(--ui-table-header-text);border-bottom:1px solid var(--ui-border)}
 .bs-tabs{display:flex;gap:4px;padding:10px 14px 0}
 .bs-tabs button{min-height:36px;padding:7px 17px;border:1px solid var(--ui-control-border);border-radius:var(--control-radius);background:var(--ui-control-face);font:inherit;font-size:13px;font-weight:700;color:var(--ui-text);cursor:pointer;box-shadow:var(--ui-control-shadow)}
 .bs-tabs button[aria-pressed=true]{background:var(--ui-table-header);color:var(--ui-table-header-text);border-color:var(--ui-control-border)}
 .bs-tabs button:focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px}
- .bs-main{width:min(720px,calc(100% - 48px));min-height:310px;margin:auto;padding:24px;background:var(--ui-surface-muted);border:1px solid var(--ui-border);border-radius:var(--panel-radius);display:flex;flex-direction:column;gap:16px;box-sizing:border-box;font-size:13px}
+ .bs-main{width:min(720px,calc(100% - 48px));min-height:310px;margin:auto;padding:24px;transform:translateY(22px);background:var(--ui-surface-muted);border:1px solid var(--ui-border);border-radius:var(--panel-radius);display:flex;flex-direction:column;gap:16px;box-sizing:border-box;font-size:13px}
 .bs-main>strong{font-size:14px;font-weight:800}
 .bs-main label{display:flex;align-items:center;gap:10px;min-height:32px;font-weight:650}
 .bs-main .bs-date-field{display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px;align-items:center}
@@ -16,9 +16,9 @@
 .bs-main p{margin:0;font-size:12px;line-height:1.5;color:var(--ui-text-muted)}
 .bs-additional{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;padding:18px 24px 24px;flex:1;min-height:0;max-height:100%;overflow:hidden;box-sizing:border-box}
 .bs-additional section{display:flex;flex-direction:column;min-height:0;gap:8px;font-size:13px;font-weight:700}
-.bs-checklist{height:100%;min-height:0;max-height:100%;overflow-y:auto;overflow-x:hidden;border:1px solid var(--ui-border);border-radius:var(--control-radius);background:var(--ui-surface);padding:10px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:7px}
-.bs-checklist label{font-size:12px;font-weight:600;display:flex;align-items:center;gap:9px;min-height:23px}
-.bs-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;width:min(600px,100%);margin:12px auto 0;flex-shrink:0}
+.bs-checklist{height:auto;flex:1 1 0;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;border:1px solid var(--ui-border);border-radius:var(--control-radius);background:var(--ui-surface);padding:10px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:7px}
+.bs-checklist label{font-size:12px;font-weight:600;display:flex;align-items:center;gap:9px;min-height:23px;flex-shrink:0}
+.bs-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;width:min(600px,100%);margin:0 auto;flex-shrink:0}
 .bs-page:not(.bs-preview) .bs-actions button.ui-button{width:100%;height:48px;min-height:48px;font-size:15px;font-weight:700;justify-content:center}
 .bs-preview{padding:0;align-items:stretch;gap:0;overflow:auto}
 .bs-paper{width:min(1020px,calc(100% - 40px));margin:20px auto;min-height:640px;padding:34px;background:var(--ui-surface);border:1px solid var(--ui-border);box-sizing:border-box}
@@ -31,5 +31,5 @@
 .bs-paper .bs-heading th{text-align:center;background:var(--ui-surface-muted);padding:11px}
 .bs-paper .bs-subtotal th,.bs-paper .bs-total th,.bs-paper tfoot th{font-weight:800;border-top:2px solid var(--ui-table-border)}
 .bs-disclaimer{font-size:11px;color:var(--ui-text-muted)}
-@media(max-width:650px){.bs-page:not(.bs-preview){overflow:auto}.bs-additional{grid-template-columns:1fr;gap:12px;overflow:auto}.bs-checklist{min-height:140px;max-height:240px}.bs-main{margin:28px auto}.bs-actions{width:100%}.bs-paper{padding:10px}}
+@media(max-width:650px){.bs-page:not(.bs-preview){height:auto;max-height:none;overflow:auto}.bs-additional{grid-template-columns:1fr;gap:12px;overflow:auto}.bs-checklist{min-height:140px;max-height:240px}.bs-main{margin:28px auto;transform:none}.bs-actions{width:100%}.bs-paper{padding:10px}}
 @media print{@page{size:A4 portrait;margin:10mm}body:has(.bs-preview) *{visibility:hidden!important}body:has(.bs-preview) .bs-paper,body:has(.bs-preview) .bs-paper *{visibility:visible!important}.bs-preview{overflow:visible}.bs-paper{position:static;margin:0;padding:0;width:100%;min-height:0;border:0;zoom:1!important}.bs-paper thead{display:table-header-group}.bs-paper tr{break-inside:avoid}.bs-paper{color:black;background:white}}
