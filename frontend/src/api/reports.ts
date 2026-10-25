@@ -11,16 +11,9 @@ export function fetchTrialBalanceReport(params: {
   group_by: TrialBalanceGroupBy
   arrange_by: TrialBalanceArrangeBy
 }): Promise<TrialBalanceReport> {
-  const query = new URLSearchParams({
-    as_of_date: params.as_of_date,
-    group_by: params.group_by,
-    arrange_by: params.arrange_by,
+  return apiFetch<TrialBalanceReport>('/api/reports/accounting/trial-balance/preview', {
+    method: 'POST', busy: 'fetch', body: JSON.stringify(params),
   })
-
-  return apiFetch<TrialBalanceReport>(
-    `/api/reports/accounting/trial-balance?${query.toString()}`,
-    { busy: 'fetch' },
-  )
 }
 
 export function fetchTrialBalanceSixColumns(params: {
@@ -36,24 +29,7 @@ export function fetchTrialBalanceSixColumns(params: {
   closing_operator?: string
   closing_amount?: string
 }): Promise<TrialBalanceSixColumnReport> {
-  const query = new URLSearchParams({
-    mode: 'six_columns',
-    start_date: params.start_date,
-    end_date: params.end_date,
-    group_by: params.group_by,
-    arrange_by: params.arrange_by,
+  return apiFetch<TrialBalanceSixColumnReport>('/api/reports/accounting/trial-balance/preview', {
+    method: 'POST', busy: 'fetch', body: JSON.stringify({mode: 'six_columns', ...params}),
   })
-  params.main_heads?.forEach((ulid, index) => query.set(`main_heads[${index}]`, ulid))
-  params.sub_heads?.forEach((ulid, index) => query.set(`sub_heads[${index}]`, ulid))
-  params.account_types?.forEach((ulid, index) => query.set(`account_types[${index}]`, ulid))
-  params.document_types?.forEach((type, index) => query.set(`document_types[${index}]`, type))
-  params.party_categories?.forEach((type, index) => query.set(`party_categories[${index}]`, type))
-  if (params.closing_operator) {
-    query.set('closing_operator', params.closing_operator)
-    query.set('closing_amount', params.closing_amount ?? '0.0000')
-  }
-  return apiFetch<TrialBalanceSixColumnReport>(
-    `/api/reports/accounting/trial-balance?${query.toString()}`,
-    { busy: 'fetch' },
-  )
 }
