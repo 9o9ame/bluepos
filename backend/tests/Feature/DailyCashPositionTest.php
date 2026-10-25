@@ -31,6 +31,23 @@ class DailyCashPositionTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_income_statement_post_preview_requires_permission_and_valid_date(): void
+    {
+        $this->signInOwner('income-statement-post-preview')->assertOk();
+        $this->postJson('/api/reports/accounting/income-statement/preview', [
+            'as_of_date' => '2026-10-25',
+        ])->assertOk()->assertJsonStructure([
+            'as_of_date', 'sections', 'net_income', 'basis', 'limitations',
+        ]);
+        $this->postJson('/api/reports/accounting/income-statement/preview', [
+            'as_of_date' => 'not-a-date',
+        ])->assertUnprocessable();
+        $this->restrictCurrentMembershipWithoutPermission('reports.accounting');
+        $this->postJson('/api/reports/accounting/income-statement/preview', [
+            'as_of_date' => '2026-10-25',
+        ])->assertForbidden();
+    }
+
     public function test_balance_sheet_post_preview_is_branch_authorized_and_validates_filters(): void
     {
         $this->signInOwner('balance-sheet-preview')->assertOk();
