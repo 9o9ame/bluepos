@@ -1,0 +1,32 @@
+.gj-page{background:var(--ui-surface-subtle);color:var(--ui-text);min-height:0}
+.gj-options{height:calc(100dvh - 225px);min-height:470px;box-sizing:border-box;display:grid;grid-template-rows:minmax(0,1fr) 48px;gap:16px;padding:10px 14px 14px;overflow:hidden}
+.gj-panel{min-height:0;display:flex;flex-direction:column;border:1px solid var(--ui-border);border-radius:var(--panel-radius);overflow:hidden}
+.gj-panel>h2{margin:0;min-height:40px;display:flex;align-items:center;justify-content:center;background:var(--ui-table-header);color:var(--ui-table-header-text);font-size:20px}
+.gj-content{display:grid;grid-template-columns:minmax(320px,380px) minmax(0,1fr);gap:14px;min-height:0;flex:1;padding:14px;box-sizing:border-box;overflow:hidden}
+.gj-left{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:8px}
+.gj-left fieldset,.gj-types{border:1px solid var(--ui-border);border-radius:var(--control-radius);min-width:0;padding:12px;background:var(--ui-surface)}
+.gj-left legend,.gj-types legend{font-weight:800;font-size:13px;padding:0 5px}
+.gj-left label{display:flex;flex-direction:column;gap:5px;margin-bottom:8px;font-size:12px;font-weight:700}
+.gj-left label.gj-inline{flex-direction:row;align-items:center;gap:8px;margin:0}
+.gj-left input[type=date],.gj-left input[type=number],.gj-left select{min-width:0;width:100%;box-sizing:border-box;height:32px;padding:4px 8px;border:1px solid var(--ui-control-border);border-radius:var(--control-radius);background:var(--ui-control-face);color:var(--ui-text);font:inherit}
+.gj-left input[type=checkbox],.gj-types input[type=checkbox]{accent-color:var(--ui-accent)}
+.gj-balance-range{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.gj-types{display:flex;flex-direction:column;min-height:0;overflow:hidden;gap:8px}
+.gj-types-scroll{background:var(--ui-surface);min-height:0;overflow-y:auto;overflow-x:hidden;flex:1;display:flex;flex-direction:column;gap:7px}
+.gj-types-scroll label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;flex-shrink:0;min-height:22px}
+.gj-types small{font-size:11px;color:var(--ui-text-muted)}
+.gj-actions{width:min(600px,100%);height:48px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:auto}
+.gj-actions button.ui-button{width:100%;height:48px;justify-content:center;font-weight:700}
+.gj-preview{height:100%;overflow:auto}
+.gj-paper{box-sizing:border-box;background:var(--ui-surface);border:1px solid var(--ui-border);margin:18px auto;width:min(1120px,calc(100% - 36px));min-height:650px;padding:30px}
+.gj-paper header{text-align:center;margin-bottom:20px}.gj-paper header h2{margin:0;font-size:22px;letter-spacing:.12em}
+.gj-voucher{break-inside:avoid;page-break-inside:avoid;margin-bottom:18px}
+.gj-voucher-header{display:flex;gap:22px;align-items:center;background:var(--ui-table-header);color:var(--ui-table-header-text);padding:7px;font-size:12px}
+.gj-voucher table{width:100%;border-collapse:collapse;font-size:12px}
+.gj-voucher th,.gj-voucher td{border:1px solid var(--ui-table-border);padding:5px 7px;vertical-align:top}
+.gj-voucher td:nth-last-child(-n+2),.gj-voucher th:nth-last-child(-n+2){text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.gj-voucher tfoot{font-weight:800}
+.gj-narration{font-size:11px;color:var(--ui-text-muted);padding-left:8px}
+.gj-grand{display:flex;flex-wrap:wrap;gap:20px;padding:10px;border-top:2px solid var(--ui-table-border);font-weight:800}
+@media(max-width:650px){.gj-options{height:auto;display:flex;flex-direction:column;overflow:auto}.gj-panel{min-height:450px}.gj-content{grid-template-columns:1fr;overflow:auto}.gj-types{min-height:160px}.gj-actions{width:100%}.gj-paper{padding:10px}}
+@media print{@page{size:A4 portrait;margin:10mm}body:has(.gj-preview) *{visibility:hidden!important}body:has(.gj-preview) .gj-paper,body:has(.gj-preview) .gj-paper *{visibility:visible!important}.gj-paper{margin:0;padding:0;width:100%;min-height:0;border:0;zoom:1!important;color:black;background:white}.gj-voucher-header{color:black;background:#ddd}.gj-voucher table thead{display:table-header-group}}
