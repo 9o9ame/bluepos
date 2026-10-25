@@ -77,6 +77,9 @@ class CashBookReportBuilder
                 'journal_entries.voucher_number',
                 'journal_entries.document_type',
                 'journal_entries.description as entry_description',
+                'journal_entries.document_type as source_document_type',
+                'journal_entries.document_id as source_document_id',
+                'journal_entries.ulid as source_journal_ulid',
                 'users.name as creator_name',
             ])
             ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
@@ -127,6 +130,11 @@ class CashBookReportBuilder
                     : null,
                 'doc' => $this->documentLabel((string) $line->document_type),
                 'creator_name' => $line->creator_name ?: '(NONE)',
+                // These source keys are consumed inside the report controller and
+                // removed before sending the public response.
+                '_source_type' => $line->source_document_type,
+                '_source_id' => $line->source_document_id,
+                '_journal_ulid' => $line->source_journal_ulid,
                 'description' => $line->line_description
                     ?: $line->entry_description
                     ?: $this->documentLabel((string) $line->document_type),
