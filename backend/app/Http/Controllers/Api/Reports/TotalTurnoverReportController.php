@@ -60,6 +60,8 @@ class TotalTurnoverReportController extends Controller
         $accounts = DB::table('accounts as a')
             ->where('a.tenant_id', $tenant)->where('a.is_active', true)
             ->whereIn('a.account_type_id', $types->pluck('id'))
+            ->when(($data['group'] ?? 'accounts') === 'customers', fn ($q) => $q->whereNotNull('a.customer_id'))
+            ->when(($data['group'] ?? 'accounts') === 'vendors', fn ($q) => $q->whereNotNull('a.supplier_id'))
             ->select('a.id','a.name','a.customer_id','a.supplier_id','a.account_type_id')
             ->orderBy('a.name')->get();
         $ids = $accounts->pluck('id')->all();
@@ -111,7 +113,7 @@ class TotalTurnoverReportController extends Controller
         })->filter(fn ($row) => bccomp($row['received'], $above, 4) > 0
             || bccomp($row['sales'], $above, 4) > 0
             || bccomp($row['purchases'], $above, 4) > 0
-            || bccomp($row['receivable'], $above, 4) > 0)->values();
+            || bccomp(ltrim($row['receivable'], '-'), $above, 4) > 0)->values();
 
         return response()->json([
             'from' => $data['from'], 'to' => $data['to'],
