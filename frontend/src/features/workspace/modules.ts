@@ -369,6 +369,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-daily-income-statement',
+    title: 'Income Statement (Daily / Monthly / Yearly)',
+    path: '/reports/accounts/daily-income-statement',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
     key: 'report-total-turnover',
     title: 'Total Turnover Report',
     path: '/reports/accounts/total-turnover',
@@ -612,7 +620,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Total Turnover Report', status: 'ready', path: '/reports/accounts/total-turnover' },
             { label: 'Balance Sheet', status: 'ready', path: '/reports/accounts/balance-sheet' },
             { label: 'Income Statement', status: 'ready', path: '/reports/accounts/income-statement' },
-            { label: 'Income Statement (Daily, Monthly)', ...LATER },
+            { label: 'Income Statement (Daily, Monthly)', status: 'ready', path: '/reports/accounts/daily-income-statement' },
             { label: 'General Journal Report', ...LATER },
           ],
         },
@@ -792,6 +800,10 @@ export function moduleTabIdentity(
         path: pathname + search,
       }
     }
+  }
+
+  if (module.key === 'report-daily-income-statement' && new URLSearchParams(search).get('view') === 'preview') {
+    return { key: 'report-daily-income-statement:preview', title: 'Daily Income Statement Preview', path: pathname + search }
   }
 
   if (module.key === 'report-income-statement' && new URLSearchParams(search).get('view') === 'preview') {
