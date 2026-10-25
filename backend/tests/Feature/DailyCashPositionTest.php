@@ -11,6 +11,8 @@ use App\Models\AccountType;
 use App\Models\Branch;
 use App\Models\CashierShift;
 use App\Models\Category;
+use App\Models\Customer;
+use App\Models\SaleReturn;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
 use App\Models\Permission;
@@ -132,6 +134,75 @@ class DailyCashPositionTest extends TestCase
         $this->getJson('/api/reports/accounting/total-turnover?from=2026-10-26&to=2026-10-01')
             ->assertUnprocessable();
         $this->getJson($base.'&above=-10')->assertUnprocessable();
+    }
+
+    public function test_total_turnover_nets_posted_returns_and_does_not_duplicate_party_sales(): void
+    {
+        $this->signInOwner('turnover-reconciliation')->assertOk();
+        $context = app(TenantContext::class);
+        $customer = Customer::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => 'TURNOVER-PARTY',
+            'name' => 'Turnover Test Party',
+            'is_active' => true,
+            'created_by' => $context->userId(),
+        ]);
+        $first = $this->leafAccount('Turnover Party A', 'TURN-A', '0010');
+        $second = $this->leafAccount('Turnover Party B', 'TURN-B', '0010');
+        $first->update(['customer_id' => $customer->id]);
+        $second->update(['customer_id' => $customer->id]);
+        $cash = $this->leafAccount('Turnover Receipt Cash', 'TURN-CASH', '0010');
+        $revenue = $this->leafAccount('Turnover Sales', 'TURN-SALES', '0040');
+
+        foreach ([['2026-10-05', '100.0000'], ['2026-10-06', '200.0000']] as $index => [$date, $amount]) {
+            Sale::query()->create([
+                'tenant_id' => $context->tenantId(),
+                'branch_id' => $context->branchId(),
+                'warehouse_id' => $context->warehouseId(),
+                'customer_id' => $customer->id,
+                'document_number' => 'TURNOVER-INVOICE-'.$index,
+                'status' => 'posted',
+                'sale_date' => $date,
+                'subtotal' => $amount,
+                'grand_total' => $amount,
+                'idempotency_key' => 'turnover-test-'.$index,
+                'created_by' => $context->userId(),
+                'posted_at' => now(),
+            ]);
+        }
+        SaleReturn::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'warehouse_id' => $context->warehouseId(),
+            'customer_id' => $customer->id,
+            'document_number' => 'TURNOVER-RETURN',
+            'return_date' => '2026-10-07',
+            'status' => 'posted',
+            'subtotal' => '30.0000',
+            'grand_total' => '30.0000',
+            'created_by' => $context->userId(),
+            'posted_at' => now(),
+        ]);
+        $this->postedJournal('sale_invoice', '2026-10-05',
+            [[$first, '100.0000', '0.0000'], [$revenue, '0.0000', '100.0000']], 'Invoice A');
+        $this->postedJournal('sale_invoice', '2026-10-06',
+            [[$second, '200.0000', '0.0000'], [$revenue, '0.0000', '200.0000']], 'Invoice B');
+        $this->postedJournal('sale_return', '2026-10-07',
+            [[$revenue, '30.0000', '0.0000'], [$second, '0.0000', '30.0000']], 'Return');
+        $this->postedJournal('receiving_voucher', '2026-10-08',
+            [[$cash, '25.0000', '0.0000'], [$second, '0.0000', '25.0000']], 'Recovery');
+
+        $base = '/api/reports/accounting/total-turnover?mode=simple'
+            .'&from=2026-10-01&to=2026-10-25';
+        $result = $this->getJson($base)->assertOk();
+        $this->assertCount(1, $result->json('rows'));
+        $this->assertSame('270.0000', $result->json('rows.0.sales_returns'));
+        $this->assertSame('25.0000', $result->json('rows.0.received'));
+        $this->assertSame('245.0000', $result->json('rows.0.receivable'));
+        $this->assertSame('270.0000', $result->json('totals.sales_returns'));
+        $this->assertNoInternalIds($result->json());
+        $this->getJson($base.'&above=270.0000')->assertJsonCount(0, 'rows');
+        $this->getJson($base.'&above=269.9999')->assertJsonCount(1, 'rows');
     }
 
     public function test_simple_turnover_uses_posted_period_ledger_movements(): void
