@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import { apiFetch } from '../api/client'
@@ -92,7 +92,7 @@ export function TotalTurnoverReportPage() {
     {data && <article ref={paperRef} className="turnover-paper" style={{zoom:zoom+'%'}}>
       <header><h1>PARTIES, PRODUCT WISE (RECEIVABLE &amp; PAYABLE SUMMARY WITH TURNOVER)</h1>
         <p>From {data.from} to {data.to}</p></header>
-      {data.mode === 'simple' ? <table className="turnover-simple-table"><thead>
+      {mode === 'simple' ? <table className="turnover-simple-table"><thead>
         <tr><th rowSpan={2}>PARTY NAME</th><th colSpan={3}>RECOVERY POSITION</th><th colSpan={2}>TOTAL</th></tr>
         <tr><th>Sales - Returns</th><th>Recovery</th><th>%age</th><th>Turnover</th><th>RECEIVABLE</th></tr>
       </thead><tbody>{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td>
@@ -102,11 +102,20 @@ export function TotalTurnoverReportPage() {
       <tfoot><tr><th>TOTAL</th><th>{fmt(data.totals.sales_returns)}</th>
         <th>{fmt(data.totals.received)}</th><th></th><th>{fmt(data.totals.sales)}</th>
         <th>{fmt(data.totals.receivable)}</th></tr></tfoot></table>
-      : <table><thead><tr><th rowSpan={2}>PARTY NAME</th><th colSpan={2}>PURCHASES</th><th>SALES</th><th colSpan={2}>RECOVERY POSITION</th><th colSpan={2}>TOTAL</th></tr>
-      <tr><th>Amount</th><th>Qty</th><th>Amount</th><th>Received</th><th>%age</th><th>Turnover</th><th>RECEIVABLE</th></tr></thead>
-      <tbody>{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td>
-        <td>{fmt(r.purchases)}</td><td>—</td><td>{fmt(r.sales)}</td><td>{fmt(r.received)}</td><td>—</td><td>{fmt(r.sales)}</td><td>{fmt(r.receivable)}</td></tr>)}
-      </tbody><tfoot><tr><th>TOTAL</th><th>{fmt(data.totals.purchases)}</th><th>—</th><th>{fmt(data.totals.sales)}</th><th>{fmt(data.totals.received)}</th><th>—</th><th>{fmt(data.totals.sales)}</th><th>{fmt(data.totals.receivable)}</th></tr></tfoot></table>}
+      : <div className="turnover-detailed-scroll"><table className="turnover-detailed-table"><thead>
+        <tr><th rowSpan={2}>PARTY NAME</th><th colSpan={2}>PURCHASES</th>
+          {Array.from({length:5},(_,i)=><th key={i} colSpan={2}></th>)}
+          <th colSpan={2}>RECOVERY POSITION</th><th colSpan={2}>TOTAL</th></tr>
+        <tr>{Array.from({length:6},(_,i)=><Fragment key={i}><th>Ltrs</th><th>AMOUNT</th></Fragment>)}
+          <th>Received</th><th>%age</th><th>Turnover</th><th>RECEIVABLE</th></tr></thead>
+        <tbody>{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td>
+          {Array.from({length:6},(_,j)=><Fragment key={j}><td>—</td><td>—</td></Fragment>)}
+          <td>{fmt(r.received)}</td><td>0%</td><td>—</td><td>{fmt(r.receivable)}</td></tr>)}</tbody>
+        <tfoot><tr><th>TOTAL</th>
+          {Array.from({length:12},(_,i)=><th key={i}>—</th>)}
+          <th>{fmt(data.totals.received)}</th><th>0%</th><th>—</th>
+          <th>{fmt(data.totals.receivable)}</th></tr></tfoot>
+      </table></div>}
       <p className="turnover-disclaimer">Posted entries only. In Simple Turn Over, Sales − Returns shows net posted account movement in the selected period, and %age = Recovery ÷ that movement × 100. Product-wise litres remain unmapped.</p>
     </article>}
   </section>
