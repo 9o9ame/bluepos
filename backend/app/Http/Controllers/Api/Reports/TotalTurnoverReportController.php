@@ -67,6 +67,7 @@ class TotalTurnoverReportController extends Controller
         $ids = $accounts->pluck('id')->all();
         $balances = collect();
         $received = collect();
+        $periodMovements = collect();
         if ($ids !== []) {
             $ledger = DB::table('journal_lines as l')
                 ->join('journal_entries as e', function ($join) use ($tenant, $branch) {
@@ -78,6 +79,11 @@ class TotalTurnoverReportController extends Controller
                 ->whereDate('e.entry_date', '<=', $data['to']);
             $balances = (clone $ledger)->groupBy('l.account_id')
                 ->selectRaw('l.account_id, SUM(l.debit - l.credit)::numeric(20,4) as balance')
+                ->get()->keyBy('account_id');
+            $periodMovements = (clone $ledger)
+                ->whereDate('e.entry_date', '>=', $data['from'])
+                ->groupBy('l.account_id')
+                ->selectRaw('l.account_id, SUM(l.debit - l.credit)::numeric(20,4) as movement')
                 ->get()->keyBy('account_id');
             // Recovery is a credit posted to a linked party account during
             // the selected period. Do not count sale invoice credits as receipts.
@@ -102,15 +108,17 @@ class TotalTurnoverReportController extends Controller
             ->groupBy('supplier_id')->selectRaw('supplier_id, SUM(grand_total)::numeric(20,4) as total')
             ->get()->keyBy('supplier_id') : collect();
         $above = (string) ($data['above'] ?? '0');
-        $rows = $accounts->map(function ($a) use ($balances, $received, $sales, $purchases) {
+        $rows = $accounts->map(function ($a) use ($balances, $received, $periodMovements, $sales, $purchases) {
             return [
                 'name' => $a->name,
                 'received' => (string) ($received->get($a->id)->received ?? '0.0000'),
+                'sales_returns' => (string) ($periodMovements->get($a->id)->movement ?? '0.0000'),
                 'receivable' => (string) ($balances->get($a->id)->balance ?? '0.0000'),
                 'sales' => (string) ($sales->get($a->customer_id)->total ?? '0.0000'),
                 'purchases' => (string) ($purchases->get($a->supplier_id)->total ?? '0.0000'),
             ];
-        })->filter(fn ($row) => bccomp($row['received'], $above, 4) > 0
+        })->filter(fn ($row) => bccomp(ltrim($row['sales_returns'], '-'), $above, 4) > 0
+            || bccomp($row['received'], $above, 4) > 0
             || bccomp($row['sales'], $above, 4) > 0
             || bccomp($row['purchases'], $above, 4) > 0
             || bccomp(ltrim($row['receivable'], '-'), $above, 4) > 0)->values();
@@ -121,6 +129,7 @@ class TotalTurnoverReportController extends Controller
             'rows' => $rows,
             'totals' => [
                 'received' => $rows->reduce(fn ($sum,$row) => bcadd($sum,$row['received'],4), '0.0000'),
+                'sales_returns' => $rows->reduce(fn ($sum,$row) => bcadd($sum,$row['sales_returns'],4), '0.0000'),
                 'receivable' => $rows->reduce(fn ($sum,$row) => bcadd($sum,$row['receivable'],4), '0.0000'),
                 'sales' => $rows->reduce(fn ($sum,$row) => bcadd($sum,$row['sales'],4), '0.0000'),
                 'purchases' => $rows->reduce(fn ($sum,$row) => bcadd($sum,$row['purchases'],4), '0.0000'),
