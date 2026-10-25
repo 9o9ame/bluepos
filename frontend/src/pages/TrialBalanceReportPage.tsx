@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, ClipboardCopy, Download, Eye, FileCode, FileText, Minus, Plus, Printer, RefreshCw, Search, X } from 'lucide-react'
@@ -15,7 +15,18 @@ import type {
   TrialBalanceRow,
   TrialBalanceTotals,
 } from '../types/reports'
+import { readPreviewSelection, savePreviewSelection } from '../features/reports/previewSelection'
 import './TrialBalanceReportPage.css'
+
+type TrialSelection = {
+  as_of_date: string; start_date: string; end_date: string
+  group_by: TrialBalanceGroupBy; arrange_by: TrialBalanceArrangeBy
+  report_title: string; separate_pages: string; dates_only: string; two_column: string
+  show: string; main_heads: string; sub_heads: string; account_types: string
+  document_types: string; party_categories: string; closing_operator: string
+  closing_amount: string
+}
+const selectionKey = (view: string) => 'trial-balance:' + view
 
 const GROUP_OPTIONS = [
   { value: 'account_type', label: 'Account Type' },
@@ -333,8 +344,13 @@ export function TrialBalanceReportPage() {
   const { session } = useAuth()
   const { closeActiveTab, openModule } = useWorkspace()
   const location = useLocation()
+  const routeParams = new URLSearchParams(location.search)
+  const viewParam = routeParams.get('view')
+  const storedSelection = viewParam ? readPreviewSelection<TrialSelection>(selectionKey(viewParam)) : null
   const params = new URLSearchParams(location.search)
-  const viewParam = params.get('view')
+  if (storedSelection) {
+    for (const [key, value] of Object.entries(storedSelection)) params.set(key, value)
+  }
   const isViewer = viewParam === 'detail' || viewParam === 'major_minor'
   const isSixViewer = viewParam === 'six_columns' || viewParam === 'dr_cr_separate'
   const isSixOptions = viewParam === 'six_options'
@@ -369,6 +385,31 @@ export function TrialBalanceReportPage() {
   const [selectedAccountTypes, setSelectedAccountTypes] = useState<string[]>(params.get('account_types')?.split(',').filter(Boolean) ?? [])
   const [selectedDocumentTypes, setSelectedDocumentTypes] = useState<string[]>(params.get('document_types')?.split(',').filter(Boolean) ?? [])
   const [selectedPartyCategories, setSelectedPartyCategories] = useState<string[]>(params.get('party_categories')?.split(',').filter(Boolean) ?? [])
+  useEffect(() => {
+    if (!storedSelection) return
+    setAsOfDate(storedSelection.as_of_date)
+    setGroupBy(storedSelection.group_by)
+    setArrangeBy(storedSelection.arrange_by)
+    setSeparatePages(storedSelection.separate_pages === '1')
+    setStartDate(storedSelection.start_date)
+    setEndDate(storedSelection.end_date)
+    setSixGrouping(storedSelection.group_by)
+    setSixArrange(storedSelection.arrange_by)
+    setSixTitle(storedSelection.report_title)
+    setSixSeparatePages(storedSelection.separate_pages === '1')
+    setSixDatesOnly(storedSelection.dates_only === '1')
+    setSixTwoColumn(storedSelection.two_column === '1')
+    setSixShowCode(storedSelection.show !== 'name')
+    setClosingOperator(storedSelection.closing_operator)
+    setClosingAmount(storedSelection.closing_amount)
+    setSelectedMainHeads(storedSelection.main_heads.split(',').filter(Boolean))
+    setSelectedSubHeads(storedSelection.sub_heads.split(',').filter(Boolean))
+    setSelectedAccountTypes(storedSelection.account_types.split(',').filter(Boolean))
+    setSelectedDocumentTypes(storedSelection.document_types.split(',').filter(Boolean))
+    setSelectedPartyCategories(storedSelection.party_categories.split(',').filter(Boolean))
+  // Only switching report modes should restore their independent snapshots.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewParam])
   const toggleHierarchy = (items: string[], setItems: (next: string[]) => void, ulid: string) => {
     setItems(items.includes(ulid) ? items.filter((value) => value !== ulid) : [...items, ulid])
   }
@@ -390,7 +431,7 @@ export function TrialBalanceReportPage() {
       group_by: viewParam === 'major_minor' ? 'level_wise' : initialGroup,
       arrange_by: viewParam === 'major_minor' ? 'code_asc' : initialArrange,
     }),
-    enabled: isViewer,
+    enabled: isViewer && Boolean(storedSelection),
   })
 
   // The existing protected report endpoint supplies real account hierarchy names.
@@ -440,12 +481,13 @@ export function TrialBalanceReportPage() {
       document_types: selectedDocumentTypes, party_categories: selectedPartyCategories,
       closing_operator: closingOperator || undefined, closing_amount: closingAmount,
     }),
-    enabled: isSixViewer,
+    enabled: isSixViewer && Boolean(storedSelection),
   })
 
   const openSixView = (view: 'six_columns' | 'dr_cr_separate') => {
     const query = new URLSearchParams({ view, start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, separate_pages: sixSeparatePages ? '1' : '0', dates_only: sixDatesOnly ? '1' : '0', two_column: sixTwoColumn ? '1' : '0', show: sixShowCode ? 'code' : 'name', main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount })
-    openModule(`/reports/accounts/trial-balance?${query.toString()}`)
+    savePreviewSelection(selectionKey(view), Object.fromEntries(query.entries()) as TrialSelection)
+    openModule('/reports/accounts/trial-balance?view=' + view)
   }
 
   const openReportView = (view: 'detail' | 'major_minor') => {
@@ -456,7 +498,8 @@ export function TrialBalanceReportPage() {
       arrange_by: view === 'major_minor' ? 'code_asc' : arrangeBy,
       separate_pages: separatePages ? '1' : '0',
     })
-    openModule(`/reports/accounts/trial-balance?${query.toString()}`)
+    savePreviewSelection(selectionKey(view), Object.fromEntries(query.entries()) as TrialSelection)
+    openModule('/reports/accounts/trial-balance?view=' + view)
   }
 
   const printReport = () => {
@@ -792,7 +835,7 @@ export function TrialBalanceReportPage() {
             <UiButton variant="default" label="Fit" onClick={() => setViewerZoom(100)} />
           </div>
           <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh" disabled={sixQuery.isFetching} onClick={() => void sixQuery.refetch()} />
-          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => openModule(`/reports/accounts/trial-balance?${new URLSearchParams({ view: 'six_options', start_date: startDate, end_date: endDate, group_by: sixGrouping, arrange_by: sixArrange, report_title: sixTitle, dates_only: sixDatesOnly ? '1' : '0', main_heads: selectedMainHeads.join(','), sub_heads: selectedSubHeads.join(','), account_types: selectedAccountTypes.join(','), document_types: selectedDocumentTypes.join(','), party_categories: selectedPartyCategories.join(','), closing_operator: closingOperator, closing_amount: closingAmount }).toString()}`)} />
+          <UiButton variant="default" icon={<ArrowLeft size={15}/>} label="Edit Options" onClick={() => { if (storedSelection) savePreviewSelection(selectionKey('six_options'), storedSelection); openModule('/reports/accounts/trial-balance?view=six_options') }} />
           <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
         </div>
         <div className="trial-balance-viewer-canvas">
