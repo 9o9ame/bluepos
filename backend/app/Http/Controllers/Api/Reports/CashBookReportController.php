@@ -34,7 +34,7 @@ class CashBookReportController extends Controller
             'show_purchase' => ['sometimes', 'boolean'],
             'non_cash_also' => ['sometimes', 'boolean'],
             'summary_only' => ['sometimes', 'boolean'],
-            'group_by' => ['sometimes', 'in:none,date,document'],
+            'group_by' => ['sometimes', 'in:none,date,document,user'],
         ]);
 
         $accounts = $this->builder->cashAccounts($context->tenantId())
