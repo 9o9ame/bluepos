@@ -197,10 +197,12 @@ class DailyCashPositionTest extends TestCase
             .'&from=2026-10-01&to=2026-10-25';
         $result = $this->getJson($base)->assertOk();
         $this->assertCount(1, $result->json('rows'));
-        $this->assertSame('270.0000', $result->json('rows.0.sales_returns'));
+        $this->assertSame('245.0000', $result->json('rows.0.sales_returns'));
+        $this->assertSame('270.0000', $result->json('rows.0.net_sales'));
         $this->assertSame('25.0000', $result->json('rows.0.received'));
         $this->assertSame('245.0000', $result->json('rows.0.receivable'));
-        $this->assertSame('270.0000', $result->json('totals.sales_returns'));
+        $this->assertSame('245.0000', $result->json('totals.sales_returns'));
+        $this->assertSame('270.0000', $result->json('totals.net_sales'));
         $this->assertNoInternalIds($result->json());
         $this->getJson($base.'&above=270.0000')->assertJsonCount(0, 'rows');
         $this->getJson($base.'&above=269.9999')->assertJsonCount(1, 'rows');
