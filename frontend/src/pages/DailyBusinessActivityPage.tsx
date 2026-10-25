@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import { apiFetch } from '../api/client'
+import { Download, FileText, FileCode, Minus, Plus, Search } from 'lucide-react'
 import { UiButton } from '../components/ui/UiButton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import './DailyBusinessActivityPage.css'
@@ -36,6 +37,9 @@ export function DailyBusinessActivityPage() {
   const [start, setStart] = useState(params.get('start_date') || today())
   const [end, setEnd] = useState(params.get('end_date') || today())
   const [selected, setSelected] = useState<string[]>(params.get('types')?.split(',').filter(Boolean) || [])
+  const [search, setSearch] = useState('')
+  const [zoom, setZoom] = useState(100)
+  const paperRef = useRef<HTMLElement>(null)
   const typesQuery = useQuery({
     queryKey: ['daily-business-account-types'],
     queryFn: () => apiFetch<{ account_types: AccountType[] }>('/api/reports/accounting/daily-business-activity/types'),
@@ -48,18 +52,61 @@ export function DailyBusinessActivityPage() {
       selected.forEach((ulid, i) => search.set(`account_type_ulids[${i}]`, ulid))
       return apiFetch<LedgerReport>(`/api/reports/accounting/daily-business-activity?${search}`)
     },
-    enabled: preview && selected.length > 0,
+    enabled: preview,
   })
+  const exportReport = (format: 'txt' | 'html' | 'csv') => {
+    const paper = paperRef.current
+    if (!paper || !reportQuery.data) return
+    const safe = (value: string) => {
+      const guarded = /^\\s*[=+@-]/.test(value) ? "'" + value : value
+      return '"' + guarded.replace(/"/g, '""') + '"'
+    }
+    const content = format === 'csv'
+      ? '\uFEFF' + [['Account', 'Date', 'Transaction', 'Document', 'Narration', 'Debit', 'Credit', 'Balance'],
+        ...reportQuery.data.sections.flatMap((section) => section.rows.map((row) =>
+          [section.account.name, row.date, row.trans_no, row.doc, row.narration,
+            row.debit, row.credit, row.balance]))].map((line) => line.map(safe).join(',')).join('\r\n')
+      : format === 'html'
+        ? '<!doctype html><html><head><meta charset="utf-8"></head><body>' + paper.innerHTML + '</body></html>'
+        : paper.innerText || paper.textContent || ''
+    const url = URL.createObjectURL(new Blob([content], { type: format === 'csv' ? 'text/csv;charset=utf-8' : format === 'html' ? 'text/html;charset=utf-8' : 'text/plain;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'daily-ledger-wise-activity.' + format
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+  const copyReport = async () => {
+    if (paperRef.current) await navigator.clipboard.writeText(paperRef.current.innerText || '')
+  }
+  const findReport = () => {
+    const term = search.trim().toLowerCase()
+    if (!term) return
+    Array.from(paperRef.current?.querySelectorAll('td,th,h1,strong') ?? [])
+      .find((node) => node.textContent?.toLowerCase().includes(term))
+      ?.scrollIntoView({ block: 'center' })
+  }
   if (preview) return <section className="dba-page dba-preview">
     <div className="dba-toolbar">
       <UiButton variant="info" label="Print / PDF" onClick={() => window.print()} />
+      <UiButton variant="default" label="Copy" onClick={() => void copyReport()} />
+      <UiButton variant="default" icon={<FileText size={14}/>} label="Text" onClick={() => exportReport('txt')} />
+      <UiButton variant="default" icon={<FileCode size={14}/>} label="HTML" onClick={() => exportReport('html')} />
+      <UiButton variant="info" icon={<Download size={14}/>} label="Export CSV" onClick={() => exportReport('csv')} />
+      <label className="dba-toolbar-search"><Search size={14}/><input aria-label="Search report" placeholder="Search report…" value={search}
+        onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') findReport() }}/></label>
+      <UiButton variant="default" label="Find" disabled={!search.trim()} onClick={findReport} />
+      <UiButton variant="default" icon={<Minus size={14}/>} aria-label="Zoom out" disabled={zoom <= 50} onClick={() => setZoom((n) => Math.max(50,n-25))}/>
+      <span>{zoom}%</span>
+      <UiButton variant="default" icon={<Plus size={14}/>} aria-label="Zoom in" disabled={zoom >= 200} onClick={() => setZoom((n) => Math.min(200,n+25))}/>
+      <UiButton variant="default" label="Fit" onClick={() => setZoom(100)} />
       <UiButton variant="info" label="Refresh" onClick={() => void reportQuery.refetch()} />
-      <UiButton variant="default" label="Selection" onClick={() => openModule('/reports/daily/business-activity')} />
+      <UiButton variant="default" label="Edit Options" onClick={() => openModule('/reports/daily/business-activity')} />
       <UiButton variant="default" label="Close" onClick={closeActiveTab} />
     </div>
     {reportQuery.isLoading && <p>Loading daily ledger report…</p>}
     {reportQuery.isError && <p role="alert">Unable to load report.</p>}
-    {reportQuery.data && <article className="dba-paper">
+    {reportQuery.data && <article className="dba-paper" ref={paperRef} style={{ zoom: `${zoom}%` }}>
       <header><h1>DAILY LEDGER WISE ACTIVITY</h1>
         <p>From {reportQuery.data.start_date} to {reportQuery.data.end_date}</p></header>
       {reportQuery.data.sections.length === 0 && <p>No posted ledger transactions for the selected account types and period.</p>}
@@ -90,7 +137,7 @@ export function DailyBusinessActivityPage() {
       })}
     </article>}
   </section>
-  const invalid = start > end || selected.length === 0
+  const invalid = !start || !end || start > end || typesQuery.isLoading || typesQuery.isError
   return <section className="dba-page">
     <div className="dba-select-card">
       <h2>Selection Options</h2>
