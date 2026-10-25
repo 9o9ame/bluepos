@@ -100,9 +100,9 @@ export function GeneralJournalReportPage(){
         <label className="gj-inline"><input type="checkbox" checked={problematic} onChange={e=>setProblematic(e.target.checked)}/> Only Problematic Entries</label>
         <label className="gj-inline"><input type="checkbox" checked={narration} onChange={e=>setNarration(e.target.checked)}/> Narration Also</label>
         <label>Print Format<select value={format} onChange={e=>setFormat(e.target.value as Selection['print_format'])}>
-          <option value="transaction_wise">Transaction Wise Format</option><option value="plain">Plain Format</option>
-          <option value="group_by_doc">Group By Doc</option><option value="single_line">Single Line Format</option></select></label>
-        <label>Having Closing Balance<select value={balanceMode} onChange={e=>setBalanceMode(e.target.value as Selection['balance_mode'])}>
+          <option value="transaction_wise">Transaction Wise Format</option><option value="plain" disabled>Plain Format (pending mapping)</option>
+          <option value="group_by_doc" disabled>Group By Doc (pending mapping)</option><option value="single_line" disabled>Single Line Format (pending mapping)</option></select></label>
+        <label>Voucher Debit/Credit Difference<select value={balanceMode} onChange={e=>setBalanceMode(e.target.value as Selection['balance_mode'])}>
           <option value="all">Any</option><option value="not_between">Not Between</option><option value="between">Between</option></select></label>
         {balanceMode!=='all'&&<div className="gj-balance-range"><label>From<input type="number" step="0.0001" min="0" value={balanceFrom} onChange={e=>setBalanceFrom(e.target.value)}/></label>
           <label>To<input type="number" step="0.0001" min="0" value={balanceTo} onChange={e=>setBalanceTo(e.target.value)}/></label></div>}
