@@ -118,6 +118,22 @@ class DailyCashPositionTest extends TestCase
             .'&end_date=2026-10-24')->assertForbidden();
     }
 
+    public function test_total_turnover_rejects_invalid_dates_and_account_type_filters(): void
+    {
+        $this->signInOwner('total-turnover-test')->assertOk();
+        $this->getJson('/api/reports/accounting/total-turnover/options')
+            ->assertOk()->assertJsonStructure(['account_types']);
+        $base = '/api/reports/accounting/total-turnover?from=2026-10-01&to=2026-10-25';
+        $response = $this->getJson($base)->assertOk()
+            ->assertJsonStructure(['rows', 'totals' => ['received', 'receivable', 'sales', 'purchases']]);
+        $this->assertNoInternalIds($response->json());
+        $this->getJson($base.'&account_type_ulids[0]=01ARZ3NDEKTSV4RRFFQ69G5FAV')
+            ->assertNotFound();
+        $this->getJson('/api/reports/accounting/total-turnover?from=2026-10-26&to=2026-10-01')
+            ->assertUnprocessable();
+        $this->getJson($base.'&above=-10')->assertUnprocessable();
+    }
+
     public function test_top_special_validates_rankings_and_never_accepts_cross_tenant_filter_ids(): void
     {
         $this->signInOwner('top-special-reports')->assertOk();
