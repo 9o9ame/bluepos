@@ -143,11 +143,19 @@ class TotalTurnoverReportController extends Controller
                 fn ($sum, $row) => bcadd($sum, $row['receivable'], 4), '0.0000');
             unset($first['_party_key']);
             return $first;
-        })->values()->filter(fn ($row) => bccomp(ltrim($row['sales_returns'], '-'), $above, 4) > 0
-            || bccomp($row['received'], $above, 4) > 0
-            || bccomp($row['sales'], $above, 4) > 0
-            || bccomp($row['purchases'], $above, 4) > 0
-            || bccomp(ltrim($row['receivable'], '-'), $above, 4) > 0)->values();
+        })->values()->filter(function ($row) use ($above) {
+            // "Show Turnover above" applies to period trading turnover, not
+            // closing receivables or recoveries. With zero threshold, preserve
+            // parties that have only outstanding balances or recoveries.
+            $trading = bccomp(ltrim($row['sales_returns'], '-'), $above, 4) > 0
+                || bccomp(ltrim($row['purchases'], '-'), $above, 4) > 0;
+            if (bccomp($above, '0', 4) > 0) {
+                return $trading;
+            }
+            return $trading
+                || bccomp(ltrim($row['received'], '-'), '0', 4) > 0
+                || bccomp(ltrim($row['receivable'], '-'), '0', 4) > 0;
+        })->values();
 
         return response()->json([
             'from' => $data['from'], 'to' => $data['to'],
