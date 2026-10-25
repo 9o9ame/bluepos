@@ -12,6 +12,9 @@ use App\Models\Branch;
 use App\Models\CashierShift;
 use App\Models\Category;
 use App\Models\Customer;
+use App\Models\PurchaseReturn;
+use App\Models\PurchaseInvoice;
+use App\Models\Supplier;
 use App\Models\SaleReturn;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
@@ -118,6 +121,56 @@ class DailyCashPositionTest extends TestCase
         $this->getJson('/api/reports/accounting/cash-book/accounts')->assertForbidden();
         $this->getJson('/api/reports/accounting/cash-book?start_date=2026-10-01'
             .'&end_date=2026-10-24')->assertForbidden();
+    }
+
+    public function test_total_turnover_subtracts_posted_purchase_returns_and_ignores_drafts(): void
+    {
+        $this->signInOwner('turnover-purchases')->assertOk();
+        $context = app(TenantContext::class);
+        $supplier = Supplier::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => 'TURNOVER-SUP',
+            'name' => 'Purchase Turnover Supplier',
+            'is_active' => true,
+            'created_by' => $context->userId(),
+        ]);
+        $payable = $this->leafAccount('Purchase Turnover Ledger', 'TURN-PAY', '0020');
+        $payable->update(['supplier_id' => $supplier->id]);
+        foreach ([['2026-10-04', '125.0000', 'posted'], ['2026-10-05', '900.0000', 'draft']] as $index => [$date, $amount, $status]) {
+            PurchaseInvoice::query()->create([
+                'tenant_id' => $context->tenantId(),
+                'branch_id' => $context->branchId(),
+                'warehouse_id' => $context->warehouseId(),
+                'supplier_id' => $supplier->id,
+                'document_number' => 'TURN-PURCHASE-'.$index,
+                'invoice_date' => $date,
+                'status' => $status,
+                'subtotal' => $amount,
+                'grand_total' => $amount,
+                'created_by' => $context->userId(),
+                'posted_at' => $status === 'posted' ? now() : null,
+            ]);
+        }
+        PurchaseReturn::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'warehouse_id' => $context->warehouseId(),
+            'supplier_id' => $supplier->id,
+            'document_number' => 'TURN-PURCHASE-RETURN',
+            'return_date' => '2026-10-06',
+            'status' => 'posted',
+            'subtotal' => '25.0000',
+            'grand_total' => '25.0000',
+            'created_by' => $context->userId(),
+            'posted_at' => now(),
+        ]);
+        $url = '/api/reports/accounting/total-turnover?mode=simple&group=vendors'
+            .'&from=2026-10-01&to=2026-10-25';
+        $response = $this->getJson($url)->assertOk()->assertJsonCount(1, 'rows');
+        $this->assertSame('100.0000', $response->json('rows.0.purchases'));
+        $this->assertSame('100.0000', $response->json('totals.purchases'));
+        $this->getJson($url.'&above=100.0000')->assertJsonCount(0, 'rows');
+        $this->assertNoInternalIds($response->json());
     }
 
     public function test_total_turnover_requires_accounting_report_permission(): void
