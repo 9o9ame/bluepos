@@ -76,7 +76,7 @@ export function TotalTurnoverReportPage() {
   const exportFile = (kind:'txt'|'html'|'csv') => {
     if (!paperRef.current || !data) return
     const safe = (s:string)=>'"'+(/^\s*[=+@-]/.test(s)?"'":'')+s.replace(/"/g,'""')+'"'
-    const txt=kind==='csv' ? '\uFEFF'+[['Party Name','Sales - Returns','Recovery','Recovery %age','Turnover','Receivable'], ...data.rows.map(x=>[x.name,x.sales_returns,x.received,recoveryPercent(x.sales_returns,x.received),x.sales,x.receivable])].map(x=>x.map(safe).join(',')).join('\r\n') : kind==='html'? '<!doctype html><meta charset="utf-8">'+paperRef.current.innerHTML: paperRef.current.innerText
+    const txt=kind==='csv' ? '\uFEFF'+(mode==='simple' ? [['Party Name','Sales - Returns','Recovery','Recovery %age','Turnover','Receivable'], ...data.rows.map(x=>[x.name,x.sales_returns,x.received,recoveryPercent(x.sales_returns,x.received),'—',x.receivable])] : [['Party Name',...Array.from({length:6},()=>['Ltrs','Amount']).flat(),'Received','Recovery %age','Turnover','Receivable'], ...data.rows.map(x=>[x.name,...Array.from({length:12},()=>''),x.received,'0%','',x.receivable])]).map(x=>x.map(safe).join(',')).join('\r\n') : kind==='html'? '<!doctype html><meta charset="utf-8">'+paperRef.current.innerHTML: paperRef.current.innerText
     const url=URL.createObjectURL(new Blob([txt],{type:kind==='csv'?'text/csv;charset=utf-8':kind==='html'?'text/html;charset=utf-8':'text/plain;charset=utf-8'}))
     const a=document.createElement('a');a.href=url;a.download='total-turnover.'+kind;a.click();URL.revokeObjectURL(url)
   }
@@ -97,10 +97,10 @@ export function TotalTurnoverReportPage() {
         <tr><th>Sales - Returns</th><th>Recovery</th><th>%age</th><th>Turnover</th><th>RECEIVABLE</th></tr>
       </thead><tbody>{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td>
         <td>{fmt(r.sales_returns)}</td><td>{fmt(r.received)}</td>
-        <td>{recoveryPercent(r.sales_returns,r.received)}</td><td>{r.sales==='0.0000'?'—':fmt(r.sales)}</td>
+        <td>{recoveryPercent(r.sales_returns,r.received)}</td><td>—</td>
         <td>{fmt(r.receivable)}</td></tr>)}</tbody>
       <tfoot><tr><th>TOTAL</th><th>{fmt(data.totals.sales_returns)}</th>
-        <th>{fmt(data.totals.received)}</th><th></th><th>{fmt(data.totals.sales)}</th>
+        <th>{fmt(data.totals.received)}</th><th></th><th>—</th>
         <th>{fmt(data.totals.receivable)}</th></tr></tfoot></table>
       : <div className="turnover-detailed-scroll"><table className="turnover-detailed-table"><thead>
         <tr><th rowSpan={2}>PARTY NAME</th><th colSpan={2}>PURCHASES</th>
@@ -116,7 +116,7 @@ export function TotalTurnoverReportPage() {
           <th>{fmt(data.totals.received)}</th><th>0%</th><th>—</th>
           <th>{fmt(data.totals.receivable)}</th></tr></tfoot>
       </table></div>}
-      <p className="turnover-disclaimer">Simple Turn Over: Sales − Returns = posted sales less posted sale returns; %age = Recovery ÷ net sales × 100 when net sales is nonzero. Product-wise litres and their allocations are not mapped yet.</p>
+      <p className="turnover-disclaimer">Sales − Returns = posted sales less posted returns; Recovery %age = Recovery ÷ net sales × 100 (0% when net sales is zero). Product-wise litres, allocations and corresponding turnover are unmapped; these show — rather than invented totals.</p>
     </article>}
   </section>
   const valid=!!from&&!!to&&from<=to&&/^\d+(\.\d{1,4})?$/.test(above)
