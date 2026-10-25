@@ -33,6 +33,7 @@ use App\Http\Controllers\Api\Reports\ProductLedgerController;
 use App\Http\Controllers\Api\Reports\ProductStockStatusController;
 use App\Http\Controllers\Api\Reports\TrialBalanceController;
 use App\Http\Controllers\Api\Reports\BalanceSheetReportController;
+use App\Http\Controllers\Api\Reports\IncomeStatementReportController;
 use App\Http\Controllers\Api\Reports\CashBookReportController;
 use App\Http\Controllers\Api\Reports\DailyBusinessActivityController;
 use App\Http\Controllers\Api\Reports\TopSpecialReportController;
@@ -315,6 +316,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::post('/reports/accounting/trial-balance/preview', TrialBalanceController::class);
     Route::get('/reports/accounting/balance-sheet/options', [BalanceSheetReportController::class, 'options']);
     Route::post('/reports/accounting/balance-sheet/preview', [BalanceSheetReportController::class, 'preview']);
+    Route::post('/reports/accounting/income-statement/preview', [IncomeStatementReportController::class, 'preview']);
     Route::get('/reports/accounting/cash-book/accounts', [CashBookReportController::class, 'accounts']);
     Route::get('/reports/accounting/cash-book', CashBookReportController::class);
     Route::post('/reports/accounting/cash-book/preview', CashBookReportController::class);
