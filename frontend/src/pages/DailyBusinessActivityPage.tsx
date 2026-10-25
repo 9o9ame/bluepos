@@ -17,7 +17,14 @@ const today = () => {
   const d = new Date()
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
 }
-const money = (value: string) => Number(value).toLocaleString('en-PK', { minimumFractionDigits: 0, maximumFractionDigits: 4 })
+const money = (value: string) => {
+  const negative = value.startsWith('-')
+  const digits = negative ? value.slice(1) : value
+  const [whole, fractional = ''] = digits.split('.')
+  const formatted = (whole || '0').replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',')
+  const cents = fractional.slice(0, 4).replace(/0+$/, '')
+  return (negative ? '-' : '') + formatted + (cents ? '.' + cents : '')
+}
 const balance = (value: string, creditNormal: boolean) => {
   const neg = value.startsWith('-')
   return `${money(neg ? value.slice(1) : value)} ${neg ? (creditNormal ? 'Dr' : 'Cr') : (creditNormal ? 'Cr' : 'Dr')}`
