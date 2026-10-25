@@ -31,6 +31,35 @@ class DailyCashPositionTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_trial_balance_post_preview_validates_both_report_modes_and_permissions(): void
+    {
+        $this->signInOwner('trial-balance-post-preview')->assertOk();
+        $this->postJson('/api/reports/accounting/trial-balance/preview', [
+            'as_of_date' => '2026-10-25',
+            'group_by' => 'level_wise',
+            'arrange_by' => 'code_asc',
+        ])->assertOk();
+        $this->postJson('/api/reports/accounting/trial-balance/preview', [
+            'mode' => 'six_columns',
+            'start_date' => '2026-10-01',
+            'end_date' => '2026-10-25',
+            'main_heads' => [],
+            'account_types' => [],
+        ])->assertOk();
+        $this->postJson('/api/reports/accounting/trial-balance/preview', [
+            'mode' => 'six_columns',
+            'start_date' => '2026-10-26',
+            'end_date' => '2026-10-01',
+        ])->assertUnprocessable();
+        $this->postJson('/api/reports/accounting/trial-balance/preview', [
+            'as_of_date' => 'not-a-date',
+        ])->assertUnprocessable();
+        $this->restrictCurrentMembershipWithoutPermission('reports.accounting');
+        $this->postJson('/api/reports/accounting/trial-balance/preview', [
+            'as_of_date' => '2026-10-25',
+        ])->assertForbidden();
+    }
+
     public function test_cash_book_post_preview_uses_same_authorization_and_validation(): void
     {
         $this->signInOwner('cash-book-post-preview')->assertOk();
