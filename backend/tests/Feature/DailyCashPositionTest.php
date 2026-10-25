@@ -147,6 +147,24 @@ class DailyCashPositionTest extends TestCase
             .'&end_date=2026-10-24&account_ulids[0]='.$revenue->ulid)->assertNotFound();
     }
 
+    public function test_cash_book_area_and_salesperson_grouping_preserves_totals_and_public_ids(): void
+    {
+        $this->signInOwner('cashbook-grouping')->assertOk();
+        $cash = $this->leafAccount('Cash Grouping', 'CB-GROUP-CASH', '0010');
+        $revenue = $this->leafAccount('Revenue Grouping', 'CB-GROUP-REV', '0040');
+        $this->postReceiving($cash, $revenue, '2026-10-08', '42.1250', true, 'grouping-test');
+        $base = '/api/reports/accounting/cash-book?start_date=2026-10-01'
+            .'&end_date=2026-10-24&account_ulids[0]='.$cash->ulid;
+        $normal = $this->getJson($base)->assertOk();
+        foreach (['area', 'salesperson'] as $groupBy) {
+            $response = $this->getJson($base.'&group_by='.$groupBy)->assertOk()
+                ->assertJsonCount(1, 'rows')
+                ->assertJsonStructure(['rows' => [['area_name', 'salesperson_name']]]);
+            $this->assertSame($normal->json('totals'), $response->json('totals'));
+            $this->assertNoInternalIds($response->json());
+        }
+    }
+
     public function test_cash_book_optional_purchase_and_non_cash_documents_do_not_change_cash_totals(): void
     {
         $this->signInOwner('cashbook-optional-types')->assertOk();
