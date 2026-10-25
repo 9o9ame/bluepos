@@ -94,7 +94,7 @@ export function BalanceSheetReportPage() {
           <tr key={'g'+i} className="bs-heading"><th colSpan={3}>{g.name}</th></tr>
           {g.sections.map((s,j)=><>
             <tr key={'s'+i+'-'+j} className="bs-heading"><th colSpan={3}>{s.name}</th></tr>
-            {!reportQuery.data!.summarized && s.rows.map((r,k)=><tr key={r.account.ulid}>
+            {s.rows.map((r,k)=><tr key={r.account.ulid}>
               <td>{k+1}. {r.account.name}</td><td>{money(r.debit)}</td><td>{money(r.credit)}</td></tr>)}
             <tr key={'sub'+j} className="bs-subtotal"><th>{s.name}</th><th>{money(s.debit)}</th><th>{money(s.credit)}</th></tr>
           </>)}
@@ -115,7 +115,7 @@ export function BalanceSheetReportPage() {
         <strong>Show Balance Sheet as on:</strong>
         <label>Date <input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
         <label><input type="checkbox" checked={summarized} onChange={e=>setSummarized(e.target.checked)}/> Summarized Form</label>
-        <label><input type="checkbox" checked={arrangeIds} onChange={e=>setArrangeIds(e.target.checked)}/> Arrange By IDs</label>
+        <label title="Original ordering rule is not yet mapped"><input type="checkbox" checked={arrangeIds} disabled/> Arrange By IDs (pending mapping)</label>
         <p>FIFO stock revaluation is not offered until a verified valuation source is available.</p>
       </div>:<div className="bs-additional">
         <section><strong>Account Type</strong><div className="bs-checklist">
