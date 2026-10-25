@@ -6,6 +6,7 @@ import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import { ReportViewerToolbar } from '../components/reports/ReportViewerToolbar'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import { readPreviewSelection, savePreviewSelection } from '../features/reports/previewSelection'
 import './TopSpecialReportPage.css'
 
 type Option = { ulid: string; name: string }
@@ -14,6 +15,8 @@ type Options = {
   salespeople: Option[]; areas: string[]
 }
 type Kind = 'customers' | 'vendors' | 'products' | 'salespeople'
+type Selection = { kind: Kind; from: string; to: string; top: string; quantity: boolean; purchasing: boolean; format: string; categoryIds: string[]; brandIds: string[]; partyIds: string[]; area: string }
+const selectionKey = 'top-special'
 type Ranked = { rank: number; description: string; qty: string; amount: string; contact_person: string | null; cnic: string | null; contact: string | null }
 type Report = { from: string; to: string; kind: Kind; format: string; ranking: Ranked[] }
 function localDate() {
@@ -63,29 +66,28 @@ export function TopSpecialReportPage() {
     enabled: !preview,
   })
   const options = optionsQuery.data
+  const selection = preview ? readPreviewSelection<Selection>(selectionKey) : null
   const resultQuery = useQuery({
-    queryKey: ['top-special', params.toString()],
-    queryFn: () => {
-      const searchParams = new URLSearchParams({
-        from, to, top, kind, purchasing: purchasing ? '1' : '0',
-        by_quantity: quantity ? '1' : '0', format,
-      })
-      categoryIds.forEach((id, i) => searchParams.set(`category_ulids[${i}]`, id))
-      brandIds.forEach((id, i) => searchParams.set(`brand_ulids[${i}]`, id))
-      partyIds.forEach((id, i) => searchParams.set(`party_ulids[${i}]`, id))
-      if (area) searchParams.set('area', area)
-      return apiFetch<Report>(`/api/reports/top-special?${searchParams}`)
-    },
-    enabled: preview,
+    queryKey: ['top-special', selection],
+    queryFn: () => apiFetch<Report>('/api/reports/top-special/preview', {
+      method: 'POST',
+      body: JSON.stringify({
+        from: selection!.from, to: selection!.to, top: selection!.top,
+        kind: selection!.kind, purchasing: selection!.purchasing ? '1' : '0',
+        by_quantity: selection!.quantity ? '1' : '0', format: selection!.format,
+        category_ulids: selection!.categoryIds, brand_ulids: selection!.brandIds,
+        party_ulids: selection!.partyIds, area: selection!.area,
+      }),
+    }),
+    enabled: preview && Boolean(selection),
   })
   const data = resultQuery.data
   const goPreview = () => {
-    const query = new URLSearchParams({
-      view: 'preview', kind, from, to, top, purchasing: purchasing ? '1' : '0',
-      quantity: quantity ? '1' : '0', format,
-      categories: categoryIds.join(','), brands: brandIds.join(','), parties: partyIds.join(','), area,
+    savePreviewSelection<Selection>(selectionKey, {
+      kind, from, to, top, quantity, purchasing, format,
+      categoryIds, brandIds, partyIds, area,
     })
-    openModule(`/reports/accounts/top-special?${query}`)
+    openModule('/reports/accounts/top-special?view=preview')
   }
   const exportReport = (type: 'txt' | 'csv' | 'html') => {
     if (!data || !paperRef.current) return
@@ -109,12 +111,13 @@ export function TopSpecialReportPage() {
       onCopy={() => { if (paperRef.current) void navigator.clipboard.writeText(paperRef.current.innerText) }}
       onExport={exportReport} onRefresh={() => void resultQuery.refetch()}
       onEditOptions={() => openModule('/reports/accounts/top-special')} onClose={closeActiveTab}/>
-    {resultQuery.isLoading && <p>Loading Top Special…</p>}
+    {!selection && <p role="status">Preview filters are not available in this session. Select Edit Options and open the report again.</p>}
+    {selection && resultQuery.isLoading && <p>Loading Top Special…</p>}
     {resultQuery.isError && <p role="alert">Unable to load Top Special report.</p>}
     {data && <article className="top-special-paper" ref={paperRef} style={{ zoom: `${zoom}%` }}>
-      <header><h1>TOP {top} {data.kind.toUpperCase()}</h1><p>From: {data.from} to: {data.to}</p></header>
+      <header><h1>TOP {selection?.top} {data.kind.toUpperCase()}</h1><p>From: {data.from} to: {data.to}</p></header>
       <table><thead><tr><th>Sr #</th><th>DESCRIPTION</th>
-        {format === 'format1' && data.kind === 'customers' && <>
+        {selection?.format === 'format1' && data.kind === 'customers' && <>
           <th>Contact Person</th><th>CNIC</th><th>Contact</th></>}
         <th>QTY</th><th>AMOUNT</th></tr></thead><tbody>
         {data.ranking.map((row) => <tr key={row.rank}><td>{row.rank}</td><td>{row.description}</td>
