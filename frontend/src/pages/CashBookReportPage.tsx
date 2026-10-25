@@ -183,7 +183,7 @@ export function CashBookReportPage() {
   )
   if (preview || cashFlow) {
     return (
-      <section className={cashFlow ? "cashbook-page cashbook-view cashbook-flow-view" : "cashbook-page cashbook-view"}>
+      <section className={flowPreview ? "cashbook-page cashbook-view cashbook-flow-view cashbook-flow-preview" : cashFlow ? "cashbook-page cashbook-view cashbook-flow-view" : "cashbook-page cashbook-view"}>
         {(!cashFlow || flowPreview) ? <div className="trial-balance-viewer-toolbar cashbook-tools">
           <UiButton variant="info" icon={<Printer size={15}/>} label="Print / PDF" disabled={!report} onClick={() => window.print()} />
           <UiButton variant="default" icon={<ClipboardCopy size={15}/>} label={copyLabel} disabled={!report} onClick={() => void copyReport()} />
