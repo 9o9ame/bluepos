@@ -14,7 +14,7 @@ type Options = {
   salespeople: Option[]; areas: string[]
 }
 type Kind = 'customers' | 'vendors' | 'products' | 'salespeople'
-type Ranked = { rank: number; description: string; qty: string; amount: string }
+type Ranked = { rank: number; description: string; qty: string; amount: string; contact_person: string | null; cnic: string | null; contact: string | null }
 type Report = { from: string; to: string; kind: Kind; format: string; ranking: Ranked[] }
 function localDate() {
   const d = new Date()
@@ -118,7 +118,7 @@ export function TopSpecialReportPage() {
           <th>Contact Person</th><th>CNIC</th><th>Contact</th></>}
         <th>QTY</th><th>AMOUNT</th></tr></thead><tbody>
         {data.ranking.map((row) => <tr key={row.rank}><td>{row.rank}</td><td>{row.description}</td>
-          {format === 'format1' && data.kind === 'customers' && <><td>—</td><td>—</td><td>—</td></>}
+          {format === 'format1' && data.kind === 'customers' && <><td>{row.contact_person || '—'}</td><td>{row.cnic || '—'}</td><td>{row.contact || '—'}</td></>}
           <td className="top-special-num">{number(row.qty)}</td>
           <td className="top-special-num">{number(row.amount)}</td></tr>)}
       </tbody></table>
