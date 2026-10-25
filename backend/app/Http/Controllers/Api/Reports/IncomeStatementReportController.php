@@ -74,4 +74,62 @@ class IncomeStatementReportController extends Controller
             ],
         ]);
     }
+    public function periodPreview(Request $request, TenantContext $context): JsonResponse
+    {
+        if (! $this->permissions->can('reports.accounting')) {
+            throw new ApiException('FORBIDDEN', 'You are not allowed to view accounting reports.', 403);
+        }
+        $data = $request->validate([
+            'from' => ['required', 'date_format:Y-m-d'],
+            'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from'],
+        ]);
+        $start = \Carbon\CarbonImmutable::createFromFormat('Y-m-d', $data['from']);
+        $closing = $this->trialBalance->build($context->tenantId(), $context->branchId(), $data['to']);
+        $opening = $this->trialBalance->build($context->tenantId(), $context->branchId(), $start->subDay()->toDateString());
+        $openingBalances = [];
+        foreach ($opening['groups'] as $group) {
+            foreach ($group['rows'] as $row) {
+                $openingBalances[$row['account']['ulid']] = $row['balance'];
+            }
+        }
+        $labels = AccountType::query()->forTenant($context->tenantId())
+            ->get(['ulid', 'pnl_grouping_label'])->keyBy('ulid');
+        $groups = [];
+        foreach ($closing['groups'] as $head) {
+            foreach ($head['rows'] as $row) {
+                $main = strtoupper(trim((string) ($row['main_head']['name'] ?? '')));
+                if (! in_array($main, ['REVENUES', 'EXPENSES'], true)) continue;
+                $previous = $openingBalances[$row['account']['ulid']] ?? '0.0000';
+                $movement = bcsub((string) $row['balance'], (string) $previous, 4);
+                $amount = bcmul($movement, '-1', 4);
+                if (bccomp($amount, '0', 4) === 0) continue;
+                $type = $labels->get($row['account_type']['ulid'] ?? '');
+                $name = trim((string) ($type?->pnl_grouping_label ?? ''));
+                $name = $name !== '' ? $name : ($row['account_type']['name'] ?? $main);
+                $key = $main.'|'.$name;
+                if (! isset($groups[$key])) {
+                    $groups[$key] = ['name' => $name, 'class' => $main, 'amount' => '0.0000', 'rows' => []];
+                }
+                $groups[$key]['rows'][] = ['account' => $row['account'], 'amount' => $amount];
+                $groups[$key]['amount'] = bcadd($groups[$key]['amount'], $amount, 4);
+            }
+        }
+        $running = '0.0000';
+        $sections = [];
+        foreach ($groups as $section) {
+            $running = bcadd($running, $section['amount'], 4);
+            $section['running_total'] = $running;
+            $sections[] = $section;
+        }
+        return response()->json([
+            'from' => $data['from'], 'to' => $data['to'],
+            'sections' => $sections, 'net_income' => $running,
+            'basis' => 'posted_journal_period_movement',
+            'limitations' => [
+                'Period movement from posted P&L journals only; FIFO opening/ending stock and unconfigured COGS are not invented.',
+                'Net Income is provisional until inventory valuation and sales accounting mappings are reconciled.',
+            ],
+        ]);
+    }
+
 }
