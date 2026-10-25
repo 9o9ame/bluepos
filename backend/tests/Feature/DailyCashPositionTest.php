@@ -125,13 +125,30 @@ class DailyCashPositionTest extends TestCase
             ->assertOk()->assertJsonStructure(['account_types']);
         $base = '/api/reports/accounting/total-turnover?from=2026-10-01&to=2026-10-25';
         $response = $this->getJson($base)->assertOk()
-            ->assertJsonStructure(['rows', 'totals' => ['received', 'receivable', 'sales', 'purchases']]);
+            ->assertJsonStructure(['rows', 'totals' => ['sales_returns', 'received', 'receivable', 'sales', 'purchases']]);
         $this->assertNoInternalIds($response->json());
         $this->getJson($base.'&account_type_ulids[0]=01ARZ3NDEKTSV4RRFFQ69G5FAV')
             ->assertNotFound();
         $this->getJson('/api/reports/accounting/total-turnover?from=2026-10-26&to=2026-10-01')
             ->assertUnprocessable();
         $this->getJson($base.'&above=-10')->assertUnprocessable();
+    }
+
+    public function test_simple_turnover_uses_posted_period_ledger_movements(): void
+    {
+        $this->signInOwner('simple-turnover')->assertOk();
+        $cash = $this->leafAccount('Turnover Cash', 'SIMPLE-CASH', '0010');
+        $revenue = $this->leafAccount('Turnover Revenue', 'SIMPLE-REV', '0040');
+        $this->postReceiving($cash, $revenue, '2026-09-30', '40.0000', true, 'before-period');
+        $this->postReceiving($cash, $revenue, '2026-10-08', '15.1250', true, 'in-period');
+        $this->postReceiving($cash, $revenue, '2026-10-08', '500.0000', false, 'draft');
+        $response = $this->getJson('/api/reports/accounting/total-turnover?mode=simple'
+            .'&from=2026-10-01&to=2026-10-25')->assertOk();
+        $row = collect($response->json('rows'))->firstWhere('name', $cash->name);
+        $this->assertNotNull($row);
+        $this->assertSame('15.1250', $row['sales_returns']);
+        $this->assertSame('55.1250', $row['receivable']);
+        $this->assertNoInternalIds($response->json());
     }
 
     public function test_top_special_validates_rankings_and_never_accepts_cross_tenant_filter_ids(): void
