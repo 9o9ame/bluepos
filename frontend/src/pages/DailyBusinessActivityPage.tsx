@@ -5,9 +5,12 @@ import { apiFetch } from '../api/client'
 import { ReportViewerToolbar } from '../components/reports/ReportViewerToolbar'
 import { UiButton } from '../components/ui/UiButton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import { readPreviewSelection, savePreviewSelection } from '../features/reports/previewSelection'
 import './DailyBusinessActivityPage.css'
 
 type AccountType = { ulid: string; name: string }
+type Selection = { start: string; end: string; selected: string[] }
+const selectionKey = 'daily-business-activity'
 type LedgerRow = { line_ulid: string; date: string; trans_no: string; doc: string; narration: string; debit: string; credit: string; balance: string }
 type LedgerSection = {
   account: { ulid: string; name: string; address: string | null; area: string | null; account_type: string | null; normal_balance: 'debit' | 'credit' | null }
@@ -45,14 +48,18 @@ export function DailyBusinessActivityPage() {
     queryFn: () => apiFetch<{ account_types: AccountType[] }>('/api/reports/accounting/daily-business-activity/types'),
     enabled: !preview,
   })
+  const selection = preview ? readPreviewSelection<Selection>(selectionKey) : null
   const reportQuery = useQuery({
-    queryKey: ['daily-business-report', params.toString()],
-    queryFn: () => {
-      const search = new URLSearchParams({ start_date: start, end_date: end })
-      selected.forEach((ulid, i) => search.set(`account_type_ulids[${i}]`, ulid))
-      return apiFetch<LedgerReport>(`/api/reports/accounting/daily-business-activity?${search}`)
-    },
-    enabled: preview,
+    queryKey: ['daily-business-report', selection],
+    queryFn: () => apiFetch<LedgerReport>('/api/reports/accounting/daily-business-activity/preview', {
+      method: 'POST',
+      body: JSON.stringify({
+        start_date: selection!.start,
+        end_date: selection!.end,
+        account_type_ulids: selection!.selected,
+      }),
+    }),
+    enabled: preview && Boolean(selection),
   })
   const exportReport = (format: 'txt' | 'html' | 'csv') => {
     const paper = paperRef.current
@@ -102,7 +109,8 @@ export function DailyBusinessActivityPage() {
       onEditOptions={() => openModule('/reports/daily/business-activity')}
       onClose={closeActiveTab}
     />
-    {reportQuery.isLoading && <p>Loading daily ledger report…</p>}
+    {!selection && <p role="status">Preview filters are not available in this session. Select Edit Options and open the report again.</p>}
+    {selection && reportQuery.isLoading && <p>Loading daily ledger report…</p>}
     {reportQuery.isError && <p role="alert">Unable to load report.</p>}
     {reportQuery.data && <article className="dba-paper" ref={paperRef} style={{ zoom: `${zoom}%` }}>
       <header><h1>DAILY LEDGER WISE ACTIVITY</h1>
@@ -160,8 +168,8 @@ export function DailyBusinessActivityPage() {
     <div className="dba-actions">
       <UiButton variant="default" label="Close" onClick={closeActiveTab} />
       <UiButton variant="info" label="View Report" disabled={invalid} onClick={() => {
-        const query = new URLSearchParams({ view: 'preview', start_date: start, end_date: end, types: selected.join(',') })
-        openModule(`/reports/daily/business-activity?${query}`)
+        savePreviewSelection<Selection>(selectionKey, { start, end, selected })
+        openModule('/reports/daily/business-activity?view=preview')
       }} />
     </div>
   </section>
