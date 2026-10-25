@@ -113,7 +113,8 @@ class DailyBusinessActivityController extends Controller
             return [
                 'account' => ['ulid' => $account->ulid, 'name' => $account->name,
                     'address' => $account->address, 'area' => $account->area,
-                    'account_type' => $account->accountType?->name],
+                    'account_type' => $account->accountType?->name,
+                    'normal_balance' => $account->accountType?->normal_balance],
                 'opening' => $opening, 'debit' => $debitTotal,
                 'credit' => $creditTotal, 'closing' => $balance, 'rows' => $rows,
             ];
