@@ -20,7 +20,7 @@ type Result = {from:string;to:string;print_format:Selection['print_format'];entr
 const key='general-journal:preview'
 const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 const amt=(v:string)=>/^0(?:\.0+)?$/.test(v)?'—':v.replace(/\B(?=(\d{3})+(?!\d))/g,',')
-const label=(v:string)=>v.replaceAll('_',' ').toUpperCase()
+const label=(v:string)=>v.replace(/_/g,' ').toUpperCase()
 export function GeneralJournalReportPage(){
   const {openModule,closeActiveTab}=useWorkspace()
   const preview=new URLSearchParams(useLocation().search).get('view')==='preview'
