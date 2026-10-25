@@ -377,6 +377,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-general-journal',
+    title: 'General Journal Report',
+    path: '/reports/accounts/general-journal',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
     key: 'report-total-turnover',
     title: 'Total Turnover Report',
     path: '/reports/accounts/total-turnover',
@@ -621,7 +629,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Balance Sheet', status: 'ready', path: '/reports/accounts/balance-sheet' },
             { label: 'Income Statement', status: 'ready', path: '/reports/accounts/income-statement' },
             { label: 'Income Statement (Daily, Monthly)', status: 'ready', path: '/reports/accounts/daily-income-statement' },
-            { label: 'General Journal Report', ...LATER },
+            { label: 'General Journal Report', status: 'ready', path: '/reports/accounts/general-journal' },
           ],
         },
         {
@@ -800,6 +808,10 @@ export function moduleTabIdentity(
         path: pathname + search,
       }
     }
+  }
+
+  if (module.key === 'report-general-journal' && new URLSearchParams(search).get('view') === 'preview') {
+    return { key: 'report-general-journal:preview', title: 'General Journal Preview', path: pathname + search }
   }
 
   if (module.key === 'report-daily-income-statement' && new URLSearchParams(search).get('view') === 'preview') {
