@@ -40,12 +40,12 @@ const CASH_FLOW_SOURCES = [
 ] as const
 
 const CASH_BOOK_GROUP_FIELDS = [
-  { value: 'area', label: 'Area Name', field: 'AreaName', disabled: true },
+  { value: 'area', label: 'Area Name', field: 'AreaName', disabled: false },
   { value: 'category', label: 'Category Name', field: 'CategoryName', disabled: true },
   { value: 'document', label: 'Document', field: 'DOC', disabled: false },
   { value: 'date', label: 'Date', field: 'EntryDate', disabled: false },
   { value: 'main_area', label: 'Main Area Name', field: 'MAreaName', disabled: true },
-  { value: 'salesperson', label: 'Sales Person Name', field: 'SaleMan', disabled: true },
+  { value: 'salesperson', label: 'Sales Person Name', field: 'SaleMan', disabled: false },
   { value: 'user', label: 'User Name', field: 'UserName', disabled: false },
 ] as const
 
@@ -74,7 +74,7 @@ export function CashBookReportPage() {
   const [nonCashAlso, setNonCashAlso] = useState(params.get('non_cash_also') === '1')
   const [summaryOnly, setSummaryOnly] = useState(params.get('summary_only') === '1')
   const [showDetails, setShowDetails] = useState(params.get('detail') !== '0')
-  const [group, setGroup] = useState<'none' | 'date' | 'document' | 'user'>((params.get('group_by') as 'none' | 'date' | 'document' | 'user') || 'none')
+  const [group, setGroup] = useState<'none' | 'date' | 'document' | 'user' | 'area' | 'salesperson'>((params.get('group_by') as 'none' | 'date' | 'document' | 'user' | 'area' | 'salesperson') || 'none')
   const [accountUlids, setAccountUlids] = useState<string[]>(params.get('account_ulids')?.split(',').filter(Boolean) ?? [])
   const [search, setSearch] = useState('')
   const [groupFieldsOpen, setGroupFieldsOpen] = useState(false)
@@ -102,9 +102,19 @@ export function CashBookReportPage() {
     openModule(`/reports/accounts/cash-book?${q}`)
   }
   const report = reportQuery.data
-  const rows = [...(report?.rows ?? [])].sort((a, b) => (group === 'document' || group === 'user')
-      ? (group === 'document' ? a.doc : a.creator_name).localeCompare(group === 'document' ? b.doc : b.creator_name) || (a.date ?? '').localeCompare(b.date ?? '')
-      : (a.date ?? '').localeCompare(b.date ?? '') || a.line_ulid.localeCompare(b.line_ulid))
+  const groupValue = (row: CashBookEntry) => {
+    switch (group) {
+      case 'document': return row.doc
+      case 'user': return row.creator_name
+      case 'area': return row.area_name
+      case 'salesperson': return row.salesperson_name
+      case 'date': return asLabel(row.date)
+      default: return ''
+    }
+  }
+  const rows = [...(report?.rows ?? [])].sort((a, b) =>
+    group !== 'none' ? groupValue(a).localeCompare(groupValue(b)) ||
+      (a.date ?? '').localeCompare(b.date ?? '') : (a.date ?? '').localeCompare(b.date ?? ''))
   const dailyCashFlow = (() => {
     const days = new Map<string, {
       debit: bigint; credit: bigint; sources: Map<string, bigint>
@@ -177,8 +187,7 @@ export function CashBookReportPage() {
   }
   const receipts = rows.filter((r) => r.debit !== '0.0000')
   const payments = rows.filter((r) => r.credit !== '0.0000')
-  const groupLabel = (row: CashBookEntry) => group === 'date' ? asLabel(row.date)
-    : group === 'document' ? row.doc : group === 'user' ? row.creator_name : ''
+  const groupLabel = groupValue
   const entries = (items: CashBookEntry[], kind: 'debit' | 'credit') => {
     const groups = new Map<string, CashBookEntry[]>()
     for (const row of items) {
