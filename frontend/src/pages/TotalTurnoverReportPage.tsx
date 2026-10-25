@@ -89,7 +89,7 @@ export function TotalTurnoverReportPage() {
       onEditOptions={()=>openModule('/reports/accounts/total-turnover')} onClose={closeActiveTab}/>
     {resultQuery.isLoading && <p>Loading turnover…</p>}
     {resultQuery.isError && <p role="alert">Unable to load turnover report.</p>}
-    {data && <article ref={paperRef} className="turnover-paper" style={{zoom:zoom+'%'}}>
+    {data && <article ref={paperRef} className={`turnover-paper ${mode === 'detailed' ? 'turnover-paper--detailed' : ''}`} style={{zoom:zoom+'%'}}>
       <header><h1>PARTIES, PRODUCT WISE (RECEIVABLE &amp; PAYABLE SUMMARY WITH TURNOVER)</h1>
         <p>From {data.from} to {data.to}</p></header>
       {mode === 'simple' ? <table className="turnover-simple-table"><thead>
