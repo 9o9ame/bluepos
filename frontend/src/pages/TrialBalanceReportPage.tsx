@@ -346,7 +346,26 @@ export function TrialBalanceReportPage() {
   const location = useLocation()
   const routeParams = new URLSearchParams(location.search)
   const viewParam = routeParams.get('view')
-  const storedSelection = viewParam ? readPreviewSelection<TrialSelection>(selectionKey(viewParam)) : null
+  const rawSelection = viewParam ? readPreviewSelection<Partial<TrialSelection>>(selectionKey(viewParam)) : null
+  const storedSelection: TrialSelection | null = rawSelection ? {
+    as_of_date: rawSelection.as_of_date || today(),
+    start_date: rawSelection.start_date || today().slice(0, 8) + '01',
+    end_date: rawSelection.end_date || today(),
+    group_by: rawSelection.group_by || 'level_wise',
+    arrange_by: rawSelection.arrange_by || 'code_asc',
+    report_title: rawSelection.report_title || 'Trial Balance (Complete)',
+    separate_pages: rawSelection.separate_pages || '0',
+    dates_only: rawSelection.dates_only || '0',
+    two_column: rawSelection.two_column || '0',
+    show: rawSelection.show || 'code',
+    main_heads: rawSelection.main_heads || '',
+    sub_heads: rawSelection.sub_heads || '',
+    account_types: rawSelection.account_types || '',
+    document_types: rawSelection.document_types || '',
+    party_categories: rawSelection.party_categories || '',
+    closing_operator: rawSelection.closing_operator || '',
+    closing_amount: rawSelection.closing_amount || '0.00',
+  } : null
   const params = new URLSearchParams(location.search)
   if (storedSelection) {
     for (const [key, value] of Object.entries(storedSelection)) params.set(key, value)
