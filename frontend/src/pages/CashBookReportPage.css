@@ -62,3 +62,10 @@
 .cashbook-flow-table tbody tr:hover{background:var(--ui-row-hover)}
 .cashbook-flow-table tfoot th,.cashbook-flow-table tfoot td{position:sticky;bottom:0;background:var(--ui-surface-muted);font-weight:800;border-top:2px solid var(--ui-table-border)}
 @media print{.cashbook-flow-view .cashbook-flow-print-heading{display:block}.cashbook-flow-view .cashbook-paper{overflow:visible;padding:0}.cashbook-flow-grid{overflow:visible}.cashbook-flow-table thead th,.cashbook-flow-table tfoot td,.cashbook-flow-table tfoot th{position:static}}
+
+.cashbook-flow-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cashbook-flow-filters label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700}
+.cashbook-flow-filters input[type="date"]{min-height:30px;padding:3px 6px;color:var(--ui-text);background:var(--ui-control-face);border:1px solid var(--ui-control-border);border-radius:var(--control-radius)}
+.cashbook-flow-footer{display:flex;justify-content:flex-end;padding:8px 14px;border-top:1px solid var(--ui-border);background:var(--ui-surface)}
+.cashbook-flow-footer button.ui-button{min-width:110px;min-height:36px}
+@media(max-width:780px){.cashbook-flow-heading{align-items:flex-start;flex-direction:column}.cashbook-flow-filters{width:100%}}
