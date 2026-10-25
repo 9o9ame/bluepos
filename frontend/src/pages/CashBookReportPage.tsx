@@ -39,6 +39,16 @@ const CASH_FLOW_SOURCES = [
   ['SALE RETURN', 'Sales Return'],
 ] as const
 
+const CASH_BOOK_GROUP_FIELDS = [
+  { value: 'area', label: 'Area Name', field: 'AreaName', disabled: true },
+  { value: 'category', label: 'Category Name', field: 'CategoryName', disabled: true },
+  { value: 'document', label: 'Document', field: 'DOC', disabled: false },
+  { value: 'date', label: 'Date', field: 'EntryDate', disabled: false },
+  { value: 'main_area', label: 'Main Area Name', field: 'MAreaName', disabled: true },
+  { value: 'salesperson', label: 'Sales Person Name', field: 'SaleMan', disabled: true },
+  { value: 'user', label: 'User Name', field: 'UserName', disabled: true },
+] as const
+
 function weekdayLabel(date: string) {
   const [year, month, day] = date.split('-').map(Number)
   return new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' })
@@ -67,6 +77,7 @@ export function CashBookReportPage() {
   const [group, setGroup] = useState<'none' | 'date' | 'document'>((params.get('group_by') as 'none' | 'date' | 'document') || 'none')
   const [accountUlids, setAccountUlids] = useState<string[]>(params.get('account_ulids')?.split(',').filter(Boolean) ?? [])
   const [search, setSearch] = useState('')
+  const [groupFieldsOpen, setGroupFieldsOpen] = useState(false)
   const [zoom, setZoom] = useState(100)
   const [copyLabel, setCopyLabel] = useState('Copy')
   const paperRef = useRef<HTMLElement>(null)
@@ -330,8 +341,15 @@ export function CashBookReportPage() {
             onChange={(e) => setShowDetails(!e.target.checked)} /> Don't Show Detail</label>
           </div>
           <label>Cash Book Group By
-            <UiSelect value={group} searchable={false} onChange={(value) => setGroup(value as typeof group)}
-              options={[{value:'none',label:'No Grouping'}, {value:'date',label:'Date'}, {value:'document',label:'Document'}]} />
+            <div className="cashbook-group-picker">
+              <UiSelect value={group} searchable={false} onChange={(value) => setGroup(value as typeof group)}
+                options={[{value:'none',label:'No Grouping'}, ...CASH_BOOK_GROUP_FIELDS.map((field) => ({
+                  value:field.value,label:field.label,disabled:field.disabled,
+                  title:field.disabled ? 'Requires verified source field mapping' : field.field,
+                }))]} />
+              <button type="button" className="cashbook-group-plus" title="Ledger Group Fields"
+                aria-label="Open Ledger Group Fields" onClick={() => setGroupFieldsOpen(true)}>+</button>
+            </div>
           </label>
           <label>Cash / Bank Accounts
             <UiSelect value={accountUlids.length === 1 ? accountUlids[0] : ''}
@@ -343,6 +361,19 @@ export function CashBookReportPage() {
           {accountsQuery.isError ? <p role="alert">Unable to load cash accounts.</p> : null}
           <p className="cashbook-note">Posted journals only · current branch. Purchase / non-cash transactions are supplementary and do not change cash totals. Area and salesman filters are not available.</p>
         </div>
+        {groupFieldsOpen ? <div className="cashbook-group-overlay" role="presentation">
+          <section className="cashbook-group-modal" role="dialog" aria-modal="true" aria-labelledby="cashbook-group-dialog-title">
+            <header><strong id="cashbook-group-dialog-title">Ledger Group Fields</strong>
+              <button type="button" aria-label="Close Ledger Group Fields" onClick={() => setGroupFieldsOpen(false)}>×</button>
+            </header>
+            <table><thead><tr><th>Field of Database</th><th>Field Display to User</th><th>Status</th></tr></thead>
+              <tbody>{CASH_BOOK_GROUP_FIELDS.map((field) => <tr key={field.value}>
+                <td>{field.field}</td><td>{field.label}</td>
+                <td>{field.disabled ? 'Mapping pending' : 'Available'}</td>
+              </tr>)}</tbody></table>
+            <div className="cashbook-group-modal-actions"><UiButton variant="default" label="Close" onClick={() => setGroupFieldsOpen(false)} /></div>
+          </section>
+        </div> : null}
         <div className="cashbook-footer-actions">
           <div className="cashbook-actions">
             <UiButton variant="info" label="Preview" disabled={from > to || !from || !to} onClick={() => launch('preview')} />
