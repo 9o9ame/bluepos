@@ -32,7 +32,7 @@ export function BalanceSheetReportPage() {
   const [tab,setTab] = useState<'main'|'additional'>('main')
   const [date,setDate] = useState(localDate())
   const [summarized,setSummarized] = useState(true)
-  const [arrangeIds,setArrangeIds] = useState(false)
+  const [arrangeIds] = useState(false)
   const [selectedTypes,setSelectedTypes] = useState<string[]>([])
   const [partyGroups,setPartyGroups] = useState<string[]>([])
   const [zoom,setZoom] = useState(100)
