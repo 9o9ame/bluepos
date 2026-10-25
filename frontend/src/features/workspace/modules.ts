@@ -752,7 +752,12 @@ export function moduleTabIdentity(
   }
 
   if (module.key === 'report-total-turnover' && new URLSearchParams(search).get('view') === 'preview') {
-    return { key: 'report-total-turnover:preview', title: 'Total Turnover Preview', path: pathname + search }
+    const mode = new URLSearchParams(search).get('mode') === 'simple' ? 'simple' : 'detailed'
+    return {
+      key: `report-total-turnover:preview:${mode}`,
+      title: mode === 'simple' ? 'Simple Turn Over' : 'Total Turnover Preview',
+      path: pathname + search,
+    }
   }
   if (module.key === 'report-top-special' && new URLSearchParams(search).get('view') === 'preview') {
     return { key: 'report-top-special:preview', title: 'Top Special Preview', path: pathname + search }
