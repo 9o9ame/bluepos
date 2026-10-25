@@ -124,6 +124,7 @@ class TotalTurnoverReportController extends Controller
             $grossPurchases = (string) ($purchases->get($a->supplier_id)->total ?? '0.0000');
             $purchaseReversals = (string) ($purchaseReturns->get($a->supplier_id)->total ?? '0.0000');
             return [
+                '_party_key' => $a->customer_id !== null ? 'customer:'.$a->customer_id : 'supplier:'.$a->supplier_id,
                 'name' => $a->name,
                 'received' => (string) ($received->get($a->id)->received ?? '0.0000'),
                 'sales_returns' => bcsub($grossSales, $returns, 4),
@@ -131,7 +132,18 @@ class TotalTurnoverReportController extends Controller
                 'sales' => $grossSales,
                 'purchases' => bcsub($grossPurchases, $purchaseReversals, 4),
             ];
-        })->filter(fn ($row) => bccomp(ltrim($row['sales_returns'], '-'), $above, 4) > 0
+        })->groupBy('_party_key')->map(function ($partyAccounts) {
+            // A customer or supplier can have multiple ledger accounts. Invoice
+            // totals belong to the party once, while ledger balances/recoveries
+            // must be summed across the selected accounts.
+            $first = $partyAccounts->first();
+            $first['received'] = $partyAccounts->reduce(
+                fn ($sum, $row) => bcadd($sum, $row['received'], 4), '0.0000');
+            $first['receivable'] = $partyAccounts->reduce(
+                fn ($sum, $row) => bcadd($sum, $row['receivable'], 4), '0.0000');
+            unset($first['_party_key']);
+            return $first;
+        })->values()->filter(fn ($row) => bccomp(ltrim($row['sales_returns'], '-'), $above, 4) > 0
             || bccomp($row['received'], $above, 4) > 0
             || bccomp($row['sales'], $above, 4) > 0
             || bccomp($row['purchases'], $above, 4) > 0
