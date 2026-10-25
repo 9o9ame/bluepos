@@ -9,7 +9,7 @@ import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import './TotalTurnoverReportPage.css'
 
 type AccountType = { ulid: string; name: string }
-type Row = { name: string; purchases: string; sales: string; received: string; receivable: string }
+type Row = { name: string; purchases: string; sales: string; sales_returns: string; received: string; receivable: string }
 type Result = { from: string; to: string; mode: string; rows: Row[]; totals: Omit<Row, 'name'> }
 type Period = 'this_month' | 'previous_month' | 'today' | 'yesterday' | 'custom'
 const dateString = (d: Date) => {
@@ -29,6 +29,21 @@ const fmt = (v: string) => {
   const [w, f = ''] = (negative ? v.slice(1) : v).split('.')
   const fraction = f.slice(0,4).replace(/0+$/,'')
   return (negative ? '(' : '') + (w || '0').replace(/\B(?=(\d{3})+(?!\d))/g,',') + (fraction ? '.'+fraction : '') + (negative ? ')' : '')
+}
+const recoveryPercent = (movement: string, recovery: string) => {
+  const units = (text: string) => {
+    const negative = text.startsWith('-')
+    const [whole, decimal = ''] = (negative ? text.slice(1) : text).split('.')
+    const result = BigInt(whole || '0') * 10000n + BigInt((decimal + '0000').slice(0, 4))
+    return negative ? -result : result
+  }
+  const denominator = units(movement)
+  if (denominator === 0n) return '0%'
+  const scaled = (units(recovery) * 10000n) / denominator
+  const negative = scaled < 0n
+  const abs = negative ? -scaled : scaled
+  const fraction = String(abs % 100n).padStart(2, '0').replace(/0+$/, '')
+  return (negative ? '-' : '') + String(abs / 100n) + (fraction ? '.' + fraction : '') + '%'
 }
 export function TotalTurnoverReportPage() {
   const { openModule, closeActiveTab } = useWorkspace()
@@ -61,7 +76,7 @@ export function TotalTurnoverReportPage() {
   const exportFile = (kind:'txt'|'html'|'csv') => {
     if (!paperRef.current || !data) return
     const safe = (s:string)=>'"'+(/^\s*[=+@-]/.test(s)?"'":'')+s.replace(/"/g,'""')+'"'
-    const txt=kind==='csv' ? '\uFEFF'+[['Party Name','Purchases','Sales','Received','Receivable'], ...data.rows.map(x=>[x.name,x.purchases,x.sales,x.received,x.receivable])].map(x=>x.map(safe).join(',')).join('\r\n') : kind==='html'? '<!doctype html><meta charset="utf-8">'+paperRef.current.innerHTML: paperRef.current.innerText
+    const txt=kind==='csv' ? '\uFEFF'+[['Party Name','Sales - Returns','Recovery','Recovery %age','Turnover','Receivable'], ...data.rows.map(x=>[x.name,x.sales_returns,x.received,recoveryPercent(x.sales_returns,x.received),x.sales,x.receivable])].map(x=>x.map(safe).join(',')).join('\r\n') : kind==='html'? '<!doctype html><meta charset="utf-8">'+paperRef.current.innerHTML: paperRef.current.innerText
     const url=URL.createObjectURL(new Blob([txt],{type:kind==='csv'?'text/csv;charset=utf-8':kind==='html'?'text/html;charset=utf-8':'text/plain;charset=utf-8'}))
     const a=document.createElement('a');a.href=url;a.download='total-turnover.'+kind;a.click();URL.revokeObjectURL(url)
   }
@@ -77,18 +92,22 @@ export function TotalTurnoverReportPage() {
     {data && <article ref={paperRef} className="turnover-paper" style={{zoom:zoom+'%'}}>
       <header><h1>PARTIES, PRODUCT WISE (RECEIVABLE &amp; PAYABLE SUMMARY WITH TURNOVER)</h1>
         <p>From {data.from} to {data.to}</p></header>
-      {data.mode === 'simple' ? <table><thead><tr>
-        <th>PARTY NAME</th><th>PURCHASES</th><th>SALES TURNOVER</th><th>RECEIVED</th><th>RECEIVABLE</th>
-      </tr></thead><tbody>{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td><td>{fmt(r.purchases)}</td>
-        <td>{fmt(r.sales)}</td><td>{fmt(r.received)}</td><td>{fmt(r.receivable)}</td></tr>)}</tbody>
-      <tfoot><tr><th>TOTAL</th><th>{fmt(data.totals.purchases)}</th><th>{fmt(data.totals.sales)}</th>
-        <th>{fmt(data.totals.received)}</th><th>{fmt(data.totals.receivable)}</th></tr></tfoot></table>
+      {data.mode === 'simple' ? <table className="turnover-simple-table"><thead>
+        <tr><th rowSpan={2}>PARTY NAME</th><th colSpan={3}>RECOVERY POSITION</th><th colSpan={2}>TOTAL</th></tr>
+        <tr><th>Sales - Returns</th><th>Recovery</th><th>%age</th><th>Turnover</th><th>RECEIVABLE</th></tr>
+      </thead><tbody>{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td>
+        <td>{fmt(r.sales_returns)}</td><td>{fmt(r.received)}</td>
+        <td>{recoveryPercent(r.sales_returns,r.received)}</td><td>{r.sales==='0.0000'?'—':fmt(r.sales)}</td>
+        <td>{fmt(r.receivable)}</td></tr>)}</tbody>
+      <tfoot><tr><th>TOTAL</th><th>{fmt(data.totals.sales_returns)}</th>
+        <th>{fmt(data.totals.received)}</th><th></th><th>{fmt(data.totals.sales)}</th>
+        <th>{fmt(data.totals.receivable)}</th></tr></tfoot></table>
       : <table><thead><tr><th rowSpan={2}>PARTY NAME</th><th colSpan={2}>PURCHASES</th><th>SALES</th><th colSpan={2}>RECOVERY POSITION</th><th colSpan={2}>TOTAL</th></tr>
       <tr><th>Amount</th><th>Qty</th><th>Amount</th><th>Received</th><th>%age</th><th>Turnover</th><th>RECEIVABLE</th></tr></thead>
       <tbody>{data.rows.map((r,i)=><tr key={i}><td>{r.name}</td>
         <td>{fmt(r.purchases)}</td><td>—</td><td>{fmt(r.sales)}</td><td>{fmt(r.received)}</td><td>—</td><td>{fmt(r.sales)}</td><td>{fmt(r.receivable)}</td></tr>)}
       </tbody><tfoot><tr><th>TOTAL</th><th>{fmt(data.totals.purchases)}</th><th>—</th><th>{fmt(data.totals.sales)}</th><th>{fmt(data.totals.received)}</th><th>—</th><th>{fmt(data.totals.sales)}</th><th>{fmt(data.totals.receivable)}</th></tr></tfoot></table>}
-      <p className="turnover-disclaimer">Posted transactions only. Product-wise litres and recovery percentages are not yet mapped; these fields are not calculated.</p>
+      <p className="turnover-disclaimer">Posted entries only. In Simple Turn Over, Sales − Returns shows net posted account movement in the selected period, and %age = Recovery ÷ that movement × 100. Product-wise litres remain unmapped.</p>
     </article>}
   </section>
   const valid=!!from&&!!to&&from<=to&&/^\d+(\.\d{1,4})?$/.test(above)
