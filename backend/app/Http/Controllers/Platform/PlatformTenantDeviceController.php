@@ -6,6 +6,8 @@ use App\Enums\DeviceStatus;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Models\Device;
+use App\Models\AuthSessionRecord;
+use App\Models\AuditLog;
 use App\Models\Tenant;
 use App\Platform\PlatformAuditLogger;
 use App\Security\SessionRevocationService;
@@ -32,6 +34,35 @@ class PlatformTenantDeviceController extends Controller
             'registered_at' => $device->registered_at?->toISOString(),
             'last_seen_at' => $device->last_seen_at?->toISOString(),
         ])->values()]);
+    }
+
+    public function activity(string $tenantUlid): JsonResponse
+    {
+        $tenant = $this->tenant($tenantUlid);
+        $sessions = AuthSessionRecord::query()
+            ->where('tenant_id', $tenant->id)
+            ->with('device:id,ulid,name')
+            ->orderByDesc('id')->limit(100)->get();
+        $events = AuditLog::query()->where('tenant_id', $tenant->id)
+            ->whereIn('event', ['LOGIN_FAILURE', 'LOGIN_SUCCESS', 'DEVICE_ENROLLMENT_REQUESTED'])
+            ->orderByDesc('occurred_at')->limit(100)->get();
+        return response()->json([
+            'sessions' => $sessions->map(fn (AuthSessionRecord $session) => [
+                'ulid' => $session->ulid,
+                'device' => $session->device ? ['ulid' => $session->device->ulid, 'name' => $session->device->name] : null,
+                'ip_address' => $session->ip_address,
+                'user_agent' => $session->user_agent,
+                'last_seen_at' => $session->last_seen_at?->toISOString(),
+                'revoked_at' => $session->revoked_at?->toISOString(),
+            ])->values(),
+            'events' => $events->map(fn (AuditLog $log) => [
+                'ulid' => $log->ulid,
+                'event' => $log->event,
+                'ip_address' => $log->ip_address,
+                'user_agent' => $log->user_agent,
+                'occurred_at' => $log->occurred_at?->toISOString(),
+            ])->values(),
+        ]);
     }
 
     public function approve(Request $request, string $tenantUlid, string $deviceUlid, TenantEntitlementService $entitlements, PlatformAuditLogger $audit): JsonResponse
