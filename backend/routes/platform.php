@@ -49,6 +49,8 @@ Route::prefix('platform')->group(function () {
             ->middleware('platform.can:platform.tenants.view');
         Route::post('/tenants', [PlatformTenantController::class, 'store'])
             ->middleware(['platform.can:platform.tenants.create', 'platform.recent-mfa']);
+        Route::get('/security/device-activity', [PlatformTenantDeviceController::class, 'overview'])
+            ->middleware('platform.can:platform.audit.view');
         Route::get('/tenants/{tenantUlid}/login-activity', [PlatformTenantDeviceController::class, 'activity'])
             ->middleware('platform.can:platform.audit.view');
         Route::get('/tenants/{tenantUlid}/devices', [PlatformTenantDeviceController::class, 'index'])
