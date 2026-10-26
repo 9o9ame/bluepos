@@ -524,6 +524,106 @@ class AuthenticationTest extends TestCase
 
     }
 
+    public function test_employee_access_review_rejects_ineligible_membership_or_device_without_mutation(): void
+    {
+        $owner = $this->provisionOwner('review-ineligible');
+        $employee = \App\Models\User::query()->create([
+            'name' => 'Ineligible Employee',
+            'email' => 'review-ineligible-staff@example.com',
+            'password' => 'password123',
+            'status' => \App\Enums\UserStatus::Active,
+            'must_change_password' => false,
+            'security_version' => 1,
+        ]);
+        $member = \App\Models\Membership::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'user_id' => $employee->id,
+            'username' => 'ineligibleemployee',
+            'status' => \App\Enums\MembershipStatus::Active,
+            'is_owner' => false,
+            'security_version' => 1,
+        ]);
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'name' => 'Ineligible review device',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+        $ulid = (string) \Illuminate\Support\Str::ulid();
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => $ulid,
+            'tenant_id' => $owner->tenant->id,
+            'membership_id' => $member->id,
+            'device_id' => $device->id,
+            'network_hash' => hash('sha256', 'review-ineligible-network'),
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('review-ineligible'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $url = '/api/devices/access-requests/'.$ulid.'/review';
+        $member->status = \App\Enums\MembershipStatus::Suspended;
+        $member->save();
+
+        foreach (['approved', 'rejected'] as $decision) {
+            $this->postJson($url, ['decision' => $decision])
+                ->assertStatus(409)->assertJsonPath('error.key', 'ACCESS_REQUEST_INVALID');
+        }
+        $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')->where('ulid', $ulid)->value('status'));
+        $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
+
+        $member->status = \App\Enums\MembershipStatus::Active;
+        $member->save();
+        $device->status = \App\Enums\DeviceStatus::Revoked;
+        $device->save();
+        foreach (['approved', 'rejected'] as $decision) {
+            $this->postJson($url, ['decision' => $decision])
+                ->assertStatus(409)->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
+        }
+        $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')->where('ulid', $ulid)->value('status'));
+        $this->assertSame(\App\Enums\DeviceStatus::Revoked, $device->fresh()->status);
+    }
+
+    public function test_employee_access_review_requires_owner_authority_and_valid_decision(): void
+    {
+        $owner = $this->provisionOwner('review-validation');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $ulid = (string) \Illuminate\Support\Str::ulid();
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => $ulid,
+            'tenant_id' => $owner->tenant->id,
+            'membership_id' => $owner->membership->id,
+            'device_id' => $device->id,
+            'network_hash' => hash('sha256', 'review-validation-network'),
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('review-validation'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $url = '/api/devices/access-requests/'.$ulid.'/review';
+        foreach (['invalid', 'pending', ''] as $decision) {
+            $this->postJson($url, ['decision' => $decision])->assertUnprocessable();
+        }
+        $this->postJson($url, [])->assertUnprocessable();
+        $this->postJson($url, ['decision' => 'approved'])
+            ->assertStatus(409)->assertJsonPath('error.key', 'ACCESS_REQUEST_INVALID');
+        $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')->where('ulid', $ulid)->value('status'));
+    }
+
     public function test_rejected_employee_access_review_cannot_be_replayed(): void
     {
         $owner = $this->provisionOwner('review-once');
