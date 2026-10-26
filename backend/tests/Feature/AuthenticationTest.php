@@ -524,6 +524,72 @@ class AuthenticationTest extends TestCase
 
     }
 
+    public function test_owner_can_filter_and_paginate_employee_device_review_history(): void
+    {
+        $owner = $this->provisionOwner('device-review-history');
+        $employee = \App\Models\User::query()->create([
+            'name' => 'History Employee',
+            'email' => 'history-employee@example.com',
+            'password' => 'password123',
+            'status' => \App\Enums\UserStatus::Active,
+            'must_change_password' => false,
+            'security_version' => 1,
+        ]);
+        $member = \App\Models\Membership::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'user_id' => $employee->id,
+            'username' => 'historyemployee',
+            'status' => \App\Enums\MembershipStatus::Active,
+            'is_owner' => false,
+            'security_version' => 1,
+        ]);
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'name' => 'History test device',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+        $ulids = [];
+        foreach (['pending', 'approved', 'rejected'] as $status) {
+            $ulid = (string) \Illuminate\Support\Str::ulid();
+            $ulids[$status] = $ulid;
+            \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+                'ulid' => $ulid,
+                'tenant_id' => $owner->tenant->id,
+                'membership_id' => $member->id,
+                'device_id' => $device->id,
+                'network_hash' => hash('sha256', 'history-'.$status),
+                'status' => $status,
+                'reviewed_at' => $status === 'pending' ? null : now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('device-review-history'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->getJson('/api/devices/access-requests')
+            ->assertOk()->assertJsonPath('pending_count', 1)
+            ->assertJsonPath('pagination.total', 1)
+            ->assertJsonPath('requests.0.ulid', $ulids['pending']);
+        $this->getJson('/api/devices/access-requests?status=approved')
+            ->assertOk()->assertJsonPath('pagination.total', 1)
+            ->assertJsonPath('requests.0.status', 'approved')
+            ->assertJsonPath('requests.0.ulid', $ulids['approved']);
+        $this->getJson('/api/devices/access-requests?status=all&per_page=1&page=2')
+            ->assertOk()->assertJsonPath('pagination.total', 3)
+            ->assertJsonPath('pagination.per_page', 1)
+            ->assertJsonCount(1, 'requests');
+        $this->getJson('/api/devices/access-requests?status=invalid')->assertUnprocessable();
+        $this->getJson('/api/devices/access-requests?per_page=101')->assertUnprocessable();
+    }
+
     public function test_employee_access_review_rejects_ineligible_membership_or_device_without_mutation(): void
     {
         $owner = $this->provisionOwner('review-ineligible');
