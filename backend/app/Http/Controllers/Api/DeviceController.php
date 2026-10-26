@@ -118,7 +118,7 @@ class DeviceController extends Controller
 
         $data = $request->validate(['decision' => ['required', 'in:approved,rejected']]);
 
-        $row = DB::transaction(function () use ($tenantContext, $requestUlid, $data) {
+        DB::transaction(function () use ($tenantContext, $requestUlid, $data): void {
             $tenant = \App\Models\Tenant::query()->whereKey($tenantContext->tenantId())
                 ->lockForUpdate()->firstOrFail();
             $access = DB::table('device_access_requests')
@@ -163,13 +163,19 @@ class DeviceController extends Controller
                     ->update(['revoked_at' => now()]);
             }
 
-            DB::table('device_access_requests')->where('id', $access->id)->update([
+            $updated = DB::table('device_access_requests')
+                ->where('id', $access->id)
+                ->where('tenant_id', $tenant->id)
+                ->where('status', 'pending')
+                ->update([
                 'status' => $data['decision'],
                 'reviewed_by' => $tenantContext->userId(),
                 'reviewed_at' => now(),
                 'updated_at' => now(),
             ]);
-            return $access;
+            if ($updated !== 1) {
+                throw new ApiException('ACCESS_REQUEST_ALREADY_REVIEWED', 'This request has already been reviewed.', 409);
+            }
         });
 
         app(AuditLogger::class)->record(
