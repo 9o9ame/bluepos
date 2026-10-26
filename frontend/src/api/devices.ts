@@ -39,7 +39,7 @@ export type DeviceAccessRequest = {
   created_at: string
 }
 
-export function fetchDeviceAccessRequests(): Promise<{ requests: DeviceAccessRequest[] }> {
+export function fetchDeviceAccessRequests(): Promise<{ requests: DeviceAccessRequest[]; pending_count: number }> {
   return apiFetch('/api/devices/access-requests')
 }
 
