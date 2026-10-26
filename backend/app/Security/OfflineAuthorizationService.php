@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use App\Enums\BranchStatus;
 use App\Enums\MembershipStatus;
 use App\Enums\UserStatus;
 use App\Exceptions\ApiException;
@@ -41,7 +42,11 @@ class OfflineAuthorizationService
             $membership = Membership::query()->with(['user', 'tenant'])
                 ->where('tenant_id', $membership->tenant_id)
                 ->whereKey($membership->id)->lockForUpdate()->firstOrFail();
-            if ($membership->status !== MembershipStatus::Active
+            $currentBranch = Branch::query()->where('tenant_id', $membership->tenant_id)
+                ->whereKey($branch->id)->first();
+
+            if (! $currentBranch || $currentBranch->status !== BranchStatus::Active
+                || $membership->status !== MembershipStatus::Active
                 || $membership->user?->status !== UserStatus::Active
                 || ! $device->isActive()
                 || (int) $device->tenant_id !== (int) $membership->tenant_id
@@ -115,8 +120,8 @@ class OfflineAuthorizationService
         if ((int) $lease->device_id !== (int) $device->id
             || (int) $lease->membership_id !== (int) $membership->id
             || ($device->branch_id !== null && (int) $device->branch_id !== (int) $lease->branch_id)
-            || ! \App\Models\Branch::query()->where('tenant_id', $lease->tenant_id)
-                ->whereKey($lease->branch_id)->exists()) {
+            || ! Branch::query()->where('tenant_id', $lease->tenant_id)
+                ->whereKey($lease->branch_id)->where('status', BranchStatus::Active->value)->exists()) {
             throw new ApiException('OFFLINE_AUTH_EXPIRED', 'Offline authorization has expired. Reconnect to continue.', 403);
         }
     }
