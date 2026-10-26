@@ -35,6 +35,42 @@ class PlatformTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_platform_device_approval_is_tenant_scoped_and_audited(): void
+    {
+        $first = $this->provisionOwner('plat-dev-first')->tenant;
+        $second = $this->provisionOwner('plat-dev-second')->tenant;
+        $device = Device::query()->create([
+            'tenant_id' => $first->id,
+            'name' => 'New browser',
+            'device_type' => 'browser',
+            'status' => DeviceStatus::Pending,
+            'credential_hash' => Hash::make('unused-test-secret'),
+            'registered_at' => now(),
+        ]);
+        $this->signInPlatformAdmin('plat-device-approval');
+
+        $this->getJson('/api/platform/tenants/'.$first->ulid.'/devices')
+            ->assertOk()->assertJsonCount(1, 'devices')
+            ->assertJsonPath('devices.0.status', 'pending');
+
+        $this->postJson('/api/platform/tenants/'.$second->ulid.'/devices/'.$device->ulid.'/approve')
+            ->assertNotFound();
+        $this->assertEquals(DeviceStatus::Pending, $device->fresh()->status);
+
+        $this->postJson('/api/platform/tenants/'.$first->ulid.'/devices/'.$device->ulid.'/approve')
+            ->assertOk()->assertJsonPath('status', 'active');
+        $this->assertEquals(DeviceStatus::Active, $device->fresh()->status);
+        $this->assertDatabaseHas('platform_audit_logs', [
+            'event' => 'PLATFORM_TENANT_DEVICE_APPROVED',
+            'resource_ulid' => $device->ulid,
+        ]);
+        $this->postJson('/api/platform/tenants/'.$first->ulid.'/devices/'.$device->ulid.'/approve')
+            ->assertStatus(409);
+        $this->postJson('/api/platform/tenants/'.$first->ulid.'/devices/'.$device->ulid.'/revoke')
+            ->assertOk()->assertJsonPath('status', 'revoked');
+        $this->assertEquals(DeviceStatus::Revoked, $device->fresh()->status);
+    }
+
     public function test_no_public_super_admin_registration(): void
     {
         $this->postJson('/api/platform/auth/register', [
