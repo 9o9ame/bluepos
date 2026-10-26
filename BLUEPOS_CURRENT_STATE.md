@@ -1,3 +1,12 @@
+## LIVE CHECKPOINT — 2026-10-26 (tests confirmed; HTTP race harness still pending)
+
+- User validated after `27bb8c9f`: `AuthenticationTest.php` **31 passed / 166 assertions**, `PostgreSqlConcurrencyConnectionTest.php` **3 passed / 19 assertions**.
+- No production or test-code edits in this checkpoint. The genuine two-worker HTTP approve-versus-reject race is NOT IMPLEMENTED, and prior database probes plus sequential replay tests do not establish HTTP race safety.
+- Auth route requires Sanctum + tenant middleware; a real race harness needs independently authenticated workers, committed isolated fixtures, bounded waits, reliable scoped cleanup and `bluepos_test` guard.
+- Next: implement **this HTTP race harness**, not another simulated locking test. See `BLUEPOS_DEVELOPMENT_LOG.md`. `main` untouched.
+
+---
+
 ## LIVE CHECKPOINT — 2026-10-26 (31 authentication + 3 concurrency PASS)
 
 - User validated at `68e1b88c`: `AuthenticationTest.php` **31/31 passed, 166 assertions**; `PostgreSqlConcurrencyConnectionTest.php` **3/3 passed, 19 assertions**.
