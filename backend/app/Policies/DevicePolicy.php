@@ -26,7 +26,7 @@ class DevicePolicy
 
     public function approve(User $user, Device $device): bool
     {
-        return $this->permissions->can('devices.approve') && $this->sameTenantOrUnassigned($device);
+        return $this->permissions->can('devices.approve') && $this->sameTenant($device);
     }
 
     public function revoke(User $user, Device $device): bool
