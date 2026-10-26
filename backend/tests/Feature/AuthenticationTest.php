@@ -624,6 +624,33 @@ class AuthenticationTest extends TestCase
         $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')->where('ulid', $ulid)->value('status'));
     }
 
+    public function test_offline_lease_is_invalid_after_device_branch_reassignment(): void
+    {
+        $owner = $this->provisionOwner('offline-reassign-branch');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $service = app(\App\Security\OfflineAuthorizationService::class);
+        $lease = $service->issue($owner->membership, $device, $owner->branch, []);
+        $service->assertValid($lease, $device, $owner->membership);
+
+        $newBranch = \App\Models\Branch::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'name' => 'Reassigned branch',
+            'code' => 'REASSIGN',
+            'status' => \App\Enums\BranchStatus::Active,
+            'is_default' => false,
+        ]);
+        $device->branch_id = $newBranch->id;
+        $device->save();
+
+        try {
+            $service->assertValid($lease, $device, $owner->membership);
+            $this->fail('Branch reassignment must invalidate old offline authorization.');
+        } catch (\App\Exceptions\ApiException $exception) {
+            $this->assertSame('OFFLINE_AUTH_EXPIRED', $exception->errorKey);
+        }
+    }
+
     public function test_disabling_user_invalidates_existing_offline_lease_and_prevents_new_issuance(): void
     {
         $owner = $this->provisionOwner('offline-disabled-user');
