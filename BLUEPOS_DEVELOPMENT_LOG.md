@@ -50,3 +50,10 @@
 - Pending device generic approval now uses the freshly locked tenant model for `assertOperational` and `assertCanRegisterDevice`, not potentially stale TenantContext tenant state.
 - Regression: generic approval of pending device after tenant suspension returns `TENANT_DISABLED`, device remains pending. Note: auth middleware may also block suspension before controller, so this is not proof of the transaction-level race invariant.
 - **Latest test not run locally yet; expected 30 total tests**. Independent-connection PostgreSQL simultaneous review/approval race still pending; do not claim covered.
+
+### 2026-10-26 — PostgreSQL concurrency connection probe (not domain race test)
+- Previous user local validation: `AuthenticationTest.php` **30 passed / 159 assertions** at `e490a322`.
+- Commit: `fb609e32`; file: `backend/tests/Feature/PostgreSqlConcurrencyConnectionTest.php`. No migrations or production changes.
+- Adds two independent PostgreSQL backend connections against `bluepos_test`; verifies distinct PostgreSQL backend PIDs, transaction-scoped advisory lock contention, and lock release after rollback. Read-only, no table inserts or cleanup of persistent data.
+- **Unrun locally**. This proves connection isolation/locking only; **not** actual concurrent device approve/reject or HTTP request races.
+- Next: validate probe locally, then add a proper committed-fixture, independently executing domain race regression with bounded waits and safe cleanup.
