@@ -1163,17 +1163,7 @@ class DailyCashPositionTest extends TestCase
     {
         $this->signInOwner('daily-cash-day-close-permission')->assertOk();
 
-        $tenant = app(TenantContext::class);
-        $role = $tenant->membership()
-            ->roles()
-            ->where('roles.tenant_id', $tenant->tenantId())
-            ->firstOrFail();
-        $permission = Permission::query()
-            ->where('key', 'cash_sessions.view')
-            ->firstOrFail();
-
-        $role->permissions()->detach($permission->id);
-        app()->forgetInstance(PermissionService::class);
+        $this->restrictCurrentMembershipWithoutPermission('cash_sessions.view');
 
         $this->getJson('/api/cash-position/day-close')->assertForbidden();
     }
@@ -1198,17 +1188,7 @@ class DailyCashPositionTest extends TestCase
     {
         $this->signInOwner('daily-cash-permission')->assertOk();
 
-        $tenant = app(TenantContext::class);
-        $role = $tenant->membership()
-            ->roles()
-            ->where('roles.tenant_id', $tenant->tenantId())
-            ->firstOrFail();
-        $permission = Permission::query()
-            ->where('key', 'accounting.journal.view')
-            ->firstOrFail();
-
-        $role->permissions()->detach($permission->id);
-        app()->forgetInstance(PermissionService::class);
+        $this->restrictCurrentMembershipWithoutPermission('accounting.journal.view');
 
         $this->getJson('/api/cash-position/accounts')->assertForbidden();
         $this->getJson('/api/cash-position/summary')->assertForbidden();
