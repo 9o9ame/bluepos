@@ -1,0 +1,76 @@
+<?php
+
+namespace App\Http\Controllers\Platform;
+
+use App\Enums\DeviceStatus;
+use App\Exceptions\ApiException;
+use App\Http\Controllers\Controller;
+use App\Models\Device;
+use App\Models\Tenant;
+use App\Platform\PlatformAuditLogger;
+use App\Security\SessionRevocationService;
+use App\Security\TenantEntitlementService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class PlatformTenantDeviceController extends Controller
+{
+    private function tenant(string $tenantUlid): Tenant
+    {
+        return Tenant::query()->where('ulid', $tenantUlid)->firstOrFail();
+    }
+
+    public function index(string $tenantUlid): JsonResponse
+    {
+        $tenant = $this->tenant($tenantUlid);
+        $rows = Device::query()->where('tenant_id', $tenant->id)
+            ->orderByDesc('registered_at')->limit(250)->get();
+        return response()->json(['devices' => $rows->map(fn (Device $device) => [
+            'ulid' => $device->ulid, 'name' => $device->name,
+            'type' => $device->device_type, 'status' => $device->status->value,
+            'registered_at' => $device->registered_at?->toISOString(),
+            'last_seen_at' => $device->last_seen_at?->toISOString(),
+        ])->values()]);
+    }
+
+    public function approve(Request $request, string $tenantUlid, string $deviceUlid, TenantEntitlementService $entitlements, PlatformAuditLogger $audit): JsonResponse
+    {
+        $tenant = $this->tenant($tenantUlid);
+        $result = DB::transaction(function () use ($tenant, $deviceUlid, $entitlements) {
+            $device = Device::query()->where('tenant_id', $tenant->id)
+                ->where('ulid', $deviceUlid)->lockForUpdate()->firstOrFail();
+            if ($device->status !== DeviceStatus::Pending) {
+                throw new ApiException('DEVICE_NOT_PENDING', 'Only pending devices can be approved.', 409);
+            }
+            $entitlements->assertOperational($tenant);
+            $entitlements->assertCanRegisterDevice($tenant);
+            $device->status = DeviceStatus::Active;
+            $device->approved_at = now();
+            // Platform actors are not tenant User records. Store their identity in platform audit.
+            $device->approved_by = null;
+            $device->save();
+            return $device;
+        });
+        $audit->record('PLATFORM_TENANT_DEVICE_APPROVED', [
+            'resource_type' => 'device', 'resource_ulid' => $result->ulid,
+            'tenant_ulid' => $tenant->ulid,
+        ], $request);
+        return response()->json(['ulid' => $result->ulid, 'status' => $result->status->value]);
+    }
+
+    public function revoke(Request $request, string $tenantUlid, string $deviceUlid, SessionRevocationService $revocation, PlatformAuditLogger $audit): JsonResponse
+    {
+        $tenant = $this->tenant($tenantUlid);
+        $device = Device::query()->where('tenant_id', $tenant->id)->where('ulid', $deviceUlid)->firstOrFail();
+        if ($device->status !== DeviceStatus::Pending && $device->status !== DeviceStatus::Active) {
+            throw new ApiException('DEVICE_NOT_REVOCABLE', 'Device cannot be revoked.', 409);
+        }
+        $revocation->revokeDevice($device);
+        $audit->record('PLATFORM_TENANT_DEVICE_REVOKED', [
+            'resource_type' => 'device', 'resource_ulid' => $device->ulid,
+            'tenant_ulid' => $tenant->ulid,
+        ], $request);
+        return response()->json(['ulid' => $device->ulid, 'status' => 'revoked']);
+    }
+}
