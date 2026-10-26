@@ -237,6 +237,27 @@ class AuthenticationTest extends TestCase
         \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('membership_id', $member->id)->update(['status' => 'approved']);
         $this->postJson('/api/auth/login', $credentials)->assertOk();
+        $this->getJson('/api/auth/me')->assertOk();
+
+        // A valid session must not survive an employee network change.
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.78']);
+        $this->getJson('/api/auth/me')
+            ->assertUnauthorized()->assertJsonPath('error.key', 'SESSION_REVOKED');
+        $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1']);
+        $this->getJson('/api/auth/me')->assertOk();
+
+        // A revoked access decision must immediately invalidate an existing session.
+        \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('membership_id', $member->id)
+            ->where('network_hash', $networkHash)
+            ->update(['status' => 'rejected', 'reviewed_at' => now()]);
+        $this->getJson('/api/auth/me')
+            ->assertUnauthorized()->assertJsonPath('error.key', 'SESSION_REVOKED');
+        \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('membership_id', $member->id)
+            ->where('network_hash', $networkHash)
+            ->update(['status' => 'approved', 'reviewed_at' => null]);
+        $this->getJson('/api/auth/me')->assertOk();
 
         // A shared browser approval must not authorize another employee.
         $secondUser = \App\Models\User::query()->create([
