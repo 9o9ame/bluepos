@@ -290,7 +290,10 @@ class AuthenticationTest extends TestCase
         $second = $this->provisionOwner('policy-isolation-b');
         $this->attachTrustedDevice((int) $first->tenant->id);
         $firstDevice = \App\Models\Device::query()->where('tenant_id', $first->tenant->id)->firstOrFail();
+        $this->attachTrustedDevice((int) $second->tenant->id);
         $secondDevice = \App\Models\Device::query()->where('tenant_id', $second->tenant->id)->firstOrFail();
+        // Restore the first tenant's device credential for its login and subsequent requests.
+        $this->attachTrustedDevice((int) $first->tenant->id);
 
         \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
             'ulid' => (string) \Illuminate\Support\Str::ulid(),
