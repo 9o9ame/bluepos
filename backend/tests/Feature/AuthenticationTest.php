@@ -418,6 +418,44 @@ class AuthenticationTest extends TestCase
         $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
     }
 
+    public function test_offline_lease_issuance_rejects_another_tenants_branch(): void
+    {
+        $first = $this->provisionOwner('offline-branch-first');
+        $second = $this->provisionOwner('offline-branch-second');
+        $this->attachTrustedDevice((int) $first->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $first->tenant->id)->firstOrFail();
+
+        try {
+            app(\App\Security\OfflineAuthorizationService::class)
+                ->issue($first->membership, $device, $second->branch, []);
+            $this->fail('Cross-tenant offline authorization was issued.');
+        } catch (\App\Exceptions\ApiException $exception) {
+            $this->assertSame('OFFLINE_AUTH_EXPIRED', $exception->errorKey);
+        }
+
+        $this->assertSame(0, \App\Models\OfflineAuthorizationLease::query()
+            ->where('membership_id', $first->membership->id)->count());
+    }
+
+    public function test_offline_lease_issuance_rejects_revoked_device(): void
+    {
+        $owner = $this->provisionOwner('offline-issue-revoked');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        app(\App\Security\SessionRevocationService::class)->revokeDevice($device);
+
+        try {
+            app(\App\Security\OfflineAuthorizationService::class)
+                ->issue($owner->membership, $device->fresh(), $owner->branch, []);
+            $this->fail('A revoked device was issued an offline lease.');
+        } catch (\App\Exceptions\ApiException $exception) {
+            $this->assertSame('DEVICE_NOT_APPROVED', $exception->errorKey);
+        }
+
+        $this->assertSame(0, \App\Models\OfflineAuthorizationLease::query()
+            ->where('device_id', $device->id)->count());
+    }
+
     public function test_offline_lease_rejects_revoked_device_and_changed_membership_security_version(): void
     {
         $owner = $this->provisionOwner('offline-revocation');
