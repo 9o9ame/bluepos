@@ -64,3 +64,10 @@
 - Added isolated, committed test-only pending device fixture in `bluepos_test`; primary PostgreSQL connection locks actual `devices` row and independent connection must receive SQLSTATE `55P03` with NOWAIT. After primary rollback, secondary acquires row lock. Both transactions rollback and fixture deleted in finally.
 - **Unrun locally**; expected two tests in probe file. An interrupted process could leave a uniquely tagged test fixture; investigate before manual cleanup, never wipe DB.
 - This is real table-row lock contention but still **not** an end-to-end concurrent approve/reject HTTP request race; that remains pending.
+
+### 2026-10-26 — Concurrency probe local verification and domain-race scoping
+- **Verified by user locally:** `PostgreSqlConcurrencyConnectionTest.php`: **2 passed, 11 assertions**; `AuthenticationTest.php`: **30 passed, 159 assertions**, after commit `b7205020`.
+- Inspected: `DeviceController::reviewAccessRequest`, `DeviceController::approve`, `tests/TestCase.php`, `tests/Support/TestDatabaseGuard.php`.
+- Both review and generic approval lock the tenant row; review also locks request/device. Existing `AuthenticationTest` employs `DatabaseTransactions`, making its fixtures invisible across PostgreSQL connections.
+- **Next implementation boundary:** need a dedicated lifecycle for committed tenant, membership, device and request fixtures plus independent process/request coordination. Test-only cleanup must be precise and resilient; do not remove or wipe unrelated `bluepos_test` data.
+- No new domain race test implemented or executed in this checkpoint; two successful probes are not evidence of actual conflicting HTTP requests.
