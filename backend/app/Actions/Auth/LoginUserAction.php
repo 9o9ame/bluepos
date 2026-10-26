@@ -15,6 +15,7 @@ use App\Models\Tenant;
 use App\Models\Warehouse;
 use App\Security\AuditLogger;
 use App\Security\DeviceCredentialService;
+use App\Security\DeviceNetworkTrust;
 use App\Security\PrivilegedAccess;
 use App\Security\TenantEntitlementService;
 use App\Support\IdentityNormalizer;
@@ -169,7 +170,7 @@ class LoginUserAction
             throw new ApiException('DEVICE_NOT_APPROVED', 'This device is not approved. Ask your administrator to approve it.', 403);
         }
 
-        if ($privileged && ! $device->isTrusted()) {
+        if ($privileged && (! $device->isTrusted() || ($membership->hasOwnerAuthority() && app(DeviceNetworkTrust::class)->requiresReverification($device, $request)))) {
             $this->requireMfa($request, $membership, $device);
         }
 
