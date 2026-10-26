@@ -126,6 +126,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::put('/memberships/{membershipUlid}/fingerprint', [MembershipController::class, 'updateFingerprint']);
 
     Route::get('/devices', [DeviceController::class, 'index']);
+    Route::get('/devices/access-requests', [DeviceController::class, 'accessRequests']);
     Route::post('/devices/{deviceUlid}/approve', [DeviceController::class, 'approve']);
     Route::post('/devices/{deviceUlid}/revoke', [DeviceController::class, 'revoke']);
     Route::patch('/devices/{deviceUlid}', [DeviceController::class, 'assign']);
