@@ -1,3 +1,12 @@
+## LIVE ROADMAP — 2026-10-26 (new offline security batch awaits tests)
+
+- Latest locally verified baseline: Authentication **34/34 PASS (188 assertions)**; PostgreSQL concurrency **3/3 PASS (19 assertions)**.
+- New code: `c777101e` revalidates enabled user and lease-user binding for existing/new offline leases; `5c93b7d9` adds disabled-user regression. Expected Authentication count **35**, **NOT RUN** yet. No migrations or UI changes.
+- Roadmap: (1) device/authorization foundation: established and passing before this batch, but **two-worker HTTP race remains outstanding**; (2) offline authorization hardening: expanded, **offline sync E2E outstanding**; (3) legacy managed-access rollout: **pending**; (4) focused final security review: **pending**.
+- Next after passing tests: prioritize real concurrent HTTP review harness and offline sync entry-point integration; do not add repeated DB-lock-only probes. Main untouched; temporary `feature/superadmin` continuation.
+
+---
+
 ## LIVE CHECKPOINT — 2026-10-26 (combined security implementation awaiting validation)
 
 - Prior user-verified results: Authentication **33 PASS / 187 assertions**; PostgreSQL concurrency **3 PASS / 19 assertions**.
