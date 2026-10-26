@@ -1,3 +1,12 @@
+## 2026-10-26 — Functional device access review queue enhancement (local validation pending)
+
+- User-verified baseline: AuthenticationTest **38/38 PASS, 211 assertions** and PostgreSqlConcurrencyConnectionTest **3/3 PASS, 19 assertions**.
+- Production commit `7f6cea49`: device access requests API now supports tenant-scoped status filters (pending/approved/rejected/all), bounded pagination, deterministic ordering and reviewed_at; default remains pending; returns pending_count and pagination metadata.
+- Regression commit `5f036107`: owner review history scenarios for pending/approved/rejected, pagination and invalid inputs. Expected AuthenticationTest **39 tests**, not yet executed locally.
+- Actual simultaneous HTTP approve/reject race is **deferred** during early development; opt-in probe remains unverified. Offline sync E2E/managed legacy migration remain pending. Main untouched; no migrations/UI change.
+
+---
+
 ## LIVE ROADMAP — 2026-10-26 (code batch pending local verification)
 
 - Verified baseline: Authentication **35 tests PASS / 191 assertions**; PostgreSQL concurrency **3 PASS / 19 assertions**. New branch reassignment and inactive-branch checks remain UNTESTED locally.
