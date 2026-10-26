@@ -23,6 +23,10 @@ $application = require dirname(__DIR__, 2).'/bootstrap/app.php';
 $application->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 TestDatabaseGuard::assertApplication();
 
+if (config('session.driver') === 'array') {
+    throw new RuntimeException('Use persistent sessions (file/database) in the test HTTP server, not SESSION_DRIVER=array.');
+}
+
 if (! extension_loaded('curl')) {
     throw new RuntimeException('PHP curl extension is required for the HTTP race probe.');
 }
