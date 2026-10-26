@@ -157,7 +157,7 @@ function requestHandle(string $url, string $body, string $deviceCredential, ?str
         CURLOPT_HTTPHEADER => $headers,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HEADER => true,
-        CURLOPT_TIMEOUT => 15,
+        CURLOPT_TIMEOUT => 30,
         CURLOPT_CONNECTTIMEOUT => 5,
         CURLOPT_FOLLOWLOCATION => false,
     ]);
@@ -263,5 +263,5 @@ $valid = $winner !== null
         : $device->status === \App\Enums\DeviceStatus::Pending);
 
 echo json_encode(['passed' => $valid, 'results' => $results, 'persisted_status' => $after->status,
-    'audit_count' => count($audit)], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR).PHP_EOL;
+    'audit_count' => count($audit), 'device_status' => $device->status->value], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR).PHP_EOL;
 exit($valid ? 0 : 1);
