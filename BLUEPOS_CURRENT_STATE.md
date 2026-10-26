@@ -1,3 +1,14 @@
+## LIVE UPDATE — 2026-10-26 (pending local validation)
+
+- Previous user validation at `44a7b8c5`: **29 authentication tests passed, 154 assertions**.
+- Latest security change: `dc26a1a5` controller and `a144b177` regression. Pending generic device approval rechecks freshly locked tenant's operational status and plan limit. **No migrations.**
+- New local test **not run**; expected `AuthenticationTest.php` **30 tests**, actual results pending.
+- Run pull + `php vendor/bin/phpunit tests/Feature/AuthenticationTest.php` on `bluepos_test`.
+- Next after passing: genuine independent-connection PostgreSQL approve/reject race test; current new regression is not a substitute for real parallel testing. Then offline sync E2E and controlled legacy access migration.
+- Documentation log: `BLUEPOS_DEVELOPMENT_LOG.md`. Main untouched.
+
+---
+
 ## LIVE HANDOFF — 2026-10-26 (latest verified)
 
 **Active work:** Super Admin / device security / offline authorization hardening. **Existing working branch:** `feature/superadmin` (temporary continuation approved by user; not one of the five standard long-lived branches). Do not merge to `main` without review/approval. Local working-tree cleanliness has NOT been verified.
