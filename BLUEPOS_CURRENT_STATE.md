@@ -1,3 +1,12 @@
+## LIVE UPDATE — 2026-10-26 (two-connection probe pending validation)
+
+- User locally confirmed **30/30 AuthenticationTest tests, 159 assertions** after `e490a322`.
+- Created `backend/tests/Feature/PostgreSqlConcurrencyConnectionTest.php` at `fb609e32`: two independent PostgreSQL connections, PID independence, advisory transaction-lock contention and rollback release. **This is a concurrency test harness/probe, not the actual device approve/reject race regression.** Local test not yet run.
+- Test must use `bluepos_test`; no migrations. Next: pull, run probe then AuthenticationTest; after PASS, implement actual device review/approval race test with independent committed fixtures and bounded concurrency. Continue offline sync E2E and controlled legacy rollout afterwards.
+- See `BLUEPOS_DEVELOPMENT_LOG.md` for chronological commits. `main` untouched.
+
+---
+
 ## LIVE UPDATE — 2026-10-26 (pending local validation)
 
 - Previous user validation at `44a7b8c5`: **29 authentication tests passed, 154 assertions**.
