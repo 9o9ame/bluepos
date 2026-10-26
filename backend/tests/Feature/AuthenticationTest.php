@@ -418,6 +418,35 @@ class AuthenticationTest extends TestCase
         $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
     }
 
+    public function test_offline_lease_rejects_revoked_device_and_changed_membership_security_version(): void
+    {
+        $owner = $this->provisionOwner('offline-revocation');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()
+            ->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $service = app(\App\Security\OfflineAuthorizationService::class);
+        $lease = $service->issue($owner->membership, $device, $owner->branch, []);
+
+        $service->assertValid($lease, $device, $owner->membership);
+        $owner->membership->bumpSecurityVersion();
+        try {
+            $service->assertValid($lease, $device, $owner->membership->fresh());
+            $this->fail('A stale offline lease was accepted after the membership security version changed.');
+        } catch (\App\Exceptions\ApiException $exception) {
+            $this->assertSame('OFFLINE_AUTH_EXPIRED', $exception->errorKey);
+        }
+
+        $freshLease = $service->issue($owner->membership->fresh(), $device, $owner->branch, []);
+        app(\App\Security\SessionRevocationService::class)->revokeDevice($device);
+        $this->assertNotNull($freshLease->fresh()->revoked_at);
+        try {
+            $service->assertValid($freshLease->fresh(), $device->fresh(), $owner->membership->fresh());
+            $this->fail('A revoked device lease was accepted.');
+        } catch (\App\Exceptions\ApiException $exception) {
+            $this->assertSame('OFFLINE_AUTH_EXPIRED', $exception->errorKey);
+        }
+    }
+
     public function test_platform_cannot_bypass_pending_employee_device_review(): void
     {
         $owner = $this->provisionOwner('platform-review-bypass');
