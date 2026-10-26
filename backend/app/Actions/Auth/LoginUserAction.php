@@ -174,6 +174,27 @@ class LoginUserAction
             throw new ApiException('DEVICE_NOT_APPROVED', 'This device is not approved. Ask your administrator to approve it.', 403);
         }
 
+        if (! $membership->hasOwnerAuthority()) {
+            $network = app(DeviceNetworkTrust::class)->fingerprint($request);
+            $hasManagedRequests = DB::table('device_access_requests')
+                ->where('tenant_id', $membership->tenant_id)
+                ->where('device_id', $device->id)->exists();
+
+            if ($hasManagedRequests) {
+                $approved = $network !== null && DB::table('device_access_requests')
+                    ->where('tenant_id', $membership->tenant_id)
+                    ->where('device_id', $device->id)
+                    ->where('membership_id', $membership->id)
+                    ->where('network_hash', $network)
+                    ->where('status', 'approved')->exists();
+
+                if (! $approved) {
+                    $this->recordStaffAccessRequest($request, $membership, $device);
+                    throw new ApiException('DEVICE_NOT_APPROVED', 'Your tenant administrator must approve this device and network.', 403);
+                }
+            }
+        }
+
         if ($privileged && (! $device->isTrusted() || ($membership->hasOwnerAuthority() && app(DeviceNetworkTrust::class)->requiresReverification($device, $request)))) {
             $this->requireMfa($request, $membership, $device);
         }
@@ -183,7 +204,7 @@ class LoginUserAction
 
     private function recordStaffAccessRequest(Request $request, Membership $membership, Device $device): void
     {
-        if ($membership->hasOwnerAuthority() || $device->status !== DeviceStatus::Pending) {
+        if ($membership->hasOwnerAuthority() || ! in_array($device->status, [DeviceStatus::Pending, DeviceStatus::Active], true)) {
             return;
         }
 
