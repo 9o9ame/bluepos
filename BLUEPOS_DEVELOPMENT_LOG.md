@@ -96,3 +96,10 @@
 - Current review route `POST /api/devices/access-requests/{requestUlid}/review` requires Sanctum session and tenant middleware. Cross-process request execution needs authenticated sessions and committed fixtures visible to both workers. Existing `DatabaseTransactions` fixture approach cannot be reused.
 - Implementation safety gate: first establish an isolated, abort-safe fixture lifecycle (tenant, membership, device, request, owner session) and bounded two-worker synchronization without pointing a server to a persistent/dev DB. No unsafe test harness or unverified simultaneous HTTP test was committed.
 - **Next implementation is still the real HTTP approval/rejection race test**, not another PostgreSQL lock simulation. Preserve exactly-one-success result, 409 losing decision, no unintended device activation, no extra audit side effects. Do not call this completed before local execution.
+
+### 2026-10-26 — Combined access-review negative-case security batch (awaiting local validation)
+- Last user-confirmed baseline: `AuthenticationTest.php` 31/31 PASS (166 assertions), `PostgreSqlConcurrencyConnectionTest.php` 3/3 PASS (19 assertions).
+- Code commits: `dc67d651`, `737e16f0` to `backend/tests/Feature/AuthenticationTest.php`. No production code or migrations.
+- Added coverage: both approve and reject refuse suspended employee; both decisions refuse revoked device; invalid/missing decision rejected; owner membership cannot be processed as employee access. No mutations on rejected attempts.
+- Expected `AuthenticationTest.php` count **33** (assertion total unknown). **Not run locally yet.**
+- Outstanding: genuine two-worker authenticated HTTP approve/reject race, offline sync end-to-end tests, controlled legacy terminal policy rollout; existing lock probes are not a substitute for HTTP race proof.
