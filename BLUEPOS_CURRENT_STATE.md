@@ -1,3 +1,17 @@
+## LIVE HANDOFF — 2026-10-26 (latest verified)
+
+**Active work:** Super Admin / device security / offline authorization hardening. **Existing working branch:** `feature/superadmin` (temporary continuation approved by user; not one of the five standard long-lived branches). Do not merge to `main` without review/approval. Local working-tree cleanliness has NOT been verified.
+
+**Last verified commit:** `3de2c137` (test correction for unwrapped device JSON collection). **User local validation:** `php vendor/bin/phpunit tests/Feature/AuthenticationTest.php` — **28 passed, 148 assertions** (PHP 8.3.33, PHPUnit 12.5.35). Focused success does not certify entire security module or independent-connection concurrency.
+
+**Verified work via previous conversation:** session revocation freshness; offline authorization fresh checks; branch/warehouse device assignment consistency; suspended tenant lease issuance guard; legacy vs managed device policy exposed without changing access. Commits in `BLUEPOS_DEVELOPMENT_LOG.md`.
+
+**Immediate next technical task:** inspect existing device approval/rejection flows and test DB isolation setup; design a *real independent PostgreSQL connection* approve-vs-reject race regression using `bluepos_test` only. Do not treat sequential DatabaseTransactions tests as proof of races. Then offline sync E2E security; then controlled legacy POS enforcement rollout (never lock out legacy terminals without an approved migration).
+
+**Session-to-session protocol:** read this section first, then `BLUEPOS_DEVELOPMENT_LOG.md` and minimal code. After each validated batch, update this live section + append log entry in the same small documentation batch. Record commit, files, exact local/test status and next action. Do not claim local tests passed until user supplies output. Preserve historical handoffs below; older recommendations may be superseded by this dated live checkpoint.
+
+---
+
 # BluePOS — Current State / Active Handoff
 
 _Last updated: 2026-10-04_
