@@ -10,6 +10,38 @@ class AuthenticationTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_tenant_entitlements_reports_effective_subscription_status_and_expiry(): void
+    {
+        $this->signInOwner('entitlement-expiry-view')->assertOk();
+
+        $tenant = \App\Models\Tenant::query()
+            ->where('code', $this->tenantCode('entitlement-expiry-view'))
+            ->firstOrFail();
+        $subscription = \App\Models\TenantSubscription::query()
+            ->where('tenant_id', $tenant->id)
+            ->firstOrFail();
+
+        $subscription->status = \App\Enums\SubscriptionStatus::Active;
+        $subscription->starts_at = now()->subDay();
+        $subscription->ends_at = now()->addDay();
+        $subscription->save();
+
+        $this->getJson('/api/settings/entitlements')
+            ->assertOk()
+            ->assertJsonPath('plan.status', 'active')
+            ->assertJsonPath('plan.operational', true)
+            ->assertJsonPath('plan.ends_at', $subscription->ends_at->toISOString());
+
+        $subscription->ends_at = now()->subMinute();
+        $subscription->save();
+
+        $this->getJson('/api/settings/entitlements')
+            ->assertOk()
+            ->assertJsonPath('plan.status', 'active')
+            ->assertJsonPath('plan.operational', false)
+            ->assertJsonPath('plan.ends_at', $subscription->ends_at->toISOString());
+    }
+
     public function test_subscription_operational_state_respects_trial_and_active_dates(): void
     {
         $subscription = new \App\Models\TenantSubscription();
