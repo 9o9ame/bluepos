@@ -586,6 +586,16 @@ class AuthenticationTest extends TestCase
             ->assertOk()->assertJsonPath('pagination.total', 3)
             ->assertJsonPath('pagination.per_page', 1)
             ->assertJsonCount(1, 'requests');
+        $this->getJson('/api/devices/access-requests?status=all&membership_ulid='.$member->ulid)
+            ->assertOk()->assertJsonPath('pagination.total', 3);
+        $this->getJson('/api/devices/access-requests?status=approved&device_ulid='.$device->ulid)
+            ->assertOk()->assertJsonPath('pagination.total', 1)
+            ->assertJsonPath('requests.0.reviewer_username', null);
+        $this->getJson('/api/devices/access-requests?status=all&device_ulid='.(string) \Illuminate\Support\Str::ulid())
+            ->assertOk()->assertJsonPath('pagination.total', 0)
+            ->assertJsonPath('pending_count', 1);
+        $this->getJson('/api/devices/access-requests?membership_ulid=invalid')->assertUnprocessable();
+        $this->getJson('/api/devices/access-requests?device_ulid=invalid')->assertUnprocessable();
         $this->getJson('/api/devices/access-requests?status=invalid')->assertUnprocessable();
         $this->getJson('/api/devices/access-requests?per_page=101')->assertUnprocessable();
     }
