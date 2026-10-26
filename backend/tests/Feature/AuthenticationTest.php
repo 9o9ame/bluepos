@@ -590,7 +590,7 @@ class AuthenticationTest extends TestCase
             ->assertOk()->assertJsonPath('pagination.total', 3);
         $this->getJson('/api/devices/access-requests?status=approved&device_ulid='.$device->ulid)
             ->assertOk()->assertJsonPath('pagination.total', 1)
-            ->assertJsonPath('requests.0.reviewer_username', null);
+            ->assertJsonPath('requests.0.reviewer_name', null);
         $this->getJson('/api/devices/access-requests?status=all&device_ulid='.(string) \Illuminate\Support\Str::ulid())
             ->assertOk()->assertJsonPath('pagination.total', 0)
             ->assertJsonPath('pending_count', 1);
