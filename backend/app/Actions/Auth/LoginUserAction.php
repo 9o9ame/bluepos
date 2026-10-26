@@ -181,7 +181,9 @@ class LoginUserAction
                 ->where('tenant_id', $membership->tenant_id)
                 ->where('device_id', $device->id)->exists();
 
-            if ($hasManagedRequests) {
+            // Browser devices always require member/network approval; pre-existing POS terminals
+            // without managed requests remain grandfathered until an explicit migration.
+            if ($hasManagedRequests || $device->device_type === 'browser') {
                 $approved = $network !== null && DB::table('device_access_requests')
                     ->where('tenant_id', $membership->tenant_id)
                     ->where('device_id', $device->id)
