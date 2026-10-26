@@ -1,3 +1,13 @@
+## LIVE CHECKPOINT — 2026-10-26 (verified probes; domain race pending)
+
+- User's local results after `b7205020`: **2/2 PostgreSQL concurrency tests, 11 assertions** and **30/30 AuthenticationTest, 159 assertions**, all PASS.
+- Real two-connection advisory and device-row locking verified on `bluepos_test`; **simultaneous approve/reject HTTP workflow still NOT tested**.
+- Inspected existing controller lock order and test fixture setup. Current `DatabaseTransactions` tests cannot expose uncommitted records to concurrent connections. Next task requires a safe committed-fixture lifecycle and separate worker/process coordination, timeout protection, deterministic cleanup, then genuine opposing review decisions with exactly-one-winner expectation.
+- No new domain test in this checkpoint; only docs history updated. Do not claim scope completed.
+- See `BLUEPOS_DEVELOPMENT_LOG.md`; main untouched.
+
+---
+
 ## LIVE UPDATE — 2026-10-26 (device row-lock test awaiting local run)
 
 - Last user-provided results: `PostgreSqlConcurrencyConnectionTest.php` 1 passed / 6 assertions; `AuthenticationTest.php` 30 passed / 159 assertions.
