@@ -41,7 +41,7 @@ class PlatformTenantDeviceController extends Controller
         $tenant = $this->tenant($tenantUlid);
         $sessions = AuthSessionRecord::query()
             ->where('tenant_id', $tenant->id)
-            ->with('device:id,ulid,name')
+            ->with(['device:id,ulid,name', 'membership:id,ulid,username'])
             ->orderByDesc('id')->limit(100)->get();
         $events = AuditLog::query()->where('tenant_id', $tenant->id)
             ->whereIn('event', ['LOGIN_FAILURE', 'LOGIN_SUCCESS', 'DEVICE_ENROLLMENT_REQUESTED'])
@@ -49,6 +49,7 @@ class PlatformTenantDeviceController extends Controller
         return response()->json([
             'sessions' => $sessions->map(fn (AuthSessionRecord $session) => [
                 'ulid' => $session->ulid,
+                'membership' => $session->membership ? ['ulid' => $session->membership->ulid, 'username' => $session->membership->username] : null,
                 'device' => $session->device ? ['ulid' => $session->device->ulid, 'name' => $session->device->name] : null,
                 'ip_address' => $session->ip_address,
                 'user_agent' => $session->user_agent,
