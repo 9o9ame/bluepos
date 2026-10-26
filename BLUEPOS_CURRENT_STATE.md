@@ -1,3 +1,12 @@
+## LIVE ROADMAP — 2026-10-26 (offline branch lease hardening pending local test)
+
+- Last user-verified baseline: Authentication **35/35 PASS, 191 assertions**, PostgreSQL concurrency **3/3 PASS, 19 assertions**.
+- This code batch: `223eae30` existing offline leases invalidated upon device branch reassignment or branch no longer owned by tenant; `67525068` focused reassignment regression. New AuthenticationTest count **36 expected**, locally unverified.
+- Roadmap: actual two-worker HTTP review race **pending**; offline lease validation **advanced** but offline sync E2E **pending** (no `/sync` or `/offline` API in inspected backend routes); legacy POS managed-access migration **pending**; final security review **pending**.
+- No migrations/UI changes. Main untouched. Pull and run focused suites on `bluepos_test`. No standalone documentation-only pull intended.
+
+---
+
 ## LIVE ROADMAP — 2026-10-26 (new offline security batch awaits tests)
 
 - Latest locally verified baseline: Authentication **34/34 PASS (188 assertions)**; PostgreSQL concurrency **3/3 PASS (19 assertions)**.
