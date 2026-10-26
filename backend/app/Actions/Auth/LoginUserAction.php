@@ -215,15 +215,35 @@ class LoginUserAction
             return;
         }
 
-        $existing = DB::table('device_access_requests')
-            ->where('tenant_id', $membership->tenant_id)
-            ->where('membership_id', $membership->id)
-            ->where('device_id', $device->id)
-            ->where('network_hash', $network)
-            ->exists();
+        $created = DB::transaction(function () use ($membership, $device, $network): bool {
+            // Lock the tenant to serialize retries with owner review and avoid duplicate alerts.
+            Tenant::query()->whereKey($membership->tenant_id)->lockForUpdate()->firstOrFail();
 
-        if (! $existing) {
-            $inserted = DB::table('device_access_requests')->insertOrIgnore([
+            $existing = DB::table('device_access_requests')
+                ->where('tenant_id', $membership->tenant_id)
+                ->where('membership_id', $membership->id)
+                ->where('device_id', $device->id)
+                ->where('network_hash', $network)
+                ->lockForUpdate()->first();
+
+            if ($existing !== null) {
+                if ($existing->status !== 'rejected'
+                    || $existing->reviewed_at === null
+                    || now()->lessThan(\Illuminate\Support\Carbon::parse($existing->reviewed_at)->addDay())) {
+                    return false;
+                }
+
+                DB::table('device_access_requests')->where('id', $existing->id)->update([
+                    'status' => 'pending',
+                    'reviewed_by' => null,
+                    'reviewed_at' => null,
+                    'updated_at' => now(),
+                ]);
+
+                return true;
+            }
+
+            return DB::table('device_access_requests')->insertOrIgnore([
                 'ulid' => (string) Str::ulid(),
                 'tenant_id' => $membership->tenant_id,
                 'membership_id' => $membership->id,
@@ -232,10 +252,10 @@ class LoginUserAction
                 'status' => 'pending',
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
-            if ($inserted === 0) {
-                return;
-            }
+            ]) > 0;
+        });
+
+        if ($created) {
             app(EmployeeDeviceApprovalNotifier::class)->notifyOwners($membership, $device->name);
             $this->audit->record('DEVICE_ACCESS_REQUESTED', [
                 'tenant_id' => $membership->tenant_id,
