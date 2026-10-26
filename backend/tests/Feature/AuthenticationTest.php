@@ -624,6 +624,28 @@ class AuthenticationTest extends TestCase
         $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')->where('ulid', $ulid)->value('status'));
     }
 
+    public function test_suspending_tenant_invalidates_previously_issued_offline_lease(): void
+    {
+        $owner = $this->provisionOwner('lease-tenant-suspend');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()
+            ->where('tenant_id', $owner->tenant->id)->firstOrFail();
+
+        $offline = app(\App\Security\OfflineAuthorizationService::class);
+        $lease = $offline->issue($owner->membership, $device, $owner->branch, []);
+        $offline->assertValid($lease, $device, $owner->membership);
+
+        $owner->tenant->status = \App\Enums\TenantStatus::Suspended;
+        $owner->tenant->save();
+
+        try {
+            $offline->assertValid($lease, $device, $owner->membership);
+            $this->fail('A suspended tenant must invalidate an issued offline lease.');
+        } catch (\App\Exceptions\ApiException $e) {
+            $this->assertSame('OFFLINE_AUTH_EXPIRED', $e->errorKey);
+        }
+    }
+
     public function test_rejected_employee_access_review_cannot_be_replayed(): void
     {
         $owner = $this->provisionOwner('review-once');
