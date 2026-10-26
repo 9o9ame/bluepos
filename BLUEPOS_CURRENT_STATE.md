@@ -1,3 +1,13 @@
+## LIVE CHECKPOINT — 2026-10-26 (combined security implementation awaiting validation)
+
+- Prior user-verified results: Authentication **33 PASS / 187 assertions**; PostgreSQL concurrency **3 PASS / 19 assertions**.
+- New implementation: `dd4eaa30` employee access review requires exactly one tenant-scoped pending row transition; `ee78cd19` offline lease validation rechecks operational status against fresh tenant; `1c62e921` regression for suspended tenant invalidating previously valid offline lease.
+- Expected `AuthenticationTest.php` **34 tests** (unverified); concurrency unchanged, **3 tests**. Run only on `bluepos_test`.
+- Real two-worker authenticated HTTP approve/reject race and offline sync E2E remain pending; controlled legacy POS migration pending. No migrations, no UI changes, main untouched.
+- See `BLUEPOS_DEVELOPMENT_LOG.md`. Do not make documentation-only commits unless needed for chat handoff.
+
+---
+
 ## LIVE UPDATE — 2026-10-26 (batched security regressions awaiting validation)
 
 - User-confirmed baseline: Authentication 31/31 PASS, 166 assertions; PostgreSQL concurrency 3/3 PASS, 19 assertions.
