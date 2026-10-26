@@ -35,11 +35,10 @@ class AuthenticationTest extends TestCase
         $subscription->ends_at = now()->subMinute();
         $subscription->save();
 
+        // Tenant middleware must block expired subscriptions before reaching this endpoint.
         $this->getJson('/api/settings/entitlements')
-            ->assertOk()
-            ->assertJsonPath('plan.status', 'active')
-            ->assertJsonPath('plan.operational', false)
-            ->assertJsonPath('plan.ends_at', $subscription->ends_at->toISOString());
+            ->assertForbidden()
+            ->assertJsonPath('error.key', 'SUBSCRIPTION_INACTIVE');
     }
 
     public function test_subscription_operational_state_respects_trial_and_active_dates(): void
