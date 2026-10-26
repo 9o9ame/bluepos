@@ -213,7 +213,7 @@ class EnsureTenantContext
             ->exists();
 
         if (! $approved) {
-            throw new ApiException('SESSION_REVOKED', 'This device or network is no longer approved for this account.', 401);
+            throw new ApiException('DEVICE_NOT_APPROVED', 'This device or network is no longer approved for this account.', 403);
         }
     }
 
