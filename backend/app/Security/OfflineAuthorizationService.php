@@ -77,6 +77,15 @@ class OfflineAuthorizationService
 
     public function assertValid(OfflineAuthorizationLease $lease, Device $device, Membership $membership): void
     {
+        // Never trust previously loaded models when enforcing a revocation.
+        $lease = OfflineAuthorizationLease::query()->whereKey($lease->id)->first();
+        $device = Device::query()->whereKey($device->id)->first();
+        $membership = Membership::query()->with(['user', 'tenant'])->whereKey($membership->id)->first();
+
+        if (! $lease || ! $device || ! $membership) {
+            throw new ApiException('OFFLINE_AUTH_EXPIRED', 'Offline authorization has expired. Reconnect to continue.', 403);
+        }
+
         if ($lease->isExpired() || ! hash_equals($lease->signature, $this->sign($lease))) {
             app(AuditLogger::class)->record('OFFLINE_LEASE_REJECTED', [
                 'resource_type' => 'offline_lease',
