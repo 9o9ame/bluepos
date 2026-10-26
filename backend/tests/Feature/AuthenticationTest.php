@@ -255,6 +255,35 @@ class AuthenticationTest extends TestCase
         $this->assertSame(\App\Enums\DeviceStatus::Active, $unmanaged->fresh()->status);
     }
 
+    public function test_device_list_reports_legacy_and_managed_employee_access_without_switching_policy(): void
+    {
+        $owner = $this->provisionOwner('device-policy-preview');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $legacy = \App\Models\Device::query()
+            ->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $browser = \App\Models\Device::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'name' => 'Managed browser',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('device-policy-preview'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $response = $this->getJson('/api/devices')->assertOk();
+        $this->assertNoInternalIds($response->json());
+        $policies = collect($response->json('data'))->pluck('employee_access_policy', 'ulid');
+        $this->assertSame('legacy_grandfathered', $policies->get($legacy->ulid));
+        $this->assertSame('managed', $policies->get($browser->ulid));
+        $this->assertSame(\App\Enums\DeviceStatus::Active, $legacy->fresh()->status);
+    }
+
     public function test_unmanaged_legacy_terminal_retains_existing_login_access_during_migration(): void
     {
         $owner = $this->provisionOwner('legacy-terminal');
