@@ -130,3 +130,9 @@
 - Regression commit `680177f5`: previously valid lease fails after branch deactivation; subsequent issuance blocked; no second lease created.
 - Together with immediately preceding `223eae30`/`67525068` reassignment batch, expected `AuthenticationTest.php` count **37**, PostgreSQL concurrency **3**. Actual tests pending; no migrations/UI changes.
 - Roadmap status: foundation verified; real simultaneous authenticated HTTP review race PENDING; offline lease guards advanced but offline sync E2E PENDING; legacy POS managed-access rollout PENDING; final security review PENDING. Main untouched.
+
+### 2026-10-26 — Functional device access review history and pagination
+- Based on latest user-verified 38 Auth tests (211 assertions) and 3 PG concurrency tests (19 assertions).
+- `7f6cea49`: `GET /api/devices/access-requests` adds status filter `pending|approved|rejected|all`, validated `page` and `per_page` (1..100), deterministic order, reviewed_at, pagination metadata; pending_count remains independent of filter. Tenant-scoped join and existing viewAny authorization preserved.
+- `5f036107`: focused feature regression for owner filtering, pagination and 422 bad query parameters.
+- Expected 39 Authentication tests (local validation pending). No migration/UI. HTTP concurrency stress testing deferred, not reported as verified.
