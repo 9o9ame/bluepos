@@ -40,6 +40,31 @@ class AuthenticationTest extends TestCase
         ])->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
     }
 
+    public function test_device_reassignment_rejects_warehouse_from_another_branch_without_mutating_device(): void
+    {
+        $this->signInOwner('device-reassign-branch');
+        $tenant = \App\Models\Tenant::query()->where('code', $this->tenantCode('device-reassign-branch'))->firstOrFail();
+        $warehouse = \App\Models\Warehouse::query()->where('tenant_id', $tenant->id)->firstOrFail();
+        $otherBranch = \App\Models\Branch::query()->create([
+            'tenant_id' => $tenant->id,
+            'code' => 'SECOND',
+            'name' => 'Second branch',
+            'status' => \App\Enums\BranchStatus::Active,
+            'is_default' => false,
+        ]);
+        $device = \App\Models\Device::query()->where('tenant_id', $tenant->id)->firstOrFail();
+        $oldBranchId = $device->branch_id;
+        $oldWarehouseId = $device->warehouse_id;
+
+        $this->postJson('/api/devices/'.$device->ulid.'/assign', [
+            'branch_ulid' => $otherBranch->ulid,
+            'warehouse_ulid' => $warehouse->ulid,
+        ])->assertStatus(422)->assertJsonPath('error.key', 'WAREHOUSE_BRANCH_MISMATCH');
+
+        $this->assertSame($oldBranchId, $device->fresh()->branch_id);
+        $this->assertSame($oldWarehouseId, $device->fresh()->warehouse_id);
+    }
+
     public function test_device_approval_rejects_warehouse_from_another_branch(): void
     {
         $this->signInOwner('device-warehouse-branch');
