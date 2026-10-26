@@ -150,10 +150,7 @@ class DeviceController extends Controller
     {
         $device = Device::query()
             ->where('ulid', $deviceUlid)
-            ->where(function ($query) use ($tenantContext): void {
-                $query->where('tenant_id', $tenantContext->tenantId())
-                    ->orWhereNull('tenant_id');
-            })
+            ->where('tenant_id', $tenantContext->tenantId())
             ->first();
 
         if (! $device) {
