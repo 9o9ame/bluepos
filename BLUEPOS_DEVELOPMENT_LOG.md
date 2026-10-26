@@ -33,3 +33,12 @@
 - Focused test command + actual result, identify local vs CI vs unrun:
 - Remaining risk:
 - Next concrete task:
+
+### 2026-10-26 — Tenant-isolation regression fixture correction
+- Commit: `0718e036` on `feature/superadmin`
+- Changed: `backend/tests/Feature/AuthenticationTest.php`; no migrations or production behavior changes.
+- User local run before fix: 29 tests, 148 assertions, 1 error (missing second tenant Device at line 293).
+- Root cause: `provisionOwner()` does not automatically create a device; the test attached a trusted device only for the first tenant, then queried a device for the second tenant.
+- Fix: use existing `attachTrustedDevice()` fixture for second tenant; restore first tenant's credential before login.
+- Validation: NOT RUN after fix; user should pull and run focused test/full AuthenticationTest, using `bluepos_test`.
+- Next: after PASS, independent PostgreSQL connection race test design/implementation; offline sync E2E thereafter.
