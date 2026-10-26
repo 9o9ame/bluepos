@@ -159,7 +159,7 @@ class LoginUserAction
         }
 
         if ($device->status === DeviceStatus::Pending) {
-            if ($privileged) {
+            if ($membership->hasOwnerAuthority()) {
                 $this->requireMfa($request, $membership, $device);
             }
 
