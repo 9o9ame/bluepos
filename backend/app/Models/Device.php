@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'approved_at',
     'approved_by',
     'trusted_until',
+    'trusted_ip_hash',
     'last_seen_at',
     'last_sync_at',
     'revoked_at',
