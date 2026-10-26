@@ -9,6 +9,7 @@ use App\Http\Controllers\Platform\PlatformPlanController;
 use App\Http\Controllers\Platform\PlatformRoleController;
 use App\Http\Controllers\Platform\PlatformSettingsController;
 use App\Http\Controllers\Platform\PlatformTenantController;
+use App\Http\Controllers\Platform\PlatformTenantDeviceController;
 use App\Http\Controllers\Platform\PlatformUserController;
 use App\Http\Controllers\Platform\TenantImportController;
 use Illuminate\Support\Facades\Route;
@@ -48,6 +49,12 @@ Route::prefix('platform')->group(function () {
             ->middleware('platform.can:platform.tenants.view');
         Route::post('/tenants', [PlatformTenantController::class, 'store'])
             ->middleware(['platform.can:platform.tenants.create', 'platform.recent-mfa']);
+        Route::get('/tenants/{tenantUlid}/devices', [PlatformTenantDeviceController::class, 'index'])
+            ->middleware('platform.can:platform.tenants.view');
+        Route::post('/tenants/{tenantUlid}/devices/{deviceUlid}/approve', [PlatformTenantDeviceController::class, 'approve'])
+            ->middleware(['platform.can:platform.tenants.edit', 'platform.recent-mfa']);
+        Route::post('/tenants/{tenantUlid}/devices/{deviceUlid}/revoke', [PlatformTenantDeviceController::class, 'revoke'])
+            ->middleware(['platform.can:platform.tenants.edit', 'platform.recent-mfa']);
         Route::get('/tenants/{tenantUlid}', [PlatformTenantController::class, 'show'])
             ->name('platform.tenants.show')
             ->middleware('platform.can:platform.tenants.view');
