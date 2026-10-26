@@ -1,3 +1,12 @@
+## LIVE CHECKPOINT — 2026-10-26 (decision collision regression awaiting local run)
+
+- User verified: PostgreSQL concurrency probes **2/2 tests, 11 assertions**; Authentication **30/30 tests, 159 assertions**.
+- New commit `b5c15687`: test two independent PostgreSQL connections competing over a pending `devices` row; second fails NOWAIT while first decision is uncommitted, then sees committed winner and conditional losing write affects no rows. **Not yet executed locally.**
+- Test is database-level only, **NOT** an HTTP endpoint concurrency verification. Genuine simultaneous `reviewAccessRequest` approve/reject authorization test with committed tenant/membership/request fixtures remains pending.
+- Pull branch, run `PostgreSqlConcurrencyConnectionTest.php` (expected 3 tests) plus `AuthenticationTest.php` (expected 30 tests). Only `bluepos_test`. Main untouched. See `BLUEPOS_DEVELOPMENT_LOG.md`.
+
+---
+
 ## LIVE CHECKPOINT — 2026-10-26 (verified probes; domain race pending)
 
 - User's local results after `b7205020`: **2/2 PostgreSQL concurrency tests, 11 assertions** and **30/30 AuthenticationTest, 159 assertions**, all PASS.
