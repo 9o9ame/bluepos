@@ -1,3 +1,12 @@
+## LIVE ROADMAP — 2026-10-26 (code batch pending local verification)
+
+- Verified baseline: Authentication **35 tests PASS / 191 assertions**; PostgreSQL concurrency **3 PASS / 19 assertions**. New branch reassignment and inactive-branch checks remain UNTESTED locally.
+- Production commits: `223eae30` invalidates offline lease when device branch changes; `6986c9eb` rejects lease issue and validation for inactive tenant-owned branch. Test commits `67525068` and `680177f5` cover both. Expected Authentication count **37 tests**.
+- Milestones: device/authorization foundation established; **simultaneous HTTP approve/reject pending**; offline lease validation hardened but **offline sync E2E pending**; controlled legacy POS migration pending; final security review pending. Do not count documentation or pull-only updates as progress.
+- No migrations/UI changes. Main untouched. See `BLUEPOS_DEVELOPMENT_LOG.md`.
+
+---
+
 ## LIVE ROADMAP — 2026-10-26 (offline branch lease hardening pending local test)
 
 - Last user-verified baseline: Authentication **35/35 PASS, 191 assertions**, PostgreSQL concurrency **3/3 PASS, 19 assertions**.
