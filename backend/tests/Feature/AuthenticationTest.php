@@ -127,6 +127,27 @@ class AuthenticationTest extends TestCase
             ->where('ulid', $requestUlid)->value('status'));
     }
 
+    public function test_employee_device_approval_email_only_targets_own_tenant_owner(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $employeeTenant = $this->provisionOwner('approval-mail-tenant-a');
+        $this->provisionOwner('approval-mail-tenant-b');
+
+        app(\App\Security\EmployeeDeviceApprovalNotifier::class)
+            ->notifyOwners($employeeTenant->membership, 'Pending browser');
+
+        \Illuminate\Support\Facades\Notification::assertSentOnDemand(
+            \App\Notifications\EmployeeDeviceApprovalNotification::class,
+            function ($notification, $channels, $notifiable) {
+                return ($notifiable->routes['mail'] ?? null) === 'owner-approval-mail-tenant-a@example.com'
+                    && $notification->deviceName === 'Pending browser';
+            }
+        );
+        \Illuminate\Support\Facades\Notification::assertSentOnDemandTimes(
+            \App\Notifications\EmployeeDeviceApprovalNotification::class, 1
+        );
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
