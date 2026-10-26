@@ -39,7 +39,7 @@ export function GeneralJournalReportPage(){
   // Independent of journal voucher filters; never derive trial balances from preview rows.
   const trialQuery=useQuery({
     queryKey:['general-journal-trial-summary',to],
-    enabled:!preview && /^\\d{4}-\\d{2}-\\d{2}$/.test(to),
+    enabled:!preview && to.length===10,
     queryFn:()=>apiFetch<{totals:{debit:string;credit:string;difference:string;difference_side:string}}>('/api/reports/accounting/trial-balance/preview',{
       method:'POST',body:JSON.stringify({as_of_date:to}),busy:'fetch',
     }),
