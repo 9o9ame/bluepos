@@ -161,6 +161,17 @@ class DeviceController extends Controller
             throw new ApiException('FORBIDDEN', 'You are not allowed to perform this action.', 403);
         }
 
+        if (DB::table('device_access_requests')
+            ->where('tenant_id', $tenantContext->tenantId())
+            ->where('device_id', $device->id)
+            ->exists()) {
+            throw new ApiException(
+                'EMPLOYEE_ACCESS_REVIEW_REQUIRED',
+                'Review the employee-specific device access request instead.',
+                409
+            );
+        }
+
         $data = $request->validate([
             'branch_ulid' => ['nullable', 'string', 'size:26'],
             'warehouse_ulid' => ['nullable', 'string', 'size:26'],
