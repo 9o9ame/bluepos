@@ -581,6 +581,63 @@ class AuthenticationTest extends TestCase
         $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
     }
 
+    public function test_approved_employee_access_review_cannot_be_reversed_by_rejection(): void
+    {
+        $owner = $this->provisionOwner('review-approved-once');
+        $employee = \App\Models\User::query()->create([
+            'name' => 'Review Employee',
+            'email' => 'review-approved-once-staff@example.com',
+            'password' => 'password123',
+            'status' => \App\Enums\UserStatus::Active,
+            'must_change_password' => false,
+            'security_version' => 1,
+        ]);
+        $membership = \App\Models\Membership::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'user_id' => $employee->id,
+            'username' => 'reviewstaff',
+            'status' => \App\Enums\MembershipStatus::Active,
+            'is_owner' => false,
+            'security_version' => 1,
+        ]);
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'name' => 'Review device',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+        $ulid = (string) \Illuminate\Support\Str::ulid();
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => $ulid,
+            'tenant_id' => $owner->tenant->id,
+            'membership_id' => $membership->id,
+            'device_id' => $device->id,
+            'network_hash' => hash('sha256', 'review-approved-once-network'),
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('review-approved-once'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $url = '/api/devices/access-requests/'.$ulid.'/review';
+        $this->postJson($url, ['decision' => 'approved'])
+            ->assertOk()->assertJsonPath('status', 'approved');
+        $this->postJson($url, ['decision' => 'rejected'])
+            ->assertStatus(409)
+            ->assertJsonPath('error.key', 'ACCESS_REQUEST_ALREADY_REVIEWED');
+        $this->assertSame('approved', \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $ulid)->value('status'));
+        $this->assertSame(\App\Enums\DeviceStatus::Active, $device->fresh()->status);
+    }
+
     public function test_offline_lease_issuance_rejects_disabled_tenant(): void
     {
         $owner = $this->provisionOwner('offline-disabled-tenant');
