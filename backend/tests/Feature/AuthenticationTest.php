@@ -54,6 +54,40 @@ class AuthenticationTest extends TestCase
         $this->postJson('/api/devices/'.$device->ulid.'/approve')->assertNotFound();
     }
 
+    public function test_device_access_request_inbox_is_tenant_scoped_and_uses_public_ulids(): void
+    {
+        $first = $this->provisionOwner('request-inbox-a');
+        $second = $this->provisionOwner('request-inbox-b');
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $second->tenant->id,
+            'name' => 'Employee browser',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => (string) \Illuminate\Support\Str::ulid(),
+            'tenant_id' => $second->tenant->id,
+            'membership_id' => $second->membership->id,
+            'device_id' => $device->id,
+            'network_hash' => hash('sha256', 'test-network'),
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->attachTrustedDevice((int) $first->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('request-inbox-a'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $response = $this->getJson('/api/devices/access-requests')->assertOk()->assertJsonCount(0, 'requests');
+        $this->assertNoInternalIds($response->json());
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
