@@ -418,6 +418,44 @@ class AuthenticationTest extends TestCase
         $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
     }
 
+    public function test_platform_cannot_bypass_pending_employee_device_review(): void
+    {
+        $owner = $this->provisionOwner('platform-review-bypass');
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'name' => 'Employee device awaiting owner',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => (string) \Illuminate\Support\Str::ulid(),
+            'tenant_id' => $owner->tenant->id,
+            'membership_id' => $owner->membership->id,
+            'device_id' => $device->id,
+            'network_hash' => hash('sha256', 'platform-review-bypass'),
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->createPlatformAdmin('platform-review-bypass');
+        $this->signInPlatformAdmin('platform-review-bypass');
+
+        $this->postJson('/api/platform/tenants/'.$owner->tenant->ulid.'/devices/'.$device->ulid.'/approve')
+            ->assertStatus(409)
+            ->assertJsonPath('error.key', 'EMPLOYEE_ACCESS_REVIEW_REQUIRED');
+        $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
+    }
+
+    public function test_platform_device_activity_denies_staff_without_audit_permission(): void
+    {
+        $staff = $this->createPlatformStaff('without-audit-activity', ['platform.dashboard.view']);
+        $this->signInPlatformUser($staff);
+
+        $this->getJson('/api/platform/security/device-activity')->assertForbidden();
+    }
+
     public function test_platform_device_activity_requires_platform_audit_authorization_and_exposes_ulids(): void
     {
         $this->getJson('/api/platform/security/device-activity')->assertUnauthorized();
