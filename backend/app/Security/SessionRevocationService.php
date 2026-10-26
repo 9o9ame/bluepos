@@ -9,6 +9,7 @@ use App\Models\CashierShift;
 use App\Models\Device;
 use App\Models\Membership;
 use App\Models\OfflineAuthorizationLease;
+use App\Models\Tenant;
 use Illuminate\Support\Facades\DB;
 
 class SessionRevocationService
@@ -16,6 +17,7 @@ class SessionRevocationService
     public function revokeMembership(Membership $membership, bool $closeShifts = true): void
     {
         DB::transaction(function () use ($membership, $closeShifts): void {
+            Tenant::query()->whereKey($membership->tenant_id)->lockForUpdate()->firstOrFail();
             $membership = Membership::query()->whereKey($membership->id)->lockForUpdate()->firstOrFail();
             $membership->bumpSecurityVersion();
 
@@ -44,6 +46,9 @@ class SessionRevocationService
     public function revokeDevice(Device $device): void
     {
         DB::transaction(function () use ($device): void {
+            if ($device->tenant_id !== null) {
+                Tenant::query()->whereKey($device->tenant_id)->lockForUpdate()->firstOrFail();
+            }
             $device = Device::query()->whereKey($device->id)->lockForUpdate()->firstOrFail();
             $device->status = DeviceStatus::Revoked;
             $device->revoked_at = now();
