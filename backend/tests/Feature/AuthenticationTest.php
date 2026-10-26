@@ -40,6 +40,37 @@ class AuthenticationTest extends TestCase
         ])->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
     }
 
+    public function test_device_approval_rejects_warehouse_from_another_branch(): void
+    {
+        $this->signInOwner('device-warehouse-branch');
+        $tenant = \App\Models\Tenant::query()->where('code', $this->tenantCode('device-warehouse-branch'))->firstOrFail();
+        $branch = \App\Models\Branch::query()->where('tenant_id', $tenant->id)->firstOrFail();
+        $warehouse = \App\Models\Warehouse::query()->where('tenant_id', $tenant->id)->firstOrFail();
+        $otherBranch = \App\Models\Branch::query()->create([
+            'tenant_id' => $tenant->id,
+            'code' => 'SECOND',
+            'name' => 'Second branch',
+            'is_active' => true,
+        ]);
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Pending branch device',
+            'device_type' => 'pos_terminal',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+
+        $this->postJson('/api/devices/'.$device->ulid.'/approve', [
+            'branch_ulid' => $otherBranch->ulid,
+            'warehouse_ulid' => $warehouse->ulid,
+        ])->assertStatus(422)->assertJsonPath('error.key', 'WAREHOUSE_BRANCH_MISMATCH');
+
+        $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
+        $this->assertNull($device->fresh()->branch_id);
+        $this->assertNull($device->fresh()->warehouse_id);
+    }
+
     public function test_tenant_cannot_approve_unassigned_device(): void
     {
         $this->signInOwner('device-unassigned')->assertOk();
