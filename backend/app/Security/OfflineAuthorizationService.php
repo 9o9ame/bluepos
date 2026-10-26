@@ -33,6 +33,20 @@ class OfflineAuthorizationService
         }
 
         return DB::transaction(function () use ($membership, $device, $branch, $permissionKeys, $hours): OfflineAuthorizationLease {
+            // Serialize issuance with tenant device access reviews and device revocation.
+            \App\Models\Tenant::query()->whereKey($membership->tenant_id)->lockForUpdate()->firstOrFail();
+            $device = Device::query()->whereKey($device->id)->lockForUpdate()->firstOrFail();
+            $membership = Membership::query()->with(['user', 'tenant'])
+                ->where('tenant_id', $membership->tenant_id)
+                ->whereKey($membership->id)->lockForUpdate()->firstOrFail();
+            if ($membership->status !== MembershipStatus::Active
+                || ! $device->isActive()
+                || (int) $device->tenant_id !== (int) $membership->tenant_id
+                || (int) $branch->tenant_id !== (int) $membership->tenant_id
+                || ($device->branch_id && (int) $device->branch_id !== (int) $branch->id)) {
+                throw new ApiException('OFFLINE_AUTH_EXPIRED', 'Offline authorization is not available for this account or device.', 403);
+            }
+
             $issuedAt = now();
             $expiresAt = $issuedAt->copy()->addHours($hours);
             $lease = OfflineAuthorizationLease::query()->create([
