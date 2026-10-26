@@ -132,6 +132,22 @@ export function fetchPlatformTenants(page = 1): Promise<Paginated<PlatformTenant
   return apiFetch<Paginated<PlatformTenant>>(`/api/platform/tenants?page=${page}`)
 }
 
+export type PlatformDeviceActivity = {
+  sessions: Array<{
+    ulid: string
+    tenant: { ulid: string; code: string; name: string } | null
+    membership: { ulid: string; username: string } | null
+    device: { ulid: string; name: string } | null
+    ip_address: string | null
+    last_seen_at: string | null
+    revoked_at: string | null
+  }>
+}
+
+export function fetchPlatformDeviceActivity(): Promise<PlatformDeviceActivity> {
+  return apiFetch<PlatformDeviceActivity>('/api/platform/security/device-activity')
+}
+
 export type PlatformTenantDevice = {
   ulid: string
   name: string
