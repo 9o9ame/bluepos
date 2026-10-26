@@ -52,8 +52,14 @@ class TenantSubscription extends Model
 
     public function isOperational(): bool
     {
-        if (in_array($this->status, [SubscriptionStatus::Trial, SubscriptionStatus::Active], true)) {
-            return true;
+        if ($this->status === SubscriptionStatus::Trial) {
+            return ($this->trial_starts_at === null || ! $this->trial_starts_at->isFuture())
+                && ($this->trial_ends_at === null || $this->trial_ends_at->isFuture());
+        }
+
+        if ($this->status === SubscriptionStatus::Active) {
+            return ($this->starts_at === null || ! $this->starts_at->isFuture())
+                && ($this->ends_at === null || $this->ends_at->isFuture());
         }
 
         if ($this->status === SubscriptionStatus::PastDue && $this->grace_ends_at && $this->grace_ends_at->isFuture()) {
