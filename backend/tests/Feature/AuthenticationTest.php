@@ -278,7 +278,7 @@ class AuthenticationTest extends TestCase
 
         $response = $this->getJson('/api/devices')->assertOk();
         $this->assertNoInternalIds($response->json());
-        $policies = collect($response->json('data'))->pluck('employee_access_policy', 'ulid');
+        $policies = collect($response->json())->pluck('employee_access_policy', 'ulid');
         $this->assertSame('legacy_grandfathered', $policies->get($legacy->ulid));
         $this->assertSame('managed', $policies->get($browser->ulid));
         $this->assertSame(\App\Enums\DeviceStatus::Active, $legacy->fresh()->status);
