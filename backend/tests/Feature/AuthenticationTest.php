@@ -208,6 +208,7 @@ class AuthenticationTest extends TestCase
         $role = \App\Models\Role::query()->where('tenant_id', $owner->tenant->id)
             ->where('code', \App\Authz\PermissionCatalogue::CASHIER)->firstOrFail();
         $member->roles()->attach($role->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
+        $member->branches()->attach($owner->branch->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
         $this->attachTrustedDevice((int) $owner->tenant->id);
         $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
 
