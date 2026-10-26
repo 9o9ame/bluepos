@@ -218,6 +218,15 @@ class DeviceController extends Controller
                 $warehouse = Warehouse::query()->forTenant($tenantContext->tenantId())->where('ulid', $data['warehouse_ulid'])->firstOrFail();
                 $device->warehouse_id = $warehouse->id;
             }
+            if ($device->warehouse_id !== null) {
+                $warehouse = Warehouse::query()
+                    ->forTenant($tenantContext->tenantId())
+                    ->whereKey($device->warehouse_id)
+                    ->firstOrFail();
+                if ($device->branch_id !== null && (int) $warehouse->branch_id !== (int) $device->branch_id) {
+                    throw new ApiException('WAREHOUSE_BRANCH_MISMATCH', 'Warehouse must belong to the assigned device branch.', 422);
+                }
+            }
             $device->save();
 
         });
