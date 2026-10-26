@@ -44,13 +44,13 @@ class AuthenticationTest extends TestCase
     {
         $this->signInOwner('device-warehouse-branch');
         $tenant = \App\Models\Tenant::query()->where('code', $this->tenantCode('device-warehouse-branch'))->firstOrFail();
-        $branch = \App\Models\Branch::query()->where('tenant_id', $tenant->id)->firstOrFail();
         $warehouse = \App\Models\Warehouse::query()->where('tenant_id', $tenant->id)->firstOrFail();
         $otherBranch = \App\Models\Branch::query()->create([
             'tenant_id' => $tenant->id,
             'code' => 'SECOND',
             'name' => 'Second branch',
-            'is_active' => true,
+            'status' => \App\Enums\BranchStatus::Active,
+            'is_default' => false,
         ]);
         $device = \App\Models\Device::query()->create([
             'tenant_id' => $tenant->id,
