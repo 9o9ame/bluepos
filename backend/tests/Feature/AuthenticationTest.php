@@ -186,6 +186,60 @@ class AuthenticationTest extends TestCase
             ->where('ulid', $requestUlid)->value('status'));
     }
 
+    public function test_employee_login_requires_approved_network_and_rejects_other_network(): void
+    {
+        $owner = $this->provisionOwner('staff-network-gate');
+        $staff = \App\Models\User::query()->create([
+            'name' => 'Staff Gate',
+            'email' => 'staff-network-gate@example.com',
+            'password' => 'password123',
+            'status' => \App\Enums\UserStatus::Active,
+            'must_change_password' => false,
+            'security_version' => 1,
+        ]);
+        $member = \App\Models\Membership::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'user_id' => $staff->id,
+            'username' => 'staffgate',
+            'status' => \App\Enums\MembershipStatus::Active,
+            'is_owner' => false,
+            'security_version' => 1,
+        ]);
+        $role = \App\Models\Role::query()->where('tenant_id', $owner->tenant->id)
+            ->where('code', \App\Authz\PermissionCatalogue::CASHIER)->firstOrFail();
+        $member->roles()->attach($role->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+
+        $request = \Illuminate\Http\Request::create('/', 'POST', [], [], [], ['REMOTE_ADDR' => '127.0.0.1']);
+        $networkHash = app(\App\Security\DeviceNetworkTrust::class)->fingerprint($request);
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => (string) \Illuminate\Support\Str::ulid(),
+            'tenant_id' => $owner->tenant->id,
+            'membership_id' => $member->id,
+            'device_id' => $device->id,
+            'network_hash' => $networkHash,
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $credentials = [
+            'tenant_code' => $this->tenantCode('staff-network-gate'),
+            'username' => 'staffgate',
+            'password' => 'password123',
+        ];
+        $this->postJson('/api/auth/login', $credentials)
+            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
+
+        \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('membership_id', $member->id)->update(['status' => 'approved']);
+        $this->postJson('/api/auth/login', $credentials)->assertOk();
+
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.78']);
+        $this->postJson('/api/auth/login', $credentials)
+            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
