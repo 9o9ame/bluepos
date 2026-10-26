@@ -1,3 +1,12 @@
+## LIVE CHECKPOINT — 2026-10-26 (approved-review replay test awaiting validation)
+
+- Last user local validation: PostgreSQL concurrency **3/3 passed, 19 assertions**; AuthenticationTest **30/30 passed, 159 assertions**.
+- New test commit `a2552653`: sequential approved→rejected replay must return 409 ACCESS_REQUEST_ALREADY_REVIEWED, preserving approved request and active device. No production code/migrations. Expected AuthenticationTest **31 tests**, not yet run locally.
+- Next after PASS: real independent-process simultaneous approve/reject HTTP race test with committed scoped fixtures; existing database lock probes and sequential replay tests do not prove this.
+- Keep `bluepos_test` only; preserve `feature/superadmin` as temporarily approved continuation, do not merge main without explicit approval. History in `BLUEPOS_DEVELOPMENT_LOG.md`.
+
+---
+
 ## LIVE CHECKPOINT — 2026-10-26 (decision collision regression awaiting local run)
 
 - User verified: PostgreSQL concurrency probes **2/2 tests, 11 assertions**; Authentication **30/30 tests, 159 assertions**.
