@@ -3,6 +3,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import {
   activatePlatformTenant,
+  approvePlatformTenantDevice,
+  revokePlatformTenantDevice,
+  fetchPlatformTenantDevices,
   assignPlatformSubscription,
   deactivateTenantAdmin,
   deletePlatformTenant,
@@ -23,7 +26,7 @@ import { CredentialsOnceModal } from '../../components/platform/CredentialsOnceM
 import { UiSelect } from '../../components/ui/UiSelect'
 import { usePlatformAuth } from '../../features/platform/PlatformAuthProvider'
 
-const TABS = ['Overview', 'Admin Users', 'Subscription', 'Features', 'Limits'] as const
+const TABS = ['Overview', 'Admin Users', 'Devices', 'Subscription', 'Features', 'Limits'] as const
 
 export function PlatformTenantDetailPage() {
   const { tenantUlid = '' } = useParams()
@@ -38,6 +41,11 @@ export function PlatformTenantDetailPage() {
     queryKey: ['platform', 'tenant', tenantUlid],
     queryFn: () => fetchPlatformTenant(tenantUlid),
     enabled: tenantUlid !== '',
+  })
+  const devicesQuery = useQuery({
+    queryKey: ['platform', 'tenant', tenantUlid, 'devices'],
+    queryFn: () => fetchPlatformTenantDevices(tenantUlid),
+    enabled: tenantUlid !== '' && tab === 'Devices',
   })
   const plansQuery = useQuery({ queryKey: ['platform', 'plans'], queryFn: fetchPlatformPlans })
   const catalogQuery = useQuery({ queryKey: ['platform', 'features'], queryFn: fetchFeatureCatalog })
@@ -328,6 +336,48 @@ export function PlatformTenantDetailPage() {
               })}
             </tbody>
           </table>
+        </div>
+      ) : null}
+
+      {tab === 'Devices' ? (
+        <div className="rounded border border-slate-300 bg-white p-3 text-[12px]">
+          <div className="mb-3 flex items-center justify-between">
+            <strong>Tenant devices — Pending approvals</strong>
+            <button type="button" className="rounded border px-3 py-1"
+              onClick={() => void devicesQuery.refetch()}>Refresh</button>
+          </div>
+          <p className="mb-2 text-slate-600">New browsers must be approved before tenant login. Approval requires recent Superadmin MFA.</p>
+          {devicesQuery.isLoading ? <p>Loading devices…</p> : null}
+          {devicesQuery.isError ? <p role="alert">Could not load devices.</p> : null}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-left">
+              <thead><tr className="border-b"><th className="p-2">Name</th><th>Type</th><th>Status</th><th>Registered</th><th>Last seen</th><th>Actions</th></tr></thead>
+              <tbody>{(devicesQuery.data?.devices ?? []).map((device) => (
+                <tr key={device.ulid} className="border-b">
+                  <td className="p-2">{device.name}</td><td>{device.type}</td><td>{device.status}</td>
+                  <td>{device.registered_at ? new Date(device.registered_at).toLocaleString() : '—'}</td>
+                  <td>{device.last_seen_at ? new Date(device.last_seen_at).toLocaleString() : '—'}</td>
+                  <td className="space-x-2">
+                    {device.status === 'pending' ? <button type="button" className="rounded border px-2 py-1"
+                      onClick={() => void run(async () => {
+                        await withRecentMfa(() => approvePlatformTenantDevice(tenant.ulid, device.ulid))
+                        await queryClient.invalidateQueries({ queryKey: ['platform', 'tenant', tenantUlid, 'devices'] })
+                      })}>Approve</button> : null}
+                    {(device.status === 'pending' || device.status === 'active') ? <button type="button"
+                      className="rounded border border-red-400 px-2 py-1 text-red-700"
+                      onClick={() => void (async () => {
+                        if (!(await askConfirm(`Revoke device ${device.name}? Existing device sessions will be invalidated.`))) return
+                        await run(async () => {
+                          await withRecentMfa(() => revokePlatformTenantDevice(tenant.ulid, device.ulid))
+                          await queryClient.invalidateQueries({ queryKey: ['platform', 'tenant', tenantUlid, 'devices'] })
+                        })
+                      })()}>Revoke</button> : null}
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          {devicesQuery.data?.devices.length === 0 ? <p className="pt-3">No registered devices for this tenant.</p> : null}
         </div>
       ) : null}
 
