@@ -6,6 +6,7 @@ import { ApiClientError } from '../api/client'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
 import { useCan } from '../features/auth/useCan'
+import { useAuth } from '../features/auth/AuthProvider'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Device } from '../types/auth'
 import { useState } from 'react'
@@ -14,9 +15,11 @@ export function DevicesPage() {
   const queryClient = useQueryClient()
   const { closeActiveTab } = useWorkspace()
   const canApprove = useCan('devices.approve')
+  const { session } = useAuth()
+  const canReviewRequests = Boolean(session?.roles.some((role) => role.code === 'owner' && role.is_active))
   const canRevoke = useCan('devices.revoke')
   const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: fetchDevices })
-  const requestsQuery = useQuery({ queryKey: ['device-access-requests'], queryFn: fetchDeviceAccessRequests, enabled: canApprove })
+  const requestsQuery = useQuery({ queryKey: ['device-access-requests'], queryFn: fetchDeviceAccessRequests, enabled: canReviewRequests })
   const [reviewing, setReviewing] = useState<string | null>(null)
   const branchesQuery = useQuery({ queryKey: ['branches'], queryFn: fetchBranches })
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +28,7 @@ export function DevicesPage() {
   useWorkspaceHandlers({
     refresh: () => {
       void devicesQuery.refetch()
-      if (canApprove) void requestsQuery.refetch()
+      if (canReviewRequests) void requestsQuery.refetch()
     },
   })
 
@@ -77,7 +80,7 @@ export function DevicesPage() {
       flush
     >
       {error ? <p className="p-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
-      {canApprove ? (
+      {canReviewRequests ? (
         <section className="p-2">
           <h3 className="mb-2 text-[12px] font-semibold">Pending employee device / network requests</h3>
           {requestsQuery.isLoading ? <p className="text-[12px]">Loading requests…</p> : null}
