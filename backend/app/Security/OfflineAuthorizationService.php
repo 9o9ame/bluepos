@@ -95,6 +95,11 @@ class OfflineAuthorizationService
             throw new ApiException('OFFLINE_AUTH_EXPIRED', 'Offline authorization has expired. Reconnect to continue.', 403);
         }
 
+        $tenant = \App\Models\Tenant::query()->whereKey($membership->tenant_id)->first();
+        if (! $tenant || ! app(TenantEntitlementService::class)->isTenantOperational($tenant)) {
+            throw new ApiException('OFFLINE_AUTH_EXPIRED', 'Offline authorization has expired. Reconnect to continue.', 403);
+        }
+
         if ($membership->status !== MembershipStatus::Active
             || ! $device->isActive()
             || (int) $device->tenant_id !== (int) $membership->tenant_id
