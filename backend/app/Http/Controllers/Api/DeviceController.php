@@ -261,17 +261,26 @@ class DeviceController extends Controller
             'branch_ulid' => ['nullable', 'string', 'size:26'],
             'warehouse_ulid' => ['nullable', 'string', 'size:26'],
         ]);
-        if (! empty($data['branch_ulid'])) {
-            $device->branch_id = Branch::query()->forTenant($tenantContext->tenantId())->where('ulid', $data['branch_ulid'])->firstOrFail()->id;
-        } else {
-            $device->branch_id = null;
-        }
-        if (! empty($data['warehouse_ulid'])) {
-            $device->warehouse_id = Warehouse::query()->forTenant($tenantContext->tenantId())->where('ulid', $data['warehouse_ulid'])->firstOrFail()->id;
-        } else {
-            $device->warehouse_id = null;
-        }
-        $device->save();
+        DB::transaction(function () use ($tenantContext, $deviceUlid, $data, &$device): void {
+            \App\Models\Tenant::query()->whereKey($tenantContext->tenantId())->lockForUpdate()->firstOrFail();
+            $device = Device::query()->where('tenant_id', $tenantContext->tenantId())
+                ->where('ulid', $deviceUlid)->lockForUpdate()->firstOrFail();
+
+            $branch = ! empty($data['branch_ulid'])
+                ? Branch::query()->forTenant($tenantContext->tenantId())->where('ulid', $data['branch_ulid'])->firstOrFail()
+                : null;
+            $warehouse = ! empty($data['warehouse_ulid'])
+                ? Warehouse::query()->forTenant($tenantContext->tenantId())->where('ulid', $data['warehouse_ulid'])->firstOrFail()
+                : null;
+
+            if ($branch && $warehouse && (int) $warehouse->branch_id !== (int) $branch->id) {
+                throw new ApiException('WAREHOUSE_BRANCH_MISMATCH', 'Warehouse must belong to the assigned device branch.', 422);
+            }
+
+            $device->branch_id = $branch?->id;
+            $device->warehouse_id = $warehouse?->id;
+            $device->save();
+        });
 
         return new DeviceResource($device->fresh(['branch', 'warehouse', 'approver']));
     }
