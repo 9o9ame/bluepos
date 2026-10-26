@@ -582,6 +582,18 @@ class AuthenticationTest extends TestCase
 
         $member->status = \App\Enums\MembershipStatus::Active;
         $member->save();
+        $employee->status = \App\Enums\UserStatus::Disabled;
+        $employee->save();
+        foreach (['approved', 'rejected'] as $decision) {
+            $this->postJson($url, ['decision' => $decision])
+                ->assertStatus(409)->assertJsonPath('error.key', 'ACCESS_REQUEST_INVALID');
+        }
+        $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $ulid)->value('status'));
+        $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
+
+        $employee->status = \App\Enums\UserStatus::Active;
+        $employee->save();
         $device->status = \App\Enums\DeviceStatus::Revoked;
         $device->save();
         foreach (['approved', 'rejected'] as $decision) {
