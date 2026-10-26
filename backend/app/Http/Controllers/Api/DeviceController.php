@@ -133,6 +133,17 @@ class DeviceController extends Controller
                 $device->save();
             }
 
+            if ($data['decision'] === 'rejected') {
+                // Offline leases are not network-scoped; revoke every lease for
+                // this employee/device pair rather than leave an unsafe lease active.
+                \App\Models\OfflineAuthorizationLease::query()
+                    ->where('tenant_id', $tenant->id)
+                    ->where('membership_id', $member->id)
+                    ->where('device_id', $device->id)
+                    ->whereNull('revoked_at')
+                    ->update(['revoked_at' => now()]);
+            }
+
             DB::table('device_access_requests')->where('id', $access->id)->update([
                 'status' => $data['decision'],
                 'reviewed_by' => $tenantContext->userId(),
