@@ -242,7 +242,7 @@ class AuthenticationTest extends TestCase
         // A valid session must not survive an employee network change.
         $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.78']);
         $this->getJson('/api/auth/me')
-            ->assertUnauthorized()->assertJsonPath('error.key', 'SESSION_REVOKED');
+            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
         $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1']);
         $this->getJson('/api/auth/me')->assertOk();
 
@@ -252,7 +252,7 @@ class AuthenticationTest extends TestCase
             ->where('network_hash', $networkHash)
             ->update(['status' => 'rejected', 'reviewed_at' => now()]);
         $this->getJson('/api/auth/me')
-            ->assertUnauthorized()->assertJsonPath('error.key', 'SESSION_REVOKED');
+            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
         \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('membership_id', $member->id)
             ->where('network_hash', $networkHash)
