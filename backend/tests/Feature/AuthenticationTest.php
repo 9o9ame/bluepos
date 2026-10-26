@@ -746,6 +746,73 @@ class AuthenticationTest extends TestCase
         }
     }
 
+    public function test_employee_access_review_rolls_back_if_audit_write_fails(): void
+    {
+        $owner = $this->provisionOwner('review-audit-rollback');
+        $employee = \App\Models\User::query()->create([
+            'name' => 'Review Employee',
+            'email' => 'review-audit-rollback-staff@example.com',
+            'password' => 'password123',
+            'status' => \App\Enums\UserStatus::Active,
+            'must_change_password' => false,
+            'security_version' => 1,
+        ]);
+        $membership = \App\Models\Membership::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'user_id' => $employee->id,
+            'username' => 'reviewstaff',
+            'status' => \App\Enums\MembershipStatus::Active,
+            'is_owner' => false,
+            'security_version' => 1,
+        ]);
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'name' => 'Review device',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+        $ulid = (string) \Illuminate\Support\Str::ulid();
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => $ulid,
+            'tenant_id' => $owner->tenant->id,
+            'membership_id' => $membership->id,
+            'device_id' => $device->id,
+            'network_hash' => hash('sha256', 'review-audit-rollback-network'),
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('review-audit-rollback'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $logger = \Mockery::mock(\App\Security\AuditLogger::class);
+        $logger->shouldReceive('record')->once()->andThrow(new \RuntimeException('Simulated audit storage failure'));
+        app()->instance(\App\Security\AuditLogger::class, $logger);
+
+        try {
+            $this->postJson('/api/devices/access-requests/'.$ulid.'/review', [
+                'decision' => 'approved',
+            ])->assertStatus(500);
+        } finally {
+            app()->forgetInstance(\App\Security\AuditLogger::class);
+        }
+
+        $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $ulid)->value('status'));
+        $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
+        $this->assertSame(0, \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('resource_ulid', $ulid)
+            ->count());
+    }
+
     public function test_rejected_employee_access_review_cannot_be_replayed(): void
     {
         $owner = $this->provisionOwner('review-once');
