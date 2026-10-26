@@ -242,7 +242,7 @@ class AuthController extends Controller
             $device->approved_at = now();
             $device->approved_by = $challenge->user_id;
             $device->tenant_id = $challenge->tenant_id;
-            if ($request->boolean('trust_device')) {
+            if ($membership->hasOwnerAuthority() || $request->boolean('trust_device')) {
                 $device->trusted_until = now()->addDays(30);
             }
             $device->save();
