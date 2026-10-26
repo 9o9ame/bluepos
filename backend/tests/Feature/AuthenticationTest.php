@@ -10,6 +10,46 @@ class AuthenticationTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_subscription_operational_state_respects_trial_and_active_dates(): void
+    {
+        $subscription = new \App\Models\TenantSubscription();
+
+        $subscription->status = \App\Enums\SubscriptionStatus::Trial;
+        $subscription->trial_starts_at = now()->subDays(3);
+        $subscription->trial_ends_at = now()->subMinute();
+        $this->assertFalse($subscription->isOperational());
+
+        $subscription->trial_ends_at = now()->addDay();
+        $this->assertTrue($subscription->isOperational());
+
+        $subscription->trial_starts_at = now()->addDay();
+        $this->assertFalse($subscription->isOperational());
+
+        $subscription->status = \App\Enums\SubscriptionStatus::Active;
+        $subscription->starts_at = now()->subDay();
+        $subscription->ends_at = now()->subMinute();
+        $this->assertFalse($subscription->isOperational());
+
+        $subscription->ends_at = now()->addDay();
+        $this->assertTrue($subscription->isOperational());
+
+        $subscription->starts_at = now()->addHour();
+        $this->assertFalse($subscription->isOperational());
+
+        $subscription->starts_at = null;
+        $subscription->ends_at = null;
+        $this->assertTrue($subscription->isOperational());
+
+        $subscription->status = \App\Enums\SubscriptionStatus::PastDue;
+        $subscription->grace_ends_at = now()->subMinute();
+        $this->assertFalse($subscription->isOperational());
+        $subscription->grace_ends_at = now()->addHour();
+        $this->assertTrue($subscription->isOperational());
+
+        $subscription->status = \App\Enums\SubscriptionStatus::Suspended;
+        $this->assertFalse($subscription->isOperational());
+    }
+
     public function test_owner_verified_network_fingerprint_requires_reverification_on_change(): void
     {
         $this->signInOwner('owner-ip-trust')->assertOk();
