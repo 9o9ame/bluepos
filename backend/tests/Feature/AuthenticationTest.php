@@ -211,6 +211,8 @@ class AuthenticationTest extends TestCase
         $member->branches()->attach($owner->branch->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
         $this->attachTrustedDevice((int) $owner->tenant->id);
         $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $device->device_type = 'browser';
+        $device->save();
 
         $request = \Illuminate\Http\Request::create('/', 'POST', [], [], [], ['REMOTE_ADDR' => '127.0.0.1']);
         $networkHash = app(\App\Security\DeviceNetworkTrust::class)->fingerprint($request);
@@ -235,6 +237,28 @@ class AuthenticationTest extends TestCase
         \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('membership_id', $member->id)->update(['status' => 'approved']);
         $this->postJson('/api/auth/login', $credentials)->assertOk();
+
+        // A shared browser approval must not authorize another employee.
+        $secondUser = \App\Models\User::query()->create([
+            'name' => 'Other Staff',
+            'email' => 'staff-other-gate@example.com',
+            'password' => 'password123',
+            'status' => \App\Enums\UserStatus::Active,
+            'must_change_password' => false,
+            'security_version' => 1,
+        ]);
+        $secondMember = \App\Models\Membership::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'user_id' => $secondUser->id,
+            'username' => 'otherstaff',
+            'status' => \App\Enums\MembershipStatus::Active,
+            'is_owner' => false,
+            'security_version' => 1,
+        ]);
+        $secondMember->roles()->attach($role->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
+        $secondMember->branches()->attach($owner->branch->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
+        $this->postJson('/api/auth/login', array_merge($credentials, ['username' => 'otherstaff']))
+            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
 
         $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.78']);
         $this->postJson('/api/auth/login', $credentials)
