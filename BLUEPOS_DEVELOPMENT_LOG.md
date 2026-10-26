@@ -83,3 +83,10 @@
 - Commit `a2552653` adds reverse-direction replay protection coverage in `backend/tests/Feature/AuthenticationTest.php`: after **approved**, attempt **rejected** must yield `ACCESS_REQUEST_ALREADY_REVIEWED`, preserving approved request and active device.
 - Tests not run after commit; expected AuthenticationTest count 31. No migrations or production code changes.
 - Existing sequential test covered rejected→approved; both directions are now covered sequentially. **Actual simultaneous HTTP approve/reject race still pending**. No claim of complete race coverage.
+
+### 2026-10-26 — Approved/rejected replay validation and HTTP concurrency boundary
+- **User local validation confirmed:** AuthenticationTest.php **31 passed / 166 assertions**; PostgreSqlConcurrencyConnectionTest.php **3 passed / 19 assertions** at `68e1b88c`.
+- Inspected routes: `POST /api/devices/access-requests/{requestUlid}/review` requires `auth:sanctum` and tenant middleware; device management lives in DeviceController.
+- An actual simultaneous HTTP race requires independently authenticated workers, committed isolated tenant/device/member/access-request fixtures visible across processes, a synchronization barrier, bounded timeouts, deterministic winner/loser assertions and robust cleanup.
+- Existing 3 DB concurrency tests **are not** HTTP-level proof. No new concurrency code committed in this checkpoint: avoiding a misleading sequential test or unsafe persistent fixture creation.
+- Next: implement isolated HTTP race harness before claiming concurrency phase complete. Keep it restricted to `bluepos_test`, never use destructive cleanup. 
