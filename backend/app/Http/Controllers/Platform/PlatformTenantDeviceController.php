@@ -99,12 +99,23 @@ class PlatformTenantDeviceController extends Controller
     {
         $tenant = $this->tenant($tenantUlid);
         $result = DB::transaction(function () use ($tenant, $deviceUlid, $entitlements) {
+            // Use the same lock order as employee approval and generic tenant approval.
+            $lockedTenant = Tenant::query()->whereKey($tenant->id)->lockForUpdate()->firstOrFail();
             $device = Device::query()->where('tenant_id', $tenant->id)
                 ->where('ulid', $deviceUlid)->lockForUpdate()->firstOrFail();
             if ($device->status !== DeviceStatus::Pending) {
                 throw new ApiException('DEVICE_NOT_PENDING', 'Only pending devices can be approved.', 409);
             }
-            $lockedTenant = Tenant::query()->whereKey($tenant->id)->lockForUpdate()->firstOrFail();
+            if (DB::table('device_access_requests')
+                ->where('tenant_id', $tenant->id)
+                ->where('device_id', $device->id)
+                ->exists()) {
+                throw new ApiException(
+                    'EMPLOYEE_ACCESS_REVIEW_REQUIRED',
+                    'Employee device access must be reviewed by the tenant owner.',
+                    409
+                );
+            }
             $entitlements->assertOperational($lockedTenant);
             $entitlements->assertCanRegisterDevice($lockedTenant);
             $device->status = DeviceStatus::Active;
