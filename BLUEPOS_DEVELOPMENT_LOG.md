@@ -57,3 +57,10 @@
 - Adds two independent PostgreSQL backend connections against `bluepos_test`; verifies distinct PostgreSQL backend PIDs, transaction-scoped advisory lock contention, and lock release after rollback. Read-only, no table inserts or cleanup of persistent data.
 - **Unrun locally**. This proves connection isolation/locking only; **not** actual concurrent device approve/reject or HTTP request races.
 - Next: validate probe locally, then add a proper committed-fixture, independently executing domain race regression with bounded waits and safe cleanup.
+
+### 2026-10-26 — Device row-lock concurrency probe (pending validation)
+- Local user validation before batch: PostgreSQL concurrency connection test **1 passed, 6 assertions** and AuthenticationTest **30 passed, 159 assertions**.
+- Commit: `5d15492e`; file: `backend/tests/Feature/PostgreSqlConcurrencyConnectionTest.php`. No application changes/migrations.
+- Added isolated, committed test-only pending device fixture in `bluepos_test`; primary PostgreSQL connection locks actual `devices` row and independent connection must receive SQLSTATE `55P03` with NOWAIT. After primary rollback, secondary acquires row lock. Both transactions rollback and fixture deleted in finally.
+- **Unrun locally**; expected two tests in probe file. An interrupted process could leave a uniquely tagged test fixture; investigate before manual cleanup, never wipe DB.
+- This is real table-row lock contention but still **not** an end-to-end concurrent approve/reject HTTP request race; that remains pending.
