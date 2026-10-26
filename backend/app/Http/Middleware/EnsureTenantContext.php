@@ -13,6 +13,8 @@ use App\Models\Device;
 use App\Models\Membership;
 use App\Models\Warehouse;
 use App\Security\TenantEntitlementService;
+use App\Security\DeviceNetworkTrust;
+use Illuminate\Support\Facades\DB;
 use App\Tenancy\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
@@ -71,6 +73,7 @@ class EnsureTenantContext
 
         $device = $this->resolveDevice($request, $membership);
         $this->assertAuthSessionRecord($request, $membership, $device);
+        $this->assertEmployeeDeviceAccess($request, $membership, $device);
 
         $branchId = $request->session()->get(EstablishAuthSessionAction::BRANCH_ID);
         $preferredBranchId = is_numeric($branchId) ? (int) $branchId : null;
@@ -181,6 +184,37 @@ class EnsureTenantContext
 
         $record->last_seen_at = now();
         $record->save();
+    }
+
+    private function assertEmployeeDeviceAccess(Request $request, Membership $membership, ?Device $device): void
+    {
+        if ($device === null || $membership->hasOwnerAuthority()) {
+            return;
+        }
+
+        $managed = DB::table('device_access_requests')
+            ->where('tenant_id', $membership->tenant_id)
+            ->where('device_id', $device->id)
+            ->exists();
+
+        // Preserve the existing grandfathered terminal behavior; browser and
+        // managed devices always need employee-specific network approval.
+        if (! $managed && $device->device_type !== 'browser') {
+            return;
+        }
+
+        $fingerprint = app(DeviceNetworkTrust::class)->fingerprint($request);
+        $approved = $fingerprint !== null && DB::table('device_access_requests')
+            ->where('tenant_id', $membership->tenant_id)
+            ->where('device_id', $device->id)
+            ->where('membership_id', $membership->id)
+            ->where('network_hash', $fingerprint)
+            ->where('status', 'approved')
+            ->exists();
+
+        if (! $approved) {
+            throw new ApiException('SESSION_REVOKED', 'This device or network is no longer approved for this account.', 401);
+        }
     }
 
     private function requiresPasswordChange(Request $request, mixed $user): bool
