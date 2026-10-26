@@ -172,7 +172,18 @@ class DeviceController extends Controller
             throw new ApiException('FORBIDDEN', 'You are not allowed to perform this action.', 403);
         }
 
-        if (DB::table('device_access_requests')
+        $data = $request->validate([
+            'branch_ulid' => ['nullable', 'string', 'size:26'],
+            'warehouse_ulid' => ['nullable', 'string', 'size:26'],
+            'name' => ['sometimes', 'string', 'max:120'],
+        ]);
+
+        // Serialize generic approval with employee request creation/review on the same tenant lock.
+        DB::transaction(function () use ($tenantContext, $deviceUlid, $data, &$device): void {
+            \App\Models\Tenant::query()->whereKey($tenantContext->tenantId())->lockForUpdate()->firstOrFail();
+            $device = $this->findTenantDevice($tenantContext, $deviceUlid);
+            $device = Device::query()->whereKey($device->id)->lockForUpdate()->firstOrFail();
+            if (DB::table('device_access_requests')
             ->where('tenant_id', $tenantContext->tenantId())
             ->where('device_id', $device->id)
             ->exists()) {
@@ -183,17 +194,13 @@ class DeviceController extends Controller
             );
         }
 
-        $data = $request->validate([
-            'branch_ulid' => ['nullable', 'string', 'size:26'],
-            'warehouse_ulid' => ['nullable', 'string', 'size:26'],
-            'name' => ['sometimes', 'string', 'max:120'],
-        ]);
 
-        if ($device->status !== DeviceStatus::Active) {
+
+            if ($device->status !== DeviceStatus::Active) {
             app(TenantEntitlementService::class)->assertCanRegisterDevice($tenantContext->tenant());
         }
 
-        $device->status = DeviceStatus::Active;
+            $device->status = DeviceStatus::Active;
         $device->approved_at = now();
         $device->approved_by = $tenantContext->userId();
         $device->tenant_id = $tenantContext->tenantId();
@@ -208,7 +215,9 @@ class DeviceController extends Controller
             $warehouse = Warehouse::query()->forTenant($tenantContext->tenantId())->where('ulid', $data['warehouse_ulid'])->firstOrFail();
             $device->warehouse_id = $warehouse->id;
         }
-        $device->save();
+            $device->save();
+
+        });
 
         app(AuditLogger::class)->record('DEVICE_APPROVED', [
             'resource_type' => 'device',
