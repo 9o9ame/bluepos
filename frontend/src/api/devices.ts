@@ -29,3 +29,23 @@ export function assignDevice(ulid: string, input: { branch_ulid?: string | null;
     body: JSON.stringify(input),
   })
 }
+
+export type DeviceAccessRequest = {
+  ulid: string
+  membership_ulid: string
+  username: string
+  device_ulid: string
+  device_name: string
+  created_at: string
+}
+
+export function fetchDeviceAccessRequests(): Promise<{ requests: DeviceAccessRequest[] }> {
+  return apiFetch('/api/devices/access-requests')
+}
+
+export function reviewDeviceAccessRequest(ulid: string, decision: 'approved' | 'rejected'): Promise<{ ulid: string; status: string }> {
+  return apiFetch(`/api/devices/access-requests/${ulid}/review`, {
+    method: 'POST',
+    body: JSON.stringify({ decision }),
+  })
+}
