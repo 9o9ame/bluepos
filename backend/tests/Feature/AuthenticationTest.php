@@ -56,7 +56,7 @@ class AuthenticationTest extends TestCase
         $oldBranchId = $device->branch_id;
         $oldWarehouseId = $device->warehouse_id;
 
-        $this->postJson('/api/devices/'.$device->ulid.'/assign', [
+        $this->patchJson('/api/devices/'.$device->ulid, [
             'branch_ulid' => $otherBranch->ulid,
             'warehouse_ulid' => $warehouse->ulid,
         ])->assertStatus(422)->assertJsonPath('error.key', 'WAREHOUSE_BRANCH_MISMATCH');
