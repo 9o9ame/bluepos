@@ -56,13 +56,27 @@ class DeviceController extends Controller
     {
         $this->authorize('viewAny', Device::class);
 
-        return DeviceResource::collection(
-            Device::query()
-                ->forTenant($tenantContext->tenantId())
-                ->with('branch', 'warehouse', 'approver')
-                ->orderByDesc('registered_at')
-                ->get()
-        );
+        $devices = Device::query()
+            ->forTenant($tenantContext->tenantId())
+            ->with('branch', 'warehouse', 'approver')
+            ->orderByDesc('registered_at')
+            ->get();
+
+        $managedIds = DB::table('device_access_requests')
+            ->where('tenant_id', $tenantContext->tenantId())
+            ->whereIn('device_id', $devices->pluck('id'))
+            ->distinct()
+            ->pluck('device_id')
+            ->mapWithKeys(fn ($id) => [(int) $id => true]);
+
+        foreach ($devices as $device) {
+            $device->setAttribute('employee_access_policy',
+                $managedIds->has((int) $device->id) || $device->device_type === 'browser'
+                    ? 'managed'
+                    : 'legacy_grandfathered');
+        }
+
+        return DeviceResource::collection($devices);
     }
 
     public function accessRequests(TenantContext $tenantContext): JsonResponse
