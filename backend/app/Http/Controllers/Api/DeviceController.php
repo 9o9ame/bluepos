@@ -79,11 +79,17 @@ class DeviceController extends Controller
         return DeviceResource::collection($devices);
     }
 
-    public function accessRequests(TenantContext $tenantContext): JsonResponse
+    public function accessRequests(Request $request, TenantContext $tenantContext): JsonResponse
     {
         $this->authorize('viewAny', Device::class);
+        $data = $request->validate([
+            'status' => ['sometimes', 'in:pending,approved,rejected,all'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+        ]);
 
-        $rows = DB::table('device_access_requests as access')
+        $status = $data['status'] ?? 'pending';
+        $query = DB::table('device_access_requests as access')
             ->join('memberships as member', function ($join) {
                 $join->on('member.id', '=', 'access.membership_id')
                     ->on('member.tenant_id', '=', 'access.tenant_id');
@@ -92,22 +98,40 @@ class DeviceController extends Controller
                 $join->on('device.id', '=', 'access.device_id')
                     ->on('device.tenant_id', '=', 'access.tenant_id');
             })
-            ->where('access.tenant_id', $tenantContext->tenantId())
-            ->where('access.status', 'pending')
-            ->orderByDesc('access.created_at')
-            ->limit(100)
-            ->get([
-                'access.ulid', 'member.ulid as membership_ulid',
-                'member.username', 'device.ulid as device_ulid',
-                'device.name as device_name', 'access.created_at',
-            ]);
+            ->where('access.tenant_id', $tenantContext->tenantId());
+
+        if ($status !== 'all') {
+            $query->where('access.status', $status);
+        }
+
+        $page = $query->orderByDesc('access.created_at')
+            ->orderByDesc('access.id')
+            ->paginate((int) ($data['per_page'] ?? 50), [
+                'access.ulid',
+                'access.status',
+                'access.created_at',
+                'access.reviewed_at',
+                'member.ulid as membership_ulid',
+                'member.username',
+                'device.ulid as device_ulid',
+                'device.name as device_name',
+            ], 'page', (int) ($data['page'] ?? 1));
 
         $pendingCount = DB::table('device_access_requests')
             ->where('tenant_id', $tenantContext->tenantId())
             ->where('status', 'pending')
             ->count();
 
-        return response()->json(['requests' => $rows, 'pending_count' => $pendingCount]);
+        return response()->json([
+            'requests' => $page->items(),
+            'pending_count' => $pendingCount,
+            'pagination' => [
+                'page' => $page->currentPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
+                'last_page' => $page->lastPage(),
+            ],
+        ]);
     }
 
     public function reviewAccessRequest(Request $request, string $requestUlid, TenantContext $tenantContext): JsonResponse
