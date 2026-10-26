@@ -91,6 +91,66 @@ class DeviceController extends Controller
         return response()->json(['requests' => $rows]);
     }
 
+    public function reviewAccessRequest(Request $request, string $requestUlid, TenantContext $tenantContext): JsonResponse
+    {
+        if (! $tenantContext->membership()->hasOwnerAuthority()) {
+            throw new ApiException('FORBIDDEN', 'Only the tenant owner may review employee access.', 403);
+        }
+
+        $data = $request->validate(['decision' => ['required', 'in:approved,rejected']]);
+
+        $row = DB::transaction(function () use ($tenantContext, $requestUlid, $data) {
+            $tenant = \App\Models\Tenant::query()->whereKey($tenantContext->tenantId())
+                ->lockForUpdate()->firstOrFail();
+            $access = DB::table('device_access_requests')
+                ->where('tenant_id', $tenant->id)
+                ->where('ulid', $requestUlid)
+                ->lockForUpdate()->first();
+            if (! $access) {
+                throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
+            }
+            if ($access->status !== 'pending') {
+                throw new ApiException('ACCESS_REQUEST_ALREADY_REVIEWED', 'This request has already been reviewed.', 409);
+            }
+
+            $member = \App\Models\Membership::query()
+                ->where('tenant_id', $tenant->id)->whereKey($access->membership_id)->firstOrFail();
+            if ($member->hasOwnerAuthority() || $member->status !== \App\Enums\MembershipStatus::Active) {
+                throw new ApiException('ACCESS_REQUEST_INVALID', 'Employee is no longer eligible.', 409);
+            }
+
+            $device = Device::query()->where('tenant_id', $tenant->id)
+                ->whereKey($access->device_id)->lockForUpdate()->firstOrFail();
+            if (! in_array($device->status, [DeviceStatus::Pending, DeviceStatus::Active], true)) {
+                throw new ApiException('DEVICE_NOT_APPROVED', 'Device is no longer eligible.', 409);
+            }
+            if ($data['decision'] === 'approved' && $device->status === DeviceStatus::Pending) {
+                app(TenantEntitlementService::class)->assertOperational($tenant);
+                app(TenantEntitlementService::class)->assertCanRegisterDevice($tenant);
+                $device->status = DeviceStatus::Active;
+                $device->approved_at = now();
+                $device->approved_by = $tenantContext->userId();
+                $device->save();
+            }
+
+            DB::table('device_access_requests')->where('id', $access->id)->update([
+                'status' => $data['decision'],
+                'reviewed_by' => $tenantContext->userId(),
+                'reviewed_at' => now(),
+                'updated_at' => now(),
+            ]);
+            return $access;
+        });
+
+        app(AuditLogger::class)->record(
+            $data['decision'] === 'approved' ? 'DEVICE_ACCESS_APPROVED' : 'DEVICE_ACCESS_REJECTED',
+            ['resource_type' => 'device_access_request', 'resource_ulid' => $requestUlid],
+            $request
+        );
+
+        return response()->json(['ulid' => $requestUlid, 'status' => $data['decision']]);
+    }
+
     public function approve(Request $request, string $deviceUlid, TenantContext $tenantContext): DeviceResource
     {
         $device = $this->findTenantDevice($tenantContext, $deviceUlid);
