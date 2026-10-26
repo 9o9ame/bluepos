@@ -23,6 +23,35 @@ class PlatformTenantDeviceController extends Controller
         return Tenant::query()->where('ulid', $tenantUlid)->firstOrFail();
     }
 
+    public function overview(): JsonResponse
+    {
+        $sessions = AuthSessionRecord::query()
+            ->with(['device:id,ulid,name', 'membership:id,ulid,username', 'membership.tenant:id,ulid,name,code'])
+            ->orderByDesc('id')
+            ->limit(200)
+            ->get();
+
+        return response()->json(['sessions' => $sessions->map(fn (AuthSessionRecord $session) => [
+            'ulid' => $session->ulid,
+            'tenant' => $session->membership?->tenant ? [
+                'ulid' => $session->membership->tenant->ulid,
+                'code' => $session->membership->tenant->code,
+                'name' => $session->membership->tenant->name,
+            ] : null,
+            'membership' => $session->membership ? [
+                'ulid' => $session->membership->ulid,
+                'username' => $session->membership->username,
+            ] : null,
+            'device' => $session->device ? [
+                'ulid' => $session->device->ulid,
+                'name' => $session->device->name,
+            ] : null,
+            'ip_address' => $session->ip_address,
+            'last_seen_at' => $session->last_seen_at?->toISOString(),
+            'revoked_at' => $session->revoked_at?->toISOString(),
+        ])->values()]);
+    }
+
     public function index(string $tenantUlid): JsonResponse
     {
         $tenant = $this->tenant($tenantUlid);
