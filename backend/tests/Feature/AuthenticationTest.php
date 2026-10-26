@@ -435,13 +435,9 @@ class AuthenticationTest extends TestCase
         $response = $this->getJson('/api/platform/security/device-activity')->assertOk();
         $this->assertIsArray($response->json('sessions'));
         $this->assertNoInternalIds($response->json());
-        $this->assertContains($owner->tenant->ulid, array_column(
-            array_filter($response->json('sessions'), fn ($session) => $session['tenant'] !== null),
-            'tenant'
-        ) === [] ? [] : array_map(
-            fn ($session) => $session['tenant']['ulid'],
-            array_filter($response->json('sessions'), fn ($session) => $session['tenant'] !== null)
-        ));
+        $tenantUlids = collect($response->json('sessions'))
+            ->pluck('tenant.ulid')->filter()->all();
+        $this->assertContains($owner->tenant->ulid, $tenantUlids);
     }
 
     public function test_login_succeeds(): void
