@@ -71,6 +71,14 @@ class OfflineAuthorizationService
             throw new ApiException('OFFLINE_AUTH_EXPIRED', 'Offline authorization has expired. Reconnect to continue.', 403);
         }
 
+        if ($membership->status !== MembershipStatus::Active
+            || ! $device->isActive()
+            || (int) $device->tenant_id !== (int) $membership->tenant_id
+            || (int) $lease->tenant_id !== (int) $membership->tenant_id
+            || (int) $lease->security_version !== $membership->currentSecurityVersion()) {
+            throw new ApiException('OFFLINE_AUTH_EXPIRED', 'Offline authorization has expired. Reconnect to continue.', 403);
+        }
+
         if ((int) $lease->device_id !== (int) $device->id || (int) $lease->membership_id !== (int) $membership->id) {
             throw new ApiException('OFFLINE_AUTH_EXPIRED', 'Offline authorization has expired. Reconnect to continue.', 403);
         }
