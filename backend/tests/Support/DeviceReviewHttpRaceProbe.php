@@ -4,13 +4,13 @@
  * Standalone, opt-in authenticated HTTP race probe.
  *
  * Usage: configure BLUEPOS_RACE_BASE_URL, BLUEPOS_RACE_TENANT_CODE,
- * BLUEPOS_RACE_OWNER_PASSWORD, BLUEPOS_RACE_REQUEST_ULID and
- * BLUEPOS_RACE_DEVICE_CREDENTIAL in the environment; start a multi-worker
- * Laravel HTTP server against bluepos_test, then run this file with PHP.
+ * BLUEPOS_RACE_OWNER_PASSWORD and BLUEPOS_RACE_DEVICE_CREDENTIAL in
+ * the environment; start a multi-worker Laravel HTTP server against
+ * bluepos_test, then run this file with PHP.
  *
- * This intentionally operates on a dedicated PENDING fixture supplied by the
- * caller: it never provisions, deletes, truncates, or touches unrelated data.
- * Run each probe with a NEW disposable pending access request.
+ * Creates one isolated employee, pending device and access request and cleans
+ * those exact rows after the race. Existing tenant/owner must be test-only.
+ * The server MUST also use bluepos_test and must support concurrent requests.
  */
 
 declare(strict_types=1);
@@ -35,7 +35,6 @@ $required = [
     'BLUEPOS_RACE_BASE_URL',
     'BLUEPOS_RACE_TENANT_CODE',
     'BLUEPOS_RACE_OWNER_PASSWORD',
-    'BLUEPOS_RACE_REQUEST_ULID',
     'BLUEPOS_RACE_DEVICE_CREDENTIAL',
 ];
 $values = [];
@@ -53,26 +52,87 @@ if (! is_array($parts)
     || ! in_array($parts['host'] ?? '', ['127.0.0.1', 'localhost'], true)) {
     throw new RuntimeException('The race probe can only target an HTTP service on localhost.');
 }
-$ulid = $values['BLUEPOS_RACE_REQUEST_ULID'];
-if (! preg_match('/^[0-9A-HJKMNP-TV-Z]{26}$/i', $ulid)) {
-    throw new RuntimeException('Request identifier must be a ULID.');
+$tenant = \App\Models\Tenant::query()->where('code', $values['BLUEPOS_RACE_TENANT_CODE'])->firstOrFail();
+$owner = \App\Models\Membership::query()->where('tenant_id', $tenant->id)
+    ->where('username', 'owner')->firstOrFail();
+if (! $owner->hasOwnerAuthority()) {
+    throw new RuntimeException('The selected test tenant has no active owner authority.');
 }
-$fixture = \Illuminate\Support\Facades\DB::table('device_access_requests')
-    ->where('ulid', $ulid)->first();
-if (! $fixture || $fixture->status !== 'pending') {
-    throw new RuntimeException('Fixture must be an existing PENDING request in bluepos_test.');
+$activeDevice = \App\Models\Device::query()->where('tenant_id', $tenant->id)
+    ->where('status', \App\Enums\DeviceStatus::Active)->first();
+if (! $activeDevice) {
+    throw new RuntimeException('A trusted owner device is required for authenticated logins.');
 }
-$tenant = \App\Models\Tenant::query()->whereKey($fixture->tenant_id)->firstOrFail();
-if ($tenant->code !== $values['BLUEPOS_RACE_TENANT_CODE']) {
-    throw new RuntimeException('Tenant mismatch: refusing to submit race.');
+
+// Only create a disposable fixture in the strictly guarded test database.
+// Never provision a tenant or mutate a pre-existing employee/device.
+$stamp = strtolower((string) \Illuminate\Support\Str::ulid());
+$employee = null;
+$device = null;
+$ulid = (string) \Illuminate\Support\Str::ulid();
+try {
+    $employee = \Illuminate\Support\Facades\DB::transaction(function () use ($stamp, $tenant) {
+        return \App\Models\User::query()->create([
+            'name' => 'Disposable HTTP race staff',
+            'email' => 'race-'.$stamp.'@example.invalid',
+            'password' => \Illuminate\Support\Str::random(40),
+            'status' => \App\Enums\UserStatus::Active,
+            'security_version' => 1,
+            'must_change_password' => false,
+        ]);
+    });
+    $member = \App\Models\Membership::query()->create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $employee->id,
+        'username' => 'race-'.$stamp,
+        'status' => \App\Enums\MembershipStatus::Active,
+        'security_version' => 1,
+        'is_owner' => false,
+    ]);
+    $device = \App\Models\Device::query()->create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Disposable HTTP race device',
+        'device_type' => 'browser',
+        'status' => \App\Enums\DeviceStatus::Pending,
+        'credential_hash' => 'disposable-race-probe',
+        'registered_at' => now(),
+    ]);
+    \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+        'ulid' => $ulid,
+        'tenant_id' => $tenant->id,
+        'membership_id' => $member->id,
+        'device_id' => $device->id,
+        'network_hash' => hash('sha256', 'race-'.$stamp),
+        'status' => 'pending',
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+} catch (\Throwable $exception) {
+    if ($device) {
+        $device->delete();
+    }
+    if (isset($member)) {
+        $member->delete();
+    }
+    if ($employee) {
+        $employee->delete();
+    }
+    throw $exception;
 }
-$device = \App\Models\Device::query()->whereKey($fixture->device_id)->firstOrFail();
-$existingAudit = \App\Models\AuditLog::query()
-    ->where('tenant_id', $tenant->id)->where('resource_ulid', $ulid)
-    ->whereIn('event', ['DEVICE_ACCESS_APPROVED', 'DEVICE_ACCESS_REJECTED'])->count();
-if ($existingAudit !== 0) {
-    throw new RuntimeException('Race fixture already has review audit entries.');
-}
+
+register_shutdown_function(static function () use ($tenant, $ulid, $device, $member, $employee): void {
+    // Explicit test-only cleanup; no tenant-wide delete or table truncation.
+    \Illuminate\Support\Facades\DB::table('audit_logs')
+        ->where('tenant_id', $tenant->id)
+        ->where('resource_ulid', $ulid)
+        ->whereIn('event', ['DEVICE_ACCESS_APPROVED', 'DEVICE_ACCESS_REJECTED'])
+        ->delete();
+    \Illuminate\Support\Facades\DB::table('device_access_requests')
+        ->where('tenant_id', $tenant->id)->where('ulid', $ulid)->delete();
+    $device->delete();
+    $member->delete();
+    $employee->delete();
+});
 
 function requestHandle(string $url, string $body, string $deviceCredential, ?string $cookie = null): CurlHandle
 {
