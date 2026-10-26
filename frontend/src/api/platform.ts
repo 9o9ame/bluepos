@@ -132,6 +132,27 @@ export function fetchPlatformTenants(page = 1): Promise<Paginated<PlatformTenant
   return apiFetch<Paginated<PlatformTenant>>(`/api/platform/tenants?page=${page}`)
 }
 
+export type PlatformTenantDevice = {
+  ulid: string
+  name: string
+  type: string
+  status: 'pending' | 'active' | 'revoked' | 'disabled'
+  registered_at: string | null
+  last_seen_at: string | null
+}
+
+export function fetchPlatformTenantDevices(tenantUlid: string): Promise<{ devices: PlatformTenantDevice[] }> {
+  return apiFetch<{ devices: PlatformTenantDevice[] }>(`/api/platform/tenants/${tenantUlid}/devices`)
+}
+
+export function approvePlatformTenantDevice(tenantUlid: string, deviceUlid: string): Promise<{ ulid: string; status: string }> {
+  return apiFetch(`/api/platform/tenants/${tenantUlid}/devices/${deviceUlid}/approve`, { method: 'POST' })
+}
+
+export function revokePlatformTenantDevice(tenantUlid: string, deviceUlid: string): Promise<{ ulid: string; status: string }> {
+  return apiFetch(`/api/platform/tenants/${tenantUlid}/devices/${deviceUlid}/revoke`, { method: 'POST' })
+}
+
 export function fetchPlatformTenant(ulid: string): Promise<PlatformTenant> {
   return apiFetch<PlatformTenant>(`/api/platform/tenants/${ulid}`)
 }
