@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, X } from 'lucide-react'
 import { fetchBranches } from '../api/branches'
+import { fetchSecuritySessions } from '../api/security'
 import { approveDevice, fetchDevices, revokeDevice, fetchDeviceAccessRequests, reviewDeviceAccessRequest } from '../api/devices'
 import { ApiClientError } from '../api/client'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
@@ -18,8 +19,10 @@ export function DevicesPage() {
   const { session } = useAuth()
   const canReviewRequests = Boolean(session?.roles.some((role) => role.code === 'owner' && role.is_active))
   const canRevoke = useCan('devices.revoke')
+  const canViewSessions = useCan('security.sessions.view')
   const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: fetchDevices })
-  const requestsQuery = useQuery({ queryKey: ['device-access-requests'], queryFn: fetchDeviceAccessRequests, enabled: canReviewRequests })
+  const requestsQuery = useQuery({ queryKey: ['device-access-requests'], queryFn: fetchDeviceAccessRequests, enabled: canReviewRequests, refetchInterval: 30000 })
+  const sessionsQuery = useQuery({ queryKey: ['security-sessions'], queryFn: fetchSecuritySessions, enabled: canViewSessions, refetchInterval: 60000 })
   const [reviewing, setReviewing] = useState<string | null>(null)
   const branchesQuery = useQuery({ queryKey: ['branches'], queryFn: fetchBranches })
   const [error, setError] = useState<string | null>(null)
@@ -29,6 +32,7 @@ export function DevicesPage() {
     refresh: () => {
       void devicesQuery.refetch()
       if (canReviewRequests) void requestsQuery.refetch()
+      if (canViewSessions) void sessionsQuery.refetch()
     },
   })
 
@@ -73,7 +77,7 @@ export function DevicesPage() {
       title="Devices"
       toolbar={
         <>
-          <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => { void devicesQuery.refetch(); if (canApprove) void requestsQuery.refetch() }} />
+          <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => { void devicesQuery.refetch(); if (canReviewRequests) void requestsQuery.refetch(); if (canViewSessions) void sessionsQuery.refetch() }} />
           <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
         </>
       }
@@ -82,7 +86,7 @@ export function DevicesPage() {
       {error ? <p className="p-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
       {canReviewRequests ? (
         <section className="p-2">
-          <h3 className="mb-2 text-[12px] font-semibold">Pending employee device / network requests</h3>
+          <h3 className="mb-2 text-[12px] font-semibold">Pending employee device / network requests ({requestsQuery.data?.pending_count ?? 0})</h3>
           {requestsQuery.isLoading ? <p className="text-[12px]">Loading requests…</p> : null}
           {requestsQuery.isError ? <p className="text-[12px] text-[var(--ui-danger)]">Unable to load access requests.</p> : null}
           {(requestsQuery.data?.requests ?? []).length === 0 && !requestsQuery.isLoading && !requestsQuery.isError ? <p className="text-[12px] text-[var(--ui-text-muted)]">No pending requests.</p> : null}
@@ -97,6 +101,26 @@ export function DevicesPage() {
               </div>
             ))}
           </div>
+        </section>
+      ) : null}
+      {canViewSessions ? (
+        <section className="p-2">
+          <h3 className="mb-2 text-[12px] font-semibold">Recent device / IP activity</h3>
+          {sessionsQuery.isLoading ? <p className="text-[12px] text-[var(--ui-text-muted)]">Loading activity…</p> : null}
+          {sessionsQuery.isError ? <p className="text-[12px] text-[var(--ui-danger)]">Unable to load session activity.</p> : null}
+          {!sessionsQuery.isLoading && !sessionsQuery.isError ? (
+            <PosDataGrid
+              columns={[
+                { key: 'employee', header: 'Employee', render: (row) => row.membership?.username ?? '—' },
+                { key: 'device', header: 'Device', render: (row) => row.device?.name ?? '—' },
+                { key: 'ip', header: 'IP address', render: (row) => row.ip_address ?? '—' },
+                { key: 'seen', header: 'Last seen', render: (row) => row.last_seen_at ?? '—' },
+                { key: 'status', header: 'Status', render: (row) => row.revoked_at ? 'Revoked' : 'Active' },
+              ]}
+              rows={(sessionsQuery.data ?? []).slice(0, 25)}
+              rowKey={(row) => row.ulid}
+            />
+          ) : null}
         </section>
       ) : null}
       <PosDataGrid
