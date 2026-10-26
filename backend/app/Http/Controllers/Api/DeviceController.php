@@ -16,6 +16,7 @@ use App\Security\TenantEntitlementService;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DeviceController extends Controller
 {
@@ -62,6 +63,32 @@ class DeviceController extends Controller
                 ->orderByDesc('registered_at')
                 ->get()
         );
+    }
+
+    public function accessRequests(TenantContext $tenantContext): JsonResponse
+    {
+        $this->authorize('viewAny', Device::class);
+
+        $rows = DB::table('device_access_requests as access')
+            ->join('memberships as member', function ($join) {
+                $join->on('member.id', '=', 'access.membership_id')
+                    ->on('member.tenant_id', '=', 'access.tenant_id');
+            })
+            ->join('devices as device', function ($join) {
+                $join->on('device.id', '=', 'access.device_id')
+                    ->on('device.tenant_id', '=', 'access.tenant_id');
+            })
+            ->where('access.tenant_id', $tenantContext->tenantId())
+            ->where('access.status', 'pending')
+            ->orderByDesc('access.created_at')
+            ->limit(100)
+            ->get([
+                'access.ulid', 'member.ulid as membership_ulid',
+                'member.username', 'device.ulid as device_ulid',
+                'device.name as device_name', 'access.created_at',
+            ]);
+
+        return response()->json(['requests' => $rows]);
     }
 
     public function approve(Request $request, string $deviceUlid, TenantContext $tenantContext): DeviceResource
