@@ -6,6 +6,7 @@ import {
   approvePlatformTenantDevice,
   revokePlatformTenantDevice,
   fetchPlatformTenantDevices,
+  fetchPlatformTenantActivity,
   assignPlatformSubscription,
   deactivateTenantAdmin,
   deletePlatformTenant,
@@ -26,7 +27,7 @@ import { CredentialsOnceModal } from '../../components/platform/CredentialsOnceM
 import { UiSelect } from '../../components/ui/UiSelect'
 import { usePlatformAuth } from '../../features/platform/PlatformAuthProvider'
 
-const TABS = ['Overview', 'Admin Users', 'Devices', 'Subscription', 'Features', 'Limits'] as const
+const TABS = ['Overview', 'Admin Users', 'Devices', 'Login Activity', 'Subscription', 'Features', 'Limits'] as const
 
 export function PlatformTenantDetailPage() {
   const { tenantUlid = '' } = useParams()
@@ -41,6 +42,11 @@ export function PlatformTenantDetailPage() {
     queryKey: ['platform', 'tenant', tenantUlid],
     queryFn: () => fetchPlatformTenant(tenantUlid),
     enabled: tenantUlid !== '',
+  })
+  const activityQuery = useQuery({
+    queryKey: ['platform', 'tenant', tenantUlid, 'login-activity'],
+    queryFn: () => fetchPlatformTenantActivity(tenantUlid),
+    enabled: tenantUlid !== '' && tab === 'Login Activity',
   })
   const devicesQuery = useQuery({
     queryKey: ['platform', 'tenant', tenantUlid, 'devices'],
@@ -378,6 +384,31 @@ export function PlatformTenantDetailPage() {
             </table>
           </div>
           {devicesQuery.data?.devices.length === 0 ? <p className="pt-3">No registered devices for this tenant.</p> : null}
+        </div>
+      ) : null}
+
+      {tab === 'Login Activity' ? (
+        <div className="rounded border border-slate-300 bg-white p-3 text-[12px]">
+          <div className="mb-2 flex justify-between"><strong>Recent login activity (up to 100 sessions and 100 events)</strong>
+            <button type="button" className="rounded border px-3 py-1" onClick={() => void activityQuery.refetch()}>Refresh</button></div>
+          <p className="mb-2 text-slate-600">IP addresses and browser user agents are recorded by the server. IP is not an exact physical location.</p>
+          {activityQuery.isLoading ? <p>Loading activity…</p> : null}
+          {activityQuery.isError ? <p role="alert">Unable to load activity or insufficient audit permission.</p> : null}
+          <strong>Sessions</strong>
+          <div className="overflow-x-auto"><table className="w-full text-left">
+            <thead><tr><th>Device</th><th>IP</th><th>Browser</th><th>Last seen</th><th>State</th></tr></thead>
+            <tbody>{(activityQuery.data?.sessions ?? []).map(session => <tr className="border-t" key={session.ulid}>
+              <td>{session.device?.name ?? 'Unknown'}</td><td>{session.ip_address ?? '—'}</td>
+              <td className="max-w-64 break-all">{session.user_agent ?? '—'}</td>
+              <td>{session.last_seen_at ?? '—'}</td><td>{session.revoked_at ? 'Revoked' : 'Recorded session'}</td>
+            </tr>)}</tbody></table></div>
+          <strong className="mt-4 block">Security events</strong>
+          <div className="overflow-x-auto"><table className="w-full text-left">
+            <thead><tr><th>Event</th><th>IP</th><th>Browser</th><th>Time</th></tr></thead>
+            <tbody>{(activityQuery.data?.events ?? []).map(event => <tr className="border-t" key={event.ulid}>
+              <td>{event.event}</td><td>{event.ip_address ?? '—'}</td>
+              <td className="max-w-64 break-all">{event.user_agent ?? '—'}</td><td>{event.occurred_at ?? '—'}</td>
+            </tr>)}</tbody></table></div>
         </div>
       ) : null}
 
