@@ -16,6 +16,7 @@ use App\Models\Warehouse;
 use App\Security\AuditLogger;
 use App\Security\DeviceCredentialService;
 use App\Security\DeviceNetworkTrust;
+use App\Security\EmployeeDeviceApprovalNotifier;
 use App\Security\PrivilegedAccess;
 use App\Security\TenantEntitlementService;
 use App\Support\IdentityNormalizer;
@@ -222,7 +223,7 @@ class LoginUserAction
             ->exists();
 
         if (! $existing) {
-            DB::table('device_access_requests')->insertOrIgnore([
+            $inserted = DB::table('device_access_requests')->insertOrIgnore([
                 'ulid' => (string) Str::ulid(),
                 'tenant_id' => $membership->tenant_id,
                 'membership_id' => $membership->id,
@@ -232,6 +233,10 @@ class LoginUserAction
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            if ($inserted === 0) {
+                return;
+            }
+            app(EmployeeDeviceApprovalNotifier::class)->notifyOwners($membership, $device->name);
             $this->audit->record('DEVICE_ACCESS_REQUESTED', [
                 'tenant_id' => $membership->tenant_id,
                 'actor_user_id' => $membership->user_id,
