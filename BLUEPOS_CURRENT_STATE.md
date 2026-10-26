@@ -1,3 +1,12 @@
+## LIVE UPDATE — 2026-10-26 (device row-lock test awaiting local run)
+
+- Last user-provided results: `PostgreSqlConcurrencyConnectionTest.php` 1 passed / 6 assertions; `AuthenticationTest.php` 30 passed / 159 assertions.
+- New commit `5d15492e`: second PostgreSQL probe verifies actual `devices` row lock conflicts (NOWAIT SQLSTATE `55P03`) between independent connections, and lock release after rollback. Uses `bluepos_test` committed isolated fixture and finally cleanup. **Not yet run.** No migrations or production changes.
+- Next: user pull + run both focused test files. After PASS, actual simultaneous approve/reject HTTP workflow with committed fixture, cross-process coordination and bounded waits remains pending; do not present row-lock probe as end-to-end race coverage.
+- `BLUEPOS_DEVELOPMENT_LOG.md` updated; `main` untouched.
+
+---
+
 ## LIVE UPDATE — 2026-10-26 (two-connection probe pending validation)
 
 - User locally confirmed **30/30 AuthenticationTest tests, 159 assertions** after `e490a322`.
