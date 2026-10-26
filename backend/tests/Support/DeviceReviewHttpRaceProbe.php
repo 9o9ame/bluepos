@@ -58,11 +58,12 @@ $owner = \App\Models\Membership::query()->where('tenant_id', $tenant->id)
 if (! $owner->hasOwnerAuthority()) {
     throw new RuntimeException('The selected test tenant has no active owner authority.');
 }
-$activeDevice = app(\App\Security\DeviceCredentialService::class)
-    ->locate(\Illuminate\Http\Request::create('/', 'GET', server: [
-        'HTTP_'.strtoupper(str_replace('-', '_', \App\Security\DeviceCredentialService::HEADER))
-            => $values['BLUEPOS_RACE_DEVICE_CREDENTIAL'],
-    ]));
+$credentialRequest = \Illuminate\Http\Request::create('/', 'GET');
+$credentialRequest->headers->set(
+    \App\Security\DeviceCredentialService::HEADER,
+    $values['BLUEPOS_RACE_DEVICE_CREDENTIAL']
+);
+$activeDevice = app(\App\Security\DeviceCredentialService::class)->locate($credentialRequest);
 if (! $activeDevice || (int) $activeDevice->tenant_id !== (int) $tenant->id || ! $activeDevice->isActive()) {
     throw new RuntimeException('Provided owner device credential must resolve to a trusted active device in this test tenant.');
 }
