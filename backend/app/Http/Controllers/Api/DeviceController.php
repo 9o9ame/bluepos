@@ -184,37 +184,35 @@ class DeviceController extends Controller
             $device = $this->findTenantDevice($tenantContext, $deviceUlid);
             $device = Device::query()->whereKey($device->id)->lockForUpdate()->firstOrFail();
             if (DB::table('device_access_requests')
-            ->where('tenant_id', $tenantContext->tenantId())
-            ->where('device_id', $device->id)
-            ->exists()) {
-            throw new ApiException(
-                'EMPLOYEE_ACCESS_REVIEW_REQUIRED',
-                'Review the employee-specific device access request instead.',
-                409
-            );
-        }
-
-
+                ->where('tenant_id', $tenantContext->tenantId())
+                ->where('device_id', $device->id)
+                ->exists()) {
+                throw new ApiException(
+                    'EMPLOYEE_ACCESS_REVIEW_REQUIRED',
+                    'Review the employee-specific device access request instead.',
+                    409
+                );
+            }
 
             if ($device->status !== DeviceStatus::Active) {
-            app(TenantEntitlementService::class)->assertCanRegisterDevice($tenantContext->tenant());
-        }
+                app(TenantEntitlementService::class)->assertCanRegisterDevice($tenantContext->tenant());
+            }
 
             $device->status = DeviceStatus::Active;
-        $device->approved_at = now();
-        $device->approved_by = $tenantContext->userId();
-        $device->tenant_id = $tenantContext->tenantId();
-        if (isset($data['name'])) {
-            $device->name = $data['name'];
-        }
-        if (! empty($data['branch_ulid'])) {
-            $branch = Branch::query()->forTenant($tenantContext->tenantId())->where('ulid', $data['branch_ulid'])->firstOrFail();
-            $device->branch_id = $branch->id;
-        }
-        if (! empty($data['warehouse_ulid'])) {
-            $warehouse = Warehouse::query()->forTenant($tenantContext->tenantId())->where('ulid', $data['warehouse_ulid'])->firstOrFail();
-            $device->warehouse_id = $warehouse->id;
-        }
+            $device->approved_at = now();
+            $device->approved_by = $tenantContext->userId();
+            $device->tenant_id = $tenantContext->tenantId();
+            if (isset($data['name'])) {
+                $device->name = $data['name'];
+            }
+            if (! empty($data['branch_ulid'])) {
+                $branch = Branch::query()->forTenant($tenantContext->tenantId())->where('ulid', $data['branch_ulid'])->firstOrFail();
+                $device->branch_id = $branch->id;
+            }
+            if (! empty($data['warehouse_ulid'])) {
+                $warehouse = Warehouse::query()->forTenant($tenantContext->tenantId())->where('ulid', $data['warehouse_ulid'])->firstOrFail();
+                $device->warehouse_id = $warehouse->id;
+            }
             $device->save();
 
         });
