@@ -13,17 +13,17 @@ class AuthenticationTest extends TestCase
     public function test_owner_verified_network_fingerprint_requires_reverification_on_change(): void
     {
         $this->signInOwner('owner-ip-trust')->assertOk();
-        $device = app(\\App\\Security\\DeviceCredentialService::class)->locate(request());
-        $this->assertNotNull($device);
-
-        $network = app(\\App\\Security\\DeviceNetworkTrust::class);
-        $this->assertSame(64, strlen((string) $network->fingerprint(request())));
-        $device->trusted_ip_hash = $network->fingerprint(request());
+        $tenantId = \App\Models\Tenant::query()->where('code', $this->tenantCode('owner-ip-trust'))->value('id');
+        $device = \App\Models\Device::query()->where('tenant_id', $tenantId)->firstOrFail();
+        $network = app(\App\Security\DeviceNetworkTrust::class);
+        $request = \Illuminate\Http\Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '192.0.2.4']);
+        $device->trusted_ip_hash = $network->fingerprint($request);
         $device->save();
 
-        $this->assertFalse($network->requiresReverification($device, request()));
+        $this->assertSame(64, strlen((string) $device->trusted_ip_hash));
+        $this->assertFalse($network->requiresReverification($device, $request));
 
-        $otherNetwork = \\Illuminate\\Http\\Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '198.51.100.14']);
+        $otherNetwork = \Illuminate\Http\Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '198.51.100.14']);
         $this->assertTrue($network->requiresReverification($device, $otherNetwork));
     }
 
