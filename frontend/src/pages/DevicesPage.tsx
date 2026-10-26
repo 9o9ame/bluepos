@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, X } from 'lucide-react'
 import { fetchBranches } from '../api/branches'
-import { approveDevice, fetchDevices, revokeDevice } from '../api/devices'
+import { approveDevice, fetchDevices, revokeDevice, fetchDeviceAccessRequests, reviewDeviceAccessRequest } from '../api/devices'
 import { ApiClientError } from '../api/client'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
@@ -16,6 +16,8 @@ export function DevicesPage() {
   const canApprove = useCan('devices.approve')
   const canRevoke = useCan('devices.revoke')
   const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: fetchDevices })
+  const requestsQuery = useQuery({ queryKey: ['device-access-requests'], queryFn: fetchDeviceAccessRequests, enabled: canApprove })
+  const [reviewing, setReviewing] = useState<string | null>(null)
   const branchesQuery = useQuery({ queryKey: ['branches'], queryFn: fetchBranches })
   const [error, setError] = useState<string | null>(null)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
@@ -23,6 +25,7 @@ export function DevicesPage() {
   useWorkspaceHandlers({
     refresh: () => {
       void devicesQuery.refetch()
+      if (canApprove) void requestsQuery.refetch()
     },
   })
 
@@ -33,6 +36,22 @@ export function DevicesPage() {
       await queryClient.invalidateQueries({ queryKey: ['devices'] })
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Unable to approve device.')
+    }
+  }
+
+  async function onReview(ulid: string, decision: 'approved' | 'rejected') {
+    setError(null)
+    setReviewing(ulid)
+    try {
+      await reviewDeviceAccessRequest(ulid, decision)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['device-access-requests'] }),
+        queryClient.invalidateQueries({ queryKey: ['devices'] }),
+      ])
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : 'Unable to review access request.')
+    } finally {
+      setReviewing(null)
     }
   }
 
@@ -51,13 +70,32 @@ export function DevicesPage() {
       title="Devices"
       toolbar={
         <>
-          <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => void devicesQuery.refetch()} />
+          <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => { void devicesQuery.refetch(); if (canApprove) void requestsQuery.refetch() }} />
           <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
         </>
       }
       flush
     >
       {error ? <p className="p-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
+      {canApprove ? (
+        <section className="p-2">
+          <h3 className="mb-2 text-[12px] font-semibold">Pending employee device / network requests</h3>
+          {requestsQuery.isLoading ? <p className="text-[12px]">Loading requests…</p> : null}
+          {requestsQuery.isError ? <p className="text-[12px] text-[var(--ui-danger)]">Unable to load access requests.</p> : null}
+          {(requestsQuery.data?.requests ?? []).length === 0 && !requestsQuery.isLoading && !requestsQuery.isError ? <p className="text-[12px] text-[var(--ui-text-muted)]">No pending requests.</p> : null}
+          <div className="flex flex-col gap-1">
+            {(requestsQuery.data?.requests ?? []).map((item) => (
+              <div key={item.ulid} className="flex flex-wrap items-center justify-between gap-2 border border-[var(--ui-border)] p-2 text-[12px]">
+                <span><strong>{item.username}</strong> — {item.device_name} · {item.created_at}</span>
+                <span className="flex gap-1">
+                  <DesktopButton label="Approve" onClick={() => void onReview(item.ulid, 'approved')} disabled={reviewing !== null} />
+                  <DesktopButton label="Reject" variant="danger" onClick={() => void onReview(item.ulid, 'rejected')} disabled={reviewing !== null} />
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
       <PosDataGrid
         columns={[
           { key: 'name', header: 'Name', render: (row) => row.name },
