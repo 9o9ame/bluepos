@@ -43,8 +43,9 @@ class PlatformTenantDeviceController extends Controller
             if ($device->status !== DeviceStatus::Pending) {
                 throw new ApiException('DEVICE_NOT_PENDING', 'Only pending devices can be approved.', 409);
             }
-            $entitlements->assertOperational($tenant);
-            $entitlements->assertCanRegisterDevice($tenant);
+            $lockedTenant = Tenant::query()->whereKey($tenant->id)->lockForUpdate()->firstOrFail();
+            $entitlements->assertOperational($lockedTenant);
+            $entitlements->assertCanRegisterDevice($lockedTenant);
             $device->status = DeviceStatus::Active;
             $device->approved_at = now();
             // Platform actors are not tenant User records. Store their identity in platform audit.
