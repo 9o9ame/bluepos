@@ -1,3 +1,12 @@
+## LIVE UPDATE — 2026-10-26 (batched security regressions awaiting validation)
+
+- User-confirmed baseline: Authentication 31/31 PASS, 166 assertions; PostgreSQL concurrency 3/3 PASS, 19 assertions.
+- Latest code `737e16f0` (preceded by `dc67d651`): two added authentication feature tests group negative cases: suspended employee, revoked device, invalid/missing review decision and owner-membership invalid request. **Not locally validated**; expected AuthenticationTest 33 tests. No production changes or migrations.
+- Run combined pull plus AuthenticationTest and PostgreSqlConcurrencyConnectionTest on `bluepos_test`. Keep `feature/superadmin` isolated; main untouched.
+- Still pending: actual simultaneous authenticated HTTP approve/reject race, offline sync E2E and controlled legacy policy migration. Existing PostgreSQL probes plus sequential access review tests do not prove HTTP concurrency.
+
+---
+
 ## LIVE CHECKPOINT — 2026-10-26 (tests confirmed; HTTP race harness still pending)
 
 - User validated after `27bb8c9f`: `AuthenticationTest.php` **31 passed / 166 assertions**, `PostgreSqlConcurrencyConnectionTest.php` **3 passed / 19 assertions**.
