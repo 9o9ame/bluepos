@@ -85,6 +85,7 @@ class AuthenticationTest extends TestCase
         ])->assertOk();
 
         $response = $this->getJson('/api/devices/access-requests')->assertOk()->assertJsonCount(0, 'requests');
+        $response->assertJsonPath('pending_count', 0);
         $this->assertNoInternalIds($response->json());
     }
 
