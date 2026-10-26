@@ -88,6 +88,45 @@ class AuthenticationTest extends TestCase
         $this->assertNoInternalIds($response->json());
     }
 
+    public function test_tenant_owner_can_review_only_own_pending_employee_access_requests(): void
+    {
+        $first = $this->provisionOwner('review-own-a');
+        $second = $this->provisionOwner('review-own-b');
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $second->tenant->id,
+            'name' => 'Second tenant terminal',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+        $requestUlid = (string) \Illuminate\Support\Str::ulid();
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => $requestUlid,
+            'tenant_id' => $second->tenant->id,
+            'membership_id' => $second->membership->id,
+            'device_id' => $device->id,
+            'network_hash' => hash('sha256', 'review-network'),
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->attachTrustedDevice((int) $first->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('review-own-a'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->postJson('/api/devices/access-requests/'.$requestUlid.'/review', [
+            'decision' => 'approved',
+        ])->assertNotFound();
+
+        $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $requestUlid)->value('status'));
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
