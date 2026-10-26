@@ -418,6 +418,32 @@ class AuthenticationTest extends TestCase
         $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
     }
 
+    public function test_platform_device_activity_requires_platform_audit_authorization_and_exposes_ulids(): void
+    {
+        $this->getJson('/api/platform/security/device-activity')->assertUnauthorized();
+
+        $owner = $this->provisionOwner('platform-device-overview');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('platform-device-overview'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->createPlatformAdmin('device-overview-admin');
+        $this->signInPlatformAdmin('device-overview-admin');
+        $response = $this->getJson('/api/platform/security/device-activity')->assertOk();
+        $this->assertIsArray($response->json('sessions'));
+        $this->assertNoInternalIds($response->json());
+        $this->assertContains($owner->tenant->ulid, array_column(
+            array_filter($response->json('sessions'), fn ($session) => $session['tenant'] !== null),
+            'tenant'
+        ) === [] ? [] : array_map(
+            fn ($session) => $session['tenant']['ulid'],
+            array_filter($response->json('sessions'), fn ($session) => $session['tenant'] !== null)
+        ));
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
