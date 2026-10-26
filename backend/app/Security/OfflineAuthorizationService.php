@@ -112,7 +112,11 @@ class OfflineAuthorizationService
             throw new ApiException('OFFLINE_AUTH_EXPIRED', 'Offline authorization has expired. Reconnect to continue.', 403);
         }
 
-        if ((int) $lease->device_id !== (int) $device->id || (int) $lease->membership_id !== (int) $membership->id) {
+        if ((int) $lease->device_id !== (int) $device->id
+            || (int) $lease->membership_id !== (int) $membership->id
+            || ($device->branch_id !== null && (int) $device->branch_id !== (int) $lease->branch_id)
+            || ! \App\Models\Branch::query()->where('tenant_id', $lease->tenant_id)
+                ->whereKey($lease->branch_id)->exists()) {
             throw new ApiException('OFFLINE_AUTH_EXPIRED', 'Offline authorization has expired. Reconnect to continue.', 403);
         }
     }
