@@ -1,3 +1,12 @@
+## LIVE CHECKPOINT — 2026-10-26 (31 authentication + 3 concurrency PASS)
+
+- User validated at `68e1b88c`: `AuthenticationTest.php` **31/31 passed, 166 assertions**; `PostgreSqlConcurrencyConnectionTest.php` **3/3 passed, 19 assertions**.
+- No new backend implementation in this checkpoint. Genuine simultaneous HTTP `POST /api/devices/access-requests/{requestUlid}/review` approve/reject is **still pending**; existing tests cover SQL lock contention and sequential replay only.
+- Next task: isolated worker-based HTTP race harness with committed tenant/member/device/request fixtures, scoped cleanup, synchronization and bounded timeouts. Test only on `bluepos_test`, never dev/persistent DB; document actual results and next action.
+- Log updated; `main` untouched.
+
+---
+
 ## LIVE CHECKPOINT — 2026-10-26 (approved-review replay test awaiting validation)
 
 - Last user local validation: PostgreSQL concurrency **3/3 passed, 19 assertions**; AuthenticationTest **30/30 passed, 159 assertions**.
