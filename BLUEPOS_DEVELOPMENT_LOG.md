@@ -123,3 +123,10 @@
 - `67525068`: regression issues valid lease, reassigns device to a different tenant-owned branch, then expects `OFFLINE_AUTH_EXPIRED`. Expected AuthenticationTest **36 tests**, not yet verified locally.
 - Inspection: backend `routes/api.php` does not currently expose an offline sync endpoint; therefore offline *sync E2E* cannot be claimed complete or safely invented without inspecting existing offline client workflow/domain integration.
 - Roadmap: HTTP approve/reject race **pending**; offline authorization hardening **advanced**, offline sync E2E **pending**; legacy device rollout **pending**; final regression/review **pending**. No migrations or UI changes.
+
+### 2026-10-26 — Offline branch-state enforcement batch (awaiting local test)
+- Last user-confirmed baseline: AuthenticationTest **35 tests / 191 assertions PASS** and PostgreSqlConcurrencyConnectionTest **3 tests / 19 assertions PASS**. Branch-reassignment regression added before this batch has not yet been validated by user.
+- Code commit `6986c9eb`: `OfflineAuthorizationService` checks fresh tenant-owned branch status is active before issuing a lease and during validation; denies inactive branches, while retaining reassignment and ownership checks.
+- Regression commit `680177f5`: previously valid lease fails after branch deactivation; subsequent issuance blocked; no second lease created.
+- Together with immediately preceding `223eae30`/`67525068` reassignment batch, expected `AuthenticationTest.php` count **37**, PostgreSQL concurrency **3**. Actual tests pending; no migrations/UI changes.
+- Roadmap status: foundation verified; real simultaneous authenticated HTTP review race PENDING; offline lease guards advanced but offline sync E2E PENDING; legacy POS managed-access rollout PENDING; final security review PENDING. Main untouched.
