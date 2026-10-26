@@ -6,6 +6,7 @@ import { PlatformAccountProfilePage } from '../pages/platform/PlatformAccountPro
 import { PlatformAccountSecurityPage } from '../pages/platform/PlatformAccountSecurityPage'
 import { PlatformAdminsPage } from '../pages/platform/PlatformAdminsPage'
 import { PlatformAuditPage } from '../pages/platform/PlatformAuditPage'
+import { PlatformDeviceActivityPage } from '../pages/platform/PlatformDeviceActivityPage'
 import { PlatformChangePasswordPage } from '../pages/platform/PlatformChangePasswordPage'
 import { PlatformDashboardPage } from '../pages/platform/PlatformDashboardPage'
 import { PlatformForgotPasswordPage } from '../pages/platform/PlatformForgotPasswordPage'
@@ -59,6 +60,7 @@ export function PlatformRoutes() {
             <Route path="plans" element={<PlatformPlansPage />} />
             <Route path="plans/:planUlid" element={<PlatformPlanEditorPage />} />
             <Route path="security/audit" element={<PlatformAuditPage />} />
+            <Route path="security/device-activity" element={<PlatformDeviceActivityPage />} />
             <Route path="admins" element={<PlatformAdminsPage />} />
             <Route path="access/users" element={<PlatformUsersPage />} />
             <Route path="access/roles" element={<PlatformRolesPage />} />
