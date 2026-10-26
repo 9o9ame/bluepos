@@ -474,6 +474,26 @@ class AuthenticationTest extends TestCase
         $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
     }
 
+    public function test_offline_lease_issuance_rejects_disabled_tenant(): void
+    {
+        $owner = $this->provisionOwner('offline-disabled-tenant');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $owner->tenant->status = \App\Enums\TenantStatus::Suspended;
+        $owner->tenant->save();
+
+        try {
+            app(\App\Security\OfflineAuthorizationService::class)
+                ->issue($owner->membership, $device, $owner->branch, []);
+            $this->fail('A disabled tenant was issued an offline lease.');
+        } catch (\App\Exceptions\ApiException $exception) {
+            $this->assertSame('TENANT_DISABLED', $exception->errorKey);
+        }
+
+        $this->assertSame(0, \App\Models\OfflineAuthorizationLease::query()
+            ->where('tenant_id', $owner->tenant->id)->count());
+    }
+
     public function test_offline_lease_issuance_rejects_another_tenants_branch(): void
     {
         $first = $this->provisionOwner('offline-branch-first');
