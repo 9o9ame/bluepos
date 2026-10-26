@@ -26,6 +26,9 @@ TestDatabaseGuard::assertApplication();
 if (config('session.driver') === 'array') {
     throw new RuntimeException('Use persistent sessions (file/database) in the test HTTP server, not SESSION_DRIVER=array.');
 }
+if (config('database.default') !== 'pgsql' || \Illuminate\Support\Facades\DB::selectOne('select current_database() as name')->name !== 'bluepos_test') {
+    throw new RuntimeException('Refusing HTTP race probe: expected real PostgreSQL database bluepos_test.');
+}
 
 if (! extension_loaded('curl')) {
     throw new RuntimeException('PHP curl extension is required for the HTTP race probe.');
@@ -181,6 +184,9 @@ foreach ([0, 1] as $worker) {
     }
     preg_match_all('/^Set-Cookie:\s*([^=;\s]+=[^;\r\n]*)/mi', $raw, $matches);
     $cookie = implode('; ', $matches[1] ?? []);
+    if (! preg_match('/(?:^|;\\s*)'.preg_quote((string) config('session.cookie'), '/').'=/i', $cookie)) {
+        throw new RuntimeException('Login did not establish the expected Laravel session cookie.');
+    }
     if ($cookie === '') {
         throw new RuntimeException('No owner session cookie was issued to worker '.($worker + 1).'.');
     }
