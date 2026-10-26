@@ -10,6 +10,23 @@ class AuthenticationTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_owner_verified_network_fingerprint_requires_reverification_on_change(): void
+    {
+        $this->signInOwner('owner-ip-trust')->assertOk();
+        $device = app(\\App\\Security\\DeviceCredentialService::class)->locate(request());
+        $this->assertNotNull($device);
+
+        $network = app(\\App\\Security\\DeviceNetworkTrust::class);
+        $this->assertSame(64, strlen((string) $network->fingerprint(request())));
+        $device->trusted_ip_hash = $network->fingerprint(request());
+        $device->save();
+
+        $this->assertFalse($network->requiresReverification($device, request()));
+
+        $otherNetwork = \\Illuminate\\Http\\Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '198.51.100.14']);
+        $this->assertTrue($network->requiresReverification($device, $otherNetwork));
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
