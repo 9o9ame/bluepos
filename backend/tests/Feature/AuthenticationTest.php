@@ -148,6 +148,44 @@ class AuthenticationTest extends TestCase
         );
     }
 
+    public function test_generic_device_approval_cannot_bypass_employee_specific_review(): void
+    {
+        $session = $this->provisionOwner('generic-bypass');
+        $this->attachTrustedDevice((int) $session->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('generic-bypass'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $session->tenant->id,
+            'name' => 'Pending employee device',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+        $requestUlid = (string) \Illuminate\Support\Str::ulid();
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => $requestUlid,
+            'tenant_id' => $session->tenant->id,
+            'membership_id' => $session->membership->id,
+            'device_id' => $device->id,
+            'network_hash' => hash('sha256', 'pending-staff-network'),
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->postJson('/api/devices/'.$device->ulid.'/approve')
+            ->assertStatus(409)
+            ->assertJsonPath('error.key', 'EMPLOYEE_ACCESS_REVIEW_REQUIRED');
+        $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
+        $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $requestUlid)->value('status'));
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
