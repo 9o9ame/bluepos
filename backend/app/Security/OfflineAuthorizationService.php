@@ -34,7 +34,8 @@ class OfflineAuthorizationService
 
         return DB::transaction(function () use ($membership, $device, $branch, $permissionKeys, $hours): OfflineAuthorizationLease {
             // Serialize issuance with tenant device access reviews and device revocation.
-            \App\Models\Tenant::query()->whereKey($membership->tenant_id)->lockForUpdate()->firstOrFail();
+            $lockedTenant = \App\Models\Tenant::query()->whereKey($membership->tenant_id)->lockForUpdate()->firstOrFail();
+            app(TenantEntitlementService::class)->assertOperational($lockedTenant);
             $device = Device::query()->whereKey($device->id)->lockForUpdate()->firstOrFail();
             $membership = Membership::query()->with(['user', 'tenant'])
                 ->where('tenant_id', $membership->tenant_id)
