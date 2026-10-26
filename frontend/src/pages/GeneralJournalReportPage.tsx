@@ -35,6 +35,15 @@ export function GeneralJournalReportPage(){
   const paperRef=useRef<HTMLElement>(null)
   const options=useQuery({queryKey:['general-journal-options'],enabled:!preview,
     queryFn:()=>apiFetch<{document_types:string[]}>('/api/reports/accounting/general-journal/options')})
+  // Same as Trial Balance: posted, tenant/branch-scoped closing balances at To Date.
+  // Independent of journal voucher filters; never derive trial balances from preview rows.
+  const trialQuery=useQuery({
+    queryKey:['general-journal-trial-summary',to],
+    enabled:!preview && /^\\d{4}-\\d{2}-\\d{2}$/.test(to),
+    queryFn:()=>apiFetch<{totals:{debit:string;credit:string;difference:string;difference_side:string}}>('/api/reports/accounting/trial-balance/preview',{
+      method:'POST',body:JSON.stringify({as_of_date:to}),busy:'fetch',
+    }),
+  })
   const selected=preview?readPreviewSelection<Selection>(key):null
   const report=useQuery({queryKey:['general-journal-preview',selected],enabled:preview&&Boolean(selected),
     queryFn:()=>apiFetch<Result>('/api/reports/accounting/general-journal/preview',{
@@ -114,7 +123,19 @@ export function GeneralJournalReportPage(){
           {label(type)}</label>)}</div>
         <small>No selection means all posted voucher types.</small>
       </fieldset>
-    </div></div>
+    </div>
+      <div className="gj-trial-footer" aria-label="Trial Balance closing totals">
+        {trialQuery.isLoading ? <span role="status">Loading Trial totals…</span> :
+          trialQuery.isError ? <span role="alert">Unable to load Trial totals.</span> :
+          trialQuery.data ? <>
+            <div className="gj-trial-item"><strong>Trial (Dr)</strong><output>{amt(trialQuery.data.totals.debit)}</output></div>
+            <div className="gj-trial-item"><strong>Trial (Cr)</strong><output>{amt(trialQuery.data.totals.credit)}</output></div>
+            <div className="gj-trial-item"><strong>Diff ({trialQuery.data.totals.difference_side})</strong>
+              <output>{amt(trialQuery.data.totals.difference)}</output></div>
+            <span className="gj-trial-date">As of {to}</span>
+          </> : null}
+      </div>
+    </div>
     <div className="gj-actions"><UiButton variant="info" label="Preview" onClick={openPreview}
       disabled={!from||!to||from>to||(!!transactionFrom&&!!transactionTo&&Number(transactionFrom)>Number(transactionTo))}/>
       <UiButton variant="default" label="Close" onClick={closeActiveTab}/></div>
