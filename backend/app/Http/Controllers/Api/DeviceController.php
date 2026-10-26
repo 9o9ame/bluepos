@@ -199,7 +199,8 @@ class DeviceController extends Controller
 
         // Serialize generic approval with employee request creation/review on the same tenant lock.
         DB::transaction(function () use ($tenantContext, $deviceUlid, $data, &$device): void {
-            \App\Models\Tenant::query()->whereKey($tenantContext->tenantId())->lockForUpdate()->firstOrFail();
+            $lockedTenant = \App\Models\Tenant::query()
+                ->whereKey($tenantContext->tenantId())->lockForUpdate()->firstOrFail();
             $device = $this->findTenantDevice($tenantContext, $deviceUlid);
             $device = Device::query()->whereKey($device->id)->lockForUpdate()->firstOrFail();
             if (DB::table('device_access_requests')
@@ -214,7 +215,9 @@ class DeviceController extends Controller
             }
 
             if ($device->status !== DeviceStatus::Active) {
-                app(TenantEntitlementService::class)->assertCanRegisterDevice($tenantContext->tenant());
+                $entitlements = app(TenantEntitlementService::class);
+                $entitlements->assertOperational($lockedTenant);
+                $entitlements->assertCanRegisterDevice($lockedTenant);
             }
 
             $device->status = DeviceStatus::Active;
