@@ -109,3 +109,10 @@
 - Production commits: `dd4eaa30` `DeviceController::reviewAccessRequest` scopes final update by tenant + `status=pending`, requires exactly one affected row, rejects conflicting/repeated decision with 409 transaction rollback. `ee78cd19` `OfflineAuthorizationService::assertValid` rechecks actual tenant operational status, denying old leases on suspension.
 - Test commit: `1c62e921` adds valid-then-suspended tenant offline lease regression to `AuthenticationTest.php`. Expected **34 authentication tests**; **not run locally**. The earlier 3 PostgreSQL concurrency tests remain unchanged.
 - No migrations or UI changes. Main untouched. Actual two-worker HTTP review race and offline sync E2E still pending; do not infer they pass from this batch.
+
+### 2026-10-26 — Offline authorization disabled-user guard (combined security work; pending local validation)
+- Last user verified: AuthenticationTest **34/34, 188 assertions**, PostgreSQL concurrency **3/3, 19 assertions**.
+- `c777101e`: `OfflineAuthorizationService` checks freshly loaded user account status during issuance and validation, and validates lease.user_id equals membership.user_id. Suspended/nonoperational tenant guard from prior batch retained.
+- `5c93b7d9`: regression validates a disabled user's existing lease becomes invalid and subsequent issuance cannot create another lease.
+- Production + test files changed; no migrations/UI changes. Local tests not yet run; expected **35 AuthenticationTest** + **3 PostgreSQL concurrency**.
+- Progress by milestone: Device authorization/lease hardening implemented and tested to prior baseline, new disabled-user guard pending validation. Actual two-worker HTTP review race NOT complete. Offline sync E2E NOT complete. Controlled legacy POS migration NOT complete. Final regression/review NOT complete.
