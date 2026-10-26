@@ -35,6 +35,21 @@ class PlatformTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_platform_login_activity_is_tenant_scoped_and_has_no_internal_ids(): void
+    {
+        $first = $this->provisionOwner('plat-activity-one')->tenant;
+        $second = $this->provisionOwner('plat-activity-two')->tenant;
+        $this->signInPlatformAdmin('plat-activity-admin');
+
+        $response = $this->getJson('/api/platform/tenants/'.$first->ulid.'/login-activity')
+            ->assertOk()->assertJsonStructure(['sessions', 'events']);
+        $this->assertNoInternalIds($response->json());
+        $other = $this->getJson('/api/platform/tenants/'.$second->ulid.'/login-activity')
+            ->assertOk()->assertJsonStructure(['sessions', 'events']);
+        $this->assertNoInternalIds($other->json());
+        $this->getJson('/api/platform/tenants/invalid/login-activity')->assertNotFound();
+    }
+
     public function test_platform_device_approval_is_tenant_scoped_and_audited(): void
     {
         $first = $this->provisionOwner('plat-dev-first')->tenant;
