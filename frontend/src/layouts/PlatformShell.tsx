@@ -105,6 +105,7 @@ export function PlatformShell() {
             </div>
           ) : null}
           {canAudit ? <NavItem to="/platform/security/audit" label="Audit" /> : null}
+          {canAudit ? <NavItem to="/platform/security/device-activity" label="Device Activity" /> : null}
           {canSettings ? <NavItem to="/platform/settings" label="Settings" /> : null}
         </nav>
         <main className="platform-main min-w-0 flex-1 overflow-auto p-4">
