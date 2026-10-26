@@ -220,10 +220,23 @@ class AuthController extends Controller
             throw new ApiException('MFA_INVALID', 'The verification code is invalid.', 403);
         }
 
+        $membership = $challenge->membership;
+        $device = $challenge->device;
+        if (! $membership || ! $membership->user || ! $membership->tenant || ! $device
+            || (int) $device->tenant_id !== (int) $membership->tenant_id
+            || $device->status === DeviceStatus::Revoked || $device->status === DeviceStatus::Disabled) {
+            throw new ApiException('MFA_INVALID', 'The verification request is no longer valid.', 403);
+        }
+
+        // Only the tenant owner may self-approve a new device through email OTP.
+        // Staff devices must first be approved through the tenant's Devices workflow.
+        if ($device->status === DeviceStatus::Pending && ! $membership->hasOwnerAuthority()) {
+            throw new ApiException('DEVICE_NOT_APPROVED', 'Your tenant administrator must approve this device.', 403);
+        }
+
         $challenge->consumed_at = now();
         $challenge->save();
 
-        $device = $challenge->device;
         if ($device) {
             $device->status = DeviceStatus::Active;
             $device->approved_at = now();
