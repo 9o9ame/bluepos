@@ -27,6 +27,33 @@ class AuthenticationTest extends TestCase
         $this->assertTrue($network->requiresReverification($device, $otherNetwork));
     }
 
+    public function test_non_owner_pending_device_requires_tenant_approval_not_email_otp(): void
+    {
+        $this->signInOwner('staff-pending')->assertOk();
+        $this->restrictCurrentMembershipWithoutPermission('devices.approve');
+        $this->withoutDevice();
+
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('staff-pending'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
+    }
+
+    public function test_tenant_cannot_approve_unassigned_device(): void
+    {
+        $this->signInOwner('device-unassigned')->assertOk();
+        $device = \App\Models\Device::query()->create([
+            'name' => 'Unassigned device',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'unused',
+            'registered_at' => now(),
+        ]);
+
+        $this->postJson('/api/devices/'.$device->ulid.'/approve')->assertNotFound();
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
