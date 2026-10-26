@@ -58,10 +58,13 @@ $owner = \App\Models\Membership::query()->where('tenant_id', $tenant->id)
 if (! $owner->hasOwnerAuthority()) {
     throw new RuntimeException('The selected test tenant has no active owner authority.');
 }
-$activeDevice = \App\Models\Device::query()->where('tenant_id', $tenant->id)
-    ->where('status', \App\Enums\DeviceStatus::Active)->first();
-if (! $activeDevice) {
-    throw new RuntimeException('A trusted owner device is required for authenticated logins.');
+$activeDevice = app(\App\Security\DeviceCredentialService::class)
+    ->locate(\Illuminate\Http\Request::create('/', 'GET', server: [
+        'HTTP_'.strtoupper(str_replace('-', '_', \App\Security\DeviceCredentialService::HEADER))
+            => $values['BLUEPOS_RACE_DEVICE_CREDENTIAL'],
+    ]));
+if (! $activeDevice || (int) $activeDevice->tenant_id !== (int) $tenant->id || ! $activeDevice->isActive()) {
+    throw new RuntimeException('Provided owner device credential must resolve to a trusted active device in this test tenant.');
 }
 
 // Only create a disposable fixture in the strictly guarded test database.
@@ -241,6 +244,8 @@ $audit = \App\Models\AuditLog::query()->where('tenant_id', $tenant->id)
     ->pluck('event')->all();
 
 $valid = $winner !== null
+    && count(array_filter($results, static fn (array $result): bool => $result['http'] === 200)) === 1
+    && count(array_filter($results, static fn (array $result): bool => $result['http'] === 409)) === 1
     && $results[$loser]['http'] === 409
     && $results[$loser]['error'] === 'ACCESS_REQUEST_ALREADY_REVIEWED'
     && $after->status === $winner
