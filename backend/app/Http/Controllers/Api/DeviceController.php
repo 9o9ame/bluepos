@@ -118,7 +118,7 @@ class DeviceController extends Controller
 
         $data = $request->validate(['decision' => ['required', 'in:approved,rejected']]);
 
-        DB::transaction(function () use ($tenantContext, $requestUlid, $data): void {
+        DB::transaction(function () use ($tenantContext, $requestUlid, $data, $request): void {
             $tenant = \App\Models\Tenant::query()->whereKey($tenantContext->tenantId())
                 ->lockForUpdate()->firstOrFail();
             $access = DB::table('device_access_requests')
@@ -179,13 +179,14 @@ class DeviceController extends Controller
             if ($updated !== 1) {
                 throw new ApiException('ACCESS_REQUEST_ALREADY_REVIEWED', 'This request has already been reviewed.', 409);
             }
-        });
 
-        app(AuditLogger::class)->record(
-            $data['decision'] === 'approved' ? 'DEVICE_ACCESS_APPROVED' : 'DEVICE_ACCESS_REJECTED',
-            ['resource_type' => 'device_access_request', 'resource_ulid' => $requestUlid],
-            $request
-        );
+            // Keep the decision and its audit evidence in the same transaction.
+            app(AuditLogger::class)->record(
+                $data['decision'] === 'approved' ? 'DEVICE_ACCESS_APPROVED' : 'DEVICE_ACCESS_REJECTED',
+                ['resource_type' => 'device_access_request', 'resource_ulid' => $requestUlid],
+                $request
+            );
+        });
 
         return response()->json(['ulid' => $requestUlid, 'status' => $data['decision']]);
     }
