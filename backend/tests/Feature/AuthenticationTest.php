@@ -801,6 +801,17 @@ class AuthenticationTest extends TestCase
         $this->assertSame('rejected', \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('ulid', $ulid)->value('status'));
         $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
+        $this->assertSame(1, \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('event', 'DEVICE_ACCESS_REJECTED')
+            ->where('resource_ulid', $ulid)
+            ->count());
+        $this->assertSame(0, \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('event', 'DEVICE_ACCESS_APPROVED')
+            ->where('resource_ulid', $ulid)
+            ->count());
+
     }
 
     public function test_approved_employee_access_review_cannot_be_reversed_by_rejection(): void
@@ -858,6 +869,17 @@ class AuthenticationTest extends TestCase
         $this->assertSame('approved', \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('ulid', $ulid)->value('status'));
         $this->assertSame(\App\Enums\DeviceStatus::Active, $device->fresh()->status);
+        $this->assertSame(1, \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('event', 'DEVICE_ACCESS_APPROVED')
+            ->where('resource_ulid', $ulid)
+            ->count());
+        $this->assertSame(0, \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('event', 'DEVICE_ACCESS_REJECTED')
+            ->where('resource_ulid', $ulid)
+            ->count());
+
     }
 
     public function test_offline_lease_issuance_rejects_disabled_tenant(): void
