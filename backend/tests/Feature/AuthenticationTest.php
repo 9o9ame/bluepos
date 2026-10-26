@@ -96,6 +96,32 @@ class AuthenticationTest extends TestCase
         $this->assertNull($device->fresh()->warehouse_id);
     }
 
+    public function test_generic_approval_rechecks_suspended_tenant_before_activating_device(): void
+    {
+        $this->signInOwner('generic-approval-suspended')->assertOk();
+        $tenant = \App\Models\Tenant::query()
+            ->where('code', $this->tenantCode('generic-approval-suspended'))->firstOrFail();
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Pending generic approval',
+            'device_type' => 'pos_terminal',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+
+        // The TenantContext may already hold an active tenant model from login.
+        $tenant->status = \App\Enums\TenantStatus::Suspended;
+        $tenant->save();
+
+        $this->postJson('/api/devices/'.$device->ulid.'/approve')
+            ->assertForbidden()
+            ->assertJsonPath('error.key', 'TENANT_DISABLED');
+
+        $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
+        $this->assertNull($device->fresh()->approved_at);
+    }
+
     public function test_tenant_cannot_approve_unassigned_device(): void
     {
         $this->signInOwner('device-unassigned')->assertOk();
