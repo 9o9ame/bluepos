@@ -22,6 +22,8 @@ use App\Support\IdentityNormalizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class LoginUserAction
 {
@@ -136,6 +138,7 @@ class LoginUserAction
                 $this->requireMfa($request, $membership, $device);
             }
 
+            $this->recordStaffAccessRequest($request, $membership, $device);
             $this->audit->record('LOGIN_FAILURE', [
                 'actor_membership_id' => $membership->id,
                 'tenant_id' => $membership->tenant_id,
@@ -162,6 +165,7 @@ class LoginUserAction
             if ($membership->hasOwnerAuthority()) {
                 $this->requireMfa($request, $membership, $device);
             }
+            $this->recordStaffAccessRequest($request, $membership, $device);
 
             throw new ApiException('DEVICE_NOT_APPROVED', 'This device is not approved. Ask your administrator to approve it.', 403);
         }
@@ -175,6 +179,47 @@ class LoginUserAction
         }
 
         return $device;
+    }
+
+    private function recordStaffAccessRequest(Request $request, Membership $membership, Device $device): void
+    {
+        if ($membership->hasOwnerAuthority() || $device->status !== DeviceStatus::Pending) {
+            return;
+        }
+
+        $network = app(DeviceNetworkTrust::class)->fingerprint($request);
+        // Do not persist unidentifiable network approval requests.
+        if ($network === null) {
+            return;
+        }
+
+        $existing = DB::table('device_access_requests')
+            ->where('tenant_id', $membership->tenant_id)
+            ->where('membership_id', $membership->id)
+            ->where('device_id', $device->id)
+            ->where('network_hash', $network)
+            ->exists();
+
+        if (! $existing) {
+            DB::table('device_access_requests')->insertOrIgnore([
+                'ulid' => (string) Str::ulid(),
+                'tenant_id' => $membership->tenant_id,
+                'membership_id' => $membership->id,
+                'device_id' => $device->id,
+                'network_hash' => $network,
+                'status' => 'pending',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $this->audit->record('DEVICE_ACCESS_REQUESTED', [
+                'tenant_id' => $membership->tenant_id,
+                'actor_user_id' => $membership->user_id,
+                'actor_membership_id' => $membership->id,
+                'device_id' => $device->id,
+                'resource_type' => 'device',
+                'resource_ulid' => $device->ulid,
+            ], $request);
+        }
     }
 
     private function pendingDevice(Membership $membership): Device
