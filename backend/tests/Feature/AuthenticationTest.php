@@ -284,6 +284,55 @@ class AuthenticationTest extends TestCase
         $this->assertSame(\App\Enums\DeviceStatus::Active, $legacy->fresh()->status);
     }
 
+    public function test_device_policy_preview_is_tenant_isolated_and_marks_managed_terminal(): void
+    {
+        $first = $this->provisionOwner('policy-isolation-a');
+        $second = $this->provisionOwner('policy-isolation-b');
+        $this->attachTrustedDevice((int) $first->tenant->id);
+        $firstDevice = \App\Models\Device::query()->where('tenant_id', $first->tenant->id)->firstOrFail();
+        $secondDevice = \App\Models\Device::query()->where('tenant_id', $second->tenant->id)->firstOrFail();
+
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => (string) \Illuminate\Support\Str::ulid(),
+            'tenant_id' => $second->tenant->id,
+            'membership_id' => $second->membership->id,
+            'device_id' => $secondDevice->id,
+            'network_hash' => hash('sha256', 'second-only-network'),
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('policy-isolation-a'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $firstResponse = $this->getJson('/api/devices')->assertOk();
+        $this->assertNoInternalIds($firstResponse->json());
+        $firstPolicies = collect($firstResponse->json())->pluck('employee_access_policy', 'ulid');
+        $this->assertSame('legacy_grandfathered', $firstPolicies->get($firstDevice->ulid));
+        $this->assertFalse($firstPolicies->has($secondDevice->ulid));
+
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => (string) \Illuminate\Support\Str::ulid(),
+            'tenant_id' => $first->tenant->id,
+            'membership_id' => $first->membership->id,
+            'device_id' => $firstDevice->id,
+            'network_hash' => hash('sha256', 'first-network'),
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $updated = $this->getJson('/api/devices')->assertOk();
+        $this->assertSame(
+            'managed',
+            collect($updated->json())->pluck('employee_access_policy', 'ulid')->get($firstDevice->ulid)
+        );
+    }
+
     public function test_unmanaged_legacy_terminal_retains_existing_login_access_during_migration(): void
     {
         $owner = $this->provisionOwner('legacy-terminal');
