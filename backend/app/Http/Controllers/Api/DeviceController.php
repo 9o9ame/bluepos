@@ -132,9 +132,12 @@ class DeviceController extends Controller
                 throw new ApiException('ACCESS_REQUEST_ALREADY_REVIEWED', 'This request has already been reviewed.', 409);
             }
 
-            $member = \App\Models\Membership::query()
-                ->where('tenant_id', $tenant->id)->whereKey($access->membership_id)->firstOrFail();
-            if ($member->hasOwnerAuthority() || $member->status !== \App\Enums\MembershipStatus::Active) {
+            $member = \App\Models\Membership::query()->with('user')
+                ->where('tenant_id', $tenant->id)->whereKey($access->membership_id)
+                ->lockForUpdate()->firstOrFail();
+            if ($member->hasOwnerAuthority()
+                || $member->status !== \App\Enums\MembershipStatus::Active
+                || $member->user?->status !== \App\Enums\UserStatus::Active) {
                 throw new ApiException('ACCESS_REQUEST_INVALID', 'Employee is no longer eligible.', 409);
             }
 
