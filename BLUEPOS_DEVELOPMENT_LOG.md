@@ -90,3 +90,9 @@
 - An actual simultaneous HTTP race requires independently authenticated workers, committed isolated tenant/device/member/access-request fixtures visible across processes, a synchronization barrier, bounded timeouts, deterministic winner/loser assertions and robust cleanup.
 - Existing 3 DB concurrency tests **are not** HTTP-level proof. No new concurrency code committed in this checkpoint: avoiding a misleading sequential test or unsafe persistent fixture creation.
 - Next: implement isolated HTTP race harness before claiming concurrency phase complete. Keep it restricted to `bluepos_test`, never use destructive cleanup. 
+
+### 2026-10-26 — Verified replay tests; HTTP concurrency implementation safety gate
+- User validated at `27bb8c9f`: **31/31 authentication tests, 166 assertions** and **3/3 concurrency tests, 19 assertions**.
+- Current review route `POST /api/devices/access-requests/{requestUlid}/review` requires Sanctum session and tenant middleware. Cross-process request execution needs authenticated sessions and committed fixtures visible to both workers. Existing `DatabaseTransactions` fixture approach cannot be reused.
+- Implementation safety gate: first establish an isolated, abort-safe fixture lifecycle (tenant, membership, device, request, owner session) and bounded two-worker synchronization without pointing a server to a persistent/dev DB. No unsafe test harness or unverified simultaneous HTTP test was committed.
+- **Next implementation is still the real HTTP approval/rejection race test**, not another PostgreSQL lock simulation. Preserve exactly-one-success result, 409 losing decision, no unintended device activation, no extra audit side effects. Do not call this completed before local execution.
