@@ -186,6 +186,44 @@ class AuthenticationTest extends TestCase
             ->where('ulid', $requestUlid)->value('status'));
     }
 
+    public function test_unmanaged_legacy_terminal_retains_existing_login_access_during_migration(): void
+    {
+        $owner = $this->provisionOwner('legacy-terminal');
+        $staff = \App\Models\User::query()->create([
+            'name' => 'Legacy Cashier',
+            'email' => 'legacy-cashier@example.com',
+            'password' => 'password123',
+            'status' => \App\Enums\UserStatus::Active,
+            'must_change_password' => false,
+            'security_version' => 1,
+        ]);
+        $member = \App\Models\Membership::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'user_id' => $staff->id,
+            'username' => 'legacycashier',
+            'status' => \App\Enums\MembershipStatus::Active,
+            'is_owner' => false,
+            'security_version' => 1,
+        ]);
+        $role = \App\Models\Role::query()->where('tenant_id', $owner->tenant->id)
+            ->where('code', \App\Authz\PermissionCatalogue::CASHIER)->firstOrFail();
+        $member->roles()->attach($role->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
+        $member->branches()->attach($owner->branch->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('legacy-terminal'),
+            'username' => 'legacycashier',
+            'password' => 'password123',
+        ])->assertOk();
+        $this->getJson('/api/auth/me')->assertOk();
+
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $this->assertSame('pos_terminal', $device->device_type);
+        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('device_id', $device->id)->count());
+    }
+
     public function test_employee_login_requires_approved_network_and_rejects_other_network(): void
     {
         $owner = $this->provisionOwner('staff-network-gate');
