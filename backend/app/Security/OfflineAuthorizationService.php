@@ -3,6 +3,7 @@
 namespace App\Security;
 
 use App\Enums\MembershipStatus;
+use App\Enums\UserStatus;
 use App\Exceptions\ApiException;
 use App\Models\Branch;
 use App\Models\Device;
@@ -41,6 +42,7 @@ class OfflineAuthorizationService
                 ->where('tenant_id', $membership->tenant_id)
                 ->whereKey($membership->id)->lockForUpdate()->firstOrFail();
             if ($membership->status !== MembershipStatus::Active
+                || $membership->user?->status !== UserStatus::Active
                 || ! $device->isActive()
                 || (int) $device->tenant_id !== (int) $membership->tenant_id
                 || (int) $branch->tenant_id !== (int) $membership->tenant_id
@@ -101,6 +103,8 @@ class OfflineAuthorizationService
         }
 
         if ($membership->status !== MembershipStatus::Active
+            || $membership->user?->status !== UserStatus::Active
+            || (int) $lease->user_id !== (int) $membership->user_id
             || ! $device->isActive()
             || (int) $device->tenant_id !== (int) $membership->tenant_id
             || (int) $lease->tenant_id !== (int) $membership->tenant_id
