@@ -624,6 +624,37 @@ class AuthenticationTest extends TestCase
         $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')->where('ulid', $ulid)->value('status'));
     }
 
+    public function test_disabling_user_invalidates_existing_offline_lease_and_prevents_new_issuance(): void
+    {
+        $owner = $this->provisionOwner('offline-disabled-user');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()
+            ->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $service = app(\App\Security\OfflineAuthorizationService::class);
+        $lease = $service->issue($owner->membership, $device, $owner->branch, []);
+        $service->assertValid($lease, $device, $owner->membership);
+
+        $owner->user->status = \App\Enums\UserStatus::Disabled;
+        $owner->user->save();
+
+        try {
+            $service->assertValid($lease, $device, $owner->membership);
+            $this->fail('Disabled user retained a previously valid offline lease.');
+        } catch (\App\Exceptions\ApiException $exception) {
+            $this->assertSame('OFFLINE_AUTH_EXPIRED', $exception->errorKey);
+        }
+
+        try {
+            $service->issue($owner->membership, $device, $owner->branch, []);
+            $this->fail('Disabled user received a new offline lease.');
+        } catch (\App\Exceptions\ApiException $exception) {
+            $this->assertSame('OFFLINE_AUTH_EXPIRED', $exception->errorKey);
+        }
+
+        $this->assertSame(1, \App\Models\OfflineAuthorizationLease::query()
+            ->where('tenant_id', $owner->tenant->id)->count());
+    }
+
     public function test_suspending_tenant_invalidates_previously_issued_offline_lease(): void
     {
         $owner = $this->provisionOwner('lease-tenant-suspend');
