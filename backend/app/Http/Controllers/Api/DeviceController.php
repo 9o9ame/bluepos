@@ -86,6 +86,8 @@ class DeviceController extends Controller
             'status' => ['sometimes', 'in:pending,approved,rejected,all'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'page' => ['sometimes', 'integer', 'min:1'],
+            'membership_ulid' => ['sometimes', 'string', 'size:26'],
+            'device_ulid' => ['sometimes', 'string', 'size:26'],
         ]);
 
         $status = $data['status'] ?? 'pending';
@@ -98,7 +100,18 @@ class DeviceController extends Controller
                 $join->on('device.id', '=', 'access.device_id')
                     ->on('device.tenant_id', '=', 'access.tenant_id');
             })
+            ->leftJoin('memberships as reviewer', function ($join) {
+                $join->on('reviewer.id', '=', 'access.reviewed_by')
+                    ->on('reviewer.tenant_id', '=', 'access.tenant_id');
+            })
             ->where('access.tenant_id', $tenantContext->tenantId());
+
+        if (isset($data['membership_ulid'])) {
+            $query->where('member.ulid', $data['membership_ulid']);
+        }
+        if (isset($data['device_ulid'])) {
+            $query->where('device.ulid', $data['device_ulid']);
+        }
 
         if ($status !== 'all') {
             $query->where('access.status', $status);
@@ -111,6 +124,8 @@ class DeviceController extends Controller
                 'access.status',
                 'access.created_at',
                 'access.reviewed_at',
+                'reviewer.ulid as reviewer_membership_ulid',
+                'reviewer.username as reviewer_username',
                 'member.ulid as membership_ulid',
                 'member.username',
                 'device.ulid as device_ulid',
