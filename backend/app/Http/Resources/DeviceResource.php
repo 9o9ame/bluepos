@@ -20,6 +20,7 @@ class DeviceResource extends JsonResource
             'ulid' => $this->ulid,
             'name' => $this->name,
             'device_type' => $this->device_type,
+            'employee_access_policy' => $this->when($this->resource->getAttribute('employee_access_policy') !== null, fn () => $this->resource->getAttribute('employee_access_policy')),
             'status' => $this->status->value,
             'registered_at' => $this->registered_at?->toISOString(),
             'approved_at' => $this->approved_at?->toISOString(),
