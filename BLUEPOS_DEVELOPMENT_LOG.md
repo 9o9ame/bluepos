@@ -116,3 +116,10 @@
 - `5c93b7d9`: regression validates a disabled user's existing lease becomes invalid and subsequent issuance cannot create another lease.
 - Production + test files changed; no migrations/UI changes. Local tests not yet run; expected **35 AuthenticationTest** + **3 PostgreSQL concurrency**.
 - Progress by milestone: Device authorization/lease hardening implemented and tested to prior baseline, new disabled-user guard pending validation. Actual two-worker HTTP review race NOT complete. Offline sync E2E NOT complete. Controlled legacy POS migration NOT complete. Final regression/review NOT complete.
+
+### 2026-10-26 — Offline lease branch-reassignment enforcement (validation pending)
+- User confirmed baseline after `276b67ba`: AuthenticationTest 35 PASS / 191 assertions, PostgreSQLConcurrencyConnectionTest 3 PASS / 19 assertions.
+- `223eae30`: OfflineAuthorizationService now rejects existing leases when a device is reassigned to another branch or lease branch is missing/outside tenant.
+- `67525068`: regression issues valid lease, reassigns device to a different tenant-owned branch, then expects `OFFLINE_AUTH_EXPIRED`. Expected AuthenticationTest **36 tests**, not yet verified locally.
+- Inspection: backend `routes/api.php` does not currently expose an offline sync endpoint; therefore offline *sync E2E* cannot be claimed complete or safely invented without inspecting existing offline client workflow/domain integration.
+- Roadmap: HTTP approve/reject race **pending**; offline authorization hardening **advanced**, offline sync E2E **pending**; legacy device rollout **pending**; final regression/review **pending**. No migrations or UI changes.
