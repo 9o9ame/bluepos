@@ -88,7 +88,12 @@ class DeviceController extends Controller
                 'device.name as device_name', 'access.created_at',
             ]);
 
-        return response()->json(['requests' => $rows]);
+        $pendingCount = DB::table('device_access_requests')
+            ->where('tenant_id', $tenantContext->tenantId())
+            ->where('status', 'pending')
+            ->count();
+
+        return response()->json(['requests' => $rows, 'pending_count' => $pendingCount]);
     }
 
     public function reviewAccessRequest(Request $request, string $requestUlid, TenantContext $tenantContext): JsonResponse
