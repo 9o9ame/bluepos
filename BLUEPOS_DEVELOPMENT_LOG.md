@@ -77,3 +77,9 @@
 - Commit `b5c15687`; changed `backend/tests/Feature/PostgreSqlConcurrencyConnectionTest.php` only. No migrations or production changes.
 - New test uses two distinct connections and a committed test-only pending device in `bluepos_test`. First connection locks and activates; second cannot acquire the device row while the first transaction holds it (SQLSTATE 55P03), then after commit sees `active` and the conditional losing write updates zero rows. Finally rollback/cleanup.
 - **Not yet run on user's PostgreSQL.** This is a database-level decision-collision test, not simultaneous HTTP requests or an end-to-end `reviewAccessRequest` test. Full approve/reject endpoint race remains pending.
+
+### 2026-10-26 — Approved access-review replay regression (local validation pending)
+- User confirmed latest `PostgreSqlConcurrencyConnectionTest.php`: **3 passed, 19 assertions** and `AuthenticationTest.php`: **30 passed, 159 assertions** at `f6993662`.
+- Commit `a2552653` adds reverse-direction replay protection coverage in `backend/tests/Feature/AuthenticationTest.php`: after **approved**, attempt **rejected** must yield `ACCESS_REQUEST_ALREADY_REVIEWED`, preserving approved request and active device.
+- Tests not run after commit; expected AuthenticationTest count 31. No migrations or production code changes.
+- Existing sequential test covered rejected→approved; both directions are now covered sequentially. **Actual simultaneous HTTP approve/reject race still pending**. No claim of complete race coverage.
