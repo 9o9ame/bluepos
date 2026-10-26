@@ -141,6 +141,14 @@ export type PlatformTenantDevice = {
   last_seen_at: string | null
 }
 
+export type PlatformTenantActivity = {
+  sessions: Array<{ulid:string;device:{ulid:string;name:string}|null;ip_address:string|null;user_agent:string|null;last_seen_at:string|null;revoked_at:string|null}>
+  events: Array<{ulid:string;event:string;ip_address:string|null;user_agent:string|null;occurred_at:string|null}>
+}
+export function fetchPlatformTenantActivity(tenantUlid:string):Promise<PlatformTenantActivity> {
+  return apiFetch<PlatformTenantActivity>(`/api/platform/tenants/${tenantUlid}/login-activity`)
+}
+
 export function fetchPlatformTenantDevices(tenantUlid: string): Promise<{ devices: PlatformTenantDevice[] }> {
   return apiFetch<{ devices: PlatformTenantDevice[] }>(`/api/platform/tenants/${tenantUlid}/devices`)
 }
