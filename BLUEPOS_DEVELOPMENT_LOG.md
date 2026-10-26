@@ -71,3 +71,9 @@
 - Both review and generic approval lock the tenant row; review also locks request/device. Existing `AuthenticationTest` employs `DatabaseTransactions`, making its fixtures invisible across PostgreSQL connections.
 - **Next implementation boundary:** need a dedicated lifecycle for committed tenant, membership, device and request fixtures plus independent process/request coordination. Test-only cleanup must be precise and resilient; do not remove or wipe unrelated `bluepos_test` data.
 - No new domain race test implemented or executed in this checkpoint; two successful probes are not evidence of actual conflicting HTTP requests.
+
+### 2026-10-26 — Two-connection device decision collision regression (awaiting local run)
+- Local validation before batch: PostgreSQL concurrency **2/2, 11 assertions**, Authentication **30/30, 159 assertions**.
+- Commit `b5c15687`; changed `backend/tests/Feature/PostgreSqlConcurrencyConnectionTest.php` only. No migrations or production changes.
+- New test uses two distinct connections and a committed test-only pending device in `bluepos_test`. First connection locks and activates; second cannot acquire the device row while the first transaction holds it (SQLSTATE 55P03), then after commit sees `active` and the conditional losing write updates zero rows. Finally rollback/cleanup.
+- **Not yet run on user's PostgreSQL.** This is a database-level decision-collision test, not simultaneous HTTP requests or an end-to-end `reviewAccessRequest` test. Full approve/reject endpoint race remains pending.
