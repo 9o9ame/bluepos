@@ -42,3 +42,11 @@
 - Fix: use existing `attachTrustedDevice()` fixture for second tenant; restore first tenant's credential before login.
 - Validation: NOT RUN after fix; user should pull and run focused test/full AuthenticationTest, using `bluepos_test`.
 - Next: after PASS, independent PostgreSQL connection race test design/implementation; offline sync E2E thereafter.
+
+### 2026-10-26 — Generic device approval operational-status guard
+- User local validation before this batch: `AuthenticationTest.php` **29 passed, 154 assertions** at `44a7b8c5`.
+- Commits: `dc26a1a5` (controller), `a144b177` (regression).
+- Files: `backend/app/Http/Controllers/Api/DeviceController.php`, `backend/tests/Feature/AuthenticationTest.php`. Migrations: none.
+- Pending device generic approval now uses the freshly locked tenant model for `assertOperational` and `assertCanRegisterDevice`, not potentially stale TenantContext tenant state.
+- Regression: generic approval of pending device after tenant suspension returns `TENANT_DISABLED`, device remains pending. Note: auth middleware may also block suspension before controller, so this is not proof of the transaction-level race invariant.
+- **Latest test not run locally yet; expected 30 total tests**. Independent-connection PostgreSQL simultaneous review/approval race still pending; do not claim covered.
