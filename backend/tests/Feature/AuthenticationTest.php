@@ -437,6 +437,27 @@ class AuthenticationTest extends TestCase
             ->where('membership_id', $first->membership->id)->count());
     }
 
+    public function test_offline_validation_rejects_stale_models_after_device_revocation(): void
+    {
+        $owner = $this->provisionOwner('offline-validate-stale');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $membership = $owner->membership->fresh(['user', 'tenant']);
+        $service = app(\App\Security\OfflineAuthorizationService::class);
+        $lease = $service->issue($membership, $device, $owner->branch, []);
+        $service->assertValid($lease, $device, $membership);
+
+        // Keep stale copies deliberately: revocation changes only persisted rows.
+        app(\App\Security\SessionRevocationService::class)->revokeDevice($device->fresh());
+
+        try {
+            $service->assertValid($lease, $device, $membership);
+            $this->fail('Stale lease and device objects bypassed revocation.');
+        } catch (\App\Exceptions\ApiException $exception) {
+            $this->assertSame('OFFLINE_AUTH_EXPIRED', $exception->errorKey);
+        }
+    }
+
     public function test_offline_lease_cannot_be_issued_from_stale_device_after_revocation(): void
     {
         $owner = $this->provisionOwner('offline-stale-device');
