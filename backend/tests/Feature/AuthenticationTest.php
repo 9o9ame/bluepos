@@ -239,6 +239,30 @@ class AuthenticationTest extends TestCase
         $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.78']);
         $this->postJson('/api/auth/login', $credentials)
             ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
+
+        $otherRequest = \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('membership_id', $member->id)
+            ->where('device_id', $device->id)
+            ->where('network_hash', '!=', $networkHash)
+            ->first();
+        $this->assertNotNull($otherRequest);
+        \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('id', $otherRequest->id)
+            ->update(['status' => 'rejected', 'reviewed_at' => now()]);
+
+        $this->postJson('/api/auth/login', $credentials)
+            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
+        $this->assertSame('rejected', \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('id', $otherRequest->id)->value('status'));
+
+        \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('id', $otherRequest->id)
+            ->update(['reviewed_at' => now()->subDays(2)]);
+        $this->postJson('/api/auth/login', $credentials)
+            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
+        $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('id', $otherRequest->id)->value('status'));
+
     }
 
     public function test_login_succeeds(): void
