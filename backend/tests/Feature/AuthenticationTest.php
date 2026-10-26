@@ -592,7 +592,7 @@ class AuthenticationTest extends TestCase
         $this->assertSame(\App\Enums\DeviceStatus::Revoked, $device->fresh()->status);
     }
 
-    public function test_employee_access_review_requires_owner_authority_and_valid_decision(): void
+    public function test_employee_access_review_rejects_owner_membership_and_invalid_decisions(): void
     {
         $owner = $this->provisionOwner('review-validation');
         $this->attachTrustedDevice((int) $owner->tenant->id);
