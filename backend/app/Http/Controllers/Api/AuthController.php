@@ -16,6 +16,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\AuthSessionResource;
 use App\Models\MfaChallenge;
 use App\Security\AuditLogger;
+use App\Security\DeviceNetworkTrust;
 use App\Security\SecurityOtp;
 use App\Security\SessionRevocationService;
 use App\Tenancy\TenantContext;
@@ -245,6 +246,7 @@ class AuthController extends Controller
             }
             if ($membership->hasOwnerAuthority() || $request->boolean('trust_device')) {
                 $device->trusted_until = now()->addDays(30);
+                $device->trusted_ip_hash = app(DeviceNetworkTrust::class)->fingerprint($request);
             }
             $device->save();
         }
