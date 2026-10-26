@@ -26,7 +26,7 @@ class PlatformTenantDeviceController extends Controller
     public function overview(): JsonResponse
     {
         $sessions = AuthSessionRecord::query()
-            ->with(['device:id,ulid,name', 'membership:id,ulid,username', 'membership.tenant:id,ulid,name,code'])
+            ->with(['device:id,ulid,name', 'membership:id,ulid,username,tenant_id', 'membership.tenant:id,ulid,name,code'])
             ->orderByDesc('id')
             ->limit(200)
             ->get();
