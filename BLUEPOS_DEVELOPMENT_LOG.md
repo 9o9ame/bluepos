@@ -103,3 +103,9 @@
 - Added coverage: both approve and reject refuse suspended employee; both decisions refuse revoked device; invalid/missing decision rejected; owner membership cannot be processed as employee access. No mutations on rejected attempts.
 - Expected `AuthenticationTest.php` count **33** (assertion total unknown). **Not run locally yet.**
 - Outstanding: genuine two-worker authenticated HTTP approve/reject race, offline sync end-to-end tests, controlled legacy terminal policy rollout; existing lock probes are not a substitute for HTTP race proof.
+
+### 2026-10-26 — Batched device review and offline lease hardening (local validation pending)
+- User verified prior baseline: `AuthenticationTest.php` **33 PASS / 187 assertions**; `PostgreSqlConcurrencyConnectionTest.php` **3 PASS / 19 assertions**.
+- Production commits: `dd4eaa30` `DeviceController::reviewAccessRequest` scopes final update by tenant + `status=pending`, requires exactly one affected row, rejects conflicting/repeated decision with 409 transaction rollback. `ee78cd19` `OfflineAuthorizationService::assertValid` rechecks actual tenant operational status, denying old leases on suspension.
+- Test commit: `1c62e921` adds valid-then-suspended tenant offline lease regression to `AuthenticationTest.php`. Expected **34 authentication tests**; **not run locally**. The earlier 3 PostgreSQL concurrency tests remain unchanged.
+- No migrations or UI changes. Main untouched. Actual two-worker HTTP review race and offline sync E2E still pending; do not infer they pass from this batch.
