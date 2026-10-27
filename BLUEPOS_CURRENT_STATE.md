@@ -1,3 +1,13 @@
+## 2026-10-27 — User-verified #39/#43/#44 focused login history tests PASS
+
+- User supplied local PowerShell output: fast-forward pull `6684d094..1e7a0d17` on `feature/superadmin`; database verified as PostgreSQL `bluepos_test` using `php artisan db:show --database=pgsql`.
+- PHPUnit 12.5.35 / PHP 8.3.33 ran the focused `AuthenticationTest` filter: `test_owner_login_history_filters_ip_device_and_exposes_only_tenant_audit_browser_hints|test_owner_device_review_emails_employee_only_after_committed_decision|test_security_privacy_retention_redacts_only_aged_login_network_identity`; result **3 PASS, 52 assertions**, 5.332 seconds.
+- Confirms scoped backend regression evidence for original #39 (owner login-history API filters), #43 (server-observed IP and scoped retention), #44 (display-only browser/OS labels), along with existing decision email regression. This is not proof of full historical/browser E2E or deployment acceptance. No new production code or migrations in this documentation checkpoint.
+- Relevant implementation commits `14db95bf`, `932012ec`, `1e7a0d17`. Still no main merge or branch switch. Keep exact original #1–#50 acceptance IDs and do not promote baseline totals solely on focused tests.
+- Remaining acceptance IDs: **#4, #18, #24, #28, #29, #37, #39, #43, #44, #45, #46, #48, #50**. Next cohesive batch under prior user plan: #28/#29/#37/#46 approximate location monitoring and mandatory browser-location E2E acceptance; review `PROJECT_UI_DESIGN_SYSTEM.md` first if frontend/UI is touched.
+
+---
+
 ## 2026-10-27 — Original #39/#43/#44 tenant login history batch (focused test pending)
 
 - Authorized `feature/superadmin` branch; production commit `14db95bf`, regression commit `932012ec`. No migrations, frontend changes, main merge or branch switch.
