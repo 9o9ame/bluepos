@@ -167,7 +167,25 @@ class PlatformTenantDeviceController extends Controller
             return $item;
         });
 
-        return response()->json(['access_requests' => $pageItems, 'approval_pagination' => [
+        $locations = DB::table('login_location_observations as loc')
+            ->join('memberships as member', function ($join) {
+                $join->on('member.id', '=', 'loc.membership_id')
+                    ->on('member.tenant_id', '=', 'loc.tenant_id');
+            })
+            ->leftJoin('devices as d', function ($join) {
+                $join->on('d.id', '=', 'loc.device_id')
+                    ->on('d.tenant_id', '=', 'loc.tenant_id');
+            })
+            ->where('loc.tenant_id', $tenant->id)
+            ->where('loc.expires_at', '>', now())
+            ->orderByDesc('loc.observed_at')->orderByDesc('loc.id')
+            ->limit(100)
+            ->get(['loc.ulid', 'loc.latitude_approx', 'loc.longitude_approx',
+                'loc.accuracy_meters', 'loc.observed_at',
+                'member.ulid as membership_ulid', 'member.username',
+                'd.ulid as device_ulid', 'd.name as device_name']);
+
+        return response()->json(['locations' => $locations, 'access_requests' => $pageItems, 'approval_pagination' => [
             'page' => $requests->currentPage(), 'last_page' => $requests->lastPage(), 'total' => $requests->total(),
         ], 'devices' => $rows->map(fn (Device $device) => [
             'ulid' => $device->ulid, 'name' => $device->name,
