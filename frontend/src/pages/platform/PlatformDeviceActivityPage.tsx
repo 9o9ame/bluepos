@@ -1,3 +1,4 @@
+import { summarizeUserAgent } from '../../utils/userAgentSummary'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
@@ -72,7 +73,7 @@ export function PlatformDeviceActivityPage() {
             { key: 'user', header: 'User', render: row => row.membership?.username ?? 'Unknown' },
             { key: 'device', header: 'Device', render: row => row.device?.name ?? '—' },
             { key: 'ip', header: 'IP', render: row => row.ip_address ?? '—' },
-            { key: 'browser', header: 'Browser', render: row => row.user_agent ?? '—' },
+            { key: 'browser', header: 'Browser / OS (reported)', render: row => summarizeUserAgent(row.user_agent) },
             { key: 'when', header: 'Time', render: row => row.occurred_at ?? '—' },
           ]}
           rows={query.data?.events ?? []}
