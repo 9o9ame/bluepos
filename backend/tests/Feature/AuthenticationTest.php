@@ -1785,10 +1785,23 @@ class AuthenticationTest extends TestCase
             'location_accuracy' => 20,
         ]))->assertUnprocessable()->assertJsonValidationErrors(['location_latitude']);
         $this->postJson('/api/auth/login', array_merge($credentials, [
-            'location_latitude' => 28.42,
-            'location_longitude' => 70.30,
+            'location_latitude' => 28.42145,
+            'location_longitude' => 70.30354,
             'location_accuracy' => 30,
         ]))->assertOk();
+
+        $this->getJson('/api/security/location-history')->assertOk()
+            ->assertJsonPath('precision', 'approximate')
+            ->assertJsonPath('retention_days', 30)
+            ->assertJsonPath('pagination.total', 1)
+            ->assertJsonPath('locations.0.latitude_approx', '28.42')
+            ->assertJsonPath('locations.0.longitude_approx', '70.30');
+        $this->getJson('/api/security/location-history?page=0')->assertUnprocessable();
+        $this->postJson('/api/auth/mfa/verify', [
+            'challenge_ulid' => (string) \Illuminate\Support\Str::ulid(),
+            'code' => '123456',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['location_latitude', 'location_longitude', 'location_accuracy']);
     }
 
     public function test_login_succeeds(): void
