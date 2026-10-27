@@ -1310,6 +1310,11 @@ class AuthenticationTest extends TestCase
         $this->getJson('/api/platform/security/device-activity?username=owner')->assertUnprocessable();
         $this->getJson('/api/platform/security/device-activity?event=INVALID')->assertUnprocessable();
         $this->getJson('/api/platform/security/device-activity?ip_address=not-an-ip')->assertUnprocessable();
+        $this->getJson('/api/platform/security/device-activity?since=2026-10-30&until=2026-10-01')->assertUnprocessable();
+        $today = now()->toDateString();
+        $dateScoped = $this->getJson('/api/platform/security/device-activity?tenant_code='.$owner->tenant->code.'&since='.$today.'&until='.$today)->assertOk();
+        $this->assertNotEmpty($dateScoped->json('events'));
+        $this->assertTrue(collect($dateScoped->json('events'))->every(fn ($row) => substr($row['occurred_at'] ?? '', 0, 10) === $today));
         $ipFiltered = $this->getJson('/api/platform/security/device-activity?tenant_code='.$owner->tenant->code.'&ip_address=127.0.0.1')->assertOk();
         $this->assertTrue(collect($ipFiltered->json('sessions'))->every(fn ($row) => $row['ip_address'] === '127.0.0.1'));
         $this->assertTrue(collect($ipFiltered->json('events'))->every(fn ($row) => $row['ip_address'] === '127.0.0.1'));
