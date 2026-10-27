@@ -199,8 +199,11 @@ export type PlatformTenantAccessRequest = {
   device_name: string
 }
 
-export function fetchPlatformTenantDevices(tenantUlid: string): Promise<{ devices: PlatformTenantDevice[]; access_requests: PlatformTenantAccessRequest[] }> {
-  return apiFetch<{ devices: PlatformTenantDevice[]; access_requests: PlatformTenantAccessRequest[] }>(`/api/platform/tenants/${tenantUlid}/devices`)
+export function fetchPlatformTenantDevices(tenantUlid: string, filters: { status?: string; ip_address?: string } = {}): Promise<{ devices: PlatformTenantDevice[]; access_requests: PlatformTenantAccessRequest[] }> {
+  const query = new URLSearchParams()
+  if (filters.status && filters.status !== 'all') query.set('status', filters.status)
+  if (filters.ip_address) query.set('ip_address', filters.ip_address)
+  return apiFetch<{ devices: PlatformTenantDevice[]; access_requests: PlatformTenantAccessRequest[] }>(`/api/platform/tenants/${tenantUlid}/devices${query.size ? `?${query.toString()}` : ''}`)
 }
 
 export function fetchPlatformTenant(ulid: string): Promise<PlatformTenant> {
