@@ -205,12 +205,24 @@ export type PlatformTenantAccessRequest = {
   device_name: string
 }
 
-export function fetchPlatformTenantDevices(tenantUlid: string, filters: { status?: string; ip_address?: string; page?: number } = {}): Promise<{ devices: PlatformTenantDevice[]; access_requests: PlatformTenantAccessRequest[]; approval_pagination: { page: number; last_page: number; total: number } }> {
+export type PlatformTenantLocation = {
+  ulid: string
+  membership_ulid: string
+  username: string
+  device_ulid: string | null
+  device_name: string | null
+  latitude_approx: string
+  longitude_approx: string
+  accuracy_meters: number
+  observed_at: string
+}
+
+export function fetchPlatformTenantDevices(tenantUlid: string, filters: { status?: string; ip_address?: string; page?: number } = {}): Promise<{ devices: PlatformTenantDevice[]; locations: PlatformTenantLocation[]; access_requests: PlatformTenantAccessRequest[]; approval_pagination: { page: number; last_page: number; total: number } }> {
   const query = new URLSearchParams()
   if (filters.status && filters.status !== 'all') query.set('status', filters.status)
   if (filters.ip_address) query.set('ip_address', filters.ip_address)
   if (filters.page) query.set('page', String(filters.page))
-  return apiFetch<{ devices: PlatformTenantDevice[]; access_requests: PlatformTenantAccessRequest[]; approval_pagination: { page: number; last_page: number; total: number } }>(`/api/platform/tenants/${tenantUlid}/devices${query.size ? `?${query.toString()}` : ''}`)
+  return apiFetch<{ devices: PlatformTenantDevice[]; locations: PlatformTenantLocation[]; access_requests: PlatformTenantAccessRequest[]; approval_pagination: { page: number; last_page: number; total: number } }>(`/api/platform/tenants/${tenantUlid}/devices${query.size ? `?${query.toString()}` : ''}`)
 }
 
 export function fetchPlatformTenant(ulid: string): Promise<PlatformTenant> {
