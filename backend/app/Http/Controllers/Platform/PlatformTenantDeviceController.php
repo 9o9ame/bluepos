@@ -134,6 +134,15 @@ class PlatformTenantDeviceController extends Controller
         $events = AuditLog::query()->where('tenant_id', $tenant->id)
             ->whereIn('event', ['LOGIN_FAILURE', 'LOGIN_SUCCESS', 'DEVICE_ENROLLMENT_REQUESTED', 'DEVICE_ACCESS_REQUESTED', 'DEVICE_ACCESS_APPROVED', 'DEVICE_ACCESS_REJECTED', 'DEVICE_REVOKED'])
             ->orderByDesc('occurred_at')->limit(100)->get();
+        $eventMemberships = \App\Models\Membership::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('id', $events->pluck('actor_membership_id')->filter()->unique())
+            ->get()->keyBy('id');
+        $eventDevices = Device::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('id', $events->pluck('device_id')->filter()->unique())
+            ->get()->keyBy('id');
+
         return response()->json([
             'sessions' => $sessions->map(fn (AuthSessionRecord $session) => [
                 'ulid' => $session->ulid,
@@ -146,6 +155,10 @@ class PlatformTenantDeviceController extends Controller
             ])->values(),
             'events' => $events->map(fn (AuditLog $log) => [
                 'ulid' => $log->ulid,
+                'membership' => $eventMemberships->get($log->actor_membership_id)
+                    ? ['ulid' => $eventMemberships->get($log->actor_membership_id)->ulid, 'username' => $eventMemberships->get($log->actor_membership_id)->username] : null,
+                'device' => $eventDevices->get($log->device_id)
+                    ? ['ulid' => $eventDevices->get($log->device_id)->ulid, 'name' => $eventDevices->get($log->device_id)->name] : null,
                 'event' => $log->event,
                 'ip_address' => $log->ip_address,
                 'user_agent' => $log->user_agent,
