@@ -242,6 +242,14 @@ class AuthenticationTest extends TestCase
         $this->assertNoInternalIds($response->json());
     }
 
+    public function test_non_owner_cannot_read_tenant_employee_network_approval_inbox(): void
+    {
+        $this->signInOwner('staff-inbox-authz')->assertOk();
+        $this->restrictCurrentMembershipWithoutPermission('devices.approve');
+
+        $this->getJson('/api/devices/access-requests')->assertForbidden();
+    }
+
     public function test_tenant_owner_can_review_only_own_pending_employee_access_requests(): void
     {
         $first = $this->provisionOwner('review-own-a');
