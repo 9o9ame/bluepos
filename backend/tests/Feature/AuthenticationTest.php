@@ -1289,6 +1289,15 @@ class AuthenticationTest extends TestCase
         $tenantUlids = collect($response->json('sessions'))
             ->pluck('tenant.ulid')->filter()->all();
         $this->assertContains($owner->tenant->ulid, $tenantUlids);
+
+        $tenantActivity = $this->getJson('/api/platform/tenants/'.$owner->tenant->ulid.'/login-activity')->assertOk();
+        $this->assertIsArray($tenantActivity->json('sessions'));
+        $this->assertIsArray($tenantActivity->json('events'));
+        $this->assertNoInternalIds($tenantActivity->json());
+        $ownerSession = collect($tenantActivity->json('sessions'))
+            ->first(fn ($row) => ($row['membership']['username'] ?? null) === 'owner');
+        $this->assertNotNull($ownerSession);
+        $this->assertContains('owner', collect($ownerSession['membership']['roles'])->pluck('code')->all());
     }
 
     public function test_login_succeeds(): void
