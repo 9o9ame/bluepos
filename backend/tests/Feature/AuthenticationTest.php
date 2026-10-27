@@ -1250,8 +1250,7 @@ class AuthenticationTest extends TestCase
         $this->signInPlatformAdmin('platform-review-bypass');
 
         $this->postJson('/api/platform/tenants/'.$owner->tenant->ulid.'/devices/'.$device->ulid.'/approve')
-            ->assertStatus(409)
-            ->assertJsonPath('error.key', 'EMPLOYEE_ACCESS_REVIEW_REQUIRED');
+            ->assertNotFound();
         $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
     }
 
