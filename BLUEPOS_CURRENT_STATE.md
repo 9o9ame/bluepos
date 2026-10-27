@@ -818,3 +818,12 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - Changed backend/app/Http/Controllers/Platform/PlatformTenantDeviceController.php and backend/tests/Feature/AuthenticationTest.php. No migration. Focused regression must still pass on bluepos_test; previously user confirmed TypeScript and two focused auth tests (32 assertions) passed before this batch.
 - Provisional count remains 24 implemented / 15 partial / 11 pending: this batch completes an important missing piece of previously counted SuperAdmin monitoring requirements; do not double-count it as a new requirement.
 - Still pending: centralized failed/blocked login attempts across tenants, geolocation when supportable, historical IP retention policy and comprehensive multi-device audit acceptance.
+
+### 2026-10-27 — Global SuperAdmin authentication and device audit timeline
+- Read-only `GET /api/platform/security/device-activity` now includes latest 200 audit entries (LOGIN_SUCCESS, LOGIN_FAILURE, DEVICE_ACCESS_REQUESTED/APPROVED/REJECTED, DEVICE_REVOKED) alongside latest 200 sessions; pre-existing `platform.audit.view` authorization remains required.
+- Backend joins only server-known tenant / membership / device records and serializes ULIDs; unknown login identities remain unknown, with no password, username hashes or internal BIGINT IDs leaked. Authenticated session activity still includes role context.
+- Platform Device and Employee Activity screen shows a separate security-event table with event, tenant, known user/device, IP, browser, timestamp; existing sessions grid preserved.
+- This completes centralized available successful/failed/blocked **recorded audit-event visibility** in current UI/API; note unrecognized tenant codes result in unknown tenant and event coverage depends on existing audit instrumentation. Do not describe it as all security events universally.
+- Existing focused platform audit-authorization test now asserts event array and matching LOGIN_SUCCESS tenant.
+- Files: PlatformTenantDeviceController.php, frontend/src/api/platform.ts, PlatformDeviceActivityPage.tsx, AuthenticationTest.php, BLUEPOS_CURRENT_STATE.md. No migration.
+- Provisional tracker: **25 implemented / 14 partial / 11 pending** (from 24/15/11) for centralized recorded login event visibility, conditional on focused local verification. Earlier user confirmed 1 test / 14 assertions passed prior to this batch.
