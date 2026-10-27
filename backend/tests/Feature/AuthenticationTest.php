@@ -248,6 +248,8 @@ class AuthenticationTest extends TestCase
         $this->restrictCurrentMembershipWithoutPermission('devices.approve');
 
         $this->getJson('/api/devices/access-requests')->assertForbidden();
+        $this->getJson('/api/devices/access-notifications')->assertForbidden();
+        $this->getJson('/api/security/login-history')->assertForbidden();
     }
 
     public function test_tenant_owner_can_review_only_own_pending_employee_access_requests(): void
@@ -439,6 +441,12 @@ class AuthenticationTest extends TestCase
             'username' => 'owner',
             'password' => 'password123',
         ])->assertOk();
+
+        $history = $this->getJson('/api/security/login-history')->assertOk()
+            ->assertJsonPath('pagination.page', 1);
+        $this->assertGreaterThanOrEqual(1, $history->json('pagination.total'));
+        $this->getJson('/api/security/login-history?page=0')->assertUnprocessable();
+        $this->getJson('/api/security/login-history?event=INVALID')->assertUnprocessable();
 
         $noticeUlid = (string) \Illuminate\Support\Str::ulid();
         \Illuminate\Support\Facades\DB::table('device_access_notifications')->insert([
