@@ -133,6 +133,16 @@ export function fetchPlatformTenants(page = 1): Promise<Paginated<PlatformTenant
 }
 
 export type PlatformDeviceActivity = {
+  events: Array<{
+    ulid: string
+    event: string
+    tenant: { ulid: string; code: string; name: string } | null
+    membership: { ulid: string; username: string } | null
+    device: { ulid: string; name: string } | null
+    ip_address: string | null
+    user_agent: string | null
+    occurred_at: string | null
+  }>
   sessions: Array<{
     ulid: string
     tenant: { ulid: string; code: string; name: string } | null
