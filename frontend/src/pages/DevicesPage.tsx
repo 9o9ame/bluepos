@@ -1,3 +1,4 @@
+import { summarizeUserAgent } from '../utils/userAgentSummary'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, X } from 'lucide-react'
 import { fetchBranches } from '../api/branches'
@@ -197,7 +198,7 @@ export function DevicesPage() {
                 { key: 'employee', header: 'Employee', render: row => row.username ?? 'Unknown' },
                 { key: 'device', header: 'Device', render: row => row.device_name ?? '—' },
                 { key: 'ip', header: 'Public IP', render: row => row.ip_address ?? '—' },
-                { key: 'browser', header: 'Browser / OS (reported)', render: row => row.user_agent ?? '—' },
+                { key: 'browser', header: 'Browser / OS (reported)', render: row => summarizeUserAgent(row.user_agent) },
                 { key: 'time', header: 'Recorded time', render: row => row.occurred_at },
               ]}
               rows={historyQuery.data?.events ?? []}
