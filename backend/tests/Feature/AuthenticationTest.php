@@ -1623,6 +1623,17 @@ class AuthenticationTest extends TestCase
             'updated_at' => now(),
         ]);
 
+        \Illuminate\Support\Facades\DB::table('login_location_observations')->insert([
+            'ulid' => (string) \Illuminate\Support\Str::ulid(),
+            'tenant_id' => $tenantA->tenant->id,
+            'membership_id' => $tenantA->membership->id,
+            'latitude_approx' => 28.42,
+            'longitude_approx' => 70.30,
+            'accuracy_meters' => 50,
+            'observed_at' => now(),
+            'expires_at' => now()->addDays(30),
+        ]);
+
         $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices')->assertUnauthorized();
         $this->createPlatformAdmin('approval-monitor-admin');
         $this->signInPlatformAdmin('approval-monitor-admin');
@@ -1632,7 +1643,9 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('access_requests.0.request_ip', '203.0.113.41')
             ->assertJsonPath('access_requests.0.username', 'owner')
             ->assertJsonPath('access_requests.0.reviewer_name', null)
-            ->assertJsonPath('access_requests.0.role_names', ['Owner']);
+            ->assertJsonPath('access_requests.0.role_names', ['Owner'])
+            ->assertJsonPath('locations.0.username', 'owner')
+            ->assertJsonPath('locations.0.latitude_approx', '28.42');
         $this->assertNoInternalIds($response->json());
         $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?status=pending&ip_address=203.0.113.41')
             ->assertOk()->assertJsonPath('access_requests.0.ulid', $requestUlid);
@@ -1653,6 +1666,8 @@ class AuthenticationTest extends TestCase
             ->assertUnprocessable();
         $this->getJson('/api/platform/tenants/'.$tenantB->tenant->ulid.'/devices')
             ->assertOk()->assertJsonCount(0, 'access_requests');
+        $this->getJson('/api/platform/tenants/'.$tenantB->tenant->ulid.'/devices')
+            ->assertOk()->assertJsonCount(0, 'locations');
         $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('ulid', $requestUlid)->value('status'));
 
