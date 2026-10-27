@@ -193,6 +193,7 @@ export type PlatformTenantAccessRequest = {
   reviewed_at: string | null
   reviewer_user_ulid: string | null
   reviewer_name: string | null
+  role_names: string[]
   request_ip: string | null
   request_user_agent: string | null
   membership_ulid: string
