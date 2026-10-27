@@ -5,7 +5,8 @@ return [
     'tenant_login_location_required' => filter_var(env('TENANT_LOGIN_LOCATION_REQUIRED', true), FILTER_VALIDATE_BOOL),
 
 
-    // Optional IPInfo lookup. Empty token: zero third-party IP disclosure.\n    'geoip' => ['token' => env('IPINFO_TOKEN', '')],\n\n    // Temporarily frozen for the initial platform implementation.
+    // Optional IPInfo lookup. Empty token: zero third-party IP disclosure.\n    'geoip' => ['token' => env('IPINFO_TOKEN', '')],
+    'privacy' => ['security_ip_retention_days' => max(30, (int) env('SECURITY_IP_RETENTION_DAYS', 90))],\n\n    // Temporarily frozen for the initial platform implementation.
     'platform_mfa_enabled' => filter_var(env('PLATFORM_MFA_ENABLED', false), FILTER_VALIDATE_BOOL),
 
     'platform_dev_bypass_mfa' => filter_var(
