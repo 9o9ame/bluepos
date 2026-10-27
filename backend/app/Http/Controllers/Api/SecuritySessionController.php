@@ -56,7 +56,7 @@ class SecuritySessionController extends Controller
             ->orderByDesc('observation.observed_at')->orderByDesc('observation.id')
             ->paginate(50, [
                 'observation.ulid', 'observation.latitude_approx', 'observation.longitude_approx',
-                'observation.accuracy_meters', 'observation.observed_at', 'observation.expires_at',
+                'observation.accuracy_meters', 'observation.country', 'observation.region', 'observation.city', 'observation.observed_at', 'observation.expires_at',
                 'member.ulid as membership_ulid', 'member.username',
                 'device.ulid as device_ulid', 'device.name as device_name',
             ], 'page', (int) ($data['page'] ?? 1));
