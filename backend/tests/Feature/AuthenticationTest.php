@@ -1485,6 +1485,13 @@ class AuthenticationTest extends TestCase
         $this->assertTrue(collect($filtered->json('events'))->every(fn ($row) => $row['event'] === 'LOGIN_SUCCESS' && ($row['tenant']['ulid'] ?? null) === $owner->tenant->ulid));
         $this->assertTrue(collect($filtered->json('sessions'))->every(fn ($row) => ($row['tenant']['ulid'] ?? null) === $owner->tenant->ulid));
         $this->getJson('/api/platform/security/device-activity?username=owner')->assertUnprocessable();
+        $this->getJson('/api/platform/security/device-activity?event_page=0')->assertUnprocessable();
+        $this->getJson('/api/platform/security/device-activity?session_page=not-a-number')->assertUnprocessable();
+        $pageOne = $this->getJson('/api/platform/security/device-activity?tenant_code='.$owner->tenant->code.'&event_page=1')
+            ->assertOk()->assertJsonPath('pagination.events.page', 1);
+        $this->assertGreaterThanOrEqual(1, $pageOne->json('pagination.events.total'));
+        $this->getJson('/api/platform/security/device-activity?tenant_code='.$owner->tenant->code.'&event_page=10000')
+            ->assertOk()->assertJsonCount(0, 'events');
         $this->getJson('/api/platform/security/device-activity?event=INVALID')->assertUnprocessable();
         $this->getJson('/api/platform/security/device-activity?ip_address=not-an-ip')->assertUnprocessable();
         $this->getJson('/api/platform/security/device-activity?since=2026-10-30&until=2026-10-01')->assertUnprocessable();
