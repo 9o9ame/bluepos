@@ -250,6 +250,7 @@ class AuthenticationTest extends TestCase
         $this->getJson('/api/devices/access-requests')->assertForbidden();
         $this->getJson('/api/devices/access-notifications')->assertForbidden();
         $this->getJson('/api/security/login-history')->assertForbidden();
+        $this->getJson('/api/security/location-history')->assertForbidden();
     }
 
     public function test_tenant_owner_can_review_only_own_pending_employee_access_requests(): void
