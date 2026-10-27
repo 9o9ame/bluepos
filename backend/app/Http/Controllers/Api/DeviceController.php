@@ -120,6 +120,8 @@ class DeviceController extends Controller
                 'access.ulid',
                 'access.status',
                 'access.created_at',
+                'access.request_ip',
+                'access.request_user_agent',
                 'access.reviewed_at',
                 'reviewer.ulid as reviewer_user_ulid',
                 'reviewer.name as reviewer_name',
