@@ -31,7 +31,34 @@ class PlatformTenantDeviceController extends Controller
             ->limit(200)
             ->get();
 
-        return response()->json(['sessions' => $sessions->map(fn (AuthSessionRecord $session) => [
+        $events = AuditLog::query()
+            ->whereIn('event', ['LOGIN_SUCCESS', 'LOGIN_FAILURE', 'DEVICE_ACCESS_REQUESTED', 'DEVICE_ACCESS_APPROVED', 'DEVICE_ACCESS_REJECTED', 'DEVICE_REVOKED'])
+            ->orderByDesc('occurred_at')->orderByDesc('id')->limit(200)->get();
+        $tenants = Tenant::query()->whereIn('id', $events->pluck('tenant_id')->filter()->unique())->get()->keyBy('id');
+        $memberships = \App\Models\Membership::query()
+            ->whereIn('id', $events->pluck('actor_membership_id')->filter()->unique())
+            ->get()->keyBy('id');
+        $devices = Device::query()->whereIn('id', $events->pluck('device_id')->filter()->unique())->get()->keyBy('id');
+
+        $eventRows = $events->map(function (AuditLog $log) use ($tenants, $memberships, $devices) {
+            $tenant = $tenants->get($log->tenant_id);
+            $member = $memberships->get($log->actor_membership_id);
+            $device = $devices->get($log->device_id);
+            return [
+                'ulid' => $log->ulid,
+                'event' => $log->event,
+                'tenant' => $tenant ? ['ulid' => $tenant->ulid, 'code' => $tenant->code, 'name' => $tenant->name] : null,
+                'membership' => $member && $tenant && (int) $member->tenant_id === (int) $tenant->id
+                    ? ['ulid' => $member->ulid, 'username' => $member->username] : null,
+                'device' => $device && $tenant && (int) $device->tenant_id === (int) $tenant->id
+                    ? ['ulid' => $device->ulid, 'name' => $device->name] : null,
+                'ip_address' => $log->ip_address,
+                'user_agent' => $log->user_agent,
+                'occurred_at' => $log->occurred_at?->toISOString(),
+            ];
+        })->values();
+
+        return response()->json(['events' => $eventRows, 'sessions' => $sessions->map(fn (AuthSessionRecord $session) => [
             'ulid' => $session->ulid,
             'tenant' => $session->membership?->tenant ? [
                 'ulid' => $session->membership->tenant->ulid,
