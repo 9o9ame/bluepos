@@ -1309,6 +1309,12 @@ class AuthenticationTest extends TestCase
         $this->assertTrue(collect($filtered->json('sessions'))->every(fn ($row) => ($row['tenant']['ulid'] ?? null) === $owner->tenant->ulid));
         $this->getJson('/api/platform/security/device-activity?username=owner')->assertUnprocessable();
         $this->getJson('/api/platform/security/device-activity?event=INVALID')->assertUnprocessable();
+        $this->getJson('/api/platform/security/device-activity?ip_address=not-an-ip')->assertUnprocessable();
+        $ipFiltered = $this->getJson('/api/platform/security/device-activity?tenant_code='.$owner->tenant->code.'&ip_address=127.0.0.1')->assertOk();
+        $this->assertTrue(collect($ipFiltered->json('sessions'))->every(fn ($row) => $row['ip_address'] === '127.0.0.1'));
+        $this->assertTrue(collect($ipFiltered->json('events'))->every(fn ($row) => $row['ip_address'] === '127.0.0.1'));
+        $this->getJson('/api/platform/security/device-activity?ip_address=203.0.113.254')->assertOk()
+            ->assertJsonCount(0, 'sessions')->assertJsonCount(0, 'events');
         $this->getJson('/api/platform/security/device-activity?tenant_code=UNKNOWN_NO_TENANT')->assertOk()
             ->assertJsonCount(0, 'events')->assertJsonCount(0, 'sessions');
 
