@@ -296,6 +296,7 @@ class LoginUserAction
                     'request_user_agent' => \Illuminate\Support\Str::limit((string) $request->userAgent(), 180, ''),
                     'reviewed_by' => null,
                     'reviewed_at' => null,
+                    ...$this->approximateRequestLocation($request),
                     'updated_at' => now(),
                 ]);
 
@@ -321,6 +322,7 @@ class LoginUserAction
                 'request_ip' => $request->ip(),
                 'request_user_agent' => \Illuminate\Support\Str::limit((string) $request->userAgent(), 180, ''),
                 'status' => 'pending',
+                ...$this->approximateRequestLocation($request),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]) > 0;
@@ -339,6 +341,27 @@ class LoginUserAction
         if ($created) {
             app(EmployeeDeviceApprovalNotifier::class)->notifyOwners($membership, $device->name, $request->ip());
         }
+    }
+
+    /** @return array{request_latitude_approx: float|null, request_longitude_approx: float|null, request_location_expires_at: mixed} */
+    private function approximateRequestLocation(Request $request): array
+    {
+        $lat = $request->input('location_latitude');
+        $long = $request->input('location_longitude');
+        if (! is_numeric($lat) || ! is_numeric($long)
+            || (float) $lat < -90 || (float) $lat > 90
+            || (float) $long < -180 || (float) $long > 180) {
+            return [
+                'request_latitude_approx' => null,
+                'request_longitude_approx' => null,
+                'request_location_expires_at' => null,
+            ];
+        }
+        return [
+            'request_latitude_approx' => round((float) $lat, 2),
+            'request_longitude_approx' => round((float) $long, 2),
+            'request_location_expires_at' => now()->addDays(30),
+        ];
     }
 
     private function recordOwnerInboxNotifications(Membership $employee, int $requestId, string $kind, bool $reopen = false): void
