@@ -35,6 +35,7 @@ export function PlatformTenantDetailPage() {
   const requestedTab = searchParams.get('tab')
   const tab = TABS.find((item) => item === requestedTab) ?? 'Overview'
   const setTab = (value: (typeof TABS)[number]) => setSearchParams(value === 'Overview' ? {} : { tab: value })
+  const [approvalPage, setApprovalPage] = useState(1)
   const [approvalStatus, setApprovalStatus] = useState('all')
   const [approvalIp, setApprovalIp] = useState('')
   const [reason, setReason] = useState('')
@@ -52,8 +53,8 @@ export function PlatformTenantDetailPage() {
     enabled: tenantUlid !== '' && tab === 'Login Activity',
   })
   const devicesQuery = useQuery({
-    queryKey: ['platform', 'tenant', tenantUlid, 'devices', approvalStatus, approvalIp],
-    queryFn: () => fetchPlatformTenantDevices(tenantUlid, { status: approvalStatus, ip_address: approvalIp.trim() || undefined }),
+    queryKey: ['platform', 'tenant', tenantUlid, 'devices', approvalStatus, approvalIp, approvalPage],
+    queryFn: () => fetchPlatformTenantDevices(tenantUlid, { status: approvalStatus, ip_address: approvalIp.trim() || undefined, page: approvalPage }),
     enabled: tenantUlid !== '' && tab === 'Devices',
   })
   const plansQuery = useQuery({ queryKey: ['platform', 'plans'], queryFn: fetchPlatformPlans })
@@ -373,10 +374,10 @@ export function PlatformTenantDetailPage() {
             </table>
           </div>
           {devicesQuery.data?.devices.length === 0 ? <p className="pt-3">No registered devices for this tenant.</p> : null}
-          <strong className="mt-4 block">Recent employee device/network approval requests (read-only, latest 100)</strong>
+          <strong className="mt-4 block">Employee device/network approval history (read-only, 100 per page)</strong>
           <div className="my-2 flex flex-wrap items-end gap-2">
             <label className="flex flex-col gap-1">Decision
-              <UiSelect value={approvalStatus} onChange={setApprovalStatus} options={[
+              <UiSelect value={approvalStatus} onChange={v => { setApprovalStatus(v); setApprovalPage(1) }} options={[
                 { value: 'all', label: 'All decisions' },
                 { value: 'pending', label: 'Pending' },
                 { value: 'approved', label: 'Approved' },
@@ -384,7 +385,7 @@ export function PlatformTenantDetailPage() {
               ]} />
             </label>
             <label className="flex flex-col gap-1">Request IP
-              <input className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={approvalIp} onChange={e => setApprovalIp(e.target.value)} placeholder="Any IP" />
+              <input className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={approvalIp} onChange={e => { setApprovalIp(e.target.value); setApprovalPage(1) }} placeholder="Any IP" />
             </label>
           </div>
           <div className="overflow-x-auto">
@@ -400,6 +401,11 @@ export function PlatformTenantDetailPage() {
             </table>
           </div>
           {devicesQuery.data?.access_requests.length === 0 ? <p className="pt-3">No employee access requests recorded.</p> : null}
+          <div className="mt-2 flex items-center gap-2">
+            <span>{devicesQuery.data?.approval_pagination.total ?? 0} requests · page {approvalPage}</span>
+            <button type="button" className="rounded border px-3 py-1" disabled={approvalPage <= 1} onClick={() => setApprovalPage(n => Math.max(1, n - 1))}>Previous</button>
+            <button type="button" className="rounded border px-3 py-1" disabled={!devicesQuery.data || approvalPage >= devicesQuery.data.approval_pagination.last_page} onClick={() => setApprovalPage(n => n + 1)}>Next</button>
+          </div>
         </div>
       ) : null}
 
