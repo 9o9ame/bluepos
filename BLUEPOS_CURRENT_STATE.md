@@ -796,3 +796,11 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - The existing review-history focused test now asserts device, username, stored IP and user-agent in tenant-scoped approval responses.
 - Requirement #24 acceptance: owner receives staff username, role names, device, request time, status, and IP/user agent via tenant-scoped API/owner screens; geographic location is optional only when available. Count as implementation-complete after migration + focused verification. Location geocoding remains #45 pending.
 - Tracker before acceptance: 22 implemented / 17 partial / 11 pending; if #24 verification passes: 23 implemented / 16 partial / 11 pending. This is code-level completion only, not release/browser E2E proof.
+
+### 2026-10-27 — Device approval acceptance milestone (staff login)
+- User verified additive request-network migration on `bluepos_test`; two relevant focused tests passed (50 assertions). This closes requirement #24 at the **implementation + focused API verification** level: owner can see username, active role, device, IP/user-agent, request timestamp and status; approximate location only when available remains unimplemented under #45.
+- Fixed the first-ever staff device login to return the same server-derived `approval_status` as subsequent pending device/network login attempts; login UI already maps `pending` and `rejected` to tenant-owner instructions and allows manual retry. No SuperAdmin approval dependency introduced.
+- Strengthened focused authentication regression to assert pending and rejected status in login denial responses.
+- Tracker upon previous successful verification: **23 implemented / 16 partial / 11 pending** (#24 partial → implemented). Requirement #26 remains pending focused regression of new first-device behavior and browser acceptance before classifying fully complete.
+- Git branch `feature/superadmin` is a user-approved legacy module branch; do not move/merge without explicit approval.
+- Validation needed for this specific batch: only `AuthenticationTest::test_employee_login_requires_approved_network_and_rejects_other_network` on `bluepos_test`. No full build required.
