@@ -516,7 +516,7 @@ class AuthenticationTest extends TestCase
             'password' => 'password123',
         ];
         $this->postJson('/api/auth/login', $credentials)
-            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
+            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED')->assertJsonPath('error.approval_status', 'pending');
 
         \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('membership_id', $member->id)->update(['status' => 'approved']);
@@ -580,7 +580,8 @@ class AuthenticationTest extends TestCase
             ->update(['status' => 'rejected', 'reviewed_at' => now()]);
 
         $this->postJson('/api/auth/login', $credentials)
-            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
+            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED')
+            ->assertJsonPath('error.approval_status', 'rejected');
         $this->assertSame('rejected', \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('id', $otherRequest->id)->value('status'));
 
