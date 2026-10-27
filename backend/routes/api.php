@@ -133,6 +133,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::post('/devices/access-requests/{requestUlid}/revoke', [DeviceController::class, 'revokeAccessRequest']);
     Route::post('/devices/{deviceUlid}/approve', [DeviceController::class, 'approve']);
     Route::post('/devices/{deviceUlid}/revoke', [DeviceController::class, 'revoke']);
+    Route::post('/devices/{deviceUlid}/restore', [DeviceController::class, 'restore']);
     Route::patch('/devices/{deviceUlid}', [DeviceController::class, 'assign']);
 
     Route::get('/security/sessions', [SecuritySessionController::class, 'index']);
