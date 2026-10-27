@@ -31,6 +31,44 @@ class SecuritySessionController extends Controller
         return AuthSessionRecordResource::collection($query->get());
     }
 
+    public function locationHistory(Request $request, TenantContext $tenantContext): JsonResponse
+    {
+        if (! $tenantContext->membership()->hasOwnerAuthority()) {
+            throw new ApiException('FORBIDDEN', 'Only the tenant owner may view staff locations.', 403);
+        }
+        $this->authorize('viewAny', AuthSessionRecord::class);
+        $data = $request->validate([
+            'page' => ['sometimes', 'integer', 'min:1', 'max:10000'],
+            'username' => ['sometimes', 'string', 'max:120'],
+        ]);
+        $page = \Illuminate\Support\Facades\DB::table('login_location_observations as observation')
+            ->join('memberships as member', function ($join) {
+                $join->on('member.id', '=', 'observation.membership_id')
+                    ->on('member.tenant_id', '=', 'observation.tenant_id');
+            })
+            ->leftJoin('devices as device', function ($join) {
+                $join->on('device.id', '=', 'observation.device_id')
+                    ->on('device.tenant_id', '=', 'observation.tenant_id');
+            })
+            ->where('observation.tenant_id', $tenantContext->tenantId())
+            ->where('observation.expires_at', '>', now())
+            ->when(isset($data['username']), fn ($query) => $query->where('member.username', $data['username']))
+            ->orderByDesc('observation.observed_at')->orderByDesc('observation.id')
+            ->paginate(50, [
+                'observation.ulid', 'observation.latitude_approx', 'observation.longitude_approx',
+                'observation.accuracy_meters', 'observation.observed_at', 'observation.expires_at',
+                'member.ulid as membership_ulid', 'member.username',
+                'device.ulid as device_ulid', 'device.name as device_name',
+            ], 'page', (int) ($data['page'] ?? 1));
+
+        return response()->json([
+            'locations' => $page->items(),
+            'pagination' => ['page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
+            'precision' => 'approximate',
+            'retention_days' => 30,
+        ]);
+    }
+
     public function loginHistory(Request $request, TenantContext $tenantContext): JsonResponse
     {
         if (! $tenantContext->membership()->hasOwnerAuthority()) {
