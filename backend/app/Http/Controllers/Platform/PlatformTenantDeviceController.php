@@ -134,6 +134,7 @@ class PlatformTenantDeviceController extends Controller
                 $join->on('device.id', '=', 'access.device_id')
                     ->on('device.tenant_id', '=', 'access.tenant_id');
             })
+            ->leftJoin('users as reviewer', 'reviewer.id', '=', 'access.reviewed_by')
             ->where('access.tenant_id', $tenant->id)
             ->when(isset($filters['status']) && $filters['status'] !== 'all', fn ($query) => $query->where('access.status', $filters['status']))
             ->when(isset($filters['ip_address']), fn ($query) => $query->where('access.request_ip', $filters['ip_address']))
@@ -142,6 +143,7 @@ class PlatformTenantDeviceController extends Controller
             ->get([
                 'access.ulid', 'access.status', 'access.created_at', 'access.reviewed_at',
                 'access.request_ip', 'access.request_user_agent',
+                'reviewer.ulid as reviewer_user_ulid', 'reviewer.name as reviewer_name',
                 'member.ulid as membership_ulid', 'member.username',
                 'device.ulid as device_ulid', 'device.name as device_name',
             ]);
