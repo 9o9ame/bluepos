@@ -740,6 +740,17 @@ class AuthenticationTest extends TestCase
         $this->postJson('/api/auth/login', array_merge($credentials, ['username' => 'otherstaff']))
             ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED')
             ->assertJsonPath('error.approval_status', 'pending');
+        $this->assertSame(1, \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('actor_membership_id', $secondMember->id)
+            ->where('event', 'DEVICE_ACCESS_REQUESTED')->count());
+        // Retrying the same pending network must not create duplicate requests or audit evidence.
+        $this->postJson('/api/auth/login', array_merge($credentials, ['username' => 'otherstaff']))
+            ->assertForbidden()->assertJsonPath('error.approval_status', 'pending');
+        $this->assertSame(1, \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('actor_membership_id', $secondMember->id)
+            ->where('event', 'DEVICE_ACCESS_REQUESTED')->count());
 
         $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.78']);
         $this->postJson('/api/auth/login', $credentials)
