@@ -1798,6 +1798,31 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('locations.0.latitude_approx', '28.42')
             ->assertJsonPath('locations.0.longitude_approx', '70.30');
         $this->getJson('/api/security/location-history?page=0')->assertUnprocessable();
+
+        $other = $this->provisionOwner('location-other-tenant');
+        \Illuminate\Support\Facades\DB::table('login_location_observations')->insert([
+            'ulid' => (string) \Illuminate\Support\Str::ulid(),
+            'tenant_id' => $other->tenant->id,
+            'membership_id' => $other->membership->id,
+            'latitude_approx' => 31.44,
+            'longitude_approx' => 74.36,
+            'accuracy_meters' => 50,
+            'observed_at' => now(),
+            'expires_at' => now()->addDays(30),
+        ]);
+        \Illuminate\Support\Facades\DB::table('login_location_observations')->insert([
+            'ulid' => (string) \Illuminate\Support\Str::ulid(),
+            'tenant_id' => $owner->tenant->id,
+            'membership_id' => $owner->membership->id,
+            'latitude_approx' => 28.42,
+            'longitude_approx' => 70.30,
+            'accuracy_meters' => 50,
+            'observed_at' => now()->subDays(32),
+            'expires_at' => now()->subDays(2),
+        ]);
+        $this->getJson('/api/security/location-history')
+            ->assertOk()->assertJsonPath('pagination.total', 1);
+
         $this->postJson('/api/auth/mfa/verify', [
             'challenge_ulid' => (string) \Illuminate\Support\Str::ulid(),
             'code' => '123456',
