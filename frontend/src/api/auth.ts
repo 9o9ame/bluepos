@@ -1,7 +1,9 @@
 import type { AppearancePreferences, AuthSession } from '../types/auth'
 import { apiFetch, resetCsrf } from './client'
 
-export type LoginInput = {
+export type BrowserLocationInput = { location_latitude: number; location_longitude: number; location_accuracy: number }
+
+export type LoginInput = BrowserLocationInput & {
   tenant_code: string
   username: string
   password: string
@@ -26,7 +28,7 @@ export type ChangePasswordInput = {
   password_confirmation: string
 }
 
-export type MfaVerifyInput = {
+export type MfaVerifyInput = BrowserLocationInput & {
   challenge_ulid: string
   code: string
   trust_device?: boolean
