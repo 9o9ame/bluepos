@@ -382,7 +382,7 @@ export function PlatformTenantDetailPage() {
               <tbody>{(devicesQuery.data?.locations ?? []).map(loc => (
                 <tr className="border-t" key={loc.ulid}>
                   <td>{loc.username}</td><td>{loc.device_name ?? '—'}</td>
-                  <td>{loc.latitude_approx}, {loc.longitude_approx}</td>
+                  <td>{[loc.city, loc.region, loc.country].filter(Boolean).join(', ') || 'Unknown'} · {loc.latitude_approx}, {loc.longitude_approx}</td>
                   <td>{loc.accuracy_meters} m</td><td>{loc.observed_at}</td>
                 </tr>
               ))}</tbody>
