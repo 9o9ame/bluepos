@@ -1285,10 +1285,14 @@ class AuthenticationTest extends TestCase
         $this->signInPlatformAdmin('device-overview-admin');
         $response = $this->getJson('/api/platform/security/device-activity')->assertOk();
         $this->assertIsArray($response->json('sessions'));
+        $this->assertIsArray($response->json('events'));
         $this->assertNoInternalIds($response->json());
         $tenantUlids = collect($response->json('sessions'))
             ->pluck('tenant.ulid')->filter()->all();
         $this->assertContains($owner->tenant->ulid, $tenantUlids);
+        // Login success is recorded in the centralized, audit-permission-protected feed.
+        $loginEvents = collect($response->json('events'))->where('event', 'LOGIN_SUCCESS');
+        $this->assertTrue($loginEvents->contains(fn ($row) => ($row['tenant']['ulid'] ?? null) === $owner->tenant->ulid));
 
         $tenantActivity = $this->getJson('/api/platform/tenants/'.$owner->tenant->ulid.'/login-activity')->assertOk();
         $this->assertIsArray($tenantActivity->json('sessions'));
