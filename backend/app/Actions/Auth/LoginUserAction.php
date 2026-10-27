@@ -335,7 +335,7 @@ class LoginUserAction
             'device_id' => $device->id,
             'resource_type' => 'device',
             'resource_ulid' => $device->ulid,
-        ], $request);
+        ], $request, serverResolvedIdentity: true);
     }
 
     private function staffApprovalStatus(Request $request, Membership $membership, Device $device): string
