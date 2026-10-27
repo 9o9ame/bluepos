@@ -184,7 +184,20 @@ class LoginUserAction
         }
 
         if ($device->tenant_id !== null && (int) $device->tenant_id !== (int) $membership->tenant_id) {
-            throw new ApiException('DEVICE_NOT_APPROVED', 'This device is not approved. Ask your administrator to approve it.', 403);
+            // A browser may retain a valid cookie issued for another tenant.
+            // Never authorize that tenant's device here: enroll a new device scoped
+            // to the authenticated membership's tenant and require its own review.
+            $device = $this->pendingDevice($membership);
+            if ($membership->hasOwnerAuthority()) {
+                $this->requireMfa($request, $membership, $device);
+            }
+            $this->recordStaffAccessRequest($request, $membership, $device);
+            throw new ApiException(
+                'DEVICE_NOT_APPROVED',
+                'Your tenant owner must approve this device and network.',
+                403,
+                ['approval_status' => $this->staffApprovalStatus($request, $membership, $device)]
+            );
         }
 
         if ($device->status === DeviceStatus::Revoked) {
