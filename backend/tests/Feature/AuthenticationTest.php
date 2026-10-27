@@ -632,6 +632,8 @@ class AuthenticationTest extends TestCase
                 'device_id' => $device->id,
                 'network_hash' => hash('sha256', 'history-'.$status),
                 'status' => $status,
+                'request_ip' => '203.0.113.24',
+                'request_user_agent' => 'BluePOS test browser',
                 'reviewed_at' => $status === 'pending' ? null : now(),
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -647,7 +649,11 @@ class AuthenticationTest extends TestCase
         $this->getJson('/api/devices/access-requests')
             ->assertOk()->assertJsonPath('pending_count', 1)
             ->assertJsonPath('pagination.total', 1)
-            ->assertJsonPath('requests.0.ulid', $ulids['pending']);
+            ->assertJsonPath('requests.0.ulid', $ulids['pending'])
+            ->assertJsonPath('requests.0.username', 'historyemployee')
+            ->assertJsonPath('requests.0.device_name', 'History test device')
+            ->assertJsonPath('requests.0.request_ip', '203.0.113.24')
+            ->assertJsonPath('requests.0.request_user_agent', 'BluePOS test browser');
         $this->getJson('/api/devices/access-requests?status=approved')
             ->assertOk()->assertJsonPath('pagination.total', 1)
             ->assertJsonPath('requests.0.status', 'approved')
