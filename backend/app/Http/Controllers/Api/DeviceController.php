@@ -206,6 +206,8 @@ class DeviceController extends Controller
                 'member.username',
                 'device.ulid as device_ulid',
                 'device.name as device_name',
+                'device.device_type',
+                'device.status as device_status',
             ], 'page', (int) ($data['page'] ?? 1));
 
         $members = \App\Models\Membership::query()
