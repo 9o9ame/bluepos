@@ -27,3 +27,6 @@ Artisan::command('inspire', function () {
 \Illuminate\Support\Facades\Schedule::call(fn () => app(\App\Security\SecurityPrivacyRetention::class)
     ->redactExpiredNetworkIdentifiers())
     ->daily()->name('redact-expired-security-network-identifiers')->withoutOverlapping();
+
+// Redact expired device request network identifiers without affecting approval decisions.
+\Illuminate\Support\Facades\Schedule::call([app(\App\Security\SecurityPrivacyRetention::class), 'redactExpiredDeviceRequestNetworkIdentifiers'])->daily()->name('device-request-ip-retention')->withoutOverlapping();
