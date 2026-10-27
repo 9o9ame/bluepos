@@ -966,3 +966,5 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - Production + test scope remains `DeviceController.php`, `AuthenticationTest.php`; no migration, no UI changes.
 - New security batch pending local test results; latest committed changes should be validated with focused owner-review and existing branch/tenant approval tests on `bluepos_test`.
 - Honest tracker remains **32 implemented / 7 partial / 11 pending** until original 50-item criteria can be mapped to actual acceptance. Future iterations must target complete *uncounted* requirements, not recurring approvals-only refinements, per STRICT USER DIRECTIVE.
+
+- Test isolation refinement: inactive-branch regression uses a **separate non-session branch** while the reviewer's own branch stays active, ensuring the assertion validates the device-review `BRANCH_ACCESS_DENIED` path rather than request middleware. Latest code commit `706d2cee`; still pending bluepos_test execution.
