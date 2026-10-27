@@ -1560,6 +1560,13 @@ class AuthenticationTest extends TestCase
             ->assertOk()->assertJsonCount(0, 'access_requests');
         $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?ip_address=203.0.113.99')
             ->assertOk()->assertJsonCount(0, 'access_requests');
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?page=0')
+            ->assertUnprocessable();
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?page=9999')
+            ->assertOk()->assertJsonCount(0, 'access_requests')
+            ->assertJsonPath('approval_pagination.total', 1);
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?page=1')
+            ->assertOk()->assertJsonPath('approval_pagination.page', 1);
         $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?status=invalid')
             ->assertUnprocessable();
         $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?ip_address=bad')
