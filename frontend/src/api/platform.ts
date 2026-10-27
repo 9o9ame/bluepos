@@ -46,12 +46,18 @@ import type {
 } from '../types/platform'
 
 export type PlatformLoginInput = {
+  location_latitude: number
+  location_longitude: number
+  location_accuracy: number
   email: string
   password: string
   remember: boolean
 }
 
 export type PlatformMfaInput = {
+  location_latitude: number
+  location_longitude: number
+  location_accuracy: number
   challenge_ulid: string
   code: string
   trust_device?: boolean
