@@ -1012,3 +1012,74 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - **Focused regression extended** within `test_owner_device_review_emails_employee_only_after_committed_decision`: approve, reject-via-review denied, explicit revocation succeeds, duplicate revocation 409, only one revocation audit and one additional notification.
 - Files: `backend/app/Http/Controllers/Api/DeviceController.php`, `backend/routes/api.php`, `backend/tests/Feature/AuthenticationTest.php`, `frontend/src/api/devices.ts`, `frontend/src/pages/DevicesPage.tsx`, `BLUEPOS_CURRENT_STATE.md`. No migrations. **Local validation pending** after current new commits; run TypeScript and focused auth tests only on `bluepos_test`.
 - **Progress baseline 32 implemented / 7 partial / 11 pending** remains provisional until original enumerated requirements can be mapped. This is a significant functional owner access-revocation closure, not another monitoring filter; don't invent a numbered completion without source evidence. User insists large useful multiple-milestone batches, bar visible every answer and no need to repeat instructions.
+
+## 2026-10-27 — ORIGINAL 50-TASK SPEC RECOVERED: CHECKLIST & EVIDENCE RECONCILIATION (AUTHORITATIVE TASK TEXT IN USER'S PASTED FILE)
+
+**Original requirements now recovered** from user's uploaded `Pasted text.txt`: "BluePOS — Final Revised Device Security, Authentication & Monitoring Requirements." Numbered requirements **#1–50** are the acceptance source, not previously guessed roadmap items. Final rule: **SuperAdmin monitoring-only, owner authenticates new device/IP by recovery email OTP, staff approval only by own tenant owner**. Never reintroduce platform-side staff approval.
+
+**Latest user-confirmed baseline:** checkout `7b1d3c83`, `npx tsc -b --pretty false` PASS, focused `AuthenticationTest` **3 PASS / 44 assertions** (owner approve/revoke and staff network login). Earlier platform history pagination + audit check **3 PASS / 103 assertions**. These are focused checks, not full 50-item acceptance.
+
+**Two-layer status policy:** Legacy release tally is **32 implemented / 7 partial / 11 pending**. The line-by-line review below is a **preliminary evidence mapping** using I = implemented evidence in previously inspected source/tests, P = partial or missing acceptance, N = absent/not established. It is **not a new verified release percentage**. Preliminary counts I=35, P=10, N=5; do NOT automatically overwrite verified 32/7/11 until each I has explicit acceptance evidence and the gap between tallies is resolved. Ambiguous platform device delete functionality must not be treated as a tenant employee approval endpoint.
+
+| # | Final requirement (short title) | Review | Evidence / remaining acceptance |
+|---|---|---|---|
+| 1 | Owner no SuperAdmin approval | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 2 | Owner first-device recovery OTP | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 3 | OTP trusts device/IP | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 4 | Remember trusted device/IP | P | Complete remaining scenario, historical coverage, or conditional requirement and run focused acceptance |
+| 5 | New owner device OTP | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 6 | Owner changed-IP OTP | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 7 | Automatic post-OTP trust | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 8 | Owner no manual approval dependency | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 9 | Owner recovery email | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 10 | Staff new-device approval mandatory | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 11 | Tenant-local review authority | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 12 | No platform staff approval | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 13 | First employee device request | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 14 | Staff device-change reapproval | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 15 | Staff changed-IP reapproval | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 16 | Block staff until approved | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 17 | Recognized staff login | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 18 | Tenant device status management | P | Complete remaining scenario, historical coverage, or conditional requirement and run focused acceptance |
+| 19 | Tenant approve/reject | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 20 | Tenant revoke staff access | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 21 | New device in-app owner notification | N | Missing or no implementation evidence; design, implement and test |
+| 22 | New IP in-app owner notification | N | Missing or no implementation evidence; design, implement and test |
+| 23 | Owner approval email alert | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 24 | Request detail incl optional location | P | Complete remaining scenario, historical coverage, or conditional requirement and run focused acceptance |
+| 25 | Pending approval count/list | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 26 | Staff approval result on login | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 27 | Platform cross-tenant device monitoring | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 28 | Platform owner device/IP/location | P | Complete remaining scenario, historical coverage, or conditional requirement and run focused acceptance |
+| 29 | Platform staff device/IP/location | P | Complete remaining scenario, historical coverage, or conditional requirement and run focused acceptance |
+| 30 | Platform tenant-wise grouping | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 31 | Platform per-user monitoring | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 32 | Platform role-wise monitoring | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 33 | Platform login/security history | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 34 | Platform read-only approval monitoring | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 35 | No platform approval notifications | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 36 | Tenant staff device monitoring | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 37 | Tenant staff geographic location | N | Missing or no implementation evidence; design, implement and test |
+| 38 | Tenant staff public IP | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 39 | Tenant complete login history | P | Complete remaining scenario, historical coverage, or conditional requirement and run focused acceptance |
+| 40 | Tenant device last seen | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 41 | Tenant isolation | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 42 | Persistent browser/device identity | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 43 | IP address history | P | Complete remaining scenario, historical coverage, or conditional requirement and run focused acceptance |
+| 44 | Browser/OS/device metadata | P | Complete remaining scenario, historical coverage, or conditional requirement and run focused acceptance |
+| 45 | Approximate IP geolocation | N | Missing or no implementation evidence; design, implement and test |
+| 46 | Permission-gated GPS if enabled | P | Complete remaining scenario, historical coverage, or conditional requirement and run focused acceptance |
+| 47 | Reviewer-attributed approval audit | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 48 | OTP/retry/abuse/session security | P | Complete remaining scenario, historical coverage, or conditional requirement and run focused acceptance |
+| 49 | Revoked device sessions | I | Implementation indicated by existing code and focused checkpoint; full scenario coverage may remain to verify |
+| 50 | Location retention/access/privacy | N | Missing or no implementation evidence; design, implement and test |
+
+**Actionable gaps by exact original task ID:**
+- **Pending / no completion evidence:** #21, #22 persistent **in-app owner notifications** (distinct from email), #37 tenant-visible location, #45 approximate country/region/city IP geolocation, #50 location-history access/retention/privacy lifecycle. These need designs and focused tests before closure.
+- **Partial:** #4 remembered owner device/IP login across trust and expiry, #18 tenant complete device status visibility, #24 request details including location if known, #28/#29 platform owner/staff IP plus location, #39 tenant complete staff login history, #43 longitudinal IP history, #44 parsed browser/OS/device information, #46 permission-based precise GPS **only if explicitly desired** (do not silently collect), #48 OTP abuse limits/retry/session comprehensive validation.
+- **Important distinct security gate:** existing device-revocation and request-revocation tests do not establish a real two-worker authenticated HTTP decision race. Add dedicated concurrency acceptance (supports #47/#48, not a standalone invented #51).
+- **Security/privacy:** Before adding location lookups choose opt-in or clearly disclosed coarse-IP approach, controlled provider/retention/access scope; never store silent GPS. #50 controls must precede general rollout.
+
+**Next development batch recommendations:** First deliver #21+#22 through a tenant-scoped persistent in-app notification/inbox workflow with unread count, action links, dedupe and authorization. Then #43+#44 IP/OS longitudinal audit history, and #45/#50 location/privacy via reviewed design. Do not simply polish existing platform filters. Tests only on `bluepos_test`, no destructive Git/DB, stay on user-authorized `feature/superadmin`.
+
+**Reporting:** Every later response must show a progress bar, exact outstanding original IDs, meaningful grouped delivery and validated vs pending distinction. When moving a numbered item from P/N to I, append its **acceptance proof** to this table or a dated verification addendum.
