@@ -1346,6 +1346,36 @@ class AuthenticationTest extends TestCase
         $this->assertNoInternalIds($response->json());
     }
 
+    public function test_unapproved_employee_login_is_audited_as_blocked_without_secrets(): void
+    {
+        $owner = $this->provisionOwner('blocked-monitor');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $device->device_type = 'browser';
+        $device->save();
+        $employee = \App\Models\Membership::query()->where('tenant_id', $owner->tenant->id)->where('username', 'owner')->firstOrFail();
+        // A tenant owner's device uses OTP rather than owner review, so exercise a revoked device instead.
+        $device->status = \App\Enums\DeviceStatus::Revoked;
+        $device->save();
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('blocked-monitor'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertForbidden()->assertJsonPath('error.key', 'DEVICE_REVOKED');
+
+        $entry = \App\Models\AuditLog::query()->where('tenant_id', $owner->tenant->id)
+            ->where('event', 'LOGIN_BLOCKED')->latest('id')->firstOrFail();
+        $this->assertSame($employee->id, $entry->actor_membership_id);
+        $this->assertSame('DEVICE_REVOKED', $entry->metadata['reason']);
+        $this->assertArrayNotHasKey('password', $entry->metadata);
+
+        $this->createPlatformAdmin('blocked-monitor-admin');
+        $this->signInPlatformAdmin('blocked-monitor-admin');
+        $this->getJson('/api/platform/security/device-activity?tenant_code='.$owner->tenant->code.'&event=LOGIN_BLOCKED')
+            ->assertOk()->assertJsonPath('events.0.event', 'LOGIN_BLOCKED')
+            ->assertJsonPath('events.0.membership.username', 'owner');
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
