@@ -782,3 +782,10 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - Files: backend/app/Http/Controllers/Api/DeviceController.php, frontend/src/api/devices.ts, frontend/src/pages/DevicesPage.tsx, frontend/src/pages/WorkspacePage.tsx.
 - Latest batch not yet validated locally. Request IP/geolocation is not stored on the access request row; no location/IP value is fabricated. Requirement #24 remains partial until server-derived request IP and available location are recorded and exposed safely.
 - Final requirement tracker remains 22 implemented / 17 partial / 11 pending until verification and additional complete requirements. The platform activity focused test previously passed (1 test, 9 assertions) and frontend typecheck passed per user output.
+
+### 2026-10-27 — Staff access request IP and browser context
+- Added reversible nullable `request_ip` and `request_user_agent` fields to `device_access_requests` in migration `2026_10_27_110000_add_request_network_context_to_device_access_requests.php`.
+- Login request creation and rejected-request reopening record server-observed IP and bounded user-agent. Staff cannot provide these values as trusted input.
+- Tenant-bound access request API exposes both fields; tenant Home alerts display IP and Devices request history displays IP and browser alongside role/device/time/status. Existing rows can show Unavailable.
+- No geolocation is derived or fabricated. Network fingerprints are still used for authorization. No changes to SuperAdmin monitoring-only policy.
+- Pending validation: migration on `bluepos_test`, focused employee request/auth test, frontend TypeScript check. Full release readiness not claimed; requirement #24 remains partial until optional location/privacy behaviors are addressed. #43/#44 progress is partial because comprehensive longitudinal IP and parsed OS history is not yet covered.
