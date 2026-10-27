@@ -1,3 +1,14 @@
+## 2026-10-27 — Device identity display, Revoke confirmation, Owner-only Restore (LOCAL VALIDATION PENDING)
+
+- User revoked own device accidentally because device list shows indistinguishable `Pending device` labels. New `associated_usernames` on tenant `GET /api/devices` is derived **server-side** from tenant-scoped `auth_sessions` + employee `device_access_requests`, distinct usernames; shows Unknown when no known history. A device may have multiple users. No usernames from other tenants are returned.
+- UI shows `Used by (known users)`, requires explicit confirmation before Revoke, and displays Owner-only Restore button on revoked devices. No frozen Sales layout affected.
+- New `POST /api/devices/{deviceUlid}/restore` authorizes existing device revoke permission AND active Owner authority, tenant-scoped ULID, transaction + tenant/device locks, verifies operational entitlement and status revoked, sets active while clearing revoked_at/trust expiry/IP trust. Audits `DEVICE_RESTORED`. Existing revoked auth sessions and offline leases remain revoked; fresh login needed. Owner browser requires fresh OTP. Staff network approval remains subject to existing records/policy; restoring a previously approved network does not replay already revoked sessions. Restore cannot resurrect disabled/non-revoked devices.
+- Files changed: `backend/app/Http/Controllers/Api/DeviceController.php`, `backend/app/Http/Resources/DeviceResource.php`, `backend/routes/api.php`, `frontend/src/api/devices.ts`, `frontend/src/types/auth.ts`, `frontend/src/pages/DevicesPage.tsx`. No migration.
+- GitHub remote edits only. Local PHP unit tests, frontend build, API authorization/tenancy checks, real-browser Owner restore all PENDING; no success claims. Before release add focused negative tests for staff denied, cross-tenant ULID denied, invalid status conflict, prior revoked session stays revoked, and per-tenant user associations.
+- After pulling branch, run `cd frontend; npm run build`; manual test in dev: Owner Devices list known users, confirm dialog, restore revoked Owner browser; log back in through OTP and check session not auto-revived.
+
+---
+
 ## 2026-10-27 — DEFERRED: scalable Owner device-approval notification bell (not implemented)
 
 - Decision by user: Do NOT enable 10-second or 2-second polling for tenant device approval notifications. Multi-tenant scale requires an event-driven solution, not per-browser periodic API traffic. Feature explicitly **PENDING**; do not present notification bell, sound, toast, realtime delivery, or browser push as implemented.
