@@ -260,6 +260,16 @@ class DeviceController extends Controller
                 );
             }
 
+            // Browser access follows owner email OTP or employee device/network review.
+            // The generic terminal approval endpoint must not bypass either workflow.
+            if ($device->device_type === 'browser') {
+                throw new ApiException(
+                    'DEVICE_ACCESS_VERIFICATION_REQUIRED',
+                    'Browser access requires owner email verification or tenant employee access review.',
+                    409
+                );
+            }
+
             if ($device->status !== DeviceStatus::Active) {
                 $entitlements = app(TenantEntitlementService::class);
                 $entitlements->assertOperational($lockedTenant);
