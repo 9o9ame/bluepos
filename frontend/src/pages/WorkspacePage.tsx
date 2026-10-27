@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { fetchDeviceAccessRequests } from '../api/devices'
 import {
   Banknote,
   BarChart3,
@@ -15,6 +17,13 @@ import { DesktopPanel } from '../components/desktop/DesktopPanel'
 export function WorkspacePage() {
   const { session } = useAuth()
   const { openModule } = useWorkspace()
+  const isOwner = Boolean(session?.membership.is_owner)
+  const approvalsQuery = useQuery({
+    queryKey: ['device-access-requests'],
+    queryFn: fetchDeviceAccessRequests,
+    enabled: isOwner,
+    refetchInterval: 30000,
+  })
   const canProducts = useCan('products.view')
   const catalogEnabled = useEntitled('catalog')
 
@@ -65,6 +74,25 @@ export function WorkspacePage() {
           </div>
         </div>
         <div>
+          {isOwner ? (
+            <div className="form-group">
+              <div className="form-group-title">Staff device / network approval alerts</div>
+              <div className="space-y-2 p-2 text-[12px]" aria-live="polite">
+                <p className="font-semibold">
+                  Pending approval requests: {approvalsQuery.isError ? 'Unavailable' : approvalsQuery.data?.pending_count ?? '…'}
+                </p>
+                {approvalsQuery.isError ? <p className="text-[var(--ui-danger)]">Unable to load device approval alerts.</p> : null}
+                {(approvalsQuery.data?.requests ?? []).slice(0, 5).map((item) => (
+                  <p key={item.ulid} className="border-b border-[var(--ui-border)] pb-1">
+                    <strong>{item.username}</strong> · {item.device_name} · {new Date(item.created_at).toLocaleString()}
+                  </p>
+                ))}
+                <button type="button" className="quick-command" onClick={() => openModule('/administration/devices')}>
+                  {approvalsQuery.data?.pending_count ? 'Review pending approvals' : 'Open device management'}
+                </button>
+              </div>
+            </div>
+          ) : null}
           <div className="form-group">
             <div className="form-group-title">Quick commands</div>
             <div className="flex flex-wrap gap-2 p-2">
