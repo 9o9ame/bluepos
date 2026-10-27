@@ -24,6 +24,27 @@ export function LoginPage() {
     return <Navigate to={session.must_change_password ? '/change-password' : '/'} replace />
   }
 
+  async function requireBrowserLocation(): Promise<{location_latitude: number;location_longitude: number;location_accuracy: number}> {
+    if (!window.isSecureContext || !navigator.geolocation) {
+      throw new Error('Sign-in requires browser location access on HTTPS (or localhost).')
+    }
+    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      })
+    })
+    if (!Number.isFinite(position.coords.latitude) || !Number.isFinite(position.coords.longitude)) {
+      throw new Error('Browser location is unavailable. Enable location permission and retry.')
+    }
+    return {
+      location_latitude: position.coords.latitude,
+      location_longitude: position.coords.longitude,
+      location_accuracy: position.coords.accuracy,
+    }
+  }
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
@@ -31,17 +52,19 @@ export function LoginPage() {
     setApprovalPending(false)
     setSubmitting(true)
     try {
+      const location = await requireBrowserLocation()
       if (challengeUlid) {
         const session = await verifyMfa({
           challenge_ulid: challengeUlid,
           code: mfaCode,
           trust_device: trustDevice,
+          ...location,
         })
         navigate(session.must_change_password ? '/change-password' : '/', { replace: true })
         return
       }
 
-      const session = await login({ tenant_code: tenantCode, username, password })
+      const session = await login({ tenant_code: tenantCode, username, password, ...location })
       navigate(session.must_change_password ? '/change-password' : '/', { replace: true })
     } catch (err) {
       if (err instanceof ApiClientError && (err.key === 'MFA_REQUIRED' || err.key === 'EMAIL_DELIVERY_FAILED')) {
@@ -64,7 +87,7 @@ export function LoginPage() {
         setError(null)
         return
       }
-      setError(err instanceof ApiClientError ? err.message : 'Unable to sign in.')
+      setError(err instanceof Error ? err.message : 'Unable to sign in.')
     } finally {
       setSubmitting(false)
     }
