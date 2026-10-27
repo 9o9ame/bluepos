@@ -858,3 +858,11 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - Added focused regression `test_disabled_member_login_is_blocked_and_audited_without_credentials` to check 403 plus tenant scope, actor, reason and no password metadata.
 - Files: LoginUserAction.php, AuthenticationTest.php, BLUEPOS_CURRENT_STATE.md. No migrations. Focused local tests for this batch are still pending.
 - No artificial tracker bump: **29 implemented / 10 partial / 11 pending**. This broadens a previously counted login-blocking monitoring criterion. A complete release-grade blocked event milestone also needs tests for tenant inactive, branch and warehouse denials, non-login auth entry points, and retention.
+
+### 2026-10-27 — Auth precheck denial audit milestone
+- User verified previous blocked-login batch: 3 focused tests, 29 assertions PASS on bluepos_test.
+- LoginUserAction now audits known-tenant `assertOperational` rejections (`TENANT_DISABLED`, `SUBSCRIPTION_REQUIRED`, `SUBSCRIPTION_INACTIVE`) as `LOGIN_BLOCKED`, while preserving existing HTTP errors.
+- These denials occur BEFORE password verification: audit only server-resolved tenant and safe error reason. Never attribute the request to a claimed username/user/membership or store credential content at this stage.
+- Added `test_suspended_tenant_login_records_block_without_unverified_identity` verifying 403, no actor attribution, privacy and global tenant activity visibility.
+- Changes: backend/app/Actions/Auth/LoginUserAction.php, backend/tests/Feature/AuthenticationTest.php, BLUEPOS_CURRENT_STATE.md. No migrations. New test not yet run locally.
+- Tracker remains **29 implemented / 10 partial / 11 pending**: adds necessary denied-login coverage to existing monitoring requirement, no double-counting. Still unresolved: non-login authentication endpoints and HTTP throttling telemetry.
