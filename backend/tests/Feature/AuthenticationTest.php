@@ -1802,6 +1802,33 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('events.0.membership', null);
     }
 
+    public function test_security_privacy_retention_redacts_only_aged_login_network_identity(): void
+    {
+        $owner = $this->provisionOwner('privacy-expiry');
+        config()->set('security.privacy.security_ip_retention_days', 90);
+        foreach ([
+            ['event' => 'LOGIN_SUCCESS', 'age' => 95],
+            ['event' => 'LOGIN_SUCCESS', 'age' => 5],
+            ['event' => 'DEVICE_ACCESS_APPROVED', 'age' => 95],
+        ] as $row) {
+            \App\Models\AuditLog::query()->create([
+                'tenant_id' => $owner->tenant->id,
+                'event' => $row['event'],
+                'occurred_at' => now()->subDays($row['age']),
+                'ip_address' => '203.0.113.10',
+                'user_agent' => 'Test browser',
+            ]);
+        }
+        $this->assertSame(1, app(\App\Security\SecurityPrivacyRetention::class)
+            ->redactExpiredNetworkIdentifiers());
+        $logs = \App\Models\AuditLog::query()->where('tenant_id', $owner->tenant->id)
+            ->orderBy('occurred_at')->get();
+        $this->assertNull($logs[0]->ip_address);
+        $this->assertNotNull($logs[1]->ip_address);
+        $this->assertNotNull($logs[2]->ip_address);
+        $this->assertCount(3, $logs);
+    }
+
     public function test_tenant_mfa_otp_is_consumed_once_and_replay_denied(): void
     {
         $owner = $this->provisionOwner('mfa-one-time');
