@@ -1766,6 +1766,31 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('events.0.membership', null);
     }
 
+    public function test_mandatory_browser_location_blocks_login_without_location_evidence(): void
+    {
+        $owner = $this->provisionOwner('login-location-gate');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        config()->set('security.tenant_login_location_required', true);
+
+        $credentials = [
+            'tenant_code' => $this->tenantCode('login-location-gate'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ];
+        $this->postJson('/api/auth/login', $credentials)->assertUnprocessable()
+            ->assertJsonValidationErrors(['location_latitude', 'location_longitude', 'location_accuracy']);
+        $this->postJson('/api/auth/login', array_merge($credentials, [
+            'location_latitude' => 91,
+            'location_longitude' => 74,
+            'location_accuracy' => 20,
+        ]))->assertUnprocessable()->assertJsonValidationErrors(['location_latitude']);
+        $this->postJson('/api/auth/login', array_merge($credentials, [
+            'location_latitude' => 28.42,
+            'location_longitude' => 70.30,
+            'location_accuracy' => 30,
+        ]))->assertOk();
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
