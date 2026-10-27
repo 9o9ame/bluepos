@@ -69,6 +69,7 @@ export type DeviceAccessNotification = {
   status: 'pending' | 'approved' | 'rejected'
   employee_ulid: string
   username: string
+  role_names: string[]
   device_ulid: string
   device_name: string
   request_ip: string | null
