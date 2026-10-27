@@ -36,6 +36,7 @@ export type DeviceAccessRequest = {
   username: string
   device_ulid: string
   device_name: string
+  role_names: string[]
   created_at: string
   status: 'pending' | 'approved' | 'rejected'
   reviewed_at: string | null
