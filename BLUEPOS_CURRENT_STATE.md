@@ -1,3 +1,15 @@
+## 2026-10-27 — Original #4/#18/#24 acceptance batch (local validation outstanding)
+
+- Authorized branch: `feature/superadmin`; last starting HEAD `b42f33cd`. Production commit `be4684c2`, regression commit `0905d2fe`. No migrations, no frontend edits, no branch change, no merge to main.
+- #4: Owner trusted-device/IP reuse, changed-IP OTP and 30-day trust expiry scenarios already have three **locally PASS** focused tests (3 tests, 13 assertions) as reported by user after pulling `b42f33cd` on PostgreSQL `bluepos_test`. **This does not establish full real-browser or time-based expiry acceptance.**
+- #18: Existing owner-only access history supports pending/approved/rejected and includes filtering and pagination; review/revoke flows already exist. Added `device_status` and `device_type` to the tenant-owner `GET /api/devices/access-requests` results so a historically approved network does not misrepresent a currently revoked device. It is read-only, tenant-filtered, and retains ULID-only public identifiers.
+- #24: Existing tenant-owner history includes role names, device name, request IP, user agent, timestamps, reviewer and expiry-gated rounded location. Enhanced `AuthenticationTest::test_owner_can_filter_and_paginate_employee_device_review_history` to assert device type/status, historic approved request with revoked device, and expired location hidden; new tests are **not locally executed**.
+- Changed paths: `backend/app/Http/Controllers/Api/DeviceController.php`, `backend/tests/Feature/AuthenticationTest.php`, `BLUEPOS_CURRENT_STATE.md`. No schema changes.
+- Suggested local validation (verify `bluepos_test` first): `cd backend && php vendor/bin/phpunit tests/Feature/AuthenticationTest.php --filter 'test_owner_can_filter_and_paginate_employee_device_review_history|test_owner_trusted_device_reuses_same_network_but_changed_network_requires_otp|test_owner_trusted_device_expiry_requires_fresh_email_verification|test_owner_verified_network_fingerprint_requires_reverification_on_change'`. Do not claim tests passed until actually run.
+- #4/#18/#24 **remain Partial pending latest regression execution plus browser/authenticated lifecycle acceptance**. Historical provisional progress remains 37 implementation-indicated Completed / 10 Partial / 3 Pending (classification unreconciled after #45/#50 code evidence); do not promote statuses yet. Remaining acceptance IDs **#4, #18, #24, #28, #29, #37, #39, #43, #44, #45, #46, #48, #50**. Next coherent batch after focused validation is #39/#43/#44 login, IP and browser/OS history.
+
+---
+
 ## 2026-10-27 — #4 trusted owner network HTTP regression (LOCAL TEST PENDING)
 
 - Authorized branch: `feature/superadmin`; starting checkpoint `2c19acec`. Implementation/test commit `a18bdf09`.
