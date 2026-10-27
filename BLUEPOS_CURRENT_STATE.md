@@ -810,3 +810,11 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - Platform Tenant Detail > Devices displays these counts. Approval/revoke platform routes remain removed. Tenant owner retains exclusive staff approval/rejection authority.
 - Related files: PlatformTenantDeviceController.php, frontend/src/api/platform.ts, frontend/src/pages/platform/PlatformTenantDetailPage.tsx.
 - Requirement #34 is now implemented at code level; pending local validation. Provisional tally **24 implemented / 15 partial / 11 pending**, including earlier #24 accepted after 2 tests/50 assertions. Requirement #26 first-device status edge case is newly addressed, focused verification pending.
+
+### 2026-10-27 — Tenant-wise SuperAdmin login/security monitoring enhancement
+- Corrected the tenant login-activity API to actually serialize active tenant-scoped membership roles (frontend already expected them). Previously the eager-loaded roles were omitted from this response, resulting in missing role display.
+- Expanded the per-tenant audit event allowlist to include DEVICE_ACCESS_REQUESTED / DEVICE_ACCESS_APPROVED / DEVICE_ACCESS_REJECTED / DEVICE_REVOKED, alongside LOGIN_FAILURE / LOGIN_SUCCESS / DEVICE_ENROLLMENT_REQUESTED. Read-only platform audit authorization remains mandatory.
+- Extended the existing platform activity security regression to check tenant session role codes, events and absence of internal IDs.
+- Changed backend/app/Http/Controllers/Platform/PlatformTenantDeviceController.php and backend/tests/Feature/AuthenticationTest.php. No migration. Focused regression must still pass on bluepos_test; previously user confirmed TypeScript and two focused auth tests (32 assertions) passed before this batch.
+- Provisional count remains 24 implemented / 15 partial / 11 pending: this batch completes an important missing piece of previously counted SuperAdmin monitoring requirements; do not double-count it as a new requirement.
+- Still pending: centralized failed/blocked login attempts across tenants, geolocation when supportable, historical IP retention policy and comprehensive multi-device audit acceptance.
