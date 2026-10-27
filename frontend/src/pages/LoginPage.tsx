@@ -15,6 +15,7 @@ export function LoginPage() {
   const [recoveryHint, setRecoveryHint] = useState<string | null>(null)
   const [trustDevice, setTrustDevice] = useState(true)
   const [deviceMessage, setDeviceMessage] = useState<string | null>(null)
+  const [approvalPending, setApprovalPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [resending, setResending] = useState(false)
@@ -27,6 +28,7 @@ export function LoginPage() {
     event.preventDefault()
     setError(null)
     setDeviceMessage(null)
+    setApprovalPending(false)
     setSubmitting(true)
     try {
       if (challengeUlid) {
@@ -49,8 +51,17 @@ export function LoginPage() {
         return
       }
       if (err instanceof ApiClientError && err.key === 'DEVICE_NOT_APPROVED') {
-        setDeviceMessage('This device is not approved. Request approval from your administrator.')
-        setError(err.message)
+        const status = err.extra.approval_status
+        const isPending = status === 'pending'
+        setApprovalPending(isPending)
+        setDeviceMessage(
+          isPending
+            ? 'Device/network approval request is pending with your tenant owner. Once approved, try signing in again.'
+            : status === 'rejected'
+              ? 'Your tenant owner rejected this device/network request. Contact your tenant owner before trying again.'
+              : 'This device/network is not approved. Contact your tenant owner. If you are the owner, use your recovery-email verification flow.',
+        )
+        setError(null)
         return
       }
       setError(err instanceof ApiClientError ? err.message : 'Unable to sign in.')
@@ -140,7 +151,8 @@ export function LoginPage() {
             </button>
           </>
         ) : null}
-        {deviceMessage ? <p className="text-[12px] text-[var(--ui-warning)]">{deviceMessage}</p> : null}
+        {deviceMessage ? <p role="status" className="text-[12px] text-[var(--ui-warning)]">{deviceMessage}</p> : null}
+        {approvalPending ? <p className="text-[12px] text-[var(--ui-text-muted)]">Approval does not sign you in automatically. Use Login again after your tenant owner approves the request.</p> : null}
         {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
         <button
           type="submit"
