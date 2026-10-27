@@ -1,3 +1,14 @@
+## 2026-10-27 — #28/#29/#37/#46 location monitoring acceptance regression (local run pending)
+
+- Working branch `feature/superadmin`; test change `e07bd0ae`. No production code, migrations or frontend changes, no main merge.
+- Existing implementation inspected: `SecuritySessionController::locationHistory` is tenant-owner-only and tenant-scoped; `PlatformTenantDeviceController::index` returns read-only approximate location observations scoped to selected tenant and not expired. `LoginLocationService` records rounded 0.01-degree positions and 30-day expiry when mandatory-location policy is active. Tenant password and MFA and platform password/MFA entry points already validate location fields under configuration.
+- Added to existing `AuthenticationTest` scenarios: tenant owner username-filtered location-history results; platform monitoring excludes expired locations and another tenant's unexpired location.
+- Existing test `test_mandatory_browser_location_blocks_login_without_location_evidence` validates request rejection without coordinates and approximate retention but does **not** prove actual browser permission-denial handling via HTTPS real browser. Existing `PlatformAccessTest::test_platform_password_and_mfa_require_location_when_policy_enabled` covers platform validation; browser E2E remains outstanding.
+- Run on confirmed `bluepos_test`: `php vendor/bin/phpunit tests/Feature/AuthenticationTest.php --filter 'test_mandatory_browser_location_blocks_login_without_location_evidence|test_platform_tenant_device_review_history_is_read_only_and_tenant_scoped'` and `php vendor/bin/phpunit tests/Feature/PlatformAccessTest.php --filter 'test_platform_password_and_mfa_require_location_when_policy_enabled'`. These amended tests were **not executed locally** at commit time. No promotion to release-completed until results and browser-permission E2E exist.
+- Original requirements #28, #29, #37, #46 remain Partial for complete acceptance. Still open #4, #18, #24, #28, #29, #37, #39, #43, #44, #45, #46, #48, #50. Historical provisional 37 code-indicated Completed / 10 Partial / 3 Pending has not been reconciled against newer partial #45/#50 evidence. Security rule unchanged: platform monitors only, no staff approval; location is not device trust evidence.
+
+---
+
 ## 2026-10-27 — User-verified #39/#43/#44 focused login history tests PASS
 
 - User supplied local PowerShell output: fast-forward pull `6684d094..1e7a0d17` on `feature/superadmin`; database verified as PostgreSQL `bluepos_test` using `php artisan db:show --database=pgsql`.
