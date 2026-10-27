@@ -135,7 +135,7 @@ export function DevicesPage() {
             header: 'Actions',
             render: (row) => (
               <div className="flex justify-end gap-1">
-                {canApprove && row.status === 'pending' ? (
+                {canApprove && row.status === 'pending' && row.device_type !== 'browser' ? (
                   <DesktopButton label="Approve" onClick={() => void onApprove(row)} />
                 ) : null}
                 {canRevoke && row.status !== 'revoked' ? (
