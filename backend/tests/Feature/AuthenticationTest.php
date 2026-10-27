@@ -1627,6 +1627,9 @@ class AuthenticationTest extends TestCase
             'device_id' => $device->id,
             'network_hash' => hash('sha256', 'platform-monitor-request'),
             'request_ip' => '203.0.113.41',
+            'request_latitude_approx' => 28.42,
+            'request_longitude_approx' => 70.30,
+            'request_location_expires_at' => now()->addDay(),
             'request_user_agent' => 'BluePOS monitoring test',
             'status' => 'pending',
             'created_at' => now(),
@@ -1651,6 +1654,7 @@ class AuthenticationTest extends TestCase
         $response = $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices')
             ->assertOk()->assertJsonPath('access_requests.0.ulid', $requestUlid)
             ->assertJsonPath('access_requests.0.request_ip', '203.0.113.41')
+            ->assertJsonPath('access_requests.0.request_latitude_approx', '28.42')
             ->assertJsonPath('access_requests.0.username', 'owner')
             ->assertJsonPath('access_requests.0.reviewer_name', null)
             ->assertJsonPath('access_requests.0.role_names', ['Owner'])
@@ -1678,6 +1682,12 @@ class AuthenticationTest extends TestCase
             ->assertOk()->assertJsonCount(0, 'access_requests');
         $this->getJson('/api/platform/tenants/'.$tenantB->tenant->ulid.'/devices')
             ->assertOk()->assertJsonCount(0, 'locations');
+        \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $requestUlid)
+            ->update(['request_location_expires_at' => now()->subMinute()]);
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices')
+            ->assertOk()->assertJsonPath('access_requests.0.request_latitude_approx', null);
+
         $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('ulid', $requestUlid)->value('status'));
 
