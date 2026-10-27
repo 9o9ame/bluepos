@@ -98,6 +98,29 @@ class AuthenticationTest extends TestCase
         $this->assertTrue($network->requiresReverification($device, $otherNetwork));
     }
 
+    public function test_owner_trusted_device_expiry_requires_fresh_email_verification(): void
+    {
+        $owner = $this->provisionOwner('owner-trust-expiry');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $credentials = [
+            'tenant_code' => $this->tenantCode('owner-trust-expiry'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ];
+
+        $this->postJson('/api/auth/login', $credentials)->assertOk();
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $device->trusted_until = now()->subMinute();
+        $device->save();
+        \Illuminate\Support\Facades\Notification::fake();
+
+        $this->postJson('/api/auth/login', $credentials)
+            ->assertForbidden()->assertJsonPath('error.key', 'MFA_REQUIRED');
+        $this->assertNotNull(\App\Models\MfaChallenge::query()
+            ->where('membership_id', $owner->membership->id)
+            ->whereNull('consumed_at')->first());
+    }
+
     public function test_non_owner_pending_device_requires_tenant_approval_not_email_otp(): void
     {
         $this->signInOwner('staff-pending')->assertOk();
