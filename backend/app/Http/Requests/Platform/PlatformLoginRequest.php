@@ -22,7 +22,7 @@ class PlatformLoginRequest extends FormRequest
             'remember' => ['sometimes', 'boolean'],
             'location_latitude' => [config('security.tenant_login_location_required') ? 'required' : 'sometimes', 'numeric', 'between:-90,90'],
             'location_longitude' => [config('security.tenant_login_location_required') ? 'required' : 'sometimes', 'numeric', 'between:-180,180'],
-            'location_accuracy' => [config('security.tenant_login_location_required') ? 'required' : 'sometimes', 'numeric', 'min:0', 'max:100000'],
+            'location_accuracy' => [config('security.tenant_login_location_required') ? 'required' : 'sometimes', 'numeric', 'min:0', 'max:20000000'],
         ];
     }
 }
