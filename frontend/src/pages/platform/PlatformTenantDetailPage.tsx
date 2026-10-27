@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import {
   activatePlatformTenant,
   approvePlatformTenantDevice,
@@ -31,9 +31,12 @@ const TABS = ['Overview', 'Admin Users', 'Devices', 'Login Activity', 'Subscript
 
 export function PlatformTenantDetailPage() {
   const { tenantUlid = '' } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { withRecentMfa } = usePlatformAuth()
   const queryClient = useQueryClient()
-  const [tab, setTab] = useState<(typeof TABS)[number]>('Overview')
+  const requestedTab = searchParams.get('tab')
+  const tab = TABS.find((item) => item === requestedTab) ?? 'Overview'
+  const setTab = (value: (typeof TABS)[number]) => setSearchParams(value === 'Overview' ? {} : { tab: value })
   const [reason, setReason] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
