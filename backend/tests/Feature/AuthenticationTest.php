@@ -1333,6 +1333,47 @@ class AuthenticationTest extends TestCase
         $this->assertContains('owner', collect($ownerSession['membership']['roles'])->pluck('code')->all());
     }
 
+    public function test_platform_tenant_device_review_history_is_read_only_and_tenant_scoped(): void
+    {
+        $tenantA = $this->provisionOwner('platform-review-a');
+        $tenantB = $this->provisionOwner('platform-review-b');
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $tenantA->tenant->id,
+            'name' => 'Approval browser',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+        $requestUlid = (string) \Illuminate\Support\Str::ulid();
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => $requestUlid,
+            'tenant_id' => $tenantA->tenant->id,
+            'membership_id' => $tenantA->membership->id,
+            'device_id' => $device->id,
+            'network_hash' => hash('sha256', 'platform-monitor-request'),
+            'request_ip' => '203.0.113.41',
+            'request_user_agent' => 'BluePOS monitoring test',
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices')->assertUnauthorized();
+        $this->createPlatformAdmin('approval-monitor-admin');
+        $this->signInPlatformAdmin('approval-monitor-admin');
+
+        $response = $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices')
+            ->assertOk()->assertJsonPath('access_requests.0.ulid', $requestUlid)
+            ->assertJsonPath('access_requests.0.request_ip', '203.0.113.41')
+            ->assertJsonPath('access_requests.0.username', 'owner');
+        $this->assertNoInternalIds($response->json());
+        $this->getJson('/api/platform/tenants/'.$tenantB->tenant->ulid.'/devices')
+            ->assertOk()->assertJsonCount(0, 'access_requests');
+        $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $requestUlid)->value('status'));
+    }
+
     public function test_failed_login_records_tenant_scope_without_user_identity_leak(): void
     {
         $owner = $this->provisionOwner('failure-monitoring');
