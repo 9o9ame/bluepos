@@ -214,8 +214,15 @@ class DeviceController extends Controller
                 throw new ApiException('DEVICE_NOT_APPROVED', 'Device is no longer eligible.', 409);
             }
             if ($data['decision'] === 'approved') {
-                // Subscription status applies even when the device was already active.
+                // Subscription and assigned branch must be valid on every new network grant.
                 app(TenantEntitlementService::class)->assertOperational($tenant);
+                if ($device->branch_id !== null
+                    && ! Branch::query()->forTenant((int) $tenant->id)
+                        ->whereKey($device->branch_id)
+                        ->where('status', \App\Enums\BranchStatus::Active->value)
+                        ->exists()) {
+                    throw new ApiException('BRANCH_ACCESS_DENIED', 'The assigned device branch is not active.', 403);
+                }
             }
             if ($data['decision'] === 'approved' && $device->status === DeviceStatus::Pending) {
                 app(TenantEntitlementService::class)->assertCanRegisterDevice($tenant);
