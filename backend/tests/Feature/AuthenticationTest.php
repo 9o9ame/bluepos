@@ -801,13 +801,23 @@ class AuthenticationTest extends TestCase
         ]);
         $secondMember->roles()->attach($role->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
         $secondMember->branches()->attach($owner->branch->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
-        $this->postJson('/api/auth/login', array_merge($credentials, ['username' => 'otherstaff']))
-            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED')
+        $this->postJson('/api/auth/login', array_merge($credentials, [
+            'username' => 'otherstaff',
+            'location_latitude' => 28.4212,
+            'location_longitude' => 70.3035,
+            'location_accuracy' => 30,
+        ]))->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED')
             ->assertJsonPath('error.approval_status', 'pending');
         $this->assertSame(1, \App\Models\AuditLog::query()
             ->where('tenant_id', $owner->tenant->id)
             ->where('actor_membership_id', $secondMember->id)
             ->where('event', 'DEVICE_ACCESS_REQUESTED')->count());
+        $locationRequest = \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('membership_id', $secondMember->id)->first();
+        $this->assertSame('28.42', (string) $locationRequest->request_latitude_approx);
+        $this->assertSame('70.30', (string) $locationRequest->request_longitude_approx);
+        $this->assertNotNull($locationRequest->request_location_expires_at);
         // Retrying the same pending network must not create duplicate requests or audit evidence.
         $this->postJson('/api/auth/login', array_merge($credentials, ['username' => 'otherstaff']))
             ->assertForbidden()->assertJsonPath('error.approval_status', 'pending');
