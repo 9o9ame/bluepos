@@ -1385,6 +1385,7 @@ class AuthenticationTest extends TestCase
         $this->signInPlatformAdmin('blocked-monitor-admin');
         $this->getJson('/api/platform/security/device-activity?tenant_code='.$owner->tenant->code.'&event=LOGIN_BLOCKED')
             ->assertOk()->assertJsonPath('events.0.event', 'LOGIN_BLOCKED')
+            ->assertJsonPath('events.0.reason', 'DEVICE_REVOKED')
             ->assertJsonPath('events.0.membership.username', 'owner');
     }
 
