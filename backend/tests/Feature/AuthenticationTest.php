@@ -369,15 +369,22 @@ class AuthenticationTest extends TestCase
 
         $owner->tenant->status = \App\Enums\TenantStatus::Active;
         $owner->tenant->save();
-        $device->branch_id = $owner->branch->id;
+        // Keep the owner's own branch active so the request exercises the device
+        // approval guard rather than a session/middleware branch restriction.
+        $inactiveBranch = \App\Models\Branch::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'name' => 'Inactive network device branch',
+            'code' => 'REVIEW-INACTIVE',
+            'status' => \App\Enums\BranchStatus::Inactive,
+            'is_default' => false,
+        ]);
+        $device->branch_id = $inactiveBranch->id;
         $device->save();
-        $owner->branch->status = \App\Enums\BranchStatus::Inactive;
-        $owner->branch->save();
         $this->postJson($url, ['decision' => 'approved'])
             ->assertForbidden()->assertJsonPath('error.key', 'BRANCH_ACCESS_DENIED');
 
-        $owner->branch->status = \App\Enums\BranchStatus::Active;
-        $owner->branch->save();
+        $inactiveBranch->status = \App\Enums\BranchStatus::Active;
+        $inactiveBranch->save();
         $owner->membership->status = \App\Enums\MembershipStatus::Suspended;
         $owner->membership->save();
         $this->postJson($url, ['decision' => 'approved'])->assertForbidden();
