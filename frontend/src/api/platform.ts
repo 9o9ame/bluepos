@@ -169,14 +169,6 @@ export function fetchPlatformTenantDevices(tenantUlid: string): Promise<{ device
   return apiFetch<{ devices: PlatformTenantDevice[] }>(`/api/platform/tenants/${tenantUlid}/devices`)
 }
 
-export function approvePlatformTenantDevice(tenantUlid: string, deviceUlid: string): Promise<{ ulid: string; status: string }> {
-  return apiFetch(`/api/platform/tenants/${tenantUlid}/devices/${deviceUlid}/approve`, { method: 'POST' })
-}
-
-export function revokePlatformTenantDevice(tenantUlid: string, deviceUlid: string): Promise<{ ulid: string; status: string }> {
-  return apiFetch(`/api/platform/tenants/${tenantUlid}/devices/${deviceUlid}/revoke`, { method: 'POST' })
-}
-
 export function fetchPlatformTenant(ulid: string): Promise<PlatformTenant> {
   return apiFetch<PlatformTenant>(`/api/platform/tenants/${ulid}`)
 }
