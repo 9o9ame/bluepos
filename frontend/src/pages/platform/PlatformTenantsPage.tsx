@@ -203,9 +203,15 @@ export function PlatformTenantsPage() {
               <td>{tenant.subscription?.status ?? '—'}</td>
               <td>{tenant.users_count ?? '—'}</td>
               <td>{tenant.branches_count ?? '—'}</td>
-              <td>{tenant.devices_count ?? '—'}</td>
+              <td>
+                <Link className="underline text-[var(--ui-accent)]" to={`/platform/tenants/${tenant.ulid}?tab=Devices`}>
+                  {tenant.devices_count ?? '—'}
+                </Link>
+              </td>
               <td>{tenant.created_at ? tenant.created_at.slice(0, 10) : '—'}</td>
               <td className="space-x-2 whitespace-nowrap p-1">
+                <Link className="underline" to={`/platform/tenants/${tenant.ulid}?tab=Devices`}>Devices / Approvals</Link>
+                <Link className="underline" to={`/platform/tenants/${tenant.ulid}?tab=Login%20Activity`}>Login Activity</Link>
                 {canImport ? <button type="button" className="underline" onClick={() => setImporting(tenant)}>Import Data</button> : null}
                 {canEdit ? (
                   <button type="button" className="underline" onClick={() => setEditing(tenant)}>
