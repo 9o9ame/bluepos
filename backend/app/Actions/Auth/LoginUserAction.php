@@ -277,7 +277,7 @@ class LoginUserAction
         });
 
         if ($created) {
-            app(EmployeeDeviceApprovalNotifier::class)->notifyOwners($membership, $device->name);
+            app(EmployeeDeviceApprovalNotifier::class)->notifyOwners($membership, $device->name, $request->ip());
             $this->audit->record('DEVICE_ACCESS_REQUESTED', [
                 'tenant_id' => $membership->tenant_id,
                 'actor_user_id' => $membership->user_id,
