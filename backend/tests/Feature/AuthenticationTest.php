@@ -98,6 +98,43 @@ class AuthenticationTest extends TestCase
         $this->assertTrue($network->requiresReverification($device, $otherNetwork));
     }
 
+    public function test_owner_trusted_device_reuses_same_network_but_changed_network_requires_otp(): void
+    {
+        $owner = $this->provisionOwner('owner-trust-network-login');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $device->trusted_until = now()->addDay();
+        $device->trusted_ip_hash = app(\App\Security\DeviceNetworkTrust::class)->fingerprint(
+            \Illuminate\Http\Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '192.0.2.11'])
+        );
+        $device->save();
+
+        $credentials = [
+            'tenant_code' => $this->tenantCode('owner-trust-network-login'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ];
+
+        $this->withServerVariables(['REMOTE_ADDR' => '192.0.2.11'])
+            ->postJson('/api/auth/login', $credentials)->assertOk();
+
+        \Illuminate\Support\Facades\Notification::fake();
+        $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.12'])
+            ->postJson('/api/auth/login', $credentials)
+            ->assertForbidden()->assertJsonPath('error.key', 'MFA_REQUIRED');
+
+        $device->refresh();
+        $this->assertSame(
+            app(\App\Security\DeviceNetworkTrust::class)->fingerprint(
+                \Illuminate\Http\Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '192.0.2.11'])
+            ),
+            $device->trusted_ip_hash
+        );
+        $this->assertNotNull(\App\Models\MfaChallenge::query()
+            ->where('membership_id', $owner->membership->id)
+            ->whereNull('consumed_at')->first());
+    }
+
     public function test_owner_trusted_device_expiry_requires_fresh_email_verification(): void
     {
         $owner = $this->provisionOwner('owner-trust-expiry');
