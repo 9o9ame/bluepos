@@ -21,9 +21,10 @@ export function DevicesPage() {
   const canRevoke = useCan('devices.revoke')
   const canViewSessions = useCan('security.sessions.view')
   const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: fetchDevices })
-  const requestsQuery = useQuery({ queryKey: ['device-access-requests'], queryFn: fetchDeviceAccessRequests, enabled: canReviewRequests, refetchInterval: 30000 })
+  const requestsQuery = useQuery({ queryKey: ['device-access-requests', requestStatus], queryFn: () => fetchDeviceAccessRequests(requestStatus), enabled: canReviewRequests, refetchInterval: 30000 })
   const sessionsQuery = useQuery({ queryKey: ['security-sessions'], queryFn: fetchSecuritySessions, enabled: canViewSessions, refetchInterval: 60000 })
   const [reviewing, setReviewing] = useState<string | null>(null)
+  const [requestStatus, setRequestStatus] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending')
   const branchesQuery = useQuery({ queryKey: ['branches'], queryFn: fetchBranches })
   const [error, setError] = useState<string | null>(null)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
@@ -86,18 +87,26 @@ export function DevicesPage() {
       {error ? <p className="p-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
       {canReviewRequests ? (
         <section className="p-2">
-          <h3 className="mb-2 text-[12px] font-semibold">Pending employee device / network requests ({requestsQuery.data?.pending_count ?? 0})</h3>
+          <h3 className="mb-2 text-[12px] font-semibold">Employee device / network approval requests (pending: {requestsQuery.data?.pending_count ?? 0})</h3>
+          <label className="mb-2 flex items-center gap-2 text-[12px]">Show
+            <select className="rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-1" value={requestStatus} onChange={(event) => setRequestStatus(event.target.value as typeof requestStatus)}>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="all">All</option>
+            </select>
+          </label>
           {requestsQuery.isLoading ? <p className="text-[12px]">Loading requests…</p> : null}
           {requestsQuery.isError ? <p className="text-[12px] text-[var(--ui-danger)]">Unable to load access requests.</p> : null}
-          {(requestsQuery.data?.requests ?? []).length === 0 && !requestsQuery.isLoading && !requestsQuery.isError ? <p className="text-[12px] text-[var(--ui-text-muted)]">No pending requests.</p> : null}
+          {(requestsQuery.data?.requests ?? []).length === 0 && !requestsQuery.isLoading && !requestsQuery.isError ? <p className="text-[12px] text-[var(--ui-text-muted)]">No matching access requests.</p> : null}
           <div className="flex flex-col gap-1">
             {(requestsQuery.data?.requests ?? []).map((item) => (
               <div key={item.ulid} className="flex flex-wrap items-center justify-between gap-2 border border-[var(--ui-border)] p-2 text-[12px]">
-                <span><strong>{item.username}</strong> — {item.device_name} · {item.created_at}</span>
-                <span className="flex gap-1">
+                <span><strong>{item.username}</strong> — {item.device_name} · {new Date(item.created_at).toLocaleString()} · {item.status}{item.reviewer_name ? ` · Reviewed by ${item.reviewer_name}` : ''}</span>
+                {item.status === 'pending' ? <span className="flex gap-1">
                   <DesktopButton label="Approve" onClick={() => void onReview(item.ulid, 'approved')} disabled={reviewing !== null} />
                   <DesktopButton label="Reject" variant="danger" onClick={() => void onReview(item.ulid, 'rejected')} disabled={reviewing !== null} />
-                </span>
+                </span> : null}
               </div>
             ))}
           </div>
