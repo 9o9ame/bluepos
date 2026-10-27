@@ -27,6 +27,7 @@ export function PlatformDeviceActivityPage() {
           columns={[
             { key: 'tenant', header: 'Tenant', render: row => row.tenant ? <Link className="underline" to={`/platform/tenants/${row.tenant.ulid}`}>{row.tenant.name} ({row.tenant.code})</Link> : '—' },
             { key: 'employee', header: 'Employee', render: row => row.membership?.username ?? '—' },
+            { key: 'roles', header: 'Roles', render: row => row.membership?.roles.map(role => role.name).join(', ') || '—' },
             { key: 'device', header: 'Device', render: row => row.device?.name ?? '—' },
             { key: 'ip', header: 'IP', render: row => row.ip_address ?? '—' },
             { key: 'seen', header: 'Last seen', render: row => row.last_seen_at ?? '—' },
