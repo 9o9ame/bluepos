@@ -121,7 +121,26 @@ class PlatformTenantDeviceController extends Controller
             ->whereIn('device_id', $rows->pluck('id'))
             ->groupBy('device_id', 'status')
             ->get()->groupBy('device_id');
-        return response()->json(['devices' => $rows->map(fn (Device $device) => [
+        $requests = DB::table('device_access_requests as access')
+            ->join('memberships as member', function ($join) {
+                $join->on('member.id', '=', 'access.membership_id')
+                    ->on('member.tenant_id', '=', 'access.tenant_id');
+            })
+            ->join('devices as device', function ($join) {
+                $join->on('device.id', '=', 'access.device_id')
+                    ->on('device.tenant_id', '=', 'access.tenant_id');
+            })
+            ->where('access.tenant_id', $tenant->id)
+            ->orderByDesc('access.created_at')->orderByDesc('access.id')
+            ->limit(100)
+            ->get([
+                'access.ulid', 'access.status', 'access.created_at', 'access.reviewed_at',
+                'access.request_ip', 'access.request_user_agent',
+                'member.ulid as membership_ulid', 'member.username',
+                'device.ulid as device_ulid', 'device.name as device_name',
+            ]);
+
+        return response()->json(['access_requests' => $requests, 'devices' => $rows->map(fn (Device $device) => [
             'ulid' => $device->ulid, 'name' => $device->name,
             'type' => $device->device_type, 'status' => $device->status->value,
             'registered_at' => $device->registered_at?->toISOString(),
