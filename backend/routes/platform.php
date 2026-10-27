@@ -55,10 +55,6 @@ Route::prefix('platform')->group(function () {
             ->middleware('platform.can:platform.audit.view');
         Route::get('/tenants/{tenantUlid}/devices', [PlatformTenantDeviceController::class, 'index'])
             ->middleware('platform.can:platform.tenants.view');
-        Route::post('/tenants/{tenantUlid}/devices/{deviceUlid}/approve', [PlatformTenantDeviceController::class, 'approve'])
-            ->middleware(['platform.can:platform.tenants.edit', 'platform.recent-mfa']);
-        Route::post('/tenants/{tenantUlid}/devices/{deviceUlid}/revoke', [PlatformTenantDeviceController::class, 'revoke'])
-            ->middleware(['platform.can:platform.tenants.edit', 'platform.recent-mfa']);
         Route::get('/tenants/{tenantUlid}', [PlatformTenantController::class, 'show'])
             ->name('platform.tenants.show')
             ->middleware('platform.can:platform.tenants.view');
