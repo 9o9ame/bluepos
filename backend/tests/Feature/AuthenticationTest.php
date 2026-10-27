@@ -1833,6 +1833,27 @@ class AuthenticationTest extends TestCase
         $this->assertNull($agedLogin->user_agent);
         $this->assertNotNull($recentLogin->ip_address);
         $this->assertNotNull($approved->ip_address);
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => (string) \Illuminate\Support\Str::ulid(),
+            'tenant_id' => $owner->tenant->id,
+            'membership_id' => $owner->membership->id,
+            'device_id' => $device->id,
+            'network_hash' => hash('sha256', 'privacy-example'),
+            'status' => 'approved',
+            'request_ip' => '203.0.113.99',
+            'request_user_agent' => 'Old UA',
+            'created_at' => now()->subDays(100),
+            'updated_at' => now()->subDays(100),
+        ]);
+        $this->assertSame(1, app(\App\Security\SecurityPrivacyRetention::class)
+            ->redactExpiredDeviceRequestNetworkIdentifiers());
+        $request = \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('tenant_id', $owner->tenant->id)->where('network_hash', hash('sha256', 'privacy-example'))->first();
+        $this->assertSame('approved', $request->status);
+        $this->assertNull($request->request_ip);
+        $this->assertNull($request->request_user_agent);
     }
 
     public function test_tenant_mfa_otp_is_consumed_once_and_replay_denied(): void
