@@ -45,6 +45,12 @@ export function DevicesPage() {
   })
   const [markingRead, setMarkingRead] = useState<string | null>(null)
   const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: fetchDevices })
+  const allAccessQuery = useQuery({
+    queryKey: ['device-access-requests', 'all'],
+    queryFn: () => fetchDeviceAccessRequests('all'),
+    enabled: canReviewRequests,
+    refetchInterval: 30000,
+  })
   const requestsQuery = useQuery({ queryKey: ['device-access-requests', requestStatus], queryFn: () => fetchDeviceAccessRequests(requestStatus), enabled: canReviewRequests, refetchInterval: 30000 })
   const sessionsQuery = useQuery({ queryKey: ['security-sessions'], queryFn: fetchSecuritySessions, enabled: canViewSessions, refetchInterval: 60000 })
   const [reviewing, setReviewing] = useState<string | null>(null)
@@ -100,6 +106,7 @@ export function DevicesPage() {
   }
 
   async function onRevokeAccess(ulid: string) {
+    if (!window.confirm('Revoke only this employee’s approved device/network access? Other users on the same device will not be revoked.')) return
     setError(null)
     setReviewing(ulid)
     try {
@@ -277,37 +284,60 @@ export function DevicesPage() {
           ) : null}
         </section>
       ) : null}
-      <PosDataGrid
-        columns={[
-          { key: 'name', header: 'Name', render: (row) => row.name },
-          { key: 'users', header: 'Used by (known users)', render: (row) => row.associated_usernames?.join(', ') || 'Unknown / no sign-in history' },
-          { key: 'ulid', header: 'ULID', render: (row) => row.ulid },
-          { key: 'branch', header: 'Branch', render: (row) => row.branch?.code ?? '—' },
-          { key: 'status', header: 'Status', render: (row) => row.status },
-          { key: 'seen', header: 'Last seen', render: (row) => row.last_seen_at ?? '—' },
-          {
-            key: 'actions',
-            header: 'Actions',
-            render: (row) => (
-              <div className="flex justify-end gap-1">
-                {canApprove && row.status === 'pending' && row.device_type !== 'browser' ? (
-                  <DesktopButton label="Approve" onClick={() => void onApprove(row)} />
-                ) : null}
-                {canReviewRequests && row.status === 'revoked' ? (
-                  <DesktopButton label="Restore" onClick={() => void onRestore(row)} />
-                ) : null}
-                {canRevoke && row.status !== 'revoked' ? (
-                  <DesktopButton label="Revoke" variant="danger" onClick={() => void onRevoke(row)} />
-                ) : null}
-              </div>
-            ),
-          },
-        ]}
-        rows={devicesQuery.data ?? []}
-        rowKey={(row) => row.ulid}
-        selectedKey={selectedKey}
-        onSelect={(row) => setSelectedKey(row.ulid)}
-      />
+      <section className="p-2">
+        <h3 className="mb-2 text-[12px] font-semibold">Registered devices and individual user access</h3>
+        <p className="mb-2 text-[12px] text-[var(--ui-text-muted)]">One browser device may be shared by multiple users. Revoke staff access for just that employee; revoking an entire device blocks everyone on it.</p>
+        <PosDataGrid
+          columns={[
+            { key: 'name', header: 'Device', render: (row) => row.device.name },
+            { key: 'user', header: 'User', render: (row) => row.username },
+            { key: 'ulid', header: 'Device ULID', render: (row) => row.device.ulid },
+            { key: 'status', header: 'Device status', render: (row) => row.device.status },
+            { key: 'seen', header: 'Last seen', render: (row) => row.device.last_seen_at ?? '—' },
+            {
+              key: 'actions',
+              header: 'Access action',
+              render: (row) => {
+                const access = (allAccessQuery.data?.requests ?? []).find(
+                  item => item.device_ulid === row.device.ulid && item.username === row.username && item.status === 'approved'
+                )
+                const shared = (row.device.associated_usernames?.length ?? 0) > 1
+                return (
+                  <div className="flex justify-end gap-1">
+                    {canReviewRequests && access ? (
+                      <DesktopButton
+                        label={`Revoke ${row.username} access`}
+                        variant="danger"
+                        disabled={reviewing !== null}
+                        onClick={() => void onRevokeAccess(access.ulid)}
+                      />
+                    ) : null}
+                    {canReviewRequests && row.device.status === 'revoked' && row.first ? (
+                      <DesktopButton label="Restore whole device" onClick={() => void onRestore(row.device)} />
+                    ) : null}
+                    {canApprove && row.device.status === 'pending' && row.device.device_type !== 'browser' && row.first ? (
+                      <DesktopButton label="Approve terminal" onClick={() => void onApprove(row.device)} />
+                    ) : null}
+                    {canRevoke && row.device.status !== 'revoked' && row.first && !shared ? (
+                      <DesktopButton label="Revoke whole device" variant="danger" onClick={() => void onRevoke(row.device)} />
+                    ) : null}
+                    {shared && !access && row.device.status !== 'revoked' ? (
+                      <span className="text-[var(--ui-text-muted)] text-[11px]">Shared device — no individual approval to revoke</span>
+                    ) : null}
+                  </div>
+                )
+              },
+            },
+          ]}
+          rows={(devicesQuery.data ?? []).flatMap(device => {
+            const users = device.associated_usernames?.length ? device.associated_usernames : ['Unknown']
+            return users.map((username, index) => ({ device, username, first: index === 0, key: `${device.ulid}:${username}` }))
+          })}
+          rowKey={row => row.key}
+          selectedKey={selectedKey}
+          onSelect={row => setSelectedKey(row.key)}
+        />
+      </section>
     </DesktopPanel>
   )
 }
