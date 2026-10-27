@@ -1,3 +1,16 @@
+## 2026-10-27 — Original #39/#43/#44 tenant login history batch (focused test pending)
+
+- Authorized `feature/superadmin` branch; production commit `14db95bf`, regression commit `932012ec`. No migrations, frontend changes, main merge or branch switch.
+- #39: Existing tenant-owner-only `GET /api/security/login-history` already returned LOGIN_SUCCESS, LOGIN_FAILURE and LOGIN_BLOCKED events with historical IP/user-agent/time, member and device ULIDs, filtered by tenant. Expanded with validated public `device_ulid` filter and bounded `per_page` (1..100), preserving default 50 and stable ordering.
+- #43: Existing audit log persists server-observed IP per login event and existing retention policy redacts aged IP/UA at 90 days. Added focused assertions for IP filtering and strict tenant boundary; no internal BIGINT fields exposed.
+- #44: Response now derives best-effort `browser` (Edge/Firefox/Chrome/Safari/Unknown) and `os` (Windows/Android/iOS/macOS/Linux/Unknown) from bounded persisted user-agent; these are **untrusted self-reported hints**, never identification or authorization. Original user_agent remains available. No external UA library or schema change.
+- Added `AuthenticationTest::test_owner_login_history_filters_ip_device_and_exposes_only_tenant_audit_browser_hints`, testing owner API, tenant isolation, IP/device/event filters, validation, ULID-only output and Chrome/Windows interpretation. New test is **NOT run** on local `bluepos_test` yet.
+- Exact changed files: `backend/app/Http/Controllers/Api/SecuritySessionController.php`, `backend/tests/Feature/AuthenticationTest.php`, `BLUEPOS_CURRENT_STATE.md`. Existing #4/#18/#24 batch user-verified **4 tests PASS, 51 assertions** remains historical baseline.
+- For validation only after confirming `bluepos_test`: `cd backend && php vendor/bin/phpunit tests/Feature/AuthenticationTest.php --filter 'test_owner_login_history_filters_ip_device_and_exposes_only_tenant_audit_browser_hints|test_owner_device_review_emails_employee_only_after_committed_decision|test_security_privacy_retention_redacts_only_aged_login_network_identity'`. New code not claimed release-accepted; no browser E2E or broader audit-history completeness proof.
+- #39/#43/#44 remain **Partial** until focused test and browser/longitudinal history acceptance. Other outstanding original IDs: #4, #18, #24, #28, #29, #37, #45, #46, #48, #50. Historical provisional 37/10/3 tally unresolved after #45/#50; never silently reclassify.
+
+---
+
 ## 2026-10-27 — User verified #4/#18/#24 focused regression PASS
 
 - User supplied local PowerShell output after fast-forward pull to `6684d094` on `feature/superadmin`.
