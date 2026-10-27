@@ -20,6 +20,26 @@ export function PlatformDeviceActivityPage() {
       <p className="text-[12px] text-[var(--ui-text-muted)]">
         Latest 200 recorded sessions across tenants. IP addresses do not establish precise physical location.
       </p>
+      <h2 className="text-[13px] font-semibold">Recent authentication and device security events</h2>
+      <p className="text-[12px] text-[var(--ui-text-muted)]">
+        Last 200 recorded audit events. Failed attempts without a known tenant/user remain unidentified; no username is inferred from credential hashes.
+      </p>
+      {!query.isLoading && !query.isError ? (
+        <PosDataGrid
+          columns={[
+            { key: 'event', header: 'Event', render: row => row.event },
+            { key: 'tenant', header: 'Tenant', render: row => row.tenant ? <Link className="underline" to={`/platform/tenants/${row.tenant.ulid}`}>{row.tenant.name}</Link> : 'Unknown' },
+            { key: 'user', header: 'User', render: row => row.membership?.username ?? 'Unknown' },
+            { key: 'device', header: 'Device', render: row => row.device?.name ?? '—' },
+            { key: 'ip', header: 'IP', render: row => row.ip_address ?? '—' },
+            { key: 'browser', header: 'Browser', render: row => row.user_agent ?? '—' },
+            { key: 'when', header: 'Time', render: row => row.occurred_at ?? '—' },
+          ]}
+          rows={query.data?.events ?? []}
+          rowKey={row => row.ulid}
+        />
+      ) : null}
+      <h2 className="text-[13px] font-semibold">Recorded sessions</h2>
       {query.isLoading ? <p className="text-[12px]">Loading activity…</p> : null}
       {query.isError ? <p role="alert" className="text-[12px] text-[var(--ui-danger)]">Unable to load activity.</p> : null}
       {!query.isLoading && !query.isError ? (
