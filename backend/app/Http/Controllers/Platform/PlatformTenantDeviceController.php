@@ -183,7 +183,7 @@ class PlatformTenantDeviceController extends Controller
             ->orderByDesc('loc.observed_at')->orderByDesc('loc.id')
             ->limit(100)
             ->get(['loc.ulid', 'loc.latitude_approx', 'loc.longitude_approx',
-                'loc.accuracy_meters', 'loc.observed_at',
+                'loc.accuracy_meters', 'loc.country', 'loc.region', 'loc.city', 'loc.observed_at',
                 'member.ulid as membership_ulid', 'member.username',
                 'd.ulid as device_ulid', 'd.name as device_name']);
 
