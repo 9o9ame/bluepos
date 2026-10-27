@@ -1,3 +1,12 @@
+## 2026-10-27 — Owner bell notification panel (browser acceptance pending)
+
+- User screenshots: ALPHA Cashier `ali` successfully signed in on approved browser; Owner Devices page shows `ali` approximate location in last-30-days history; Platform ALPHA Devices page shows approved Cashier request, role, browser/IP/location. This supports #37 positive-path manually, #29 partial platform monitoring, NOT isolation or privacy acceptance. Platform page also displays `Could not load devices.` alongside device rows and needs later diagnosis.
+- Commit `09afe4c8` modifies `frontend/src/components/desktop/ApplicationTitleBar.tsx` only: tenant Owner-only bell next to fullscreen controls, unread count badge, accessible dropdown with device/network inbox messages and Mark read, and navigation to existing Devices review screen. Existing backend notification endpoints reused. Request and inbox queries automatically poll every 10 seconds and on window focus; no full-page reload necessary, but **this is polling, NOT true server push/Web Push**. No new backend/websocket/push permission/migrations or frozen geometry changes.
+- Device page's existing pending approvals UI remains the action surface. Developer environment has no local frontend/build runner access to GitHub checkout: validation and browser screenshot verification PENDING. Ask user to pull current branch and inspect Owner bell/new employee request with Owner Devices page open. Staff/non-owner must not see bell.
+- #28/#29/#37/#46 remain locked partial overall pending residual manual/security acceptance; 37 implementation-indicated/13 Partial progress was historical/provisional.
+
+---
+
 ## 2026-10-27 — Owner/Staff new browser cross-tenant cookie fix (LOCAL TEST PENDING)
 
 - User confirmed in `bluepos_dev`: ALPHA admin = active Owner role, ALPHA ali = active Cashier role. Earlier empty challenge/request counts were queried via default `bluepos_test`, so cannot prove dev state.
