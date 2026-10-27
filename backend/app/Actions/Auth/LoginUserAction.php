@@ -227,7 +227,7 @@ class LoginUserAction
             return;
         }
 
-        $created = DB::transaction(function () use ($membership, $device, $network): bool {
+        $created = DB::transaction(function () use ($membership, $device, $network, $request): bool {
             // Lock the tenant to serialize retries with owner review and avoid duplicate alerts.
             Tenant::query()->whereKey($membership->tenant_id)->lockForUpdate()->firstOrFail();
 
@@ -247,6 +247,8 @@ class LoginUserAction
 
                 DB::table('device_access_requests')->where('id', $existing->id)->update([
                     'status' => 'pending',
+                    'request_ip' => $request->ip(),
+                    'request_user_agent' => \Illuminate\Support\Str::limit((string) $request->userAgent(), 180, ''),
                     'reviewed_by' => null,
                     'reviewed_at' => null,
                     'updated_at' => now(),
@@ -261,6 +263,8 @@ class LoginUserAction
                 'membership_id' => $membership->id,
                 'device_id' => $device->id,
                 'network_hash' => $network,
+                'request_ip' => $request->ip(),
+                'request_user_agent' => \Illuminate\Support\Str::limit((string) $request->userAgent(), 180, ''),
                 'status' => 'pending',
                 'created_at' => now(),
                 'updated_at' => now(),
