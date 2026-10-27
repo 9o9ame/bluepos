@@ -1083,3 +1083,14 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 **Next development batch recommendations:** First deliver #21+#22 through a tenant-scoped persistent in-app notification/inbox workflow with unread count, action links, dedupe and authorization. Then #43+#44 IP/OS longitudinal audit history, and #45/#50 location/privacy via reviewed design. Do not simply polish existing platform filters. Tests only on `bluepos_test`, no destructive Git/DB, stay on user-authorized `feature/superadmin`.
 
 **Reporting:** Every later response must show a progress bar, exact outstanding original IDs, meaningful grouped delivery and validated vs pending distinction. When moving a numbered item from P/N to I, append its **acceptance proof** to this table or a dated verification addendum.
+
+## 2026-10-27 — MANDATORY USER PROGRESS DISPLAY CONTRACT
+
+In EVERY BluePOS development response, present:
+1. Visible segmented progress bar with green **Completed**, amber **Partial**, red **Pending** counts and labels.
+2. Complete original numbered #1–#50 requirements list with a per-task explicit color-coded status and label.
+3. Blue **In Progress** only on actual actively edited task(s); do not invent active implementation work. When a task is in progress, record its previous underlying classification separately, so totals remain exactly 50 and it is not double counted.
+4. List remaining work for every Partial/Pending task, and cite tests/commits for status promotions. Update checklist and bar together.
+5. Until a validated reconciliation replaces it, maintain historical verified baseline 32 Completed / 7 Partial / 11 Pending, distinct from preliminary item-by-item evidence mapping 35 implementation-indicated / 10 Partial / 5 Pending. DO NOT combine labels from different baselines into a misleading count. For task-level display prefer explicitly identified preliminary mapping and clearly identify it as unverified.
+
+Statuses: Completed = green, Partial = amber, Pending = red, In Progress = blue. This is a reporting/documentation change only; no production code or test changes, no newly completed milestones.
