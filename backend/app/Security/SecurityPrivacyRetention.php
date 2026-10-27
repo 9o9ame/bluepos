@@ -20,4 +20,14 @@ final class SecurityPrivacyRetention
             })
             ->update(['ip_address' => null, 'user_agent' => null]);
     }
+
+    public function redactExpiredDeviceRequestNetworkIdentifiers(): int
+    {
+        return DB::table('device_access_requests')
+            ->where('created_at', '<', now()->subDays((int) config('security.privacy.security_ip_retention_days', 90)))
+            ->where(function ($query): void {
+                $query->whereNotNull('request_ip')->orWhereNotNull('request_user_agent');
+            })
+            ->update(['request_ip' => null, 'request_user_agent' => null]);
+    }
 }
