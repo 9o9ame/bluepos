@@ -170,7 +170,7 @@ class DeviceController extends Controller
 
         $data = $request->validate(['decision' => ['required', 'in:approved,rejected']]);
 
-        DB::transaction(function () use ($tenantContext, $requestUlid, $data, $request): void {
+        $decisionEmail = DB::transaction(function () use ($tenantContext, $requestUlid, $data, $request): array {
             $tenant = \App\Models\Tenant::query()->whereKey($tenantContext->tenantId())
                 ->lockForUpdate()->firstOrFail();
             $access = DB::table('device_access_requests')
@@ -238,7 +238,14 @@ class DeviceController extends Controller
                 ['resource_type' => 'device_access_request', 'resource_ulid' => $requestUlid],
                 $request
             );
+
+            return ['member' => $member, 'device_name' => $device->name];
         });
+
+        // Notify only after the decision has committed; email delivery never changes authorization.
+        app(\App\Security\EmployeeDeviceApprovalNotifier::class)->notifyEmployeeDecision(
+            $decisionEmail['member'], $decisionEmail['device_name'], $data['decision']
+        );
 
         return response()->json(['ulid' => $requestUlid, 'status' => $data['decision']]);
     }
