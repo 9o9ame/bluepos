@@ -57,7 +57,17 @@ class LoginUserAction
             $fail();
         }
 
-        $this->entitlements->assertOperational($tenant);
+        try {
+            $this->entitlements->assertOperational($tenant);
+        } catch (ApiException $error) {
+            // At this stage the tenant is known, but the username and password are unverified.
+            // Never associate an unverified identity with a login audit.
+            $this->audit->record('LOGIN_BLOCKED', [
+                'tenant_id' => $tenant->id,
+                'reason' => $error->errorKey,
+            ], $request);
+            throw $error;
+        }
 
         $membership = Membership::query()
             ->with('user', 'tenant')
