@@ -27,6 +27,7 @@
         <env name="DB_HOST" value="127.0.0.1"/>
         <env name="DB_PORT" value="5432"/>
         <env name="DB_DATABASE" value="bluepos_test" force="true"/>
+        <env name="TENANT_LOGIN_LOCATION_REQUIRED" value="false" force="true"/>
         <env name="DB_USERNAME" value="postgres"/>
         <env name="DB_URL" value="" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
