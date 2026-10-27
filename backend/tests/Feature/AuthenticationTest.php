@@ -1814,12 +1814,12 @@ class AuthenticationTest extends TestCase
             'password' => 'password123',
         ];
         $this->postJson('/api/auth/login', $credentials)->assertUnprocessable()
-            ->assertJsonValidationErrors(['location_latitude', 'location_longitude', 'location_accuracy']);
+            ->assertJsonStructure(['error' => ['fields' => ['location_latitude', 'location_longitude', 'location_accuracy']]]);
         $this->postJson('/api/auth/login', array_merge($credentials, [
             'location_latitude' => 91,
             'location_longitude' => 74,
             'location_accuracy' => 20,
-        ]))->assertUnprocessable()->assertJsonValidationErrors(['location_latitude']);
+        ]))->assertUnprocessable()->assertJsonStructure(['error' => ['fields' => ['location_latitude']]]);
         $this->postJson('/api/auth/login', array_merge($credentials, [
             'location_latitude' => 28.42145,
             'location_longitude' => 70.30354,
@@ -1862,7 +1862,7 @@ class AuthenticationTest extends TestCase
             'challenge_ulid' => (string) \Illuminate\Support\Str::ulid(),
             'code' => '123456',
         ])->assertUnprocessable()
-            ->assertJsonValidationErrors(['location_latitude', 'location_longitude', 'location_accuracy']);
+            ->assertJsonStructure(['error' => ['fields' => ['location_latitude', 'location_longitude', 'location_accuracy']]]);
     }
 
     public function test_login_succeeds(): void
