@@ -173,6 +173,21 @@ class DeviceController extends Controller
         $decisionEmail = DB::transaction(function () use ($tenantContext, $requestUlid, $data, $request): array {
             $tenant = \App\Models\Tenant::query()->whereKey($tenantContext->tenantId())
                 ->lockForUpdate()->firstOrFail();
+            // Recheck reviewer authority inside the serialized decision transaction.
+            // A stale session must not approve access after owner rights are removed.
+            $reviewer = \App\Models\Membership::query()
+                ->with('user')
+                ->where('tenant_id', $tenant->id)
+                ->whereKey($tenantContext->membership()->id)
+                ->lockForUpdate()
+                ->first();
+            if (! $reviewer
+                || $reviewer->status !== \App\Enums\MembershipStatus::Active
+                || $reviewer->user?->status !== \App\Enums\UserStatus::Active
+                || ! $reviewer->hasOwnerAuthority()) {
+                throw new ApiException('FORBIDDEN', 'Only an active tenant owner may review employee access.', 403);
+            }
+
             $access = DB::table('device_access_requests')
                 ->where('tenant_id', $tenant->id)
                 ->where('ulid', $requestUlid)
@@ -198,8 +213,11 @@ class DeviceController extends Controller
             if (! in_array($device->status, [DeviceStatus::Pending, DeviceStatus::Active], true)) {
                 throw new ApiException('DEVICE_NOT_APPROVED', 'Device is no longer eligible.', 409);
             }
-            if ($data['decision'] === 'approved' && $device->status === DeviceStatus::Pending) {
+            if ($data['decision'] === 'approved') {
+                // Subscription status applies even when the device was already active.
                 app(TenantEntitlementService::class)->assertOperational($tenant);
+            }
+            if ($data['decision'] === 'approved' && $device->status === DeviceStatus::Pending) {
                 app(TenantEntitlementService::class)->assertCanRegisterDevice($tenant);
                 $device->status = DeviceStatus::Active;
                 $device->approved_at = now();
