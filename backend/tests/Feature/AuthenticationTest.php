@@ -440,6 +440,28 @@ class AuthenticationTest extends TestCase
             'password' => 'password123',
         ])->assertOk();
 
+        $noticeUlid = (string) \Illuminate\Support\Str::ulid();
+        \Illuminate\Support\Facades\DB::table('device_access_notifications')->insert([
+            'ulid' => $noticeUlid,
+            'tenant_id' => $owner->tenant->id,
+            'recipient_membership_id' => $owner->membership->id,
+            'access_request_id' => \Illuminate\Support\Facades\DB::table('device_access_requests')
+                ->where('ulid', $requestUlid)->value('id'),
+            'kind' => 'new_device',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->getJson('/api/devices/access-notifications')
+            ->assertOk()->assertJsonPath('unread_count', 1)
+            ->assertJsonPath('notifications.0.ulid', $noticeUlid)
+            ->assertJsonPath('notifications.0.request_ulid', $requestUlid);
+        $this->postJson('/api/devices/access-notifications/'.$noticeUlid.'/read')
+            ->assertOk()->assertJsonPath('read', true);
+        $this->getJson('/api/devices/access-notifications')
+            ->assertOk()->assertJsonPath('unread_count', 0);
+        $this->postJson('/api/devices/access-notifications/'.(string) \Illuminate\Support\Str::ulid().'/read')
+            ->assertNotFound();
+
         $url = '/api/devices/access-requests/'.$requestUlid.'/review';
         $this->postJson($url, ['decision' => 'approved'])
             ->assertOk()->assertJsonPath('status', 'approved');
