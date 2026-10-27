@@ -148,6 +148,16 @@ class PlatformTenantDeviceController extends Controller
                 'device.ulid as device_ulid', 'device.name as device_name',
             ]);
 
+        $members = \App\Models\Membership::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('ulid', $requests->pluck('membership_ulid'))
+            ->with(['roles' => fn ($query) => $query->where('roles.tenant_id', $tenant->id)->where('roles.is_active', true)])
+            ->get()->keyBy('ulid');
+        $requests->transform(function ($item) use ($members) {
+            $item->role_names = $members->get($item->membership_ulid)?->roles->pluck('name')->values()->all() ?? [];
+            return $item;
+        });
+
         return response()->json(['access_requests' => $requests, 'devices' => $rows->map(fn (Device $device) => [
             'ulid' => $device->ulid, 'name' => $device->name,
             'type' => $device->device_type, 'status' => $device->status->value,
