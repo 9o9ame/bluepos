@@ -1368,6 +1368,16 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('access_requests.0.request_ip', '203.0.113.41')
             ->assertJsonPath('access_requests.0.username', 'owner');
         $this->assertNoInternalIds($response->json());
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?status=pending&ip_address=203.0.113.41')
+            ->assertOk()->assertJsonPath('access_requests.0.ulid', $requestUlid);
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?status=rejected')
+            ->assertOk()->assertJsonCount(0, 'access_requests');
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?ip_address=203.0.113.99')
+            ->assertOk()->assertJsonCount(0, 'access_requests');
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?status=invalid')
+            ->assertUnprocessable();
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?ip_address=bad')
+            ->assertUnprocessable();
         $this->getJson('/api/platform/tenants/'.$tenantB->tenant->ulid.'/devices')
             ->assertOk()->assertJsonCount(0, 'access_requests');
         $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
