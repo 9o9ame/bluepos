@@ -111,6 +111,8 @@ class DeviceController extends Controller
                 'notice.ulid', 'notice.kind', 'notice.created_at', 'notice.read_at',
                 'access.ulid as request_ulid', 'access.status',
                 'access.request_ip', 'access.request_user_agent',
+                DB::raw('CASE WHEN access.request_location_expires_at > CURRENT_TIMESTAMP THEN access.request_latitude_approx ELSE NULL END AS request_latitude_approx'),
+                DB::raw('CASE WHEN access.request_location_expires_at > CURRENT_TIMESTAMP THEN access.request_longitude_approx ELSE NULL END AS request_longitude_approx'),
                 'employee.ulid as employee_ulid', 'employee.username',
                 'device.ulid as device_ulid', 'device.name as device_name',
             ], 'page', (int) ($data['page'] ?? 1));
@@ -185,6 +187,8 @@ class DeviceController extends Controller
                 'access.created_at',
                 'access.request_ip',
                 'access.request_user_agent',
+                DB::raw('CASE WHEN access.request_location_expires_at > CURRENT_TIMESTAMP THEN access.request_latitude_approx ELSE NULL END AS request_latitude_approx'),
+                DB::raw('CASE WHEN access.request_location_expires_at > CURRENT_TIMESTAMP THEN access.request_longitude_approx ELSE NULL END AS request_longitude_approx'),
                 'access.reviewed_at',
                 'reviewer.ulid as reviewer_user_ulid',
                 'reviewer.name as reviewer_name',
