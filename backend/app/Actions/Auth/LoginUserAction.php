@@ -88,7 +88,18 @@ class LoginUserAction
         }
 
         $device = $this->devices->locate($request);
-        $device = $this->assertDevice($request, $membership, $device);
+        try {
+            $device = $this->assertDevice($request, $membership, $device);
+        } catch (ApiException $error) {
+            $this->audit->record('LOGIN_BLOCKED', [
+                'tenant_id' => $tenant->id,
+                'actor_user_id' => $user->id,
+                'actor_membership_id' => $membership->id,
+                'device_id' => $device?->id,
+                'reason' => $error->errorKey,
+            ], $request);
+            throw $error;
+        }
 
         $branch = $this->membershipAccess->resolveBranch($membership, $device->branch_id ? (int) $device->branch_id : null);
         if (! $branch) {
