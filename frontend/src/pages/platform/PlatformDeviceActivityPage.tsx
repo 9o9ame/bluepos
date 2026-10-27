@@ -1,13 +1,19 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { fetchPlatformDeviceActivity } from '../../api/platform'
 import { PosDataGrid } from '../../components/desktop/PosDataGrid'
 import { UiButton } from '../../components/ui/UiButton'
+import { UiSelect } from '../../components/ui/UiSelect'
 
 export function PlatformDeviceActivityPage() {
+  const [tenantCode, setTenantCode] = useState('')
+  const [username, setUsername] = useState('')
+  const [event, setEvent] = useState('')
+  const filters = { tenant_code: tenantCode.trim() || undefined, username: tenantCode.trim() ? username.trim() || undefined : undefined, event: event || undefined }
   const query = useQuery({
-    queryKey: ['platform', 'device-activity'],
-    queryFn: fetchPlatformDeviceActivity,
+    queryKey: ['platform', 'device-activity', filters.tenant_code, filters.username, filters.event],
+    queryFn: () => fetchPlatformDeviceActivity(filters),
     refetchInterval: 60000,
   })
 
@@ -16,6 +22,23 @@ export function PlatformDeviceActivityPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-lg font-semibold">Device and employee activity</h1>
         <UiButton variant="info" onClick={() => void query.refetch()}>Refresh</UiButton>
+      </div>
+      <div className="flex flex-wrap items-end gap-2 text-[12px]">
+        <label className="flex flex-col gap-1">Tenant code
+          <input className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={tenantCode} onChange={e => setTenantCode(e.target.value)} placeholder="All tenants" />
+        </label>
+        <label className="flex flex-col gap-1">Username (within tenant)
+          <input className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={username} onChange={e => setUsername(e.target.value)} disabled={!tenantCode.trim()} placeholder="All users" />
+        </label>
+        <div className="min-w-[190px]"><span>Event type</span>
+          <UiSelect value={event} onChange={setEvent} options={[
+            {value:'',label:'All security events'}, {value:'LOGIN_SUCCESS',label:'Login success'},
+            {value:'LOGIN_FAILURE',label:'Login failure'}, {value:'DEVICE_ACCESS_REQUESTED',label:'Access requested'},
+            {value:'DEVICE_ACCESS_APPROVED',label:'Access approved'}, {value:'DEVICE_ACCESS_REJECTED',label:'Access rejected'},
+            {value:'DEVICE_REVOKED',label:'Device revoked'},
+          ]}/>
+        </div>
+        <UiButton variant="info" onClick={() => {setTenantCode('');setUsername('');setEvent('')}}>Clear filters</UiButton>
       </div>
       <p className="text-[12px] text-[var(--ui-text-muted)]">
         Latest 200 recorded sessions across tenants. IP addresses do not establish precise physical location.
