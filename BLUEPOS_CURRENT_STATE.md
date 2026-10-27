@@ -1,3 +1,13 @@
+## 2026-10-27 — Shared browser device, per-user access actions (VALIDATION PENDING)
+
+- Screenshot: a single registered browser device lists `admin, ali` because both signed in on same Chrome profile. Device-level Revoke necessarily revokes the underlying device for **all users**. This is not a separate physical device for each user.
+- New UI commit `507b7a7c` changes only `frontend/src/pages/DevicesPage.tsx`: device table expands to a distinct row per known username, identifies each row's shared device ULID, offers an explicitly labeled **Revoke [staff username] access** using the **existing** tenant-owner-approved network access revoke endpoint, and hides whole-device Revoke for shared devices. For unshared devices, whole-device Revoke is explicitly labeled, and the existing confirmation applies. Whole-device Restore remains available for already revoked devices, one action per device; this restores device status, not individual member sessions.
+- The per-member access action operates on the approved employee/device/network request, not on Owner trust. It does not alter other members' access request records. Existing user-specific network access revocation flow is reused, no new endpoint/migration/parallel security design.
+- Frontend build, backend security acceptance and browser behavior **NOT RUN/NOT VERIFIED** from GitHub-only environment. Confirm shared row splits into `admin` and `ali`, `ali` approved access Revocation does not revoke `admin` device; ensure staff session behavior meets policy, test reconnect/login. Existing #18 and #37 follow-up remains pending.
+- User wants scalable Laravel event-driven notification bell with sound+toast later; prior polling bell remains reverted.
+
+---
+
 ## 2026-10-27 — Device identity display, Revoke confirmation, Owner-only Restore (LOCAL VALIDATION PENDING)
 
 - User revoked own device accidentally because device list shows indistinguishable `Pending device` labels. New `associated_usernames` on tenant `GET /api/devices` is derived **server-side** from tenant-scoped `auth_sessions` + employee `device_access_requests`, distinct usernames; shows Unknown when no known history. A device may have multiple users. No usernames from other tenants are returned.
