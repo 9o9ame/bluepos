@@ -12,19 +12,22 @@ class AuditLogger
     /**
      * @param  array<string, mixed>  $metadata
      */
-    public function record(string $event, array $metadata = [], ?Request $request = null): void
+    public function record(string $event, array $metadata = [], ?Request $request = null, bool $serverResolvedIdentity = false): void
     {
         $request ??= request();
         $context = app(TenantContext::class);
 
         $safe = $this->redact($metadata);
 
+        // Pre-authentication login flows resolve the identity from verified credentials,
+        // whereas TenantContext may still represent an earlier request in tests.
+        // This override is only for callers that supply server-resolved numeric identities.
         AuditLog::query()->create([
-            'tenant_id' => $context->hasTenant() ? $context->tenantId() : ($safe['tenant_id'] ?? null),
-            'actor_user_id' => $context->hasTenant() ? $context->userId() : ($safe['actor_user_id'] ?? null),
-            'actor_membership_id' => $context->hasTenant() ? $context->membershipId() : ($safe['actor_membership_id'] ?? null),
-            'device_id' => $context->hasDevice() ? $context->deviceId() : ($safe['device_id'] ?? null),
-            'branch_id' => $context->hasTenant() ? $context->branchId() : ($safe['branch_id'] ?? null),
+            'tenant_id' => $serverResolvedIdentity ? ($safe['tenant_id'] ?? null) : ($context->hasTenant() ? $context->tenantId() : ($safe['tenant_id'] ?? null)),
+            'actor_user_id' => $serverResolvedIdentity ? ($safe['actor_user_id'] ?? null) : ($context->hasTenant() ? $context->userId() : ($safe['actor_user_id'] ?? null)),
+            'actor_membership_id' => $serverResolvedIdentity ? ($safe['actor_membership_id'] ?? null) : ($context->hasTenant() ? $context->membershipId() : ($safe['actor_membership_id'] ?? null)),
+            'device_id' => $serverResolvedIdentity ? ($safe['device_id'] ?? null) : ($context->hasDevice() ? $context->deviceId() : ($safe['device_id'] ?? null)),
+            'branch_id' => $serverResolvedIdentity ? ($safe['branch_id'] ?? null) : ($context->hasTenant() ? $context->branchId() : ($safe['branch_id'] ?? null)),
             'event' => $event,
             'resource_type' => $safe['resource_type'] ?? null,
             'resource_ulid' => $safe['resource_ulid'] ?? null,
