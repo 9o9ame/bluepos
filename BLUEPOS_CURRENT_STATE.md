@@ -866,3 +866,11 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - Added `test_suspended_tenant_login_records_block_without_unverified_identity` verifying 403, no actor attribution, privacy and global tenant activity visibility.
 - Changes: backend/app/Actions/Auth/LoginUserAction.php, backend/tests/Feature/AuthenticationTest.php, BLUEPOS_CURRENT_STATE.md. No migrations. New test not yet run locally.
 - Tracker remains **29 implemented / 10 partial / 11 pending**: adds necessary denied-login coverage to existing monitoring requirement, no double-counting. Still unresolved: non-login authentication endpoints and HTTP throttling telemetry.
+
+### 2026-10-27 — Requirement #26 closure: staff login approval status lifecycle
+- User reports latest safety regression PASS: 3 tests, 30 assertions; previous staff-network focused regression passed along with platform audit test: 2 tests, 32 assertions.
+- Requirement #26 is moved **partial → implemented** because the existing sign-in UI handles backend `approval_status` pending/rejected and retry, the API returns matching status for first-device and existing-device employee denials, tenant-owner review updates the authoritative request state, and network-scoped login authorization requires `approved`.
+- Added explicit regression assertion in the employee network gate test that a second, non-approved employee on the same browser receives `error.approval_status=pending`, not another user's approval. This addition still requires focused local test execution.
+- This is implementation-level acceptance, not end-to-end browser automation; manual retry remains deliberate. Do not imply an automatic login upon approval.
+- Updated provisional 50-requirement tally: **30 implemented / 9 partial / 11 pending**, compared with **29 / 10 / 11**. Only one independently grounded requirement changed classification. All remaining IDs require reconciliation against the original 50-item list before another count change.
+- Files: backend/tests/Feature/AuthenticationTest.php and BLUEPOS_CURRENT_STATE.md. No migration, no UI changes. Only bluepos_test focused tests are permitted.
