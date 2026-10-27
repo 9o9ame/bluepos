@@ -851,3 +851,10 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - New focused regression tests verify tenant-attributed failed credential audits and denied-device blocked audits through read-only platform filtering.
 - Files: LoginUserAction.php, PlatformTenantDeviceController.php, PlatformDeviceActivityPage.tsx, AuthenticationTest.php, BLUEPOS_CURRENT_STATE.md. No migration. Backend + frontend focused tests **not run locally** for this batch; user must validate on bluepos_test.
 - Provisional tracking **29 implemented / 10 partial / 11 pending**, up from 27/12/11, only for known-tenant failed-login attribution and denied-device blocked-login event instrumentation. Caveat: not universal coverage for unrelated auth endpoints, rate-limit decisions, unknown tenants or cross-app login paths.
+
+### 2026-10-27 — Broader known-account login denial monitoring
+- User verified previous login-monitoring batch on bluepos_test: 3 tests / 49 assertions PASS and frontend typecheck PASS.
+- Added a shared LOGIN_BLOCKED audit helper for authenticated tenant/membership context. Account-disabled, membership-suspended, tenant-inactive, device-policy, branch-access and no-warehouse denials now write a server-derived tenant/actor and safe error reason without credentials. Reuses existing AuditLogger and global/tenant monitoring event feeds.
+- Added focused regression `test_disabled_member_login_is_blocked_and_audited_without_credentials` to check 403 plus tenant scope, actor, reason and no password metadata.
+- Files: LoginUserAction.php, AuthenticationTest.php, BLUEPOS_CURRENT_STATE.md. No migrations. Focused local tests for this batch are still pending.
+- No artificial tracker bump: **29 implemented / 10 partial / 11 pending**. This broadens a previously counted login-blocking monitoring criterion. A complete release-grade blocked event milestone also needs tests for tenant inactive, branch and warehouse denials, non-login auth entry points, and retention.
