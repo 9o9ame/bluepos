@@ -19,6 +19,7 @@ class DeviceResource extends JsonResource
         return [
             'ulid' => $this->ulid,
             'name' => $this->name,
+            'associated_usernames' => $this->when($this->resource->getAttribute('associated_usernames') !== null, fn () => $this->resource->getAttribute('associated_usernames')),
             'device_type' => $this->device_type,
             'employee_access_policy' => $this->when($this->resource->getAttribute('employee_access_policy') !== null, fn () => $this->resource->getAttribute('employee_access_policy')),
             'status' => $this->status->value,
