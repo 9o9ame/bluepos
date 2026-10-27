@@ -123,6 +123,7 @@ class PlatformTenantDeviceController extends Controller
         $filters = $request->validate([
             'status' => ['sometimes', 'in:all,pending,approved,rejected'],
             'ip_address' => ['sometimes', 'ip'],
+            'page' => ['sometimes', 'integer', 'min:1', 'max:10000'],
         ]);
         $tenant = $this->tenant($tenantUlid);
         $rows = Device::query()->where('tenant_id', $tenant->id)
@@ -147,26 +148,28 @@ class PlatformTenantDeviceController extends Controller
             ->when(isset($filters['status']) && $filters['status'] !== 'all', fn ($query) => $query->where('access.status', $filters['status']))
             ->when(isset($filters['ip_address']), fn ($query) => $query->where('access.request_ip', $filters['ip_address']))
             ->orderByDesc('access.created_at')->orderByDesc('access.id')
-            ->limit(100)
-            ->get([
+            ->paginate(100, [
                 'access.ulid', 'access.status', 'access.created_at', 'access.reviewed_at',
                 'access.request_ip', 'access.request_user_agent',
                 'reviewer.ulid as reviewer_user_ulid', 'reviewer.name as reviewer_name',
                 'member.ulid as membership_ulid', 'member.username',
                 'device.ulid as device_ulid', 'device.name as device_name',
-            ]);
+            ], 'page', (int) ($filters['page'] ?? 1));
 
+        $pageItems = $requests->getCollection();
         $members = \App\Models\Membership::query()
             ->where('tenant_id', $tenant->id)
-            ->whereIn('ulid', $requests->pluck('membership_ulid'))
+            ->whereIn('ulid', $pageItems->pluck('membership_ulid'))
             ->with(['roles' => fn ($query) => $query->where('roles.tenant_id', $tenant->id)->where('roles.is_active', true)])
             ->get()->keyBy('ulid');
-        $requests->transform(function ($item) use ($members) {
+        $pageItems->transform(function ($item) use ($members) {
             $item->role_names = $members->get($item->membership_ulid)?->roles->pluck('name')->values()->all() ?? [];
             return $item;
         });
 
-        return response()->json(['access_requests' => $requests, 'devices' => $rows->map(fn (Device $device) => [
+        return response()->json(['access_requests' => $pageItems, 'approval_pagination' => [
+            'page' => $requests->currentPage(), 'last_page' => $requests->lastPage(), 'total' => $requests->total(),
+        ], 'devices' => $rows->map(fn (Device $device) => [
             'ulid' => $device->ulid, 'name' => $device->name,
             'type' => $device->device_type, 'status' => $device->status->value,
             'registered_at' => $device->registered_at?->toISOString(),
