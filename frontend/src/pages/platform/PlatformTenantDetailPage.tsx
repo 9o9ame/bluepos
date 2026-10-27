@@ -374,6 +374,20 @@ export function PlatformTenantDetailPage() {
             </table>
           </div>
           {devicesQuery.data?.devices.length === 0 ? <p className="pt-3">No registered devices for this tenant.</p> : null}
+          <strong className="mt-4 block">Approximate device locations (read-only, last 30 days)</strong>
+          <p className="my-2 text-[12px] text-[var(--ui-text-muted)]">Browser-reported locations rounded for privacy. Not verified physical presence; country/city names are unavailable.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead><tr className="border-b"><th>User</th><th>Device</th><th>Approximate position</th><th>Reported accuracy</th><th>Recorded</th></tr></thead>
+              <tbody>{(devicesQuery.data?.locations ?? []).map(loc => (
+                <tr className="border-t" key={loc.ulid}>
+                  <td>{loc.username}</td><td>{loc.device_name ?? '—'}</td>
+                  <td>{loc.latitude_approx}, {loc.longitude_approx}</td>
+                  <td>{loc.accuracy_meters} m</td><td>{loc.observed_at}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
           <strong className="mt-4 block">Employee device/network approval history (read-only, 100 per page)</strong>
           <div className="my-2 flex flex-wrap items-end gap-2">
             <label className="flex flex-col gap-1">Decision
