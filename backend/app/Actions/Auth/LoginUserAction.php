@@ -75,15 +75,13 @@ class LoginUserAction
             $fail($tenant);
         }
 
-        if ($user->status !== UserStatus::Active) {
-            throw new ApiException('ACCOUNT_DISABLED', 'This account is disabled.', 403);
-        }
-
-        if ($membership->status !== MembershipStatus::Active) {
+        if ($user->status !== UserStatus::Active || $membership->status !== MembershipStatus::Active) {
+            $this->recordBlockedLogin($request, $tenant, $membership, 'ACCOUNT_DISABLED');
             throw new ApiException('ACCOUNT_DISABLED', 'This account is disabled.', 403);
         }
 
         if (! in_array($tenant->status, [TenantStatus::Active, TenantStatus::Trial], true)) {
+            $this->recordBlockedLogin($request, $tenant, $membership, 'TENANT_DISABLED');
             throw new ApiException('TENANT_DISABLED', 'This tenant is not active.', 403);
         }
 
@@ -91,13 +89,7 @@ class LoginUserAction
         try {
             $device = $this->assertDevice($request, $membership, $device);
         } catch (ApiException $error) {
-            $this->audit->record('LOGIN_BLOCKED', [
-                'tenant_id' => $tenant->id,
-                'actor_user_id' => $user->id,
-                'actor_membership_id' => $membership->id,
-                'device_id' => $device?->id,
-                'reason' => $error->errorKey,
-            ], $request);
+            $this->recordBlockedLogin($request, $tenant, $membership, $error->errorKey, $device);
             throw $error;
         }
 
@@ -139,6 +131,17 @@ class LoginUserAction
             warehouse: $warehouse,
             device: $device,
         );
+    }
+
+    private function recordBlockedLogin(Request $request, Tenant $tenant, Membership $membership, string $reason, ?Device $device = null): void
+    {
+        $this->audit->record('LOGIN_BLOCKED', [
+            'tenant_id' => $tenant->id,
+            'actor_user_id' => $membership->user_id,
+            'actor_membership_id' => $membership->id,
+            'device_id' => $device?->id,
+            'reason' => $reason,
+        ], $request);
     }
 
     private function assertDevice(Request $request, Membership $membership, ?Device $device): Device
