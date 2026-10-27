@@ -35,6 +35,8 @@ export function PlatformTenantDetailPage() {
   const requestedTab = searchParams.get('tab')
   const tab = TABS.find((item) => item === requestedTab) ?? 'Overview'
   const setTab = (value: (typeof TABS)[number]) => setSearchParams(value === 'Overview' ? {} : { tab: value })
+  const [approvalStatus, setApprovalStatus] = useState('all')
+  const [approvalIp, setApprovalIp] = useState('')
   const [reason, setReason] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -50,8 +52,8 @@ export function PlatformTenantDetailPage() {
     enabled: tenantUlid !== '' && tab === 'Login Activity',
   })
   const devicesQuery = useQuery({
-    queryKey: ['platform', 'tenant', tenantUlid, 'devices'],
-    queryFn: () => fetchPlatformTenantDevices(tenantUlid),
+    queryKey: ['platform', 'tenant', tenantUlid, 'devices', approvalStatus, approvalIp],
+    queryFn: () => fetchPlatformTenantDevices(tenantUlid, { status: approvalStatus, ip_address: approvalIp.trim() || undefined }),
     enabled: tenantUlid !== '' && tab === 'Devices',
   })
   const plansQuery = useQuery({ queryKey: ['platform', 'plans'], queryFn: fetchPlatformPlans })
@@ -372,6 +374,19 @@ export function PlatformTenantDetailPage() {
           </div>
           {devicesQuery.data?.devices.length === 0 ? <p className="pt-3">No registered devices for this tenant.</p> : null}
           <strong className="mt-4 block">Recent employee device/network approval requests (read-only, latest 100)</strong>
+          <div className="my-2 flex flex-wrap items-end gap-2">
+            <label className="flex flex-col gap-1">Decision
+              <UiSelect value={approvalStatus} onChange={setApprovalStatus} options={[
+                { value: 'all', label: 'All decisions' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'approved', label: 'Approved' },
+                { value: 'rejected', label: 'Rejected' },
+              ]} />
+            </label>
+            <label className="flex flex-col gap-1">Request IP
+              <input className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={approvalIp} onChange={e => setApprovalIp(e.target.value)} placeholder="Any IP" />
+            </label>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead><tr className="border-b"><th>Employee</th><th>Device</th><th>Status</th><th>IP</th><th>Browser</th><th>Requested</th><th>Reviewed</th></tr></thead>
