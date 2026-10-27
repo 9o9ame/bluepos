@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, X } from 'lucide-react'
 import { fetchBranches } from '../api/branches'
 import { fetchSecuritySessions } from '../api/security'
-import { approveDevice, fetchDevices, revokeDevice, fetchDeviceAccessRequests, reviewDeviceAccessRequest } from '../api/devices'
+import { approveDevice, fetchDevices, revokeDevice, fetchDeviceAccessRequests, reviewDeviceAccessRequest, revokeDeviceAccessRequest } from '../api/devices'
 import { ApiClientError } from '../api/client'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
@@ -63,6 +63,22 @@ export function DevicesPage() {
     }
   }
 
+  async function onRevokeAccess(ulid: string) {
+    setError(null)
+    setReviewing(ulid)
+    try {
+      await revokeDeviceAccessRequest(ulid)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['device-access-requests'] }),
+        queryClient.invalidateQueries({ queryKey: ['security-sessions'] }),
+      ])
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : 'Unable to revoke employee network access.')
+    } finally {
+      setReviewing(null)
+    }
+  }
+
   async function onRevoke(device: Device) {
     setError(null)
     try {
@@ -107,6 +123,9 @@ export function DevicesPage() {
                   <DesktopButton label="Approve" onClick={() => void onReview(item.ulid, 'approved')} disabled={reviewing !== null} />
                   <DesktopButton label="Reject" variant="danger" onClick={() => void onReview(item.ulid, 'rejected')} disabled={reviewing !== null} />
                 </span> : null}
+                {item.status === 'approved' ? (
+                  <DesktopButton label="Revoke network access" variant="danger" onClick={() => void onRevokeAccess(item.ulid)} disabled={reviewing !== null} />
+                ) : null}
               </div>
             ))}
           </div>
