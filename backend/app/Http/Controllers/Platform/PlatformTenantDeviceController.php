@@ -151,6 +151,8 @@ class PlatformTenantDeviceController extends Controller
             ->paginate(100, [
                 'access.ulid', 'access.status', 'access.created_at', 'access.reviewed_at',
                 'access.request_ip', 'access.request_user_agent',
+                DB::raw('CASE WHEN access.request_location_expires_at > CURRENT_TIMESTAMP THEN access.request_latitude_approx ELSE NULL END AS request_latitude_approx'),
+                DB::raw('CASE WHEN access.request_location_expires_at > CURRENT_TIMESTAMP THEN access.request_longitude_approx ELSE NULL END AS request_longitude_approx'),
                 'reviewer.ulid as reviewer_user_ulid', 'reviewer.name as reviewer_name',
                 'member.ulid as membership_ulid', 'member.username',
                 'device.ulid as device_ulid', 'device.name as device_name',
