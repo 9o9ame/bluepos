@@ -168,7 +168,12 @@ class LoginUserAction
             }
             $this->recordStaffAccessRequest($request, $membership, $device);
 
-            throw new ApiException('DEVICE_NOT_APPROVED', 'This device is not approved. Ask your administrator to approve it.', 403);
+            throw new ApiException(
+                'DEVICE_NOT_APPROVED',
+                'Your tenant administrator must approve this device and network.',
+                403,
+                ['approval_status' => $this->staffApprovalStatus($request, $membership, $device)]
+            );
         }
 
         if (! $device->isActive()) {
@@ -193,7 +198,12 @@ class LoginUserAction
 
                 if (! $approved) {
                     $this->recordStaffAccessRequest($request, $membership, $device);
-                    throw new ApiException('DEVICE_NOT_APPROVED', 'Your tenant administrator must approve this device and network.', 403);
+                    throw new ApiException(
+                        'DEVICE_NOT_APPROVED',
+                        'Your tenant administrator must approve this device and network.',
+                        403,
+                        ['approval_status' => $this->staffApprovalStatus($request, $membership, $device)]
+                    );
                 }
             }
         }
@@ -268,6 +278,21 @@ class LoginUserAction
                 'resource_ulid' => $device->ulid,
             ], $request);
         }
+    }
+
+    private function staffApprovalStatus(Request $request, Membership $membership, Device $device): string
+    {
+        $network = app(DeviceNetworkTrust::class)->fingerprint($request);
+        if ($network === null) {
+            return 'unavailable';
+        }
+
+        return DB::table('device_access_requests')
+            ->where('tenant_id', $membership->tenant_id)
+            ->where('membership_id', $membership->id)
+            ->where('device_id', $device->id)
+            ->where('network_hash', $network)
+            ->value('status') ?? 'unavailable';
     }
 
     private function pendingDevice(Membership $membership): Device
