@@ -1,3 +1,14 @@
+## 2026-10-27 — #28/#29/#37/#46 user test result and corrected test expectation
+
+- User supplied local run after pull to `6ac35634`, confirmed PostgreSQL `bluepos_test`. AuthenticationTest location filter: 2 tests, 66 assertions, 1 failure at `AuthenticationTest.php:1833`; PlatformAccessTest mandatory-location validation: 1 PASS, 12 assertions.
+- Inspected failing assertion and found fixture/test expectation mismatch: test explicitly inserted an unexpired location for tenant B, then incorrectly expected tenant B response to have zero locations. The platform query is correctly scoped and should return B's own row while tenant A's API excludes it.
+- Changed ONLY `backend/tests/Feature/AuthenticationTest.php` in commit `f3fc2eb6` to assert tenant B's one own location and rounded latitude. Production code and UI unchanged, no migrations.
+- Corrected test is NOT yet rerun locally. Recheck `bluepos_test` and rerun focused `test_platform_tenant_device_review_history_is_read_only_and_tenant_scoped|test_mandatory_browser_location_blocks_login_without_location_evidence`, plus PlatformAccessTest location test if desired. Do not report 3/3 PASS before actual rerun.
+- #28/#29/#37/#46 still Partial: owner/staff/browser permission actual HTTPS E2E and platform/tenant role visibility acceptance outstanding; stored approximate browser geolocation is spoofable and not trust proof.
+- Reporting requirement: enumerate each remaining Partial ID with a concrete unfinished condition in every subsequent development response. Remaining IDs #4, #18, #24, #28, #29, #37, #39, #43, #44, #45, #46, #48, #50. Provisional 37 implementation-indicated Completed / 13 Partial / 0 Pending is not an audited release state; no status promotion.
+ 
+---
+
 ## 2026-10-27 — #28/#29/#37/#46 location monitoring acceptance regression (local run pending)
 
 - Working branch `feature/superadmin`; test change `e07bd0ae`. No production code, migrations or frontend changes, no main merge.
