@@ -155,6 +155,7 @@ export type PlatformTenantDevice = {
   status: 'pending' | 'active' | 'revoked' | 'disabled'
   registered_at: string | null
   last_seen_at: string | null
+  employee_approvals: { pending: number; approved: number; rejected: number }
 }
 
 export type PlatformTenantActivity = {
