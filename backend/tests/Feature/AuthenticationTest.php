@@ -1293,6 +1293,14 @@ class AuthenticationTest extends TestCase
         // Login success is recorded in the centralized, audit-permission-protected feed.
         $loginEvents = collect($response->json('events'))->where('event', 'LOGIN_SUCCESS');
         $this->assertTrue($loginEvents->contains(fn ($row) => ($row['tenant']['ulid'] ?? null) === $owner->tenant->ulid));
+        $filtered = $this->getJson('/api/platform/security/device-activity?tenant_code='.$owner->tenant->code.'&event=LOGIN_SUCCESS')->assertOk();
+        $this->assertNotEmpty($filtered->json('events'));
+        $this->assertTrue(collect($filtered->json('events'))->every(fn ($row) => $row['event'] === 'LOGIN_SUCCESS' && ($row['tenant']['ulid'] ?? null) === $owner->tenant->ulid));
+        $this->assertTrue(collect($filtered->json('sessions'))->every(fn ($row) => ($row['tenant']['ulid'] ?? null) === $owner->tenant->ulid));
+        $this->getJson('/api/platform/security/device-activity?username=owner')->assertUnprocessable();
+        $this->getJson('/api/platform/security/device-activity?event=INVALID')->assertUnprocessable();
+        $this->getJson('/api/platform/security/device-activity?tenant_code=UNKNOWN_NO_TENANT')->assertOk()
+            ->assertJsonCount(0, 'events')->assertJsonCount(0, 'sessions');
 
         $tenantActivity = $this->getJson('/api/platform/tenants/'.$owner->tenant->ulid.'/login-activity')->assertOk();
         $this->assertIsArray($tenantActivity->json('sessions'));
