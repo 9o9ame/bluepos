@@ -789,3 +789,10 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - Tenant-bound access request API exposes both fields; tenant Home alerts display IP and Devices request history displays IP and browser alongside role/device/time/status. Existing rows can show Unavailable.
 - No geolocation is derived or fabricated. Network fingerprints are still used for authorization. No changes to SuperAdmin monitoring-only policy.
 - Pending validation: migration on `bluepos_test`, focused employee request/auth test, frontend TypeScript check. Full release readiness not claimed; requirement #24 remains partial until optional location/privacy behaviors are addressed. #43/#44 progress is partial because comprehensive longitudinal IP and parsed OS history is not yet covered.
+
+### 2026-10-27 — Test database migration blocker and acceptance milestone
+- User-run focused employee network test returned HTTP 500 instead of expected 403 because PostgreSQL `bluepos_test` did not yet contain `device_access_requests.request_ip` or `request_user_agent`. This is a **test database migration state issue**, not evidence that the approval policy should be weakened.
+- The migration is additive and reversible: `2026_10_27_110000_add_request_network_context_to_device_access_requests.php`. Apply it explicitly to **bluepos_test only** with APP_ENV=testing / DB_DATABASE=bluepos_test after verifying DB target; never run destructive reset commands.
+- The existing review-history focused test now asserts device, username, stored IP and user-agent in tenant-scoped approval responses.
+- Requirement #24 acceptance: owner receives staff username, role names, device, request time, status, and IP/user agent via tenant-scoped API/owner screens; geographic location is optional only when available. Count as implementation-complete after migration + focused verification. Location geocoding remains #45 pending.
+- Tracker before acceptance: 22 implemented / 17 partial / 11 pending; if #24 verification passes: 23 implemented / 16 partial / 11 pending. This is code-level completion only, not release/browser E2E proof.
