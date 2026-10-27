@@ -1880,6 +1880,34 @@ class AuthenticationTest extends TestCase
             ->whereKey($challenge->id)->whereNotNull('consumed_at')->count());
     }
 
+    public function test_tenant_mfa_wrong_code_exhausts_attempt_budget_and_blocks_correct_code(): void
+    {
+        $owner = $this->provisionOwner('mfa-budget');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $challenge = \App\Models\MfaChallenge::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'user_id' => $owner->user->id,
+            'membership_id' => $owner->membership->id,
+            'device_id' => $device->id,
+            'method' => \App\Enums\MfaMethod::EmailOtp,
+            'purpose' => 'login',
+            'code_hash' => \Illuminate\Support\Facades\Hash::make('654321'),
+            'attempts' => 0,
+            'expires_at' => now()->addMinutes(10),
+        ]);
+        for ($i = 0; $i < \App\Security\SecurityOtp::maxVerifyAttempts(); $i++) {
+            $this->postJson('/api/auth/mfa/verify', [
+                'challenge_ulid' => $challenge->ulid, 'code' => '000000',
+            ])->assertForbidden()->assertJsonPath('error.key', 'MFA_INVALID');
+        }
+        $this->postJson('/api/auth/mfa/verify', [
+            'challenge_ulid' => $challenge->ulid, 'code' => '654321',
+        ])->assertStatus(429)->assertJsonPath('error.key', 'TOO_MANY_ATTEMPTS');
+        $this->assertSame(\App\Security\SecurityOtp::maxVerifyAttempts(), $challenge->fresh()->attempts);
+        $this->assertNull($challenge->fresh()->consumed_at);
+    }
+
     public function test_ip_geolocation_does_not_contact_provider_without_opt_in_or_public_ip(): void
     {
         \Illuminate\Support\Facades\Http::fake();
