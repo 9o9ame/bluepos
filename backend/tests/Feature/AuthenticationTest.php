@@ -2107,7 +2107,7 @@ class AuthenticationTest extends TestCase
         $this->postJson('/api/auth/login', array_merge($credentials, [
             'location_latitude' => 28.42145,
             'location_longitude' => 70.30354,
-            'location_accuracy' => 30,
+            'location_accuracy' => 150000,
         ]))->assertOk();
 
         $this->getJson('/api/security/location-history')->assertOk()
@@ -2115,7 +2115,8 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('retention_days', 30)
             ->assertJsonPath('pagination.total', 1)
             ->assertJsonPath('locations.0.latitude_approx', '28.42')
-            ->assertJsonPath('locations.0.longitude_approx', '70.30');
+            ->assertJsonPath('locations.0.longitude_approx', '70.30')
+            ->assertJsonPath('locations.0.accuracy_meters', 150000);
         $this->getJson('/api/security/location-history?username=owner')
             ->assertOk()->assertJsonPath('pagination.total', 1);
         $this->getJson('/api/security/location-history?username=unknown')
