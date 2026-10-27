@@ -13,7 +13,7 @@ use Throwable;
 
 final class EmployeeDeviceApprovalNotifier
 {
-    public function notifyOwners(Membership $employee, string $deviceName): void
+    public function notifyOwners(Membership $employee, string $deviceName, ?string $networkIp = null): void
     {
         $owners = Membership::query()
             ->with('user')
