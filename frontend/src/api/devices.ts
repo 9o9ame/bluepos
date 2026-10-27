@@ -55,3 +55,7 @@ export function reviewDeviceAccessRequest(ulid: string, decision: 'approved' | '
     body: JSON.stringify({ decision }),
   })
 }
+
+export function revokeDeviceAccessRequest(ulid: string): Promise<{ ulid: string; status: 'rejected' }> {
+  return apiFetch(`/api/devices/access-requests/${ulid}/revoke`, { method: 'POST' })
+}
