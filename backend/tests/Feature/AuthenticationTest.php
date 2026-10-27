@@ -311,6 +311,73 @@ class AuthenticationTest extends TestCase
         );
     }
 
+    public function test_review_rechecks_live_owner_authority_and_tenant_licence_for_active_device(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $owner = $this->provisionOwner('review-live-guards');
+        $staffUser = \App\Models\User::query()->create([
+            'name' => 'Live Guard Staff',
+            'email' => 'live-guard-staff@example.com',
+            'password' => 'password123',
+            'status' => \App\Enums\UserStatus::Active,
+            'must_change_password' => false,
+            'security_version' => 1,
+        ]);
+        $staff = \App\Models\Membership::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'user_id' => $staffUser->id,
+            'username' => 'liveguardstaff',
+            'status' => \App\Enums\MembershipStatus::Active,
+            'is_owner' => false,
+            'security_version' => 1,
+        ]);
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'name' => 'Already active browser',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Active,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+            'approved_at' => now(),
+        ]);
+        $ulid = (string) \Illuminate\Support\Str::ulid();
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => $ulid,
+            'tenant_id' => $owner->tenant->id,
+            'membership_id' => $staff->id,
+            'device_id' => $device->id,
+            'network_hash' => hash('sha256', 'new-network-active-device'),
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('review-live-guards'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+        $url = '/api/devices/access-requests/'.$ulid.'/review';
+
+        $owner->tenant->status = \App\Enums\TenantStatus::Suspended;
+        $owner->tenant->save();
+        $this->postJson($url, ['decision' => 'approved'])
+            ->assertForbidden()->assertJsonPath('error.key', 'TENANT_DISABLED');
+        $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $ulid)->value('status'));
+
+        $owner->tenant->status = \App\Enums\TenantStatus::Active;
+        $owner->tenant->save();
+        $owner->membership->status = \App\Enums\MembershipStatus::Suspended;
+        $owner->membership->save();
+        $this->postJson($url, ['decision' => 'approved'])->assertForbidden();
+        $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $ulid)->value('status'));
+
+        \Illuminate\Support\Facades\Notification::assertNothingSent();
+    }
+
     public function test_owner_device_review_emails_employee_only_after_committed_decision(): void
     {
         \Illuminate\Support\Facades\Notification::fake();
