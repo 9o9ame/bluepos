@@ -154,8 +154,14 @@ export type PlatformDeviceActivity = {
   }>
 }
 
-export function fetchPlatformDeviceActivity(): Promise<PlatformDeviceActivity> {
-  return apiFetch<PlatformDeviceActivity>('/api/platform/security/device-activity')
+export type PlatformActivityFilters = { tenant_code?: string; username?: string; event?: string }
+
+export function fetchPlatformDeviceActivity(filters: PlatformActivityFilters = {}): Promise<PlatformDeviceActivity> {
+  const query = new URLSearchParams()
+  if (filters.tenant_code) query.set('tenant_code', filters.tenant_code)
+  if (filters.username && filters.tenant_code) query.set('username', filters.username)
+  if (filters.event) query.set('event', filters.event)
+  return apiFetch<PlatformDeviceActivity>(`/api/platform/security/device-activity${query.size ? `?${query.toString()}` : ''}`)
 }
 
 export type PlatformTenantDevice = {
