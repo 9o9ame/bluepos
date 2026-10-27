@@ -136,7 +136,7 @@ export type PlatformDeviceActivity = {
   sessions: Array<{
     ulid: string
     tenant: { ulid: string; code: string; name: string } | null
-    membership: { ulid: string; username: string } | null
+    membership: { ulid: string; username: string; roles: Array<{code:string;name:string}> } | null
     device: { ulid: string; name: string } | null
     ip_address: string | null
     last_seen_at: string | null
@@ -158,7 +158,7 @@ export type PlatformTenantDevice = {
 }
 
 export type PlatformTenantActivity = {
-  sessions: Array<{ulid:string;membership:{ulid:string;username:string}|null;device:{ulid:string;name:string}|null;ip_address:string|null;user_agent:string|null;last_seen_at:string|null;revoked_at:string|null}>
+  sessions: Array<{ulid:string;membership:{ulid:string;username:string;roles:Array<{code:string;name:string}>}|null;device:{ulid:string;name:string}|null;ip_address:string|null;user_agent:string|null;last_seen_at:string|null;revoked_at:string|null}>
   events: Array<{ulid:string;event:string;ip_address:string|null;user_agent:string|null;occurred_at:string|null}>
 }
 export function fetchPlatformTenantActivity(tenantUlid:string):Promise<PlatformTenantActivity> {
