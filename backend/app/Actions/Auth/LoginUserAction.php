@@ -299,7 +299,11 @@ class LoginUserAction
                     'updated_at' => now(),
                 ]);
 
-                $this->recordOwnerInboxNotifications($membership, (int) $existing->id, 'new_network', true);
+                $originalKind = DB::table('device_access_notifications')
+                    ->where('tenant_id', $membership->tenant_id)
+                    ->where('access_request_id', $existing->id)
+                    ->value('kind') ?? 'new_network';
+                $this->recordOwnerInboxNotifications($membership, (int) $existing->id, $originalKind, true);
                 $this->recordAccessRequestAudit($request, $membership, $device);
                 return true;
             }
