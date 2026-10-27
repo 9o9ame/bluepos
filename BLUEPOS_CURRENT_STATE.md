@@ -1,3 +1,15 @@
+## 2026-10-27 — User verified #4/#18/#24 focused regression PASS
+
+- User supplied local PowerShell output after fast-forward pull to `6684d094` on `feature/superadmin`.
+- `php artisan db:show --database=pgsql` confirmed PostgreSQL `bluepos_test` (PostgreSQL 18.6 on user's machine).
+- Focused `AuthenticationTest` filter for owner trusted network reuse, owner trust expiry, network fingerprint change and owner review history: **4 PASS, 51 assertions**, PHP 8.3.33, PHPUnit 12.5.35, 5.660 seconds.
+- This verifies scoped API/backend regressions for original #4 (trusted device/IP), #18 (device lifecycle history) and #24 (request details/location expiry); it does not establish full browser or production acceptance, real live concurrency, or end-to-end notification delivery.
+- No additional code changes or migrations in this verification checkpoint. Exact prior commits: `be4684c2` (DeviceController fields), `0905d2fe` (tests), `6684d094` (docs). This documentation update records the newly supplied validation without claiming new implementation.
+- Original #4/#18/#24 remain **Partial for full acceptance** pending browser and operational lifecycle verification. Last provisional implementation-indicated tally remains unreconciled (historical 37 Completed / 10 Partial / 3 Pending, with newer #45/#50 partial evidence); do not promote counts without line-by-line acceptance reconciliation.
+- Exact outstanding acceptance IDs: **#4, #18, #24, #28, #29, #37, #39, #43, #44, #45, #46, #48, #50**. Next coherent code batch: #39/#43/#44 tenant login/IP/browser/OS history after minimal source inspection. Main untouched.
+
+---
+
 ## 2026-10-27 — Original #4/#18/#24 acceptance batch (local validation outstanding)
 
 - Authorized branch: `feature/superadmin`; last starting HEAD `b42f33cd`. Production commit `be4684c2`, regression commit `0905d2fe`. No migrations, no frontend edits, no branch change, no merge to main.
