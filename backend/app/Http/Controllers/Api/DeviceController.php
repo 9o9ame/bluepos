@@ -275,6 +275,73 @@ class DeviceController extends Controller
         return response()->json(['ulid' => $requestUlid, 'status' => $data['decision']]);
     }
 
+    public function revokeAccessRequest(Request $request, string $requestUlid, TenantContext $tenantContext): JsonResponse
+    {
+        if (! $tenantContext->membership()->hasOwnerAuthority()) {
+            throw new ApiException('FORBIDDEN', 'Only the tenant owner may revoke employee network access.', 403);
+        }
+        $this->authorize('viewAny', Device::class);
+
+        $decision = DB::transaction(function () use ($request, $requestUlid, $tenantContext): array {
+            $tenant = \App\Models\Tenant::query()->whereKey($tenantContext->tenantId())
+                ->lockForUpdate()->firstOrFail();
+            $reviewer = \App\Models\Membership::query()->with('user')
+                ->where('tenant_id', $tenant->id)
+                ->whereKey($tenantContext->membership()->id)->lockForUpdate()->first();
+            if (! $reviewer
+                || $reviewer->status !== \App\Enums\MembershipStatus::Active
+                || $reviewer->user?->status !== \App\Enums\UserStatus::Active
+                || ! $reviewer->hasOwnerAuthority()) {
+                throw new ApiException('FORBIDDEN', 'Only an active tenant owner may revoke employee network access.', 403);
+            }
+
+            $access = DB::table('device_access_requests')
+                ->where('tenant_id', $tenant->id)->where('ulid', $requestUlid)
+                ->lockForUpdate()->first();
+            if (! $access) {
+                throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
+            }
+            if ($access->status !== 'approved') {
+                throw new ApiException('ACCESS_REQUEST_NOT_APPROVED', 'Only approved network access may be revoked.', 409);
+            }
+            $member = \App\Models\Membership::query()->where('tenant_id', $tenant->id)
+                ->whereKey($access->membership_id)->first();
+            $device = Device::query()->where('tenant_id', $tenant->id)
+                ->whereKey($access->device_id)->first();
+            if (! $member || ! $device || $member->hasOwnerAuthority()) {
+                throw new ApiException('ACCESS_REQUEST_INVALID', 'The approved employee access is no longer eligible.', 409);
+            }
+
+            $updated = DB::table('device_access_requests')
+                ->where('tenant_id', $tenant->id)->where('id', $access->id)
+                ->where('status', 'approved')->update([
+                    'status' => 'rejected',
+                    'reviewed_by' => $tenantContext->userId(),
+                    'reviewed_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            if ($updated !== 1) {
+                throw new ApiException('ACCESS_REQUEST_NOT_APPROVED', 'Only approved network access may be revoked.', 409);
+            }
+            // Leases are not network-bound: revoke all leases for this employee/device.
+            \App\Models\OfflineAuthorizationLease::query()
+                ->where('tenant_id', $tenant->id)->where('membership_id', $member->id)
+                ->where('device_id', $device->id)->whereNull('revoked_at')
+                ->update(['revoked_at' => now()]);
+
+            app(AuditLogger::class)->record('DEVICE_ACCESS_REVOKED', [
+                'resource_type' => 'device_access_request', 'resource_ulid' => $requestUlid,
+            ], $request);
+
+            return ['member' => $member, 'device_name' => $device->name];
+        });
+
+        app(\App\Security\EmployeeDeviceApprovalNotifier::class)->notifyEmployeeDecision(
+            $decision['member'], $decision['device_name'], 'rejected'
+        );
+        return response()->json(['ulid' => $requestUlid, 'status' => 'rejected']);
+    }
+
     public function approve(Request $request, string $deviceUlid, TenantContext $tenantContext): DeviceResource
     {
         $device = $this->findTenantDevice($tenantContext, $deviceUlid);
