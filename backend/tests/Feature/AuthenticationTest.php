@@ -276,12 +276,31 @@ class AuthenticationTest extends TestCase
             'updated_at' => now(),
         ]);
 
+        $foreignAlertUlid = (string) \Illuminate\Support\Str::ulid();
+        \Illuminate\Support\Facades\DB::table('device_access_notifications')->insert([
+            'ulid' => $foreignAlertUlid,
+            'tenant_id' => $second->tenant->id,
+            'recipient_membership_id' => $second->membership->id,
+            'access_request_id' => \Illuminate\Support\Facades\DB::table('device_access_requests')
+                ->where('ulid', $requestUlid)->value('id'),
+            'kind' => 'new_device',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $this->attachTrustedDevice((int) $first->tenant->id);
         $this->postJson('/api/auth/login', [
             'tenant_code' => $this->tenantCode('review-own-a'),
             'username' => 'owner',
             'password' => 'password123',
         ])->assertOk();
+
+        $this->getJson('/api/devices/access-notifications')
+            ->assertOk()->assertJsonPath('unread_count', 0)->assertJsonCount(0, 'notifications');
+        $this->postJson('/api/devices/access-notifications/'.$foreignAlertUlid.'/read')
+            ->assertNotFound();
+        $this->assertNull(\Illuminate\Support\Facades\DB::table('device_access_notifications')
+            ->where('ulid', $foreignAlertUlid)->value('read_at'));
 
         $this->postJson('/api/devices/access-requests/'.$requestUlid.'/review', [
             'decision' => 'approved',
