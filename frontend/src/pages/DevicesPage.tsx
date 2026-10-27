@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, X } from 'lucide-react'
 import { fetchBranches } from '../api/branches'
 import { fetchSecuritySessions, fetchTenantLoginHistory, fetchTenantLocationHistory } from '../api/security'
-import { approveDevice, fetchDevices, revokeDevice, fetchDeviceAccessRequests, reviewDeviceAccessRequest, revokeDeviceAccessRequest, fetchDeviceAccessNotifications, markDeviceAccessNotificationRead } from '../api/devices'
+import { approveDevice, fetchDevices, revokeDevice, restoreDevice, fetchDeviceAccessRequests, reviewDeviceAccessRequest, revokeDeviceAccessRequest, fetchDeviceAccessNotifications, markDeviceAccessNotificationRead } from '../api/devices'
 import { ApiClientError } from '../api/client'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
@@ -116,12 +116,24 @@ export function DevicesPage() {
   }
 
   async function onRevoke(device: Device) {
+    if (!window.confirm(`Revoke device ${device.name} (${device.associated_usernames?.join(', ') || 'owner unknown'})? Existing sessions will be terminated.`)) return
     setError(null)
     try {
       await revokeDevice(device.ulid)
       await queryClient.invalidateQueries({ queryKey: ['devices'] })
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Unable to revoke device.')
+    }
+  }
+
+  async function onRestore(device: Device) {
+    if (!window.confirm(`Restore device ${device.name} (${device.associated_usernames?.join(', ') || 'owner unknown'})? Existing sessions remain revoked; the user must sign in again.`)) return
+    setError(null)
+    try {
+      await restoreDevice(device.ulid)
+      await queryClient.invalidateQueries({ queryKey: ['devices'] })
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : 'Unable to restore device.')
     }
   }
 
@@ -268,6 +280,7 @@ export function DevicesPage() {
       <PosDataGrid
         columns={[
           { key: 'name', header: 'Name', render: (row) => row.name },
+          { key: 'users', header: 'Used by (known users)', render: (row) => row.associated_usernames?.join(', ') || 'Unknown / no sign-in history' },
           { key: 'ulid', header: 'ULID', render: (row) => row.ulid },
           { key: 'branch', header: 'Branch', render: (row) => row.branch?.code ?? '—' },
           { key: 'status', header: 'Status', render: (row) => row.status },
@@ -279,6 +292,9 @@ export function DevicesPage() {
               <div className="flex justify-end gap-1">
                 {canApprove && row.status === 'pending' && row.device_type !== 'browser' ? (
                   <DesktopButton label="Approve" onClick={() => void onApprove(row)} />
+                ) : null}
+                {canReviewRequests && row.status === 'revoked' ? (
+                  <DesktopButton label="Restore" onClick={() => void onRestore(row)} />
                 ) : null}
                 {canRevoke && row.status !== 'revoked' ? (
                   <DesktopButton label="Revoke" variant="danger" onClick={() => void onRevoke(row)} />
