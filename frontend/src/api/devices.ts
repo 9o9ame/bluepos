@@ -23,6 +23,10 @@ export function revokeDevice(ulid: string): Promise<Device> {
   return apiFetch<Device>(`/api/devices/${ulid}/revoke`, { method: 'POST' })
 }
 
+export function restoreDevice(ulid: string): Promise<Device> {
+  return apiFetch<Device>(`/api/devices/${ulid}/restore`, { method: 'POST' })
+}
+
 export function assignDevice(ulid: string, input: { branch_ulid?: string | null; warehouse_ulid?: string | null }): Promise<Device> {
   return apiFetch<Device>(`/api/devices/${ulid}`, {
     method: 'PATCH',
