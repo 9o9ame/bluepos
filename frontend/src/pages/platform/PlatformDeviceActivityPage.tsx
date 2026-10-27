@@ -11,9 +11,11 @@ export function PlatformDeviceActivityPage() {
   const [username, setUsername] = useState('')
   const [event, setEvent] = useState('')
   const [ipAddress, setIpAddress] = useState('')
-  const filters = { tenant_code: tenantCode.trim() || undefined, username: tenantCode.trim() ? username.trim() || undefined : undefined, event: event || undefined, ip_address: ipAddress.trim() || undefined }
+  const [since, setSince] = useState('')
+  const [until, setUntil] = useState('')
+  const filters = { tenant_code: tenantCode.trim() || undefined, username: tenantCode.trim() ? username.trim() || undefined : undefined, event: event || undefined, ip_address: ipAddress.trim() || undefined, since: since || undefined, until: until || undefined }
   const query = useQuery({
-    queryKey: ['platform', 'device-activity', filters.tenant_code, filters.username, filters.event, filters.ip_address],
+    queryKey: ['platform', 'device-activity', filters.tenant_code, filters.username, filters.event, filters.ip_address, filters.since, filters.until],
     queryFn: () => fetchPlatformDeviceActivity(filters),
     refetchInterval: 60000,
   })
@@ -34,6 +36,12 @@ export function PlatformDeviceActivityPage() {
         <label className="flex flex-col gap-1">IP address
           <input className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={ipAddress} onChange={e => setIpAddress(e.target.value)} placeholder="Any IP" />
         </label>
+        <label className="flex flex-col gap-1">From date
+          <input type="date" className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={since} onChange={e => setSince(e.target.value)} />
+        </label>
+        <label className="flex flex-col gap-1">To date
+          <input type="date" min={since || undefined} className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={until} onChange={e => setUntil(e.target.value)} />
+        </label>
         <div className="min-w-[190px]"><span>Event type</span>
           <UiSelect value={event} onChange={setEvent} options={[
             {value:'',label:'All security events'}, {value:'LOGIN_SUCCESS',label:'Login success'},
@@ -42,7 +50,7 @@ export function PlatformDeviceActivityPage() {
             {value:'DEVICE_REVOKED',label:'Device revoked'},
           ]}/>
         </div>
-        <UiButton variant="info" onClick={() => {setTenantCode('');setUsername('');setEvent('');setIpAddress('')}}>Clear filters</UiButton>
+        <UiButton variant="info" onClick={() => {setTenantCode('');setUsername('');setEvent('');setIpAddress('');setSince('');setUntil('')}}>Clear filters</UiButton>
       </div>
       <p className="text-[12px] text-[var(--ui-text-muted)]">
         Latest 200 recorded sessions across tenants. IP addresses do not establish precise physical location.
@@ -55,6 +63,7 @@ export function PlatformDeviceActivityPage() {
         <PosDataGrid
           columns={[
             { key: 'event', header: 'Event', render: row => row.event },
+            { key: 'reason', header: 'Denial reason', render: row => row.reason ?? '—' },
             { key: 'tenant', header: 'Tenant', render: row => row.tenant ? <Link className="underline" to={`/platform/tenants/${row.tenant.ulid}`}>{row.tenant.name}</Link> : 'Unknown' },
             { key: 'user', header: 'User', render: row => row.membership?.username ?? 'Unknown' },
             { key: 'device', header: 'Device', render: row => row.device?.name ?? '—' },
