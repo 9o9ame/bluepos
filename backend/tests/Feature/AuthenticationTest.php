@@ -302,7 +302,8 @@ class AuthenticationTest extends TestCase
             \App\Notifications\EmployeeDeviceApprovalNotification::class,
             function ($notification, $channels, $notifiable) {
                 return ($notifiable->routes['mail'] ?? null) === 'owner-approval-mail-tenant-a@example.com'
-                    && $notification->deviceName === 'Pending browser';
+                    && $notification->deviceName === 'Pending browser'
+                    && $notification->networkIp === null;
             }
         );
         \Illuminate\Support\Facades\Notification::assertSentOnDemandTimes(
