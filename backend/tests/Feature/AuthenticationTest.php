@@ -1791,6 +1791,25 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('locations.0.username', 'owner')
             ->assertJsonPath('locations.0.latitude_approx', '28.42');
         $this->assertNoInternalIds($response->json());
+        // Expired coarse locations must disappear from platform monitoring.
+        \Illuminate\Support\Facades\DB::table('login_location_observations')
+            ->where('tenant_id', $tenantA->tenant->id)
+            ->update(['expires_at' => now()->subMinute()]);
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices')
+            ->assertOk()->assertJsonCount(0, 'locations');
+        // A different tenant's location must never enter this tenant's result.
+        \Illuminate\Support\Facades\DB::table('login_location_observations')->insert([
+            'ulid' => (string) \Illuminate\Support\Str::ulid(),
+            'tenant_id' => $tenantB->tenant->id,
+            'membership_id' => $tenantB->membership->id,
+            'latitude_approx' => 31.44,
+            'longitude_approx' => 74.36,
+            'accuracy_meters' => 50,
+            'observed_at' => now(),
+            'expires_at' => now()->addDays(30),
+        ]);
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices')
+            ->assertOk()->assertJsonCount(0, 'locations');
         $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?status=pending&ip_address=203.0.113.41')
             ->assertOk()->assertJsonPath('access_requests.0.ulid', $requestUlid);
         $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?status=rejected')
@@ -2094,6 +2113,10 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('pagination.total', 1)
             ->assertJsonPath('locations.0.latitude_approx', '28.42')
             ->assertJsonPath('locations.0.longitude_approx', '70.30');
+        $this->getJson('/api/security/location-history?username=owner')
+            ->assertOk()->assertJsonPath('pagination.total', 1);
+        $this->getJson('/api/security/location-history?username=unknown')
+            ->assertOk()->assertJsonPath('pagination.total', 0);
         $this->getJson('/api/security/location-history?page=0')->assertUnprocessable();
 
         $other = $this->provisionOwner('location-other-tenant');
