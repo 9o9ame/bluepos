@@ -75,6 +75,7 @@ export type Device = {
   ulid: string
   name: string
   device_type: string
+  associated_usernames?: string[]
   status: string
   registered_at: string | null
   approved_at: string | null
