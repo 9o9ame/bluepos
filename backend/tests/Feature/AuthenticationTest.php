@@ -369,6 +369,15 @@ class AuthenticationTest extends TestCase
 
         $owner->tenant->status = \App\Enums\TenantStatus::Active;
         $owner->tenant->save();
+        $device->branch_id = $owner->branch->id;
+        $device->save();
+        $owner->branch->status = \App\Enums\BranchStatus::Inactive;
+        $owner->branch->save();
+        $this->postJson($url, ['decision' => 'approved'])
+            ->assertForbidden()->assertJsonPath('error.key', 'BRANCH_ACCESS_DENIED');
+
+        $owner->branch->status = \App\Enums\BranchStatus::Active;
+        $owner->branch->save();
         $owner->membership->status = \App\Enums\MembershipStatus::Suspended;
         $owner->membership->save();
         $this->postJson($url, ['decision' => 'approved'])->assertForbidden();
