@@ -1467,6 +1467,14 @@ class AuthenticationTest extends TestCase
             ->assertOk()->assertJsonCount(0, 'access_requests');
         $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('ulid', $requestUlid)->value('status'));
+
+        \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $requestUlid)
+            ->update(['status' => 'approved', 'reviewed_by' => $tenantA->user->id, 'reviewed_at' => now()]);
+        $reviewed = $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?status=approved')
+            ->assertOk()->assertJsonPath('access_requests.0.ulid', $requestUlid)
+            ->assertJsonPath('access_requests.0.reviewer_name', $tenantA->user->name);
+        $this->assertNoInternalIds($reviewed->json());
     }
 
     public function test_failed_login_records_tenant_scope_without_user_identity_leak(): void
