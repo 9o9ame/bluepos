@@ -77,7 +77,9 @@ class SecuritySessionController extends Controller
         $this->authorize('viewAny', AuthSessionRecord::class);
         $filters = $request->validate([
             'page' => ['sometimes', 'integer', 'min:1', 'max:10000'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
             'username' => ['sometimes', 'string', 'max:120'],
+            'device_ulid' => ['sometimes', 'string', 'size:26'],
             'ip_address' => ['sometimes', 'ip'],
             'event' => ['sometimes', 'in:all,LOGIN_SUCCESS,LOGIN_FAILURE,LOGIN_BLOCKED'],
         ]);
@@ -95,17 +97,40 @@ class SecuritySessionController extends Controller
             ->whereIn('audit.event', ['LOGIN_SUCCESS', 'LOGIN_FAILURE', 'LOGIN_BLOCKED'])
             ->when(isset($filters['username']), fn ($q) => $q->where('member.username', $filters['username']))
             ->when(isset($filters['ip_address']), fn ($q) => $q->where('audit.ip_address', $filters['ip_address']))
+            ->when(isset($filters['device_ulid']), fn ($q) => $q->where('device.ulid', $filters['device_ulid']))
             ->when(isset($filters['event']) && $filters['event'] !== 'all', fn ($q) => $q->where('audit.event', $filters['event']))
             ->orderByDesc('audit.occurred_at')->orderByDesc('audit.id')
-            ->paginate(50, [
+            ->paginate((int) ($filters['per_page'] ?? 50), [
                 'audit.ulid', 'audit.event', 'audit.ip_address', 'audit.user_agent', 'audit.occurred_at',
                 'member.ulid as membership_ulid', 'member.username',
                 'device.ulid as device_ulid', 'device.name as device_name',
             ], 'page', (int) ($filters['page'] ?? 1));
 
+        $page->getCollection()->transform(function ($event) {
+            $agent = (string) ($event->user_agent ?? '');
+            // User-Agent is client-reported. These labels are display hints, not identity evidence.
+            $event->browser = match (true) {
+                str_contains($agent, 'Edg/') => 'Edge',
+                str_contains($agent, 'Firefox/') => 'Firefox',
+                str_contains($agent, 'Chrome/') => 'Chrome',
+                str_contains($agent, 'Safari/') => 'Safari',
+                default => 'Unknown',
+            };
+            $event->os = match (true) {
+                str_contains($agent, 'Windows NT') => 'Windows',
+                str_contains($agent, 'Android') => 'Android',
+                str_contains($agent, 'iPhone'), str_contains($agent, 'iPad') => 'iOS',
+                str_contains($agent, 'Mac OS X') => 'macOS',
+                str_contains($agent, 'Linux') => 'Linux',
+                default => 'Unknown',
+            };
+
+            return $event;
+        });
+
         return response()->json([
             'events' => $page->items(),
-            'pagination' => ['page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
+            'pagination' => ['page' => $page->currentPage(), 'per_page' => $page->perPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
         ]);
     }
 
