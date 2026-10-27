@@ -21,6 +21,23 @@ class PlatformAccessTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_platform_password_and_mfa_require_location_when_policy_enabled(): void
+    {
+        config()->set('security.tenant_login_location_required', true);
+
+        $this->postJson('/api/platform/auth/login', [
+            'email' => 'unknown@example.com',
+            'password' => 'not-valid',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['location_latitude', 'location_longitude', 'location_accuracy']);
+
+        $this->postJson('/api/platform/auth/mfa/verify', [
+            'challenge_ulid' => (string) Str::ulid(),
+            'code' => '123456',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['location_latitude', 'location_longitude', 'location_accuracy']);
+    }
+
     public function test_super_admin_system_role_exists_and_receives_catalogue(): void
     {
         $this->signInPlatformAdmin('sa-cat');
