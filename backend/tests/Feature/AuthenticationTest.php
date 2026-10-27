@@ -452,6 +452,20 @@ class AuthenticationTest extends TestCase
         \Illuminate\Support\Facades\Notification::assertSentOnDemandTimes(
             \App\Notifications\EmployeeDeviceDecisionNotification::class, 1
         );
+
+        $revokeUrl = '/api/devices/access-requests/'.$requestUlid.'/revoke';
+        $this->postJson($revokeUrl)->assertOk()->assertJsonPath('status', 'rejected');
+        $this->assertSame('rejected', \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $requestUlid)->value('status'));
+        $this->postJson($revokeUrl)
+            ->assertStatus(409)->assertJsonPath('error.key', 'ACCESS_REQUEST_NOT_APPROVED');
+        \Illuminate\Support\Facades\Notification::assertSentOnDemandTimes(
+            \App\Notifications\EmployeeDeviceDecisionNotification::class, 2
+        );
+        $this->assertSame(1, \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('event', 'DEVICE_ACCESS_REVOKED')
+            ->where('resource_ulid', $requestUlid)->count());
     }
 
     public function test_device_review_decision_emails_have_correct_status_and_no_credentials(): void
