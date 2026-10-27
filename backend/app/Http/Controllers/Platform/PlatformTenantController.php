@@ -40,6 +40,7 @@ class PlatformTenantController extends Controller
             ->withCount(['memberships', 'branches', 'warehouses'])
             ->withCount([
                 'devices as active_devices_count' => fn ($devices) => $devices->where('status', DeviceStatus::Active),
+                'devices as pending_devices_count' => fn ($devices) => $devices->where('status', DeviceStatus::Pending),
             ])
             ->orderByDesc('id');
 
@@ -90,6 +91,7 @@ class PlatformTenantController extends Controller
         $tenant->loadCount(['memberships', 'branches', 'warehouses']);
         $tenant->loadCount([
             'devices as active_devices_count' => fn ($devices) => $devices->where('status', DeviceStatus::Active),
+                'devices as pending_devices_count' => fn ($devices) => $devices->where('status', DeviceStatus::Pending),
         ]);
 
         return new PlatformTenantResource($tenant);
