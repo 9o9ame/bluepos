@@ -184,6 +184,7 @@ export function PlatformTenantsPage() {
             <th>Users</th>
             <th>Branches</th>
             <th>Devices</th>
+            <th>Pending Devices</th>
             <th>Created</th>
             <th>Actions</th>
           </tr>
@@ -206,6 +207,11 @@ export function PlatformTenantsPage() {
               <td>
                 <Link className="underline text-[var(--ui-accent)]" to={`/platform/tenants/${tenant.ulid}?tab=Devices`}>
                   {tenant.devices_count ?? '—'}
+                </Link>
+              </td>
+              <td>
+                <Link className={tenant.pending_devices_count ? 'font-semibold underline text-[var(--ui-warning)]' : 'underline'} to={`/platform/tenants/${tenant.ulid}?tab=Devices`}>
+                  {tenant.pending_devices_count ?? 0}
                 </Link>
               </td>
               <td>{tenant.created_at ? tenant.created_at.slice(0, 10) : '—'}</td>
