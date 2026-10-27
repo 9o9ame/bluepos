@@ -102,7 +102,7 @@ export function DevicesPage() {
           <div className="flex flex-col gap-1">
             {(requestsQuery.data?.requests ?? []).map((item) => (
               <div key={item.ulid} className="flex flex-wrap items-center justify-between gap-2 border border-[var(--ui-border)] p-2 text-[12px]">
-                <span><strong>{item.username}</strong> — {item.device_name} · {new Date(item.created_at).toLocaleString()} · {item.status}{item.reviewer_name ? ` · Reviewed by ${item.reviewer_name}` : ''}</span>
+                <span><strong>{item.username}</strong> {item.role_names.length ? `(${item.role_names.join(', ')})` : ''} — {item.device_name} · {new Date(item.created_at).toLocaleString()} · {item.status}{item.reviewer_name ? ` · Reviewed by ${item.reviewer_name}` : ''}</span>
                 {item.status === 'pending' ? <span className="flex gap-1">
                   <DesktopButton label="Approve" onClick={() => void onReview(item.ulid, 'approved')} disabled={reviewing !== null} />
                   <DesktopButton label="Reject" variant="danger" onClick={() => void onReview(item.ulid, 'rejected')} disabled={reviewing !== null} />
