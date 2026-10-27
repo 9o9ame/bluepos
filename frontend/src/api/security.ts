@@ -35,3 +35,25 @@ export type TenantLoginHistory = {
 export function fetchTenantLoginHistory(page = 1): Promise<TenantLoginHistory> {
   return apiFetch<TenantLoginHistory>(`/api/security/login-history?page=${page}`)
 }
+
+export type TenantLocationHistory = {
+  locations: Array<{
+    ulid: string
+    membership_ulid: string
+    username: string
+    device_ulid: string | null
+    device_name: string | null
+    latitude_approx: string
+    longitude_approx: string
+    accuracy_meters: number
+    observed_at: string
+    expires_at: string
+  }>
+  pagination: { page: number; last_page: number; total: number }
+  precision: 'approximate'
+  retention_days: number
+}
+
+export function fetchTenantLocationHistory(page = 1): Promise<TenantLocationHistory> {
+  return apiFetch<TenantLocationHistory>(`/api/security/location-history?page=${page}`)
+}
