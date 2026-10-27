@@ -1321,6 +1321,31 @@ class AuthenticationTest extends TestCase
         $this->assertContains('owner', collect($ownerSession['membership']['roles'])->pluck('code')->all());
     }
 
+    public function test_failed_login_records_tenant_scope_without_user_identity_leak(): void
+    {
+        $owner = $this->provisionOwner('failure-monitoring');
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('failure-monitoring'),
+            'username' => 'owner',
+            'password' => 'wrong-password',
+        ])->assertUnauthorized();
+
+        $entry = \App\Models\AuditLog::query()->where('event', 'LOGIN_FAILURE')
+            ->where('tenant_id', $owner->tenant->id)->latest('id')->firstOrFail();
+        $this->assertNull($entry->actor_membership_id);
+        $this->assertArrayHasKey('username_hash', $entry->metadata);
+        $this->assertArrayNotHasKey('username', $entry->metadata);
+
+        $this->createPlatformAdmin('failure-monitor-admin');
+        $this->signInPlatformAdmin('failure-monitor-admin');
+        $response = $this->getJson('/api/platform/security/device-activity?tenant_code='.$owner->tenant->code.'&event=LOGIN_FAILURE')
+            ->assertOk();
+        $this->assertNotEmpty($response->json('events'));
+        $this->assertSame($owner->tenant->ulid, $response->json('events.0.tenant.ulid'));
+        $this->assertNull($response->json('events.0.membership'));
+        $this->assertNoInternalIds($response->json());
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
