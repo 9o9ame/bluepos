@@ -932,6 +932,55 @@ class AuthenticationTest extends TestCase
 
     }
 
+    public function test_owner_login_history_filters_ip_device_and_exposes_only_tenant_audit_browser_hints(): void
+    {
+        $owner = $this->provisionOwner('login-history-scoped');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('login-history-scoped'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $knownIp = '203.0.113.45';
+        \App\Models\AuditLog::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'actor_user_id' => $owner->membership->user_id,
+            'actor_membership_id' => $owner->membership->id,
+            'device_id' => $device->id,
+            'event' => 'LOGIN_BLOCKED',
+            'ip_address' => $knownIp,
+            'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36',
+            'occurred_at' => now()->addSecond(),
+        ]);
+        $other = $this->provisionOwner('login-history-other-tenant');
+        \App\Models\AuditLog::query()->create([
+            'tenant_id' => $other->tenant->id,
+            'actor_user_id' => $other->membership->user_id,
+            'actor_membership_id' => $other->membership->id,
+            'event' => 'LOGIN_FAILURE',
+            'ip_address' => $knownIp,
+            'user_agent' => 'Firefox/125.0',
+            'occurred_at' => now()->addSeconds(2),
+        ]);
+
+        $response = $this->getJson('/api/security/login-history?event=LOGIN_BLOCKED&ip_address='.$knownIp.'&device_ulid='.$device->ulid.'&per_page=1')
+            ->assertOk()->assertJsonPath('pagination.total', 1)
+            ->assertJsonPath('pagination.per_page', 1)
+            ->assertJsonPath('events.0.event', 'LOGIN_BLOCKED')
+            ->assertJsonPath('events.0.ip_address', $knownIp)
+            ->assertJsonPath('events.0.browser', 'Chrome')
+            ->assertJsonPath('events.0.os', 'Windows')
+            ->assertJsonPath('events.0.device_ulid', $device->ulid);
+        $this->assertArrayNotHasKey('tenant_id', $response->json('events.0'));
+        $this->assertArrayNotHasKey('device_id', $response->json('events.0'));
+        $this->getJson('/api/security/login-history?event=LOGIN_FAILURE&ip_address='.$knownIp)
+            ->assertOk()->assertJsonPath('pagination.total', 0);
+        $this->getJson('/api/security/login-history?device_ulid=invalid')->assertUnprocessable();
+        $this->getJson('/api/security/login-history?per_page=101')->assertUnprocessable();
+    }
+
     public function test_owner_can_filter_and_paginate_employee_device_review_history(): void
     {
         $owner = $this->provisionOwner('device-review-history');
