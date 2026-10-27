@@ -28,13 +28,18 @@ export function LoginPage() {
     if (!window.isSecureContext || !navigator.geolocation) {
       throw new Error('Sign-in requires browser location access on HTTPS (or localhost).')
     }
-    const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
+    let position: GeolocationPosition
+    try {
+      position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        })
       })
-    })
+    } catch {
+      throw new Error('Location access is required to sign in. Enable location for BluePOS in your browser and try again.')
+    }
     if (!Number.isFinite(position.coords.latitude) || !Number.isFinite(position.coords.longitude)) {
       throw new Error('Browser location is unavailable. Enable location permission and retry.')
     }
@@ -95,6 +100,9 @@ export function LoginPage() {
 
   return (
     <AuthLayout title="Sign in">
+      <p className="mb-3 text-[12px] text-[var(--ui-text-muted)]">
+        Sign-in requires browser location permission. Only approximate coordinates are saved for 30 days and are visible to authorized tenant security staff and platform monitoring. Denying permission prevents sign-in.
+      </p>
       <form className="space-y-3" onSubmit={onSubmit}>
         <label className="block text-[12px] font-semibold">
           Tenant / Mart code
