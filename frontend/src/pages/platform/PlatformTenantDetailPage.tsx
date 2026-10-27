@@ -358,12 +358,13 @@ export function PlatformTenantDetailPage() {
           {devicesQuery.isError ? <p role="alert">Could not load devices.</p> : null}
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
-              <thead><tr className="border-b"><th className="p-2">Name</th><th>Type</th><th>Status</th><th>Registered</th><th>Last seen</th></tr></thead>
+              <thead><tr className="border-b"><th className="p-2">Name</th><th>Type</th><th>Status</th><th>Registered</th><th>Last seen</th><th>Staff approvals</th></tr></thead>
               <tbody>{(devicesQuery.data?.devices ?? []).map((device) => (
                 <tr key={device.ulid} className="border-b">
                   <td className="p-2">{device.name}</td><td>{device.type}</td><td>{device.status}</td>
                   <td>{device.registered_at ? new Date(device.registered_at).toLocaleString() : '—'}</td>
                   <td>{device.last_seen_at ? new Date(device.last_seen_at).toLocaleString() : '—'}</td>
+                  <td>Pending: {device.employee_approvals.pending} · Approved: {device.employee_approvals.approved} · Rejected: {device.employee_approvals.rejected}</td>
 
                 </tr>
               ))}</tbody>
