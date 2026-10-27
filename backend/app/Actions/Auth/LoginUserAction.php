@@ -95,10 +95,12 @@ class LoginUserAction
 
         $branch = $this->membershipAccess->resolveBranch($membership, $device->branch_id ? (int) $device->branch_id : null);
         if (! $branch) {
+            $this->recordBlockedLogin($request, $tenant, $membership, 'BRANCH_ACCESS_DENIED', $device);
             throw new ApiException('BRANCH_ACCESS_DENIED', 'No branch is available for this account.', 403);
         }
 
         if ($device->branch_id && (int) $device->branch_id !== (int) $branch->id) {
+            $this->recordBlockedLogin($request, $tenant, $membership, 'BRANCH_ACCESS_DENIED', $device);
             throw new ApiException('BRANCH_ACCESS_DENIED', 'This device is not assigned to an allowed branch.', 403);
         }
 
@@ -117,6 +119,7 @@ class LoginUserAction
             ->first();
 
         if (! $warehouse) {
+            $this->recordBlockedLogin($request, $tenant, $membership, 'NO_WAREHOUSE', $device);
             throw new ApiException('NO_WAREHOUSE', 'No warehouse is available for this branch.', 403);
         }
 
