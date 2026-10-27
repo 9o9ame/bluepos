@@ -148,7 +148,7 @@ export function DevicesPage() {
               <div key={alert.ulid} className="flex flex-wrap items-center justify-between gap-2 border border-[var(--ui-border)] p-2 text-[12px]">
                 <span>
                   {alert.read_at === null ? <strong>Unread · </strong> : null}
-                  {alert.kind === 'new_device' ? 'New device' : 'New network/IP'} · {alert.username} · {alert.device_name}
+                  {alert.kind === 'new_device' ? 'New device' : 'New network/IP'} · {alert.username} {alert.role_names.length ? `(${alert.role_names.join(', ')})` : ''} · {alert.device_name}
                   {' · IP: '}{alert.request_ip ?? 'Unavailable'} · {new Date(alert.created_at).toLocaleString()}
                   {alert.request_latitude_approx !== null && alert.request_longitude_approx !== null ? ` · Approx. location: ${alert.request_latitude_approx}, ${alert.request_longitude_approx}` : ''}
                   {' · '}{alert.status}
