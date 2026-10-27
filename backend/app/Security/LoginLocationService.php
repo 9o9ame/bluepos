@@ -18,6 +18,7 @@ final class LoginLocationService
         $longitude = (float) $request->input('location_longitude');
         $accuracy = (int) ceil((float) $request->input('location_accuracy'));
 
+        $place = app(IpGeolocation::class)->lookup($request->ip());
         DB::table('login_location_observations')->insert([
             'ulid' => (string) Str::ulid(),
             'tenant_id' => $session->tenant->id,
@@ -26,6 +27,9 @@ final class LoginLocationService
             'latitude_approx' => round($latitude, 2),
             'longitude_approx' => round($longitude, 2),
             'accuracy_meters' => min(100000, max(0, $accuracy)),
+            'country' => $place['country'],
+            'region' => $place['region'],
+            'city' => $place['city'],
             'observed_at' => now(),
             'expires_at' => now()->addDays(30),
         ]);
