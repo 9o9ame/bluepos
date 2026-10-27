@@ -39,6 +39,8 @@ export type DeviceAccessRequest = {
   role_names: string[]
   request_ip: string | null
   request_user_agent: string | null
+  request_latitude_approx: string | null
+  request_longitude_approx: string | null
   created_at: string
   status: 'pending' | 'approved' | 'rejected'
   reviewed_at: string | null
@@ -71,6 +73,8 @@ export type DeviceAccessNotification = {
   device_name: string
   request_ip: string | null
   request_user_agent: string | null
+  request_latitude_approx: string | null
+  request_longitude_approx: string | null
   created_at: string
   read_at: string | null
 }
