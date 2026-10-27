@@ -972,6 +972,9 @@ class AuthenticationTest extends TestCase
                 'status' => $status,
                 'request_ip' => '203.0.113.24',
                 'request_user_agent' => 'BluePOS test browser',
+                'request_latitude_approx' => 28.42,
+                'request_longitude_approx' => 70.30,
+                'request_location_expires_at' => now()->addDay(),
                 'reviewed_at' => $status === 'pending' ? null : now(),
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -991,7 +994,10 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('requests.0.username', 'historyemployee')
             ->assertJsonPath('requests.0.device_name', 'History test device')
             ->assertJsonPath('requests.0.request_ip', '203.0.113.24')
-            ->assertJsonPath('requests.0.request_user_agent', 'BluePOS test browser');
+            ->assertJsonPath('requests.0.request_user_agent', 'BluePOS test browser')
+            ->assertJsonPath('requests.0.device_type', 'browser')
+            ->assertJsonPath('requests.0.device_status', 'pending')
+            ->assertJsonPath('requests.0.request_latitude_approx', '28.42');
         $this->getJson('/api/devices/access-requests?status=approved')
             ->assertOk()->assertJsonPath('pagination.total', 1)
             ->assertJsonPath('requests.0.status', 'approved')
@@ -1008,6 +1014,21 @@ class AuthenticationTest extends TestCase
         $this->getJson('/api/devices/access-requests?status=all&device_ulid='.(string) \Illuminate\Support\Str::ulid())
             ->assertOk()->assertJsonPath('pagination.total', 0)
             ->assertJsonPath('pending_count', 1);
+        // Historical approved requests must not imply that a now-revoked device is active.
+        $device->status = \App\Enums\DeviceStatus::Revoked;
+        $device->save();
+        $this->getJson('/api/devices/access-requests?status=approved')
+            ->assertOk()->assertJsonPath('requests.0.status', 'approved')
+            ->assertJsonPath('requests.0.device_status', 'revoked');
+
+        // Expired browser location must not be exposed in owner history.
+        \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $ulids['approved'])
+            ->update(['request_location_expires_at' => now()->subMinute()]);
+        $this->getJson('/api/devices/access-requests?status=approved')
+            ->assertOk()->assertJsonPath('requests.0.request_latitude_approx', null)
+            ->assertJsonPath('requests.0.request_longitude_approx', null);
+
         $this->getJson('/api/devices/access-requests?membership_ulid=invalid')->assertUnprocessable();
         $this->getJson('/api/devices/access-requests?device_ulid=invalid')->assertUnprocessable();
         $this->getJson('/api/devices/access-requests?status=invalid')->assertUnprocessable();
