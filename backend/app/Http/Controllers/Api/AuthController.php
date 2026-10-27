@@ -215,8 +215,8 @@ class AuthController extends Controller
         }
 
         if (! Hash::check($data['code'], $challenge->code_hash)) {
-            $challenge->attempts++;
-            $challenge->save();
+            MfaChallenge::query()->whereKey($challenge->id)->whereNull('consumed_at')
+                ->where('attempts', '<', SecurityOtp::maxVerifyAttempts())->increment('attempts');
             app(AuditLogger::class)->record('MFA_FAILURE', [
                 'tenant_id' => $challenge->tenant_id,
                 'resource_ulid' => $challenge->ulid,
@@ -239,8 +239,14 @@ class AuthController extends Controller
             throw new ApiException('DEVICE_NOT_APPROVED', 'Your tenant administrator must approve this device.', 403);
         }
 
-        $challenge->consumed_at = now();
-        $challenge->save();
+        // Atomically consume the challenge; concurrent replays lose before a session is established.
+        $claimed = MfaChallenge::query()->whereKey($challenge->id)
+            ->whereNull('consumed_at')->where('expires_at', '>', now())
+            ->where('attempts', '<', SecurityOtp::maxVerifyAttempts())
+            ->update(['consumed_at' => now()]);
+        if ($claimed !== 1) {
+            throw new ApiException('MFA_INVALID', 'The verification request is no longer valid.', 403);
+        }
 
         if ($device) {
             if ($device->status === DeviceStatus::Pending) {
