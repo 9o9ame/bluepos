@@ -756,3 +756,22 @@ be enabled.
 This is financial/accounting work and should be handled as a separate SOL-level phase on a dedicated branch.
 
 
+
+## Device security requirements — 2026-10-27 (feature/superadmin)
+
+Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify their own browser/network via recovery-email OTP; employees require approval from their own tenant owner. Do not restore platform device approval/revoke routes.
+
+### Implemented in current branch
+- Platform device approval/revoke endpoints and UI actions removed; monitoring endpoints remain permission-protected.
+- Browser generic device-approval bypass blocked; employee-specific tenant review remains the authoritative staff approval flow.
+- Tenant Home and title bar surface pending staff device/network requests; Administration > Devices shows pending/approved/rejected history and owner review actions.
+- Staff login denial includes matching approval status when identifiable; UI shows pending/rejected information and manual retry guidance.
+- SuperAdmin tenant list links to read-only Devices and Login Activity, shows pending-device counts.
+- Central platform session activity and tenant-specific login history now include active, matching-tenant role names/codes for each recorded membership; frontend displays the roles alongside username, device and IP.
+
+### Validation and limitations
+- User reported TypeScript typecheck passed after login-status changes, plus 2 focused auth tests / 25 assertions PASS; platform approval-route removal regression separately PASS (1 test / 6 assertions).
+- Role-monitoring addition **not yet locally typechecked/tested**; browser verification remains pending.
+- No claim of complete geolocation, request-event IP details, privacy retention policy, reliable email delivery, persistent notification inbox, or complete end-to-end owner/staff onboarding.
+- Tracker is provisional, not audited release readiness: baseline 20 implemented / 18 partial / 12 pending; role-wise monitoring requirement #32 moved pending → implemented on code inspection, pending local validation.
+- Avoid routine full builds. Run only focused security validation on `bluepos_test` and frontend typecheck when impacted.
