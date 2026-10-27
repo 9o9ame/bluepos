@@ -264,6 +264,18 @@ class LoginUserAction
             // Lock the tenant to serialize retries with owner review and avoid duplicate alerts.
             Tenant::query()->whereKey($membership->tenant_id)->lockForUpdate()->firstOrFail();
 
+            // Account status may have changed since password verification.
+            $currentMember = Membership::query()->with('user')
+                ->where('tenant_id', $membership->tenant_id)
+                ->whereKey($membership->id)
+                ->lockForUpdate()->first();
+            if (! $currentMember
+                || $currentMember->status !== MembershipStatus::Active
+                || $currentMember->user?->status !== UserStatus::Active
+                || $currentMember->hasOwnerAuthority()) {
+                return false;
+            }
+
             $existing = DB::table('device_access_requests')
                 ->where('tenant_id', $membership->tenant_id)
                 ->where('membership_id', $membership->id)
@@ -287,10 +299,11 @@ class LoginUserAction
                     'updated_at' => now(),
                 ]);
 
+                $this->recordAccessRequestAudit($request, $membership, $device);
                 return true;
             }
 
-            return DB::table('device_access_requests')->insertOrIgnore([
+            $inserted = DB::table('device_access_requests')->insertOrIgnore([
                 'ulid' => (string) Str::ulid(),
                 'tenant_id' => $membership->tenant_id,
                 'membership_id' => $membership->id,
@@ -302,19 +315,27 @@ class LoginUserAction
                 'created_at' => now(),
                 'updated_at' => now(),
             ]) > 0;
+            if ($inserted) {
+                $this->recordAccessRequestAudit($request, $membership, $device);
+            }
+            return $inserted;
         });
 
         if ($created) {
             app(EmployeeDeviceApprovalNotifier::class)->notifyOwners($membership, $device->name, $request->ip());
-            $this->audit->record('DEVICE_ACCESS_REQUESTED', [
-                'tenant_id' => $membership->tenant_id,
-                'actor_user_id' => $membership->user_id,
-                'actor_membership_id' => $membership->id,
-                'device_id' => $device->id,
-                'resource_type' => 'device',
-                'resource_ulid' => $device->ulid,
-            ], $request);
         }
+    }
+
+    private function recordAccessRequestAudit(Request $request, Membership $membership, Device $device): void
+    {
+        $this->audit->record('DEVICE_ACCESS_REQUESTED', [
+            'tenant_id' => $membership->tenant_id,
+            'actor_user_id' => $membership->user_id,
+            'actor_membership_id' => $membership->id,
+            'device_id' => $device->id,
+            'resource_type' => 'device',
+            'resource_ulid' => $device->ulid,
+        ], $request);
     }
 
     private function staffApprovalStatus(Request $request, Membership $membership, Device $device): string
