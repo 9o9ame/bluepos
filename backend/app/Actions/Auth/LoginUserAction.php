@@ -299,10 +299,15 @@ class LoginUserAction
                     'updated_at' => now(),
                 ]);
 
+                $this->recordOwnerInboxNotifications($membership, (int) $existing->id, 'new_network', true);
                 $this->recordAccessRequestAudit($request, $membership, $device);
                 return true;
             }
 
+            $hasDeviceHistory = DB::table('device_access_requests')
+                ->where('tenant_id', $membership->tenant_id)
+                ->where('membership_id', $membership->id)
+                ->where('device_id', $device->id)->exists();
             $inserted = DB::table('device_access_requests')->insertOrIgnore([
                 'ulid' => (string) Str::ulid(),
                 'tenant_id' => $membership->tenant_id,
@@ -316,6 +321,12 @@ class LoginUserAction
                 'updated_at' => now(),
             ]) > 0;
             if ($inserted) {
+                $newRequestId = DB::table('device_access_requests')
+                    ->where('tenant_id', $membership->tenant_id)
+                    ->where('membership_id', $membership->id)
+                    ->where('device_id', $device->id)
+                    ->where('network_hash', $network)->value('id');
+                $this->recordOwnerInboxNotifications($membership, (int) $newRequestId, $hasDeviceHistory ? 'new_network' : 'new_device');
                 $this->recordAccessRequestAudit($request, $membership, $device);
             }
             return $inserted;
@@ -323,6 +334,40 @@ class LoginUserAction
 
         if ($created) {
             app(EmployeeDeviceApprovalNotifier::class)->notifyOwners($membership, $device->name, $request->ip());
+        }
+    }
+
+    private function recordOwnerInboxNotifications(Membership $employee, int $requestId, string $kind, bool $reopen = false): void
+    {
+        $owners = Membership::query()->with('user')
+            ->where('tenant_id', $employee->tenant_id)
+            ->where('status', MembershipStatus::Active)
+            ->whereHas('roles', fn ($query) => $query
+                ->where('roles.tenant_id', $employee->tenant_id)
+                ->where('roles.code', \App\Authz\PermissionCatalogue::OWNER)
+                ->where('roles.is_active', true))->get();
+
+        foreach ($owners as $owner) {
+            if ($owner->user?->status !== UserStatus::Active) {
+                continue;
+            }
+            DB::table('device_access_notifications')->insertOrIgnore([
+                'ulid' => (string) Str::ulid(),
+                'tenant_id' => $employee->tenant_id,
+                'recipient_membership_id' => $owner->id,
+                'access_request_id' => $requestId,
+                'kind' => $kind,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            if ($reopen) {
+                DB::table('device_access_notifications')
+                    ->where('tenant_id', $employee->tenant_id)
+                    ->where('recipient_membership_id', $owner->id)
+                    ->where('access_request_id', $requestId)
+                    ->where('kind', $kind)
+                    ->update(['read_at' => null, 'updated_at' => now()]);
+            }
         }
     }
 
