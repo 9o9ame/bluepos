@@ -133,6 +133,7 @@ export function fetchPlatformTenants(page = 1): Promise<Paginated<PlatformTenant
 }
 
 export type PlatformDeviceActivity = {
+  pagination: { events: { page: number; last_page: number; total: number }; sessions: { page: number; last_page: number; total: number } }
   events: Array<{
     ulid: string
     event: string
@@ -155,7 +156,7 @@ export type PlatformDeviceActivity = {
   }>
 }
 
-export type PlatformActivityFilters = { tenant_code?: string; username?: string; event?: string; ip_address?: string; since?: string; until?: string }
+export type PlatformActivityFilters = { tenant_code?: string; username?: string; event?: string; ip_address?: string; since?: string; until?: string; event_page?: number; session_page?: number }
 
 export function fetchPlatformDeviceActivity(filters: PlatformActivityFilters = {}): Promise<PlatformDeviceActivity> {
   const query = new URLSearchParams()
@@ -165,6 +166,8 @@ export function fetchPlatformDeviceActivity(filters: PlatformActivityFilters = {
   if (filters.ip_address) query.set('ip_address', filters.ip_address)
   if (filters.since) query.set('since', filters.since)
   if (filters.until) query.set('until', filters.until)
+  if (filters.event_page) query.set('event_page', String(filters.event_page))
+  if (filters.session_page) query.set('session_page', String(filters.session_page))
   return apiFetch<PlatformDeviceActivity>(`/api/platform/security/device-activity${query.size ? `?${query.toString()}` : ''}`)
 }
 
