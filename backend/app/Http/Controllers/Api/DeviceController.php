@@ -69,7 +69,30 @@ class DeviceController extends Controller
             ->pluck('device_id')
             ->mapWithKeys(fn ($id) => [(int) $id => true]);
 
+        // Devices can be shared by more than one membership. Collect every known
+        // tenant-scoped username from login sessions and staff approval requests.
+        $deviceIds = $devices->pluck('id');
+        $usersByDevice = collect();
+        if ($deviceIds->isNotEmpty()) {
+            $fromSessions = DB::table('auth_sessions as s')
+                ->join('memberships as m', 'm.id', '=', 's.membership_id')
+                ->where('s.tenant_id', $tenantContext->tenantId())
+                ->where('m.tenant_id', $tenantContext->tenantId())
+                ->whereIn('s.device_id', $deviceIds)
+                ->select('s.device_id', 'm.username')
+                ->distinct()->get();
+            $fromRequests = DB::table('device_access_requests as r')
+                ->join('memberships as m', 'm.id', '=', 'r.membership_id')
+                ->where('r.tenant_id', $tenantContext->tenantId())
+                ->where('m.tenant_id', $tenantContext->tenantId())
+                ->whereIn('r.device_id', $deviceIds)
+                ->select('r.device_id', 'm.username')
+                ->distinct()->get();
+            $usersByDevice = $fromSessions->concat($fromRequests)->groupBy('device_id');
+        }
+
         foreach ($devices as $device) {
+            $device->setAttribute('associated_usernames', $usersByDevice->get($device->id, collect())->pluck('username')->unique()->values()->all());
             $device->setAttribute('employee_access_policy',
                 $managedIds->has((int) $device->id) || $device->device_type === 'browser'
                     ? 'managed'
@@ -510,6 +533,41 @@ class DeviceController extends Controller
         $revocation->revokeDevice($device);
 
         app(AuditLogger::class)->record('DEVICE_REVOKED', [
+            'resource_type' => 'device',
+            'resource_ulid' => $device->ulid,
+        ], $request);
+
+        return new DeviceResource($device->fresh(['branch', 'warehouse', 'approver']));
+    }
+
+    public function restore(Request $request, string $deviceUlid, TenantContext $tenantContext): DeviceResource
+    {
+        $device = $this->findTenantDevice($tenantContext, $deviceUlid);
+        $this->authorize('revoke', $device);
+        if (! $tenantContext->membership()->hasOwnerAuthority()) {
+            throw new ApiException('FORBIDDEN', 'Only the tenant owner may restore a revoked device.', 403);
+        }
+
+        DB::transaction(function () use ($tenantContext, $deviceUlid, &$device): void {
+            $tenant = \App\Models\Tenant::query()
+                ->whereKey($tenantContext->tenantId())->lockForUpdate()->firstOrFail();
+            app(TenantEntitlementService::class)->assertOperational($tenant);
+            $device = Device::query()->forTenant($tenantContext->tenantId())
+                ->where('ulid', $deviceUlid)->lockForUpdate()->firstOrFail();
+            if ($device->status !== DeviceStatus::Revoked) {
+                throw new ApiException('DEVICE_NOT_REVOKED', 'Only revoked devices can be restored.', 409);
+            }
+            $device->status = DeviceStatus::Active;
+            $device->revoked_at = null;
+            $device->trusted_until = null;
+            $device->trusted_ip_hash = null;
+            $device->save();
+            // Revoked sessions/leases stay revoked. A new sign-in is mandatory.
+            // Owner browsers reverify with OTP; staff still require their
+            // tenant-specific approved device/network access.
+        });
+
+        app(AuditLogger::class)->record('DEVICE_RESTORED', [
             'resource_type' => 'device',
             'resource_ulid' => $device->ulid,
         ], $request);
