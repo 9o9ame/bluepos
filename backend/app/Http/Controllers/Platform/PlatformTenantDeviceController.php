@@ -58,11 +58,22 @@ class PlatformTenantDeviceController extends Controller
         $tenant = $this->tenant($tenantUlid);
         $rows = Device::query()->where('tenant_id', $tenant->id)
             ->orderByDesc('registered_at')->limit(250)->get();
+        $approvalCounts = DB::table('device_access_requests')
+            ->select('device_id', 'status', DB::raw('COUNT(*) as total'))
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('device_id', $rows->pluck('id'))
+            ->groupBy('device_id', 'status')
+            ->get()->groupBy('device_id');
         return response()->json(['devices' => $rows->map(fn (Device $device) => [
             'ulid' => $device->ulid, 'name' => $device->name,
             'type' => $device->device_type, 'status' => $device->status->value,
             'registered_at' => $device->registered_at?->toISOString(),
             'last_seen_at' => $device->last_seen_at?->toISOString(),
+            'employee_approvals' => [
+                'pending' => (int) ($approvalCounts->get($device->id)?->firstWhere('status', 'pending')?->total ?? 0),
+                'approved' => (int) ($approvalCounts->get($device->id)?->firstWhere('status', 'approved')?->total ?? 0),
+                'rejected' => (int) ($approvalCounts->get($device->id)?->firstWhere('status', 'rejected')?->total ?? 0),
+            ],
         ])->values()]);
     }
 
