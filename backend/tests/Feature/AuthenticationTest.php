@@ -1376,6 +1376,26 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('events.0.membership.username', 'owner');
     }
 
+    public function test_disabled_member_login_is_blocked_and_audited_without_credentials(): void
+    {
+        $owner = $this->provisionOwner('disabled-login-monitor');
+        $owner->membership->status = \App\Enums\MembershipStatus::Suspended;
+        $owner->membership->save();
+
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('disabled-login-monitor'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertForbidden()->assertJsonPath('error.key', 'ACCOUNT_DISABLED');
+
+        $entry = \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('event', 'LOGIN_BLOCKED')->latest('id')->firstOrFail();
+        $this->assertSame($owner->membership->id, $entry->actor_membership_id);
+        $this->assertSame('ACCOUNT_DISABLED', $entry->metadata['reason']);
+        $this->assertArrayNotHasKey('password', $entry->metadata);
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
