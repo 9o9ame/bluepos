@@ -23,15 +23,35 @@ class PlatformTenantDeviceController extends Controller
         return Tenant::query()->where('ulid', $tenantUlid)->firstOrFail();
     }
 
-    public function overview(): JsonResponse
+    public function overview(Request $request): JsonResponse
     {
+        $filters = $request->validate([
+            'tenant_code' => ['sometimes', 'string', 'max:60'],
+            'username' => ['sometimes', 'string', 'max:120', 'required_with:tenant_code'],
+            'event' => ['sometimes', 'in:LOGIN_SUCCESS,LOGIN_FAILURE,DEVICE_ACCESS_REQUESTED,DEVICE_ACCESS_APPROVED,DEVICE_ACCESS_REJECTED,DEVICE_REVOKED'],
+        ]);
+        $tenant = isset($filters['tenant_code'])
+            ? Tenant::query()->where('code', $filters['tenant_code'])->first()
+            : null;
+        $tenantIds = isset($filters['tenant_code']) ? [$tenant?->id ?? -1] : null;
+        $member = isset($filters['username']) && $tenant
+            ? \App\Models\Membership::query()->where('tenant_id', $tenant->id)
+                ->where('username', $filters['username'])->first()
+            : null;
+        $memberIds = isset($filters['username']) ? [$member?->id ?? -1] : null;
+
         $sessions = AuthSessionRecord::query()
+            ->when($tenantIds !== null, fn ($query) => $query->whereIn('tenant_id', $tenantIds))
+            ->when($memberIds !== null, fn ($query) => $query->whereIn('membership_id', $memberIds))
             ->with(['device:id,ulid,name', 'membership:id,ulid,username,tenant_id', 'membership.tenant:id,ulid,name,code', 'membership.roles:id,ulid,tenant_id,name,code,is_active'])
             ->orderByDesc('id')
             ->limit(200)
             ->get();
 
         $events = AuditLog::query()
+            ->when($tenantIds !== null, fn ($query) => $query->whereIn('tenant_id', $tenantIds))
+            ->when($memberIds !== null, fn ($query) => $query->whereIn('actor_membership_id', $memberIds))
+            ->when(isset($filters['event']), fn ($query) => $query->where('event', $filters['event']))
             ->whereIn('event', ['LOGIN_SUCCESS', 'LOGIN_FAILURE', 'DEVICE_ACCESS_REQUESTED', 'DEVICE_ACCESS_APPROVED', 'DEVICE_ACCESS_REJECTED', 'DEVICE_REVOKED'])
             ->orderByDesc('occurred_at')->orderByDesc('id')->limit(200)->get();
         $tenants = Tenant::query()->whereIn('id', $events->pluck('tenant_id')->filter()->unique())->get()->keyBy('id');
