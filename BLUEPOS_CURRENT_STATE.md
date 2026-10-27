@@ -1,3 +1,14 @@
+## 2026-10-27 — #4 trusted owner network HTTP regression (LOCAL TEST PENDING)
+
+- Authorized branch: `feature/superadmin`; starting checkpoint `2c19acec`. Implementation/test commit `a18bdf09`.
+- Added `AuthenticationTest::test_owner_trusted_device_reuses_same_network_but_changed_network_requires_otp` in `backend/tests/Feature/AuthenticationTest.php`. It exercises actual `POST /api/auth/login` for existing trusted owner device: same server-observed IP succeeds, changed IP responds `MFA_REQUIRED`, original trust fingerprint remains unchanged, pending MFA challenge exists.
+- No production changes, migrations, frontend changes, branch switching or main merge. New test has **not** been run on local `bluepos_test`; passing claim is prohibited. Existing verified tests remain 7 focused / 70 assertions from earlier local checkpoint, plus earlier separate 5 / 116 location checks.
+- #4 remains **Partial** pending actual focused test and full trust/expiry acceptance. No original #1–#50 status promotion. Provisional historical progress display is 37 Completed (implementation-indicated), 10 Partial, 3 Pending, unreconciled due to newer partial #45/#50 implementations; do not reinterpret these as release-accepted statuses.
+- Next local validation (only on `bluepos_test`): `cd backend && php vendor/bin/phpunit tests/Feature/AuthenticationTest.php --filter 'test_owner_trusted_device_reuses_same_network_but_changed_network_requires_otp|test_owner_trusted_device_expiry_requires_fresh_email_verification|test_owner_verified_network_fingerprint_requires_reverification_on_change'`. Confirm test DB before running. If the test fails, inspect observed request fingerprint rather than weakening security assertions.
+- Remaining original acceptance IDs unchanged: **#4, #18, #24, #28, #29, #37, #39, #43, #44, #45, #46, #48, #50**. Real provider GeoIP and production scheduler remain operational dependencies; real two-worker HTTP race testing remains incomplete.
+
+---
+
 ## 2026-10-26 — Functional device access review queue enhancement (local validation pending)
 
 - User-verified baseline: AuthenticationTest **38/38 PASS, 211 assertions** and PostgreSqlConcurrencyConnectionTest **3/3 PASS, 19 assertions**.
