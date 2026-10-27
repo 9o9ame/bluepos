@@ -1,3 +1,14 @@
+## 2026-10-27 — Owner/Staff new browser cross-tenant cookie fix (LOCAL TEST PENDING)
+
+- User confirmed in `bluepos_dev`: ALPHA admin = active Owner role, ALPHA ali = active Cashier role. Earlier empty challenge/request counts were queried via default `bluepos_test`, so cannot prove dev state.
+- Existing `LoginUserAction::assertDevice` returned `DEVICE_NOT_APPROVED` whenever a *valid* device cookie belonged to another tenant, without offering fresh tenant-specific enrollment. This is a concrete multi-tenant browser re-use bug, independent of whether the user screenshot hit exactly that branch.
+- Commit `f1e93ec5` changes ONLY this path: credential-validated foreign-tenant device is **never trusted**, and new pending device is enrolled in the authenticated tenant. Active Owner role receives own recovery OTP through existing `requireMfa`; Staff creates tenant-owner approval request through existing `recordStaffAccessRequest`. Revoked or disabled same-tenant device semantics unchanged. No client/tenant IDs trusted.
+- Commit `ea8a807e` adds targeted `AuthenticationTest::test_owner_with_another_tenants_browser_cookie_gets_own_recovery_otp`, checks MFA_REQUIRED, challenge associated with correct tenant/member/device and no employee approval request created. Test NOT RUN in this environment. No migrations, frontend changes, branch switch or main merge.
+- Validation on `bluepos_test` required: `php vendor/bin/phpunit tests/Feature/AuthenticationTest.php --filter 'test_owner_with_another_tenants_browser_cookie_gets_own_recovery_otp|test_non_owner_pending_device_requires_tenant_approval_not_email_otp|test_owner_trusted_device_reuses_same_network_but_changed_network_requires_otp'`. Then browser Owner new-device OTP and Staff owner-inbox approval, ideally both clean/incognito and shared-cookie cases on `bluepos_dev`.
+- #28/#29/#37/#46 remain locked Partial, and #4/#18/#24/#39/#43/#44/#45/#48/#50 remain Partial; don't promote until actual current-batch browser/authorization acceptance. Existing 37/13/0 progress bar is provisional only.
+
+---
+
 ## 2026-10-27 — Live browser sign-in blocked by accuracy >100000m (#46)
 
 - User screenshots show **both** `localhost:5173/login` (tenant) and `localhost:5173/platform/login` (platform) displaying `The location accuracy field must not be greater than 100000.` after requesting geolocation.
