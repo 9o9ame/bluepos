@@ -804,3 +804,9 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - Tracker upon previous successful verification: **23 implemented / 16 partial / 11 pending** (#24 partial → implemented). Requirement #26 remains pending focused regression of new first-device behavior and browser acceptance before classifying fully complete.
 - Git branch `feature/superadmin` is a user-approved legacy module branch; do not move/merge without explicit approval.
 - Validation needed for this specific batch: only `AuthenticationTest::test_employee_login_requires_approved_network_and_rejects_other_network` on `bluepos_test`. No full build required.
+
+### 2026-10-27 — SuperAdmin approval read-only status monitoring
+- Platform tenant Devices API now returns tenant-scoped counts of pending/approved/rejected employee-specific network access requests for each listed device, with no internal IDs in payload.
+- Platform Tenant Detail > Devices displays these counts. Approval/revoke platform routes remain removed. Tenant owner retains exclusive staff approval/rejection authority.
+- Related files: PlatformTenantDeviceController.php, frontend/src/api/platform.ts, frontend/src/pages/platform/PlatformTenantDetailPage.tsx.
+- Requirement #34 is now implemented at code level; pending local validation. Provisional tally **24 implemented / 15 partial / 11 pending**, including earlier #24 accepted after 2 tests/50 assertions. Requirement #26 first-device status edge case is newly addressed, focused verification pending.
