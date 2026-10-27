@@ -31,6 +31,9 @@ class LoginRequest extends FormRequest
             'tenant_code' => ['required', 'string', 'max:32'],
             'username' => ['required', 'string', 'max:64'],
             'password' => ['required', 'string'],
+            'location_latitude' => [config('security.tenant_login_location_required') ? 'required' : 'sometimes', 'numeric', 'between:-90,90'],
+            'location_longitude' => [config('security.tenant_login_location_required') ? 'required' : 'sometimes', 'numeric', 'between:-180,180'],
+            'location_accuracy' => [config('security.tenant_login_location_required') ? 'required' : 'sometimes', 'numeric', 'min:0', 'max:100000'],
         ];
     }
 }
