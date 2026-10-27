@@ -44,6 +44,7 @@ class AuthController extends Controller
             $request->validated('username'),
             $request->validated('password'),
         );
+        app(\App\Security\LoginLocationService::class)->record($request, $session);
         $establishSession->execute($request, $session);
 
         return (new AuthSessionResource($session))->response();
@@ -269,6 +270,7 @@ class AuthController extends Controller
             warehouse: $warehouse,
             device: $device,
         );
+        app(\App\Security\LoginLocationService::class)->record($request, $session);
         $establishSession->execute($request, $session);
 
         app(AuditLogger::class)->record('MFA_SUCCESS', [
