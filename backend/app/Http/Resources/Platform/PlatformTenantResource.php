@@ -45,6 +45,7 @@ class PlatformTenantResource extends JsonResource
             'users_count' => $this->whenCounted('memberships'),
             'branches_count' => $this->whenCounted('branches'),
             'devices_count' => $this->when(isset($this->active_devices_count), $this->active_devices_count),
+            'pending_devices_count' => $this->when(isset($this->pending_devices_count), $this->pending_devices_count),
             'warehouses_count' => $this->whenCounted('warehouses'),
             'admin_username' => $this->adminUsername(),
         ];
