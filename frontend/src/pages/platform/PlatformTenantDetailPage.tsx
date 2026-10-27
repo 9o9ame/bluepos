@@ -3,8 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useParams, useSearchParams } from 'react-router-dom'
 import {
   activatePlatformTenant,
-  approvePlatformTenantDevice,
-  revokePlatformTenantDevice,
   fetchPlatformTenantDevices,
   fetchPlatformTenantActivity,
   assignPlatformSubscription,
@@ -355,33 +353,18 @@ export function PlatformTenantDetailPage() {
             <button type="button" className="rounded border px-3 py-1"
               onClick={() => void devicesQuery.refetch()}>Refresh</button>
           </div>
-          <p className="mb-2 text-slate-600">New browsers must be approved before tenant login. Approval requires recent Superadmin MFA.</p>
+          <p className="mb-2 text-[var(--ui-text-muted)]">Read-only monitoring. Tenant owners verify their own devices by email OTP and approve staff device/network requests.</p>
           {devicesQuery.isLoading ? <p>Loading devices…</p> : null}
           {devicesQuery.isError ? <p role="alert">Could not load devices.</p> : null}
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
-              <thead><tr className="border-b"><th className="p-2">Name</th><th>Type</th><th>Status</th><th>Registered</th><th>Last seen</th><th>Actions</th></tr></thead>
+              <thead><tr className="border-b"><th className="p-2">Name</th><th>Type</th><th>Status</th><th>Registered</th><th>Last seen</th></tr></thead>
               <tbody>{(devicesQuery.data?.devices ?? []).map((device) => (
                 <tr key={device.ulid} className="border-b">
                   <td className="p-2">{device.name}</td><td>{device.type}</td><td>{device.status}</td>
                   <td>{device.registered_at ? new Date(device.registered_at).toLocaleString() : '—'}</td>
                   <td>{device.last_seen_at ? new Date(device.last_seen_at).toLocaleString() : '—'}</td>
-                  <td className="space-x-2">
-                    {device.status === 'pending' ? <button type="button" className="rounded border px-2 py-1"
-                      onClick={() => void run(async () => {
-                        await withRecentMfa(() => approvePlatformTenantDevice(tenant.ulid, device.ulid))
-                        await queryClient.invalidateQueries({ queryKey: ['platform', 'tenant', tenantUlid, 'devices'] })
-                      })}>Approve</button> : null}
-                    {(device.status === 'pending' || device.status === 'active') ? <button type="button"
-                      className="rounded border border-red-400 px-2 py-1 text-red-700"
-                      onClick={() => void (async () => {
-                        if (!(await askConfirm(`Revoke device ${device.name}? Existing device sessions will be invalidated.`))) return
-                        await run(async () => {
-                          await withRecentMfa(() => revokePlatformTenantDevice(tenant.ulid, device.ulid))
-                          await queryClient.invalidateQueries({ queryKey: ['platform', 'tenant', tenantUlid, 'devices'] })
-                        })
-                      })()}>Revoke</button> : null}
-                  </td>
+
                 </tr>
               ))}</tbody>
             </table>
