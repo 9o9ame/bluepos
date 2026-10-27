@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, X } from 'lucide-react'
 import { fetchBranches } from '../api/branches'
 import { fetchSecuritySessions } from '../api/security'
-import { approveDevice, fetchDevices, revokeDevice, fetchDeviceAccessRequests, reviewDeviceAccessRequest, revokeDeviceAccessRequest } from '../api/devices'
+import { approveDevice, fetchDevices, revokeDevice, fetchDeviceAccessRequests, reviewDeviceAccessRequest, revokeDeviceAccessRequest, fetchDeviceAccessNotifications, markDeviceAccessNotificationRead } from '../api/devices'
 import { ApiClientError } from '../api/client'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
 import { PosDataGrid } from '../components/desktop/PosDataGrid'
@@ -21,6 +21,14 @@ export function DevicesPage() {
   const canRevoke = useCan('devices.revoke')
   const canViewSessions = useCan('security.sessions.view')
   const [requestStatus, setRequestStatus] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending')
+  const [inboxPage, setInboxPage] = useState(1)
+  const inboxQuery = useQuery({
+    queryKey: ['device-access-inbox', inboxPage],
+    queryFn: () => fetchDeviceAccessNotifications(inboxPage),
+    enabled: canReviewRequests,
+    refetchInterval: 30000,
+  })
+  const [markingRead, setMarkingRead] = useState<string | null>(null)
   const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: fetchDevices })
   const requestsQuery = useQuery({ queryKey: ['device-access-requests', requestStatus], queryFn: () => fetchDeviceAccessRequests(requestStatus), enabled: canReviewRequests, refetchInterval: 30000 })
   const sessionsQuery = useQuery({ queryKey: ['security-sessions'], queryFn: fetchSecuritySessions, enabled: canViewSessions, refetchInterval: 60000 })
@@ -32,10 +40,23 @@ export function DevicesPage() {
   useWorkspaceHandlers({
     refresh: () => {
       void devicesQuery.refetch()
-      if (canReviewRequests) void requestsQuery.refetch()
+      if (canReviewRequests) { void requestsQuery.refetch(); void inboxQuery.refetch() }
       if (canViewSessions) void sessionsQuery.refetch()
     },
   })
+
+  async function onMarkRead(ulid: string) {
+    setError(null)
+    setMarkingRead(ulid)
+    try {
+      await markDeviceAccessNotificationRead(ulid)
+      await queryClient.invalidateQueries({ queryKey: ['device-access-inbox'] })
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : 'Unable to mark alert as read.')
+    } finally {
+      setMarkingRead(null)
+    }
+  }
 
   async function onApprove(device: Device) {
     setError(null)
@@ -94,13 +115,39 @@ export function DevicesPage() {
       title="Devices"
       toolbar={
         <>
-          <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => { void devicesQuery.refetch(); if (canReviewRequests) void requestsQuery.refetch(); if (canViewSessions) void sessionsQuery.refetch() }} />
+          <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => { void devicesQuery.refetch(); if (canReviewRequests) { void requestsQuery.refetch(); void inboxQuery.refetch() } if (canViewSessions) void sessionsQuery.refetch() }} />
           <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
         </>
       }
       flush
     >
       {error ? <p className="p-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
+      {canReviewRequests ? (
+        <section className="p-2">
+          <h3 className="mb-2 text-[12px] font-semibold">Device &amp; network alerts ({inboxQuery.data?.unread_count ?? 0} unread)</h3>
+          {inboxQuery.isLoading ? <p className="text-[12px]">Loading alerts…</p> : null}
+          {inboxQuery.isError ? <p role="alert" className="text-[12px] text-[var(--ui-danger)]">Unable to load alerts.</p> : null}
+          {inboxQuery.data?.notifications.length === 0 ? <p className="text-[12px] text-[var(--ui-text-muted)]">No alerts recorded.</p> : null}
+          <div className="flex flex-col gap-1">
+            {(inboxQuery.data?.notifications ?? []).map(alert => (
+              <div key={alert.ulid} className="flex flex-wrap items-center justify-between gap-2 border border-[var(--ui-border)] p-2 text-[12px]">
+                <span>
+                  {alert.read_at === null ? <strong>Unread · </strong> : null}
+                  {alert.kind === 'new_device' ? 'New device' : 'New network/IP'} · {alert.username} · {alert.device_name}
+                  {' · IP: '}{alert.request_ip ?? 'Unavailable'} · {new Date(alert.created_at).toLocaleString()}
+                  {' · '}{alert.status}
+                </span>
+                {alert.read_at === null ? <DesktopButton label="Mark read" onClick={() => void onMarkRead(alert.ulid)} disabled={markingRead !== null} /> : null}
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 flex items-center gap-2 text-[12px]">
+            <span>Page {inboxPage} · {inboxQuery.data?.pagination.total ?? 0} alerts</span>
+            <DesktopButton label="Previous" disabled={inboxPage <= 1} onClick={() => setInboxPage(p => Math.max(1, p - 1))} />
+            <DesktopButton label="Next" disabled={!inboxQuery.data || inboxPage >= inboxQuery.data.pagination.last_page} onClick={() => setInboxPage(p => p + 1)} />
+          </div>
+        </section>
+      ) : null}
       {canReviewRequests ? (
         <section className="p-2">
           <h3 className="mb-2 text-[12px] font-semibold">Employee device / network approval requests (pending: {requestsQuery.data?.pending_count ?? 0})</h3>
