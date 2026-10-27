@@ -33,7 +33,7 @@ export function PlatformDeviceActivityPage() {
         <div className="min-w-[190px]"><span>Event type</span>
           <UiSelect value={event} onChange={setEvent} options={[
             {value:'',label:'All security events'}, {value:'LOGIN_SUCCESS',label:'Login success'},
-            {value:'LOGIN_FAILURE',label:'Login failure'}, {value:'DEVICE_ACCESS_REQUESTED',label:'Access requested'},
+            {value:'LOGIN_FAILURE',label:'Login failure'}, {value:'LOGIN_BLOCKED',label:'Login blocked'}, {value:'DEVICE_ACCESS_REQUESTED',label:'Access requested'},
             {value:'DEVICE_ACCESS_APPROVED',label:'Access approved'}, {value:'DEVICE_ACCESS_REJECTED',label:'Access rejected'},
             {value:'DEVICE_REVOKED',label:'Device revoked'},
           ]}/>
