@@ -30,6 +30,8 @@ class PlatformTenantDeviceController extends Controller
             'username' => ['sometimes', 'string', 'max:120'],
             'event' => ['sometimes', 'in:LOGIN_SUCCESS,LOGIN_FAILURE,LOGIN_BLOCKED,DEVICE_ACCESS_REQUESTED,DEVICE_ACCESS_APPROVED,DEVICE_ACCESS_REJECTED,DEVICE_REVOKED'],
             'ip_address' => ['sometimes', 'ip'],
+            'since' => ['sometimes', 'date_format:Y-m-d'],
+            'until' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:since'],
         ]);
         $tenant = isset($filters['tenant_code'])
             ? Tenant::query()->where('code', $filters['tenant_code'])->first()
@@ -45,6 +47,8 @@ class PlatformTenantDeviceController extends Controller
             ->when($tenantIds !== null, fn ($query) => $query->whereIn('tenant_id', $tenantIds))
             ->when($memberIds !== null, fn ($query) => $query->whereIn('membership_id', $memberIds))
             ->when(isset($filters['ip_address']), fn ($query) => $query->where('ip_address', $filters['ip_address']))
+            ->when(isset($filters['since']), fn ($query) => $query->whereDate('last_seen_at', '>=', $filters['since']))
+            ->when(isset($filters['until']), fn ($query) => $query->whereDate('last_seen_at', '<=', $filters['until']))
             ->with(['device:id,ulid,name', 'membership:id,ulid,username,tenant_id', 'membership.tenant:id,ulid,name,code', 'membership.roles:id,ulid,tenant_id,name,code,is_active'])
             ->orderByDesc('id')
             ->limit(200)
@@ -55,6 +59,8 @@ class PlatformTenantDeviceController extends Controller
             ->when($memberIds !== null, fn ($query) => $query->whereIn('actor_membership_id', $memberIds))
             ->when(isset($filters['event']), fn ($query) => $query->where('event', $filters['event']))
             ->when(isset($filters['ip_address']), fn ($query) => $query->where('ip_address', $filters['ip_address']))
+            ->when(isset($filters['since']), fn ($query) => $query->whereDate('occurred_at', '>=', $filters['since']))
+            ->when(isset($filters['until']), fn ($query) => $query->whereDate('occurred_at', '<=', $filters['until']))
             ->whereIn('event', ['LOGIN_SUCCESS', 'LOGIN_FAILURE', 'LOGIN_BLOCKED', 'DEVICE_ACCESS_REQUESTED', 'DEVICE_ACCESS_APPROVED', 'DEVICE_ACCESS_REJECTED', 'DEVICE_REVOKED'])
             ->orderByDesc('occurred_at')->orderByDesc('id')->limit(200)->get();
         $tenants = Tenant::query()->whereIn('id', $events->pluck('tenant_id')->filter()->unique())->get()->keyBy('id');
@@ -70,6 +76,7 @@ class PlatformTenantDeviceController extends Controller
             return [
                 'ulid' => $log->ulid,
                 'event' => $log->event,
+                'reason' => $log->event === 'LOGIN_BLOCKED' && in_array($log->metadata['reason'] ?? null, ['DEVICE_NOT_APPROVED', 'DEVICE_REVOKED', 'ACCOUNT_DISABLED', 'TENANT_DISABLED', 'SUBSCRIPTION_REQUIRED', 'SUBSCRIPTION_INACTIVE', 'BRANCH_ACCESS_DENIED', 'NO_WAREHOUSE'], true) ? $log->metadata['reason'] : null,
                 'tenant' => $tenant ? ['ulid' => $tenant->ulid, 'code' => $tenant->code, 'name' => $tenant->name] : null,
                 'membership' => $member && $tenant && (int) $member->tenant_id === (int) $tenant->id
                     ? ['ulid' => $member->ulid, 'username' => $member->username] : null,
