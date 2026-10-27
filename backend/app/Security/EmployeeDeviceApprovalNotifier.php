@@ -41,7 +41,7 @@ final class EmployeeDeviceApprovalNotifier
         foreach (array_keys($recipients) as $address) {
             try {
                 Notification::route('mail', $address)->notify(
-                    new EmployeeDeviceApprovalNotification($employee->username, $deviceName)
+                    new EmployeeDeviceApprovalNotification($employee->username, $deviceName, $networkIp)
                 );
             } catch (Throwable $error) {
                 // Notification failures must not grant access or prevent a pending request being recorded.
