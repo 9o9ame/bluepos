@@ -1802,6 +1802,32 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('events.0.membership', null);
     }
 
+    public function test_ip_geolocation_does_not_contact_provider_without_opt_in_or_public_ip(): void
+    {
+        \Illuminate\Support\Facades\Http::fake();
+        config()->set('security.geoip.token', '');
+        $empty = ['country' => null, 'region' => null, 'city' => null];
+        $this->assertSame($empty, app(\App\Security\IpGeolocation::class)->lookup('8.8.8.8'));
+        config()->set('security.geoip.token', 'test-token');
+        $this->assertSame($empty, app(\App\Security\IpGeolocation::class)->lookup('127.0.0.1'));
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
+
+    public function test_ip_geolocation_parses_only_provider_fields_and_keeps_failure_unknown(): void
+    {
+        \Illuminate\Support\Facades\Http::fake([
+            'ipinfo.io/*' => \Illuminate\Support\Facades\Http::response([
+                'country' => 'PK', 'region' => 'Punjab', 'city' => 'Rahim Yar Khan',
+                'loc' => '28.42,70.30', 'ip' => '8.8.4.4',
+            ]),
+        ]);
+        config()->set('security.geoip.token', 'test-token');
+        $this->assertSame([
+            'country' => 'PK', 'region' => 'Punjab', 'city' => 'Rahim Yar Khan',
+        ], app(\App\Security\IpGeolocation::class)->lookup('8.8.4.4'));
+        \Illuminate\Support\Facades\Http::assertSentCount(1);
+    }
+
     public function test_mandatory_browser_location_blocks_login_without_location_evidence(): void
     {
         $owner = $this->provisionOwner('login-location-gate');
