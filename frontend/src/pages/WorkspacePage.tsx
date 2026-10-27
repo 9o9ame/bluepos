@@ -20,7 +20,7 @@ export function WorkspacePage() {
   const isOwner = Boolean(session?.membership.is_owner)
   const approvalsQuery = useQuery({
     queryKey: ['device-access-requests'],
-    queryFn: fetchDeviceAccessRequests,
+    queryFn: () => fetchDeviceAccessRequests(),
     enabled: isOwner,
     refetchInterval: 30000,
   })
