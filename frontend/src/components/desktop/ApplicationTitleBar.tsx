@@ -31,7 +31,7 @@ export function ApplicationTitleBar({
   const isTenantOwner = session.roles.some((role) => role.code === 'owner' && role.is_active)
   const pendingQuery = useQuery({
     queryKey: ['device-access-requests'],
-    queryFn: fetchDeviceAccessRequests,
+    queryFn: () => fetchDeviceAccessRequests(),
     enabled: isTenantOwner,
     refetchInterval: 30000,
   })
