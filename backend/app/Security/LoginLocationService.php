@@ -26,7 +26,7 @@ final class LoginLocationService
             'device_id' => $session->device?->id,
             'latitude_approx' => round($latitude, 2),
             'longitude_approx' => round($longitude, 2),
-            'accuracy_meters' => min(100000, max(0, $accuracy)),
+            'accuracy_meters' => min(20000000, max(0, $accuracy)),
             'country' => $place['country'],
             'region' => $place['region'],
             'city' => $place['city'],
