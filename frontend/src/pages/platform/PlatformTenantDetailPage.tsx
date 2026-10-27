@@ -391,9 +391,9 @@ export function PlatformTenantDetailPage() {
             </tr>)}</tbody></table></div>
           <strong className="mt-4 block">Security events</strong>
           <div className="overflow-x-auto"><table className="w-full text-left">
-            <thead><tr><th>Event</th><th>IP</th><th>Browser</th><th>Time</th></tr></thead>
+            <thead><tr><th>Event</th><th>Employee</th><th>Device</th><th>IP</th><th>Browser</th><th>Time</th></tr></thead>
             <tbody>{(activityQuery.data?.events ?? []).map(event => <tr className="border-t" key={event.ulid}>
-              <td>{event.event}</td><td>{event.ip_address ?? '—'}</td>
+              <td>{event.event}</td><td>{event.membership?.username ?? 'Unknown'}</td><td>{event.device?.name ?? '—'}</td><td>{event.ip_address ?? '—'}</td>
               <td className="max-w-64 break-all">{event.user_agent ?? '—'}</td><td>{event.occurred_at ?? '—'}</td>
             </tr>)}</tbody></table></div>
         </div>
