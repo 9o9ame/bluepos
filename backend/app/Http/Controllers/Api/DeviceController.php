@@ -81,6 +81,9 @@ class DeviceController extends Controller
 
     public function accessRequests(Request $request, TenantContext $tenantContext): JsonResponse
     {
+        if (! $tenantContext->membership()->hasOwnerAuthority()) {
+            throw new ApiException('FORBIDDEN', 'Only the tenant owner may view employee access requests.', 403);
+        }
         $this->authorize('viewAny', Device::class);
         $data = $request->validate([
             'status' => ['sometimes', 'in:pending,approved,rejected,all'],
