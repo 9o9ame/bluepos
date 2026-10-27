@@ -31,6 +31,15 @@ class PlatformAccessTest extends TestCase
         ])->assertUnprocessable()
             ->assertJsonStructure(['error' => ['fields' => ['location_latitude', 'location_longitude', 'location_accuracy']]]);
 
+        // Coarse but valid browser geolocation must reach authentication, not validation failure.
+        $this->postJson('/api/platform/auth/login', [
+            'email' => 'unknown@example.com',
+            'password' => 'not-valid',
+            'location_latitude' => 28.42145,
+            'location_longitude' => 70.30354,
+            'location_accuracy' => 150000,
+        ])->assertUnauthorized()->assertJsonPath('error.key', 'INVALID_CREDENTIALS');
+
         $this->postJson('/api/platform/auth/mfa/verify', [
             'challenge_ulid' => (string) Str::ulid(),
             'code' => '123456',
