@@ -371,6 +371,20 @@ export function PlatformTenantDetailPage() {
             </table>
           </div>
           {devicesQuery.data?.devices.length === 0 ? <p className="pt-3">No registered devices for this tenant.</p> : null}
+          <strong className="mt-4 block">Recent employee device/network approval requests (read-only, latest 100)</strong>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead><tr className="border-b"><th>Employee</th><th>Device</th><th>Status</th><th>IP</th><th>Browser</th><th>Requested</th><th>Reviewed</th></tr></thead>
+              <tbody>{(devicesQuery.data?.access_requests ?? []).map(item => (
+                <tr className="border-t" key={item.ulid}>
+                  <td>{item.username}</td><td>{item.device_name}</td><td>{item.status}</td>
+                  <td>{item.request_ip ?? '—'}</td><td className="max-w-64 break-all">{item.request_user_agent ?? '—'}</td>
+                  <td>{item.created_at ?? '—'}</td><td>{item.reviewed_at ?? '—'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          {devicesQuery.data?.access_requests.length === 0 ? <p className="pt-3">No employee access requests recorded.</p> : null}
         </div>
       ) : null}
 
