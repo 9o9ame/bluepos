@@ -79,6 +79,66 @@ class DeviceController extends Controller
         return DeviceResource::collection($devices);
     }
 
+    public function accessNotifications(Request $request, TenantContext $tenantContext): JsonResponse
+    {
+        if (! $tenantContext->membership()->hasOwnerAuthority()) {
+            throw new ApiException('FORBIDDEN', 'Only the tenant owner may view access notifications.', 403);
+        }
+        $this->authorize('viewAny', Device::class);
+        $data = $request->validate(['page' => ['sometimes', 'integer', 'min:1', 'max:10000']]);
+        $tenantId = $tenantContext->tenantId();
+        $membershipId = $tenantContext->membershipId();
+
+        $query = DB::table('device_access_notifications as notice')
+            ->join('device_access_requests as access', function ($join) {
+                $join->on('access.id', '=', 'notice.access_request_id')
+                    ->on('access.tenant_id', '=', 'notice.tenant_id');
+            })
+            ->join('memberships as employee', function ($join) {
+                $join->on('employee.id', '=', 'access.membership_id')
+                    ->on('employee.tenant_id', '=', 'notice.tenant_id');
+            })
+            ->join('devices as device', function ($join) {
+                $join->on('device.id', '=', 'access.device_id')
+                    ->on('device.tenant_id', '=', 'notice.tenant_id');
+            })
+            ->where('notice.tenant_id', $tenantId)
+            ->where('notice.recipient_membership_id', $membershipId);
+
+        $unread = (clone $query)->whereNull('notice.read_at')->count();
+        $page = $query->orderByDesc('notice.created_at')->orderByDesc('notice.id')
+            ->paginate(30, [
+                'notice.ulid', 'notice.kind', 'notice.created_at', 'notice.read_at',
+                'access.ulid as request_ulid', 'access.status',
+                'access.request_ip', 'access.request_user_agent',
+                'employee.ulid as employee_ulid', 'employee.username',
+                'device.ulid as device_ulid', 'device.name as device_name',
+            ], 'page', (int) ($data['page'] ?? 1));
+
+        return response()->json([
+            'notifications' => $page->items(),
+            'unread_count' => $unread,
+            'pagination' => ['page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total()],
+        ]);
+    }
+
+    public function readAccessNotification(string $notificationUlid, TenantContext $tenantContext): JsonResponse
+    {
+        if (! $tenantContext->membership()->hasOwnerAuthority()) {
+            throw new ApiException('FORBIDDEN', 'Only the tenant owner may read access notifications.', 403);
+        }
+        $this->authorize('viewAny', Device::class);
+        $updated = DB::table('device_access_notifications')
+            ->where('tenant_id', $tenantContext->tenantId())
+            ->where('recipient_membership_id', $tenantContext->membershipId())
+            ->where('ulid', $notificationUlid)
+            ->update(['read_at' => DB::raw('COALESCE(read_at, CURRENT_TIMESTAMP)'), 'updated_at' => now()]);
+        if ($updated !== 1) {
+            throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
+        }
+        return response()->json(['ulid' => $notificationUlid, 'read' => true]);
+    }
+
     public function accessRequests(Request $request, TenantContext $tenantContext): JsonResponse
     {
         if (! $tenantContext->membership()->hasOwnerAuthority()) {
