@@ -1451,7 +1451,7 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('access_requests.0.request_ip', '203.0.113.41')
             ->assertJsonPath('access_requests.0.username', 'owner')
             ->assertJsonPath('access_requests.0.reviewer_name', null)
-            ->assertJsonPath('access_requests.0.role_names.0', 'Owner');
+            ->assertJsonPath('access_requests.0.role_names', ['Owner']);
         $this->assertNoInternalIds($response->json());
         $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices?status=pending&ip_address=203.0.113.41')
             ->assertOk()->assertJsonPath('access_requests.0.ulid', $requestUlid);
