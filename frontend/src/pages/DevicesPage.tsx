@@ -2,7 +2,7 @@ import { summarizeUserAgent } from '../utils/userAgentSummary'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, X } from 'lucide-react'
 import { fetchBranches } from '../api/branches'
-import { fetchSecuritySessions, fetchTenantLoginHistory } from '../api/security'
+import { fetchSecuritySessions, fetchTenantLoginHistory, fetchTenantLocationHistory } from '../api/security'
 import { approveDevice, fetchDevices, revokeDevice, fetchDeviceAccessRequests, reviewDeviceAccessRequest, revokeDeviceAccessRequest, fetchDeviceAccessNotifications, markDeviceAccessNotificationRead } from '../api/devices'
 import { ApiClientError } from '../api/client'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
@@ -22,6 +22,13 @@ export function DevicesPage() {
   const canRevoke = useCan('devices.revoke')
   const canViewSessions = useCan('security.sessions.view')
   const [requestStatus, setRequestStatus] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending')
+  const [locationPage, setLocationPage] = useState(1)
+  const locationQuery = useQuery({
+    queryKey: ['tenant-location-history', locationPage],
+    queryFn: () => fetchTenantLocationHistory(locationPage),
+    enabled: canReviewRequests,
+    refetchInterval: 60000,
+  })
   const [historyPage, setHistoryPage] = useState(1)
   const historyQuery = useQuery({
     queryKey: ['tenant-login-history', historyPage],
@@ -209,6 +216,31 @@ export function DevicesPage() {
             <span>{historyQuery.data?.pagination.total ?? 0} events · page {historyPage}</span>
             <DesktopButton label="Previous" disabled={historyPage <= 1} onClick={() => setHistoryPage(n => Math.max(1, n - 1))} />
             <DesktopButton label="Next" disabled={!historyQuery.data || historyPage >= historyQuery.data.pagination.last_page} onClick={() => setHistoryPage(n => n + 1)} />
+          </div>
+        </section>
+      ) : null}
+      {canReviewRequests ? (
+        <section className="p-2">
+          <h3 className="mb-2 text-[12px] font-semibold">Approximate staff locations (last 30 days)</h3>
+          <p className="mb-2 text-[12px] text-[var(--ui-text-muted)]">Location comes from browser permission at sign-in; coordinates are rounded for privacy, not reliable proof of physical presence.</p>
+          {locationQuery.isError ? <p role="alert" className="text-[12px] text-[var(--ui-danger)]">Unable to load location history.</p> : null}
+          {!locationQuery.isLoading && !locationQuery.isError ? (
+            <PosDataGrid
+              columns={[
+                { key: 'employee', header: 'Employee', render: row => row.username },
+                { key: 'device', header: 'Device', render: row => row.device_name ?? '—' },
+                { key: 'location', header: 'Approx. coordinates', render: row => `${row.latitude_approx}, ${row.longitude_approx}` },
+                { key: 'accuracy', header: 'Reported accuracy', render: row => `${row.accuracy_meters} m` },
+                { key: 'time', header: 'Observed', render: row => row.observed_at },
+              ]}
+              rows={locationQuery.data?.locations ?? []}
+              rowKey={row => row.ulid}
+            />
+          ) : null}
+          <div className="mt-2 flex items-center gap-2 text-[12px]">
+            <span>{locationQuery.data?.pagination.total ?? 0} records · page {locationPage}</span>
+            <DesktopButton label="Previous" disabled={locationPage <= 1} onClick={() => setLocationPage(n => Math.max(1, n - 1))} />
+            <DesktopButton label="Next" disabled={!locationQuery.data || locationPage >= locationQuery.data.pagination.last_page} onClick={() => setLocationPage(n => n + 1)} />
           </div>
         </section>
       ) : null}
