@@ -85,12 +85,12 @@ class PlatformTenantDeviceController extends Controller
             ->with(['device:id,ulid,name', 'membership:id,ulid,username,tenant_id', 'membership.roles:id,ulid,tenant_id,name,code,is_active'])
             ->orderByDesc('id')->limit(100)->get();
         $events = AuditLog::query()->where('tenant_id', $tenant->id)
-            ->whereIn('event', ['LOGIN_FAILURE', 'LOGIN_SUCCESS', 'DEVICE_ENROLLMENT_REQUESTED'])
+            ->whereIn('event', ['LOGIN_FAILURE', 'LOGIN_SUCCESS', 'DEVICE_ENROLLMENT_REQUESTED', 'DEVICE_ACCESS_REQUESTED', 'DEVICE_ACCESS_APPROVED', 'DEVICE_ACCESS_REJECTED', 'DEVICE_REVOKED'])
             ->orderByDesc('occurred_at')->limit(100)->get();
         return response()->json([
             'sessions' => $sessions->map(fn (AuthSessionRecord $session) => [
                 'ulid' => $session->ulid,
-                'membership' => $session->membership ? ['ulid' => $session->membership->ulid, 'username' => $session->membership->username] : null,
+                'membership' => $session->membership ? ['ulid' => $session->membership->ulid, 'username' => $session->membership->username, 'roles' => $session->membership->roles->filter(fn ($role) => $role->is_active && (int) $role->tenant_id === (int) $tenant->id)->map(fn ($role) => ['code' => $role->code, 'name' => $role->name])->values()->all()] : null,
                 'device' => $session->device ? ['ulid' => $session->device->ulid, 'name' => $session->device->name] : null,
                 'ip_address' => $session->ip_address,
                 'user_agent' => $session->user_agent,
