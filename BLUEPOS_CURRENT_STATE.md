@@ -959,3 +959,10 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - Modified files: `backend/app/Http/Controllers/Api/DeviceController.php`, `backend/tests/Feature/AuthenticationTest.php`, `BLUEPOS_CURRENT_STATE.md`. No frontend changes.
 - Maintains serial tenant lock, conditional pending-row transition, transaction atomicity, audit and after-commit employee email; no platform decision permission added.
 - Tracker **32 implemented / 7 partial / 11 pending** remains a provisional baseline without original 50-item acceptance list. These are real security safeguards but should not be counted as independently complete original requirements on guesswork. User expects *multiple milestone completions per turn*; use this document's strict user directive, avoid padding numbers and do not ask user to reiterate.
+
+### 2026-10-27 — Additional staff network authorization: assigned branch cannot be inactive
+- Continuing same substantial security batch: owner approval of employee network for an already-active or pending device now also revalidates an assigned device branch against the locked tenant and current active branch status. Missing, foreign or inactive assigned branches result in `BRANCH_ACCESS_DENIED` (403), without changing request state, sending decision email, or activating device.
+- Focused regression extended to set the active device's assigned branch inactive, assert branch denial, then restore branch and verify that a suspended reviewer still cannot approve.
+- Production + test scope remains `DeviceController.php`, `AuthenticationTest.php`; no migration, no UI changes.
+- New security batch pending local test results; latest committed changes should be validated with focused owner-review and existing branch/tenant approval tests on `bluepos_test`.
+- Honest tracker remains **32 implemented / 7 partial / 11 pending** until original 50-item criteria can be mapped to actual acceptance. Future iterations must target complete *uncounted* requirements, not recurring approvals-only refinements, per STRICT USER DIRECTIVE.
