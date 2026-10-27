@@ -129,6 +129,17 @@ class DeviceController extends Controller
                 'device.name as device_name',
             ], 'page', (int) ($data['page'] ?? 1));
 
+        $members = \App\Models\Membership::query()
+            ->where('tenant_id', $tenantContext->tenantId())
+            ->whereIn('ulid', collect($page->items())->pluck('membership_ulid'))
+            ->with(['roles' => fn ($query) => $query->where('roles.tenant_id', $tenantContext->tenantId())->where('roles.is_active', true)])
+            ->get()->keyBy('ulid');
+
+        $page->getCollection()->transform(function ($item) use ($members) {
+            $item->role_names = $members->get($item->membership_ulid)?->roles->pluck('name')->values()->all() ?? [];
+            return $item;
+        });
+
         $pendingCount = DB::table('device_access_requests')
             ->where('tenant_id', $tenantContext->tenantId())
             ->where('status', 'pending')
