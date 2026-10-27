@@ -1,3 +1,13 @@
+## 2026-10-27 — DEFERRED: scalable Owner device-approval notification bell (not implemented)
+
+- Decision by user: Do NOT enable 10-second or 2-second polling for tenant device approval notifications. Multi-tenant scale requires an event-driven solution, not per-browser periodic API traffic. Feature explicitly **PENDING**; do not present notification bell, sound, toast, realtime delivery, or browser push as implemented.
+- Reverted previous polling bell change in `frontend/src/components/desktop/ApplicationTitleBar.tsx` (commit `cdb17a7`), restoring the prior titlebar. Existing owner Devices approval inbox and approvals remain working; previous server endpoints and existing periodic behavior elsewhere remain unchanged.
+- Future scope: Laravel built-in Notifications (database persistence + recipient scoping), queued delivery after transaction commit, authenticated tenant-scoped Laravel broadcasting/websocket event delivery to currently online Owners; persistent bell with unread badge, accessible dropdown with mark-read, native in-app toast and user-gesture-enabled sound, navigation to existing Devices approval records. Only if user explicitly approves external/browser Web Push should background notifications, service-worker subscriptions and permissions be designed. Account for reconnect sync, dedupe, permission/access checks, multi-tenant isolation, horizontal scalability, notification retention, reduced-motion/sound preference, and tests.
+- No separate branch/new module now; track under existing #21/#22/#25 notification enhancements and #24 request details without claiming completed. Do not start until locked #28/#29/#37/#46 acceptance or user explicitly reprioritizes.
+- Verification: frontend build and local browser checks pending; user should fast-forward pull `feature/superadmin`. No database migration.
+
+---
+
 ## 2026-10-27 — Owner bell notification panel (browser acceptance pending)
 
 - User screenshots: ALPHA Cashier `ali` successfully signed in on approved browser; Owner Devices page shows `ali` approximate location in last-30-days history; Platform ALPHA Devices page shows approved Cashier request, role, browser/IP/location. This supports #37 positive-path manually, #29 partial platform monitoring, NOT isolation or privacy acceptance. Platform page also displays `Could not load devices.` alongside device rows and needs later diagnosis.
