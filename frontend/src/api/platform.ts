@@ -88,7 +88,7 @@ export function platformVerifyMfa(input: PlatformMfaInput): Promise<PlatformUser
   })
 }
 
-export function platformConfirmMfa(input: PlatformMfaInput): Promise<PlatformUser> {
+export function platformConfirmMfa(input: Pick<PlatformMfaInput, 'challenge_ulid' | 'code'>): Promise<PlatformUser> {
   return apiFetch<PlatformUser>('/api/platform/auth/mfa/confirm', {
     method: 'POST',
     body: JSON.stringify(input),
