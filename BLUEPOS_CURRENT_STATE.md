@@ -843,3 +843,11 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - Files: backend/app/Security/EmployeeDeviceApprovalNotifier.php, backend/app/Notifications/EmployeeDeviceApprovalNotification.php, backend/app/Actions/Auth/LoginUserAction.php, backend/app/Http/Controllers/Api/DeviceController.php, backend/tests/Feature/AuthenticationTest.php, BLUEPOS_CURRENT_STATE.md.
 - Baseline user validation before batch: TypeScript check PASS, platform monitoring audit test PASS (1 test / 25 assertions). Changes in this batch NOT yet locally tested. No migrations.
 - Tracker kept at 27 implemented / 12 partial / 11 pending until focused authZ/email verification. These are meaningful finalization changes inside already-counted owner approval requirements; do not double-count criteria solely for an email field or access restriction.
+
+### 2026-10-27 — Complete failed/blocked login event coverage (current login path)
+- Credential errors for known tenant codes now record the server-resolved `tenant_id` in LOGIN_FAILURE audits without recording usernames/passwords; unknown tenant codes remain unattributed. The platform tenant filter can therefore include wrong-password/login failures for known tenants.
+- Authenticated, device-policy-denied tenant logins now record `LOGIN_BLOCKED` with server tenant, user, membership and device context when available and safe error key (e.g. DEVICE_REVOKED). No secrets; thrown original access denial remains unchanged.
+- Platform centralized monitoring and tenant login activity now allow/list/display LOGIN_BLOCKED alongside SUCCESS/FAILURE; global event selector includes blocked.
+- New focused regression tests verify tenant-attributed failed credential audits and denied-device blocked audits through read-only platform filtering.
+- Files: LoginUserAction.php, PlatformTenantDeviceController.php, PlatformDeviceActivityPage.tsx, AuthenticationTest.php, BLUEPOS_CURRENT_STATE.md. No migration. Backend + frontend focused tests **not run locally** for this batch; user must validate on bluepos_test.
+- Provisional tracking **29 implemented / 10 partial / 11 pending**, up from 27/12/11, only for known-tenant failed-login attribution and denied-device blocked-login event instrumentation. Caveat: not universal coverage for unrelated auth endpoints, rate-limit decisions, unknown tenants or cross-app login paths.
