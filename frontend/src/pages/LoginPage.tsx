@@ -76,7 +76,7 @@ export function LoginPage() {
   return (
     <AuthLayout title="Sign in">
       <p className="mb-3 text-[12px] text-[var(--ui-text-muted)]">
-        Sign-in requires browser location permission. Only approximate coordinates are saved for 30 days and are visible to authorized tenant security staff and platform monitoring. Denying permission prevents sign-in.
+        Sign-in requires browser location permission. Only approximate coordinates are saved for 30 days and are visible to authorized tenant security staff and platform monitoring. Where enabled, a geolocation provider may also receive your public IP to estimate country, region and city; these location labels share the same 30-day retention. Denying permission prevents sign-in.
       </p>
       <form className="space-y-3" onSubmit={onSubmit}>
         <label className="block text-[12px] font-semibold">
