@@ -311,6 +311,66 @@ class AuthenticationTest extends TestCase
         );
     }
 
+    public function test_owner_device_review_emails_employee_only_after_committed_decision(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $owner = $this->provisionOwner('review-email-flow');
+        $employee = \App\Models\User::query()->create([
+            'name' => 'Review Recipient',
+            'email' => 'review-recipient@example.com',
+            'password' => 'password123',
+            'status' => \App\Enums\UserStatus::Active,
+            'must_change_password' => false,
+            'security_version' => 1,
+        ]);
+        $member = \App\Models\Membership::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'user_id' => $employee->id,
+            'username' => 'reviewrecipient',
+            'status' => \App\Enums\MembershipStatus::Active,
+            'is_owner' => false,
+            'security_version' => 1,
+        ]);
+        $device = \App\Models\Device::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'name' => 'Review recipient browser',
+            'device_type' => 'browser',
+            'status' => \App\Enums\DeviceStatus::Pending,
+            'credential_hash' => 'pending',
+            'registered_at' => now(),
+        ]);
+        $requestUlid = (string) \Illuminate\Support\Str::ulid();
+        \Illuminate\Support\Facades\DB::table('device_access_requests')->insert([
+            'ulid' => $requestUlid,
+            'tenant_id' => $owner->tenant->id,
+            'membership_id' => $member->id,
+            'device_id' => $device->id,
+            'network_hash' => hash('sha256', 'review-email'),
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('review-email-flow'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $url = '/api/devices/access-requests/'.$requestUlid.'/review';
+        $this->postJson($url, ['decision' => 'approved'])
+            ->assertOk()->assertJsonPath('status', 'approved');
+        \Illuminate\Support\Facades\Notification::assertSentOnDemand(
+            \App\Notifications\EmployeeDeviceDecisionNotification::class,
+            fn ($notice, $channels, $notifiable) => $notice->decision === 'approved'
+                && ($notifiable->routes['mail'] ?? null) === 'review-recipient@example.com'
+        );
+        $this->postJson($url, ['decision' => 'rejected'])->assertStatus(409);
+        \Illuminate\Support\Facades\Notification::assertSentOnDemandTimes(
+            \App\Notifications\EmployeeDeviceDecisionNotification::class, 1
+        );
+    }
+
     public function test_device_review_decision_emails_have_correct_status_and_no_credentials(): void
     {
         \Illuminate\Support\Facades\Notification::fake();
