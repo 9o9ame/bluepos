@@ -230,7 +230,7 @@ export function DevicesPage() {
               columns={[
                 { key: 'employee', header: 'Employee', render: row => row.username },
                 { key: 'device', header: 'Device', render: row => row.device_name ?? '—' },
-                { key: 'location', header: 'Approx. coordinates', render: row => `${row.latitude_approx}, ${row.longitude_approx}` },
+                { key: 'location', header: 'Approx. place / coordinates', render: row => `${[row.city, row.region, row.country].filter(Boolean).join(', ') || 'Unknown'} · ${row.latitude_approx}, ${row.longitude_approx}` },
                 { key: 'accuracy', header: 'Reported accuracy', render: row => `${row.accuracy_meters} m` },
                 { key: 'time', header: 'Observed', render: row => row.observed_at },
               ]}
