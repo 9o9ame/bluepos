@@ -296,14 +296,14 @@ class AuthenticationTest extends TestCase
         $this->provisionOwner('approval-mail-tenant-b');
 
         app(\App\Security\EmployeeDeviceApprovalNotifier::class)
-            ->notifyOwners($employeeTenant->membership, 'Pending browser');
+            ->notifyOwners($employeeTenant->membership, 'Pending browser', '203.0.113.15');
 
         \Illuminate\Support\Facades\Notification::assertSentOnDemand(
             \App\Notifications\EmployeeDeviceApprovalNotification::class,
             function ($notification, $channels, $notifiable) {
                 return ($notifiable->routes['mail'] ?? null) === 'owner-approval-mail-tenant-a@example.com'
                     && $notification->deviceName === 'Pending browser'
-                    && $notification->networkIp === null;
+                    && $notification->networkIp === '203.0.113.15';
             }
         );
         \Illuminate\Support\Facades\Notification::assertSentOnDemandTimes(
