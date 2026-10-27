@@ -137,6 +137,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::get('/security/sessions', [SecuritySessionController::class, 'index']);
     Route::get('/security/login-history', [SecuritySessionController::class, 'loginHistory']);
+    Route::get('/security/location-history', [SecuritySessionController::class, 'locationHistory']);
     Route::delete('/security/sessions/others', [SecuritySessionController::class, 'destroyOthers']);
     Route::delete('/security/sessions/{sessionUlid}', [SecuritySessionController::class, 'destroy']);
 
