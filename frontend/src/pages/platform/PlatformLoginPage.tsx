@@ -1,3 +1,4 @@
+import { requireBrowserLocation } from '../../utils/browserLocation'
 import { FormEvent, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { ApiClientError } from '../../api/client'
@@ -36,12 +37,13 @@ export function PlatformLoginPage() {
     setError(null)
     setSubmitting(true)
     try {
+      const location = await requireBrowserLocation()
       if (challengeUlid) {
-        const signedIn = await verifyMfa({ challenge_ulid: challengeUlid, code: mfaCode, trust_device: true })
+        const signedIn = await verifyMfa({ challenge_ulid: challengeUlid, code: mfaCode, trust_device: true, ...location })
         navigate(signedIn.must_change_password ? '/platform/change-password' : '/platform', { replace: true })
         return
       }
-      const signedIn = await login({ email, password, remember })
+      const signedIn = await login({ email, password, remember, ...location })
       navigate(signedIn.must_change_password ? '/platform/change-password' : '/platform', { replace: true })
     } catch (err) {
       if (
@@ -51,7 +53,7 @@ export function PlatformLoginPage() {
         applyMfaChallenge(err)
         return
       }
-      setError(err instanceof ApiClientError ? err.message : 'Unable to sign in.')
+      setError(err instanceof Error ? err.message : 'Unable to sign in.')
     } finally {
       setSubmitting(false)
     }
