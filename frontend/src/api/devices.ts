@@ -59,3 +59,32 @@ export function reviewDeviceAccessRequest(ulid: string, decision: 'approved' | '
 export function revokeDeviceAccessRequest(ulid: string): Promise<{ ulid: string; status: 'rejected' }> {
   return apiFetch(`/api/devices/access-requests/${ulid}/revoke`, { method: 'POST' })
 }
+
+export type DeviceAccessNotification = {
+  ulid: string
+  kind: 'new_device' | 'new_network'
+  request_ulid: string
+  status: 'pending' | 'approved' | 'rejected'
+  employee_ulid: string
+  username: string
+  device_ulid: string
+  device_name: string
+  request_ip: string | null
+  request_user_agent: string | null
+  created_at: string
+  read_at: string | null
+}
+
+export type DeviceAccessInbox = {
+  notifications: DeviceAccessNotification[]
+  unread_count: number
+  pagination: { page: number; last_page: number; total: number }
+}
+
+export function fetchDeviceAccessNotifications(page = 1): Promise<DeviceAccessInbox> {
+  return apiFetch<DeviceAccessInbox>(`/api/devices/access-notifications?page=${page}`)
+}
+
+export function markDeviceAccessNotificationRead(ulid: string): Promise<{ ulid: string; read: true }> {
+  return apiFetch(`/api/devices/access-notifications/${ulid}/read`, { method: 'POST' })
+}
