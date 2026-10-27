@@ -26,8 +26,8 @@ class PlatformTenantDeviceController extends Controller
     public function overview(Request $request): JsonResponse
     {
         $filters = $request->validate([
-            'tenant_code' => ['sometimes', 'string', 'max:60'],
-            'username' => ['sometimes', 'string', 'max:120', 'required_with:tenant_code'],
+            'tenant_code' => ['required_with:username', 'string', 'max:60'],
+            'username' => ['sometimes', 'string', 'max:120'],
             'event' => ['sometimes', 'in:LOGIN_SUCCESS,LOGIN_FAILURE,DEVICE_ACCESS_REQUESTED,DEVICE_ACCESS_APPROVED,DEVICE_ACCESS_REJECTED,DEVICE_REVOKED'],
         ]);
         $tenant = isset($filters['tenant_code'])
