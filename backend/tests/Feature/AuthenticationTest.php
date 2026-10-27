@@ -1829,8 +1829,11 @@ class AuthenticationTest extends TestCase
             ->assertUnprocessable();
         $this->getJson('/api/platform/tenants/'.$tenantB->tenant->ulid.'/devices')
             ->assertOk()->assertJsonCount(0, 'access_requests');
+        // Tenant B owns its new location; it must be visible only for B.
         $this->getJson('/api/platform/tenants/'.$tenantB->tenant->ulid.'/devices')
-            ->assertOk()->assertJsonCount(0, 'locations');
+            ->assertOk()->assertJsonCount(1, 'locations')
+            ->assertJsonPath('locations.0.username', 'owner')
+            ->assertJsonPath('locations.0.latitude_approx', '31.44');
         \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('ulid', $requestUlid)
             ->update(['request_location_expires_at' => now()->subMinute()]);
