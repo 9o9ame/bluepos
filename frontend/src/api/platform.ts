@@ -186,8 +186,21 @@ export function fetchPlatformTenantActivity(tenantUlid:string):Promise<PlatformT
   return apiFetch<PlatformTenantActivity>(`/api/platform/tenants/${tenantUlid}/login-activity`)
 }
 
-export function fetchPlatformTenantDevices(tenantUlid: string): Promise<{ devices: PlatformTenantDevice[] }> {
-  return apiFetch<{ devices: PlatformTenantDevice[] }>(`/api/platform/tenants/${tenantUlid}/devices`)
+export type PlatformTenantAccessRequest = {
+  ulid: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string | null
+  reviewed_at: string | null
+  request_ip: string | null
+  request_user_agent: string | null
+  membership_ulid: string
+  username: string
+  device_ulid: string
+  device_name: string
+}
+
+export function fetchPlatformTenantDevices(tenantUlid: string): Promise<{ devices: PlatformTenantDevice[]; access_requests: PlatformTenantAccessRequest[] }> {
+  return apiFetch<{ devices: PlatformTenantDevice[]; access_requests: PlatformTenantAccessRequest[] }>(`/api/platform/tenants/${tenantUlid}/devices`)
 }
 
 export function fetchPlatformTenant(ulid: string): Promise<PlatformTenant> {
