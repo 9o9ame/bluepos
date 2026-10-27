@@ -10,9 +10,10 @@ export function PlatformDeviceActivityPage() {
   const [tenantCode, setTenantCode] = useState('')
   const [username, setUsername] = useState('')
   const [event, setEvent] = useState('')
-  const filters = { tenant_code: tenantCode.trim() || undefined, username: tenantCode.trim() ? username.trim() || undefined : undefined, event: event || undefined }
+  const [ipAddress, setIpAddress] = useState('')
+  const filters = { tenant_code: tenantCode.trim() || undefined, username: tenantCode.trim() ? username.trim() || undefined : undefined, event: event || undefined, ip_address: ipAddress.trim() || undefined }
   const query = useQuery({
-    queryKey: ['platform', 'device-activity', filters.tenant_code, filters.username, filters.event],
+    queryKey: ['platform', 'device-activity', filters.tenant_code, filters.username, filters.event, filters.ip_address],
     queryFn: () => fetchPlatformDeviceActivity(filters),
     refetchInterval: 60000,
   })
@@ -30,6 +31,9 @@ export function PlatformDeviceActivityPage() {
         <label className="flex flex-col gap-1">Username (within tenant)
           <input className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={username} onChange={e => setUsername(e.target.value)} disabled={!tenantCode.trim()} placeholder="All users" />
         </label>
+        <label className="flex flex-col gap-1">IP address
+          <input className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={ipAddress} onChange={e => setIpAddress(e.target.value)} placeholder="Any IP" />
+        </label>
         <div className="min-w-[190px]"><span>Event type</span>
           <UiSelect value={event} onChange={setEvent} options={[
             {value:'',label:'All security events'}, {value:'LOGIN_SUCCESS',label:'Login success'},
@@ -38,7 +42,7 @@ export function PlatformDeviceActivityPage() {
             {value:'DEVICE_REVOKED',label:'Device revoked'},
           ]}/>
         </div>
-        <UiButton variant="info" onClick={() => {setTenantCode('');setUsername('');setEvent('')}}>Clear filters</UiButton>
+        <UiButton variant="info" onClick={() => {setTenantCode('');setUsername('');setEvent('');setIpAddress('')}}>Clear filters</UiButton>
       </div>
       <p className="text-[12px] text-[var(--ui-text-muted)]">
         Latest 200 recorded sessions across tenants. IP addresses do not establish precise physical location.
