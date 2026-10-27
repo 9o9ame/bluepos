@@ -135,6 +135,30 @@ class AuthenticationTest extends TestCase
             ->whereNull('consumed_at')->first());
     }
 
+    public function test_owner_with_another_tenants_browser_cookie_gets_own_recovery_otp(): void
+    {
+        $first = $this->provisionOwner('foreign-browser-first');
+        $second = $this->provisionOwner('foreign-browser-second');
+        $this->attachTrustedDevice((int) $first->tenant->id);
+        \Illuminate\Support\Facades\Notification::fake();
+
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('foreign-browser-second'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertForbidden()->assertJsonPath('error.key', 'MFA_REQUIRED');
+
+        $challenge = \App\Models\MfaChallenge::query()
+            ->where('tenant_id', $second->tenant->id)
+            ->where('membership_id', $second->membership->id)
+            ->whereNull('consumed_at')
+            ->firstOrFail();
+        $newDevice = \App\Models\Device::query()->findOrFail($challenge->device_id);
+        $this->assertSame((int) $second->tenant->id, (int) $newDevice->tenant_id);
+        $this->assertSame(0, \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('tenant_id', $second->tenant->id)->count());
+    }
+
     public function test_owner_trusted_device_expiry_requires_fresh_email_verification(): void
     {
         $owner = $this->provisionOwner('owner-trust-expiry');
