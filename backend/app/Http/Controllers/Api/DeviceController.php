@@ -117,6 +117,16 @@ class DeviceController extends Controller
                 'device.ulid as device_ulid', 'device.name as device_name',
             ], 'page', (int) ($data['page'] ?? 1));
 
+        $members = \App\Models\Membership::query()
+            ->where('tenant_id', $tenantId)
+            ->whereIn('ulid', collect($page->items())->pluck('employee_ulid'))
+            ->with(['roles' => fn ($query) => $query->where('roles.tenant_id', $tenantId)->where('roles.is_active', true)])
+            ->get()->keyBy('ulid');
+        $page->getCollection()->transform(function ($item) use ($members) {
+            $item->role_names = $members->get($item->employee_ulid)?->roles->pluck('name')->values()->all() ?? [];
+            return $item;
+        });
+
         return response()->json([
             'notifications' => $page->items(),
             'unread_count' => $unread,
