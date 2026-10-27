@@ -147,7 +147,12 @@ class LoginUserAction
                 'reason' => 'device_missing',
             ], $request);
 
-            throw new ApiException('DEVICE_NOT_APPROVED', 'This device is not approved. Ask your administrator to approve it.', 403);
+            throw new ApiException(
+                'DEVICE_NOT_APPROVED',
+                'Your tenant owner must approve this device and network.',
+                403,
+                ['approval_status' => $this->staffApprovalStatus($request, $membership, $device)]
+            );
         }
 
         if ($device->tenant_id !== null && (int) $device->tenant_id !== (int) $membership->tenant_id) {
