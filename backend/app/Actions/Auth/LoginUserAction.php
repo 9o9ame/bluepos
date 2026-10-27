@@ -42,8 +42,9 @@ class LoginUserAction
         $code = IdentityNormalizer::tenantCode($tenantCode);
         $name = IdentityNormalizer::username($username);
 
-        $fail = function () use ($request, $code, $name): never {
+        $fail = function (?Tenant $knownTenant = null) use ($request, $code, $name): never {
             $this->audit->record('LOGIN_FAILURE', [
+                'tenant_id' => $knownTenant?->id,
                 'tenant_code_hash' => hash('sha256', $code),
                 'username_hash' => hash('sha256', $name),
             ], $request);
@@ -65,13 +66,13 @@ class LoginUserAction
             ->first();
 
         if (! $membership || ! $membership->user) {
-            $fail();
+            $fail($tenant);
         }
 
         $user = $membership->user;
 
         if (! Hash::check($password, $user->password)) {
-            $fail();
+            $fail($tenant);
         }
 
         if ($user->status !== UserStatus::Active) {
