@@ -766,6 +766,17 @@ class AuthenticationTest extends TestCase
             ->where('actor_membership_id', $secondMember->id)
             ->where('event', 'DEVICE_ACCESS_REQUESTED')->count());
 
+        $this->assertSame(1, \Illuminate\Support\Facades\DB::table('device_access_notifications as notice')
+            ->join('device_access_requests as access', 'access.id', '=', 'notice.access_request_id')
+            ->where('notice.tenant_id', $owner->tenant->id)
+            ->where('notice.recipient_membership_id', $owner->membership->id)
+            ->where('access.membership_id', $secondMember->id)
+            ->where('notice.kind', 'new_device')->count());
+        $this->assertSame(1, \Illuminate\Support\Facades\DB::table('device_access_notifications as notice')
+            ->join('device_access_requests as access', 'access.id', '=', 'notice.access_request_id')
+            ->where('notice.tenant_id', $owner->tenant->id)
+            ->where('access.membership_id', $secondMember->id)->count());
+
         $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.78']);
         $this->postJson('/api/auth/login', $credentials)
             ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
@@ -776,6 +787,11 @@ class AuthenticationTest extends TestCase
             ->where('network_hash', '!=', $networkHash)
             ->first();
         $this->assertNotNull($otherRequest);
+        $this->assertSame(1, \Illuminate\Support\Facades\DB::table('device_access_notifications')
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('recipient_membership_id', $owner->membership->id)
+            ->where('access_request_id', $otherRequest->id)
+            ->where('kind', 'new_network')->count());
         \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('id', $otherRequest->id)
             ->update(['status' => 'rejected', 'reviewed_at' => now()]);
