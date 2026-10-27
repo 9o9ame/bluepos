@@ -205,6 +205,8 @@ export type PlatformTenantAccessRequest = {
   role_names: string[]
   request_ip: string | null
   request_user_agent: string | null
+  request_latitude_approx: string | null
+  request_longitude_approx: string | null
   membership_ulid: string
   username: string
   device_ulid: string
