@@ -775,3 +775,10 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - No claim of complete geolocation, request-event IP details, privacy retention policy, reliable email delivery, persistent notification inbox, or complete end-to-end owner/staff onboarding.
 - Tracker is provisional, not audited release readiness: baseline 20 implemented / 18 partial / 12 pending; role-wise monitoring requirement #32 moved pending → implemented on code inspection, pending local validation.
 - Avoid routine full builds. Run only focused security validation on `bluepos_test` and frontend typecheck when impacted.
+
+### 2026-10-27 — Tenant approval request identity enhancement
+- Employee access-request API now attaches active role names scoped to the authenticated tenant, in one bounded additional membership query per page (no client-provided tenant IDs).
+- Owner Home approval alerts and Administration > Devices request history display staff role names alongside the username, device, date and approval status.
+- Files: backend/app/Http/Controllers/Api/DeviceController.php, frontend/src/api/devices.ts, frontend/src/pages/DevicesPage.tsx, frontend/src/pages/WorkspacePage.tsx.
+- Latest batch not yet validated locally. Request IP/geolocation is not stored on the access request row; no location/IP value is fabricated. Requirement #24 remains partial until server-derived request IP and available location are recorded and exposed safely.
+- Final requirement tracker remains 22 implemented / 17 partial / 11 pending until verification and additional complete requirements. The platform activity focused test previously passed (1 test, 9 assertions) and frontend typecheck passed per user output.
