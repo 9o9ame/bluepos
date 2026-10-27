@@ -37,10 +37,13 @@ export type DeviceAccessRequest = {
   device_ulid: string
   device_name: string
   created_at: string
+  status: 'pending' | 'approved' | 'rejected'
+  reviewed_at: string | null
+  reviewer_name: string | null
 }
 
-export function fetchDeviceAccessRequests(): Promise<{ requests: DeviceAccessRequest[]; pending_count: number }> {
-  return apiFetch('/api/devices/access-requests')
+export function fetchDeviceAccessRequests(status: 'pending' | 'approved' | 'rejected' | 'all' = 'pending'): Promise<{ requests: DeviceAccessRequest[]; pending_count: number }> {
+  return apiFetch(`/api/devices/access-requests?status=${status}`)
 }
 
 export function reviewDeviceAccessRequest(ulid: string, decision: 'approved' | 'rejected'): Promise<{ ulid: string; status: string }> {
