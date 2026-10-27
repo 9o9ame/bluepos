@@ -572,7 +572,8 @@ class AuthenticationTest extends TestCase
         $secondMember->roles()->attach($role->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
         $secondMember->branches()->attach($owner->branch->id, ['ulid' => (string) \Illuminate\Support\Str::ulid()]);
         $this->postJson('/api/auth/login', array_merge($credentials, ['username' => 'otherstaff']))
-            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED');
+            ->assertForbidden()->assertJsonPath('error.key', 'DEVICE_NOT_APPROVED')
+            ->assertJsonPath('error.approval_status', 'pending');
 
         $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.78']);
         $this->postJson('/api/auth/login', $credentials)
