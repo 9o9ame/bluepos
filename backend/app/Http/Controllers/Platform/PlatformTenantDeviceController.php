@@ -110,8 +110,12 @@ class PlatformTenantDeviceController extends Controller
         ])->values()]);
     }
 
-    public function index(string $tenantUlid): JsonResponse
+    public function index(Request $request, string $tenantUlid): JsonResponse
     {
+        $filters = $request->validate([
+            'status' => ['sometimes', 'in:all,pending,approved,rejected'],
+            'ip_address' => ['sometimes', 'ip'],
+        ]);
         $tenant = $this->tenant($tenantUlid);
         $rows = Device::query()->where('tenant_id', $tenant->id)
             ->orderByDesc('registered_at')->limit(250)->get();
@@ -131,6 +135,8 @@ class PlatformTenantDeviceController extends Controller
                     ->on('device.tenant_id', '=', 'access.tenant_id');
             })
             ->where('access.tenant_id', $tenant->id)
+            ->when(isset($filters['status']) && $filters['status'] !== 'all', fn ($query) => $query->where('access.status', $filters['status']))
+            ->when(isset($filters['ip_address']), fn ($query) => $query->where('access.request_ip', $filters['ip_address']))
             ->orderByDesc('access.created_at')->orderByDesc('access.id')
             ->limit(100)
             ->get([
