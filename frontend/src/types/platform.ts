@@ -87,6 +87,7 @@ export type PlatformTenant = {
   users_count?: number
   branches_count?: number
   devices_count?: number
+  pending_devices_count?: number
   warehouses_count?: number
   admin_username?: string | null
   entitlements?: {
