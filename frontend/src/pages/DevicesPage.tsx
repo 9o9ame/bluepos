@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, X } from 'lucide-react'
 import { fetchBranches } from '../api/branches'
-import { fetchSecuritySessions } from '../api/security'
+import { fetchSecuritySessions, fetchTenantLoginHistory } from '../api/security'
 import { approveDevice, fetchDevices, revokeDevice, fetchDeviceAccessRequests, reviewDeviceAccessRequest, revokeDeviceAccessRequest, fetchDeviceAccessNotifications, markDeviceAccessNotificationRead } from '../api/devices'
 import { ApiClientError } from '../api/client'
 import { DesktopButton, DesktopPanel } from '../components/desktop/DesktopPanel'
@@ -21,6 +21,13 @@ export function DevicesPage() {
   const canRevoke = useCan('devices.revoke')
   const canViewSessions = useCan('security.sessions.view')
   const [requestStatus, setRequestStatus] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending')
+  const [historyPage, setHistoryPage] = useState(1)
+  const historyQuery = useQuery({
+    queryKey: ['tenant-login-history', historyPage],
+    queryFn: () => fetchTenantLoginHistory(historyPage),
+    enabled: canReviewRequests,
+    refetchInterval: 60000,
+  })
   const [inboxPage, setInboxPage] = useState(1)
   const inboxQuery = useQuery({
     queryKey: ['device-access-inbox', inboxPage],
@@ -175,6 +182,32 @@ export function DevicesPage() {
                 ) : null}
               </div>
             ))}
+          </div>
+        </section>
+      ) : null}
+      {canReviewRequests ? (
+        <section className="p-2">
+          <h3 className="mb-2 text-[12px] font-semibold">Staff login and public IP history</h3>
+          {historyQuery.isLoading ? <p className="text-[12px]">Loading login history…</p> : null}
+          {historyQuery.isError ? <p role="alert" className="text-[12px] text-[var(--ui-danger)]">Unable to load login history.</p> : null}
+          {!historyQuery.isLoading && !historyQuery.isError ? (
+            <PosDataGrid
+              columns={[
+                { key: 'event', header: 'Event', render: row => row.event },
+                { key: 'employee', header: 'Employee', render: row => row.username ?? 'Unknown' },
+                { key: 'device', header: 'Device', render: row => row.device_name ?? '—' },
+                { key: 'ip', header: 'Public IP', render: row => row.ip_address ?? '—' },
+                { key: 'browser', header: 'Browser / OS (reported)', render: row => row.user_agent ?? '—' },
+                { key: 'time', header: 'Recorded time', render: row => row.occurred_at },
+              ]}
+              rows={historyQuery.data?.events ?? []}
+              rowKey={row => row.ulid}
+            />
+          ) : null}
+          <div className="mt-2 flex items-center gap-2 text-[12px]">
+            <span>{historyQuery.data?.pagination.total ?? 0} events · page {historyPage}</span>
+            <DesktopButton label="Previous" disabled={historyPage <= 1} onClick={() => setHistoryPage(n => Math.max(1, n - 1))} />
+            <DesktopButton label="Next" disabled={!historyQuery.data || historyPage >= historyQuery.data.pagination.last_page} onClick={() => setHistoryPage(n => n + 1)} />
           </div>
         </section>
       ) : null}
