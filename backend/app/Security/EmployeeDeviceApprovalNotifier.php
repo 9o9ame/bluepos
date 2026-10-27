@@ -7,6 +7,7 @@ use App\Enums\MembershipStatus;
 use App\Enums\UserStatus;
 use App\Models\Membership;
 use App\Notifications\EmployeeDeviceApprovalNotification;
+use App\Notifications\EmployeeDeviceDecisionNotification;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Throwable;
@@ -51,4 +52,30 @@ final class EmployeeDeviceApprovalNotifier
             }
         }
     }
+    public function notifyEmployeeDecision(Membership $employee, string $deviceName, string $decision): void
+    {
+        if (! in_array($decision, ['approved', 'rejected'], true)) {
+            return;
+        }
+
+        $employee->loadMissing('user');
+        if ($employee->user?->status !== UserStatus::Active) {
+            return;
+        }
+
+        $address = EmailNormalizer::normalize($employee->user->recoveryAddress());
+        if ($address === null) {
+            return;
+        }
+
+        try {
+            Notification::route('mail', $address)->notify(
+                new EmployeeDeviceDecisionNotification($deviceName, $decision)
+            );
+        } catch (Throwable $error) {
+            // The owner's committed decision must not be rolled back by mail failure.
+            Log::warning('security.device_decision_email_failed', ['reason' => $error::class]);
+        }
+    }
+
 }
