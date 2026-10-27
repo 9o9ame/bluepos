@@ -32,6 +32,8 @@ class PlatformTenantDeviceController extends Controller
             'ip_address' => ['sometimes', 'ip'],
             'since' => ['sometimes', 'date_format:Y-m-d'],
             'until' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:since'],
+            'event_page' => ['sometimes', 'integer', 'min:1', 'max:10000'],
+            'session_page' => ['sometimes', 'integer', 'min:1', 'max:10000'],
         ]);
         $tenant = isset($filters['tenant_code'])
             ? Tenant::query()->where('code', $filters['tenant_code'])->first()
@@ -43,6 +45,10 @@ class PlatformTenantDeviceController extends Controller
             : null;
         $memberIds = isset($filters['username']) ? [$member?->id ?? -1] : null;
 
+        $perPage = 100;
+        $eventPage = (int) ($filters['event_page'] ?? 1);
+        $sessionPage = (int) ($filters['session_page'] ?? 1);
+
         $sessions = AuthSessionRecord::query()
             ->when($tenantIds !== null, fn ($query) => $query->whereIn('tenant_id', $tenantIds))
             ->when($memberIds !== null, fn ($query) => $query->whereIn('membership_id', $memberIds))
@@ -51,8 +57,7 @@ class PlatformTenantDeviceController extends Controller
             ->when(isset($filters['until']), fn ($query) => $query->whereDate('last_seen_at', '<=', $filters['until']))
             ->with(['device:id,ulid,name', 'membership:id,ulid,username,tenant_id', 'membership.tenant:id,ulid,name,code', 'membership.roles:id,ulid,tenant_id,name,code,is_active'])
             ->orderByDesc('id')
-            ->limit(200)
-            ->get();
+            ->paginate($perPage, ['*'], 'session_page', $sessionPage);
 
         $events = AuditLog::query()
             ->when($tenantIds !== null, fn ($query) => $query->whereIn('tenant_id', $tenantIds))
@@ -62,14 +67,14 @@ class PlatformTenantDeviceController extends Controller
             ->when(isset($filters['since']), fn ($query) => $query->whereDate('occurred_at', '>=', $filters['since']))
             ->when(isset($filters['until']), fn ($query) => $query->whereDate('occurred_at', '<=', $filters['until']))
             ->whereIn('event', ['LOGIN_SUCCESS', 'LOGIN_FAILURE', 'LOGIN_BLOCKED', 'DEVICE_ACCESS_REQUESTED', 'DEVICE_ACCESS_APPROVED', 'DEVICE_ACCESS_REJECTED', 'DEVICE_REVOKED'])
-            ->orderByDesc('occurred_at')->orderByDesc('id')->limit(200)->get();
+            ->orderByDesc('occurred_at')->orderByDesc('id')->paginate($perPage, ['*'], 'event_page', $eventPage);
         $tenants = Tenant::query()->whereIn('id', $events->pluck('tenant_id')->filter()->unique())->get()->keyBy('id');
         $memberships = \App\Models\Membership::query()
             ->whereIn('id', $events->pluck('actor_membership_id')->filter()->unique())
             ->get()->keyBy('id');
         $devices = Device::query()->whereIn('id', $events->pluck('device_id')->filter()->unique())->get()->keyBy('id');
 
-        $eventRows = $events->map(function (AuditLog $log) use ($tenants, $memberships, $devices) {
+        $eventRows = $events->getCollection()->map(function (AuditLog $log) use ($tenants, $memberships, $devices) {
             $tenant = $tenants->get($log->tenant_id);
             $member = $memberships->get($log->actor_membership_id);
             $device = $devices->get($log->device_id);
@@ -88,7 +93,10 @@ class PlatformTenantDeviceController extends Controller
             ];
         })->values();
 
-        return response()->json(['events' => $eventRows, 'sessions' => $sessions->map(fn (AuthSessionRecord $session) => [
+        return response()->json(['events' => $eventRows, 'pagination' => [
+            'events' => ['page' => $events->currentPage(), 'last_page' => $events->lastPage(), 'total' => $events->total()],
+            'sessions' => ['page' => $sessions->currentPage(), 'last_page' => $sessions->lastPage(), 'total' => $sessions->total()],
+        ], 'sessions' => $sessions->getCollection()->map(fn (AuthSessionRecord $session) => [
             'ulid' => $session->ulid,
             'tenant' => $session->membership?->tenant ? [
                 'ulid' => $session->membership->tenant->ulid,
