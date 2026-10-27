@@ -84,7 +84,7 @@ export function WorkspacePage() {
                 {approvalsQuery.isError ? <p className="text-[var(--ui-danger)]">Unable to load device approval alerts.</p> : null}
                 {(approvalsQuery.data?.requests ?? []).slice(0, 5).map((item) => (
                   <p key={item.ulid} className="border-b border-[var(--ui-border)] pb-1">
-                    <strong>{item.username}</strong> {item.role_names.length ? `(${item.role_names.join(', ')})` : ''} · {item.device_name} · {new Date(item.created_at).toLocaleString()}
+                    <strong>{item.username}</strong> {item.role_names.length ? `(${item.role_names.join(', ')})` : ''} · {item.device_name} · IP: {item.request_ip ?? 'Unavailable'} · {new Date(item.created_at).toLocaleString()}
                   </p>
                 ))}
                 <button type="button" className="quick-command" onClick={() => openModule('/administration/devices')}>
