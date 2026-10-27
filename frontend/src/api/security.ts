@@ -46,6 +46,9 @@ export type TenantLocationHistory = {
     latitude_approx: string
     longitude_approx: string
     accuracy_meters: number
+  country: string | null
+  region: string | null
+  city: string | null
     observed_at: string
     expires_at: string
   }>
