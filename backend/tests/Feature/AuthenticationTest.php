@@ -311,6 +311,29 @@ class AuthenticationTest extends TestCase
         );
     }
 
+    public function test_device_review_decision_emails_have_correct_status_and_no_credentials(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $session = $this->provisionOwner('decision-notify');
+        $service = app(\App\Security\EmployeeDeviceApprovalNotifier::class);
+
+        $service->notifyEmployeeDecision($session->membership, 'Staff browser', 'approved');
+        $service->notifyEmployeeDecision($session->membership, 'Staff browser', 'rejected');
+        $service->notifyEmployeeDecision($session->membership, 'Staff browser', 'other');
+
+        \Illuminate\Support\Facades\Notification::assertSentOnDemandTimes(
+            \App\Notifications\EmployeeDeviceDecisionNotification::class, 2
+        );
+        \Illuminate\Support\Facades\Notification::assertSentOnDemand(
+            \App\Notifications\EmployeeDeviceDecisionNotification::class,
+            function ($notification, $channels, $notifiable) {
+                return $notification->deviceName === 'Staff browser'
+                    && $notification->decision === 'approved'
+                    && ($notifiable->routes['mail'] ?? null) === 'owner-decision-notify@example.com';
+            }
+        );
+    }
+
     public function test_generic_device_approval_cannot_bypass_employee_specific_review(): void
     {
         $session = $this->provisionOwner('generic-bypass');
