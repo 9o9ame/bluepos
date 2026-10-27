@@ -874,3 +874,8 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - This is implementation-level acceptance, not end-to-end browser automation; manual retry remains deliberate. Do not imply an automatic login upon approval.
 - Updated provisional 50-requirement tally: **30 implemented / 9 partial / 11 pending**, compared with **29 / 10 / 11**. Only one independently grounded requirement changed classification. All remaining IDs require reconciliation against the original 50-item list before another count change.
 - Files: backend/tests/Feature/AuthenticationTest.php and BLUEPOS_CURRENT_STATE.md. No migration, no UI changes. Only bluepos_test focused tests are permitted.
+
+### 2026-10-27 — Requirement #26 focused acceptance confirmed
+- User pulled commit `186bbfef` and executed `AuthenticationTest` focused filters `test_employee_login_requires_approved_network_and_rejects_other_network|test_tenant_owner_can_review_only_own_pending_employee_access_requests` on `bluepos_test`: **PASS (2 tests, 27 assertions)**. First-device and second-employee pending status, network gating and owner-only review regression are green in this scope.
+- #26 remains implemented. Tracker baseline remains **30 implemented / 9 partial / 11 pending**; no additional requirement claimed solely for a validation run.
+- No code or migration changes in this checkpoint. Remaining 20 items require original requirement-by-requirement reconciliation rather than counting routine refinements.
