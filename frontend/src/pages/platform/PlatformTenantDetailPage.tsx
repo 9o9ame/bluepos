@@ -382,9 +382,9 @@ export function PlatformTenantDetailPage() {
           {activityQuery.isError ? <p role="alert">Unable to load activity or insufficient audit permission.</p> : null}
           <strong>Sessions</strong>
           <div className="overflow-x-auto"><table className="w-full text-left">
-            <thead><tr><th>Employee</th><th>Device</th><th>IP</th><th>Browser</th><th>Last seen</th><th>State</th></tr></thead>
+            <thead><tr><th>Employee</th><th>Roles</th><th>Device</th><th>IP</th><th>Browser</th><th>Last seen</th><th>State</th></tr></thead>
             <tbody>{(activityQuery.data?.sessions ?? []).map(session => <tr className="border-t" key={session.ulid}>
-              <td>{session.membership?.username ?? '—'}</td><td>{session.device?.name ?? 'Unknown'}</td><td>{session.ip_address ?? '—'}</td>
+              <td>{session.membership?.username ?? '—'}</td><td>{session.membership?.roles.map(role => role.name).join(', ') || '—'}</td><td>{session.device?.name ?? 'Unknown'}</td><td>{session.ip_address ?? '—'}</td>
               <td className="max-w-64 break-all">{session.user_agent ?? '—'}</td>
               <td>{session.last_seen_at ?? '—'}</td><td>{session.revoked_at ? 'Revoked' : 'Recorded session'}</td>
             </tr>)}</tbody></table></div>
