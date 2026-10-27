@@ -1396,6 +1396,32 @@ class AuthenticationTest extends TestCase
         $this->assertArrayNotHasKey('password', $entry->metadata);
     }
 
+    public function test_suspended_tenant_login_records_block_without_unverified_identity(): void
+    {
+        $owner = $this->provisionOwner('suspended-login-monitor');
+        $owner->tenant->status = \App\Enums\TenantStatus::Suspended;
+        $owner->tenant->save();
+
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('suspended-login-monitor'),
+            'username' => 'owner',
+            'password' => 'incorrect-password',
+        ])->assertForbidden()->assertJsonPath('error.key', 'TENANT_DISABLED');
+
+        $event = \App\Models\AuditLog::query()->where('tenant_id', $owner->tenant->id)
+            ->where('event', 'LOGIN_BLOCKED')->latest('id')->firstOrFail();
+        $this->assertNull($event->actor_membership_id);
+        $this->assertNull($event->actor_user_id);
+        $this->assertSame('TENANT_DISABLED', $event->metadata['reason']);
+        $this->assertArrayNotHasKey('password', $event->metadata);
+
+        $this->createPlatformAdmin('suspended-login-admin');
+        $this->signInPlatformAdmin('suspended-login-admin');
+        $this->getJson('/api/platform/security/device-activity?tenant_code='.$owner->tenant->code.'&event=LOGIN_BLOCKED')
+            ->assertOk()->assertJsonPath('events.0.event', 'LOGIN_BLOCKED')
+            ->assertJsonPath('events.0.membership', null);
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
