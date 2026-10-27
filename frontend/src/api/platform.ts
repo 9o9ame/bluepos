@@ -136,6 +136,7 @@ export type PlatformDeviceActivity = {
   events: Array<{
     ulid: string
     event: string
+    reason: string | null
     tenant: { ulid: string; code: string; name: string } | null
     membership: { ulid: string; username: string } | null
     device: { ulid: string; name: string } | null
@@ -154,7 +155,7 @@ export type PlatformDeviceActivity = {
   }>
 }
 
-export type PlatformActivityFilters = { tenant_code?: string; username?: string; event?: string; ip_address?: string }
+export type PlatformActivityFilters = { tenant_code?: string; username?: string; event?: string; ip_address?: string; since?: string; until?: string }
 
 export function fetchPlatformDeviceActivity(filters: PlatformActivityFilters = {}): Promise<PlatformDeviceActivity> {
   const query = new URLSearchParams()
@@ -162,6 +163,8 @@ export function fetchPlatformDeviceActivity(filters: PlatformActivityFilters = {
   if (filters.username && filters.tenant_code) query.set('username', filters.username)
   if (filters.event) query.set('event', filters.event)
   if (filters.ip_address) query.set('ip_address', filters.ip_address)
+  if (filters.since) query.set('since', filters.since)
+  if (filters.until) query.set('until', filters.until)
   return apiFetch<PlatformDeviceActivity>(`/api/platform/security/device-activity${query.size ? `?${query.toString()}` : ''}`)
 }
 
