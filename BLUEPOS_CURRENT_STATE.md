@@ -879,3 +879,11 @@ Final approval policy: SuperAdmin is **monitoring-only**. Tenant owners verify t
 - User pulled commit `186bbfef` and executed `AuthenticationTest` focused filters `test_employee_login_requires_approved_network_and_rejects_other_network|test_tenant_owner_can_review_only_own_pending_employee_access_requests` on `bluepos_test`: **PASS (2 tests, 27 assertions)**. First-device and second-employee pending status, network gating and owner-only review regression are green in this scope.
 - #26 remains implemented. Tracker baseline remains **30 implemented / 9 partial / 11 pending**; no additional requirement claimed solely for a validation run.
 - No code or migration changes in this checkpoint. Remaining 20 items require original requirement-by-requirement reconciliation rather than counting routine refinements.
+
+### 2026-10-27 — Global monitoring IP investigation milestone
+- Latest user-provided regression result: 2 staff-approval tests / 27 assertions PASS.
+- Audit-authorized global monitoring endpoint accepts optional validated `ip_address` and applies exact server-side IP scope to both authentication sessions and security audit events, compatible with existing tenant/user/event filters. Invalid IP returns 422. IPv4/IPv6 supported by Laravel `ip` validation. This is an investigation filter, not an IP trust decision or inferred geolocation.
+- Global monitoring page includes an IP filter and reset; frontend API passes it safely via URLSearchParams. Existing read-only platform permission remains required.
+- Existing platform activity security test now checks invalid IP, isolated IP results, and empty results for unmatched IP; no BIGINT IDs exposed.
+- Files: backend/app/Http/Controllers/Platform/PlatformTenantDeviceController.php, frontend/src/api/platform.ts, frontend/src/pages/platform/PlatformDeviceActivityPage.tsx, backend/tests/Feature/AuthenticationTest.php, BLUEPOS_CURRENT_STATE.md. No migration.
+- Provisional tracker **31 implemented / 8 partial / 11 pending** vs 30/9/11, pending local typecheck/focused PHP validation. This closes one IP-centric central investigation criterion at implementation level, but NOT geo/retention/history completeness (#43/#44/#45 remain partial/pending where applicable).
