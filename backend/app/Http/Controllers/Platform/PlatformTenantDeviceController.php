@@ -26,7 +26,7 @@ class PlatformTenantDeviceController extends Controller
     public function overview(): JsonResponse
     {
         $sessions = AuthSessionRecord::query()
-            ->with(['device:id,ulid,name', 'membership:id,ulid,username,tenant_id', 'membership.tenant:id,ulid,name,code'])
+            ->with(['device:id,ulid,name', 'membership:id,ulid,username,tenant_id', 'membership.tenant:id,ulid,name,code', 'membership.roles:id,ulid,tenant_id,name,code,is_active'])
             ->orderByDesc('id')
             ->limit(200)
             ->get();
@@ -41,6 +41,7 @@ class PlatformTenantDeviceController extends Controller
             'membership' => $session->membership ? [
                 'ulid' => $session->membership->ulid,
                 'username' => $session->membership->username,
+                'roles' => $session->membership->roles->filter(fn ($role) => $role->is_active && (int) $role->tenant_id === (int) $session->membership->tenant_id)->map(fn ($role) => ['code' => $role->code, 'name' => $role->name])->values()->all(),
             ] : null,
             'device' => $session->device ? [
                 'ulid' => $session->device->ulid,
@@ -70,7 +71,7 @@ class PlatformTenantDeviceController extends Controller
         $tenant = $this->tenant($tenantUlid);
         $sessions = AuthSessionRecord::query()
             ->where('tenant_id', $tenant->id)
-            ->with(['device:id,ulid,name', 'membership:id,ulid,username'])
+            ->with(['device:id,ulid,name', 'membership:id,ulid,username,tenant_id', 'membership.roles:id,ulid,tenant_id,name,code,is_active'])
             ->orderByDesc('id')->limit(100)->get();
         $events = AuditLog::query()->where('tenant_id', $tenant->id)
             ->whereIn('event', ['LOGIN_FAILURE', 'LOGIN_SUCCESS', 'DEVICE_ENROLLMENT_REQUESTED'])
