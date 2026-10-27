@@ -1821,12 +1821,18 @@ class AuthenticationTest extends TestCase
         }
         $this->assertSame(1, app(\App\Security\SecurityPrivacyRetention::class)
             ->redactExpiredNetworkIdentifiers());
-        $logs = \App\Models\AuditLog::query()->where('tenant_id', $owner->tenant->id)
-            ->orderBy('occurred_at')->get();
-        $this->assertNull($logs[0]->ip_address);
-        $this->assertNotNull($logs[1]->ip_address);
-        $this->assertNotNull($logs[2]->ip_address);
-        $this->assertCount(3, $logs);
+        $agedLogin = \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)->where('event', 'LOGIN_SUCCESS')
+            ->orderBy('occurred_at')->firstOrFail();
+        $recentLogin = \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)->where('event', 'LOGIN_SUCCESS')
+            ->orderByDesc('occurred_at')->firstOrFail();
+        $approved = \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)->where('event', 'DEVICE_ACCESS_APPROVED')->firstOrFail();
+        $this->assertNull($agedLogin->ip_address);
+        $this->assertNull($agedLogin->user_agent);
+        $this->assertNotNull($recentLogin->ip_address);
+        $this->assertNotNull($approved->ip_address);
     }
 
     public function test_tenant_mfa_otp_is_consumed_once_and_replay_denied(): void
