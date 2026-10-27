@@ -389,7 +389,7 @@ export function PlatformTenantDetailPage() {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead><tr className="border-b"><th>Employee</th><th>Device</th><th>Status</th><th>IP</th><th>Browser</th><th>Requested</th><th>Reviewed</th><th>Reviewed by</th></tr></thead>
+              <thead><tr className="border-b"><th>Employee</th><th>Roles</th><th>Device</th><th>Status</th><th>IP</th><th>Browser</th><th>Requested</th><th>Reviewed</th><th>Reviewed by</th></tr></thead>
               <tbody>{(devicesQuery.data?.access_requests ?? []).map(item => (
                 <tr className="border-t" key={item.ulid}>
                   <td>{item.username}</td><td>{item.device_name}</td><td>{item.status}</td>
