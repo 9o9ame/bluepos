@@ -1,3 +1,12 @@
+## 2026-10-28 — #18 stale decision / revoke / reapprove regression extended (TEST EXECUTION PENDING)
+
+- User's ordered screenshots verify Staff two-tab offline records (3,082 products) are removed to zero in both tabs after Owner revokes access and both protected tabs receive denied API responses; browser redirects to login. This is accepted two-tab manual test, not a claim of instant untouched-tab invalidation.
+- Added focused regression assertions to existing `test_owner_device_review_emails_employee_only_after_committed_decision`: after approved→revoked, stale rejection remains 409; explicit Owner reapproval succeeds; repeated approval returns 409; final grant status and exact audit counts reflect allowed transitions only. Commit `04ec7a03`. No production code change or migration.
+- **Important limit:** deterministic sequential interleaving validates stale-decision/idempotency behavior but **does not constitute a true simultaneous two-connection/process concurrency stress test**. Controller uses tenant locks + access request locks + CAS update. True parallel execution remains unverified.
+- Run this one focused test on isolated `bluepos_test`. Continue #18 until acceptance; no next requirement switched.
+
+---
+
 ## 2026-10-28 — #18-I two-tab revoked-access browser acceptance PASS
 
 - User supplied chronological screenshots: staff `ali` reapproved and signed in; Products and Quotation/Estimate opened in two Chrome tabs; offline IndexedDB records held **3,082** product records before revocation. Owner revoked `ali` access in Edge. Refreshing both Staff tabs redirected each to `/login`; refreshing DevTools IndexedDB `bluepos-local-data → records` in both tabs showed **0 entries**.
