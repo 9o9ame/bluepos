@@ -1,3 +1,11 @@
+## 2026-10-28 — #45 GeoIP failure-test HTTP fake isolation fix (RETEST PENDING)
+
+- User ran `test_ip_geolocation_provider_failure_does_not_leak_coordinates_or_break_lookup` on isolated `bluepos_test`: FAIL, expected all-null on second provider 503 but received first provider success fixture. First six assertions passed, confirming allowlist/city truncation.
+- Cause: multiple `Http::fake` registrations in same test can retain earlier matching stub; second request matched earlier successful fake. Reset Laravel HTTP client Factory using `Http::swap(new \Illuminate\Http\Client\Factory())` before registering 503-only stub. Distinct public IPs already prevent GeoIP cache collision. Test-only fix commit `473a21da`; production `IpGeolocation` unchanged.
+- Retest required, #45 remains Partial (46/50 total, four Partial); no new requirement started.
+
+---
+
 ## 2026-10-28 — #45 GeoIP provider privacy/failure regression added (TEST PENDING)
 
 - #44 `test_login_history_reports_unknown_browser_and_os_for_missing_or_unrecognized_agent` **PASS (1 test, 11 assertions)** on bluepos_test, scoped accepted. Count **46/50 (92%)**, four Partial (#45,#46,#48,#50).
