@@ -133,6 +133,15 @@ class AuthenticationTest extends TestCase
         $this->assertNotNull(\App\Models\MfaChallenge::query()
             ->where('membership_id', $owner->membership->id)
             ->whereNull('consumed_at')->first());
+        // Changed-network Owner attempt is associated with the same known device,
+        // but the new IP must remain untrusted until fresh OTP verification.
+        $blocked = \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('actor_membership_id', $owner->membership->id)
+            ->where('event', 'LOGIN_BLOCKED')
+            ->latest('id')->firstOrFail();
+        $this->assertSame('198.51.100.12', $blocked->ip_address);
+        $this->assertSame((int) $device->id, (int) $blocked->device_id);
     }
 
     public function test_owner_with_another_tenants_browser_cookie_gets_own_recovery_otp(): void
