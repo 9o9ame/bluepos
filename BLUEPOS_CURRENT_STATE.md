@@ -1,3 +1,11 @@
+## 2026-10-28 — #24 request-location expiry fixture clock correction (RETEST REQUIRED)
+
+- User executed focused Owner notification/request privacy regression on `bluepos_test`: FAIL at notification live coordinates, returned NULL instead of '28.42' (12 assertions before failure).
+- DeviceController guards location with PostgreSQL `CURRENT_TIMESTAMP`. PHP test fixture initially used `now()->addMinute()` / `now()->subMinute()`, which can disagree with PostgreSQL transaction/timezone clock. Corrected ONLY test fixture to use SQL `CURRENT_TIMESTAMP + INTERVAL '1 day'` and `CURRENT_TIMESTAMP - INTERVAL '1 day'`, matching the production condition's clock and avoiding fragile one-minute boundary. Commit `307d16eb`.
+- Production controller not modified. Test result after fix **pending**. Re-run focused test on isolated `bluepos_test`; do not claim #24 Completed until live and expired coordinate tests pass.
+
+---
+
 ## 2026-10-28 — #24 owner access notification / request-location expiry regression (TEST PENDING)
 
 - After #18 scoped closure (40/50, 10 Partial), began #24 only.
