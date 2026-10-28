@@ -391,7 +391,7 @@ class LoginUserAction
             if ($owner->user?->status !== UserStatus::Active) {
                 continue;
             }
-            DB::table('device_access_notifications')->insertOrIgnore([
+            $createdNotice = DB::table('device_access_notifications')->insertOrIgnore([
                 'ulid' => (string) Str::ulid(),
                 'tenant_id' => $employee->tenant_id,
                 'recipient_membership_id' => $owner->id,
@@ -407,6 +407,21 @@ class LoginUserAction
                     ->where('access_request_id', $requestId)
                     ->where('kind', $kind)
                     ->update(['read_at' => null, 'updated_at' => now()]);
+            }
+            if ($createdNotice || $reopen) {
+                // Trigger only after the request and its inbox row have committed.
+                DB::afterCommit(static function () use ($employee, $owner): void {
+                    try {
+                        event(new \App\Events\DeviceAccessRequested(
+                            \App\Models\Tenant::query()->whereKey($employee->tenant_id)->value('ulid'),
+                            $owner->ulid,
+                        ));
+                    } catch (\Throwable $error) {
+                        \Illuminate\Support\Facades\Log::warning('security.device_broadcast_failed', [
+                            'reason' => $error::class,
+                        ]);
+                    }
+                });
             }
         }
     }
