@@ -1,3 +1,13 @@
+## 2026-10-28 — Pusher dependency remediation validated locally; lockfile synchronization still pending
+
+- User ran `composer update league/commonmark --with-all-dependencies` on local feature/superadmin: `league/commonmark` 2.10.1 → 2.10.4, `nette/schema` 1.3.6 → 1.4.0 and `nette/utils` 4.1.5 → 4.1.6; **composer audit: no security vulnerability advisories**.
+- User ran unforced `npm audit fix`; frontend `npm run typecheck` PASS and `npm run build` PASS (2285 modules). Vite emitted pre-existing mixed dynamic/static import and large bundle warnings, not compilation errors.
+- `npm audit` still reports **2 vulnerabilities: 1 moderate, 1 high**. Visible entry: `esbuild <=0.24.2` via Vite 5, where npm suggests force-upgrading to Vite 8 (BREAKING). The visible pasted excerpt does **not identify the remaining high vulnerability**; do not assume it is resolved or advise `npm audit fix --force`. Inspect via `npm audit --json` or `npm audit --omit=dev` and affected package paths before any targeted remediation.
+- Local `git status --short` shows **only** `M backend/composer.lock` and `M frontend/package-lock.json`. These are real locally generated lockfile updates following user-requested installs and security fixes. They are **NOT yet committed or pushed**; GitHub remote cannot read uncommitted local changes. Prefer user commit both lockfiles together (after checking diff) on current already-approved `feature/superadmin` branch; do not fabricate GitHub commit. Never overwrite/reset local lockfiles. Preserve single testing round per task.
+- Pusher live two-browser event delivery, private-channel tenant auth and included five MP3 files remain UNVERIFIED; new notification feature remains partial, no deployment or main merge. Retention production cron remains deferred until go-live.
+
+---
+
 ## 2026-10-28 — Pusher frontend build PASS; targeted dependency advisories open
 
 - User executed consolidated validation after authorizer type fix: `npm run typecheck` PASS; `npm run build` PASS (2285 Vite modules). Existing dynamic/static import and large chunk warnings remain non-blocking, unrelated cleanup deferred.
