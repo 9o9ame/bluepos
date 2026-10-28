@@ -1891,6 +1891,14 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('locations.0.username', 'owner')
             ->assertJsonPath('locations.0.latitude_approx', '28.42');
         $this->assertNoInternalIds($response->json());
+        // Expired request coordinates also must disappear from platform approval history.
+        \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $requestUlid)
+            ->update(['request_location_expires_at' => \Illuminate\Support\Facades\DB::raw("CURRENT_TIMESTAMP - INTERVAL '1 day'")]);
+        $this->getJson('/api/platform/tenants/'.$tenantA->tenant->ulid.'/devices')
+            ->assertOk()
+            ->assertJsonPath('access_requests.0.request_latitude_approx', null)
+            ->assertJsonPath('access_requests.0.request_longitude_approx', null);
         // Expired coarse locations must disappear from platform monitoring.
         \Illuminate\Support\Facades\DB::table('login_location_observations')
             ->where('tenant_id', $tenantA->tenant->id)
