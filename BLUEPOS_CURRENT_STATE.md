@@ -1,3 +1,12 @@
+## 2026-10-28 — Device alert observed live, silent background refresh fix; sound remains unverified
+
+- User screenshot shows Chrome Owner Devices page receiving a new Ali pending approval and unread alert, while second Edge browser sees pending approval. User reports bell shaking and notification appearing without manual reload; **audio did not play**. This does not yet prove Pusher channel delivery because polling was enabled; inspect WS connection separately.
+- Root of constantly animated top API loading bar: `frontend/src/api/client.ts` defaults GET calls to `busy='fetch'`; 4-second polling from bell and Devices page kept showing fetch activity. Changed device access inbox and approval GETs in `frontend/src/api/devices.ts` to use `busy:'none'` for background refresh. Lowered bell and Devices inbox/request fallback polling 4s → 30s; Pusher events continue to invalidate relevant React Query caches for immediate refresh.
+- Sound code previously silently swallowed `HTMLAudioElement.play()` rejections; now exposes development-only console warning to help distinguish browser autoplay permission from missing MP3. **Important**: five MP3s are in user-provided ZIP, not yet committed in GitHub; user must extract to `frontend/public/sounds/notifications`. Test direct media URL returns audio and bell menu sound preview; browser may block unsolicited audio before user gesture. Don't claim audio fixed until tested.
+- Modified `frontend/src/api/devices.ts`, `frontend/src/components/desktop/NotificationBell.tsx`, `frontend/src/pages/DevicesPage.tsx`. Frontend typecheck/build and browser validation for these changes PENDING. No tests run against persistent/dev DB, no production deployment.
+
+---
+
 ## 2026-10-28 — Git divergence resolved; lockfiles pushed
 
 - User explicitly approved a one-commit rebase of local lockfile commit 84d46aa7 onto remote documentation commit 9cf194b2.
