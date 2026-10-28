@@ -1,3 +1,12 @@
+## 2026-10-28 — #24 owner access notification / request-location expiry regression (TEST PENDING)
+
+- After #18 scoped closure (40/50, 10 Partial), began #24 only.
+- Inspected `DeviceController::accessNotifications` and `accessRequests`: both return coarse request coordinates only if `request_location_expires_at > CURRENT_TIMESTAMP`, else NULL. Existing Owner-only tenant scoped access controls retained.
+- Extended existing `test_owner_device_review_emails_employee_only_after_committed_decision` with active request location visibility and expiration checks on both Owner notification and request-list endpoints. Test code committed; **not yet run**. Latest test fix `ef3f5658`. No production code or migrations. Next focused test on isolated `bluepos_test`: `php artisan test --filter=test_owner_device_review_emails_employee_only_after_committed_decision`.
+- #24 remains Partial pending test result and review of other request-data retention and owner notification detail acceptance.
+
+---
+
 ## 2026-10-28 — #18 Staff approval/revocation ACCEPTED / COMPLETED (scoped)
 
 - User ran final stale-decision/revoke/reapprove focused test `test_owner_device_review_emails_employee_only_after_committed_decision` on isolated `bluepos_test`: **1 PASS / 37 assertions** after pulling `f77462f9`. This verifies idempotent rejection of stale/repeated decisions, explicit reapproval, final status, transactional audit counts, and notification flow.
