@@ -1,3 +1,12 @@
+## 2026-10-28 — #28 Owner device attribution regression started (TEST PENDING)
+
+- #24 accepted after user's second focused test **PASS (1 test, 47 assertions)**, combined with Owner request detail/privacy test **PASS (1 test, 45 assertions)**. Completion checkpoint commit `8e7b6744`; scoped count **41/50 = 82%, 9 Partial**.
+- #28 existing `DeviceController::index` returns tenant-scoped `associated_usernames` combined from auth_sessions and member access requests. Existing manual screenshots verified shared browser's per-user rows. Added focused test assertions for the trusted Owner device's username appearing and a newly created unassociated pending browser returning an empty list. Commit `d48d2b82`; **NOT RUN**.
+- Remaining #28 external changed public-IP device identification cannot be proven from local 127.0.0.1 screenshots; controlled test network simulation is a distinct proof and may be used for backend checks. #28 stays Partial until focused test and attribution/IP assertions verified.
+- No production code or migrations in this checkpoint. Continue only #28.
+
+---
+
 ## 2026-10-28 — #24 APPROVAL NOTIFICATIONS / LOCATION PRIVACY COMPLETED
 
 - User ran platform request monitoring regression `test_platform_tenant_device_review_history_is_read_only_and_tenant_scoped`: **PASS (1 test, 47 assertions)** on isolated `bluepos_test`. Expired request coordinates hidden; tenant scope and read-only behavior verified.
