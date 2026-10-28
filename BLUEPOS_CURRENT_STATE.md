@@ -1,3 +1,19 @@
+## 2026-10-28 — Production scheduler optimization DEFERRED until go-live; next focus REAL-TIME NOTIFICATIONS
+
+### Deferred deployment / performance tasks (NOT verified, NOT completed)
+- User confirmed BluePOS is hosted on Hostinger and directed postponement of production Cron Job activation/verification and scale optimization until the project goes live. **Do not treat this as an active blocker for current development**, but do not claim production retention execution is verified.
+- At go-live, identify Hostinger plan and PHP/artisan paths, inspect existing cron jobs to prevent duplicates, configure Laravel `schedule:run` every minute using an environment-appropriate scheduler, confirm worker/scheduler health and actual job execution; avoid printing PII in logs.
+- Before enabling production retention workloads, check PostgreSQL indexes and `EXPLAIN (ANALYZE, BUFFERS)` only when safe on representative test/staging data for `login_location_observations.expires_at`, `device_access_requests.request_location_expires_at`, `audit_logs.occurred_at/event`, and `device_access_requests.created_at`. Review batch sizes for DELETE/UPDATE, lock duration, WAL/autovacuum effects, off-peak timing, job overlap and observability. Avoid broad unbounded cleanup with millions of rows; validate tenant-wide isolation and retention policy. No destructive DB commands. Measure before changing existing implementation.
+- Existing four daily jobs are registered and focused tests passed (2 tests / 13 assertions), but this proves **code registration and redaction behavior only**, not real Hostinger cron execution.
+
+### Next approved development direction — real-time in-app notifications
+- User wants WhatsApp-like instant user-to-user delivery: when an action/message occurs, another user's UI receives a notification automatically, and an open conversation updates without reload. Explore system-wide real-time notification use cases; do **not** assume a full chat module exists or is in scope.
+- Laravel 13's built-in Notifications (`database`, `broadcast`) and broadcasting events with Laravel Echo are candidate primitives. Laravel Reverb/WebSockets is an option, subject to **Hostinger hosting/server support**; browser PWA Web Push for background/closed-app notifications is a separate capability, not a substitute for WebSocket live updates.
+- Inspect current notification/event/queue, user+membership+tenant auth, broadcast channel authorization, React client patterns and hosting capabilities **before implementation**. Server-authoritative recipient visibility, private tenant/recipient-scoped channels, ULID public identifiers, no cross-tenant leakage, after-commit broadcast, idempotent retries, audit/PII-safe payloads and tests required. Reuse existing notification flows rather than duplicating.
+- User preference: implement own code changes without repeated approval; provide all relevant task tests in **one testing round**. No new notification implementation claimed by this documentation checkpoint.
+
+---
+
 ## 2026-10-28 — #50 Retention scheduler ACCEPTED; tracked 50/50 completed
 
 - User ran both #50 focused tests in ONE round on isolated `bluepos_test`: `test_security_retention_scheduler_registers_all_four_daily_jobs` and `test_security_privacy_retention_redacts_only_aged_login_network_identity`: **2 PASS / 13 assertions**. Four daily jobs registered; aged network identifiers redacted while preserving security event/decision evidence.
