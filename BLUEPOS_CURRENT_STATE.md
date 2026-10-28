@@ -1,3 +1,11 @@
+## 2026-10-28 — #48 OTP expiry regression added (TEST PENDING)
+
+- #46 optional-location test passed (1 test / 4 assertions) on isolated bluepos_test; accepted with count 48/50 (96%), two Partial (#48,#50).
+- Reviewed existing #48 OTP replay rejection and wrong-code attempt budget tests. Added `test_expired_tenant_mfa_otp_cannot_be_used_or_consumed` to check matching code on expired challenge is rejected as MFA_INVALID and not marked consumed. Commit `795bc595`; **not yet run**. No production code or migrations.
+- Important: replay, attempt-budget and expiration tests are deterministic, **not** actual simultaneous process concurrency; do not claim parallel race coverage. Continue #48, focused test in bluepos_test only.
+
+---
+
 ## 2026-10-28 — #46 optional/unavailable browser location scoped acceptance
 
 - User ran `test_optional_browser_location_allows_login_without_coordinates_and_does_not_fabricate_location` on isolated `bluepos_test`: **PASS (1 test, 4 assertions)**. When location is optional, login succeeds and no fabricated location observations are returned. Mandatory-location rejection/coarse handling covered by existing test.
