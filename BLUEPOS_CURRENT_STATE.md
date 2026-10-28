@@ -1,3 +1,11 @@
+## 2026-10-28 — #29 cross-tenant direct device-API isolation accepted
+
+- User ran `test_tenant_owner_can_review_only_own_pending_employee_access_requests` on isolated `bluepos_test`: **PASS (1 test, 14 assertions)**. Direct foreign request approve/reject/revoke, notification read, device and request listings deny/exclude foreign tenant records; no foreign request state changes.
+- This scoped acceptance closes #29 for tested device-access endpoints, not a claim of universal route-wide tenant audit. Historical count: **43/50 = 86% implementation-indicated/accepted; 7 Partial** (#37,#43,#44,#45,#46,#48,#50).
+- Next active #37 Staff backend authorization. Stay on `feature/superadmin`; no main merge, no production code changes for #29.
+
+---
+
 ## 2026-10-28 — #29 cross-tenant direct API isolation regression added (TEST PENDING)
 
 - #28 closed after user ran changed-IP Owner test **PASS (1 test, 7 assertions)** plus prior Owner device username attribution **PASS (1 test, 7 assertions)**. Scoped historical progress **42/50 (84%), 8 Partial**.
