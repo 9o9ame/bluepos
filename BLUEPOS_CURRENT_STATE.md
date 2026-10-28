@@ -1,3 +1,12 @@
+## 2026-10-28 — #50 retention scheduler inspection and batch test prepared (PENDING)
+
+- After scoped #48 completion (two independent PostgreSQL workers PASS; 6 assertions), began #50. Inspected `backend/routes/console.php`: four daily `withoutOverlapping` jobs exist for expired login location pruning, expired approval-request location scrubbing, audit network-identifier redaction and device-request IP/user-agent redaction. `SecurityPrivacyRetention` preserves audit events while clearing expired IP/UA fields.
+- Added `test_security_retention_scheduler_registers_all_four_daily_jobs` (commit `afa354b1`) using Laravel `schedule:list` output. Existing `test_security_privacy_retention_redacts_only_aged_login_network_identity` checks age-based network redaction. **New test not yet executed.** Test registration does not prove OS/task-runner cron is configured in deployment.
+- In line with user preference, run both relevant focused tests in ONE command/round on isolated `bluepos_test`: `php artisan test --filter="test_security_retention_scheduler_registers_all_four_daily_jobs|test_security_privacy_retention_redacts_only_aged_login_network_identity"`. Do not mark #50 complete before results, and report any deployment scheduler requirement separately.
+- No production changes/migrations. Current progress 49/50 (98%) implementation-indicated/accepted; #50 Partial. Branch feature/superadmin, no main merge.
+
+---
+
 ## 2026-10-28 — #48 actual PostgreSQL concurrency ACCEPTED
 
 - User ran `test_two_independent_postgresql_processes_cannot_claim_same_otp` on isolated `bluepos_test`: **PASS (1 test, 6 assertions)**. Two independent PHP/PostgreSQL processes contended on one committed OTP row: one conditional claim succeeded, one returned zero. Prior MFA expiry, replay, single authenticated session, single success audit and attempt budget focused tests passed.
