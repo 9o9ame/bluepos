@@ -2221,6 +2221,10 @@ class AuthenticationTest extends TestCase
             ->where('event', 'MFA_SUCCESS')
             ->where('resource_ulid', $challenge->ulid)
             ->count());
+        $this->assertSame(1, \Illuminate\Support\Facades\DB::table('auth_sessions')
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('membership_id', $owner->membership->id)
+            ->count());
     }
 
     public function test_tenant_mfa_atomic_claim_rejects_stale_second_claim(): void
