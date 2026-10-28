@@ -32,8 +32,20 @@ export type TenantLoginHistory = {
   pagination: { page: number; last_page: number; total: number }
 }
 
-export function fetchTenantLoginHistory(page = 1): Promise<TenantLoginHistory> {
-  return apiFetch<TenantLoginHistory>(`/api/security/login-history?page=${page}`)
+export type TenantLoginHistoryFilters = {
+  username?: string
+  event?: 'all' | 'LOGIN_SUCCESS' | 'LOGIN_FAILURE' | 'LOGIN_BLOCKED'
+  ip_address?: string
+  date_from?: string
+  date_to?: string
+}
+
+export function fetchTenantLoginHistory(page = 1, filters: TenantLoginHistoryFilters = {}): Promise<TenantLoginHistory> {
+  const params = new URLSearchParams({ page: String(page) })
+  for (const [key, value] of Object.entries(filters)) {
+    if (value && value !== 'all') params.set(key, value)
+  }
+  return apiFetch<TenantLoginHistory>(`/api/security/login-history?${params.toString()}`)
 }
 
 export type TenantLocationHistory = {
