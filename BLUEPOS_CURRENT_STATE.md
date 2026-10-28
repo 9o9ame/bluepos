@@ -1,3 +1,12 @@
+## 2026-10-28 — #48 MFA replay success-audit PASS, session duplication test added
+
+- User ran `test_tenant_mfa_otp_is_consumed_once_and_replay_denied` in isolated `bluepos_test`: **PASS (1 test / 5 assertions)**. Challenge single consumption, replay rejection, and exactly one MFA_SUCCESS audit record.
+- Added regression assertion in same test that only **one** `auth_sessions` row is created for the membership after duplicate verification attempt; commit `3bc6a486`, **not yet run**. No production code or migrations.
+- True parallel PostgreSQL race test is still not implemented. Existing `AuthenticationTest` uses `DatabaseTransactions` so uncommitted fixtures are invisible to independent connections. A proper test requires a safe, isolated, committed-fixture harness with guaranteed cleanup; do not call sequential CAS verification parallel execution or mark #48 complete.
+- Progress remains **48/50 = 96%, #48 and #50 Partial**; continue #48 only.
+
+---
+
 ## 2026-10-28 — #48 atomic claim PASS; replay audit hardening test pending
 
 - User ran `test_tenant_mfa_atomic_claim_rejects_stale_second_claim` on isolated `bluepos_test`: **PASS (1 test, 5 assertions)**. First conditional DB update succeeds, second stale conditional claim updates 0 rows.
