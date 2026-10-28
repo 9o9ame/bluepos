@@ -52,6 +52,8 @@ function AuthStateProvider({ children }: { children: ReactNode }) {
   const mfaMutation = useMutation({
     mutationFn: verifyMfa,
     onSuccess: (session) => {
+      client.clear()
+      setSessionInvalidated(false)
       client.setQueryData(['auth', 'me'], session)
     },
   })
