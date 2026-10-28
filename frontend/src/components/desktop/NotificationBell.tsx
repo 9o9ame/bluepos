@@ -69,12 +69,12 @@ export function NotificationBell({ session, onOpenDevices }: {
       cluster,
       client: pusher,
       authorizer: (channel: { name: string }) => ({
-        authorize: (socketId: string, callback: (error: Error | null, data: unknown) => void) => {
+        authorize: (socketId: string, callback: (error: Error | null, data: { auth: string; channel_data?: string } | null) => void) => {
           void apiFetch('/api/broadcasting/auth', {
             method: 'POST',
             busy: 'none',
             body: JSON.stringify({ socket_id: socketId, channel_name: channel.name }),
-          }).then((result) => callback(null, result)).catch((error: Error) => callback(error, null))
+          }).then((result) => callback(null, result as { auth: string; channel_data?: string })).catch((error: Error) => callback(error, null))
         },
       }),
     })
