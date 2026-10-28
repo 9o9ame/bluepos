@@ -584,8 +584,8 @@ class AuthenticationTest extends TestCase
             ->assertOk()->assertJsonPath('notifications.0.request_latitude_approx', null)
             ->assertJsonPath('notifications.0.request_longitude_approx', null);
         $this->getJson('/api/devices/access-requests?status=all')
-            ->assertOk()->assertJsonPath('access_requests.0.request_latitude_approx', null)
-            ->assertJsonPath('access_requests.0.request_longitude_approx', null);
+            ->assertOk()->assertJsonPath('requests.0.request_latitude_approx', null)
+            ->assertJsonPath('requests.0.request_longitude_approx', null);
         $this->postJson('/api/devices/access-notifications/'.$noticeUlid.'/read')
             ->assertOk()->assertJsonPath('read', true);
         $this->getJson('/api/devices/access-notifications')
