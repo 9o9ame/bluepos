@@ -52,7 +52,7 @@ export type DeviceAccessRequest = {
 }
 
 export function fetchDeviceAccessRequests(status: 'pending' | 'approved' | 'rejected' | 'all' = 'pending'): Promise<{ requests: DeviceAccessRequest[]; pending_count: number }> {
-  return apiFetch(`/api/devices/access-requests?status=${status}`)
+  return apiFetch(`/api/devices/access-requests?status=${status}`, { busy: 'none' })
 }
 
 export function reviewDeviceAccessRequest(ulid: string, decision: 'approved' | 'rejected'): Promise<{ ulid: string; status: string }> {
@@ -91,7 +91,7 @@ export type DeviceAccessInbox = {
 }
 
 export function fetchDeviceAccessNotifications(page = 1): Promise<DeviceAccessInbox> {
-  return apiFetch<DeviceAccessInbox>(`/api/devices/access-notifications?page=${page}`)
+  return apiFetch<DeviceAccessInbox>(`/api/devices/access-notifications?page=${page}`, { busy: 'none' })
 }
 
 export function markDeviceAccessNotificationRead(ulid: string): Promise<{ ulid: string; read: true }> {
