@@ -1,3 +1,12 @@
+## 2026-10-28 — #48 session replay PASS; parallel harness safety assessment
+
+- User ran `test_tenant_mfa_otp_is_consumed_once_and_replay_denied` on `bluepos_test`: **PASS, 1 test / 6 assertions**. Verified single consumed OTP, replay rejection, exactly one MFA_SUCCESS audit and one auth_sessions row.
+- Confirmed `AuthController::verifyMfa` has conditional single-row claim `WHERE consumed_at IS NULL AND expires_at > now() AND attempts < max` and only issues session if affected rows is exactly one.
+- **No genuine parallel test was run or committed.** Inspected `AuthenticationTest` using `DatabaseTransactions` and `TestDatabaseGuard` restricting APP_ENV=testing, database=bluepos_test and no cached config. Running a second PostgreSQL session in that class would not see uncommitted MFA fixtures. A safe dedicated parallel test needs committed fixture creation with scoped guaranteed cleanup and two independent workers. Do not create misleading 'parallel' assertions or make potentially destructive testing changes to persistent DB.
+- #48 still Partial, historical count 48/50 (96%), #50 Partial. No production changes or migrations from this checkpoint; do not proceed to #50 until #48 is resolved.
+
+---
+
 ## 2026-10-28 — #48 MFA replay success-audit PASS, session duplication test added
 
 - User ran `test_tenant_mfa_otp_is_consumed_once_and_replay_denied` in isolated `bluepos_test`: **PASS (1 test / 5 assertions)**. Challenge single consumption, replay rejection, and exactly one MFA_SUCCESS audit record.
