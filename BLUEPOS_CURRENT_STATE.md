@@ -1,3 +1,12 @@
+## 2026-10-28 — #18 IndexedDB residual data after Staff revocation (FIX, VALIDATION PENDING)
+
+- User DevTools screenshot after revoked Staff redirect shows `bluepos-local-data` IndexedDB `records` store contains 3,082 items (product-scoped keys), about 6.4 MB; service-worker Cache Storage empty. This is confirmed persisted offline business data, not merely a shell cache.
+- Fixed `frontend/src/features/auth/AuthProvider.tsx`: on protected API session/device invalidation, clear `bluepos-local-data` `records` and `meta` IndexedDB stores via read-write transaction in addition to existing React Query cache reset and auth redirect. Avoid creating an empty database when none exists. No UI layout modifications, migrations or backend change. Commit `496ba6cb`.
+- **Validation pending:** frontend build, Staff revocation then DevTools records count zero, cross-tab/IDB concurrent writing behavior. Storage deletion is asynchronous and existing open application tabs may repopulate records; cannot claim full multi-tab protection until separately verified. Do not manually clear browser data before testing.
+- Requirement #18 remains Partial. Keep current `feature/superadmin` branch, no main merge.
+
+---
+
 ## 2026-10-28 — #18 protected downloads session-invalidation gap (VALIDATION PENDING)
 
 - Inspected frontend `apiDownload` and found it bypassed the revoked-session notification used by `apiFetch`. On revoked device/session, a protected CSV download error could leave stale authenticated React Query data mounted.
