@@ -157,6 +157,7 @@ export async function apiDownload(path: string, filename: string): Promise<void>
         error?: { key?: string; message?: string; fields?: Record<string, string[]>; [key: string]: unknown }
       }
       const { key, message, fields, ...extra } = payload.error ?? {}
+      reportTenantSessionInvalidation(path, response.status, String(key ?? 'SERVER_ERROR'))
       throw new ApiClientError(
         (key as string | undefined) ?? 'SERVER_ERROR',
         (message as string | undefined) ?? 'Download failed.',
