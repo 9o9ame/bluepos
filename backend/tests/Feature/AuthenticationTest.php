@@ -2216,6 +2216,11 @@ class AuthenticationTest extends TestCase
             ->assertForbidden()->assertJsonPath('error.key', 'MFA_INVALID');
         $this->assertSame(1, \App\Models\MfaChallenge::query()
             ->whereKey($challenge->id)->whereNotNull('consumed_at')->count());
+        $this->assertSame(1, \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('event', 'MFA_SUCCESS')
+            ->where('resource_ulid', $challenge->ulid)
+            ->count());
     }
 
     public function test_tenant_mfa_atomic_claim_rejects_stale_second_claim(): void
