@@ -27,6 +27,22 @@ export class ApiClientError extends Error {
   }
 }
 
+// A denied protected request invalidates cached tenant data immediately.
+// Do not treat login/MFA credential errors as revocation of an existing session.
+const tenantSessionInvalidationListeners = new Set<() => void>()
+
+export function subscribeTenantSessionInvalidation(listener: () => void): () => void {
+  tenantSessionInvalidationListeners.add(listener)
+  return () => { tenantSessionInvalidationListeners.delete(listener) }
+}
+
+function reportTenantSessionInvalidation(path: string, status: number, key: string): void {
+  if (!path.startsWith('/api/') || path.startsWith('/api/auth/login') || path.startsWith('/api/auth/mfa/') || path.startsWith('/api/auth/logout')) return
+  if (status !== 401 && !['SESSION_REVOKED', 'DEVICE_REVOKED', 'DEVICE_NOT_APPROVED'].includes(key)) return
+  resetCsrf()
+  tenantSessionInvalidationListeners.forEach(listener => listener())
+}
+
 export function resetCsrf(): void {
   csrfReady = false
 }
@@ -103,6 +119,7 @@ export async function apiFetch<T>(path: string, init: ApiFetchOptions = {}): Pro
 
     if (!response.ok) {
       const { key, message, fields, ...extra } = payload.error ?? {}
+      reportTenantSessionInvalidation(path, response.status, String(key ?? 'SERVER_ERROR'))
       throw new ApiClientError(
         (key as string | undefined) ?? 'SERVER_ERROR',
         (message as string | undefined) ?? 'Request failed.',
