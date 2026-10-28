@@ -1,3 +1,12 @@
+## 2026-10-28 — #18-I two-tab revoked-access browser acceptance PASS
+
+- User supplied chronological screenshots: staff `ali` reapproved and signed in; Products and Quotation/Estimate opened in two Chrome tabs; offline IndexedDB records held **3,082** product records before revocation. Owner revoked `ali` access in Edge. Refreshing both Staff tabs redirected each to `/login`; refreshing DevTools IndexedDB `bluepos-local-data → records` in both tabs showed **0 entries**.
+- This confirms tested two-tab revocation and offline record purge with both tabs participating in protected requests. It does not prove that untouched dormant tabs or ongoing offline writes independently invalidate without a request.
+- Existing Owner review/revoke code uses serialized tenant row locking, access-request locking, conditional status updates, and audit within transaction. Concurrent *simultaneous* requests not yet stress-tested; #18 still Partial pending final concurrency coverage.
+- No code changes in this checkpoint; no next requirement started.
+
+---
+
 ## 2026-10-28 — #18-H IndexedDB revocation cleanup browser PASS
 
 - User confirmed screenshot after Owner revoked Staff `ali`: protected UI redirected to `/login` and DevTools IndexedDB `bluepos-local-data → records` shows **Total entries: 0**. Prior 3,082 offline product-scoped records were present before the fix. No manual storage deletion was performed in this acceptance scenario.
