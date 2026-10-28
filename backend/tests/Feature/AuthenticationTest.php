@@ -2218,6 +2218,40 @@ class AuthenticationTest extends TestCase
             ->whereKey($challenge->id)->whereNotNull('consumed_at')->count());
     }
 
+    public function test_tenant_mfa_atomic_claim_rejects_stale_second_claim(): void
+    {
+        $owner = $this->provisionOwner('mfa-atomic-claim');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $challenge = \App\Models\MfaChallenge::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'user_id' => $owner->user->id,
+            'membership_id' => $owner->membership->id,
+            'device_id' => $device->id,
+            'method' => \App\Enums\MfaMethod::EmailOtp,
+            'purpose' => 'login',
+            'code_hash' => \Illuminate\Support\Facades\Hash::make('654321'),
+            'attempts' => 0,
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        // Two callers can both observe an unconsumed snapshot; only the first
+        // conditional database claim may succeed, even with a stale second model.
+        $firstSnapshot = \App\Models\MfaChallenge::query()->findOrFail($challenge->id);
+        $secondSnapshot = \App\Models\MfaChallenge::query()->findOrFail($challenge->id);
+        $this->assertNull($firstSnapshot->consumed_at);
+        $this->assertNull($secondSnapshot->consumed_at);
+        $claim = fn () => \App\Models\MfaChallenge::query()
+            ->whereKey($challenge->id)
+            ->whereNull('consumed_at')
+            ->where('expires_at', '>', now())
+            ->where('attempts', '<', \App\Security\SecurityOtp::maxVerifyAttempts())
+            ->update(['consumed_at' => now()]);
+        $this->assertSame(1, $claim());
+        $this->assertSame(0, $claim());
+        $this->assertNotNull($challenge->fresh()->consumed_at);
+    }
+
     public function test_tenant_mfa_wrong_code_exhausts_attempt_budget_and_blocks_correct_code(): void
     {
         $owner = $this->provisionOwner('mfa-budget');
