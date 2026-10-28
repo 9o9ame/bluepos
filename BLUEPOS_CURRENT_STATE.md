@@ -1,3 +1,12 @@
+## 2026-10-28 — #43 completed; #44 unknown browser/OS fallback regression added
+
+- User executed #43 `test_owner_login_history_filters_ip_device_and_exposes_only_tenant_audit_browser_hints` on isolated `bluepos_test`: **1 PASS / 31 assertions**. Same device's distinct audit IP entries retained and searchable while tenant isolation/ULID filtering remain. Scoped requirement #43 accepted. This covers deterministic backend history with seeded IPs, not physical ISP switching.
+- Historical progress **45/50 = 90% implementation-indicated/accepted; 5 Partial** (#44,#45,#46,#48,#50).
+- Inspected existing `SecuritySessionController::loginHistory`: missing or unrecognized user agent maps browser and OS to `Unknown`; browser/OS are display hints, not identity. Added focused test `test_login_history_reports_unknown_browser_and_os_for_missing_or_unrecognized_agent` for null and unrecognized agents, validates tenant/internal IDs excluded from response. Commit `5a05ad7e`. **Not yet executed**. No production changes or migrations.
+- Next isolated `bluepos_test` focused test for #44; stay on `feature/superadmin`.
+
+---
+
 ## 2026-10-28 — #43 longitudinal device IP history regression (TEST PENDING)
 
 - #37 staff privileged endpoint authorization focused test **PASS (1 test, 8 assertions)**; scoped accepted (#37). Count **44/50 = 88% implementation-indicated/accepted; 6 Partial** (#43,#44,#45,#46,#48,#50).
