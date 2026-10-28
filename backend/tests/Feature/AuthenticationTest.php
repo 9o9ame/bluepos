@@ -2140,6 +2140,21 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('events.0.membership', null);
     }
 
+    public function test_device_access_broadcast_exposes_only_scoped_channel_and_safe_refresh_signal(): void
+    {
+        $event = new \App\Events\DeviceAccessRequested(
+            '01H00000000000000000000000',
+            '01H11111111111111111111111',
+        );
+
+        $this->assertSame(
+            'private-bluepos.tenant.01H00000000000000000000000.member.01H11111111111111111111111',
+            $event->broadcastOn()->name
+        );
+        $this->assertSame('device.access.requested', $event->broadcastAs());
+        $this->assertSame(['type' => 'device_access_requested'], $event->broadcastWith());
+    }
+
     public function test_security_retention_scheduler_registers_all_four_daily_jobs(): void
     {
         \Illuminate\Support\Facades\Artisan::call('schedule:list');
