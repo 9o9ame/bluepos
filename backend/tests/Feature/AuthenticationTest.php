@@ -1089,7 +1089,7 @@ class AuthenticationTest extends TestCase
         $today = now()->toDateString();
         $yesterday = now()->subDay()->toDateString();
         $tomorrow = now()->addDay()->toDateString();
-        $this->getJson('/api/security/login-history?event=LOGIN_BLOCKED&date_from='.$today.'&date_to='.$today)
+        $this->getJson('/api/security/login-history?event=LOGIN_BLOCKED&date_from='.$today.'&date_to='.$today.'&ip_address='.$knownIp)
             ->assertOk()->assertJsonPath('pagination.total', 1)
             ->assertJsonPath('events.0.ip_address', $knownIp);
         $this->getJson('/api/security/login-history?event=LOGIN_BLOCKED&date_from='.$yesterday.'&date_to='.$yesterday)
