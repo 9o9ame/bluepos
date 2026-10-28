@@ -1,3 +1,11 @@
+## 2026-10-28 — #45 GeoIP provider privacy/failure regression added (TEST PENDING)
+
+- #44 `test_login_history_reports_unknown_browser_and_os_for_missing_or_unrecognized_agent` **PASS (1 test, 11 assertions)** on bluepos_test, scoped accepted. Count **46/50 (92%)**, four Partial (#45,#46,#48,#50).
+- Extended GeoIP test coverage with `test_ip_geolocation_provider_failure_does_not_leak_coordinates_or_break_lookup`: provider response cannot expose coordinate fields or arbitrary provider fields; unexpected non-string region is NULL, long city truncated to 90 chars, HTTP 503 returns all unknown without exception. New focused regression commit `749713cb`; **not run** yet. Existing token/public-IP opt-in tests remain.
+- No production code/migrations. Continue only #45 with isolated `bluepos_test` execution and evaluate remaining acceptance.
+
+---
+
 ## 2026-10-28 — #44 Browser/OS fallback accepted
 
 - User executed `test_login_history_reports_unknown_browser_and_os_for_missing_or_unrecognized_agent` in isolated `bluepos_test`: **PASS (1 test, 11 assertions)**. Null/unrecognized User-Agent displays Unknown for both hints, no tenant BIGINT IDs leaked. #44 scoped accepted.
