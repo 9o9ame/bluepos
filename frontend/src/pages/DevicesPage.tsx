@@ -45,7 +45,7 @@ export function DevicesPage() {
     queryKey: ['device-access-inbox', session?.tenant.ulid, session?.user.ulid, inboxPage],
     queryFn: () => fetchDeviceAccessNotifications(inboxPage),
     enabled: canReviewRequests,
-    refetchInterval: 4000,
+    refetchInterval: 30000,
   })
   const [markingRead, setMarkingRead] = useState<string | null>(null)
   const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: fetchDevices })
@@ -53,9 +53,9 @@ export function DevicesPage() {
     queryKey: ['device-access-requests', 'all'],
     queryFn: () => fetchDeviceAccessRequests('all'),
     enabled: canReviewRequests,
-    refetchInterval: 4000,
+    refetchInterval: 30000,
   })
-  const requestsQuery = useQuery({ queryKey: ['device-access-requests', requestStatus], queryFn: () => fetchDeviceAccessRequests(requestStatus), enabled: canReviewRequests, refetchInterval: 4000 })
+  const requestsQuery = useQuery({ queryKey: ['device-access-requests', requestStatus], queryFn: () => fetchDeviceAccessRequests(requestStatus), enabled: canReviewRequests, refetchInterval: 30000 })
   const sessionsQuery = useQuery({ queryKey: ['security-sessions'], queryFn: fetchSecuritySessions, enabled: canViewSessions, refetchInterval: 60000 })
   const [reviewing, setReviewing] = useState<string | null>(null)
   const branchesQuery = useQuery({ queryKey: ['branches'], queryFn: fetchBranches })
