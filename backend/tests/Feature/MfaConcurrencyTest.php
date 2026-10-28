@@ -80,6 +80,15 @@ class MfaConcurrencyTest extends TestCase
                 'expires_at' => now()->addMinutes(10),
             ]);
 
+            // Use the same PostgreSQL clock as the worker predicate, not PHP's local timezone.
+            DB::table('mfa_challenges')->where('id', $challenge->id)
+                ->update(['expires_at' => DB::raw("CURRENT_TIMESTAMP + INTERVAL '10 minutes'")]);
+            $this->assertSame(1, DB::table('mfa_challenges')
+                ->where('id', $challenge->id)
+                ->where('consumed_at', null)
+                ->where('expires_at', '>', DB::raw('CURRENT_TIMESTAMP'))
+                ->count());
+
             // Each child uses its own PDO connection/process. No shared Laravel connection.
             // The winning transaction holds its row lock for 1 second so the loser
             // contends against a still-open transaction rather than a completed update.
