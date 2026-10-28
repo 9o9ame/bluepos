@@ -1,3 +1,14 @@
+## 2026-10-28 — Owner explicit staff reapproval after revoke (VALIDATION PENDING)
+
+- User manually passed staff revoked login block. Owner Devices screen shows `pending: 0` after revoke and no restore button beside `ali`. Root cause: existing `recordStaffAccessRequest` intentionally delays rejected request re-opening for 24h, and generic `Restore whole device` only applies when device itself is revoked. Shared browser remains active.
+- Reused `POST /api/devices/access-requests/{requestUlid}/review` to allow **active tenant Owner** to move a **rejected** employee network grant back to approved on explicit review only. Existing tenant lock, reviewer/member/device status checks, tenant-scoped ULID, operational entitlement validation, atomic audit and email notification retained. Only rejected->approved newly allowed; rejected->rejected/approved->approved still 409. Already revoked sessions/offline leases remain revoked, fresh sign-in required.
+- UI `frontend/src/pages/DevicesPage.tsx`: rejected request in Rejected/All filter shows `Reapprove access`; shared user's rejected row shows `Reapprove ali access`. Device-level restore remains exclusively for revoked devices.
+- Changed files: `backend/app/Http/Controllers/Api/DeviceController.php`, `frontend/src/pages/DevicesPage.tsx`, this current state document. No migrations. Backend security tests, frontend build, browser reapprove and cross-tenant test **PENDING**; do not mark full #18 completed until validated.
+- Existing 24h anti-spam cooldown for *automatic new staff request creation* unchanged; manual Owner reapproval is explicitly authorized independent recovery route.
+- Relevant manual acceptance: `ALPHA / admin` Devices Rejected filter -> ali Reapprove -> successful Owner dashboard unaffected -> ali logs in afresh; verify after revocation old session not resurrected.
+
+---
+
 ## 2026-10-27 — Shared browser device, per-user access actions (VALIDATION PENDING)
 
 - Screenshot: a single registered browser device lists `admin, ali` because both signed in on same Chrome profile. Device-level Revoke necessarily revokes the underlying device for **all users**. This is not a separate physical device for each user.
