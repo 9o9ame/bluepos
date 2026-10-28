@@ -2246,6 +2246,30 @@ class AuthenticationTest extends TestCase
         $this->assertNull($challenge->fresh()->consumed_at);
     }
 
+    public function test_expired_tenant_mfa_otp_cannot_be_used_or_consumed(): void
+    {
+        $owner = $this->provisionOwner('mfa-expired');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $challenge = \App\Models\MfaChallenge::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'user_id' => $owner->user->id,
+            'membership_id' => $owner->membership->id,
+            'device_id' => $device->id,
+            'method' => \App\Enums\MfaMethod::EmailOtp,
+            'purpose' => 'login',
+            'code_hash' => \Illuminate\Support\Facades\Hash::make('654321'),
+            'attempts' => 0,
+            'expires_at' => now()->subMinute(),
+        ]);
+
+        $this->postJson('/api/auth/mfa/verify', [
+            'challenge_ulid' => $challenge->ulid,
+            'code' => '654321',
+        ])->assertForbidden()->assertJsonPath('error.key', 'MFA_INVALID');
+        $this->assertNull($challenge->fresh()->consumed_at);
+    }
+
     public function test_ip_geolocation_does_not_contact_provider_without_opt_in_or_public_ip(): void
     {
         \Illuminate\Support\Facades\Http::fake();
