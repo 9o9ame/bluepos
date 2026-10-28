@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createContext, useContext, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { fetchMe, login, logout, resendMfa as requestResendMfa, verifyMfa, type LoginInput, type MfaVerifyInput } from '../../api/auth'
-import { ApiClientError } from '../../api/client'
+import { ApiClientError, subscribeTenantSessionInvalidation } from '../../api/client'
 import type { AuthSession } from '../../types/auth'
 
 const queryClient = new QueryClient({
@@ -26,6 +26,14 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 
 function AuthStateProvider({ children }: { children: ReactNode }) {
   const client = useQueryClient()
+  const [sessionInvalidated, setSessionInvalidated] = useState(false)
+  useEffect(() => subscribeTenantSessionInvalidation(() => {
+    setSessionInvalidated(true)
+    // Clearing all tenant queries prevents revoked users from browsing stale
+    // sensitive records; a fresh login creates a new authenticated context.
+    client.clear()
+    client.setQueryData(['auth', 'me'], null)
+  }), [client])
   const meQuery = useQuery({
     queryKey: ['auth', 'me'],
     queryFn: fetchMe,
@@ -35,6 +43,8 @@ function AuthStateProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: (session) => {
+      client.clear()
+      setSessionInvalidated(false)
       client.setQueryData(['auth', 'me'], session)
     },
   })
@@ -49,13 +59,14 @@ function AuthStateProvider({ children }: { children: ReactNode }) {
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      client.setQueryData(['auth', 'me'], null)
+      setSessionInvalidated(true)
       client.clear()
+      client.setQueryData(['auth', 'me'], null)
     },
   })
 
   const authError = meQuery.error instanceof ApiClientError ? meQuery.error : null
-  const unauthenticated = authError !== null && (authError.status === 401 || authError.key === 'SESSION_REVOKED')
+  const unauthenticated = sessionInvalidated || (authError !== null && (authError.status === 401 || authError.key === 'SESSION_REVOKED' || authError.key === 'DEVICE_NOT_APPROVED' || authError.key === 'DEVICE_REVOKED'))
   const session = unauthenticated ? null : (meQuery.data ?? null)
 
   const value: AuthContextValue = {
