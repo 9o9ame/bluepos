@@ -1,3 +1,12 @@
+## 2026-10-28 — #18 Staff approval/revocation ACCEPTED / COMPLETED (scoped)
+
+- User ran final stale-decision/revoke/reapprove focused test `test_owner_device_review_emails_employee_only_after_committed_decision` on isolated `bluepos_test`: **1 PASS / 37 assertions** after pulling `f77462f9`. This verifies idempotent rejection of stale/repeated decisions, explicit reapproval, final status, transactional audit counts, and notification flow.
+- Previous #18 focused runs passed: tenant-scoped review + network/session access + rollback + offline revocation (4 tests/51 assertions); corrected reapproval/replay (2 tests/24 assertions); authority and ineligible membership/invalid decision + stale offline validation (4 tests/37 assertions); other offline tests passed in prior run. User browser accepted pending→approve/reject/reapprove, active session blocked, Back stayed login, offline IndexedDB product records **3,082→0**, and two-tab protected requests revoked and cleaned both stores. Frontend build passed following client, AuthProvider, IndexedDB cleanup changes.
+- Reviewed `DeviceController::reviewAccessRequest` and `revokeAccessRequest`: shared tenant `lockForUpdate` lock, request row lock, conditional status update, in-transaction audit, and after-commit notification. This and sequential interleaving tests support concurrency safety; **true simultaneous multi-process race/stress test was NOT executed**. Retain this as known release-hardening limitation, not a claimed test PASS. Two-tab test requires each tab to make a protected request; dormant/offline tabs do not have proven instant revocation. Online protected actions and backend leases enforce current access.
+- Scope-accepted #18 as Completed, with explicit stress-test residual, no main merge and no production deployment. Count **40/50 implementation-indicated/accepted, 10 Partial** (#24, #28, #29, #37, #43, #44, #45, #46, #48, #50). Close #18; next task #24 may begin.
+
+---
+
 ## 2026-10-28 — #18 stale decision / revoke / reapprove regression extended (TEST EXECUTION PENDING)
 
 - User's ordered screenshots verify Staff two-tab offline records (3,082 products) are removed to zero in both tabs after Owner revokes access and both protected tabs receive denied API responses; browser redirects to login. This is accepted two-tab manual test, not a claim of instant untouched-tab invalidation.
