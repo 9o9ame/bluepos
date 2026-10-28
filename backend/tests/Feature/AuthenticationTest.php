@@ -1001,6 +1001,21 @@ class AuthenticationTest extends TestCase
         $this->assertArrayNotHasKey('device_id', $response->json('events.0'));
         $this->getJson('/api/security/login-history?event=LOGIN_FAILURE&ip_address='.$knownIp)
             ->assertOk()->assertJsonPath('pagination.total', 0);
+        // Date range is inclusive and must be evaluated before tenant pagination.
+        $today = now()->toDateString();
+        $yesterday = now()->subDay()->toDateString();
+        $tomorrow = now()->addDay()->toDateString();
+        $this->getJson('/api/security/login-history?event=LOGIN_BLOCKED&date_from='.$today.'&date_to='.$today)
+            ->assertOk()->assertJsonPath('pagination.total', 1)
+            ->assertJsonPath('events.0.ip_address', $knownIp);
+        $this->getJson('/api/security/login-history?event=LOGIN_BLOCKED&date_from='.$yesterday.'&date_to='.$yesterday)
+            ->assertOk()->assertJsonPath('pagination.total', 0);
+        $this->getJson('/api/security/login-history?date_from='.$tomorrow.'&date_to='.$yesterday)
+            ->assertUnprocessable();
+        $this->getJson('/api/security/login-history?date_from=2026-99-99')
+            ->assertUnprocessable();
+        $this->getJson('/api/security/login-history?event=LOGIN_BLOCKED&ip_address=192.0.2.123')
+            ->assertOk()->assertJsonPath('pagination.total', 0);
         $this->getJson('/api/security/login-history?device_ulid=invalid')->assertUnprocessable();
         $this->getJson('/api/security/login-history?per_page=101')->assertUnprocessable();
     }
