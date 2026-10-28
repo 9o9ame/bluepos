@@ -1053,6 +1053,26 @@ class AuthenticationTest extends TestCase
             'occurred_at' => now()->addSeconds(2),
         ]);
 
+        // Login history must retain distinct network changes for the same device.
+        $changedIp = '198.51.100.77';
+        \App\Models\AuditLog::query()->create([
+            'tenant_id' => $owner->tenant->id,
+            'actor_user_id' => $owner->membership->user_id,
+            'actor_membership_id' => $owner->membership->id,
+            'device_id' => $device->id,
+            'event' => 'LOGIN_BLOCKED',
+            'ip_address' => $changedIp,
+            'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36',
+            'occurred_at' => now()->addSeconds(3),
+        ]);
+        $this->getJson('/api/security/login-history?event=LOGIN_BLOCKED&device_ulid='.$device->ulid)
+            ->assertOk()->assertJsonPath('pagination.total', 2)
+            ->assertJsonPath('events.0.ip_address', $changedIp)
+            ->assertJsonPath('events.1.ip_address', $knownIp);
+        $this->getJson('/api/security/login-history?event=LOGIN_BLOCKED&ip_address='.$changedIp.'&device_ulid='.$device->ulid)
+            ->assertOk()->assertJsonPath('pagination.total', 1)
+            ->assertJsonPath('events.0.ip_address', $changedIp);
+
         $response = $this->getJson('/api/security/login-history?event=LOGIN_BLOCKED&ip_address='.$knownIp.'&device_ulid='.$device->ulid.'&per_page=1')
             ->assertOk()->assertJsonPath('pagination.total', 1)
             ->assertJsonPath('pagination.per_page', 1)
