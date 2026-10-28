@@ -294,7 +294,10 @@ class DeviceController extends Controller
             if (! $access) {
                 throw new ApiException('NOT_FOUND', 'The requested resource was not found.', 404);
             }
-            if ($access->status !== 'pending') {
+            // Owner may explicitly restore a rejected employee/network grant.
+            // A fresh staff login must still occur; revoked sessions remain revoked.
+            $reapproving = $access->status === 'rejected' && $data['decision'] === 'approved';
+            if ($access->status !== 'pending' && ! $reapproving) {
                 throw new ApiException('ACCESS_REQUEST_ALREADY_REVIEWED', 'This request has already been reviewed.', 409);
             }
 
@@ -345,7 +348,7 @@ class DeviceController extends Controller
             $updated = DB::table('device_access_requests')
                 ->where('id', $access->id)
                 ->where('tenant_id', $tenant->id)
-                ->where('status', 'pending')
+                ->where('status', $access->status)
                 ->update([
                 'status' => $data['decision'],
                 'reviewed_by' => $tenantContext->userId(),
