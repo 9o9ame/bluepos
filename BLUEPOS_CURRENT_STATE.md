@@ -1,3 +1,12 @@
+## 2026-10-28 — #18 stale regression after explicit Owner reapproval (RETEST PENDING)
+
+- User ran 4 focused security tests: **4 PASS / 51 assertions** covering tenant-scoped Owner review, staff network/session revocation, audit rollback, revoked offline lease.
+- Next 4 tests: **3 PASS, 1 FAIL**; old test `test_rejected_employee_access_review_cannot_be_replayed` expected 409 on rejected→approved. This conflicts with the previously approved Owner explicit `Reapprove access` workflow, and controller deliberately permits rejected→approved.
+- Fixed only the stale regression test in `backend/tests/Feature/AuthenticationTest.php` (commit `977ae037`), renamed to `test_rejected_employee_access_can_be_explicitly_reapproved_but_decisions_cannot_be_replayed`; verify repeated rejection 409, explicit reapproval succeeds, repeated approval 409 and reverse rejection 409, final state and exactly one audit event per allowed transition. **No production code/migrations changed.**
+- **RETEST REQUIRED** on isolated `bluepos_test` before #18 acceptance. Other #18 concurrency/offline-cached-data acceptance is still under review; do not mark #18 complete or move to next requirement yet.
+
+---
+
 ## 2026-10-28 — Requirement #4 Owner trusted-device / network OTP ACCEPTED
 
 - Manual browser trust reuse on same Chrome profile/network previously PASS; changed public-IP manual test was impractical on localhost wired setup. Instead user executed focused backend test with simulated REMOTE_ADDR changes: same network trusted, changed network requires MFA, original trusted IP fingerprint unchanged; expired trust requires fresh MFA: **2 passed, 9 assertions**.
