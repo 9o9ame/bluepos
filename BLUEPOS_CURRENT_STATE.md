@@ -1,3 +1,11 @@
+## 2026-10-28 — #48 expired OTP test expected error corrected (RETEST PENDING)
+
+- User executed `test_expired_tenant_mfa_otp_cannot_be_used_or_consumed` on isolated `bluepos_test`: FAIL (2 assertions) solely because API correctly returned `MFA_EXPIRED` rather than test's expected `MFA_INVALID`; HTTP 403 rejection already verified.
+- Narrow test-only change: expect explicit `MFA_EXPIRED` error key. Commit `d4d127dc`. No production change, migration or other test alterations.
+- Focused retest pending; #48 remains Partial, 48/50 (96%) implementation-indicated/accepted, with #50 also Partial. Actual parallel OTP verification is not yet proven.
+
+---
+
 ## 2026-10-28 — #48 OTP expiry regression added (TEST PENDING)
 
 - #46 optional-location test passed (1 test / 4 assertions) on isolated bluepos_test; accepted with count 48/50 (96%), two Partial (#48,#50).
