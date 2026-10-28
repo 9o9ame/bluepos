@@ -1,3 +1,11 @@
+## 2026-10-28 — #28 Owner device attribution / changed-IP mapping ACCEPTED
+
+- User executed `test_owner_trusted_device_reuses_same_network_but_changed_network_requires_otp` on isolated `bluepos_test`: **1 PASS, 7 assertions**. Changed IP required OTP and audit attributed blocked request to known device while trusted fingerprint stayed unchanged.
+- Previous `test_device_list_reports_legacy_and_managed_employee_access_without_switching_policy`: **1 PASS, 7 assertions**. Owner username attributed to trusted device, pending unassociated browser has empty usernames; shared-browser user attribution previously manually checked.
+- #28 scoped acceptance CLOSED, noting localhost prevented true external ISP IP change; simulated distinct server IPs supplied deterministic security coverage. Historical progress **42/50 = 84%, 8 Partial** (#29,#37,#43,#44,#45,#46,#48,#50). No production code or migrations. Stay feature/superadmin; next active #29.
+
+---
+
 ## 2026-10-28 — #28 Owner attribution PASS; changed-network audit mapping regression pending
 
 - User ran `test_device_list_reports_legacy_and_managed_employee_access_without_switching_policy` on isolated `bluepos_test`: **1 PASS / 7 assertions**. Trusted Owner device associated username returned and unassociated pending browser has no fabricated usernames.
