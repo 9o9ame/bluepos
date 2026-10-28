@@ -1,3 +1,11 @@
+## 2026-10-28 — #18-H IndexedDB revocation cleanup browser PASS
+
+- User confirmed screenshot after Owner revoked Staff `ali`: protected UI redirected to `/login` and DevTools IndexedDB `bluepos-local-data → records` shows **Total entries: 0**. Prior 3,082 offline product-scoped records were present before the fix. No manual storage deletion was performed in this acceptance scenario.
+- This verifies single-tab persisted `records` cleanup following protected API denial. It does not independently establish multi-tab synchronization, whether ongoing background writes can refill the database, or true concurrent Owner review/revoke behavior.
+- #18 remains Partial until these remaining scenarios are verified. No new production changes in this checkpoint.
+
+---
+
 ## 2026-10-28 — #18 IndexedDB residual data after Staff revocation (FIX, VALIDATION PENDING)
 
 - User DevTools screenshot after revoked Staff redirect shows `bluepos-local-data` IndexedDB `records` store contains 3,082 items (product-scoped keys), about 6.4 MB; service-worker Cache Storage empty. This is confirmed persisted offline business data, not merely a shell cache.
