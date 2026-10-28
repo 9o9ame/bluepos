@@ -1,3 +1,11 @@
+## 2026-10-28 — #48 actual PostgreSQL concurrency ACCEPTED
+
+- User ran `test_two_independent_postgresql_processes_cannot_claim_same_otp` on isolated `bluepos_test`: **PASS (1 test, 6 assertions)**. Two independent PHP/PostgreSQL processes contended on one committed OTP row: one conditional claim succeeded, one returned zero. Prior MFA expiry, replay, single authenticated session, single success audit and attempt budget focused tests passed.
+- #48 scoped acceptance COMPLETED. Count **49/50 = 98% implementation-indicated/accepted, 1 Partial (#50)**. This proves conditional database claim contention, not a full simultaneous HTTP/session end-to-end race; retain distinction.
+- User requested **all relevant focused tests for each remaining requirement in one batch/turn**, not sequential single tests. For #50 inspect scheduler and retention implementation and prepare one focused test command including all relevant tests after code work. Stay `feature/superadmin`, no main merge.
+
+---
+
 ## 2026-10-28 — #48 parallel OTP test first run FAIL; PostgreSQL expiry fixture corrected (RETEST PENDING)
 
 - User executed `test_two_independent_postgresql_processes_cannot_claim_same_otp` on isolated `bluepos_test`: **FAIL**, both workers exited successfully but each conditional UPDATE returned 0 rows (expected 0 and 1). No OTP double-consumption observed; test fixture eligibility not established.
