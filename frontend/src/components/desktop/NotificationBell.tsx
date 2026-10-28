@@ -29,7 +29,9 @@ function playNotificationSound(value: string): void {
   const audio = new Audio(source)
   audio.volume = 0.65
   // Browser audio autoplay policies may block playback until first user gesture.
-  void audio.play().catch(() => undefined)
+  void audio.play().catch((error) => {
+    if (import.meta.env.DEV) console.warn('Notification sound could not play. Check audio file and browser sound permissions.', error)
+  })
 }
 
 export function NotificationBell({ session, onOpenDevices }: {
@@ -53,7 +55,7 @@ export function NotificationBell({ session, onOpenDevices }: {
     queryKey: ['device-access-inbox', scope, 1],
     queryFn: () => fetchDeviceAccessNotifications(1),
     enabled: isOwner,
-    refetchInterval: 4000, // Resilient fallback; not equivalent to WebSocket push.
+    refetchInterval: 30000, // Low-frequency recovery fallback; Pusher event triggers immediate refresh.
     refetchIntervalInBackground: false,
   })
 
