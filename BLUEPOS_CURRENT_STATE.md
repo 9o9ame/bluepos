@@ -1,3 +1,12 @@
+## 2026-10-28 — #48 atomic claim PASS; replay audit hardening test pending
+
+- User ran `test_tenant_mfa_atomic_claim_rejects_stale_second_claim` on isolated `bluepos_test`: **PASS (1 test, 5 assertions)**. First conditional DB update succeeds, second stale conditional claim updates 0 rows.
+- Verified current `AuthController::verifyMfa` performs a conditional consumed_at/expiry/attempts UPDATE and checks updated count before session issuance; duplicate claim cannot establish session via this guard.
+- Added focused assertion to `test_tenant_mfa_otp_is_consumed_once_and_replay_denied`: replay must not create a duplicate `MFA_SUCCESS` audit event. Commit `e77ca5ad`. **Test execution pending**.
+- Investigation: `AuthenticationTest` uses `DatabaseTransactions`; a separate PostgreSQL connection cannot see uncommitted fixture rows. A meaningful true simultaneous two-connection/process HTTP test therefore needs an explicitly isolated nontransactional harness (bluepos_test only). Do not treat sequential CAS regression as actual parallel test. #48 remains Partial pending parallel verification. Progress remains 48/50 = 96%, two Partial (#48,#50); do not start #50 yet. No production or migrations changed.
+
+---
+
 ## 2026-10-28 — #48 OTP expiry PASS, atomic claim stale-caller regression pending
 
 - User retested `test_expired_tenant_mfa_otp_cannot_be_used_or_consumed` on isolated `bluepos_test`: **PASS (1 test, 3 assertions)**. Expired challenge rejects correct code using explicit MFA_EXPIRED; unconsumed after denial.
