@@ -342,6 +342,11 @@ class AuthenticationTest extends TestCase
 
         $this->getJson('/api/devices/access-requests')->assertForbidden();
         $this->getJson('/api/devices/access-notifications')->assertForbidden();
+        $this->postJson('/api/devices/access-requests/'.(string) \Illuminate\Support\Str::ulid().'/review', [
+            'decision' => 'approved',
+        ])->assertForbidden();
+        $this->postJson('/api/devices/access-requests/'.(string) \Illuminate\Support\Str::ulid().'/revoke')
+            ->assertForbidden();
         $this->getJson('/api/security/login-history')->assertForbidden();
         $this->getJson('/api/security/location-history')->assertForbidden();
     }
