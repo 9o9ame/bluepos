@@ -600,6 +600,25 @@ class AuthenticationTest extends TestCase
             ->where('tenant_id', $owner->tenant->id)
             ->where('event', 'DEVICE_ACCESS_REVOKED')
             ->where('resource_ulid', $requestUlid)->count());
+
+        // A delayed/stale review rejection cannot override a committed revocation.
+        $this->postJson($url, ['decision' => 'rejected'])
+            ->assertStatus(409)->assertJsonPath('error.key', 'ACCESS_REQUEST_ALREADY_REVIEWED');
+        // Only an explicit Owner reapproval changes the revoked grant.
+        $this->postJson($url, ['decision' => 'approved'])
+            ->assertOk()->assertJsonPath('status', 'approved');
+        $this->postJson($url, ['decision' => 'approved'])
+            ->assertStatus(409)->assertJsonPath('error.key', 'ACCESS_REQUEST_ALREADY_REVIEWED');
+        $this->assertSame('approved', \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $requestUlid)->value('status'));
+        $this->assertSame(2, \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('event', 'DEVICE_ACCESS_APPROVED')
+            ->where('resource_ulid', $requestUlid)->count());
+        $this->assertSame(1, \App\Models\AuditLog::query()
+            ->where('tenant_id', $owner->tenant->id)
+            ->where('event', 'DEVICE_ACCESS_REVOKED')
+            ->where('resource_ulid', $requestUlid)->count());
     }
 
     public function test_device_review_decision_emails_have_correct_status_and_no_credentials(): void
