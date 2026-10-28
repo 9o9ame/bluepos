@@ -1,3 +1,10 @@
+## 2026-10-28 — #37 staff backend authorization test extended (EXECUTION PENDING)
+
+- After scoped #29 acceptance (43/50, 7 Partial), extended existing `test_non_owner_cannot_read_tenant_employee_network_approval_inbox` to directly POST Owner-only access-request approve and revoke endpoints with ULID-shaped identifiers; non-owner membership must receive 403 **before** resource lookup. Existing inbox, notification, login/location history 403 checks remain. Commit `8a229b54`.
+- No production code or migration modified. Run only focused test on isolated `bluepos_test`. Do not mark #37 complete until passing and any remaining authorization acceptance addressed.
+
+---
+
 ## 2026-10-28 — #29 cross-tenant direct device-API isolation accepted
 
 - User ran `test_tenant_owner_can_review_only_own_pending_employee_access_requests` on isolated `bluepos_test`: **PASS (1 test, 14 assertions)**. Direct foreign request approve/reject/revoke, notification read, device and request listings deny/exclude foreign tenant records; no foreign request state changes.
