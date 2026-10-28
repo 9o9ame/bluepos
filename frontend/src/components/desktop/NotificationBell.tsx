@@ -1,3 +1,6 @@
+import Echo from 'laravel-echo'
+import Pusher from 'pusher-js'
+import { apiFetch } from '../../api/client'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bell, Volume2, X } from 'lucide-react'
@@ -53,6 +56,38 @@ export function NotificationBell({ session, onOpenDevices }: {
     refetchInterval: 4000, // Resilient fallback; not equivalent to WebSocket push.
     refetchIntervalInBackground: false,
   })
+
+  useEffect(() => {
+    const key = import.meta.env.VITE_PUSHER_APP_KEY
+    const cluster = import.meta.env.VITE_PUSHER_APP_CLUSTER
+    if (!isOwner || !key || !cluster) return
+
+    const pusher = new Pusher(key, { cluster, forceTLS: true })
+    const echo = new Echo({
+      broadcaster: 'pusher',
+      key,
+      cluster,
+      client: pusher,
+      authorizer: (channel: { name: string }) => ({
+        authorize: (socketId: string, callback: (error: Error | null, data: unknown) => void) => {
+          void apiFetch('/api/broadcasting/auth', {
+            method: 'POST',
+            busy: 'none',
+            body: JSON.stringify({ socket_id: socketId, channel_name: channel.name }),
+          }).then((result) => callback(null, result)).catch((error: Error) => callback(error, null))
+        },
+      }),
+    })
+    const channel = 'bluepos.tenant.' + session.tenant.ulid + '.member.' + session.membership.ulid
+    echo.private(channel).listen('.device.access.requested', () => {
+      void queryClient.invalidateQueries({ queryKey: ['device-access-inbox'] })
+      void queryClient.invalidateQueries({ queryKey: ['device-access-requests'] })
+    })
+    return () => {
+      echo.leave(channel)
+      pusher.disconnect()
+    }
+  }, [isOwner, session.tenant.ulid, session.membership.ulid, queryClient])
 
   useEffect(() => {
     if (lastScope.current === scope) return
