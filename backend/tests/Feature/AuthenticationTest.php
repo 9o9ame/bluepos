@@ -1020,6 +1020,21 @@ class AuthenticationTest extends TestCase
         $this->getJson('/api/security/login-history?per_page=101')->assertUnprocessable();
     }
 
+    public function test_login_history_denies_authenticated_member_without_owner_authority(): void
+    {
+        $this->signInOwner('login-history-non-owner')->assertOk();
+        // Replace Owner authority with a non-Owner membership in the authenticated
+        // session; the route must deny even if the user knows the API URL.
+        $this->restrictCurrentMembershipWithoutPermission('devices.approve');
+
+        $this->getJson('/api/security/login-history')
+            ->assertForbidden()
+            ->assertJsonPath('error.key', 'FORBIDDEN');
+        $this->getJson('/api/security/login-history?event=LOGIN_FAILURE')
+            ->assertForbidden()
+            ->assertJsonPath('error.key', 'FORBIDDEN');
+    }
+
     public function test_owner_can_filter_and_paginate_employee_device_review_history(): void
     {
         $owner = $this->provisionOwner('device-review-history');
