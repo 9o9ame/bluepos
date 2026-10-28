@@ -205,6 +205,9 @@ export function DevicesPage() {
                   <DesktopButton label="Approve" onClick={() => void onReview(item.ulid, 'approved')} disabled={reviewing !== null} />
                   <DesktopButton label="Reject" variant="danger" onClick={() => void onReview(item.ulid, 'rejected')} disabled={reviewing !== null} />
                 </span> : null}
+                {item.status === 'rejected' ? (
+                  <DesktopButton label="Reapprove access" onClick={() => void onReview(item.ulid, 'approved')} disabled={reviewing !== null} />
+                ) : null}
                 {item.status === 'approved' ? (
                   <DesktopButton label="Revoke network access" variant="danger" onClick={() => void onRevokeAccess(item.ulid)} disabled={reviewing !== null} />
                 ) : null}
@@ -301,6 +304,9 @@ export function DevicesPage() {
                 const access = (allAccessQuery.data?.requests ?? []).find(
                   item => item.device_ulid === row.device.ulid && item.username === row.username && item.status === 'approved'
                 )
+                const rejected = (allAccessQuery.data?.requests ?? []).find(
+                  item => item.device_ulid === row.device.ulid && item.username === row.username && item.status === 'rejected'
+                )
                 const shared = (row.device.associated_usernames?.length ?? 0) > 1
                 return (
                   <div className="flex justify-end gap-1">
@@ -312,6 +318,13 @@ export function DevicesPage() {
                         onClick={() => void onRevokeAccess(access.ulid)}
                       />
                     ) : null}
+                    {canReviewRequests && !access && rejected && row.device.status === 'active' ? (
+                      <DesktopButton
+                        label={`Reapprove ${row.username} access`}
+                        disabled={reviewing !== null}
+                        onClick={() => void onReview(rejected.ulid, 'approved')}
+                      />
+                    ) : null}
                     {canReviewRequests && row.device.status === 'revoked' && row.first ? (
                       <DesktopButton label="Restore whole device" onClick={() => void onRestore(row.device)} />
                     ) : null}
@@ -321,7 +334,7 @@ export function DevicesPage() {
                     {canRevoke && row.device.status !== 'revoked' && row.first && !shared ? (
                       <DesktopButton label="Revoke whole device" variant="danger" onClick={() => void onRevoke(row.device)} />
                     ) : null}
-                    {shared && !access && row.device.status !== 'revoked' ? (
+                    {shared && !access && !rejected && row.device.status !== 'revoked' ? (
                       <span className="text-[var(--ui-text-muted)] text-[11px]">Shared device — no individual approval to revoke</span>
                     ) : null}
                   </div>
