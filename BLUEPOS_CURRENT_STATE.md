@@ -1,3 +1,12 @@
+## 2026-10-28 — #45 accepted and #46 optional missing-location regression pending
+
+- User ran `test_ip_geolocation_provider_failure_does_not_leak_coordinates_or_break_lookup` on isolated `bluepos_test`: **PASS (1 test, 6 assertions)**. Provider response allowlist, non-string region, long city cap, 503 failure return all-null. Previous no-token/non-public-IP and provider parsing tests also exist. Scoped #45 accepted for mocked provider privacy and graceful failure, not real-provider E2E.
+- Historical count **47/50 = 94% implementation-indicated/accepted; 3 Partial** (#46,#48,#50).
+- #46 existing required browser-location test rejects missing coordinates and accepts coarse coordinates. Added complementary optional-mode test `test_optional_browser_location_allows_login_without_coordinates_and_does_not_fabricate_location`, verifying successful login with required location disabled and zero location-history rows. Commit `41ca5f2f`. **Execution pending**, no production code/migrations.
+- Stay `feature/superadmin`; continue only #46 until scoped acceptance.
+
+---
+
 ## 2026-10-28 — #45 GeoIP failure-test HTTP fake isolation fix (RETEST PENDING)
 
 - User ran `test_ip_geolocation_provider_failure_does_not_leak_coordinates_or_break_lookup` on isolated `bluepos_test`: FAIL, expected all-null on second provider 503 but received first provider success fixture. First six assertions passed, confirming allowlist/city truncation.
