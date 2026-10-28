@@ -1,3 +1,12 @@
+## 2026-10-28 — #48 TRUE two-process PostgreSQL OTP contention test IMPLEMENTED, RUN PENDING
+
+- Created dedicated `backend/tests/Feature/MfaConcurrencyTest.php` (commit `845c82a9`), separate from `AuthenticationTest` / `DatabaseTransactions`, so fixture is committed and visible to both workers.
+- Test guard enforces app testing env and `bluepos_test`. Creates unique tenant, user, membership, device and OTP challenge; runs two separate PHP worker processes, each with its own PostgreSQL PDO connection, attempting same conditional `UPDATE ... WHERE consumed_at IS NULL AND expires_at > CURRENT_TIMESTAMP AND attempts < max RETURNING id`. Winner holds row lock for one second before committing. Assert exactly one winner, loser updates zero rows, stored challenge consumed exactly once.
+- Test credentials sent only via child STDIN, not process args or logs. Cleanup is scoped by newly generated model IDs in finally, no schema changes/blanket table deletion/truncate/drop. Worker exceptions avoid printing secrets. **NOT EXECUTED YET** — local PHP pgsql PDO and child-process support, FK cleanup, constraints remain to be validated. Execution on bluepos_test only.
+- Earlier user executed `test_tenant_mfa_otp_is_consumed_once_and_replay_denied`: PASS 1 test / 6 assertions, confirmed no duplicate session/audit. #48 remains Partial until concurrency test passes. Historical count 48/50=96%, #48 and #50 Partial.
+
+---
+
 ## 2026-10-28 — #48 session replay PASS; parallel harness safety assessment
 
 - User ran `test_tenant_mfa_otp_is_consumed_once_and_replay_denied` on `bluepos_test`: **PASS, 1 test / 6 assertions**. Verified single consumed OTP, replay rejection, exactly one MFA_SUCCESS audit and one auth_sessions row.
