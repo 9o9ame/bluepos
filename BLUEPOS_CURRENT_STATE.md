@@ -1,3 +1,11 @@
+## 2026-10-28 — #48 parallel OTP test first run FAIL; PostgreSQL expiry fixture corrected (RETEST PENDING)
+
+- User executed `test_two_independent_postgresql_processes_cannot_claim_same_otp` on isolated `bluepos_test`: **FAIL**, both workers exited successfully but each conditional UPDATE returned 0 rows (expected 0 and 1). No OTP double-consumption observed; test fixture eligibility not established.
+- Similar earlier location-expiry tests revealed PHP application clock versus PostgreSQL CURRENT_TIMESTAMP mismatch. Corrected the *test-only* fixture after challenge creation with SQL `CURRENT_TIMESTAMP + INTERVAL '10 minutes'` and added an explicit pre-worker eligibility assertion using PostgreSQL clock. Commit `dfbc9793`; **not yet run**. This distinguishes fixture-time mismatch from lock/claim failure.
+- No changes to production OTP logic, migrations or existing persistent DB. Test still scoped to bluepos_test with per-fixture finally cleanup. #48 remains Partial; 48/50 = 96% historical tally, #50 Partial.
+
+---
+
 ## 2026-10-28 — #48 TRUE two-process PostgreSQL OTP contention test IMPLEMENTED, RUN PENDING
 
 - Created dedicated `backend/tests/Feature/MfaConcurrencyTest.php` (commit `845c82a9`), separate from `AuthenticationTest` / `DatabaseTransactions`, so fixture is committed and visible to both workers.
