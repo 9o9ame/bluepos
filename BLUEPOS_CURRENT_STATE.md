@@ -1,3 +1,11 @@
+## 2026-10-28 — #18 PWA shell cache inspection
+
+- Inspected `frontend/vite.pwa.ts`: generated service worker precaches application shell/assets only and explicitly bypasses `/api/` and `/sanctum/` requests; it does not cache authenticated API responses. Browser shell can be available offline, but access to private API data still needs valid server authorization.
+- React Query in-memory cached tenant records are cleared on protected-request revocation error by recently implemented AuthProvider/client hardening. Browser screenshot confirms redirect and Back remains on login.
+- This does NOT by itself prove all application modules avoid storing sensitive data in localStorage/IndexedDB or prove multi-request approval/revoke concurrency; those are distinct residual checks. No PWA modifications in this checkpoint. Requirement #18 remains Partial until remaining risks are assessed and focused tests pass.
+
+---
+
 ## 2026-10-28 — #18-F revoked-session UI browser acceptance PASS
 
 - User reports Owner revoked Staff `ali` access; Staff browser redirected to `/login`. Browser Back remained on login (screenshot provided). This verifies UI route protection after a denied protected request.
