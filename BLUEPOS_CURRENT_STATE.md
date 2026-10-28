@@ -1,3 +1,12 @@
+## 2026-10-28 — #24 APPROVAL NOTIFICATIONS / LOCATION PRIVACY COMPLETED
+
+- User ran platform request monitoring regression `test_platform_tenant_device_review_history_is_read_only_and_tenant_scoped`: **PASS (1 test, 47 assertions)** on isolated `bluepos_test`. Expired request coordinates hidden; tenant scope and read-only behavior verified.
+- Earlier Owner notification/request test `test_owner_device_review_emails_employee_only_after_committed_decision`: **PASS (1 test, 45 assertions)**. Owner manual screenshots approved request user/role/device/IP/browser/status/reviewer detail.
+- #24 scoped acceptance COMPLETED: **2 focused tests, 92 assertions**, browser UI checks. No production changes/migrations to close #24. Remaining Partial **9**: #28,#29,#37,#43,#44,#45,#46,#48,#50. Historical progress **41/50 = 82%**. Stay on `feature/superadmin`, no main merge.
+- Begin #28 only after recording #24 closure. Owner attribution and real changed-IP mapping require independent verification.
+
+---
+
 ## 2026-10-28 — #24 request-location retention: Owner test PASS, platform test added
 
 - User ran `test_owner_device_review_emails_employee_only_after_committed_decision` on isolated `bluepos_test`: **1 PASS / 45 assertions**. Owner access notifications and requests hide expired approximate coordinates while allowing active coordinates. PHP/PostgreSQL fixture clock mismatch was corrected using database-relative intervals.
