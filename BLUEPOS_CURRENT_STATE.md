@@ -1,3 +1,12 @@
+## 2026-10-28 — Pusher installation: backend PASS, frontend TS callback fix pending local validation
+
+- User ran `composer update pusher/pusher-php-server --with-all-dependencies` and `npm install` successfully on local feature/superadmin after pull. **Local lockfiles changed but are not committed remotely**. Backend `test_device_access_broadcast_exposes_only_scoped_channel_and_safe_refresh_signal` PASS, 1 test / 3 assertions.
+- `npm run typecheck` and `npm run build` both FAILED with TS2322 on `NotificationBell.tsx` Pusher authorizer callback `unknown` auth data. Updated callback to structurally typed Pusher auth response, commit `e90e551a`; **retest pending**.
+- Composer output reports **2 security advisories affecting 1 package**; npm reports **4 vulnerabilities (2 moderate, 2 high)**. Need inspect `composer audit`, `npm audit --json` or plain audit, evaluate before updating; never blindly use `npm audit fix --force`.
+- After one single local validation round, ensure lockfiles are committed by user or via connector, test secure channel authZ, audio files integration, two-browser event delivery, and monitor short-interval polling costs. Production notification feature NOT completed; Pusher secret must remain private.
+
+---
+
 ## 2026-10-28 — Pusher Channels app CREATED by user; private configuration and integration validation pending
 
 - User confirmed Pusher Channels app created. Do not request or store Pusher App Secret in chat or GitHub. Pusher App ID, Key, Secret and Cluster must be entered privately into backend environment; frontend receives only VITE_PUSHER_APP_KEY and VITE_PUSHER_APP_CLUSTER.
