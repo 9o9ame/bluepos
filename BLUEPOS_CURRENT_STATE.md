@@ -1,3 +1,14 @@
+## 2026-10-28 — #50 Retention scheduler ACCEPTED; tracked 50/50 completed
+
+- User ran both #50 focused tests in ONE round on isolated `bluepos_test`: `test_security_retention_scheduler_registers_all_four_daily_jobs` and `test_security_privacy_retention_redacts_only_aged_login_network_identity`: **2 PASS / 13 assertions**. Four daily jobs registered; aged network identifiers redacted while preserving security event/decision evidence.
+- #50 scoped acceptance COMPLETE. All **50/50 previously tracked security requirements** are now implementation-indicated / scoped accepted (100%, 0 Partial). This is NOT blanket production security certification.
+- **Outstanding release/deployment verification:** external OS/production cron or scheduled task invokes Laravel `schedule:run` every minute; inspect production scheduler execution and logs. Four scheduler job registration tests alone do not prove that external scheduler is running.
+- Existing explicit limitations retained: true parallel *full HTTP/session* MFA challenge race not tested (two independent PostgreSQL processes did demonstrate one conditional claim winner); #18 owner approval/revoke simultaneous worker stress not performed; dormant tabs without protected request do not prove instant client-side revocation.
+- User preference: group relevant focused tests for each task in one execution round, no repeated individual test requests.
+- No production code/migrations needed for this final #50 test acceptance. Branch remains `feature/superadmin`; **no merge to main, no deployment, no release approval**. Review before any merge.
+
+---
+
 ## 2026-10-28 — #50 retention scheduler inspection and batch test prepared (PENDING)
 
 - After scoped #48 completion (two independent PostgreSQL workers PASS; 6 assertions), began #50. Inspected `backend/routes/console.php`: four daily `withoutOverlapping` jobs exist for expired login location pruning, expired approval-request location scrubbing, audit network-identifier redaction and device-request IP/user-agent redaction. `SecurityPrivacyRetention` preserves audit events while clearing expired IP/UA fields.
