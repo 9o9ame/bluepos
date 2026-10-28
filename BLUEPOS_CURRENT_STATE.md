@@ -1,3 +1,11 @@
+## 2026-10-28 — #37 Staff backend authorization scoped acceptance
+
+- User ran `test_non_owner_cannot_read_tenant_employee_network_approval_inbox` on isolated `bluepos_test`: **PASS, 1 test / 8 assertions**. Non-owner membership denied Owner-only inbox, notifications, direct approve/revoke endpoints, login history and location history. Other tenant isolation covered under #29.
+- Scoped #37 accepted for tested privileged device/security endpoints; not a full application-wide RBAC audit. Historical count **44/50 (88%) implementation-indicated/accepted, 6 Partial** (#43,#44,#45,#46,#48,#50).
+- Next active #43 IP history across network changes. No production change or migration to close #37. Stay feature/superadmin; no main merge.
+
+---
+
 ## 2026-10-28 — #37 staff backend authorization test extended (EXECUTION PENDING)
 
 - After scoped #29 acceptance (43/50, 7 Partial), extended existing `test_non_owner_cannot_read_tenant_employee_network_approval_inbox` to directly POST Owner-only access-request approve and revoke endpoints with ULID-shaped identifiers; non-owner membership must receive 403 **before** resource lookup. Existing inbox, notification, login/location history 403 checks remain. Commit `8a229b54`.
