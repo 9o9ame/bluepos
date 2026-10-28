@@ -82,6 +82,8 @@ class SecuritySessionController extends Controller
             'device_ulid' => ['sometimes', 'string', 'size:26'],
             'ip_address' => ['sometimes', 'ip'],
             'event' => ['sometimes', 'in:all,LOGIN_SUCCESS,LOGIN_FAILURE,LOGIN_BLOCKED'],
+            'date_from' => ['sometimes', 'date_format:Y-m-d'],
+            'date_to' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:date_from'],
         ]);
 
         $page = \Illuminate\Support\Facades\DB::table('audit_logs as audit')
@@ -97,6 +99,8 @@ class SecuritySessionController extends Controller
             ->whereIn('audit.event', ['LOGIN_SUCCESS', 'LOGIN_FAILURE', 'LOGIN_BLOCKED'])
             ->when(isset($filters['username']), fn ($q) => $q->where('member.username', $filters['username']))
             ->when(isset($filters['ip_address']), fn ($q) => $q->where('audit.ip_address', $filters['ip_address']))
+            ->when(isset($filters['date_from']), fn ($q) => $q->whereDate('audit.occurred_at', '>=', $filters['date_from']))
+            ->when(isset($filters['date_to']), fn ($q) => $q->whereDate('audit.occurred_at', '<=', $filters['date_to']))
             ->when(isset($filters['device_ulid']), fn ($q) => $q->where('device.ulid', $filters['device_ulid']))
             ->when(isset($filters['event']) && $filters['event'] !== 'all', fn ($q) => $q->where('audit.event', $filters['event']))
             ->orderByDesc('audit.occurred_at')->orderByDesc('audit.id')
