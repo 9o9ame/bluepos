@@ -1,3 +1,11 @@
+## 2026-10-28 — #28 Owner attribution PASS; changed-network audit mapping regression pending
+
+- User ran `test_device_list_reports_legacy_and_managed_employee_access_without_switching_policy` on isolated `bluepos_test`: **1 PASS / 7 assertions**. Trusted Owner device associated username returned and unassociated pending browser has no fabricated usernames.
+- Extended existing Owner changed-network MFA regression with audit assertions: rejected second IP should be recorded as `LOGIN_BLOCKED` with the changed IP and the known device ID, without replacing original trusted network fingerprint. Commit `eb1dbfba`; **NOT RUN** yet.
+- This validates backend simulated IP mapping, not external real-world public-IP E2E switching, which remains impractical on localhost. #28 remains Partial until test execution and final acceptance.
+
+---
+
 ## 2026-10-28 — #28 Owner device attribution regression started (TEST PENDING)
 
 - #24 accepted after user's second focused test **PASS (1 test, 47 assertions)**, combined with Owner request detail/privacy test **PASS (1 test, 45 assertions)**. Completion checkpoint commit `8e7b6744`; scoped count **41/50 = 82%, 9 Partial**.
