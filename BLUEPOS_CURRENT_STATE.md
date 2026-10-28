@@ -1,3 +1,13 @@
+## 2026-10-28 — #18 frontend revoked-session cache invalidation (VALIDATION PENDING)
+
+- User's latest four focused tests **PASS (37 assertions)** covering live Owner authority, ineligible member/device, invalid decisions and stale offline revocation. Earlier #18 focused runs: 4 PASS/51 assertions; replay/reapproval corrected 2 PASS/24 assertions, and other offline safeguards passed. Do not claim real concurrency exercised.
+- Reviewed `frontend/src/features/auth/AuthProvider.tsx` and `frontend/src/api/client.ts`: formerly protected API `DEVICE_NOT_APPROVED` / `DEVICE_REVOKED` / `SESSION_REVOKED` responses did **not** automatically clear React Query cached tenant records.
+- Added authenticated API invalidation notifications from API client for protected API 401/session/device revocation errors (excluding unauthenticated login/MFA/logout flows); AuthProvider now invalidates in-memory tenant query cache, resets authenticated session to null so protected routes unmount, and restores fresh auth context only after successful login/MFA. Normal logout unchanged. No UI geometry changes, no backend or migrations.
+- Files changed: `frontend/src/api/client.ts`, `frontend/src/features/auth/AuthProvider.tsx`, this file. Frontend build, direct browser revoked-session navigation, real offline persisted data purge, and concurrency under simultaneous approval/revoke are **not verified**. Offline lease validation on server previously confirmed, but do not equate with proving browser persistent storage removal.
+- Follow-up: local `cd frontend && npm run build`, then browser Staff revoke while protected route open and attempt API; confirm immediate redirect and no cached data. Assess any IndexedDB/service-worker persisted sensitive storage separately before final #18 acceptance. Remain on #18.
+
+---
+
 ## 2026-10-28 — #18 stale regression after explicit Owner reapproval (RETEST PENDING)
 
 - User ran 4 focused security tests: **4 PASS / 51 assertions** covering tenant-scoped Owner review, staff network/session revocation, audit rollback, revoked offline lease.
