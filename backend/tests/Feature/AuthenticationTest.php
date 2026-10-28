@@ -1427,7 +1427,7 @@ class AuthenticationTest extends TestCase
             ->count());
     }
 
-    public function test_rejected_employee_access_review_cannot_be_replayed(): void
+    public function test_rejected_employee_access_can_be_explicitly_reapproved_but_decisions_cannot_be_replayed(): void
     {
         $owner = $this->provisionOwner('review-once');
         $employee = \App\Models\User::query()->create([
@@ -1476,18 +1476,26 @@ class AuthenticationTest extends TestCase
         $url = '/api/devices/access-requests/'.$ulid.'/review';
         $this->postJson($url, ['decision' => 'rejected'])
             ->assertOk()->assertJsonPath('status', 'rejected');
-        $this->postJson($url, ['decision' => 'approved'])
+        // Repeating the rejection must fail; only an explicit Owner reapproval may restore it.
+        $this->postJson($url, ['decision' => 'rejected'])
             ->assertStatus(409)
             ->assertJsonPath('error.key', 'ACCESS_REQUEST_ALREADY_REVIEWED');
-        $this->assertSame('rejected', \Illuminate\Support\Facades\DB::table('device_access_requests')
+        $this->postJson($url, ['decision' => 'approved'])
+            ->assertOk()->assertJsonPath('status', 'approved');
+        // A second approval or reversing it again is not a new review operation.
+        $this->postJson($url, ['decision' => 'approved'])
+            ->assertStatus(409)->assertJsonPath('error.key', 'ACCESS_REQUEST_ALREADY_REVIEWED');
+        $this->postJson($url, ['decision' => 'rejected'])
+            ->assertStatus(409)->assertJsonPath('error.key', 'ACCESS_REQUEST_ALREADY_REVIEWED');
+        $this->assertSame('approved', \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('ulid', $ulid)->value('status'));
-        $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
+        $this->assertSame(\App\Enums\DeviceStatus::Active, $device->fresh()->status);
         $this->assertSame(1, \App\Models\AuditLog::query()
             ->where('tenant_id', $owner->tenant->id)
             ->where('event', 'DEVICE_ACCESS_REJECTED')
             ->where('resource_ulid', $ulid)
             ->count());
-        $this->assertSame(0, \App\Models\AuditLog::query()
+        $this->assertSame(1, \App\Models\AuditLog::query()
             ->where('tenant_id', $owner->tenant->id)
             ->where('event', 'DEVICE_ACCESS_APPROVED')
             ->where('resource_ulid', $ulid)
