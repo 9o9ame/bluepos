@@ -1,3 +1,11 @@
+## 2026-10-28 — #24 request-location retention: Owner test PASS, platform test added
+
+- User ran `test_owner_device_review_emails_employee_only_after_committed_decision` on isolated `bluepos_test`: **1 PASS / 45 assertions**. Owner access notifications and requests hide expired approximate coordinates while allowing active coordinates. PHP/PostgreSQL fixture clock mismatch was corrected using database-relative intervals.
+- Additional platform monitoring retention test added in `test_platform_tenant_device_review_history_is_read_only_and_tenant_scoped`: after request location expires, both coordinates must be NULL in platform approval history. Commit `dc096ef4`; **NOT RUN** yet.
+- Historical Owner request-detail UI screenshot already accepted. No production code changes in this checkpoint. #24 remains Partial until platform regression PASS; do not start another requirement.
+
+---
+
 ## 2026-10-28 — #24 request-location expiry fixture clock correction (RETEST REQUIRED)
 
 - User executed focused Owner notification/request privacy regression on `bluepos_test`: FAIL at notification live coordinates, returned NULL instead of '28.42' (12 assertions before failure).
