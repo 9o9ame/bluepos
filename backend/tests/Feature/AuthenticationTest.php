@@ -2140,6 +2140,21 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('events.0.membership', null);
     }
 
+    public function test_security_retention_scheduler_registers_all_four_daily_jobs(): void
+    {
+        \Illuminate\Support\Facades\Artisan::call('schedule:list');
+        $scheduled = \Illuminate\Support\Facades\Artisan::output();
+
+        foreach ([
+            'prune-expired-login-locations',
+            'scrub-expired-device-request-locations',
+            'redact-expired-security-network-identifiers',
+            'device-request-ip-retention',
+        ] as $job) {
+            $this->assertStringContainsString($job, $scheduled);
+        }
+    }
+
     public function test_security_privacy_retention_redacts_only_aged_login_network_identity(): void
     {
         $owner = $this->provisionOwner('privacy-expiry');
