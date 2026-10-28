@@ -1,3 +1,12 @@
+## 2026-10-28 — #18 protected downloads session-invalidation gap (VALIDATION PENDING)
+
+- Inspected frontend `apiDownload` and found it bypassed the revoked-session notification used by `apiFetch`. On revoked device/session, a protected CSV download error could leave stale authenticated React Query data mounted.
+- Fixed `frontend/src/api/client.ts` to call the existing `reportTenantSessionInvalidation(path, status, errorKey)` for rejected downloads before throwing. This reuses AuthProvider's existing session invalidate/cache clear/redirect behavior. No UI geometry or backend changes. Commit `159f558a`.
+- Existing PWA SW skips API and Sanctum response caching, backend review/revoke flow serializes tenant/request locks and uses conditional update. Actual parallel stress testing and all potential browser-origin persistent data sinks are not verified.
+- Next manual action only for frontend: pull branch and `npm run build`; after PASS continue #18 validation. Do not mark #18 complete before remaining checks.
+
+---
+
 ## 2026-10-28 — #18 PWA shell cache inspection
 
 - Inspected `frontend/vite.pwa.ts`: generated service worker precaches application shell/assets only and explicitly bypasses `/api/` and `/sanctum/` requests; it does not cache authenticated API responses. Browser shell can be available offline, but access to private API data still needs valid server authorization.
