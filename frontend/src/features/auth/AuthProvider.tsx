@@ -13,6 +13,31 @@ const queryClient = new QueryClient({
   },
 })
 
+
+// Revoked users must not retain previously synchronized business records offline.
+// Clear the existing local-data stores, rather than relying on React Query memory.
+function clearOfflineBusinessData(): void {
+  if (typeof indexedDB === 'undefined') return
+  const request = indexedDB.open('bluepos-local-data')
+  request.onupgradeneeded = () => {
+    // Do not create an empty database merely to clear one.
+    request.transaction?.abort()
+  }
+  request.onsuccess = () => {
+    const db = request.result
+    const stores = ['records', 'meta'].filter(name => db.objectStoreNames.contains(name))
+    if (stores.length === 0) {
+      db.close()
+      return
+    }
+    const transaction = db.transaction(stores, 'readwrite')
+    stores.forEach(name => transaction.objectStore(name).clear())
+    transaction.oncomplete = () => db.close()
+    transaction.onerror = () => db.close()
+    transaction.onabort = () => db.close()
+  }
+}
+
 type AuthContextValue = {
   session: AuthSession | null
   isLoading: boolean
@@ -29,6 +54,7 @@ function AuthStateProvider({ children }: { children: ReactNode }) {
   const [sessionInvalidated, setSessionInvalidated] = useState(false)
   useEffect(() => subscribeTenantSessionInvalidation(() => {
     setSessionInvalidated(true)
+    clearOfflineBusinessData()
     // Clearing all tenant queries prevents revoked users from browsing stale
     // sensitive records; a fresh login creates a new authenticated context.
     client.clear()
