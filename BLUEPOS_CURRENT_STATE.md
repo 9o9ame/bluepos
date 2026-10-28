@@ -1,3 +1,11 @@
+## 2026-10-28 — Pusher Channels app CREATED by user; private configuration and integration validation pending
+
+- User confirmed Pusher Channels app created. Do not request or store Pusher App Secret in chat or GitHub. Pusher App ID, Key, Secret and Cluster must be entered privately into backend environment; frontend receives only VITE_PUSHER_APP_KEY and VITE_PUSHER_APP_CLUSTER.
+- Existing code changes include Pusher private broadcasting event/channel, Echo client, notification bell, fallback polling, sound selector. Backend composer.json and frontend package.json dependencies changed **without updated composer.lock / package-lock.json**. User must install/update dependencies in local workspace and commit matching lockfiles before deployment, then run focused tests and frontend typecheck/build in a single testing batch. Sound ZIP exists externally with five MP3s for frontend/public/sounds/notifications, not yet in GitHub.
+- To complete feature, validate real two-browser delivery, cross-tenant/role channel auth, browser sound behavior, and remove/reduce short-interval polling once realtime is stable. No claim of live Pusher connection or production readiness. Hosted Pusher secrets remain private.
+
+---
+
 ## 2026-10-28 — Pusher Channels / Laravel Echo integration CODE ADDED, validation and credentials PENDING
 
 - User approved **Pusher Channels** instead of self-hosted Reverb on current Hostinger web hosting. User will create Pusher Channels app; real credentials must stay private in `.env` and Hostinger settings, never GitHub/chat. Use regional cluster as assigned by Pusher. No production credentials or connection available to assistant.
