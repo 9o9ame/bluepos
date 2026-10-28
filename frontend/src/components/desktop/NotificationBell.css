@@ -3,7 +3,7 @@
 .bp-notification-trigger { position: relative; min-width: 28px; height: 26px; }
 .bp-notification-trigger:hover, .bp-notification-icon:hover { background: var(--ui-control-hover-bg); }
 .bp-notification-count { position: absolute; top: -6px; right: -9px; border-radius: 12px; padding: 0 4px; min-width: 16px; line-height: 15px; font-size: 10px; text-align: center; background: var(--ui-danger); color: white; }
-.bp-notification-popover { position: absolute; top: calc(100% + 7px); right: 0; z-index: 1200; width: min(340px, calc(100vw - 28px)); max-height: 420px; overflow: visible; background: var(--ui-surface); color: var(--ui-text); border: 1px solid var(--ui-border); border-radius: var(--panel-radius); box-shadow: var(--ui-card-shadow); }
+.bp-notification-popover { position: absolute; top: calc(100% + 7px); right: 0; width: min(340px, calc(100vw - 28px)); max-height: 420px; overflow: visible; background: var(--ui-surface); color: var(--ui-text); border: 1px solid var(--ui-border); border-radius: var(--panel-radius); box-shadow: var(--ui-card-shadow); }
 .bp-notification-heading, .bp-notification-settings { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px; border-bottom: 1px solid var(--ui-border); }
 .bp-notification-icon { width: 25px; height: 25px; flex: 0 0 auto; }
 .bp-notification-list { max-height: 220px; overflow: auto; }
