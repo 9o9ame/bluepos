@@ -1,3 +1,12 @@
+## 2026-10-28 — #39 final Owner-only API regression and failed-login privacy review
+
+- User validated #39 login success/failure/blocked, pagination, Employee/Event filters, combined date/IP, exclusion and Clear in browser; focused `test_owner_login_history_filters_ip_device_and_exposes_only_tenant_audit_browser_hints` was run by user on isolated test DB and **PASSED (1 test, 24 assertions)**.
+- Inspected `LoginUserAction::execute`: unverified/incorrect passwords are recorded with hashed tenant code and username, no actor membership linked. Inspected `test_failed_login_records_tenant_scope_without_user_identity_leak`: existing assertions protect against saving raw username or associating identity and platform display returns null membership. `Unknown` actor is intentional privacy behavior. This check is reviewed but existing privacy test must be executed before #39 release closure.
+- New test `test_login_history_denies_authenticated_member_without_owner_authority` uses existing membership restriction helper and verifies login-history API returns 403 for non-Owner authority even with event filter. Commit `d3b9b744`. No production code or migrations.
+- REQUIRED: user run on isolated `bluepos_test` focused tests `test_login_history_denies_authenticated_member_without_owner_authority` and `test_failed_login_records_tenant_scope_without_user_identity_leak`; after PASS close #39 (if no failures). Do not move to next requirement until #39 accepted. No development DB test runs.
+
+---
+
 ## 2026-10-28 — #29/#37/#39 focused regression checkpoint (TEST EXECUTION PENDING)
 
 - Reused existing `backend/tests/Feature/AuthenticationTest.php` focused tests for Owner login-history tenant scoping, browser hint metadata, invalid ULID/pagination, location history Owner view/tenant scoping and expiry.
