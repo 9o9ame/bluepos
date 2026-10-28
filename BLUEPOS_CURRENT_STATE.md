@@ -1,3 +1,12 @@
+## 2026-10-28 — #44 Browser/OS fallback accepted
+
+- User executed `test_login_history_reports_unknown_browser_and_os_for_missing_or_unrecognized_agent` in isolated `bluepos_test`: **PASS (1 test, 11 assertions)**. Null/unrecognized User-Agent displays Unknown for both hints, no tenant BIGINT IDs leaked. #44 scoped accepted.
+- Historical progress **46/50 = 92% implementation-indicated/accepted; 4 Partial** (#45,#46,#48,#50).
+- Next active #45 GeoIP privacy. Existing `IpGeolocation` requires token and global-public IP, only fetches fixed HTTPS ipinfo.io endpoint, returns country/region/city, caches hashed IP for 12h, handles provider errors as Unknown. Existing focused tests cover no calls when disabled/non-public IP and allowed fields on success. Additional failure/privacy regression pending.
+- Stay `feature/superadmin`, no main merge.
+
+---
+
 ## 2026-10-28 — #43 completed; #44 unknown browser/OS fallback regression added
 
 - User executed #43 `test_owner_login_history_filters_ip_device_and_exposes_only_tenant_audit_browser_hints` on isolated `bluepos_test`: **1 PASS / 31 assertions**. Same device's distinct audit IP entries retained and searchable while tenant isolation/ULID filtering remain. Scoped requirement #43 accepted. This covers deterministic backend history with seeded IPs, not physical ISP switching.
