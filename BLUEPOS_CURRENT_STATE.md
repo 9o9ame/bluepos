@@ -1,3 +1,13 @@
+## 2026-10-28 — #39 tenant login history server-side filters (LOCAL VALIDATION PENDING)
+
+- Owner screenshot confirmed Staff login/IP history showed success, blocked, failure, pagination but no UI filters. Existing `SecuritySessionController::loginHistory` already accepted tenant-scoped `username`, `event`, `ip_address`, `device_ulid` before SQL pagination.
+- Added validated `date_from` and `date_to` (`Y-m-d`, inclusive, date_to >= date_from) to backend query, filtering `audit.occurred_at` **before** paginate with tenant ID and existing Owner-only + viewAny authorization intact.
+- Added `TenantLoginHistoryFilters` + query string support in frontend API. Owner Devices page now provides Employee username, Event (canonical UiSelect), date From/To, exact IP, Apply filters/Clear, and resets page to 1 whenever filters are applied. Query cache key includes filters and pagination remains server-side. No additional polling added; existing history polling behavior unchanged.
+- Files: `backend/app/Http/Controllers/Api/SecuritySessionController.php`, `frontend/src/api/security.ts`, `frontend/src/pages/DevicesPage.tsx`, this state file. No migrations. GitHub remote edits only. Frontend build, browser filter queries, Owner-only/tenant-isolation and invalid-date server checks **NOT RUN**; focused validation required before release. Avoid claiming #39 complete until verified.
+- Failed-password audit event's `Unknown` actor is deliberately not fabricated; privacy-safe attribution review remains separate.
+
+---
+
 ## 2026-10-28 — Owner explicit staff reapproval after revoke (VALIDATION PENDING)
 
 - User manually passed staff revoked login block. Owner Devices screen shows `pending: 0` after revoke and no restore button beside `ali`. Root cause: existing `recordStaffAccessRequest` intentionally delays rejected request re-opening for 24h, and generic `Restore whole device` only applies when device itself is revoked. Shared browser remains active.
