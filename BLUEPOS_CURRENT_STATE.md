@@ -1,3 +1,13 @@
+## 2026-10-28 — #29/#37/#39 focused regression checkpoint (TEST EXECUTION PENDING)
+
+- Reused existing `backend/tests/Feature/AuthenticationTest.php` focused tests for Owner login-history tenant scoping, browser hint metadata, invalid ULID/pagination, location history Owner view/tenant scoping and expiry.
+- Added assertions within `test_owner_login_history_filters_ip_device_and_exposes_only_tenant_audit_browser_hints` for inclusive today date range, excluding yesterday date, reversed/invalid dates returning 422, nonmatching IP returning zero rows. Existing cross-tenant seeded audit event remains the isolation fixture. Commit `6ee6d162`; no production code changed in this checkpoint, no migrations.
+- **NOT YET VERIFIED:** Actual PHPUnit execution, staff direct API unauthorized denial, cross-tenant Owner request with foreign tenant device locator, location staff authZ and date range under timezone differences. Run focused tests on isolated `bluepos_test` only. Never run automated test suite against development database.
+- Command after pull: `cd backend; php artisan test --filter=test_owner_login_history_filters_ip_device_and_exposes_only_tenant_audit_browser_hints`; optional separately `--filter=test_mandatory_browser_location_blocks_login_without_location_evidence`. Check DB config before any automated run.
+- User screenshot validated #39 complete manual workflow; release status Partial until security test results confirmed.
+
+---
+
 ## 2026-10-28 — #39 tenant login history server-side filters (LOCAL VALIDATION PENDING)
 
 - Owner screenshot confirmed Staff login/IP history showed success, blocked, failure, pagination but no UI filters. Existing `SecuritySessionController::loginHistory` already accepted tenant-scoped `username`, `event`, `ip_address`, `device_ulid` before SQL pagination.
