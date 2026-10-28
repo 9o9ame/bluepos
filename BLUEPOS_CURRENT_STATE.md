@@ -1,3 +1,14 @@
+## 2026-10-28 — Requirement #39 Login History ACCEPTED / COMPLETED
+
+- Owner browser acceptance PASS: success/failure/blocked history, pagination, Employee/Event filtering, combined inclusive Date/IP filtering, unmatched-IP zero results, and Clear restoring full history.
+- User executed the focused tenant-scoping/filter regression test on `bluepos_test`: **1 passed (24 assertions)**.
+- User executed explicit non-Owner API access denial and failed-login identity privacy tests on `bluepos_test`: **2 passed (18 assertions)**.
+- Overall #39: **3 focused tests passed, 42 assertions**, plus browser acceptance. Wrong-password login is not attributed to an unverified membership; username is hashed in audit metadata.
+- #39 promoted from Partial to **Completed** for scoped acceptance. Remaining Partial requirements: **12** (#4, #18, #24, #28, #29, #37, #43, #44, #45, #46, #48, #50). The historic 37 implementation-indicated baseline plus #39 now means 38 accepted/implementation-indicated and 12 Partial; other requirements have not been reaudited.
+- No production code or migrations in this completion note. No merge to main. Stay on `feature/superadmin` pending approval; no next requirement started.
+
+---
+
 ## 2026-10-28 — #39 final Owner-only API regression and failed-login privacy review
 
 - User validated #39 login success/failure/blocked, pagination, Employee/Event filters, combined date/IP, exclusion and Clear in browser; focused `test_owner_login_history_filters_ip_device_and_exposes_only_tenant_audit_browser_hints` was run by user on isolated test DB and **PASSED (1 test, 24 assertions)**.
