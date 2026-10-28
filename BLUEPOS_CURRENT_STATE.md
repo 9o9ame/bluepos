@@ -1,3 +1,11 @@
+## 2026-10-28 — #43 longitudinal device IP history regression (TEST PENDING)
+
+- #37 staff privileged endpoint authorization focused test **PASS (1 test, 8 assertions)**; scoped accepted (#37). Count **44/50 = 88% implementation-indicated/accepted; 6 Partial** (#43,#44,#45,#46,#48,#50).
+- #43 extended `test_owner_login_history_filters_ip_device_and_exposes_only_tenant_audit_browser_hints` with second distinct IP on same device, device-scoped history retaining both IPs and filtering changed IP independently. Existing tenant filtering/date controls retained; earlier date assertion explicitly filters original IP. Commits `21ba206c`, `ff66c147`. **Not yet run**. This proves audit reporting with a simulated second IP, not live provider address change.
+- No production code or migrations; run focused test on isolated `bluepos_test`, #43 remains Partial until acceptance.
+
+---
+
 ## 2026-10-28 — #37 Staff backend authorization scoped acceptance
 
 - User ran `test_non_owner_cannot_read_tenant_employee_network_approval_inbox` on isolated `bluepos_test`: **PASS, 1 test / 8 assertions**. Non-owner membership denied Owner-only inbox, notifications, direct approve/revoke endpoints, login history and location history. Other tenant isolation covered under #29.
