@@ -1,3 +1,11 @@
+## 2026-10-28 — #29 cross-tenant direct API isolation regression added (TEST PENDING)
+
+- #28 closed after user ran changed-IP Owner test **PASS (1 test, 7 assertions)** plus prior Owner device username attribution **PASS (1 test, 7 assertions)**. Scoped historical progress **42/50 (84%), 8 Partial**.
+- #29 extended existing `test_tenant_owner_can_review_only_own_pending_employee_access_requests` to cover direct foreign request rejection, foreign revoke endpoint, foreign request list exclusion, and foreign device list exclusion, beyond existing foreign approve and notification-read IDOR protections. Commit `226cc8cd`. Confirmed route `POST /api/devices/access-requests/{requestUlid}/revoke` exists.
+- Test not yet run. Run focused regression only on isolated `bluepos_test`; #29 remains Partial and no new production code or migration.
+
+---
+
 ## 2026-10-28 — #28 Owner device attribution / changed-IP mapping ACCEPTED
 
 - User executed `test_owner_trusted_device_reuses_same_network_but_changed_network_requires_otp` on isolated `bluepos_test`: **1 PASS, 7 assertions**. Changed IP required OTP and audit attributed blocked request to known device while trusted fingerprint stayed unchanged.
