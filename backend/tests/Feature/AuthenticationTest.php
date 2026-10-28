@@ -2266,7 +2266,7 @@ class AuthenticationTest extends TestCase
         $this->postJson('/api/auth/mfa/verify', [
             'challenge_ulid' => $challenge->ulid,
             'code' => '654321',
-        ])->assertForbidden()->assertJsonPath('error.key', 'MFA_INVALID');
+        ])->assertForbidden()->assertJsonPath('error.key', 'MFA_EXPIRED');
         $this->assertNull($challenge->fresh()->consumed_at);
     }
 
