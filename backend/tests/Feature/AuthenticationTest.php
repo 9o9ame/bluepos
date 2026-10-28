@@ -2371,6 +2371,24 @@ class AuthenticationTest extends TestCase
             ->assertJsonStructure(['error' => ['fields' => ['location_latitude', 'location_longitude', 'location_accuracy']]]);
     }
 
+    public function test_optional_browser_location_allows_login_without_coordinates_and_does_not_fabricate_location(): void
+    {
+        $owner = $this->provisionOwner('login-location-optional');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        config()->set('security.tenant_login_location_required', false);
+        config()->set('security.geoip.token', '');
+
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('login-location-optional'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->getJson('/api/security/location-history')
+            ->assertOk()->assertJsonPath('pagination.total', 0)
+            ->assertJsonCount(0, 'locations');
+    }
+
     public function test_login_succeeds(): void
     {
         $this->provisionOwner('golf');
