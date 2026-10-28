@@ -1104,6 +1104,38 @@ class AuthenticationTest extends TestCase
         $this->getJson('/api/security/login-history?per_page=101')->assertUnprocessable();
     }
 
+    public function test_login_history_reports_unknown_browser_and_os_for_missing_or_unrecognized_agent(): void
+    {
+        $owner = $this->provisionOwner('login-history-unknown-agent');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('login-history-unknown-agent'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        foreach ([null, 'BluePOS-Test-Client/1.0'] as $index => $agent) {
+            \App\Models\AuditLog::query()->create([
+                'tenant_id' => $owner->tenant->id,
+                'actor_user_id' => $owner->membership->user_id,
+                'actor_membership_id' => $owner->membership->id,
+                'event' => 'LOGIN_BLOCKED',
+                'ip_address' => '203.0.113.'.(80 + $index),
+                'user_agent' => $agent,
+                'occurred_at' => now()->addSeconds($index + 1),
+            ]);
+        }
+
+        $response = $this->getJson('/api/security/login-history?event=LOGIN_BLOCKED')
+            ->assertOk()->assertJsonPath('pagination.total', 2);
+        foreach ($response->json('events') as $event) {
+            $this->assertSame('Unknown', $event['browser']);
+            $this->assertSame('Unknown', $event['os']);
+            $this->assertArrayNotHasKey('tenant_id', $event);
+            $this->assertArrayNotHasKey('device_id', $event);
+        }
+    }
+
     public function test_login_history_denies_authenticated_member_without_owner_authority(): void
     {
         $this->signInOwner('login-history-non-owner')->assertOk();
