@@ -563,10 +563,29 @@ class AuthenticationTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        // Request location is visible only while its short-lived retention window is active.
+        \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $requestUlid)
+            ->update([
+                'request_latitude_approx' => 28.42,
+                'request_longitude_approx' => 70.30,
+                'request_location_expires_at' => now()->addMinute(),
+            ]);
         $this->getJson('/api/devices/access-notifications')
             ->assertOk()->assertJsonPath('unread_count', 1)
             ->assertJsonPath('notifications.0.ulid', $noticeUlid)
-            ->assertJsonPath('notifications.0.request_ulid', $requestUlid);
+            ->assertJsonPath('notifications.0.request_ulid', $requestUlid)
+            ->assertJsonPath('notifications.0.request_latitude_approx', '28.42')
+            ->assertJsonPath('notifications.0.request_longitude_approx', '70.30');
+        \Illuminate\Support\Facades\DB::table('device_access_requests')
+            ->where('ulid', $requestUlid)
+            ->update(['request_location_expires_at' => now()->subMinute()]);
+        $this->getJson('/api/devices/access-notifications')
+            ->assertOk()->assertJsonPath('notifications.0.request_latitude_approx', null)
+            ->assertJsonPath('notifications.0.request_longitude_approx', null);
+        $this->getJson('/api/devices/access-requests?status=all')
+            ->assertOk()->assertJsonPath('access_requests.0.request_latitude_approx', null)
+            ->assertJsonPath('access_requests.0.request_longitude_approx', null);
         $this->postJson('/api/devices/access-notifications/'.$noticeUlid.'/read')
             ->assertOk()->assertJsonPath('read', true);
         $this->getJson('/api/devices/access-notifications')
