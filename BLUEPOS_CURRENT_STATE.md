@@ -1,3 +1,12 @@
+## 2026-10-28 — #48 OTP expiry PASS, atomic claim stale-caller regression pending
+
+- User retested `test_expired_tenant_mfa_otp_cannot_be_used_or_consumed` on isolated `bluepos_test`: **PASS (1 test, 3 assertions)**. Expired challenge rejects correct code using explicit MFA_EXPIRED; unconsumed after denial.
+- Inspected `AuthController::verifyMfa`: after validating hash, conditional single-statement UPDATE checks challenge unconsumed, expiry and attempts before session setup; a second caller that loses row claim cannot establish session. Added `test_tenant_mfa_atomic_claim_rejects_stale_second_claim` to assert first conditional claim wins and second stale claim returns 0, while two model snapshots initially see null consumed_at. Commit `fc34cfee`. **Not yet run.**
+- This regression directly checks conditional claim at DB level, but runs sequential updates and **does not prove simultaneous two-process PostgreSQL contention**. True parallel exercise still needed if requirement #48 requires that evidence; do not declare complete or advance to #50 solely from this test.
+- No production code change/migration. Current historic progress 48/50 = 96%, two Partial (#48,#50); remain on feature/superadmin.
+
+---
+
 ## 2026-10-28 — #48 expired OTP test expected error corrected (RETEST PENDING)
 
 - User executed `test_expired_tenant_mfa_otp_cannot_be_used_or_consumed` on isolated `bluepos_test`: FAIL (2 assertions) solely because API correctly returned `MFA_EXPIRED` rather than test's expected `MFA_INVALID`; HTTP 403 rejection already verified.
