@@ -1,3 +1,11 @@
+## 2026-10-28 — #46 optional/unavailable browser location scoped acceptance
+
+- User ran `test_optional_browser_location_allows_login_without_coordinates_and_does_not_fabricate_location` on isolated `bluepos_test`: **PASS (1 test, 4 assertions)**. When location is optional, login succeeds and no fabricated location observations are returned. Mandatory-location rejection/coarse handling covered by existing test.
+- #46 scoped accepted. Historical tally **48/50 = 96% implementation-indicated/accepted; 2 Partial** (#48,#50). No production changes or migrations. Continue #48 OTP abuse and concurrency, with real parallel race verification distinguished from deterministic replay/attempt tests.
+- Branch remains `feature/superadmin`; no main merge.
+
+---
+
 ## 2026-10-28 — #45 accepted and #46 optional missing-location regression pending
 
 - User ran `test_ip_geolocation_provider_failure_does_not_leak_coordinates_or_break_lookup` on isolated `bluepos_test`: **PASS (1 test, 6 assertions)**. Provider response allowlist, non-string region, long city cap, 503 failure return all-null. Previous no-token/non-public-IP and provider parsing tests also exist. Scoped #45 accepted for mocked provider privacy and graceful failure, not real-provider E2E.
