@@ -1,3 +1,14 @@
+## 2026-10-28 — Pusher frontend build PASS; targeted dependency advisories open
+
+- User executed consolidated validation after authorizer type fix: `npm run typecheck` PASS; `npm run build` PASS (2285 Vite modules). Existing dynamic/static import and large chunk warnings remain non-blocking, unrelated cleanup deferred.
+- Previously user ran `test_device_access_broadcast_exposes_only_scoped_channel_and_safe_refresh_signal`: PASS 1 test / 3 assertions.
+- `composer audit` reports 2 advisories on `league/commonmark` <=2.10.1 (moderate XSS HTML filtering bypass GHSA-97jj-33gv-5xf9 and high quadratic-table parsing DoS GHSA-3q6v-r5mr-hxv8). Advisory patched in **2.10.2**; recommend targeted `composer update league/commonmark --with-all-dependencies` after checking constraints, not broad composer update.
+- `npm audit` reports 4 vulnerabilities (2 moderate, 2 high); actionable nonbreaking transitive fixes noted for `postcss-selector-parser` and `source-map-js`, while esbuild via current Vite 5 requires review of breaking Vite upgrade. **Never run npm audit fix --force** blindly. Inspect lockfile and diff for `npm audit fix` or targeted updates.
+- User has local modified `backend/composer.lock` and `frontend/package-lock.json` from installing Pusher packages; lockfiles still NOT synchronized/committed. Do not overwrite/discard them; commit together only after reviewed updates.
+- Pusher private-channel live connection, cross-tenant authorization, sound asset placement, and two-browser notification flow remain UNVERIFIED. The new feature is partial; no production deployment. User wants all tests for each task in a single testing round.
+
+---
+
 ## 2026-10-28 — Pusher installation: backend PASS, frontend TS callback fix pending local validation
 
 - User ran `composer update pusher/pusher-php-server --with-all-dependencies` and `npm install` successfully on local feature/superadmin after pull. **Local lockfiles changed but are not committed remotely**. Backend `test_device_access_broadcast_exposes_only_scoped_channel_and_safe_refresh_signal` PASS, 1 test / 3 assertions.
