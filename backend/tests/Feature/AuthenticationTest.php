@@ -569,7 +569,7 @@ class AuthenticationTest extends TestCase
             ->update([
                 'request_latitude_approx' => 28.42,
                 'request_longitude_approx' => 70.30,
-                'request_location_expires_at' => now()->addMinute(),
+                'request_location_expires_at' => \Illuminate\Support\Facades\DB::raw("CURRENT_TIMESTAMP + INTERVAL '1 day'"),
             ]);
         $this->getJson('/api/devices/access-notifications')
             ->assertOk()->assertJsonPath('unread_count', 1)
@@ -579,7 +579,7 @@ class AuthenticationTest extends TestCase
             ->assertJsonPath('notifications.0.request_longitude_approx', '70.30');
         \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('ulid', $requestUlid)
-            ->update(['request_location_expires_at' => now()->subMinute()]);
+            ->update(['request_location_expires_at' => \Illuminate\Support\Facades\DB::raw("CURRENT_TIMESTAMP - INTERVAL '1 day'")]);
         $this->getJson('/api/devices/access-notifications')
             ->assertOk()->assertJsonPath('notifications.0.request_latitude_approx', null)
             ->assertJsonPath('notifications.0.request_longitude_approx', null);
