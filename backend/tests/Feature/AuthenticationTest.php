@@ -2272,6 +2272,35 @@ class AuthenticationTest extends TestCase
         \Illuminate\Support\Facades\Http::assertSentCount(1);
     }
 
+    public function test_ip_geolocation_provider_failure_does_not_leak_coordinates_or_break_lookup(): void
+    {
+        \Illuminate\Support\Facades\Http::fake([
+            'ipinfo.io/*' => \Illuminate\Support\Facades\Http::response([
+                'country' => 'PK',
+                'region' => ['unexpected' => 'object'],
+                'city' => str_repeat('x', 200),
+                'loc' => '28.42,70.30',
+                'latitude' => 28.42,
+                'longitude' => 70.30,
+            ]),
+        ]);
+        config()->set('security.geoip.token', 'test-token');
+        $location = app(\App\Security\IpGeolocation::class)->lookup('8.8.8.7');
+        $this->assertSame('PK', $location['country']);
+        $this->assertNull($location['region']);
+        $this->assertSame(90, strlen($location['city']));
+        $this->assertSame(['country', 'region', 'city'], array_keys($location));
+        \Illuminate\Support\Facades\Http::assertSentCount(1);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'ipinfo.io/*' => \Illuminate\Support\Facades\Http::response(['error' => 'unavailable'], 503),
+        ]);
+        $this->assertSame(
+            ['country' => null, 'region' => null, 'city' => null],
+            app(\App\Security\IpGeolocation::class)->lookup('8.8.8.6')
+        );
+    }
+
     public function test_mandatory_browser_location_blocks_login_without_location_evidence(): void
     {
         $owner = $this->provisionOwner('login-location-gate');
