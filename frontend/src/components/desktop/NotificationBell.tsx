@@ -31,6 +31,9 @@ function playNotificationSound(value: string): void {
   // Browser audio autoplay policies may block playback until first user gesture.
   void audio.play().catch((error) => {
     if (import.meta.env.DEV) console.warn('Notification sound could not play. Check audio file and browser sound permissions.', error)
+    const fallback = new Audio('/sounds/error-notification.mp3')
+    fallback.volume = 0.65
+    void fallback.play().catch(() => undefined)
   })
 }
 
