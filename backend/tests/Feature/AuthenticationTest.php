@@ -399,6 +399,15 @@ class AuthenticationTest extends TestCase
         $this->postJson('/api/devices/access-requests/'.$requestUlid.'/review', [
             'decision' => 'approved',
         ])->assertNotFound();
+        $this->postJson('/api/devices/access-requests/'.$requestUlid.'/review', [
+            'decision' => 'rejected',
+        ])->assertNotFound();
+        $this->postJson('/api/devices/access-requests/'.$requestUlid.'/revoke')
+            ->assertNotFound();
+        $this->getJson('/api/devices/access-requests?status=all')
+            ->assertOk()->assertJsonCount(0, 'requests');
+        $this->getJson('/api/devices')
+            ->assertOk()->assertJsonMissing(['ulid' => $device->ulid]);
 
         $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('ulid', $requestUlid)->value('status'));
