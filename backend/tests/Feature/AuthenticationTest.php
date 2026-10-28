@@ -2292,6 +2292,8 @@ class AuthenticationTest extends TestCase
         $this->assertSame(['country', 'region', 'city'], array_keys($location));
         \Illuminate\Support\Facades\Http::assertSentCount(1);
 
+        // Http::fake() appends callbacks; reset prior successful fixture before simulating outage.
+        \Illuminate\Support\Facades\Http::swap(new \Illuminate\Http\Client\Factory());
         \Illuminate\Support\Facades\Http::fake([
             'ipinfo.io/*' => \Illuminate\Support\Facades\Http::response(['error' => 'unavailable'], 503),
         ]);
