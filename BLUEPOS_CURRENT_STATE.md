@@ -1,3 +1,12 @@
+## 2026-10-28 — #18-F revoked-session UI browser acceptance PASS
+
+- User reports Owner revoked Staff `ali` access; Staff browser redirected to `/login`. Browser Back remained on login (screenshot provided). This verifies UI route protection after a denied protected request.
+- Previous frontend `npm run build` PASS after AuthProvider/API client cache invalidation hardening; prior #18 targeted backend security tests also passed, including 4 tests/37 assertions latest.
+- **Do not claim browser persistent offline-data removal or simultaneous competing approval/revocation stress testing was demonstrated by the screenshot.** #18 remains Partial pending targeted security verification of these residuals.
+- No implementation change in this checkpoint. Keep only #18 active.
+
+---
+
 ## 2026-10-28 — #18 frontend revoked-session cache invalidation (VALIDATION PENDING)
 
 - User's latest four focused tests **PASS (37 assertions)** covering live Owner authority, ineligible member/device, invalid decisions and stale offline revocation. Earlier #18 focused runs: 4 PASS/51 assertions; replay/reapproval corrected 2 PASS/24 assertions, and other offline safeguards passed. Do not claim real concurrency exercised.
