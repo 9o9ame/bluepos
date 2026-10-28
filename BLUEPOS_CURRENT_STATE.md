@@ -1,3 +1,12 @@
+## 2026-10-28 — Git divergence resolved; lockfiles pushed
+
+- User explicitly approved a one-commit rebase of local lockfile commit 84d46aa7 onto remote documentation commit 9cf194b2.
+- Rebase succeeded; rewritten lockfile commit `1ce23d8d` pushed normally to `origin/feature/superadmin` (fast-forward from 9cf194b2), with clean local working tree per final `git status --short` output.
+- No force-push, reset, merge to main or branch switch. Composer audit zero advisories, frontend typecheck and build pass, `npm audit --omit=dev` zero vulnerabilities (full npm audit still has development-tooling advisories).
+- Next: validate actual Pusher Channels handshake and two-browser device approval event delivery, secure owner/private channel and tenant boundaries. Sound MP3 assets still require confirmation. Feature still partial.
+
+---
+
 ## 2026-10-28 — Pusher dependency remediation validated locally; lockfile synchronization still pending
 
 - User ran `composer update league/commonmark --with-all-dependencies` on local feature/superadmin: `league/commonmark` 2.10.1 → 2.10.4, `nette/schema` 1.3.6 → 1.4.0 and `nette/utils` 4.1.5 → 4.1.6; **composer audit: no security vulnerability advisories**.
