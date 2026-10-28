@@ -12,6 +12,8 @@ import { useAuth } from '../features/auth/AuthProvider'
 import { useWorkspace, useWorkspaceHandlers } from '../features/workspace/WorkspaceProvider'
 import type { Device } from '../types/auth'
 import { useState } from 'react'
+import { UiSelect } from '../components/ui/UiSelect'
+import type { TenantLoginHistoryFilters } from '../api/security'
 
 export function DevicesPage() {
   const queryClient = useQueryClient()
@@ -30,9 +32,11 @@ export function DevicesPage() {
     refetchInterval: 60000,
   })
   const [historyPage, setHistoryPage] = useState(1)
+  const [historyDraft, setHistoryDraft] = useState<TenantLoginHistoryFilters>({ event: 'all' })
+  const [historyFilters, setHistoryFilters] = useState<TenantLoginHistoryFilters>({ event: 'all' })
   const historyQuery = useQuery({
-    queryKey: ['tenant-login-history', historyPage],
-    queryFn: () => fetchTenantLoginHistory(historyPage),
+    queryKey: ['tenant-login-history', historyPage, historyFilters],
+    queryFn: () => fetchTenantLoginHistory(historyPage, historyFilters),
     enabled: canReviewRequests,
     refetchInterval: 60000,
   })
@@ -219,6 +223,54 @@ export function DevicesPage() {
       {canReviewRequests ? (
         <section className="p-2">
           <h3 className="mb-2 text-[12px] font-semibold">Staff login and public IP history</h3>
+          <form
+            className="mb-2 flex flex-wrap items-end gap-2 text-[12px]"
+            onSubmit={event => {
+              event.preventDefault()
+              setHistoryPage(1)
+              setHistoryFilters({
+                username: historyDraft.username?.trim() || undefined,
+                ip_address: historyDraft.ip_address?.trim() || undefined,
+                event: historyDraft.event ?? 'all',
+                date_from: historyDraft.date_from || undefined,
+                date_to: historyDraft.date_to || undefined,
+              })
+            }}
+          >
+            <label className="flex flex-col gap-1">Employee
+              <input aria-label="History employee" className="rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-1 text-[var(--ui-text)]" value={historyDraft.username ?? ''} onChange={e => setHistoryDraft(v => ({ ...v, username: e.target.value }))} placeholder="Username" maxLength={120} />
+            </label>
+            <label className="flex flex-col gap-1">Event
+              <UiSelect
+                aria-label="History event type"
+                className="min-w-[130px]"
+                value={historyDraft.event ?? 'all'}
+                options={[
+                  { value: 'all', label: 'All events' },
+                  { value: 'LOGIN_SUCCESS', label: 'Login success' },
+                  { value: 'LOGIN_FAILURE', label: 'Login failure' },
+                  { value: 'LOGIN_BLOCKED', label: 'Login blocked' },
+                ]}
+                onChange={event => setHistoryDraft(v => ({ ...v, event: event as TenantLoginHistoryFilters['event'] }))}
+                searchable={false}
+              />
+            </label>
+            <label className="flex flex-col gap-1">From
+              <input aria-label="History date from" type="date" className="rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-1 text-[var(--ui-text)]" value={historyDraft.date_from ?? ''} onChange={e => setHistoryDraft(v => ({ ...v, date_from: e.target.value }))} />
+            </label>
+            <label className="flex flex-col gap-1">To
+              <input aria-label="History date to" type="date" min={historyDraft.date_from || undefined} className="rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-1 text-[var(--ui-text)]" value={historyDraft.date_to ?? ''} onChange={e => setHistoryDraft(v => ({ ...v, date_to: e.target.value }))} />
+            </label>
+            <label className="flex flex-col gap-1">IP address
+              <input aria-label="History IP address" className="rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-1 text-[var(--ui-text)]" value={historyDraft.ip_address ?? ''} onChange={e => setHistoryDraft(v => ({ ...v, ip_address: e.target.value }))} placeholder="Exact IP" maxLength={45} />
+            </label>
+            <DesktopButton label="Apply filters" type="submit" />
+            <DesktopButton label="Clear" type="button" onClick={() => {
+              setHistoryDraft({ event: 'all' })
+              setHistoryFilters({ event: 'all' })
+              setHistoryPage(1)
+            }} />
+          </form>
           {historyQuery.isLoading ? <p className="text-[12px]">Loading login history…</p> : null}
           {historyQuery.isError ? <p role="alert" className="text-[12px] text-[var(--ui-danger)]">Unable to load login history.</p> : null}
           {!historyQuery.isLoading && !historyQuery.isError ? (
