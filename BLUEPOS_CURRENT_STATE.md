@@ -1,3 +1,12 @@
+## 2026-10-28 — Requirement #4 Owner trusted-device / network OTP ACCEPTED
+
+- Manual browser trust reuse on same Chrome profile/network previously PASS; changed public-IP manual test was impractical on localhost wired setup. Instead user executed focused backend test with simulated REMOTE_ADDR changes: same network trusted, changed network requires MFA, original trusted IP fingerprint unchanged; expired trust requires fresh MFA: **2 passed, 9 assertions**.
+- User executed further focused tests on isolated `bluepos_test`: trusted network fingerprint change, one-time OTP verification and replay denial, wrong OTP attempt budget exhaustion: **3 passed, 22 assertions**.
+- Combined **5 focused tests passed, 31 assertions**, plus same-browser manual acceptance. Scoped requirement #4 marked **Completed**; real public-IP e2e switching was not performed, and this acceptance uses automated simulation for changed network. No production code changes/migrations.
+- Count now **39 implementation-indicated/accepted, 11 Partial**. Remaining Partial IDs: #18, #24, #28, #29, #37, #43, #44, #45, #46, #48, #50. Do not duplicate #4 tests during #48 concurrency coverage.
+
+---
+
 ## 2026-10-28 — Requirement #39 Login History ACCEPTED / COMPLETED
 
 - Owner browser acceptance PASS: success/failure/blocked history, pagination, Employee/Event filtering, combined inclusive Date/IP filtering, unmatched-IP zero results, and Clear restoring full history.
