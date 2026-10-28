@@ -4,6 +4,7 @@ import { Bell, Volume2, X } from 'lucide-react'
 import type { AuthSession } from '../../types/auth'
 import { fetchDeviceAccessNotifications, type DeviceAccessNotification } from '../../api/devices'
 import { UiSelect } from '../ui/UiSelect'
+import { UI_LAYER } from '../ui/uiLayers'
 import './NotificationBell.css'
 
 const TONES = [
@@ -46,7 +47,7 @@ export function NotificationBell({ session, onOpenDevices }: {
   const ringTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const notices = useQuery({
-    queryKey: ['device-access-inbox', 1],
+    queryKey: ['device-access-inbox', scope, 1],
     queryFn: () => fetchDeviceAccessNotifications(1),
     enabled: isOwner,
     refetchInterval: 4000, // Resilient fallback; not equivalent to WebSocket push.
@@ -109,7 +110,7 @@ export function NotificationBell({ session, onOpenDevices }: {
         {unread > 0 ? <span className="bp-notification-count">{unread > 99 ? '99+' : unread}</span> : null}
       </button>
       {open ? (
-        <section className="bp-notification-popover" aria-label="Notifications">
+        <section className="bp-notification-popover" aria-label="Notifications" style={{ zIndex: UI_LAYER.dropdown }}>
           <div className="bp-notification-heading">
             <strong>Device approval alerts</strong>
             <button type="button" className="bp-notification-icon" onClick={() => setOpen(false)} aria-label="Close notifications"><X size={14} /></button>
@@ -138,7 +139,7 @@ export function NotificationBell({ session, onOpenDevices }: {
         </section>
       ) : null}
       {toast ? (
-        <div className="bp-notification-toast" role="status">
+        <div className="bp-notification-toast" role="status" style={{ zIndex: UI_LAYER.feedback }}>
           <Bell size={18} />
           <div><strong>New device approval request</strong><span>{toast.username} · {toast.device_name}</span></div>
           <button type="button" onClick={() => { setToast(null); onOpenDevices() }}>View</button>
