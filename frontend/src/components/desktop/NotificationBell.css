@@ -71,3 +71,55 @@ html[data-animations='off'] .bp-notification-trigger.bp-motion-bell:hover svg {
 @media (prefers-reduced-motion: reduce) {
   .bp-notification-trigger.bp-motion-bell:hover svg { transition: none; }
 }
+
+/* Premium stacked alerts reference: compact layered surfaces, no extra close
+   control; hover/focus works like the platform account dropdown. */
+.bp-notification-popover {
+  width: min(350px, calc(100vw - 28px));
+  padding: 12px;
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow), 0 16px 38px color-mix(in srgb, var(--ui-text) 12%, transparent);
+  animation: bp-notification-premium-open 320ms cubic-bezier(.22,1,.36,1) both;
+}
+.bp-notification-root::after {
+  content: ''; position: absolute; top: 100%; right: 0;
+  width: 100%; height: 9px;
+}
+.bp-notification-heading { padding: 4px 4px 12px; justify-content: flex-start; }
+.bp-notification-heading-mark {
+  width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center;
+  color: var(--ui-accent-strong); background: var(--ui-accent-soft);
+  border-radius: var(--control-radius);
+}
+.bp-notification-heading > div { display: grid; gap: 2px; }
+.bp-notification-heading small { font-size: 10px; color: var(--ui-text-muted); }
+.bp-notification-heading-count {
+  margin-left: auto; padding: 4px 7px; border-radius: 20px;
+  color: var(--ui-accent-strong); background: var(--ui-accent-soft);
+  font-size: 10px; font-weight: 700;
+}
+.bp-notification-list { display: grid; gap: 7px; padding: 8px 2px; max-height: 270px; }
+.bp-notification-item {
+  display: flex; flex-direction: row; align-items: center; gap: 9px;
+  padding: 11px 10px; border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface); box-shadow: var(--ui-control-shadow);
+  animation: bp-notification-premium-card 430ms cubic-bezier(.22,1,.36,1) both;
+}
+.bp-notification-card-icon { width: 31px; height: 31px; flex: 0 0 31px; display: grid; place-items: center;
+  border-radius: var(--control-radius); background: var(--ui-accent-soft); color: var(--ui-accent-strong); }
+.bp-notification-card-content { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.bp-notification-card-content strong { font-size: 11px; }
+.bp-notification-card-content > span { overflow-wrap: anywhere; color: var(--ui-text-muted); font-size: 11px; }
+.bp-notification-card-content small { font-size: 10px; }
+.bp-notification-unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ui-accent); flex-shrink: 0; }
+.bp-notification-read-icon { color: var(--ui-success); flex-shrink: 0; }
+.bp-notification-all { margin-top: 7px; border-radius: var(--control-radius); font-weight: 700; }
+@keyframes bp-notification-premium-open { from { opacity: 0; transform: translateY(-7px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes bp-notification-premium-card { from { opacity: 0; transform: translateY(9px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+html[data-animations='off'] .bp-notification-popover,
+html[data-animations='off'] .bp-notification-item { animation: none; }
+@media(prefers-reduced-motion: reduce) {
+  .bp-notification-popover, .bp-notification-item { animation: none; }
+}
