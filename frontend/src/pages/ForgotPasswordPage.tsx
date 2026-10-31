@@ -45,7 +45,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthLayout title="Forgot password" notice={error}>
+    <AuthLayout title="Owner password recovery" notice={error}>
       {done ? (
         <p className="text-[13px]">
           Password updated.{' '}
@@ -63,6 +63,7 @@ export function ForgotPasswordPage() {
         </form>
       ) : (
         <form className="space-y-3" onSubmit={onRequest}>
+          <p className="text-[12px] text-[var(--ui-text-muted)]">Only tenant owners can recover a password by email. Staff members must contact their tenant owner to reset credentials.</p>
           <input className="h-9 w-full rounded border px-2 text-[12px]" placeholder="Mart code" value={tenantCode} onChange={(e) => setTenantCode(e.target.value)} required />
           <input className="h-9 w-full rounded border px-2 text-[12px]" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required />
           {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
