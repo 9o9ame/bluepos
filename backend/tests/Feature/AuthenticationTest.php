@@ -769,7 +769,8 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->postJson('/api/devices/'.$device->ulid.'/approve')
-            ->assertNotFound();
+            ->assertStatus(409)
+            ->assertJsonPath('error.key', 'EMPLOYEE_ACCESS_REVIEW_REQUIRED');
         $this->assertSame(\App\Enums\DeviceStatus::Pending, $device->fresh()->status);
         $this->assertSame('pending', \Illuminate\Support\Facades\DB::table('device_access_requests')
             ->where('ulid', $requestUlid)->value('status'));
