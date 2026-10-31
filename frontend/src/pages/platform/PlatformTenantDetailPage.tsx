@@ -23,6 +23,7 @@ import { ApiClientError } from '../../api/client'
 import { askConfirm } from '../../feedback/FeedbackProvider'
 import { CredentialsOnceModal } from '../../components/platform/CredentialsOnceModal'
 import { UiSelect } from '../../components/ui/UiSelect'
+import './platform-tenant-monitor.css'
 import { usePlatformAuth } from '../../features/platform/PlatformAuthProvider'
 
 const TABS = ['Overview', 'Admin Users', 'Devices', 'Login Activity', 'Subscription', 'Features', 'Limits'] as const
@@ -36,6 +37,8 @@ export function PlatformTenantDetailPage() {
   const tab = TABS.find((item) => item === requestedTab) ?? 'Overview'
   const setTab = (value: (typeof TABS)[number]) => setSearchParams(value === 'Overview' ? {} : { tab: value })
   const [approvalPage, setApprovalPage] = useState(1)
+  const [devicesView, setDevicesView] = useState<'devices' | 'locations' | 'approvals'>('devices')
+  const [activityView, setActivityView] = useState<'sessions' | 'events'>('sessions')
   const [approvalStatus, setApprovalStatus] = useState('all')
   const [approvalIp, setApprovalIp] = useState('')
   const [reason, setReason] = useState('')
@@ -350,16 +353,27 @@ export function PlatformTenantDetailPage() {
       ) : null}
 
       {tab === 'Devices' ? (
-        <div className="rounded border border-slate-300 bg-white p-3 text-[12px]">
+        <div className="platform-tenant-monitor-panel rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-3 text-[12px]">
           <div className="mb-3 flex items-center justify-between">
             <strong>Tenant devices — Pending approvals</strong>
             <button type="button" className="rounded border px-3 py-1"
               onClick={() => void devicesQuery.refetch()}>Refresh</button>
           </div>
           <p className="mb-2 text-[var(--ui-text-muted)]">Read-only monitoring. Tenant owners verify their own devices by email OTP and approve staff device/network requests.</p>
+          <div role="tablist" aria-label="Tenant device monitoring lists" className="platform-tenant-monitor-tabs">
+            {([
+              ['devices', 'Registered devices'],
+              ['locations', 'Approximate locations'],
+              ['approvals', 'Employee approval history'],
+            ] as const).map(([key, label]) => (
+              <button key={key} type="button" role="tab" aria-selected={devicesView === key}
+                className={devicesView === key ? 'is-active' : ''}
+                onClick={() => setDevicesView(key)}>{label}</button>
+            ))}
+          </div>
           {devicesQuery.isLoading ? <p>Loading devices…</p> : null}
           {devicesQuery.isError ? <p role="alert">Could not load devices.</p> : null}
-          <div className="overflow-x-auto">
+          {devicesView === 'devices' ? <div role="tabpanel" className="platform-tenant-monitor-grid">
             <table className="w-full border-collapse text-left">
               <thead><tr className="border-b"><th className="p-2">Name</th><th>Type</th><th>Status</th><th>Registered</th><th>Last seen</th><th>Staff approvals</th></tr></thead>
               <tbody>{(devicesQuery.data?.devices ?? []).map((device) => (
@@ -372,11 +386,12 @@ export function PlatformTenantDetailPage() {
                 </tr>
               ))}</tbody>
             </table>
-          </div>
-          {devicesQuery.data?.devices.length === 0 ? <p className="pt-3">No registered devices for this tenant.</p> : null}
-          <strong className="mt-4 block">Approximate device locations (read-only, last 30 days)</strong>
+          </div> : null}
+          {devicesQuery.data?.devices.length === 0 && devicesView === 'devices' ? <p className="pt-3">No registered devices for this tenant.</p> : null}
+          {devicesView === 'locations' ? <div role="tabpanel" className="platform-tenant-monitor-section">
+          <strong className="block">Approximate device locations (read-only, last 30 days)</strong>
           <p className="my-2 text-[12px] text-[var(--ui-text-muted)]">Browser-reported locations rounded for privacy. Not verified physical presence; country/city names are unavailable.</p>
-          <div className="overflow-x-auto">
+          <div className="platform-tenant-monitor-grid">
             <table className="w-full text-left">
               <thead><tr className="border-b"><th>User</th><th>Device</th><th>Approximate position</th><th>Reported accuracy</th><th>Recorded</th></tr></thead>
               <tbody>{(devicesQuery.data?.locations ?? []).map(loc => (
@@ -388,7 +403,9 @@ export function PlatformTenantDetailPage() {
               ))}</tbody>
             </table>
           </div>
-          <strong className="mt-4 block">Employee device/network approval history (read-only, 100 per page)</strong>
+          </div> : null}
+          {devicesView === 'approvals' ? <div role="tabpanel" className="platform-tenant-monitor-section">
+          <strong className="block">Employee device/network approval history (read-only, 100 per page)</strong>
           <div className="my-2 flex flex-wrap items-end gap-2">
             <label className="flex flex-col gap-1">Decision
               <UiSelect value={approvalStatus} onChange={v => { setApprovalStatus(v); setApprovalPage(1) }} options={[
@@ -402,7 +419,7 @@ export function PlatformTenantDetailPage() {
               <input className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={approvalIp} onChange={e => { setApprovalIp(e.target.value); setApprovalPage(1) }} placeholder="Any IP" />
             </label>
           </div>
-          <div className="overflow-x-auto">
+          <div className="platform-tenant-monitor-grid">
             <table className="w-full text-left">
               <thead><tr className="border-b"><th>Employee</th><th>Roles</th><th>Device</th><th>Status</th><th>IP</th><th>Approx. location</th><th>Browser</th><th>Requested</th><th>Reviewed</th><th>Reviewed by</th></tr></thead>
               <tbody>{(devicesQuery.data?.access_requests ?? []).map(item => (
@@ -420,31 +437,37 @@ export function PlatformTenantDetailPage() {
             <button type="button" className="rounded border px-3 py-1" disabled={approvalPage <= 1} onClick={() => setApprovalPage(n => Math.max(1, n - 1))}>Previous</button>
             <button type="button" className="rounded border px-3 py-1" disabled={!devicesQuery.data || approvalPage >= devicesQuery.data.approval_pagination.last_page} onClick={() => setApprovalPage(n => n + 1)}>Next</button>
           </div>
+          </div> : null}
         </div>
       ) : null}
 
       {tab === 'Login Activity' ? (
-        <div className="rounded border border-slate-300 bg-white p-3 text-[12px]">
+        <div className="platform-tenant-monitor-panel rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-3 text-[12px]">
           <div className="mb-2 flex justify-between"><strong>Recent login activity (up to 100 sessions and 100 events)</strong>
             <button type="button" className="rounded border px-3 py-1" onClick={() => void activityQuery.refetch()}>Refresh</button></div>
           <p className="mb-2 text-slate-600">IP addresses and browser user agents are recorded by the server. IP is not an exact physical location.</p>
           {activityQuery.isLoading ? <p>Loading activity…</p> : null}
           {activityQuery.isError ? <p role="alert">Unable to load activity or insufficient audit permission.</p> : null}
-          <strong>Sessions</strong>
-          <div className="overflow-x-auto"><table className="w-full text-left">
+          <div role="tablist" aria-label="Login activity lists" className="platform-tenant-monitor-tabs">
+            {([['sessions', 'Sessions'], ['events', 'Security events']] as const).map(([key, label]) => (
+              <button key={key} type="button" role="tab" aria-selected={activityView === key}
+                className={activityView === key ? 'is-active' : ''}
+                onClick={() => setActivityView(key)}>{label}</button>
+            ))}
+          </div>
+          {activityView === 'sessions' ? <div role="tabpanel" className="platform-tenant-monitor-grid"><table className="w-full text-left">
             <thead><tr><th>Employee</th><th>Roles</th><th>Device</th><th>IP</th><th>Browser</th><th>Last seen</th><th>State</th></tr></thead>
             <tbody>{(activityQuery.data?.sessions ?? []).map(session => <tr className="border-t" key={session.ulid}>
               <td>{session.membership?.username ?? '—'}</td><td>{session.membership?.roles.map(role => role.name).join(', ') || '—'}</td><td>{session.device?.name ?? 'Unknown'}</td><td>{session.ip_address ?? '—'}</td>
               <td className="max-w-64 break-all">{session.user_agent ?? '—'}</td>
               <td>{session.last_seen_at ?? '—'}</td><td>{session.revoked_at ? 'Revoked' : 'Recorded session'}</td>
-            </tr>)}</tbody></table></div>
-          <strong className="mt-4 block">Security events</strong>
-          <div className="overflow-x-auto"><table className="w-full text-left">
+            </tr>)}</tbody></table></div> : null}
+          {activityView === 'events' ? <div role="tabpanel" className="platform-tenant-monitor-grid"><table className="w-full text-left">
             <thead><tr><th>Event</th><th>Employee</th><th>Device</th><th>IP</th><th>Browser</th><th>Time</th></tr></thead>
             <tbody>{(activityQuery.data?.events ?? []).map(event => <tr className="border-t" key={event.ulid}>
               <td>{event.event}</td><td>{event.membership?.username ?? 'Unknown'}</td><td>{event.device?.name ?? '—'}</td><td>{event.ip_address ?? '—'}</td>
               <td className="max-w-64 break-all">{event.user_agent ?? '—'}</td><td>{event.occurred_at ?? '—'}</td>
-            </tr>)}</tbody></table></div>
+            </tr>)}</tbody></table></div> : null}
         </div>
       ) : null}
 
