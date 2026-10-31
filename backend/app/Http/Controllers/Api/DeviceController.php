@@ -533,6 +533,11 @@ class DeviceController extends Controller
     {
         $device = $this->findTenantDevice($tenantContext, $deviceUlid);
         $this->authorize('revoke', $device);
+        // Prevent accidental lockout: a signed-in owner cannot revoke the
+        // very device currently authenticating this request.
+        if ($tenantContext->hasDevice() && $tenantContext->device()->is($device)) {
+            throw new ApiException('CURRENT_DEVICE_REVOKE_DENIED', 'You cannot revoke the device currently in use.', 409);
+        }
         $revocation->revokeDevice($device);
 
         app(AuditLogger::class)->record('DEVICE_REVOKED', [
