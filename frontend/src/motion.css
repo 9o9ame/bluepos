@@ -1,0 +1,55 @@
+/*
+ * BluePOS Motion Library — opt-in motion only.
+ * Never changes component size, padding, radius, border width, or geometry.
+ * Shared Theme & Appearance tokens are authoritative.
+ */
+:root {
+  --bp-motion-ease: cubic-bezier(.22,1,.36,1);
+  --bp-motion-fast: 240ms;
+  --bp-motion-normal: 420ms;
+  --bp-motion-slow: 850ms;
+}
+@keyframes bp-motion-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes bp-motion-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes bp-motion-sweep { from { transform: translateX(-110%); } to { transform: translateX(110%); } }
+@keyframes bp-motion-ring { from { stroke-dashoffset: var(--bp-ring-length, 100); opacity: .3; } to { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes bp-motion-pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+.bp-motion-enter { animation: bp-motion-rise var(--bp-motion-normal) var(--bp-motion-ease) both; }
+.bp-motion-progress { transform-origin: left; animation: bp-motion-fill var(--bp-motion-slow) var(--bp-motion-ease) both; }
+.bp-motion-ring { animation: bp-motion-ring 1100ms var(--bp-motion-ease) both; }
+/* CRUD buttons: use existing semantic colors and dimensions; animate face only. */
+.bp-motion-action { position: relative; overflow: hidden; isolation: isolate; transition: transform var(--bp-motion-fast) ease, filter var(--bp-motion-fast) ease, box-shadow var(--bp-motion-normal) var(--bp-motion-ease); }
+.bp-motion-action::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 20%, color-mix(in srgb, var(--ui-surface) 38%, transparent) 50%, transparent 80%); opacity: 0; transform: translateX(-110%); transition: opacity var(--bp-motion-fast) ease; }
+.bp-motion-action:not(:disabled):hover { transform: translateY(-1px); filter: brightness(1.04); }
+.bp-motion-action:not(:disabled):hover::after { opacity: .7; animation: bp-motion-sweep 650ms var(--bp-motion-ease) both; }
+.bp-motion-action:not(:disabled):active { transform: translateY(1px); }
+.bp-motion-action:disabled { cursor: not-allowed; }
+/* Download: progress and confirmation live inside original button bounds. */
+.bp-motion-download { position: relative; overflow: hidden; }
+.bp-motion-download[data-busy="true"]::after { content: ""; position: absolute; inset-inline: 0; bottom: 0; height: 2px; background: var(--ui-accent); transform-origin: left; animation: bp-motion-fill 1s var(--bp-motion-ease) both; }
+/* Copy: consuming code sets data-copied=true only after clipboard success. */
+.bp-motion-copy { transition: transform var(--bp-motion-fast) ease, background-color var(--bp-motion-normal) ease; }
+.bp-motion-copy[data-copied="true"] { background-color: var(--ui-accent-soft); color: var(--ui-accent-strong); }
+/* Notifications, skeleton and date selection retain existing spacing/borders. */
+.bp-motion-notice { animation: bp-motion-rise var(--bp-motion-normal) var(--bp-motion-ease) both; transition: background-color var(--bp-motion-normal) ease; }
+.bp-motion-notice:hover { background-color: var(--ui-accent-soft); }
+.bp-motion-bell { transform-origin: top center; transition: transform var(--bp-motion-normal) var(--bp-motion-ease); }
+.bp-motion-bell:hover { transform: rotate(-11deg); }
+.bp-motion-skeleton { position: relative; overflow: hidden; background: var(--ui-surface-muted); }
+.bp-motion-skeleton::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ui-surface) 65%, transparent), transparent); animation: bp-motion-sweep 1400ms ease-in-out infinite; }
+.bp-motion-date-cell { transition: background-color var(--bp-motion-fast) ease, color var(--bp-motion-fast) ease, box-shadow var(--bp-motion-normal) ease; }
+.bp-motion-date-cell:hover { background: var(--ui-accent-soft); }
+.bp-motion-date-cell[aria-selected="true"] { background: var(--ui-accent); color: var(--ui-surface); }
+[data-animations="off"] .bp-motion-enter, [data-animations="off"] .bp-motion-progress,
+[data-animations="off"] .bp-motion-ring, [data-animations="off"] .bp-motion-notice,
+[data-animations="off"] .bp-motion-skeleton::after { animation: none; }
+[data-animations="off"] .bp-motion-action, [data-animations="off"] .bp-motion-copy,
+[data-animations="off"] .bp-motion-bell, [data-animations="off"] .bp-motion-date-cell { transition: none; }
+[data-animations="off"] .bp-motion-action::after { animation: none; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .bp-motion-enter, .bp-motion-progress, .bp-motion-ring,
+  .bp-motion-notice, .bp-motion-skeleton::after, .bp-motion-download[data-busy="true"]::after { animation: none; }
+  .bp-motion-action, .bp-motion-copy, .bp-motion-bell, .bp-motion-date-cell { transition: none; }
+  .bp-motion-action:hover, .bp-motion-action:active, .bp-motion-bell:hover { transform: none; }
+  .bp-motion-action::after { display: none; }
+}
