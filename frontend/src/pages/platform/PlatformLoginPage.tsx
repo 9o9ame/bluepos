@@ -96,9 +96,7 @@ export function PlatformLoginPage() {
         </div>
         <form className="space-y-3 px-5 py-4" onSubmit={onSubmit}>
           {!challengeUlid ? <>
-          <p className="text-[12px] text-[var(--ui-text-muted)]">
-            Location permission is required for platform sign-in. Enable browser location to continue. Your raw coordinates are not stored in the platform account.
-          </p>
+
           <label className="block text-[12px] font-semibold">
             Email
             <input
