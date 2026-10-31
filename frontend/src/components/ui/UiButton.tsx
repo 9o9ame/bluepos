@@ -22,7 +22,7 @@ export function UiButton({
     <button
       {...props}
       type={type}
-      className={['ui-button', `is-${variant}`, className].filter(Boolean).join(' ')}
+      className={['ui-button', `is-${variant}`, 'bp-motion-action', className].filter(Boolean).join(' ')}
     >
       {icon ? <span className="ui-button-icon" aria-hidden>{icon}</span> : null}
       {label ?? children}
