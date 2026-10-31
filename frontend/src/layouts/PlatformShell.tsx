@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronLeft, ChevronRight, Fingerprint, KeyRound, LogOut, MonitorSmartphone, ShieldCheck, UserRound, Layers3, LayoutDashboard, Building2, CreditCard, Users, LockKeyhole, ClipboardList, Settings, Search } from 'lucide-react'
+import { ChevronDown, ChevronRight, Fingerprint, KeyRound, LogOut, MonitorSmartphone, ShieldCheck, UserRound, Layers3, LayoutDashboard, Building2, CreditCard, Users, LockKeyhole, ClipboardList, Settings, Search } from 'lucide-react'
 import './platform-account-dropdown.css'
 import './platform-sidebar.css'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
@@ -27,8 +27,8 @@ export function PlatformShell() {
   const canAudit = usePlatformCan('platform.audit.view')
   const canSettings = usePlatformCan('platform.settings.view')
   const [menuOpen, setMenuOpen] = useState(false)
-  const [accessOpen, setAccessOpen] = useState(true)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [accessOpen, setAccessOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const [sidebarSearch, setSidebarSearch] = useState('')
   const canAccess = canUsers || canRoles || canPermissions
 
@@ -116,16 +116,20 @@ export function PlatformShell() {
         </div>
       </header>
       <div className="platform-body flex min-h-0 flex-1">
-        <nav className="platform-sidebar-frame" data-collapsed={sidebarCollapsed} aria-label="Platform navigation">
+        <nav className="platform-sidebar-frame" data-collapsed={sidebarCollapsed} aria-label="Platform navigation"
+          onMouseEnter={() => setSidebarCollapsed(false)}
+          onMouseLeave={() => { setSidebarCollapsed(true); setAccessOpen(false) }}
+          onFocusCapture={() => setSidebarCollapsed(false)}
+          onBlurCapture={event => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+              setSidebarCollapsed(true)
+              setAccessOpen(false)
+            }
+          }}>
           <div className="platform-sidebar-panel">
             <div className="platform-sidebar-brand">
               <span className="platform-sidebar-brand-icon"><Layers3 size={18} aria-hidden="true" /></span>
               <span className="platform-sidebar-brand-text">BluePOS Platform</span>
-              <button type="button" className="platform-sidebar-collapse" onClick={() => setSidebarCollapsed(value => !value)}
-                aria-label={sidebarCollapsed ? 'Expand platform sidebar' : 'Collapse platform sidebar'}
-                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
-                {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-              </button>
             </div>
             <label className="platform-sidebar-search">
               <Search size={15} aria-hidden="true" />
@@ -140,7 +144,8 @@ export function PlatformShell() {
               ))}
               {canAccess && (sidebarSearch === '' || 'platform access'.includes(sidebarSearch.toLowerCase()) ||
                 ACCESS.some(item => item.label.toLowerCase().includes(sidebarSearch.toLowerCase()))) ? (
-                <div className="platform-sidebar-group">
+                <div className="platform-sidebar-group" onMouseEnter={() => setAccessOpen(true)} onMouseLeave={() => setAccessOpen(false)}
+                  onFocusCapture={() => setAccessOpen(true)} onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setAccessOpen(false) }}>
                   <button type="button" className="platform-sidebar-group-trigger" onClick={() => setAccessOpen(value => !value)}
                     aria-expanded={accessOpen} title="Platform Access">
                     <LockKeyhole size={16} aria-hidden="true" />
