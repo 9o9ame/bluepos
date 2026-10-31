@@ -30,7 +30,7 @@ type AppearanceContextValue = AppearancePreferences & {
 const DEFAULT_PREFERENCES: AppearancePreferences = {
   theme: 'system',
   skin: 'classic',
-  font: 'skin-default',
+  font: 'roboto-condensed',
   primaryTheme: 'blue',
   density: 'comfortable',
   radius: 'medium',
