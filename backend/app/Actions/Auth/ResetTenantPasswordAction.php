@@ -34,7 +34,7 @@ class ResetTenantPasswordAction
             ->where('tenant_id', $tenant->id)
             ->where('username', IdentityNormalizer::username($username))
             ->first();
-        if (! $membership?->user) {
+        if (! $membership?->user || ! $membership->hasOwnerAuthority()) {
             $generic();
         }
 
