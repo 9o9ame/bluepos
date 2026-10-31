@@ -1,0 +1,58 @@
+/* Platform-only soft 3D language. Reuses existing theme colors and semantics. */
+.platform-shell {
+  --platform-neo-light: color-mix(in srgb, var(--ui-surface) 94%, transparent);
+  --platform-neo-dark: color-mix(in srgb, var(--ui-text) 18%, transparent);
+  --platform-neo-rise: -5px -5px 11px var(--platform-neo-light), 6px 7px 14px var(--platform-neo-dark);
+  --platform-neo-pressed: inset 4px 4px 8px var(--platform-neo-dark), inset -4px -4px 8px var(--platform-neo-light);
+}
+.platform-shell .platform-main { background: var(--ui-surface-subtle); }
+.platform-shell .platform-main :is(.rounded.border, .rounded-lg.border, .platform-dashboard-card, .platform-dashboard-metric, .platform-tenant-monitor-panel) {
+  border-color: color-mix(in srgb, var(--ui-border) 48%, transparent);
+  background-color: var(--ui-surface-subtle);
+  box-shadow: var(--platform-neo-rise);
+}
+.platform-shell .platform-main :is(button.rounded.border, button.rounded-lg.border, a.rounded.border,
+  .platform-tenant-primary-tabs button, .platform-tenant-monitor-tabs button) {
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text);
+  border-color: color-mix(in srgb, var(--ui-border) 60%, transparent);
+  box-shadow: var(--platform-neo-rise);
+  transition: box-shadow var(--ui-transition-normal), transform var(--ui-transition-normal), background var(--ui-transition-normal);
+}
+.platform-shell .platform-main :is(button.rounded.border, button.rounded-lg.border, a.rounded.border,
+  .platform-tenant-primary-tabs button, .platform-tenant-monitor-tabs button):hover {
+  box-shadow: var(--platform-neo-pressed);
+}
+.platform-shell .platform-main :is(.platform-tenant-primary-tabs button[aria-selected="true"],
+  .platform-tenant-monitor-tabs button.is-active) {
+  background: var(--ui-accent);
+  color: var(--ui-surface);
+  box-shadow: inset 2px 2px 5px color-mix(in srgb, var(--ui-text) 20%, transparent), 3px 4px 8px var(--platform-neo-dark);
+}
+.platform-shell .platform-main :is(input:not([type="checkbox"]), select, textarea) {
+  color: var(--ui-text);
+  background: var(--ui-surface-subtle);
+  box-shadow: var(--platform-neo-pressed);
+  border-color: color-mix(in srgb, var(--ui-border) 55%, transparent);
+}
+.platform-shell .platform-main :is(input, select, textarea):focus-visible { box-shadow: var(--ui-focus-shadow), var(--platform-neo-pressed); }
+.platform-shell .platform-account-trigger, .platform-shell .platform-account-menu {
+  border-color: color-mix(in srgb, var(--ui-border) 55%, transparent);
+  background: var(--ui-surface-subtle);
+  box-shadow: var(--platform-neo-rise);
+}
+.platform-shell .platform-account-menu-item:hover,
+.platform-shell .platform-account-menu-item:focus-visible {
+  background: var(--ui-accent-soft);
+  box-shadow: var(--platform-neo-pressed);
+}
+.platform-shell .platform-account-item-icon,
+.platform-shell .platform-account-avatar {
+  box-shadow: -2px -2px 6px var(--platform-neo-light), 3px 4px 8px var(--platform-neo-dark);
+}
+.platform-shell .platform-account-trigger:hover { box-shadow: var(--platform-neo-pressed); }
+[data-animations="off"] .platform-shell .platform-main button,
+[data-animations="off"] .platform-shell .platform-account-trigger { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .platform-shell .platform-main button, .platform-shell .platform-account-trigger { transition: none; }
+}
