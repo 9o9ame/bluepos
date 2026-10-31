@@ -78,7 +78,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout title={challengeUlid ? "Verify your account" : "Sign in"}>
+    <AuthLayout title={challengeUlid ? "Verify your account" : "Sign in"} notice={deviceMessage || error || (approvalPending ? "Approval does not sign you in automatically. Use Login again after your tenant owner approves the request." : null)}>
       {challengeUlid ? <div className="auth-otp-emblem" aria-hidden="true">✦</div> : null}
       <form className="space-y-3" onSubmit={onSubmit}>
         {!challengeUlid ? <>
@@ -143,9 +143,6 @@ export function LoginPage() {
             <button type="button" className="auth-otp-back block mx-auto" onClick={() => { setChallengeUlid(null); setMfaCode(''); setError(null) }}>Back to sign in</button>
           </div>
         ) : null}
-        {deviceMessage ? <p role="status" className="text-[12px] text-[var(--ui-warning)]">{deviceMessage}</p> : null}
-        {approvalPending ? <p className="text-[12px] text-[var(--ui-text-muted)]">Approval does not sign you in automatically. Use Login again after your tenant owner approves the request.</p> : null}
-        {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
         <button
           type="submit"
           className="h-9 w-full rounded bg-[var(--ui-accent)] text-sm font-semibold text-white disabled:opacity-60"
