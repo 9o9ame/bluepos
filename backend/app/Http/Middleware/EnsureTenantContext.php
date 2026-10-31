@@ -38,6 +38,10 @@ class EnsureTenantContext
 
         $this->rejectClientTenancyOverrides($request);
 
+        // StartSession builds its response cookie after route middleware returns.
+        // Keep the selected browser-close behavior across authenticated requests.
+        config(['session.expire_on_close' => $request->session()->get(EstablishAuthSessionAction::REMEMBER) !== true]);
+
         if ($user->status !== UserStatus::Active) {
             throw new ApiException('ACCOUNT_DISABLED', 'This account is disabled.', 403);
         }
