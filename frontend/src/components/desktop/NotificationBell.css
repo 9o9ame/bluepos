@@ -123,3 +123,17 @@ html[data-animations='off'] .bp-notification-item { animation: none; }
 @media(prefers-reduced-motion: reduce) {
   .bp-notification-popover, .bp-notification-item { animation: none; }
 }
+
+/* Keep unread badge INSIDE the toolbar's 26px button boundary so the
+   ribbon/header overflow cannot clip its count. */
+.bp-notification-count {
+  top: 1px;
+  right: 1px;
+  min-width: 13px;
+  height: 13px;
+  padding-inline: 2px;
+  line-height: 13px;
+  font-size: 9px;
+  z-index: 1;
+  pointer-events: none;
+}
