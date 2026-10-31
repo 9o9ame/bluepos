@@ -144,6 +144,58 @@ class AuthenticationTest extends TestCase
         $this->assertSame((int) $device->id, (int) $blocked->device_id);
     }
 
+    public function test_owner_changed_network_otp_rebinds_trust_and_reuses_new_ip(): void
+    {
+        $owner = $this->provisionOwner('owner-network-otp-rebind');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()->where('tenant_id', $owner->tenant->id)->firstOrFail();
+        $oldIp = '192.0.2.30';
+        $newIp = '198.51.100.30';
+        $trust = app(\App\Security\DeviceNetworkTrust::class);
+        $device->trusted_until = now()->addDay();
+        $device->trusted_ip_hash = $trust->fingerprint(
+            \Illuminate\Http\Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => $oldIp])
+        );
+        $device->save();
+
+        $credentials = [
+            'tenant_code' => $this->tenantCode('owner-network-otp-rebind'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ];
+        $this->withServerVariables(['REMOTE_ADDR' => $newIp])
+            ->postJson('/api/auth/login', $credentials)
+            ->assertForbidden()->assertJsonPath('error.key', 'MFA_REQUIRED');
+
+        $challenge = \App\Models\MfaChallenge::query()
+            ->where('membership_id', $owner->membership->id)
+            ->whereNull('consumed_at')->latest('id')->firstOrFail();
+        $this->assertSame((int) $device->id, (int) $challenge->device_id);
+
+        // Dedicated test challenge code: never use or expose a real recovery OTP.
+        $challenge->code_hash = \Illuminate\Support\Facades\Hash::make('864219');
+        $challenge->expires_at = now()->addMinutes(10);
+        $challenge->save();
+
+        $this->withServerVariables(['REMOTE_ADDR' => $newIp])
+            ->postJson('/api/auth/mfa/verify', [
+                'challenge_ulid' => $challenge->ulid,
+                'code' => '864219',
+            ])->assertOk();
+
+        $device->refresh();
+        $this->assertTrue($device->isTrusted());
+        $this->assertSame(
+            $trust->fingerprint(\Illuminate\Http\Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => $newIp])),
+            $device->trusted_ip_hash
+        );
+        $this->withServerVariables(['REMOTE_ADDR' => $newIp])
+            ->postJson('/api/auth/login', $credentials)->assertOk();
+        $this->withServerVariables(['REMOTE_ADDR' => $oldIp])
+            ->postJson('/api/auth/login', $credentials)
+            ->assertForbidden()->assertJsonPath('error.key', 'MFA_REQUIRED');
+    }
+
     public function test_owner_with_another_tenants_browser_cookie_gets_own_recovery_otp(): void
     {
         $first = $this->provisionOwner('foreign-browser-first');
