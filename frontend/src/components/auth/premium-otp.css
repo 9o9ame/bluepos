@@ -21,3 +21,18 @@
 .auth-showcase .auth-otp-back { color: var(--ui-accent-strong); font-size: 12px; font-weight: 650; }
 .auth-showcase .auth-showcase-form-card:has(.premium-otp) { padding-top: 35px; padding-bottom: 35px; }
 @media (prefers-reduced-motion: reduce) { .auth-showcase .premium-otp input { transition: none; } }
+
+.auth-showcase .auth-showcase-form-card:has(.premium-otp) .auth-showcase-heading,
+.auth-showcase .auth-showcase-form-card:has(.premium-otp) form {
+  animation: premium-otp-step-in 560ms cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes premium-otp-step-in {
+  from { opacity: 0; transform: translateY(9px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-showcase .auth-showcase-form-card:has(.premium-otp) .auth-showcase-heading,
+  .auth-showcase .auth-showcase-form-card:has(.premium-otp) form { animation: none; }
+}
+[data-animations="off"] .auth-showcase .auth-showcase-form-card:has(.premium-otp) .auth-showcase-heading,
+[data-animations="off"] .auth-showcase .auth-showcase-form-card:has(.premium-otp) form { animation: none; }
