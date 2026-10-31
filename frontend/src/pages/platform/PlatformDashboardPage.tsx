@@ -58,6 +58,65 @@ function TenantMetric({ label, value, total, tone, index }: {
   )
 }
 
+
+type StatusDatum = { label: string; count: number; tone: 'success' | 'warning' | 'danger' | 'primary' }
+
+function StatusCharts({ values, total }: { values: StatusDatum[]; total: number | null }) {
+  const known = values.reduce((sum, item) => sum + item.count, 0)
+  // The API exposes more statuses than the three summary counts; show their remainder explicitly.
+  const remainder = total === null ? 0 : Math.max(0, total - known)
+  const rows: StatusDatum[] = remainder > 0 ? [...values, { label: 'Other statuses', count: remainder, tone: 'primary' }] : values
+  const max = Math.max(1, ...rows.map(item => item.count))
+  const circumference = 2 * Math.PI * 62
+  let offset = 0
+  if (total === null) return null
+
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="platform-dashboard-card platform-dashboard-chart-card">
+        <h2 className="mb-1 text-sm font-semibold">Tenant status breakdown</h2>
+        <p className="platform-dashboard-chart-hint">Live totals by tenant status</p>
+        <div className="platform-dashboard-donut-layout">
+          <svg className="platform-dashboard-donut" viewBox="0 0 180 180" role="img" aria-label={`Tenant status: ${rows.map(item => `${item.label} ${item.count}`).join(', ')}`}>
+            <circle cx="90" cy="90" r="62" fill="none" stroke="var(--ui-surface-muted)" strokeWidth="19" />
+            {total > 0 ? rows.map(item => {
+              const length = (item.count / total) * circumference
+              const segmentOffset = offset
+              offset += length
+              return <circle key={item.label} className={`platform-dashboard-segment platform-dashboard-segment-${item.tone}`}
+                cx="90" cy="90" r="62" fill="none" strokeWidth="19" strokeDasharray={`${length} ${circumference - length}`}
+                strokeDashoffset={-segmentOffset} transform="rotate(-90 90 90)" />
+            }) : null}
+            <text x="90" y="85" textAnchor="middle" className="platform-dashboard-donut-number">{total.toLocaleString()}</text>
+            <text x="90" y="104" textAnchor="middle" className="platform-dashboard-donut-label">Tenants</text>
+          </svg>
+          <div className="platform-dashboard-chart-legend">
+            {rows.map(item => <div className="platform-dashboard-legend-line" key={item.label}>
+              <span className={`platform-dashboard-legend-dot platform-dashboard-tone-${item.tone}`} />
+              <span>{item.label}</span><strong>{item.count.toLocaleString()}</strong>
+            </div>)}
+            {total === 0 ? <p className="text-[var(--ui-text-muted)]">No tenants yet.</p> : null}
+          </div>
+        </div>
+      </div>
+      <div className="platform-dashboard-card platform-dashboard-chart-card">
+        <h2 className="mb-1 text-sm font-semibold">Status comparison</h2>
+        <p className="platform-dashboard-chart-hint">Current tenant counts — not historical growth</p>
+        <div className="platform-dashboard-bar-list">
+          {rows.map(item => <div className="platform-dashboard-bar-row" key={item.label}>
+            <div className="platform-dashboard-bar-heading"><span>{item.label}</span><strong>{item.count.toLocaleString()}</strong></div>
+            <div className="platform-dashboard-bar-track">
+              <span key={item.count} className={`platform-dashboard-bar platform-dashboard-tone-${item.tone}`}
+                style={{ '--bar-width': `${(item.count / max) * 100}%` } as CSSProperties} />
+            </div>
+          </div>)}
+          {total === 0 ? <p className="text-[var(--ui-text-muted)]">No tenants yet.</p> : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function PlatformDashboardPage() {
   const query = useQuery({ queryKey: ['platform', 'dashboard'], queryFn: fetchPlatformDashboard })
   const data = query.data
@@ -77,6 +136,11 @@ export function PlatformDashboardPage() {
           <TenantMetric key={metric.label} label={metric.label} value={metric.value} total={total} tone={metric.tone} index={index} />
         ))}
       </div>
+      <StatusCharts total={total} values={[
+        { label: 'Active', count: data?.tenants.active ?? 0, tone: 'success' },
+        { label: 'Trial', count: data?.tenants.trial ?? 0, tone: 'warning' },
+        { label: 'Suspended', count: data?.tenants.suspended ?? 0, tone: 'danger' },
+      ]} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="platform-dashboard-card">
           <h2 className="mb-2 text-sm font-semibold">Plans</h2>
