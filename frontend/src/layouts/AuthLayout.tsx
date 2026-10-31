@@ -6,13 +6,13 @@ export function AuthLayout({ title, children }: { title: string; children: React
     <div className="auth-layout auth-showcase">
       <div className="auth-showcase-form-side">
         <div className="auth-showcase-ring">
-          <div className="auth-card auth-showcase-form-card">
-            <div className="auth-card-header auth-showcase-heading">
+          <div className="auth-showcase-form-card">
+            <div className="auth-showcase-heading">
               <div className="auth-brand">BLUEPOS</div>
               <h1 className="auth-title">{title}</h1>
               <p className="auth-showcase-subtitle">Access your workspace securely</p>
             </div>
-            <div className="auth-card-body">{children}</div>
+            <div className="auth-showcase-form-body">{children}</div>
           </div>
         </div>
       </div>
