@@ -2087,3 +2087,16 @@ Statuses: Completed = green, Partial = amber, Pending = red, In Progress = blue.
 - Updated `frontend/src/components/ui/ListLoadingIndicator.css` (`d1101b1c`, `829761a4`) for shimmer when visible, retaining existing spinner and geometry.
 - Updated tenant `frontend/src/components/desktop/NotificationBell.tsx` (`1b211b8f`) and `NotificationBell.css` (`df5b1921`) for bell hover and staggered notification items, preserving notifications, audio, approval flows and authorizations.
 - **Pending:** canonical date input/range owner discovery + integration; dedicated clipboard/download lifecycle motions in all consumers; tenant dashboard chart mapping; focused frontend typecheck/build and browser acceptance. Do not mark all seven completed. No backend/schema changes. #50 retention deferred.
+
+
+## 2026-10-31 — Platform Dashboard status chart interaction pass (feature/superadmin)
+
+**Scope:** Platform Dashboard charts only; no tenant dashboard, frozen UI, backend API, schema or financial data changes.
+
+- Inspected `PROJECT_UI_DESIGN_SYSTEM.md`, `PlatformDashboardPage.tsx` and `platform-dashboard.css`. Existing dashboard API exposes current tenant total, active, trial, suspended and related snapshots; historical series/revenue are NOT available. Continue to label the curved chart as a current status profile, not fabricated history or revenue.
+- **Implemented and committed:** status legend selection now highlights its actual corresponding donut segment, updates center count/label, and emphasizes the matching profile point and status label while dimming others; clicking the selected legend item resets the selection. Added accessible pressed state and label with API-derived count/share.
+- Added explicit chart loading message and error with functional Retry action instead of silently omitting charts when dashboard query fails.
+- KPI count-up now checks the BluePOS Animations Off preference as well as OS reduced motion.
+- CSS respects existing theme tokens, preserved chart/card geometry and added motion-off/reduced-motion transition fallbacks. Commits: `e896f767`, `d0f40d79`, `4c6443ae`.
+- **Verification pending:** frontend typecheck/build and actual browser interaction, narrow viewport, theme/dark-mode, motion Off/reduced-motion accessibility review. GitHub remote edits are not locally executable here. User acceptance for chart visuals is still pending; do NOT claim the entire seven-video animation program complete.
+- Security milestone #50 (Hostinger production retention scheduler) remains deferred.
