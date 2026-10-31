@@ -6,7 +6,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 import { AuthLayout } from '../layouts/AuthLayout'
 
 export function ChangePasswordPage() {
-  const { session, isLoading, logout } = useAuth()
+  const { session, isLoading, logout, refreshSession } = useAuth()
   const navigate = useNavigate()
   const [current, setCurrent] = useState('')
   const [password, setPassword] = useState('')
@@ -29,6 +29,7 @@ export function ChangePasswordPage() {
         password,
         password_confirmation: confirm,
       })
+      await refreshSession()
       navigate('/', { replace: true })
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Unable to change password.')
