@@ -101,3 +101,39 @@
     transition: none;
   }
 }
+
+/* Same width for account trigger (shutter) and expanded menu. */
+.platform-account-dropdown {
+  width: min(310px, calc(100vw - 24px));
+}
+.platform-account-trigger {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.platform-account-menu {
+  width: 100%;
+  box-sizing: border-box;
+  clip-path: inset(0 0 100% 0 round var(--panel-radius));
+  transform: translateY(-8px) scaleY(.97);
+  transform-origin: top center;
+  transition:
+    clip-path 760ms cubic-bezier(.22,1,.36,1),
+    opacity 650ms cubic-bezier(.22,1,.36,1),
+    transform 760ms cubic-bezier(.22,1,.36,1),
+    visibility 0s linear 760ms;
+}
+.platform-account-menu[data-open="true"] {
+  clip-path: inset(0 0 0 0 round var(--panel-radius));
+  transform: translateY(0) scaleY(1);
+  transition:
+    clip-path 760ms cubic-bezier(.22,1,.36,1),
+    opacity 650ms cubic-bezier(.22,1,.36,1),
+    transform 760ms cubic-bezier(.22,1,.36,1),
+    visibility 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .platform-account-menu, .platform-account-menu[data-open="true"] {
+    transition: none;
+  }
+}
