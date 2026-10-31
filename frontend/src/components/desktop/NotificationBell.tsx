@@ -97,6 +97,15 @@ export function NotificationBell({ session, onOpenDevices }: {
   }, [isOwner, session.tenant.ulid, session.membership.ulid, queryClient])
 
   useEffect(() => {
+    const handleTone = (event: Event) => {
+      const detail = (event as CustomEvent<{ key: string; value: string }>).detail
+      if (detail?.key === preferenceKey) setTone(detail.value)
+    }
+    window.addEventListener('bluepos-notification-tone-change', handleTone)
+    return () => window.removeEventListener('bluepos-notification-tone-change', handleTone)
+  }, [preferenceKey])
+
+  useEffect(() => {
     if (lastScope.current === scope) return
     lastScope.current = scope
     known.current = null
