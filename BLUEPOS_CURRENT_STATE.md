@@ -1939,3 +1939,11 @@ Statuses: Completed = green, Partial = amber, Pending = red, In Progress = blue.
 - Reversible migration `2026_10_27_230000_add_geoip_place_to_login_locations.php`, plus earlier `210000` location observations and `220000` temporary approval request location fields. No destructive DB or Git operations.
 
 **Next execution priority:** do not reimplement already delivered functionality. Pick smallest meaningful acceptance batch from the 13, inspect minimum relevant code, close requirements with substantive tests, and only promote numbered statuses with evidence. For #45 real provider lookup, deployment token is a policy/dependency, not permission to invent results; for #50 confirm scheduling and full retention; for #48 concurrency tests must use test DB `bluepos_test`, NEVER dev database. Use SOL minimum for auth/tenancy/location/security, CODEX only when genuinely multi-file. Current code > memory. Respect frozen UI. No broad repo audit, no force push/reset hard/unsafe branch switch.
+
+
+## 2026-10-31 — Follow-up: #4 owner device/network trust regression tests added (NOT YET RUN)
+
+- GitHub commit `49c98effabb150b39bbf50f9f4ec16c107d58818` adds `backend/tests/Unit/DeviceNetworkTrustTest.php` with three focused cases: active vs expired/revoked trust, same-vs-changed public IP HMAC binding, and documented legacy devices without an IP binding. No production behavior changed.
+- Focused validation PENDING, run only with test configuration `bluepos_test`: `cd backend && php artisan test --filter=DeviceNetworkTrustTest`. Unit coverage alone does NOT complete the owner first-login, expiry and changed-network HTTP/E2E acceptance for #4; keep #4 Partial.
+- Document reconciliation caveat: the handoff dated 2026-10-31 retains the preliminary 37/10/3 tally while other 2026-10-28 notes contain later scoped acceptance for #48/#50 and even 50/50. These different acceptance scopes must not be silently conflated. Current release and full HTTP concurrency / deployment verification remain pending. Do not infer current local test PASS from GitHub commit.
+- Stayed on approved `feature/superadmin`; no new branch, main merge, forced update, migration, or persistent DB operation.
