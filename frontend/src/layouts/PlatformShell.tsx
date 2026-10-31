@@ -64,7 +64,7 @@ export function PlatformShell() {
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             aria-controls="platform-account-menu"
-            className="platform-account-trigger"
+            className="platform-account-trigger bp-motion-action"
             onClick={() => setMenuOpen((open) => !open)}
           >
             <span className="platform-account-avatar"><Layers3 size={16} aria-hidden="true" /></span>
@@ -88,7 +88,7 @@ export function PlatformShell() {
                   type="button"
                   role="menuitem"
                   tabIndex={menuOpen ? 0 : -1}
-                  className="platform-account-menu-item"
+                  className="platform-account-menu-item bp-motion-action"
                   onClick={() => {
                     setMenuOpen(false)
                     navigate(to)
@@ -104,7 +104,7 @@ export function PlatformShell() {
                 type="button"
                 role="menuitem"
                 tabIndex={menuOpen ? 0 : -1}
-                className="platform-account-menu-item platform-account-menu-signout"
+                className="platform-account-menu-item platform-account-menu-signout bp-motion-action"
                 onClick={() => {
                   setMenuOpen(false)
                   void logout()
