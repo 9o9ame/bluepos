@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import './auth-showcase.css'
 
-export function AuthLayout({ title, children }: { title: string; children: ReactNode }) {
+export function AuthLayout({ title, children, notice }: { title: string; children: ReactNode; notice?: ReactNode }) {
   return (
     <div className="auth-layout auth-showcase">
       <div className="auth-showcase-form-side">
@@ -16,6 +16,7 @@ export function AuthLayout({ title, children }: { title: string; children: React
           </div>
         </div>
       </div>
+      {notice ? <div className="auth-showcase-notice" role="status" aria-live="polite">{notice}</div> : null}
       <aside className="auth-showcase-promo" aria-label="BluePOS information">
         <div className="auth-showcase-promo-content">
           <div className="auth-showcase-promo-mark">BP</div>
