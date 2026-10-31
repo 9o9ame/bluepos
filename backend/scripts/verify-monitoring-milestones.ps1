@@ -2,9 +2,13 @@
 # Requires isolated bluepos_test; never executes migrations or cleanup commands.
 $ErrorActionPreference = 'Stop'
 $backend = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+$previousDbConnection = [Environment]::GetEnvironmentVariable('DB_CONNECTION', 'Process')
+$previousDbUrl = [Environment]::GetEnvironmentVariable('DB_URL', 'Process')
 Push-Location $backend
 try {
     $env:APP_ENV = 'testing'
+    $env:DB_CONNECTION = 'pgsql'
+    $env:DB_URL = ''
     $env:DB_DATABASE = 'bluepos_test'
     $guard = & php scripts/guard-test-database.php
     if ($LASTEXITCODE -ne 0 -or ($guard -join '').Trim() -ne 'TEST_DATABASE_OK') {
@@ -27,4 +31,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Monitoring milestone test batch FAILED.' }
     Write-Host 'Monitoring backend acceptance PASS; confirm Owner/Platform browser screens for #24 #28 #29 #37 #39 #43 #44.'
 }
-finally { Pop-Location }
+finally {
+    [Environment]::SetEnvironmentVariable('DB_CONNECTION', $previousDbConnection, 'Process')
+    [Environment]::SetEnvironmentVariable('DB_URL', $previousDbUrl, 'Process')
+    Pop-Location
+}
