@@ -86,7 +86,7 @@ export function PlatformLoginPage() {
     <div className="platform-auth-page auth-showcase">
       <div className="auth-showcase-form-side">
       <div className="auth-showcase-ring">
-      <div className="platform-auth-card auth-showcase-form-card">
+      <div className="auth-showcase-form-card">
         <div className="auth-showcase-heading">
           <div className="auth-brand">BLUEPOS PLATFORM</div>
           <h1 className="auth-title">Sign in</h1>
