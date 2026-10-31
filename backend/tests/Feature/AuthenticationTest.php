@@ -2303,6 +2303,25 @@ class AuthenticationTest extends TestCase
         $this->assertEmpty($owner->user->fresh()->getRememberToken());
     }
 
+    public function test_tenant_owner_password_change_clears_required_flag_and_establishes_fresh_session(): void
+    {
+        $this->signInOwner('owner-initial-password-change')->assertOk();
+        $membership = \App\Models\Membership::query()
+            ->whereHas('tenant', fn ($q) => $q->where('code', $this->tenantCode('owner-initial-password-change')))
+            ->where('username', 'owner')->firstOrFail();
+        $membership->user->must_change_password = true;
+        $membership->user->save();
+
+        $this->getJson('/api/auth/me')->assertOk()->assertJsonPath('must_change_password', true);
+        $this->postJson('/api/auth/change-password', [
+            'current_password' => 'password123',
+            'password' => 'new-password-123',
+            'password_confirmation' => 'new-password-123',
+        ])->assertOk();
+        $this->getJson('/api/auth/me')->assertOk()->assertJsonPath('must_change_password', false);
+        $this->assertFalse((bool) $membership->user->fresh()->must_change_password);
+    }
+
     public function test_tenant_remember_me_off_uses_browser_session_cookie(): void
     {
         $owner = $this->provisionOwner('tenant-no-remember-cookie');
