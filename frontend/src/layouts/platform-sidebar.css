@@ -60,3 +60,38 @@
 @media (prefers-reduced-motion: reduce) {
   .platform-sidebar-submenu, .platform-sidebar-group-chevron { transition: none; }
 }
+
+/* Video-inspired soft raised shell; colors remain BluePOS theme tokens. */
+.platform-sidebar-frame { perspective: 900px; }
+.platform-sidebar-panel {
+  background: linear-gradient(145deg, var(--ui-surface), var(--ui-surface-subtle));
+  border: 1px solid var(--ui-border);
+  box-shadow: var(--ui-card-shadow), 8px 10px 20px color-mix(in srgb, var(--ui-text) 11%, transparent),
+    -5px -5px 13px color-mix(in srgb, var(--ui-surface) 88%, transparent),
+    inset 1px 1px 0 color-mix(in srgb, var(--ui-surface) 95%, transparent);
+  transition: box-shadow var(--ui-transition-normal), transform var(--ui-transition-normal);
+}
+.platform-sidebar-frame:not([data-collapsed="true"]) .platform-sidebar-panel {
+  box-shadow: var(--ui-card-shadow), 12px 14px 25px color-mix(in srgb, var(--ui-text) 13%, transparent),
+    -6px -6px 16px color-mix(in srgb, var(--ui-surface) 94%, transparent),
+    inset 1px 1px 0 var(--ui-surface);
+}
+.platform-sidebar-brand-icon, .platform-sidebar-search, .platform-sidebar-link,
+.platform-sidebar-group-trigger, .platform-sidebar-footer-item {
+  box-shadow: inset 1px 1px 0 color-mix(in srgb, var(--ui-surface) 85%, transparent),
+    2px 3px 6px color-mix(in srgb, var(--ui-text) 5%, transparent);
+}
+.platform-sidebar-link:hover, .platform-sidebar-footer-item:hover,
+.platform-sidebar-group-trigger:hover {
+  transform: translateY(-1px);
+  box-shadow: 2px 4px 8px color-mix(in srgb, var(--ui-text) 11%, transparent),
+    inset 1px 1px 0 var(--ui-surface);
+}
+.platform-sidebar-link.is-active {
+  box-shadow: inset 2px 2px 6px color-mix(in srgb, var(--ui-text) 9%, transparent),
+    1px 2px 4px color-mix(in srgb, var(--ui-accent) 13%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .platform-sidebar-panel { transition: none; }
+}
+[data-animations="off"] .platform-sidebar-panel { transition: none; }
