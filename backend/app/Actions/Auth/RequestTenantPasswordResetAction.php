@@ -37,7 +37,7 @@ class RequestTenantPasswordResetAction
             : null;
 
         $address = EmailNormalizer::normalize($membership?->user?->recoveryAddress());
-        if ($membership && $address) {
+        if ($membership && $membership->hasOwnerAuthority() && $address) {
             PasswordResetChallenge::query()
                 ->where('membership_id', $membership->id)
                 ->whereNull('consumed_at')
