@@ -70,8 +70,7 @@ export function PlatformShell() {
             </span>
             <span className="platform-account-chevron"><ChevronDown size={16} aria-hidden="true" /></span>
           </button>
-          {menuOpen ? (
-            <div id="platform-account-menu" role="menu" aria-label="Platform account" className="platform-account-menu">
+          <div id="platform-account-menu" role="menu" aria-label="Platform account" aria-hidden={!menuOpen} className="platform-account-menu" data-open={menuOpen}>
               {[
                 { to: '/platform/account/profile', label: 'My Profile', hint: 'Personal information', icon: UserRound },
                 { to: '/platform/account/password', label: 'Change Password', hint: 'Update your password', icon: KeyRound },
@@ -84,6 +83,7 @@ export function PlatformShell() {
                   key={to}
                   type="button"
                   role="menuitem"
+                  tabIndex={menuOpen ? 0 : -1}
                   className="platform-account-menu-item"
                   onClick={() => {
                     setMenuOpen(false)
@@ -99,6 +99,7 @@ export function PlatformShell() {
               <button
                 type="button"
                 role="menuitem"
+                tabIndex={menuOpen ? 0 : -1}
                 className="platform-account-menu-item platform-account-menu-signout"
                 onClick={() => {
                   setMenuOpen(false)
@@ -108,8 +109,7 @@ export function PlatformShell() {
                 <span className="platform-account-item-icon"><LogOut size={16} aria-hidden="true" /></span>
                 <span className="platform-account-item-text"><strong>Sign Out</strong><small>End your session</small></span>
               </button>
-            </div>
-          ) : null}
+          </div>
         </div>
       </header>
       <div className="platform-body flex min-h-0 flex-1">
