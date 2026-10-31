@@ -130,3 +130,56 @@
   box-shadow: -3px -3px 6px color-mix(in srgb,var(--ui-surface) 90%,transparent),
     4px 5px 9px color-mix(in srgb,var(--ui-text) 17%,transparent);
 }
+
+/* Adapted from user-supplied Neumorphic-Sidebar-UI:
+   solid active accent, pressed inset hover, raised outer shell.
+   No reference red/gray is imported: only existing BluePOS theme tokens. */
+.platform-sidebar-panel {
+  background: var(--ui-surface-subtle);
+  border-radius: max(20px, var(--panel-radius));
+  box-shadow:
+    -13px -13px 25px color-mix(in srgb,var(--ui-surface) 97%,transparent),
+    15px 17px 27px color-mix(in srgb,var(--ui-text) 25%,transparent),
+    inset 1px 1px 1px color-mix(in srgb,var(--ui-surface) 80%,transparent);
+}
+.platform-sidebar-link:not(.is-active),
+.platform-sidebar-group-trigger,
+.platform-sidebar-footer-item {
+  box-shadow: none;
+  background: transparent;
+  transition: box-shadow 350ms cubic-bezier(.22,1,.36,1),
+    color 300ms ease, transform 300ms ease, background 300ms ease;
+}
+.platform-sidebar-link:not(.is-active):hover,
+.platform-sidebar-group-trigger:hover,
+.platform-sidebar-footer-item:hover {
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text);
+  transform: translateY(0);
+  box-shadow:
+    inset 4px 4px 7px color-mix(in srgb,var(--ui-text) 15%,transparent),
+    inset -4px -4px 8px color-mix(in srgb,var(--ui-surface) 98%,transparent);
+}
+.platform-sidebar-link.is-active,
+.platform-sidebar-link.is-active:hover {
+  color: var(--ui-surface);
+  background: linear-gradient(145deg,var(--ui-accent),var(--ui-accent-strong));
+  border-radius: max(12px,var(--control-radius));
+  box-shadow:
+    4px 6px 12px color-mix(in srgb,var(--ui-text) 25%,transparent),
+    inset 1px 1px 2px color-mix(in srgb,var(--ui-surface) 22%,transparent),
+    inset -2px -2px 5px color-mix(in srgb,var(--ui-text) 20%,transparent);
+}
+.platform-sidebar-link.is-active svg { color: inherit; }
+.platform-sidebar-link.is-active:before { display: none; }
+.platform-sidebar-link.is-active:hover {
+  box-shadow: inset 3px 3px 7px color-mix(in srgb,var(--ui-text) 27%,transparent),
+    inset -2px -2px 5px color-mix(in srgb,var(--ui-surface) 17%,transparent),
+    5px 7px 13px color-mix(in srgb,var(--ui-text) 19%,transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .platform-sidebar-link, .platform-sidebar-group-trigger, .platform-sidebar-footer-item { transition: none; }
+}
+[data-animations="off"] .platform-sidebar-link,
+[data-animations="off"] .platform-sidebar-group-trigger,
+[data-animations="off"] .platform-sidebar-footer-item { transition: none; }
