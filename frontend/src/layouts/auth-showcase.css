@@ -503,3 +503,49 @@
     transform: translateX(clamp(12px, 3.5vw, 68px));
   }
 }
+
+/* Authentication feedback is independent of the fixed circular geometry.
+   Long device/network messages wrap in a viewport toast, never in the form. */
+.auth-showcase-notice {
+  position: fixed;
+  z-index: 40;
+  inset-inline-end: clamp(16px, 3vw, 44px);
+  bottom: 20px;
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(35dvh, 180px);
+  overflow-y: auto;
+  padding: 12px 16px;
+  border: 1px solid var(--ui-border);
+  border-inline-start: 4px solid var(--ui-warning);
+  border-radius: var(--panel-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  box-shadow: var(--ui-card-shadow);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.auth-showcase .auth-showcase-password-form {
+  min-width: 0;
+}
+.auth-showcase .auth-showcase-password-form > input {
+  display: block;
+  min-width: 0;
+}
+.auth-showcase .auth-showcase-password-form > button {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+}
+.auth-showcase .auth-showcase-password-form > button[type="button"] {
+  color: var(--ui-text);
+  background: var(--ui-surface-subtle);
+  border-color: var(--ui-border);
+}
+@media (max-width: 700px) {
+  .auth-showcase-notice {
+    inset-inline: 16px;
+    width: auto;
+    bottom: 12px;
+  }
+}
