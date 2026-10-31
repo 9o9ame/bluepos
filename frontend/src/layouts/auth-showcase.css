@@ -239,3 +239,86 @@
     padding: 26px;
   }
 }
+
+/* Responsive circular login: short viewports scroll the PAGE, never turn the
+   circular form into a rectangular card. Switch to single-column before the
+   3-field form becomes narrower than its accessible content. */
+.auth-showcase {
+  min-height: 100dvh;
+  overflow: visible;
+}
+.auth-showcase .auth-showcase-form-side {
+  min-width: 0;
+  min-height: 100dvh;
+  overflow: visible;
+  padding: 28px;
+  align-content: center;
+}
+.auth-showcase .auth-showcase-ring {
+  width: min(100%, 620px);
+  aspect-ratio: 1;
+  min-height: 0;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.auth-showcase .auth-showcase-form-card {
+  height: 100%;
+  border-radius: 50%;
+  overflow: visible;
+}
+/* Preserve circular geometry even if the available VIEWPORT HEIGHT shrinks:
+   the document may scroll rather than clipping verification or error text. */
+@media (max-height: 740px) {
+  .auth-showcase { min-height: 760px; }
+  .auth-showcase .auth-showcase-form-side { min-height: 760px; }
+  .auth-showcase .auth-showcase-ring { aspect-ratio: 1; border-radius: 50%; }
+  .auth-showcase .auth-showcase-form-card {
+    height: 100%;
+    border-radius: 50%;
+    padding: clamp(28px, 3.2vw, 52px) clamp(48px, 4.7vw, 76px);
+  }
+}
+/* A two-column 1024px laptop leaves only ~480px for three fields and the GPS
+   disclosure. Use a centered circle instead of shrinking until controls spill. */
+@media (max-width: 1199px) {
+  .auth-showcase { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .auth-showcase::before, .auth-showcase::after,
+  .auth-showcase .auth-showcase-promo { display: none; }
+  .auth-showcase .auth-showcase-form-side {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 100dvh;
+    padding: 28px 22px;
+    overflow: visible;
+  }
+  .auth-showcase .auth-showcase-ring {
+    width: min(100%, 620px);
+    max-width: 620px;
+    min-height: 0;
+    aspect-ratio: 1;
+    border-radius: 50%;
+  }
+  .auth-showcase .auth-showcase-form-card {
+    height: 100%;
+    border-radius: 50%;
+    padding: clamp(32px, 4vw, 56px) clamp(52px, 6vw, 80px);
+  }
+}
+@media (max-width: 1199px) and (max-height: 740px) {
+  .auth-showcase .auth-showcase-form-side { min-height: 760px; }
+}
+/* On actual phone widths, retain a usable scrollable card rather than
+   squeezing 3 fields and privacy text inside an impossibly small circle. */
+@media (max-width: 599px) {
+  .auth-showcase .auth-showcase-form-side { padding: 20px 14px; }
+  .auth-showcase .auth-showcase-ring {
+    width: 100%;
+    aspect-ratio: auto;
+    border-radius: var(--panel-radius);
+  }
+  .auth-showcase .auth-showcase-form-card {
+    height: auto;
+    border-radius: var(--panel-radius);
+    padding: 26px;
+  }
+}
