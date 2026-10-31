@@ -1,0 +1,31 @@
+/* Devices-page-only table viewport. Shared PosDataGrid visual styling stays authoritative. */
+.devices-tab-content .devices-grid-card {
+  min-height: 0;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+  overflow: hidden;
+  background: var(--ui-surface);
+}
+.devices-tab-content .devices-grid-card .pos-grid-wrap {
+  max-height: calc(100dvh - 350px);
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.devices-tab-content .devices-grid-card--history .pos-grid-wrap {
+  max-height: calc(100dvh - 400px);
+}
+.devices-tab-content .devices-grid-card .pos-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ui-table-header);
+}
+@media (max-height: 650px) {
+  .devices-tab-content .devices-grid-card .pos-grid-wrap {
+    max-height: max(140px, calc(100dvh - 350px));
+  }
+  .devices-tab-content .devices-grid-card--history .pos-grid-wrap {
+    max-height: max(140px, calc(100dvh - 400px));
+  }
+}
