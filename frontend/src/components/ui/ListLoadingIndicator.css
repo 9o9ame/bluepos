@@ -46,8 +46,9 @@ html[data-animations='off'] .ui-list-loading-spinner {
   position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(90deg, transparent 15%, color-mix(in srgb, var(--ui-surface) 58%, transparent) 50%, transparent 85%);
   animation: bp-motion-sweep 1550ms ease-in-out infinite;
-  z-index: -1;
+  z-index: 0;
 }
+.ui-list-loading > * { position: relative; z-index: 1; }
 html[data-animations='off'] .ui-list-loading::before { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .ui-list-loading-spinner, .ui-list-loading::before { animation: none; }
