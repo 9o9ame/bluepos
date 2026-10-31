@@ -50,7 +50,7 @@ class AuthSessionResource extends JsonResource
             'appearance' => [
                 'theme' => $this->user->appearance_theme ?: 'system',
                 'skin' => $this->user->appearance_skin ?: 'classic',
-                'font' => $this->user->appearance_font ?: 'skin-default',
+                'font' => in_array($this->user->appearance_font, [null, '', 'skin-default'], true) ? 'roboto-condensed' : $this->user->appearance_font,
                 'primaryTheme' => $this->user->appearance_primary_theme ?: 'blue',
                 'density' => $this->user->appearance_density ?: 'comfortable',
                 'radius' => $this->user->appearance_radius ?: 'medium',
