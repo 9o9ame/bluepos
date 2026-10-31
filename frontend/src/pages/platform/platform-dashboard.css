@@ -59,3 +59,39 @@
 @media (prefers-reduced-motion: reduce) {
   .platform-dashboard-metric, .platform-dashboard-card, .platform-dashboard-fill { animation: none; }
 }
+
+/* Real current-status charts; the historical revenue curve in the reference has no API source yet. */
+.platform-dashboard-chart-card { min-height: 280px; }
+.platform-dashboard-chart-hint { color: var(--ui-text-muted); font-size: 11px; margin-bottom: 10px; }
+.platform-dashboard-donut-layout { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.platform-dashboard-donut { width: min(190px, 52%); min-width: 150px; flex: 0 0 auto; overflow: visible; }
+.platform-dashboard-donut-number { fill: var(--ui-text); font-weight: 750; font-size: 25px; }
+.platform-dashboard-donut-label { fill: var(--ui-text-muted); font-size: 11px; }
+.platform-dashboard-segment { stroke: var(--ui-accent); animation: platform-dashboard-donut-enter 1100ms cubic-bezier(.22,1,.36,1) both; transform-origin: center; }
+.platform-dashboard-segment-success { stroke: var(--ui-success); }
+.platform-dashboard-segment-warning { stroke: var(--ui-warning); }
+.platform-dashboard-segment-danger { stroke: var(--ui-danger); }
+.platform-dashboard-chart-legend { flex: 1; min-width: 150px; font-size: 12px; }
+.platform-dashboard-legend-line { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
+.platform-dashboard-legend-line strong { margin-left: auto; font-variant-numeric: tabular-nums; }
+.platform-dashboard-legend-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ui-accent); flex: 0 0 auto; }
+.platform-dashboard-legend-dot.platform-dashboard-tone-success { background: var(--ui-success); }
+.platform-dashboard-legend-dot.platform-dashboard-tone-warning { background: var(--ui-warning); }
+.platform-dashboard-legend-dot.platform-dashboard-tone-danger { background: var(--ui-danger); }
+.platform-dashboard-bar-list { display: grid; gap: 16px; padding-top: 12px; }
+.platform-dashboard-bar-heading { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; margin-bottom: 5px; }
+.platform-dashboard-bar-heading strong { font-variant-numeric: tabular-nums; }
+.platform-dashboard-bar-track { height: 13px; background: var(--ui-surface-muted); border-radius: var(--control-radius); overflow: hidden; }
+.platform-dashboard-bar { display: block; width: var(--bar-width, 0%); height: 100%; background: var(--ui-accent); border-radius: inherit; transform-origin: left; animation: platform-dashboard-fill 1250ms cubic-bezier(.22,1,.36,1) both; }
+.platform-dashboard-bar.platform-dashboard-tone-success { background: var(--ui-success); }
+.platform-dashboard-bar.platform-dashboard-tone-warning { background: var(--ui-warning); }
+.platform-dashboard-bar.platform-dashboard-tone-danger { background: var(--ui-danger); }
+@keyframes platform-dashboard-donut-enter { from { opacity: .1; stroke-dasharray: 0 390; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .platform-dashboard-segment, .platform-dashboard-bar { animation: none; }
+}
+[data-animations="off"] .platform-dashboard-metric,
+[data-animations="off"] .platform-dashboard-card,
+[data-animations="off"] .platform-dashboard-fill,
+[data-animations="off"] .platform-dashboard-segment,
+[data-animations="off"] .platform-dashboard-bar { animation: none; }
