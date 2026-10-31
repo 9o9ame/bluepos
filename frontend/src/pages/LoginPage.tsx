@@ -77,9 +77,7 @@ export function LoginPage() {
 
   return (
     <AuthLayout title={challengeUlid ? "Verify your account" : "Sign in"}>
-      {!challengeUlid ? <p className="mb-3 text-[12px] text-[var(--ui-text-muted)]">
-        Sign-in requires browser location permission. Only approximate coordinates are saved for 30 days and are visible to authorized tenant security staff and platform monitoring. Where enabled, a geolocation provider may also receive your public IP to estimate country, region and city; these location labels share the same 30-day retention. Denying permission prevents sign-in.
-      </p> : <div className="auth-otp-emblem" aria-hidden="true">✦</div>}
+      {challengeUlid ? <div className="auth-otp-emblem" aria-hidden="true">✦</div> : null}
       <form className="space-y-3" onSubmit={onSubmit}>
         {!challengeUlid ? <>
         <label className="block text-[12px] font-semibold">
