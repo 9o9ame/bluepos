@@ -67,6 +67,13 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
   const remainder = total === null ? 0 : Math.max(0, total - known)
   const rows: StatusDatum[] = remainder > 0 ? [...values, { label: 'Other statuses', count: remainder, tone: 'primary' }] : values
   const max = Math.max(1, ...rows.map(item => item.count))
+  const points = rows.map((item, index) => ({
+    x: rows.length === 1 ? 50 : 8 + (index * 84) / (rows.length - 1),
+    y: 82 - (item.count / max) * 60,
+    item,
+  }))
+  const linePath = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+  const areaPath = points.length ? `${linePath} L ${points[points.length - 1].x} 88 L ${points[0].x} 88 Z` : ''
   let shareOffset = 0
   const slices = rows.map(item => {
     const start = shareOffset
@@ -80,8 +87,8 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <div className="platform-dashboard-card platform-dashboard-chart-card">
-        <h2 className="mb-1 text-sm font-semibold">Tenant status breakdown</h2>
-        <p className="platform-dashboard-chart-hint">Live totals by tenant status</p>
+        <h2 className="mb-1 text-sm font-semibold">Tenant distribution</h2>
+        <p className="platform-dashboard-chart-hint">Current share of tenant statuses</p>
         <div className="platform-dashboard-donut-layout">
           <div className="platform-dashboard-donut" role="img"
             aria-label={`Tenant status: ${rows.map(item => `${item.label} ${item.count}`).join(', ')}`}
@@ -100,20 +107,29 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
         </div>
       </div>
       <div className="platform-dashboard-card platform-dashboard-chart-card">
-        <h2 className="mb-1 text-sm font-semibold">Status comparison</h2>
-        <p className="platform-dashboard-chart-hint">Current tenant counts — not historical growth</p>
-        <div className="platform-dashboard-bar-list">
-          {rows.map(item => <div className="platform-dashboard-bar-row" key={item.label}>
-            <div className="platform-dashboard-bar-heading"><span>{item.label}</span><strong>{item.count.toLocaleString()}</strong></div>
-            <div className="platform-dashboard-bar-track">
-              <span key={item.count} className={`platform-dashboard-bar platform-dashboard-tone-${item.tone}`}
-                style={{ '--bar-width': `${(item.count / max) * 100}%` } as CSSProperties} />
-            </div>
-          </div>)}
-          {total === 0 ? <p className="text-[var(--ui-text-muted)]">No tenants yet.</p> : null}
+        <div className="platform-dashboard-chart-heading">
+          <div><h2 className="mb-1 text-sm font-semibold">Tenant status profile</h2>
+            <p className="platform-dashboard-chart-hint">Current statuses, not a time-series or revenue chart</p></div>
+          <span className="platform-dashboard-chart-tag">{total.toLocaleString()} total</span>
         </div>
-      </div>
-    </div>
+        <div className="platform-dashboard-profile-chart">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img"
+            aria-label={`Current status counts: ${rows.map(item => `${item.label} ${item.count}`).join(', ')}`}>
+            <defs><linearGradient id="platform-status-profile-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="var(--ui-accent)" stopOpacity=".20" />
+              <stop offset="100%" stopColor="var(--ui-accent)" stopOpacity=".01" />
+            </linearGradient></defs>
+            {[22, 42, 62, 82].map(y => <line key={y} x1="4" x2="96" y1={y} y2={y} className="platform-dashboard-profile-gridline" />)}
+            {points.length > 0 ? <path d={areaPath} fill="url(#platform-status-profile-fill)" /> : null}
+            {points.length > 0 ? <path key={linePath} d={linePath} className="platform-dashboard-profile-line" pathLength={100} /> : null}
+            {points.map(point => <circle key={point.item.label} cx={point.x} cy={point.y} r="1.5"
+              className="platform-dashboard-profile-point" />)}
+          </svg>
+        </div>
+        <div className="platform-dashboard-profile-labels">
+          {rows.map(row => <div key={row.label}><span>{row.label}</span><strong>{row.count.toLocaleString()}</strong></div>)}
+        </div>
+      </div>    </div>
   )
 }
 
