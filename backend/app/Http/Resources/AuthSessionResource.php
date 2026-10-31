@@ -45,7 +45,7 @@ class AuthSessionResource extends JsonResource
             'roles' => RoleResource::collection(collect($permissions->roles())),
             'permissions' => $permissions->keys(),
             'device' => $this->device ? new DeviceResource($this->device) : null,
-            'must_change_password' => (bool) $this->user->must_change_password,
+            'must_change_password' => (bool) $this->user->must_change_password && $this->membership->hasOwnerAuthority(),
             'branch_access' => $permissions->canAccessAllBranches() ? 'all_branches' : 'selected_branches',
             'appearance' => [
                 'theme' => $this->user->appearance_theme ?: 'system',
