@@ -21,3 +21,108 @@
 .auth-showcase-decor span { width: 56px; height: 12px; border-radius: var(--control-radius); background: var(--ui-accent); opacity: .8; box-shadow: 2px 4px 6px color-mix(in srgb,var(--ui-text) 11%,transparent); }
 .auth-showcase-decor span:nth-child(2) { opacity: .4; } .auth-showcase-decor span:nth-child(3) { opacity: .2; }
 @media(max-width: 850px) { .auth-showcase { grid-template-columns: 1fr; } .auth-showcase-promo { display: none; } .auth-showcase-form-side { min-height: 100dvh; } }
+
+/* Circular embossed sign-in on the RIGHT; diagonal theme-based promotional section on the LEFT. */
+.auth-showcase {
+  position: relative;
+  isolation: isolate;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  background: var(--ui-surface-subtle);
+}
+.auth-showcase-promo {
+  grid-column: 1;
+  grid-row: 1;
+  position: relative;
+  z-index: 1;
+  border: 0;
+  min-height: 100dvh;
+  padding: 40px clamp(32px, 5vw, 86px);
+  justify-items: start;
+  background: transparent;
+}
+.auth-showcase::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: linear-gradient(138deg, var(--ui-accent-strong), var(--ui-accent), var(--ui-accent-soft));
+  clip-path: polygon(0 0, 36% 0, 64% 100%, 0 100%);
+  filter: drop-shadow(12px 0 12px color-mix(in srgb,var(--ui-text) 20%,transparent));
+}
+.auth-showcase::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: color-mix(in srgb, var(--ui-surface) 55%, transparent);
+  clip-path: polygon(35.7% 0, 36.4% 0, 64.4% 100%, 63.7% 100%);
+  pointer-events: none;
+}
+.auth-showcase-promo-content {
+  max-width: 360px;
+  margin-left: 0;
+  color: var(--ui-surface);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--ui-text) 30%,transparent);
+}
+.auth-showcase-promo-content h2, .auth-showcase-promo-content .auth-showcase-eyebrow,
+.auth-showcase-promo-content p:not(.auth-showcase-eyebrow) {
+  color: inherit;
+}
+.auth-showcase-form-side {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  z-index: 2;
+  padding: 20px 26px;
+  overflow-y: auto;
+}
+.auth-showcase-ring {
+  width: min(100%, 640px);
+  aspect-ratio: 1;
+  padding: clamp(18px, 2.7vw, 34px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(138deg, var(--ui-surface), var(--ui-surface-muted));
+  border: 1px solid color-mix(in srgb, var(--ui-border) 45%, transparent);
+  box-shadow:
+    -17px -17px 27px color-mix(in srgb,var(--ui-surface) 90%,transparent),
+    22px 25px 34px color-mix(in srgb,var(--ui-text) 22%,transparent),
+    inset 6px 6px 9px color-mix(in srgb,var(--ui-surface) 90%,transparent),
+    inset -9px -10px 17px color-mix(in srgb,var(--ui-text) 17%,transparent);
+}
+.auth-showcase-form-card {
+  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: clamp(38px, 5vw, 70px) clamp(47px, 5.1vw, 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
+  box-shadow:
+    inset 10px 12px 22px color-mix(in srgb,var(--ui-text) 16%,transparent),
+    inset -9px -10px 20px color-mix(in srgb,var(--ui-surface) 90%,transparent),
+    0 2px 5px color-mix(in srgb,var(--ui-text) 12%,transparent);
+}
+.auth-showcase-heading { margin-bottom: 8px; }
+.auth-showcase-form-card .auth-card-body,
+.auth-showcase-form-card > form { min-width: 0; }
+.auth-showcase-form-card .auth-title { font-size: clamp(22px, 2vw, 30px); }
+.auth-showcase-form-card form { font-size: 12px; }
+.auth-showcase-form-card button[type="submit"] { min-height: 36px; }
+@media (max-width: 1140px) {
+  .auth-showcase-ring { max-width: 530px; }
+  .auth-showcase-form-card { padding: 36px 58px; }
+  .auth-showcase-promo-content { max-width: 270px; }
+}
+@media (max-width: 850px), (max-height: 660px) {
+  .auth-showcase { display: block; overflow-y: auto; }
+  .auth-showcase::before, .auth-showcase::after, .auth-showcase-promo { display: none; }
+  .auth-showcase-form-side { min-height: 100dvh; padding: 20px; }
+  .auth-showcase-ring { width: min(100%, 600px); aspect-ratio: auto; min-height: 520px; border-radius: var(--panel-radius); }
+  .auth-showcase-form-card { height: auto; border-radius: var(--panel-radius); padding: 26px; }
+}
