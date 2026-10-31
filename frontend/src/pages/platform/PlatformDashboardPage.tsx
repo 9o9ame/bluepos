@@ -90,20 +90,19 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <div className="platform-dashboard-card platform-dashboard-chart-card">
-        <h2 className="mb-1 text-sm font-semibold">Tenant distribution</h2>
-        <p className="platform-dashboard-chart-hint">Current share of tenant statuses</p>
+        <div className="platform-dashboard-premium-heading"><span className="platform-dashboard-premium-icon" aria-hidden="true">◉</span><div><h2 className="mb-1 text-sm font-semibold">Tenant distribution</h2><p className="platform-dashboard-chart-hint">Live status breakdown</p></div><span className="platform-dashboard-premium-live">Current</span></div>
         <div className="platform-dashboard-donut-layout">
           <div className="platform-dashboard-donut bp-motion-enter" role="img"
             aria-label={`Tenant status: ${rows.map(item => `${item.label} ${item.count}`).join(', ')}${selectedRow ? `. Selected: ${selectedRow.label} ${selectedRow.count}` : ''}`}
             style={{ '--donut-gradient': donutGradient } as CSSProperties}>
             <div className="platform-dashboard-donut-center">
-              <strong>{(selectedRow?.count ?? total).toLocaleString()}</strong><span>{selectedRow?.label ?? 'Tenants'}</span>
+              <strong>{(selectedRow?.count ?? total).toLocaleString()}</strong><span>{selectedRow?.label ?? 'Tenants'}</span><small>{total ? `${Math.round(((selectedRow?.count ?? total) / total) * 100)}%` : '0%'}</small>
             </div>
           </div>
           <div className="platform-dashboard-chart-legend">
             {rows.map(item => <button type="button" className={`platform-dashboard-legend-line platform-dashboard-legend-action${selectedStatus === item.label ? " is-selected" : ""}${selectedRow && selectedRow.label !== item.label ? ' is-muted' : ''}`} key={item.label} onClick={() => setSelectedStatus(selectedStatus === item.label ? null : item.label)} aria-pressed={selectedStatus === item.label} aria-label={`${item.label}: ${item.count} tenants, ${total ? Math.round(item.count / total * 100) : 0}% of total`}>
               <span className={`platform-dashboard-legend-dot platform-dashboard-tone-${item.tone}`} />
-              <span>{item.label}</span><strong>{item.count.toLocaleString()}</strong>
+              <span>{item.label}</span><strong>{item.count.toLocaleString()}</strong><span className="platform-dashboard-legend-percent">{total ? Math.round(item.count / total * 100) : 0}%</span>
             </button>)}
             {total === 0 ? <p className="text-[var(--ui-text-muted)]">No tenants yet.</p> : null}
           </div>
@@ -113,7 +112,7 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
         <div className="platform-dashboard-chart-heading">
           <div><h2 className="mb-1 text-sm font-semibold">Tenant status profile</h2>
             <p className="platform-dashboard-chart-hint">Current statuses, not a time-series or revenue chart</p></div>
-          <span className="platform-dashboard-chart-tag">{total.toLocaleString()} total</span>
+          <span className="platform-dashboard-chart-tag">{total.toLocaleString()} tenants</span>
         </div>
         <div className="platform-dashboard-profile-chart">
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img"
@@ -129,6 +128,7 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
               className={`platform-dashboard-profile-point${selectedRow && selectedRow.label !== point.item.label ? ' is-muted' : ''}${selectedRow?.label === point.item.label ? ' is-selected' : ''}`} />)}
           </svg>
         </div>
+        <div className="platform-dashboard-status-bars" aria-label="Current tenants by status">{rows.map((item, index) => <div className="platform-dashboard-status-bar-item" key={item.label}><div className="platform-dashboard-status-bar-value">{item.count}</div><div className={`platform-dashboard-status-bar-track platform-dashboard-tone-${item.tone}`}><span style={{ '--bar-height': `${max ? (item.count / max) * 100 : 0}%`, '--bar-delay': `${index * 130}ms` } as CSSProperties} /></div><span>{item.label}</span></div>)}</div>
         <div className="platform-dashboard-profile-labels">
           {rows.map(row => <div key={row.label} className={selectedRow && selectedRow.label !== row.label ? 'is-muted' : selectedRow?.label === row.label ? 'is-selected' : ''}><span>{row.label}</span><strong>{row.count.toLocaleString()}</strong></div>)}
         </div>
