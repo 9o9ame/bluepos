@@ -44,6 +44,7 @@ type AuthContextValue = {
   login: (input: LoginInput) => Promise<AuthSession>
   verifyMfa: (input: MfaVerifyInput) => Promise<AuthSession>
   resendMfa: (challengeUlid: string) => Promise<void>
+  refreshSession: () => Promise<AuthSession>
   logout: () => Promise<void>
 }
 
@@ -103,6 +104,11 @@ function AuthStateProvider({ children }: { children: ReactNode }) {
     login: (input) => loginMutation.mutateAsync(input),
     verifyMfa: (input) => mfaMutation.mutateAsync(input),
     resendMfa: (challengeUlid) => requestResendMfa(challengeUlid),
+    refreshSession: async () => {
+      const fresh = await fetchMe()
+      client.setQueryData(['auth', 'me'], fresh)
+      return fresh
+    },
     logout: () => logoutMutation.mutateAsync(),
   }
 
