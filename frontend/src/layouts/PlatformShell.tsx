@@ -152,10 +152,15 @@ export function PlatformShell() {
                     <span className="platform-sidebar-item-label">Platform Access</span>
                     {accessOpen ? <ChevronDown size={13} className="platform-sidebar-group-chevron" /> : <ChevronRight size={13} className="platform-sidebar-group-chevron" />}
                   </button>
-                  {accessOpen ? ACCESS.filter(item => user?.permissions.includes(item.can) && item.label.toLowerCase().includes(sidebarSearch.toLowerCase())).map(item => (
-                    <NavItem key={item.to} to={item.to} label={item.label} collapsed={sidebarCollapsed}
-                      icon={item.label === 'Users' ? Users : item.label === 'Roles' ? ShieldCheck : KeyRound} indent />
-                  )) : null}
+                  <div className="platform-sidebar-submenu" data-open={accessOpen} aria-hidden={!accessOpen}>
+                    <div className="platform-sidebar-submenu-inner">
+                      {ACCESS.filter(item => user?.permissions.includes(item.can) && item.label.toLowerCase().includes(sidebarSearch.toLowerCase())).map(item => (
+                        <NavItem key={item.to} to={item.to} label={item.label} collapsed={sidebarCollapsed}
+                          icon={item.label === 'Users' ? Users : item.label === 'Roles' ? ShieldCheck : KeyRound} indent
+                          tabIndex={accessOpen ? undefined : -1} />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               ) : null}
               {canAudit && 'audit'.includes(sidebarSearch.toLowerCase()) ? <NavItem to="/platform/security/audit" label="Audit" icon={ClipboardList} collapsed={sidebarCollapsed} /> : null}
@@ -181,16 +186,17 @@ export function PlatformShell() {
 
 type SidebarIcon = typeof LayoutDashboard
 
-function NavItem({ to, label, end, indent, icon: Icon, collapsed }: {
+function NavItem({ to, label, end, indent, icon: Icon, collapsed, tabIndex }: {
   to: string
   label: string
   end?: boolean
   indent?: boolean
   icon: SidebarIcon
   collapsed: boolean
+  tabIndex?: number
 }) {
   return (
-    <NavLink to={to} end={end} title={collapsed ? label : undefined}
+    <NavLink to={to} end={end} title={collapsed ? label : undefined} tabIndex={tabIndex}
       className={({ isActive }) => `platform-sidebar-link${isActive ? ' is-active' : ''}${indent ? ' is-indent' : ''}`}>
       <Icon size={16} aria-hidden="true" />
       <span className="platform-sidebar-item-label">{label}</span>
