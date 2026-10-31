@@ -61,6 +61,7 @@ export function DevicesPage() {
   const branchesQuery = useQuery({ queryKey: ['branches'], queryFn: fetchBranches })
   const [error, setError] = useState<string | null>(null)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
+  const [activeView, setActiveView] = useState<'requests' | 'history' | 'locations' | 'activity' | 'devices'>('requests')
 
   useWorkspaceHandlers({
     refresh: () => {
@@ -155,12 +156,33 @@ export function DevicesPage() {
         <>
           <DesktopButton icon={<RefreshCw size={13} />} label="Refresh" shortcut="F8" onClick={() => { void devicesQuery.refetch(); if (canReviewRequests) { void requestsQuery.refetch(); void inboxQuery.refetch() } if (canViewSessions) void sessionsQuery.refetch() }} />
           <DesktopButton icon={<X size={13} />} label="Close" shortcut="Esc" onClick={closeActiveTab} />
+          {([
+            ['requests', 'Requests & alerts', canReviewRequests],
+            ['history', 'Staff login & IP history', canReviewRequests],
+            ['locations', 'Staff locations', canReviewRequests],
+            ['activity', 'Recent device / IP activity', canViewSessions],
+            ['devices', 'Registered devices & user access', true],
+          ] as const).filter(([, , allowed]) => allowed).map(([view, label]) => (
+            <button
+              key={view}
+              type="button"
+              role="tab"
+              aria-selected={activeView === view}
+              onClick={() => setActiveView(view)}
+              className={`rounded border px-2 py-1 text-[11px] transition-colors ${
+                activeView === view
+                  ? 'border-[var(--ui-accent)] bg-[var(--ui-accent-soft)] text-[var(--ui-text)] font-semibold'
+                  : 'border-[var(--ui-border)] bg-[var(--ui-surface)] text-[var(--ui-text-muted)] hover:bg-[var(--ui-surface-subtle)]'
+              }`}
+            >{label}</button>
+          ))}
         </>
       }
       flush
     >
-      {error ? <p className="p-2 text-[12px] text-[var(--danger)]">{error}</p> : null}
-      {canReviewRequests ? (
+      {error ? <p role="alert" className="p-2 text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
+      <div role="tabpanel" className="min-h-0 overflow-y-auto overflow-x-auto" style={{ maxHeight: 'calc(100dvh - 270px)' }}>
+      {activeView === 'requests' && canReviewRequests ? (
         <section className="p-2">
           <h3 className="mb-2 text-[12px] font-semibold">Device &amp; network alerts ({inboxQuery.data?.unread_count ?? 0} unread)</h3>
           {inboxQuery.isLoading ? <p className="text-[12px]">Loading alerts…</p> : null}
@@ -187,7 +209,7 @@ export function DevicesPage() {
           </div>
         </section>
       ) : null}
-      {canReviewRequests ? (
+      {activeView === 'requests' && canReviewRequests ? (
         <section className="p-2">
           <h3 className="mb-2 text-[12px] font-semibold">Employee device / network approval requests (pending: {requestsQuery.data?.pending_count ?? 0})</h3>
           <label className="mb-2 flex items-center gap-2 text-[12px]">Show
@@ -220,7 +242,7 @@ export function DevicesPage() {
           </div>
         </section>
       ) : null}
-      {canReviewRequests ? (
+      {activeView === 'history' && canReviewRequests ? (
         <section className="p-2">
           <h3 className="mb-2 text-[12px] font-semibold">Staff login and public IP history</h3>
           <form
@@ -294,7 +316,7 @@ export function DevicesPage() {
           </div>
         </section>
       ) : null}
-      {canReviewRequests ? (
+      {activeView === 'locations' && canReviewRequests ? (
         <section className="p-2">
           <h3 className="mb-2 text-[12px] font-semibold">Approximate staff locations (last 30 days)</h3>
           <p className="mb-2 text-[12px] text-[var(--ui-text-muted)]">Location comes from browser permission at sign-in; coordinates are rounded for privacy, not reliable proof of physical presence.</p>
@@ -319,7 +341,7 @@ export function DevicesPage() {
           </div>
         </section>
       ) : null}
-      {canViewSessions ? (
+      {activeView === 'activity' && canViewSessions ? (
         <section className="p-2">
           <h3 className="mb-2 text-[12px] font-semibold">Recent device / IP activity</h3>
           {sessionsQuery.isLoading ? <p className="text-[12px] text-[var(--ui-text-muted)]">Loading activity…</p> : null}
@@ -339,6 +361,7 @@ export function DevicesPage() {
           ) : null}
         </section>
       ) : null}
+      {activeView === 'devices' || (!canReviewRequests && activeView === 'requests') ? (
       <section className="p-2">
         <h3 className="mb-2 text-[12px] font-semibold">Registered devices and individual user access</h3>
         <p className="mb-2 text-[12px] text-[var(--ui-text-muted)]">One browser device may be shared by multiple users. Revoke staff access for just that employee; revoking an entire device blocks everyone on it.</p>
@@ -403,6 +426,8 @@ export function DevicesPage() {
           onSelect={row => setSelectedKey(row.key)}
         />
       </section>
+      ) : null}
+      </div>
     </DesktopPanel>
   )
 }
