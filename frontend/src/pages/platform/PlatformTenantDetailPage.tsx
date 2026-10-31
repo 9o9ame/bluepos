@@ -35,10 +35,19 @@ export function PlatformTenantDetailPage() {
   const queryClient = useQueryClient()
   const requestedTab = searchParams.get('tab')
   const tab = TABS.find((item) => item === requestedTab) ?? 'Overview'
-  const setTab = (value: (typeof TABS)[number]) => setSearchParams(value === 'Overview' ? {} : { tab: value })
+  const [hoverTab, setHoverTab] = useState<(typeof TABS)[number] | null>(null)
+  const displayTab = hoverTab ?? tab
+  const setTab = (value: (typeof TABS)[number]) => {
+    setHoverTab(null)
+    setSearchParams(value === 'Overview' ? {} : { tab: value })
+  }
   const [approvalPage, setApprovalPage] = useState(1)
   const [devicesView, setDevicesView] = useState<'devices' | 'locations' | 'approvals'>('devices')
+  const [hoverDevicesView, setHoverDevicesView] = useState<typeof devicesView | null>(null)
+  const displayDevicesView = hoverDevicesView ?? devicesView
   const [activityView, setActivityView] = useState<'sessions' | 'events'>('sessions')
+  const [hoverActivityView, setHoverActivityView] = useState<typeof activityView | null>(null)
+  const displayActivityView = hoverActivityView ?? activityView
   const [approvalStatus, setApprovalStatus] = useState('all')
   const [approvalIp, setApprovalIp] = useState('')
   const [reason, setReason] = useState('')
@@ -53,12 +62,12 @@ export function PlatformTenantDetailPage() {
   const activityQuery = useQuery({
     queryKey: ['platform', 'tenant', tenantUlid, 'login-activity'],
     queryFn: () => fetchPlatformTenantActivity(tenantUlid),
-    enabled: tenantUlid !== '' && tab === 'Login Activity',
+    enabled: tenantUlid !== '' && displayTab === 'Login Activity',
   })
   const devicesQuery = useQuery({
     queryKey: ['platform', 'tenant', tenantUlid, 'devices', approvalStatus, approvalIp, approvalPage],
     queryFn: () => fetchPlatformTenantDevices(tenantUlid, { status: approvalStatus, ip_address: approvalIp.trim() || undefined, page: approvalPage }),
-    enabled: tenantUlid !== '' && tab === 'Devices',
+    enabled: tenantUlid !== '' && displayTab === 'Devices',
   })
   const plansQuery = useQuery({ queryKey: ['platform', 'plans'], queryFn: fetchPlatformPlans })
   const catalogQuery = useQuery({ queryKey: ['platform', 'features'], queryFn: fetchFeatureCatalog })
@@ -95,13 +104,14 @@ export function PlatformTenantDetailPage() {
       </div>
       {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
       {notice ? <p className="text-[12px] text-[var(--ui-success)]">{notice}</p> : null}
-      <div className="platform-tenant-primary-tabs flex gap-2" role="tablist" aria-label="Tenant detail sections">
+      <div className="platform-tenant-primary-tabs flex gap-2" role="tablist" aria-label="Tenant detail sections" onMouseLeave={() => setHoverTab(null)}>
         {TABS.map((item) => (
           <button
             key={item}
             type="button"
             role="tab"
             aria-selected={tab === item}
+            onMouseEnter={() => setHoverTab(item)}
             className={`rounded border px-2 py-1 text-[12px] ${tab === item ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white'}`}
             onClick={() => setTab(item)}
           >
@@ -110,8 +120,8 @@ export function PlatformTenantDetailPage() {
         ))}
       </div>
 
-      <div key={tab} className="platform-tenant-tab-transition" role="tabpanel">
-      {tab === 'Overview' ? (
+      <div key={displayTab} className="platform-tenant-tab-transition" role="tabpanel">
+      {displayTab === 'Overview' ? (
         <div className="space-y-3 rounded border border-slate-300 bg-white p-3 text-[12px]">
           <form
             className="grid grid-cols-2 gap-2"
@@ -221,7 +231,7 @@ export function PlatformTenantDetailPage() {
         </div>
       ) : null}
 
-      {tab === 'Admin Users' ? (
+      {displayTab === 'Admin Users' ? (
         <div className="rounded border border-slate-300 bg-white p-3 text-[12px]">
           <table className="w-full text-left">
             <thead>
@@ -271,7 +281,7 @@ export function PlatformTenantDetailPage() {
         </div>
       ) : null}
 
-      {tab === 'Subscription' ? (
+      {displayTab === 'Subscription' ? (
         <form
           className="space-y-2 rounded border border-slate-300 bg-white p-3 text-[12px]"
           onSubmit={(event: FormEvent) => {
@@ -316,7 +326,7 @@ export function PlatformTenantDetailPage() {
         </form>
       ) : null}
 
-      {tab === 'Features' ? (
+      {displayTab === 'Features' ? (
         <div className="rounded border border-slate-300 bg-white p-3 text-[12px]">
           <table className="w-full text-left">
             <thead>
@@ -355,7 +365,7 @@ export function PlatformTenantDetailPage() {
         </div>
       ) : null}
 
-      {tab === 'Devices' ? (
+      {displayTab === 'Devices' ? (
         <div className="platform-tenant-monitor-panel rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-3 text-[12px]">
           <div className="mb-3 flex items-center justify-between">
             <strong>Tenant devices — Pending approvals</strong>
@@ -363,20 +373,20 @@ export function PlatformTenantDetailPage() {
               onClick={() => void devicesQuery.refetch()}>Refresh</button>
           </div>
           <p className="mb-2 text-[var(--ui-text-muted)]">Read-only monitoring. Tenant owners verify their own devices by email OTP and approve staff device/network requests.</p>
-          <div role="tablist" aria-label="Tenant device monitoring lists" className="platform-tenant-monitor-tabs">
+          <div role="tablist" aria-label="Tenant device monitoring lists" className="platform-tenant-monitor-tabs" onMouseLeave={() => setHoverDevicesView(null)}>
             {([
               ['devices', 'Registered devices'],
               ['locations', 'Approximate locations'],
               ['approvals', 'Employee approval history'],
             ] as const).map(([key, label]) => (
-              <button key={key} type="button" role="tab" aria-selected={devicesView === key}
-                className={devicesView === key ? 'is-active' : ''}
-                onClick={() => setDevicesView(key)}>{label}</button>
+              <button key={key} type="button" role="tab" aria-selected={devicesView === key} onMouseEnter={() => setHoverDevicesView(key)}
+                className={displayDevicesView === key ? 'is-active' : ''}
+                onClick={() => { setDevicesView(key); setHoverDevicesView(null) }}>{label}</button>
             ))}
           </div>
           {devicesQuery.isLoading ? <p>Loading devices…</p> : null}
           {devicesQuery.isError ? <p role="alert">Could not load devices.</p> : null}
-          {devicesView === 'devices' ? <div role="tabpanel" className="platform-tenant-monitor-grid">
+          {displayDevicesView === 'devices' ? <div role="tabpanel" className="platform-tenant-monitor-grid">
             <table className="w-full border-collapse text-left">
               <thead><tr className="border-b"><th className="p-2">Name</th><th>Type</th><th>Status</th><th>Registered</th><th>Last seen</th><th>Staff approvals</th></tr></thead>
               <tbody>{(devicesQuery.data?.devices ?? []).map((device) => (
@@ -390,8 +400,8 @@ export function PlatformTenantDetailPage() {
               ))}</tbody>
             </table>
           </div> : null}
-          {devicesQuery.data?.devices.length === 0 && devicesView === 'devices' ? <p className="pt-3">No registered devices for this tenant.</p> : null}
-          {devicesView === 'locations' ? <div role="tabpanel" className="platform-tenant-monitor-section">
+          {devicesQuery.data?.devices.length === 0 && displayDevicesView === 'devices' ? <p className="pt-3">No registered devices for this tenant.</p> : null}
+          {displayDevicesView === 'locations' ? <div role="tabpanel" className="platform-tenant-monitor-section">
           <strong className="block">Approximate device locations (read-only, last 30 days)</strong>
           <p className="my-2 text-[12px] text-[var(--ui-text-muted)]">Browser-reported locations rounded for privacy. Not verified physical presence; country/city names are unavailable.</p>
           <div className="platform-tenant-monitor-grid">
@@ -407,7 +417,7 @@ export function PlatformTenantDetailPage() {
             </table>
           </div>
           </div> : null}
-          {devicesView === 'approvals' ? <div role="tabpanel" className="platform-tenant-monitor-section">
+          {displayDevicesView === 'approvals' ? <div role="tabpanel" className="platform-tenant-monitor-section">
           <strong className="block">Employee device/network approval history (read-only, 100 per page)</strong>
           <div className="my-2 flex flex-wrap items-end gap-2">
             <label className="flex flex-col gap-1">Decision
@@ -444,28 +454,28 @@ export function PlatformTenantDetailPage() {
         </div>
       ) : null}
 
-      {tab === 'Login Activity' ? (
+      {displayTab === 'Login Activity' ? (
         <div className="platform-tenant-monitor-panel rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-3 text-[12px]">
           <div className="mb-2 flex justify-between"><strong>Recent login activity (up to 100 sessions and 100 events)</strong>
             <button type="button" className="rounded border px-3 py-1" onClick={() => void activityQuery.refetch()}>Refresh</button></div>
           <p className="mb-2 text-slate-600">IP addresses and browser user agents are recorded by the server. IP is not an exact physical location.</p>
           {activityQuery.isLoading ? <p>Loading activity…</p> : null}
           {activityQuery.isError ? <p role="alert">Unable to load activity or insufficient audit permission.</p> : null}
-          <div role="tablist" aria-label="Login activity lists" className="platform-tenant-monitor-tabs">
+          <div role="tablist" aria-label="Login activity lists" className="platform-tenant-monitor-tabs" onMouseLeave={() => setHoverActivityView(null)}>
             {([['sessions', 'Sessions'], ['events', 'Security events']] as const).map(([key, label]) => (
-              <button key={key} type="button" role="tab" aria-selected={activityView === key}
-                className={activityView === key ? 'is-active' : ''}
-                onClick={() => setActivityView(key)}>{label}</button>
+              <button key={key} type="button" role="tab" aria-selected={activityView === key} onMouseEnter={() => setHoverActivityView(key)}
+                className={displayActivityView === key ? 'is-active' : ''}
+                onClick={() => { setActivityView(key); setHoverActivityView(null) }}>{label}</button>
             ))}
           </div>
-          {activityView === 'sessions' ? <div role="tabpanel" className="platform-tenant-monitor-grid"><table className="w-full text-left">
+          {displayActivityView === 'sessions' ? <div role="tabpanel" className="platform-tenant-monitor-grid"><table className="w-full text-left">
             <thead><tr><th>Employee</th><th>Roles</th><th>Device</th><th>IP</th><th>Browser</th><th>Last seen</th><th>State</th></tr></thead>
             <tbody>{(activityQuery.data?.sessions ?? []).map(session => <tr className="border-t" key={session.ulid}>
               <td>{session.membership?.username ?? '—'}</td><td>{session.membership?.roles.map(role => role.name).join(', ') || '—'}</td><td>{session.device?.name ?? 'Unknown'}</td><td>{session.ip_address ?? '—'}</td>
               <td className="max-w-64 break-all">{session.user_agent ?? '—'}</td>
               <td>{session.last_seen_at ?? '—'}</td><td>{session.revoked_at ? 'Revoked' : 'Recorded session'}</td>
             </tr>)}</tbody></table></div> : null}
-          {activityView === 'events' ? <div role="tabpanel" className="platform-tenant-monitor-grid"><table className="w-full text-left">
+          {displayActivityView === 'events' ? <div role="tabpanel" className="platform-tenant-monitor-grid"><table className="w-full text-left">
             <thead><tr><th>Event</th><th>Employee</th><th>Device</th><th>IP</th><th>Browser</th><th>Time</th></tr></thead>
             <tbody>{(activityQuery.data?.events ?? []).map(event => <tr className="border-t" key={event.ulid}>
               <td>{event.event}</td><td>{event.membership?.username ?? 'Unknown'}</td><td>{event.device?.name ?? '—'}</td><td>{event.ip_address ?? '—'}</td>
@@ -474,7 +484,7 @@ export function PlatformTenantDetailPage() {
         </div>
       ) : null}
 
-      {tab === 'Limits' ? (
+      {displayTab === 'Limits' ? (
         <div className="rounded border border-slate-300 bg-white p-3 text-[12px]">
           {(['max_users', 'max_branches', 'max_warehouses', 'max_devices'] as const).map((key) => (
             <form
