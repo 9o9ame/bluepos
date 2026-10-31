@@ -6,16 +6,9 @@ Push-Location $backend
 try {
     $env:APP_ENV = 'testing'
     $env:DB_DATABASE = 'bluepos_test'
-    $probe = @'
-require "vendor/autoload.php";
-$app = require "bootstrap/app.php";
-$app->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap();
-echo config("database.default"), "|", config("database.connections.pgsql.database");
-'@
-    $probe = $probe.Replace('\\', '\')
-    $resolved = & php -r $probe
-    if ($LASTEXITCODE -ne 0 -or ($resolved -join '').Trim() -ne 'pgsql|bluepos_test') {
-        throw "Unsafe test database configuration: expected pgsql|bluepos_test, got: $resolved"
+    $resolved = & php scripts/guard-test-database.php
+    if ($LASTEXITCODE -ne 0 -or ($resolved -join '').Trim() -ne 'TEST_DATABASE_OK') {
+        throw "Unsafe test database configuration or failed connection. Test batch was not run."
     }
     $names = @(
         "test_owner_trusted_device_reuses_same_network_but_changed_network_requires_otp",
