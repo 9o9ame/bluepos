@@ -30,7 +30,8 @@ export function DevicesPage() {
     queryKey: ['tenant-location-history', locationPage],
     queryFn: () => fetchTenantLocationHistory(locationPage),
     enabled: canReviewRequests,
-    refetchInterval: 60000,
+    refetchInterval: 300000, // Five-minute recovery; explicit refresh and realtime invalidation remain available
+    refetchIntervalInBackground: false,
   })
   const [historyPage, setHistoryPage] = useState(1)
   const [historyDraft, setHistoryDraft] = useState<TenantLoginHistoryFilters>({ event: 'all' })
@@ -39,14 +40,16 @@ export function DevicesPage() {
     queryKey: ['tenant-login-history', historyPage, historyFilters],
     queryFn: () => fetchTenantLoginHistory(historyPage, historyFilters),
     enabled: canReviewRequests,
-    refetchInterval: 60000,
+    refetchInterval: 300000, // Five-minute recovery; explicit refresh and realtime invalidation remain available
+    refetchIntervalInBackground: false,
   })
   const [inboxPage, setInboxPage] = useState(1)
   const inboxQuery = useQuery({
     queryKey: ['device-access-inbox', session?.tenant.ulid, session?.user.ulid, inboxPage],
     queryFn: () => fetchDeviceAccessNotifications(inboxPage),
     enabled: canReviewRequests,
-    refetchInterval: 30000,
+    refetchInterval: 300000, // Five-minute recovery; explicit refresh and realtime invalidation remain available
+    refetchIntervalInBackground: false,
   })
   const [markingRead, setMarkingRead] = useState<string | null>(null)
   const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: fetchDevices })
@@ -54,10 +57,13 @@ export function DevicesPage() {
     queryKey: ['device-access-requests', 'all'],
     queryFn: () => fetchDeviceAccessRequests('all'),
     enabled: canReviewRequests,
-    refetchInterval: 30000,
+    refetchInterval: 300000, // Five-minute recovery; explicit refresh and realtime invalidation remain available
+    refetchIntervalInBackground: false,
   })
-  const requestsQuery = useQuery({ queryKey: ['device-access-requests', requestStatus], queryFn: () => fetchDeviceAccessRequests(requestStatus), enabled: canReviewRequests, refetchInterval: 30000 })
-  const sessionsQuery = useQuery({ queryKey: ['security-sessions'], queryFn: fetchSecuritySessions, enabled: canViewSessions, refetchInterval: 60000 })
+  const requestsQuery = useQuery({ queryKey: ['device-access-requests', requestStatus], queryFn: () => fetchDeviceAccessRequests(requestStatus), enabled: canReviewRequests, refetchInterval: 300000, // Five-minute recovery; explicit refresh and realtime invalidation remain available
+    refetchIntervalInBackground: false })
+  const sessionsQuery = useQuery({ queryKey: ['security-sessions'], queryFn: fetchSecuritySessions, enabled: canViewSessions, refetchInterval: 300000, // Five-minute recovery; explicit refresh and realtime invalidation remain available
+    refetchIntervalInBackground: false })
   const [reviewing, setReviewing] = useState<string | null>(null)
   const branchesQuery = useQuery({ queryKey: ['branches'], queryFn: fetchBranches })
   const [error, setError] = useState<string | null>(null)
