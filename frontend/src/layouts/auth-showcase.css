@@ -455,3 +455,38 @@
 }
 /* Keep the two-panel layout and round form on smaller laptops; mobile still
    uses the previously approved content-first fallback. */
+
+/* Correct desktop/laptop proportions: circle shrinks with available column
+   width and sits on the RIGHT of its panel; inputs remain inside the circle. */
+@media (min-width: 701px) {
+  .auth-showcase .auth-showcase-form-side {
+    justify-items: end;
+    padding-inline: clamp(10px, 2.2vw, 34px);
+  }
+  .auth-showcase .auth-showcase-ring {
+    width: min(83%, 490px, calc(100dvh - 60px));
+    max-width: 490px;
+    margin-inline: 0;
+    justify-self: end;
+    aspect-ratio: 1;
+  }
+  .auth-showcase .auth-showcase-form-card {
+    padding: clamp(32px, 4vw, 54px) clamp(52px, 6vw, 79px);
+  }
+}
+@media (min-width: 701px) and (max-width: 1199px) {
+  .auth-showcase .auth-showcase-ring {
+    width: min(85%, 430px, calc(100dvh - 60px));
+  }
+  .auth-showcase .auth-showcase-form-card {
+    padding: 26px clamp(36px, 4vw, 56px);
+  }
+  .auth-showcase .auth-showcase-form-card input:not([type="checkbox"]) {
+    height: clamp(29px, 3.4vw, 36px);
+  }
+}
+@media (min-width: 701px) and (max-height: 740px) {
+  .auth-showcase .auth-showcase-ring {
+    width: min(83%, 450px, calc(100dvh - 44px));
+  }
+}
