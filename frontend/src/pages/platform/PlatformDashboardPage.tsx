@@ -12,7 +12,7 @@ function useCountUp(target: number | null, duration = 1250) {
       setValue(0)
       return
     }
-    if (typeof window === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (typeof window === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.animations === 'off') {
       setValue(target)
       return
     }
@@ -68,6 +68,7 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
   const rows: StatusDatum[] = remainder > 0 ? [...values, { label: 'Other statuses', count: remainder, tone: 'primary' }] : values
   const max = Math.max(1, ...rows.map(item => item.count))
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
+  const selectedRow = rows.find(row => row.label === selectedStatus) ?? null
   const points = rows.map((item, index) => ({
     x: rows.length === 1 ? 50 : 8 + (index * 84) / (rows.length - 1),
     y: 82 - (item.count / max) * 60,
@@ -92,14 +93,15 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
         <p className="platform-dashboard-chart-hint">Current share of tenant statuses</p>
         <div className="platform-dashboard-donut-layout">
           <div className="platform-dashboard-donut bp-motion-enter" role="img"
-            aria-label={`Tenant status: ${rows.map(item => `${item.label} ${item.count}`).join(', ')}`}
+            aria-label={`Tenant status: ${rows.map(item => `${item.label} ${item.count}`).join(', ')}${selectedRow ? `. Selected: ${selectedRow.label} ${selectedRow.count}` : ''}`}
             style={{ '--donut-gradient': donutGradient } as CSSProperties}>
+            {selectedRow ? <div className="platform-dashboard-donut-selection" aria-hidden="true" /> : null}
             <div className="platform-dashboard-donut-center">
-              <strong>{total.toLocaleString()}</strong><span>Tenants</span>
+              <strong>{(selectedRow?.count ?? total).toLocaleString()}</strong><span>{selectedRow?.label ?? 'Tenants'}</span>
             </div>
           </div>
           <div className="platform-dashboard-chart-legend">
-            {rows.map(item => <button type="button" className={`platform-dashboard-legend-line platform-dashboard-legend-action${selectedStatus === item.label ? " is-selected" : ""}`} key={item.label} onClick={() => setSelectedStatus(selectedStatus === item.label ? null : item.label)} aria-pressed={selectedStatus === item.label}>
+            {rows.map(item => <button type="button" className={`platform-dashboard-legend-line platform-dashboard-legend-action${selectedStatus === item.label ? " is-selected" : ""}${selectedRow && selectedRow.label !== item.label ? ' is-muted' : ''}`} key={item.label} onClick={() => setSelectedStatus(selectedStatus === item.label ? null : item.label)} aria-pressed={selectedStatus === item.label} aria-label={`${item.label}: ${item.count} tenants, ${total ? Math.round(item.count / total * 100) : 0}% of total`}>
               <span className={`platform-dashboard-legend-dot platform-dashboard-tone-${item.tone}`} />
               <span>{item.label}</span><strong>{item.count.toLocaleString()}</strong>
             </button>)}
@@ -124,11 +126,11 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
             {points.length > 0 ? <path d={areaPath} fill="url(#platform-status-profile-fill)" /> : null}
             {points.length > 0 ? <path key={linePath} d={linePath} className="platform-dashboard-profile-line" pathLength={100} /> : null}
             {points.map(point => <circle key={point.item.label} cx={point.x} cy={point.y} r="1.5"
-              className="platform-dashboard-profile-point" />)}
+              className={`platform-dashboard-profile-point${selectedRow && selectedRow.label !== point.item.label ? ' is-muted' : ''}${selectedRow?.label === point.item.label ? ' is-selected' : ''}`} />)}
           </svg>
         </div>
         <div className="platform-dashboard-profile-labels">
-          {rows.map(row => <div key={row.label}><span>{row.label}</span><strong>{row.count.toLocaleString()}</strong></div>)}
+          {rows.map(row => <div key={row.label} className={selectedRow && selectedRow.label !== row.label ? 'is-muted' : selectedRow?.label === row.label ? 'is-selected' : ''}><span>{row.label}</span><strong>{row.count.toLocaleString()}</strong></div>)}
         </div>
       </div>    </div>
   )
@@ -153,11 +155,13 @@ export function PlatformDashboardPage() {
           <TenantMetric key={metric.label} label={metric.label} value={metric.value} total={total} tone={metric.tone} index={index} />
         ))}
       </div>
-      <StatusCharts total={total} values={[
+      {query.isError ? <div className="platform-dashboard-card" role="alert">Unable to load dashboard charts. <button type="button" className="platform-dashboard-retry" onClick={() => void query.refetch()}>Retry</button></div> : null}
+      {query.isPending ? <div className="platform-dashboard-card" role="status">Loading tenant status charts…</div> : null}
+      {!query.isError && !query.isPending ? <StatusCharts total={total} values={[
         { label: 'Active', count: data?.tenants.active ?? 0, tone: 'success' },
         { label: 'Trial', count: data?.tenants.trial ?? 0, tone: 'warning' },
         { label: 'Suspended', count: data?.tenants.suspended ?? 0, tone: 'danger' },
-      ]} />
+      ]} /> : null}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="platform-dashboard-card">
           <h2 className="mb-2 text-sm font-semibold">Plans</h2>
