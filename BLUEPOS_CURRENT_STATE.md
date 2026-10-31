@@ -1895,3 +1895,47 @@ Statuses: Completed = green, Partial = amber, Pending = red, In Progress = blue.
 **Next action** (new chat): inspect ONLY minimal relevant repo files for selected unfinished tasks, pick a high-value coherent batch, fix with smallest reversible diff, add security/tenancy/concurrency tests. Don't repeat completed integrations, don't invent nonexistent schema. Before promoting an item to Completed, verify functional conditions and expected tests; report blockers candidly. For CODEX route, give scope/files/justification. Recommended serious security model at least SOL.
 
 **Known operational caveats:** Secure HTTPS origin required for real browser geolocation, active browser sessions aren't retroactively invalidated by initial login-only location gate; client coordinates can be spoofed. Private/reserved IP does not get geolocated; local dev may show Unknown. `IPINFO_TOKEN` is empty by default and must be set by operator only after privacy/provider review, not stored in Git. Production scheduler required for actual deletion/redaction; database queries hide expired location even before cleanup. Existing audit evidence is preserved when network identifiers redacted. Earlier a literal `\\n` mistake in `backend/config/security.php` caused PHP parse error; fixed in `9bbbb9a1`, user confirmed lint/test pass; avoid reintroducing.
+
+## 2026-10-31 — NEW CHAT HANDOFF: ORIGINAL 50 DEVICE SECURITY TASKS (READ FIRST)
+
+**Status at handoff:** repository `9o9ame/bluepos`, authorized ongoing branch `feature/superadmin` (user-specific exception to standard module branch policy), latest pre-handoff progress document includes user-verified 2026-10-27 validation. Do not switch branches, merge, push main, or declare all tasks done without user approval. Root `BLUEPOS_MASTER_CONTEXT.md`, this state document, and `PROJECT_UI_DESIGN_SYSTEM.md` govern work. UI changes MUST read design system before planning/editing. Current repository code overrides summaries.
+
+**Task source of truth:** the user's ORIGINAL enumerated 50 requirements from prior BluePOS device-security conversation, organized: #1–9 Main Tenant owner OTP; #10–20 Staff device authorization; #21–26 owner notifications; #27–35 SuperAdmin monitoring ONLY; #36–41 Tenant staff monitoring; #42–50 security, audit, privacy. Critically: SuperAdmin can monitor all tenants but must NEVER approve/reject/revoke tenant staff devices; only each tenant's authorized owner approves staff; Owner new device/network public IP verified via recovery-email OTP without manual SuperAdmin approval. Persistent browser credential + public IP (not IP alone). GPS mandatory for interactive browser login per user's latest instruction: permission denied/unavailable prevents tenant and platform password/MFA sign-in; browser location may be spoofed and is NOT reliable physical-presence verification. Coordinates stored rounded approximately 0.01 degrees and expire in 30 days. Do not silently persist exact GPS.
+
+**Most recent VERIFIED user-provided local validation:**
+- Git `feature/superadmin` fast-forward to commit `e5052f4c` successful. `backend/config/security.php` PHP syntax lint PASS (hotfix fixed literal `\\n`).
+- Database confirmed `bluepos_test` and migration `2026_10_27_230000_add_geoip_place_to_login_locations` DONE; earlier location and device-approval migrations also successfully run on `bluepos_test`.
+- `AuthenticationTest --filter="test_ip_geolocation_|test_tenant_mfa_|test_security_privacy_retention_|test_mandatory_browser_location_blocks_login_without_location_evidence"`: **6 PASS / 58 assertions**.
+- `PlatformAccessTest --filter="test_platform_password_and_mfa_require_location_when_policy_enabled"`: **1 PASS / 12 assertions**.
+- Frontend `npx tsc -b --pretty false`: **PASS** (no diagnostics).
+- Combined latest **7 PASS / 70 assertions**. Earlier focused location batch 5 PASS / 116 assertions; older in-app device notification batch 4 PASS / 72 assertions. These are NOT the full test suite, true two-worker HTTP concurrency proof, or browser E2E release validation.
+- Most recent doc-only commit before this handoff `a2d0d182` recorded that validation. No new product code after that checkpoint in this conversation.
+
+**Progress tracking rule and uncertainty:** previous visual progress used **37 implementation-indicated / 10 Partial / 3 Pending** out of 50, but it is a *legacy preliminary* classification and internally inconsistent with the latest verified partial implementations for #45 and #50. **Do not present it as a fully reconciled count or claim 37 fully acceptance-verified.** First next-chat task: reconcile exact statuses against fresh current code and tests; if status cannot be proven, show Partial rather than inflate. All development replies MUST include visible segmented progress bar and the **entire original numbered 1–50 list**, each status labeled + colored: green **Completed**, amber **Partial**, red **Pending**, blue **In Progress** only when code genuinely under active implementation. Keep underlying categories totals exactly 50; In Progress is a temporary overlay, not double counted. Include meaningful remaining gaps and validation.
+ 
+**Original numbered remaining acceptance IDs as of handoff (13):**
+- #4 recognized owner device/IP login trust expiry and changing IP full acceptance.
+- #18 tenant staff pending/approved/revoked lifecycle completeness.
+- #24 approval request details: staff name/role/device/IP/time/status + optional approximate request location.
+- #28 SuperAdmin owner device/IP/approximate location end-to-end monitoring.
+- #29 SuperAdmin staff device/IP/approximate location end-to-end monitoring.
+- #37 tenant staff geographic monitoring browser-level acceptance.
+- #39 full staff login history including failed/blocked.
+- #43 longitudinal public IP history.
+- #44 browser/OS/user-agent metadata accuracy and availability.
+- #45 OPTIONAL configured external IPInfo public-IP lookup: country/region/city (code tested using mock, production token/DPA not configured; unavailable must remain Unknown, never fabricated). `IPINFO_TOKEN` intentionally empty by default.
+- #46 mandatory interactive geolocation browser permission tenant + SuperAdmin/password+MFA end-to-end verification; no precise GPS persistent storage; session rechecks not implemented.
+- #48 OTP expiry/attempt throttle/session revocation, replay, real two-worker authenticated HTTP concurrency acceptance; atomic consume implemented and focused tests PASS.
+- #50 privacy: rounded/expiring GPS approx 30 days, security audit/request IP+UA redaction default 90 days, Laravel scheduler deployment/monitoring, GeoIP privacy agreement, full retention/access policy; focused redaction tests PASS.
+
+**Recent exact code changes:**
+- In-app owner alerts for new staff device/IP with unread count, actor role/location, tenant-scoped approval API/UI.
+- Tenant and platform security/login history monitoring and best-effort browser/OS summary.
+- Mandatory browser GPS access before interactive login; backend validates claimed coordinates in password and MFA entry points.
+- 30-day approximate location observations and pending approval request location context; owner/platform read-only monitoring; daily expire/purge/scrub schedules.
+- `backend/app/Security/IpGeolocation.php` uses optional token, public-IP only, fixed HTTPS provider with safe null fallback; enriched country/region/city in 30-day observations, output to tenant/platform UI. User-provided token is NOT required for focused tests.
+- `backend/app/Http/Controllers/Api/AuthController.php` conditional DB OTP increment and atomic consumed_at claim, existing resend cooldown.
+- `backend/app/Security/SecurityPrivacyRetention.php` redacts old login audit IP/UA and old device approval request IP/UA without deleting approval/audit records. Config `SECURITY_IP_RETENTION_DAYS` default 90 min 30, location retention 30. `backend/routes/console.php` daily jobs require operational scheduler.
+- Reversible migration `2026_10_27_230000_add_geoip_place_to_login_locations.php`, plus earlier `210000` location observations and `220000` temporary approval request location fields. No destructive DB or Git operations.
+
+**Next execution priority:** do not reimplement already delivered functionality. Pick smallest meaningful acceptance batch from the 13, inspect minimum relevant code, close requirements with substantive tests, and only promote numbered statuses with evidence. For #45 real provider lookup, deployment token is a policy/dependency, not permission to invent results; for #50 confirm scheduling and full retention; for #48 concurrency tests must use test DB `bluepos_test`, NEVER dev database. Use SOL minimum for auth/tenancy/location/security, CODEX only when genuinely multi-file. Current code > memory. Respect frozen UI. No broad repo audit, no force push/reset hard/unsafe branch switch.
