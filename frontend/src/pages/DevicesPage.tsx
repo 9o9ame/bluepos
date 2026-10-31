@@ -420,7 +420,7 @@ export function DevicesPage() {
                     {canApprove && row.device.status === 'pending' && row.device.device_type !== 'browser' && row.first ? (
                       <DesktopButton label="Approve terminal" onClick={() => void onApprove(row.device)} />
                     ) : null}
-                    {canRevoke && row.device.status !== 'revoked' && row.first && !shared ? (
+                    {canRevoke && row.device.status !== 'revoked' && row.first && !shared && row.device.ulid !== session?.device?.ulid ? (
                       <DesktopButton label="Revoke whole device" variant="danger" onClick={() => void onRevoke(row.device)} />
                     ) : null}
                     {shared && !access && !rejected && row.device.status !== 'revoked' ? (
