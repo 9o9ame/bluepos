@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../auth/AuthProvider'
 import { updateAppearance } from '../../api/auth'
 import { UiSelect } from '../../components/ui/UiSelect'
@@ -36,6 +36,7 @@ export function AppearanceSettings() {
   const { session } = useAuth()
   const notificationToneKey = session ? 'bluepos-notification-tone:' + session.tenant.ulid + ':' + session.user.ulid : null
   const [notificationTone, setNotificationTone] = useState(() => notificationToneKey ? localStorage.getItem(notificationToneKey) || '07' : '07')
+  useEffect(() => { if (notificationToneKey) setNotificationTone(localStorage.getItem(notificationToneKey) || '07') }, [notificationToneKey])
   const { theme, skin, font, primaryTheme, density, radius, shadow, animations } = appearance
   async function persist(overrides: Partial<Parameters<typeof updateAppearance>[0]> = {}) {
     try {
@@ -109,7 +110,10 @@ export function AppearanceSettings() {
         ]}
         onChange={(value) => {
           setNotificationTone(value)
-          if (notificationToneKey) localStorage.setItem(notificationToneKey, value)
+          if (notificationToneKey) {
+            localStorage.setItem(notificationToneKey, value)
+            window.dispatchEvent(new CustomEvent('bluepos-notification-tone-change', { detail: { key: notificationToneKey, value } }))
+          }
         }} />
     </div> : null}
     <div className="appearance-settings-actions"><button type="button" className="desktop-btn" onClick={() => {
