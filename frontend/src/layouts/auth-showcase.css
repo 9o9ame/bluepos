@@ -490,3 +490,16 @@
     width: min(83%, 450px, calc(100dvh - 44px));
   }
 }
+
+/* Align the circular form with the visual center of the area between the
+   diagonal divider and right viewport edge, not the right gutter. */
+@media (min-width: 701px) {
+  .auth-showcase .auth-showcase-form-side {
+    justify-items: center;
+  }
+  .auth-showcase .auth-showcase-ring {
+    justify-self: center;
+    margin-inline: auto;
+    transform: translateX(clamp(12px, 3.5vw, 68px));
+  }
+}
