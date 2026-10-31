@@ -51,7 +51,8 @@ export function LoginPage() {
       if (err instanceof ApiClientError && (err.key === 'MFA_REQUIRED' || err.key === 'EMAIL_DELIVERY_FAILED')) {
         setChallengeUlid(typeof err.extra.challenge_ulid === 'string' ? err.extra.challenge_ulid : null)
         setRecoveryHint(typeof err.extra.recovery_hint === 'string' ? err.extra.recovery_hint : null)
-        setError(err.message)
+        setMfaCode('')
+        setError(err.key === 'MFA_REQUIRED' ? null : err.message)
         return
       }
       if (err instanceof ApiClientError && err.key === 'DEVICE_NOT_APPROVED') {
