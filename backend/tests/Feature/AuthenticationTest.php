@@ -2300,7 +2300,7 @@ class AuthenticationTest extends TestCase
 
         // No Laravel recaller token is minted: a revoked/logged-out browser
         // must never bypass the server-side device and auth-session record.
-        $this->assertNull($owner->user->fresh()->getRememberToken());
+        $this->assertEmpty($owner->user->fresh()->getRememberToken());
     }
 
     public function test_tenant_remember_me_off_uses_browser_session_cookie(): void
