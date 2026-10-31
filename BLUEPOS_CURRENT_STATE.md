@@ -1947,3 +1947,10 @@ Statuses: Completed = green, Partial = amber, Pending = red, In Progress = blue.
 - Focused validation PENDING, run only with test configuration `bluepos_test`: `cd backend && php artisan test --filter=DeviceNetworkTrustTest`. Unit coverage alone does NOT complete the owner first-login, expiry and changed-network HTTP/E2E acceptance for #4; keep #4 Partial.
 - Document reconciliation caveat: the handoff dated 2026-10-31 retains the preliminary 37/10/3 tally while other 2026-10-28 notes contain later scoped acceptance for #48/#50 and even 50/50. These different acceptance scopes must not be silently conflated. Current release and full HTTP concurrency / deployment verification remain pending. Do not infer current local test PASS from GitHub commit.
 - Stayed on approved `feature/superadmin`; no new branch, main merge, forced update, migration, or persistent DB operation.
+
+
+## 2026-10-31 — Consolidated 13-gap focused acceptance batch (RUN PENDING)
+
+- Commit `fb1c1152e1c4cbae2e3116803c98e5df3236c0e6` adds `backend/scripts/verify-device-milestones.ps1`: a single PowerShell runner for 17 EXISTING targeted AuthenticationTest cases spanning #4, #18, #24, #39, #43, #44, #45, #46, #48, #50; checks Laravel's resolved default is `pgsql` and database is `bluepos_test` before running. Does not run schema resets, migrations, or production writes. Other platform-specific/browser cases remain separate.
+- From repository root on approved `feature/superadmin`: `git pull --ff-only origin feature/superadmin` then `powershell -ExecutionPolicy Bypass -File backend/scripts/verify-device-milestones.ps1`. Do not use this script until reviewed; inspect current worktree first and do not discard local changes.
+- NOT EXECUTED here. No status promotions, no claim that browser E2E, true HTTP parallel session race, production IPInfo token or production scheduler deployment are accepted. This batch avoids rewriting tests already present, and accelerates reporting of several milestones together once user provides actual PASS/FAIL output.
