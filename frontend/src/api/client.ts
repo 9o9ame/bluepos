@@ -37,7 +37,10 @@ export function subscribeTenantSessionInvalidation(listener: () => void): () => 
 }
 
 function reportTenantSessionInvalidation(path: string, status: number, key: string): void {
-  if (!path.startsWith('/api/') || path.startsWith('/api/auth/login') || path.startsWith('/api/auth/mfa/') || path.startsWith('/api/auth/logout')) return
+  // /auth/me is itself the session-discovery query. Invalidating its own cache on 401
+  // causes an unauthenticated login page to repeatedly re-fetch /me.
+  // AuthProvider handles its 401 directly; protected API 401s still revoke local state.
+  if (!path.startsWith('/api/') || path === '/api/auth/me' || path.startsWith('/api/auth/login') || path.startsWith('/api/auth/mfa/') || path.startsWith('/api/auth/logout')) return
   if (status !== 401 && !['SESSION_REVOKED', 'DEVICE_REVOKED', 'DEVICE_NOT_APPROVED'].includes(key)) return
   resetCsrf()
   tenantSessionInvalidationListeners.forEach(listener => listener())
