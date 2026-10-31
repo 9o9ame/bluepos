@@ -36,3 +36,20 @@
   .bp-notification-popover, .bp-notification-item.bp-motion-notice { animation: none; }
   .bp-notification-trigger.bp-motion-bell:hover svg { transform: none; }
 }
+
+/* Visibly interactive notification cards, without altering the approved popover width or row size. */
+.bp-notification-item {
+  transition: background-color 420ms cubic-bezier(.22,1,.36,1), box-shadow 420ms ease;
+}
+.bp-notification-item:is(:hover, :focus-visible) {
+  background: var(--ui-accent-soft);
+  box-shadow: inset 4px 4px 9px color-mix(in srgb, var(--ui-text) 10%, transparent),
+    inset -3px -3px 8px color-mix(in srgb, var(--ui-surface) 95%, transparent);
+}
+.bp-notification-trigger:is(:hover, :focus-visible) {
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-strong);
+  box-shadow: var(--ui-control-shadow), 0 0 10px color-mix(in srgb, var(--ui-accent) 19%, transparent);
+}
+html[data-animations='off'] .bp-notification-item { transition: none; }
+@media (prefers-reduced-motion: reduce) { .bp-notification-item { transition: none; } }
