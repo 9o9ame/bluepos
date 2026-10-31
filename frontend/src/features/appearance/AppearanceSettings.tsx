@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { useAuth } from '../auth/AuthProvider'
 import { updateAppearance } from '../../api/auth'
 import { UiSelect } from '../../components/ui/UiSelect'
 import {
@@ -31,6 +33,9 @@ const PRIMARY_OPTIONS: Array<{ value: PrimaryTheme; label: string }> = [
 
 export function AppearanceSettings() {
   const appearance = useAppearance()
+  const { session } = useAuth()
+  const notificationToneKey = session ? 'bluepos-notification-tone:' + session.tenant.ulid + ':' + session.user.ulid : null
+  const [notificationTone, setNotificationTone] = useState(() => notificationToneKey ? localStorage.getItem(notificationToneKey) || '07' : '07')
   const { theme, skin, font, primaryTheme, density, radius, shadow, animations } = appearance
   async function persist(overrides: Partial<Parameters<typeof updateAppearance>[0]> = {}) {
     try {
@@ -90,9 +95,26 @@ export function AppearanceSettings() {
         }}
       />
     </div>
+    {session ? <div className="appearance-settings-group">
+      <div className="appearance-settings-heading">Notification sound</div>
+      <UiSelect aria-label="Notification sound" triggerClassName="desktop-select" searchable={false}
+        value={notificationTone}
+        options={[
+          { value: 'off', label: 'Off' },
+          { value: '07', label: 'Notification 07' },
+          { value: '024', label: 'Notification 024' },
+          { value: '050', label: 'Notification 050' },
+          { value: '051', label: 'Notification 051' },
+          { value: '057', label: 'Notification 057' },
+        ]}
+        onChange={(value) => {
+          setNotificationTone(value)
+          if (notificationToneKey) localStorage.setItem(notificationToneKey, value)
+        }} />
+    </div> : null}
     <div className="appearance-settings-actions"><button type="button" className="desktop-btn" onClick={() => {
         appearance.resetAppearance()
-        void persist({ theme: 'system', skin: 'classic', font: 'skin-default', primaryTheme: 'blue', density: 'comfortable', radius: 'medium', shadow: 'soft', animations: true })
+        void persist({ theme: 'system', skin: 'classic', font: 'roboto-condensed', primaryTheme: 'blue', density: 'comfortable', radius: 'medium', shadow: 'soft', animations: true })
       }}>Reset to Default</button>
     </div>
   </section>
