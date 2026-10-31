@@ -27,17 +27,23 @@ class EstablishAuthSessionAction
 
     public const AUTH_SESSION_ULID = 'auth_session_ulid';
 
+    public const REMEMBER = 'tenant_remember_selected';
+
     public function __construct(
         private readonly AuthEventLogger $logger,
         private readonly TenantContext $tenantContext,
         private readonly AuditLogger $audit,
     ) {}
 
-    public function execute(Request $request, AuthenticatedSession $session, bool $logSuccess = true): void
+    public function execute(Request $request, AuthenticatedSession $session, bool $logSuccess = true, bool $remember = false): void
     {
         Auth::guard('platform')->logout();
         Auth::guard('web')->login($session->user);
         $request->session()->regenerate();
+        $request->session()->put(self::REMEMBER, $remember);
+        // Persist only the server-validated Laravel session, never a remember-token
+        // which could reauthenticate without tenant/device/network validation.
+        config(['session.expire_on_close' => ! $remember]);
 
         $version = $session->membership->currentSecurityVersion();
 
