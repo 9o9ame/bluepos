@@ -15,6 +15,7 @@ import { FeedbackProvider } from './feedback/FeedbackProvider'
 import { applyAppDisplayMode } from './features/desktop/appDisplayMode'
 import './index.css'
 import './appearance.css'
+import './motion.css'
 import './density.css'
 import './density-shell.css'
 
