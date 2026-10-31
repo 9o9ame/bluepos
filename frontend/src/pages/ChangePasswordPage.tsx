@@ -37,13 +37,12 @@ export function ChangePasswordPage() {
   }
 
   return (
-    <AuthLayout title="Change password">
-      <form className="space-y-3" onSubmit={onSubmit}>
+    <AuthLayout title="Change password" notice={error}>
+      <form className="auth-showcase-password-form space-y-3" onSubmit={onSubmit}>
         <p className="text-[12px] text-[var(--ui-text-muted)]">You must set a new password before using BluePOS.</p>
         <input className="h-9 w-full rounded border px-2 text-[12px]" type="password" placeholder="Current password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
         <input className="h-9 w-full rounded border px-2 text-[12px]" type="password" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
         <input className="h-9 w-full rounded border px-2 text-[12px]" type="password" placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={8} />
-        {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
         <button type="submit" className="h-9 w-full rounded bg-[var(--ui-accent)] text-sm font-semibold text-white">Update password</button>
         <button
           type="button"
