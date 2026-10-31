@@ -45,7 +45,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthLayout title="Forgot password">
+    <AuthLayout title="Forgot password" notice={error}>
       {done ? (
         <p className="text-[13px]">
           Password updated.{' '}
@@ -59,7 +59,6 @@ export function ForgotPasswordPage() {
           <input className="h-9 w-full rounded border px-2 text-[12px]" placeholder="Reset code" value={token} onChange={(e) => setToken(e.target.value)} required />
           <input className="h-9 w-full rounded border px-2 text-[12px]" type="password" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
           <input className="h-9 w-full rounded border px-2 text-[12px]" type="password" placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={8} />
-          {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
           <button type="submit" className="h-9 w-full rounded bg-[var(--ui-accent)] text-sm font-semibold text-white">Reset password</button>
         </form>
       ) : (
