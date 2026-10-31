@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { ChevronDown, Fingerprint, KeyRound, LogOut, MonitorSmartphone, ShieldCheck, UserRound, Layers3 } from 'lucide-react'
+import './platform-account-dropdown.css'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { usePlatformAuth } from '../features/platform/PlatformAuthProvider'
 import { usePlatformCan } from '../features/platform/usePlatformCan'
@@ -39,45 +41,72 @@ export function PlatformShell() {
           <div className="text-[10px] font-black tracking-[0.2em] text-[var(--ui-accent)]">PLATFORM ADMINISTRATION</div>
           <div className="text-sm font-semibold">BluePOS Super Admin</div>
         </div>
-        <div className="relative text-[12px]">
+        <div
+          className="platform-account-dropdown relative text-[12px]"
+          onMouseEnter={() => setMenuOpen(true)}
+          onMouseLeave={() => setMenuOpen(false)}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setMenuOpen(false)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              setMenuOpen(false)
+              event.currentTarget.querySelector<HTMLButtonElement>('.platform-account-trigger')?.focus()
+            }
+          }}
+        >
           <button
             type="button"
-            className="platform-account-trigger rounded border border-[var(--ui-border)] px-2 py-1"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-controls="platform-account-menu"
+            className="platform-account-trigger"
             onClick={() => setMenuOpen((open) => !open)}
           >
-            {user?.name ?? user?.email} ▾
+            <span className="platform-account-avatar"><Layers3 size={16} aria-hidden="true" /></span>
+            <span className="platform-account-label">
+              <strong>{user?.name ?? user?.email}</strong>
+              <small>Manage your account</small>
+            </span>
+            <span className="platform-account-chevron"><ChevronDown size={16} aria-hidden="true" /></span>
           </button>
           {menuOpen ? (
-            <div className="platform-account-menu absolute right-0 z-20 mt-1 w-52 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] py-1 shadow-lg">
+            <div id="platform-account-menu" role="menu" aria-label="Platform account" className="platform-account-menu">
               {[
-                ['/platform/account/profile', 'My Profile'],
-                ['/platform/account/password', 'Change Password'],
-                ['/platform/account/security', 'Security'],
-                ['/platform/account/security#mfa', 'MFA'],
-                ['/platform/account/security#devices', 'Trusted Devices'],
-                ['/platform/account/security#sessions', 'Active Sessions'],
-              ].map(([to, label]) => (
+                { to: '/platform/account/profile', label: 'My Profile', hint: 'Personal information', icon: UserRound },
+                { to: '/platform/account/password', label: 'Change Password', hint: 'Update your password', icon: KeyRound },
+                { to: '/platform/account/security', label: 'Security', hint: 'Security overview', icon: ShieldCheck },
+                { to: '/platform/account/security#mfa', label: 'MFA', hint: 'Multi-factor authentication', icon: Fingerprint },
+                { to: '/platform/account/security#devices', label: 'Trusted Devices', hint: 'Recognized devices', icon: MonitorSmartphone },
+                { to: '/platform/account/security#sessions', label: 'Active Sessions', hint: 'Review active sessions', icon: MonitorSmartphone },
+              ].map(({ to, label, hint, icon: Icon }) => (
                 <button
                   key={to}
                   type="button"
-                  className="platform-account-menu-item block w-full px-3 py-1.5 text-left hover:bg-[var(--ui-accent-soft)]"
+                  role="menuitem"
+                  className="platform-account-menu-item"
                   onClick={() => {
                     setMenuOpen(false)
                     navigate(to)
                   }}
                 >
-                  {label}
+                  <span className="platform-account-item-icon"><Icon size={16} aria-hidden="true" /></span>
+                  <span className="platform-account-item-text"><strong>{label}</strong><small>{hint}</small></span>
+                  <span className="platform-account-item-arrow" aria-hidden="true">→</span>
                 </button>
               ))}
+              <div className="platform-account-menu-divider" />
               <button
                 type="button"
-                className="platform-account-menu-item platform-account-menu-signout block w-full border-t border-[var(--ui-border)] px-3 py-1.5 text-left hover:bg-[var(--ui-accent-soft)]"
+                role="menuitem"
+                className="platform-account-menu-item platform-account-menu-signout"
                 onClick={() => {
                   setMenuOpen(false)
                   void logout()
                 }}
               >
-                Sign Out
+                <span className="platform-account-item-icon"><LogOut size={16} aria-hidden="true" /></span>
+                <span className="platform-account-item-text"><strong>Sign Out</strong><small>End your session</small></span>
               </button>
             </div>
           ) : null}
