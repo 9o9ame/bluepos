@@ -1,0 +1,61 @@
+/* Tenant-monitoring panels only: keep platform chrome fixed and scroll inside the active table. */
+.platform-tenant-monitor-panel {
+  height: max(240px, calc(100dvh - 245px));
+  max-height: calc(100dvh - 245px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.platform-tenant-monitor-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+  flex: 0 0 auto;
+}
+.platform-tenant-monitor-tabs button {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--control-radius);
+  background: var(--ui-surface);
+  color: var(--ui-text-muted);
+  padding: 4px 10px;
+}
+.platform-tenant-monitor-tabs button:hover {
+  background: var(--ui-surface-subtle);
+}
+.platform-tenant-monitor-tabs button.is-active {
+  background: var(--ui-accent-soft);
+  border-color: var(--ui-accent);
+  color: var(--ui-text);
+  font-weight: 600;
+}
+.platform-tenant-monitor-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.platform-tenant-monitor-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--panel-radius);
+}
+.platform-tenant-monitor-grid table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.platform-tenant-monitor-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ui-table-header);
+  color: var(--ui-table-header-text);
+  box-shadow: 0 1px 0 var(--ui-table-border);
+}
+.platform-tenant-monitor-grid td, .platform-tenant-monitor-grid th {
+  padding: 4px 6px;
+}
