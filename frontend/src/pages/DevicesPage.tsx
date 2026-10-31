@@ -1,4 +1,5 @@
 import { summarizeUserAgent } from '../utils/userAgentSummary'
+import './devices-page.css'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, X } from 'lucide-react'
 import { fetchBranches } from '../api/branches'
@@ -181,7 +182,7 @@ export function DevicesPage() {
       flush
     >
       {error ? <p role="alert" className="p-2 text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
-      <div role="tabpanel" className="min-h-0 overflow-y-auto overflow-x-auto" style={{ maxHeight: 'calc(100dvh - 270px)' }}>
+      <div role="tabpanel" className={`devices-tab-content min-h-0 ${activeView === 'requests' ? 'overflow-y-auto' : 'overflow-hidden'}`} style={{ height: 'calc(100dvh - 270px)', maxHeight: 'calc(100dvh - 270px)' }}>
       {activeView === 'requests' && canReviewRequests ? (
         <section className="p-2">
           <h3 className="mb-2 text-[12px] font-semibold">Device &amp; network alerts ({inboxQuery.data?.unread_count ?? 0} unread)</h3>
@@ -296,6 +297,7 @@ export function DevicesPage() {
           {historyQuery.isLoading ? <p className="text-[12px]">Loading login history…</p> : null}
           {historyQuery.isError ? <p role="alert" className="text-[12px] text-[var(--ui-danger)]">Unable to load login history.</p> : null}
           {!historyQuery.isLoading && !historyQuery.isError ? (
+            <div className="devices-grid-card devices-grid-card--history">
             <PosDataGrid
               columns={[
                 { key: 'event', header: 'Event', render: row => row.event },
@@ -308,6 +310,7 @@ export function DevicesPage() {
               rows={historyQuery.data?.events ?? []}
               rowKey={row => row.ulid}
             />
+            </div>
           ) : null}
           <div className="mt-2 flex items-center gap-2 text-[12px]">
             <span>{historyQuery.data?.pagination.total ?? 0} events · page {historyPage}</span>
@@ -322,6 +325,7 @@ export function DevicesPage() {
           <p className="mb-2 text-[12px] text-[var(--ui-text-muted)]">Location comes from browser permission at sign-in; coordinates are rounded for privacy, not reliable proof of physical presence.</p>
           {locationQuery.isError ? <p role="alert" className="text-[12px] text-[var(--ui-danger)]">Unable to load location history.</p> : null}
           {!locationQuery.isLoading && !locationQuery.isError ? (
+            <div className="devices-grid-card devices-grid-card--locations">
             <PosDataGrid
               columns={[
                 { key: 'employee', header: 'Employee', render: row => row.username },
@@ -333,6 +337,7 @@ export function DevicesPage() {
               rows={locationQuery.data?.locations ?? []}
               rowKey={row => row.ulid}
             />
+            </div>
           ) : null}
           <div className="mt-2 flex items-center gap-2 text-[12px]">
             <span>{locationQuery.data?.pagination.total ?? 0} records · page {locationPage}</span>
@@ -347,6 +352,7 @@ export function DevicesPage() {
           {sessionsQuery.isLoading ? <p className="text-[12px] text-[var(--ui-text-muted)]">Loading activity…</p> : null}
           {sessionsQuery.isError ? <p className="text-[12px] text-[var(--ui-danger)]">Unable to load session activity.</p> : null}
           {!sessionsQuery.isLoading && !sessionsQuery.isError ? (
+            <div className="devices-grid-card devices-grid-card--activity">
             <PosDataGrid
               columns={[
                 { key: 'employee', header: 'Employee', render: (row) => row.membership?.username ?? '—' },
@@ -358,6 +364,7 @@ export function DevicesPage() {
               rows={(sessionsQuery.data ?? []).slice(0, 25)}
               rowKey={(row) => row.ulid}
             />
+            </div>
           ) : null}
         </section>
       ) : null}
@@ -365,6 +372,7 @@ export function DevicesPage() {
       <section className="p-2">
         <h3 className="mb-2 text-[12px] font-semibold">Registered devices and individual user access</h3>
         <p className="mb-2 text-[12px] text-[var(--ui-text-muted)]">One browser device may be shared by multiple users. Revoke staff access for just that employee; revoking an entire device blocks everyone on it.</p>
+        <div className="devices-grid-card devices-grid-card--registered">
         <PosDataGrid
           columns={[
             { key: 'name', header: 'Device', render: (row) => row.device.name },
@@ -425,6 +433,7 @@ export function DevicesPage() {
           selectedKey={selectedKey}
           onSelect={row => setSelectedKey(row.key)}
         />
+        </div>
       </section>
       ) : null}
       </div>
