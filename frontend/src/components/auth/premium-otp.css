@@ -1,0 +1,23 @@
+/* Video-inspired premium OTP controls. BluePOS theme tokens remain authoritative. */
+.auth-showcase .auth-showcase-heading .auth-otp-emblem {
+  display: grid; place-items: center; margin: 0 auto 12px;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--ui-accent-soft); color: var(--ui-accent-strong);
+  box-shadow: -4px -4px 9px var(--ui-surface), 5px 6px 11px color-mix(in srgb,var(--ui-text) 16%,transparent);
+}
+.auth-showcase .premium-otp {
+  display: flex; justify-content: center; gap: clamp(4px, .55vw, 9px);
+  width: 100%; margin: 14px 0;
+}
+.auth-showcase .auth-showcase-form-card .premium-otp input {
+  appearance: none; text-align: center; padding: 0;
+  min-width: 0; width: min(100%, 42px); flex: 1 1 0;
+  height: 44px; font-size: 19px; font-weight: 750;
+  font-variant-numeric: tabular-nums; border-radius: max(9px,var(--control-radius));
+  background: var(--ui-surface-subtle); color: var(--ui-text);
+  box-shadow: inset 4px 4px 8px color-mix(in srgb,var(--ui-text) 15%,transparent), inset -4px -4px 7px var(--ui-surface);
+}
+.auth-showcase .auth-otp-copy { text-align: center; font-size: 12px; line-height: 1.5; color: var(--ui-text-muted); }
+.auth-showcase .auth-otp-back { color: var(--ui-accent-strong); font-size: 12px; font-weight: 650; }
+.auth-showcase .auth-showcase-form-card:has(.premium-otp) { padding-top: 35px; padding-bottom: 35px; }
+@media (prefers-reduced-motion: reduce) { .auth-showcase .premium-otp input { transition: none; } }
