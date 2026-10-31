@@ -6,7 +6,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 import { AuthLayout } from '../layouts/AuthLayout'
 
 export function ChangePasswordPage() {
-  const { session, isLoading, logout, refreshSession } = useAuth()
+  const { session, isLoading, refreshSession } = useAuth()
   const navigate = useNavigate()
   const [current, setCurrent] = useState('')
   const [password, setPassword] = useState('')
@@ -44,15 +44,6 @@ export function ChangePasswordPage() {
         <input className="h-9 w-full rounded border px-2 text-[12px]" type="password" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
         <input className="h-9 w-full rounded border px-2 text-[12px]" type="password" placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={8} />
         <button type="submit" className="h-9 w-full rounded bg-[var(--ui-accent)] text-sm font-semibold text-white">Update password</button>
-        <button
-          type="button"
-          className="h-9 w-full rounded border text-sm"
-          onClick={() => {
-            void logout().then(() => navigate('/login', { replace: true }))
-          }}
-        >
-          Logout
-        </button>
       </form>
     </AuthLayout>
   )
