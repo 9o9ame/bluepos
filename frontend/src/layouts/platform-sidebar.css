@@ -183,3 +183,19 @@
 [data-animations="off"] .platform-sidebar-link,
 [data-animations="off"] .platform-sidebar-group-trigger,
 [data-animations="off"] .platform-sidebar-footer-item { transition: none; }
+
+/* Match Manage Account's soft accent-blue option hover, retaining inset 3D depth. */
+.platform-sidebar-link:not(.is-active):is(:hover, :focus-visible),
+.platform-sidebar-group-trigger:is(:hover, :focus-visible),
+.platform-sidebar-footer-item:is(:hover, :focus-visible) {
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-strong);
+  box-shadow:
+    inset 4px 4px 7px color-mix(in srgb, var(--ui-text) 12%, transparent),
+    inset -4px -4px 8px color-mix(in srgb, var(--ui-surface) 98%, transparent);
+}
+.platform-sidebar-link:not(.is-active):is(:hover, :focus-visible) svg,
+.platform-sidebar-group-trigger:is(:hover, :focus-visible) svg,
+.platform-sidebar-footer-item:is(:hover, :focus-visible) svg {
+  color: var(--ui-accent-strong);
+}
