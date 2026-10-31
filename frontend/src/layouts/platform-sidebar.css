@@ -4,8 +4,6 @@
 .platform-sidebar-brand { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 2px 1px 14px; }
 .platform-sidebar-brand-icon { flex: 0 0 34px; width: 34px; height: 34px; display: grid; place-items: center; color: var(--ui-accent-strong); background: var(--ui-accent-soft); border-radius: var(--control-radius); }
 .platform-sidebar-brand-text { font-size: 12px; font-weight: 750; white-space: nowrap; flex: 1; overflow: hidden; }
-.platform-sidebar-collapse { width: 24px; height: 24px; flex: 0 0 24px; display: grid; place-items: center; border: 1px solid var(--ui-border); color: var(--ui-text-muted); background: var(--ui-surface-subtle); border-radius: 50%; }
-.platform-sidebar-collapse:hover, .platform-sidebar-collapse:focus-visible { color: var(--ui-accent-strong); box-shadow: var(--ui-focus-shadow); }
 .platform-sidebar-search { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; min-height: 34px; padding: 0 10px; margin: 7px 1px 16px; background: var(--ui-surface-subtle); border: 1px solid var(--ui-border); border-radius: var(--control-radius); color: var(--ui-text-muted); }
 .platform-sidebar-search input { width: 100%; min-width: 0; background: transparent; outline: none; color: var(--ui-text); font-size: 12px; }
 .platform-sidebar-search:focus-within { box-shadow: var(--ui-focus-shadow); }
