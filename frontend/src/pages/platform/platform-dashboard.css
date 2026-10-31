@@ -192,3 +192,40 @@
 [data-animations="off"] .platform-dashboard-donut::before,
 [data-animations="off"] .platform-dashboard-profile-point,
 [data-animations="off"] .platform-dashboard-profile-chart path[fill^="url"] { animation: none; }
+
+/* Persistent visible interactivity after entrance finishes: no geometry/size changes. */
+.platform-dashboard-metric,
+.platform-dashboard-card {
+  transition: box-shadow 440ms cubic-bezier(.22,1,.36,1), border-color 440ms ease;
+}
+.platform-dashboard-metric:hover,
+.platform-dashboard-card:hover {
+  border-color: color-mix(in srgb, var(--ui-accent) 38%, var(--ui-border));
+  box-shadow: var(--ui-card-shadow), 0 7px 24px color-mix(in srgb, var(--ui-accent) 16%, transparent);
+}
+.platform-dashboard-chart-card:hover .platform-dashboard-profile-line {
+  stroke-dasharray: 100;
+  animation: platform-dashboard-line-reveal 1800ms cubic-bezier(.22,1,.36,1) both;
+}
+.platform-dashboard-chart-card:hover .platform-dashboard-donut::before {
+  animation: platform-chart-donut-sweep 1700ms cubic-bezier(.22,1,.36,1) both;
+}
+.platform-dashboard-chart-card:hover .platform-dashboard-profile-point {
+  animation: platform-chart-point-in 480ms cubic-bezier(.22,1,.36,1) 850ms both;
+}
+.platform-dashboard-metric:hover .platform-dashboard-fill {
+  animation: platform-dashboard-fill 1450ms cubic-bezier(.22,1,.36,1) both;
+}
+html[data-animations='off'] .platform-dashboard-metric,
+html[data-animations='off'] .platform-dashboard-card { transition: none; }
+html[data-animations='off'] .platform-dashboard-chart-card:hover .platform-dashboard-profile-line,
+html[data-animations='off'] .platform-dashboard-chart-card:hover .platform-dashboard-donut::before,
+html[data-animations='off'] .platform-dashboard-chart-card:hover .platform-dashboard-profile-point,
+html[data-animations='off'] .platform-dashboard-metric:hover .platform-dashboard-fill { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .platform-dashboard-metric, .platform-dashboard-card { transition: none; }
+  .platform-dashboard-chart-card:hover .platform-dashboard-profile-line,
+  .platform-dashboard-chart-card:hover .platform-dashboard-donut::before,
+  .platform-dashboard-chart-card:hover .platform-dashboard-profile-point,
+  .platform-dashboard-metric:hover .platform-dashboard-fill { animation: none; }
+}
