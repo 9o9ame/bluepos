@@ -1,4 +1,5 @@
 import { requireBrowserLocation } from '../../utils/browserLocation'
+import '../../layouts/auth-showcase.css'
 import { FormEvent, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { ApiClientError } from '../../api/client'
@@ -82,11 +83,14 @@ export function PlatformLoginPage() {
   }
 
   return (
-    <div className="platform-auth-page flex min-h-screen items-center justify-center bg-[var(--ui-bg)] p-4">
-      <div className="platform-auth-card w-full max-w-md rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] text-[var(--ui-text)] shadow-xl">
-        <div className="border-b border-[var(--ui-border)] px-5 py-3">
-          <div className="text-[11px] font-black tracking-[0.18em] text-[var(--ui-accent)]">BLUEPOS PLATFORM</div>
-          <h1 className="text-lg font-semibold">Platform Administration</h1>
+    <div className="platform-auth-page auth-showcase">
+      <div className="auth-showcase-form-side">
+      <div className="auth-showcase-ring">
+      <div className="platform-auth-card auth-showcase-form-card">
+        <div className="auth-showcase-heading">
+          <div className="auth-brand">BLUEPOS PLATFORM</div>
+          <h1 className="auth-title">Sign in</h1>
+          <p className="auth-showcase-subtitle">Platform Administration</p>
         </div>
         <form className="space-y-3 px-5 py-4" onSubmit={onSubmit}>
           <p className="text-[12px] text-[var(--ui-text-muted)]">
@@ -162,6 +166,17 @@ export function PlatformLoginPage() {
           </p>
         </form>
       </div>
+      </div>
+      </div>
+      <aside className="auth-showcase-promo" aria-label="BluePOS Platform information">
+        <div className="auth-showcase-promo-content">
+          <div className="auth-showcase-promo-mark">BP</div>
+          <p className="auth-showcase-eyebrow">BLUEPOS PLATFORM</p>
+          <h2>Manage your platform with clarity.</h2>
+          <p>Sign in to continue to your authorized BluePOS administration workspace.</p>
+          <div className="auth-showcase-decor" aria-hidden="true"><span /><span /><span /></div>
+        </div>
+      </aside>
     </div>
   )
 }
