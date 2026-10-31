@@ -1,15 +1,30 @@
 import type { ReactNode } from 'react'
+import './auth-showcase.css'
 
 export function AuthLayout({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="auth-layout flex min-h-screen items-center justify-center bg-[var(--ui-accent)] p-4">
-      <div className="auth-card w-full max-w-md rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] shadow-xl">
-        <div className="auth-card-header border-b border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] px-5 py-3">
-          <div className="auth-brand text-[11px] font-black tracking-[0.2em] text-[var(--ui-accent)]">BLUEPOS</div>
-          <h1 className="auth-title text-lg font-semibold text-[var(--ui-text)]">{title}</h1>
+    <div className="auth-layout auth-showcase">
+      <div className="auth-showcase-form-side">
+        <div className="auth-showcase-ring">
+          <div className="auth-card auth-showcase-form-card">
+            <div className="auth-card-header auth-showcase-heading">
+              <div className="auth-brand">BLUEPOS</div>
+              <h1 className="auth-title">{title}</h1>
+              <p className="auth-showcase-subtitle">Access your workspace securely</p>
+            </div>
+            <div className="auth-card-body">{children}</div>
+          </div>
         </div>
-        <div className="auth-card-body px-5 py-4">{children}</div>
       </div>
+      <aside className="auth-showcase-promo" aria-label="BluePOS information">
+        <div className="auth-showcase-promo-content">
+          <div className="auth-showcase-promo-mark">BP</div>
+          <p className="auth-showcase-eyebrow">BLUEPOS</p>
+          <h2>One workspace. A clearer way to work.</h2>
+          <p>Welcome to BluePOS. Sign in to continue to your authorized workspace.</p>
+          <div className="auth-showcase-decor" aria-hidden="true"><span /><span /><span /></div>
+        </div>
+      </aside>
     </div>
   )
 }
