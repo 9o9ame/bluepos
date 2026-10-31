@@ -44,7 +44,7 @@ function TenantMetric({ label, value, total, tone, index }: {
     : 0
 
   return (
-    <div className={`platform-dashboard-metric platform-dashboard-tone-${tone}`} style={{ animationDelay: `${index * 90}ms` }}>
+    <div className={`platform-dashboard-metric bp-motion-enter platform-dashboard-tone-${tone}`} style={{ animationDelay: `${index * 90}ms` }}>
       <div className="platform-dashboard-metric-label">{label}</div>
       <div className="platform-dashboard-metric-number" aria-label={value === null ? 'Unavailable' : `${value}`}>
         {value === null ? '—' : count.toLocaleString()}
@@ -90,7 +90,7 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
         <h2 className="mb-1 text-sm font-semibold">Tenant distribution</h2>
         <p className="platform-dashboard-chart-hint">Current share of tenant statuses</p>
         <div className="platform-dashboard-donut-layout">
-          <div className="platform-dashboard-donut" role="img"
+          <div className="platform-dashboard-donut bp-motion-enter" role="img"
             aria-label={`Tenant status: ${rows.map(item => `${item.label} ${item.count}`).join(', ')}`}
             style={{ '--donut-gradient': donutGradient } as CSSProperties}>
             <div className="platform-dashboard-donut-center">
