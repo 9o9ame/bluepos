@@ -7,6 +7,7 @@ export type LoginInput = BrowserLocationInput & {
   tenant_code: string
   username: string
   password: string
+  remember?: boolean
 }
 
 export type ForgotPasswordInput = {
@@ -32,6 +33,7 @@ export type MfaVerifyInput = BrowserLocationInput & {
   challenge_ulid: string
   code: string
   trust_device?: boolean
+  remember?: boolean
 }
 
 export type UpdateAppearanceInput = AppearancePreferences
