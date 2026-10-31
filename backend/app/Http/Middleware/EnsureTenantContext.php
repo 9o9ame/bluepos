@@ -223,7 +223,7 @@ class EnsureTenantContext
 
     private function requiresPasswordChange(Request $request, mixed $user): bool
     {
-        if (! $user->must_change_password) {
+        if (! $user->must_change_password || ! $this->tenantContext->membership()->hasOwnerAuthority()) {
             return false;
         }
 
