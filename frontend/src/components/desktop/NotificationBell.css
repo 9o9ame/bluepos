@@ -21,3 +21,18 @@
 .bp-notification-ring svg { animation: bp-notification-shake 400ms ease-in-out 3; transform-origin: top center; }
 [data-animations='off'] .bp-notification-ring svg { animation: none; }
 @media (prefers-reduced-motion: reduce) { .bp-notification-ring svg { animation: none; } }
+
+/* Video-style staggered notification reveal; existing list geometry and colors stay intact. */
+.bp-notification-popover { animation: bp-motion-rise 420ms cubic-bezier(.22,1,.36,1) both; }
+.bp-notification-item.bp-motion-notice:hover { background: var(--ui-accent-soft); }
+.bp-notification-list .bp-notification-item:nth-child(2) { animation-delay: 70ms; }
+.bp-notification-list .bp-notification-item:nth-child(3) { animation-delay: 140ms; }
+.bp-notification-list .bp-notification-item:nth-child(4) { animation-delay: 210ms; }
+.bp-notification-list .bp-notification-item:nth-child(5) { animation-delay: 280ms; }
+.bp-notification-trigger.bp-motion-bell:hover svg { transform: rotate(-8deg); transition: transform 350ms cubic-bezier(.22,1,.36,1); }
+[data-animations='off'] .bp-notification-popover,
+[data-animations='off'] .bp-notification-item.bp-motion-notice { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .bp-notification-popover, .bp-notification-item.bp-motion-notice { animation: none; }
+  .bp-notification-trigger.bp-motion-bell:hover svg { transform: none; }
+}
