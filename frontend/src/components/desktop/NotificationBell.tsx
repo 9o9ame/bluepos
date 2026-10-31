@@ -3,10 +3,9 @@ import Pusher from 'pusher-js'
 import { apiFetch } from '../../api/client'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bell, Volume2, X } from 'lucide-react'
+import { Bell, BellRing, CheckCheck } from 'lucide-react'
 import type { AuthSession } from '../../types/auth'
 import { fetchDeviceAccessNotifications, markDeviceAccessNotificationRead, type DeviceAccessNotification } from '../../api/devices'
-import { UiSelect } from '../ui/UiSelect'
 import { UI_LAYER } from '../ui/uiLayers'
 import './NotificationBell.css'
 
@@ -47,6 +46,7 @@ export function NotificationBell({ session, onOpenDevices }: {
   const preferenceKey = 'bluepos-notification-tone:' + scope
   const [tone, setTone] = useState(() => localStorage.getItem(preferenceKey) || '07')
   const [open, setOpen] = useState(false)
+  const hasRealtime = Boolean(import.meta.env.VITE_PUSHER_APP_KEY && import.meta.env.VITE_PUSHER_APP_CLUSTER)
   const [toast, setToast] = useState<DeviceAccessNotification | null>(null)
   const [ring, setRing] = useState(false)
   const known = useRef<Set<string> | null>(null)
@@ -60,7 +60,7 @@ export function NotificationBell({ session, onOpenDevices }: {
     queryKey: ['device-access-inbox', scope, 1],
     queryFn: () => fetchDeviceAccessNotifications(1),
     enabled: isOwner,
-    refetchInterval: 30000, // Low-frequency recovery fallback; Pusher event triggers immediate refresh.
+    refetchInterval: hasRealtime ? 300000 : 60000, // Pusher-first; a five-minute safety recovery if connected.
     refetchIntervalInBackground: false,
   })
 
@@ -164,7 +164,7 @@ export function NotificationBell({ session, onOpenDevices }: {
 
   const unread = notices.data?.unread_count ?? 0
   return (
-    <div className="bp-notification-root">
+    <div className="bp-notification-root" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false) }} onKeyDown={(event) => { if (event.key === 'Escape') setOpen(false) }}>
       <button
         type="button"
         className={'bp-notification-trigger bp-motion-bell' + (ring ? ' bp-notification-ring' : '')}
@@ -179,32 +179,16 @@ export function NotificationBell({ session, onOpenDevices }: {
       </button>
       {open ? (
         <section className="bp-notification-popover" role="dialog" aria-label="Notifications" style={{ zIndex: UI_LAYER.dropdown }}>
-          <div className="bp-notification-heading">
-            <strong>Device approval alerts</strong>
-            <button type="button" className="bp-notification-icon" onClick={() => setOpen(false)} aria-label="Close notifications"><X size={14} /></button>
-          </div>
+          <div className="bp-notification-heading"><span className="bp-notification-heading-mark"><BellRing size={16} aria-hidden="true" /></span><div><strong>Notifications</strong><small>Device approval activity</small></div>{unread > 0 ? <span className="bp-notification-heading-count">{unread} new</span> : null}</div>
           {noticeError ? <p className="bp-notification-error" role="alert">Could not mark this alert as read. Please try again.</p> : null}
           <div className="bp-notification-list">
             {notices.data?.notifications.length ? notices.data.notifications.slice(0, 5).map((notice) => (
               <button type="button" key={notice.ulid} className="bp-notification-item bp-motion-notice" disabled={openingNotice === notice.ulid} onClick={() => void openNotice(notice)}>
-                <span>{notice.username} — {notice.device_name}</span>
-                <small>{notice.read_at ? 'Read' : 'Unread'} · {notice.status}</small>
+                <span className="bp-notification-card-icon"><Bell size={15} aria-hidden="true" /></span><span className="bp-notification-card-content"><strong>{notice.kind === 'new_network' ? 'New network request' : 'New device request'}</strong><span>{notice.username} · {notice.device_name}</span><small>{notice.read_at ? 'Read' : 'Unread'} · {notice.status}</small></span>{notice.read_at ? <CheckCheck size={15} className="bp-notification-read-icon" aria-hidden="true" /> : <span className="bp-notification-unread-dot" aria-hidden="true" />}
               </button>
             )) : <p className="bp-notification-empty">No notifications yet.</p>}
           </div>
-          <div className="bp-notification-settings">
-            <span>Alert sound</span>
-            <UiSelect
-              value={tone}
-              aria-label="Notification sound"
-              options={[{ value: 'off', label: 'Off' }, ...TONES.map(({ value, label }) => ({ value, label }))]}
-              onChange={(value) => { setTone(value); localStorage.setItem(preferenceKey, value) }}
-              searchable={false}
-              menuPlacement="up"
-            />
-            <button type="button" className="bp-notification-icon" title="Preview sound" aria-label="Preview notification sound" onClick={() => playNotificationSound(tone)}><Volume2 size={16} /></button>
-          </div>
-          <button type="button" className="bp-notification-all" onClick={() => { setOpen(false); onOpenDevices() }}>Open Devices</button>
+          <button type="button" className="bp-notification-all" onClick={() => { setOpen(false); onOpenDevices() }}>View all in Devices</button>
         </section>
       ) : null}
       {toast ? (
