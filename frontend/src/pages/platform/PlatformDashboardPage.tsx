@@ -67,8 +67,14 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
   const remainder = total === null ? 0 : Math.max(0, total - known)
   const rows: StatusDatum[] = remainder > 0 ? [...values, { label: 'Other statuses', count: remainder, tone: 'primary' }] : values
   const max = Math.max(1, ...rows.map(item => item.count))
-  const circumference = 2 * Math.PI * 62
-  let offset = 0
+  let shareOffset = 0
+  const slices = rows.map(item => {
+    const start = shareOffset
+    shareOffset += total && total > 0 ? (item.count / total) * 100 : 0
+    const color = item.tone === 'success' ? 'var(--ui-success)' : item.tone === 'warning' ? 'var(--ui-warning)' : item.tone === 'danger' ? 'var(--ui-danger)' : 'var(--ui-accent)'
+    return `${color} ${start}% ${shareOffset}%`
+  })
+  const donutGradient = total && total > 0 ? `conic-gradient(${slices.join(', ')})` : 'var(--ui-surface-muted)'
   if (total === null) return null
 
   return (
@@ -77,19 +83,13 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
         <h2 className="mb-1 text-sm font-semibold">Tenant status breakdown</h2>
         <p className="platform-dashboard-chart-hint">Live totals by tenant status</p>
         <div className="platform-dashboard-donut-layout">
-          <svg className="platform-dashboard-donut" viewBox="0 0 180 180" role="img" aria-label={`Tenant status: ${rows.map(item => `${item.label} ${item.count}`).join(', ')}`}>
-            <circle cx="90" cy="90" r="62" fill="none" stroke="var(--ui-surface-muted)" strokeWidth="19" />
-            {total > 0 ? rows.map(item => {
-              const length = (item.count / total) * circumference
-              const segmentOffset = offset
-              offset += length
-              return <circle key={item.label} className={`platform-dashboard-segment platform-dashboard-segment-${item.tone}`}
-                cx="90" cy="90" r="62" fill="none" strokeWidth="19" strokeDasharray={`${length} ${circumference - length}`}
-                strokeDashoffset={-segmentOffset} transform="rotate(-90 90 90)" />
-            }) : null}
-            <text x="90" y="85" textAnchor="middle" className="platform-dashboard-donut-number">{total.toLocaleString()}</text>
-            <text x="90" y="104" textAnchor="middle" className="platform-dashboard-donut-label">Tenants</text>
-          </svg>
+          <div className="platform-dashboard-donut" role="img"
+            aria-label={`Tenant status: ${rows.map(item => `${item.label} ${item.count}`).join(', ')}`}
+            style={{ '--donut-gradient': donutGradient } as CSSProperties}>
+            <div className="platform-dashboard-donut-center">
+              <strong>{total.toLocaleString()}</strong><span>Tenants</span>
+            </div>
+          </div>
           <div className="platform-dashboard-chart-legend">
             {rows.map(item => <div className="platform-dashboard-legend-line" key={item.label}>
               <span className={`platform-dashboard-legend-dot platform-dashboard-tone-${item.tone}`} />
