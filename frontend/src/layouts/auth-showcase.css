@@ -210,3 +210,32 @@
 }
 [data-animations="off"] .auth-showcase .auth-showcase-form-card input:not([type="checkbox"]),
 [data-animations="off"] .auth-showcase .auth-showcase-form-card button[type="submit"] { transition: none; }
+
+/* Tenant login: remove the circular face's nested scroll gutter.
+   Give three-field content enough room; viewport scroll remains available when needed. */
+.auth-showcase .auth-showcase-ring {
+  width: min(100%, 660px, calc(100dvh - 64px));
+  box-sizing: border-box;
+}
+.auth-showcase .auth-showcase-form-card {
+  overflow: visible;
+  padding: clamp(28px, 3.2vw, 52px) clamp(48px, 4.7vw, 76px);
+}
+.auth-showcase .auth-showcase-form-side {
+  overflow-y: auto;
+}
+/* For compact screens or additional MFA/error content, keep every control reachable
+   rather than forcing content into a circle and clipping verification fields. */
+@media (max-width: 850px), (max-height: 740px) {
+  .auth-showcase .auth-showcase-ring {
+    width: min(100%, 600px);
+    aspect-ratio: auto;
+    min-height: 0;
+    border-radius: var(--panel-radius);
+  }
+  .auth-showcase .auth-showcase-form-card {
+    border-radius: var(--panel-radius);
+    height: auto;
+    padding: 26px;
+  }
+}
