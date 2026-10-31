@@ -30,7 +30,7 @@ export function ReportViewerToolbar({
     <UiButton variant="default" icon={<ClipboardCopy size={15}/>} label={copyLabel} className="bp-motion-copy" data-copied={/copied/i.test(copyLabel)} disabled={!ready} onClick={onCopy}/>
     <UiButton variant="default" icon={<FileText size={15}/>} label="Text" disabled={!ready} onClick={() => onExport('txt')}/>
     <UiButton variant="default" icon={<FileCode size={15}/>} label="HTML" disabled={!ready} onClick={() => onExport('html')}/>
-    <UiButton variant="info" icon={<Download size={15}/>} label="Export CSV" className="bp-motion-download" disabled={!ready} onClick={() => onExport('csv')}/>
+    <UiButton variant="info" icon={<Download size={15}/>} label={busy ? "Exporting…" : "Export CSV"} className="bp-motion-download" data-busy={busy ? "true" : "false"} aria-busy={busy} disabled={!ready || busy} onClick={() => onExport('csv')}/>
     <UiSelect className="report-viewer-export-choice" aria-label="Export report format"
       value="" searchable={false} options={[
         { value: '', label: 'Export as…' },
