@@ -49,3 +49,55 @@
   .platform-account-menu { animation: none; }
   .platform-account-chevron svg, .platform-account-menu-item { transition: none; }
 }
+
+/* Premium motion: open AND close persist because the panel remains mounted. */
+.platform-account-menu {
+  animation: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-12px) scale(.965);
+  transform-origin: top right;
+  transition: opacity 480ms cubic-bezier(.22,1,.36,1), transform 540ms cubic-bezier(.22,1,.36,1), visibility 0s linear 540ms;
+}
+.platform-account-menu[data-open="true"] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition: opacity 480ms cubic-bezier(.22,1,.36,1), transform 540ms cubic-bezier(.22,1,.36,1), visibility 0s;
+}
+.platform-account-avatar svg,
+.platform-account-item-icon,
+.platform-account-item-icon svg {
+  transition: transform 560ms cubic-bezier(.2,1.35,.4,1), background 400ms ease, color 400ms ease;
+}
+.platform-account-dropdown:hover .platform-account-avatar svg,
+.platform-account-dropdown:focus-within .platform-account-avatar svg {
+  transform: rotate(-13deg) translateY(-2px) scale(1.08);
+}
+.platform-account-menu-item:hover .platform-account-item-icon,
+.platform-account-menu-item:focus-visible .platform-account-item-icon {
+  transform: rotate(-11deg) translateY(-3px) scale(1.07);
+  background: var(--ui-accent-soft);
+}
+.platform-account-menu-item:hover .platform-account-item-icon svg,
+.platform-account-menu-item:focus-visible .platform-account-item-icon svg {
+  transform: rotate(9deg);
+}
+.platform-account-menu-item { transition: background 360ms ease; }
+.platform-account-item-arrow {
+  transform: translateX(-7px);
+  transition: opacity 360ms ease, transform 450ms cubic-bezier(.22,1,.36,1);
+}
+.platform-account-menu-item:hover .platform-account-item-arrow,
+.platform-account-menu-item:focus-visible .platform-account-item-arrow {
+  transform: translateX(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .platform-account-menu, .platform-account-menu[data-open="true"],
+  .platform-account-avatar svg, .platform-account-item-icon,
+  .platform-account-item-icon svg, .platform-account-item-arrow {
+    transition: none;
+  }
+}
