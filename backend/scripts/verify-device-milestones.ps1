@@ -39,6 +39,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Device milestone acceptance batch FAILED." }
     & php artisan test tests/Feature/MfaConcurrencyTest.php
     if ($LASTEXITCODE -ne 0) { throw "Two-process OTP contention test FAILED." }
+    & php artisan test tests/Feature/DeviceAccessConcurrencyTest.php
+    if ($LASTEXITCODE -ne 0) { throw "Two-process staff access review contention test FAILED." }
     Write-Host "Focused milestone acceptance batch PASS. Browser E2E, production IPInfo and cron still require separate verification."
 }
 finally { Pop-Location }
