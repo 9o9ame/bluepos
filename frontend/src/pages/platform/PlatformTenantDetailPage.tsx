@@ -95,11 +95,13 @@ export function PlatformTenantDetailPage() {
       </div>
       {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
       {notice ? <p className="text-[12px] text-[var(--ui-success)]">{notice}</p> : null}
-      <div className="flex gap-2">
+      <div className="platform-tenant-primary-tabs flex gap-2" role="tablist" aria-label="Tenant detail sections">
         {TABS.map((item) => (
           <button
             key={item}
             type="button"
+            role="tab"
+            aria-selected={tab === item}
             className={`rounded border px-2 py-1 text-[12px] ${tab === item ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white'}`}
             onClick={() => setTab(item)}
           >
@@ -108,6 +110,7 @@ export function PlatformTenantDetailPage() {
         ))}
       </div>
 
+      <div key={tab} className="platform-tenant-tab-transition" role="tabpanel">
       {tab === 'Overview' ? (
         <div className="space-y-3 rounded border border-slate-300 bg-white p-3 text-[12px]">
           <form
@@ -499,6 +502,7 @@ export function PlatformTenantDetailPage() {
           ))}
         </div>
       ) : null}
+      </div>
       {credentials ? (
         <CredentialsOnceModal
           title="Tenant admin access reset"
