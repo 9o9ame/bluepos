@@ -2305,12 +2305,19 @@ class AuthenticationTest extends TestCase
 
     public function test_tenant_owner_password_change_clears_required_flag_and_establishes_fresh_session(): void
     {
-        $this->signInOwner('owner-initial-password-change')->assertOk();
-        $membership = \App\Models\Membership::query()
-            ->whereHas('tenant', fn ($q) => $q->where('code', $this->tenantCode('owner-initial-password-change')))
-            ->where('username', 'owner')->firstOrFail();
-        $membership->user->must_change_password = true;
-        $membership->user->save();
+        // Arrange the forced-change flag BEFORE login. The authenticated user
+        // is hydrated at login time, so changing the DB record afterwards can
+        // leave the in-memory guard user with the old value.
+        $owner = $this->provisionOwner('owner-initial-password-change');
+        $owner->user->must_change_password = true;
+        $owner->user->save();
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('owner-initial-password-change'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk()->assertJsonPath('must_change_password', true);
+        $membership = $owner->membership;
 
         $this->getJson('/api/auth/me')->assertOk()->assertJsonPath('must_change_password', true);
         $this->postJson('/api/auth/change-password', [
