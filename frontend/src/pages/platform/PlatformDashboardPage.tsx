@@ -129,9 +129,7 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
           </svg>
         </div>
         <div className="platform-dashboard-status-bars" aria-label="Current tenants by status">{rows.map((item, index) => <div className="platform-dashboard-status-bar-item" key={item.label}><div className="platform-dashboard-status-bar-value">{item.count}</div><div className={`platform-dashboard-status-bar-track platform-dashboard-tone-${item.tone}`}><span style={{ '--bar-height': `${max ? (item.count / max) * 100 : 0}%`, '--bar-delay': `${index * 130}ms` } as CSSProperties} /></div><span>{item.label}</span></div>)}</div>
-        <div className="platform-dashboard-profile-labels">
-          {rows.map(row => <div key={row.label} className={selectedRow && selectedRow.label !== row.label ? 'is-muted' : selectedRow?.label === row.label ? 'is-selected' : ''}><span>{row.label}</span><strong>{row.count.toLocaleString()}</strong></div>)}
-        </div>
+
       </div>    </div>
   )
 }
