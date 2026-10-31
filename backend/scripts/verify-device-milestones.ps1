@@ -13,6 +13,11 @@ try {
     $names = @(
         "test_owner_trusted_device_reuses_same_network_but_changed_network_requires_otp",
         "test_owner_trusted_device_expiry_requires_fresh_email_verification",
+        "test_owner_changed_network_otp_rebinds_trust_and_reuses_new_ip",
+        "test_approved_employee_access_review_cannot_be_reversed_by_rejection",
+        "test_employee_access_review_rejects_ineligible_membership_or_device_without_mutation",
+        "test_platform_cannot_bypass_pending_employee_device_review",
+        "test_review_rechecks_live_owner_authority_and_tenant_licence_for_active_device",
         "test_tenant_owner_can_review_only_own_pending_employee_access_requests",
         "test_device_access_request_inbox_is_tenant_scoped_and_uses_public_ulids",
         "test_owner_can_filter_and_paginate_employee_device_review_history",
@@ -32,6 +37,8 @@ try {
     $filter = $names -join '|'
     & php artisan test tests/Feature/AuthenticationTest.php --filter=$filter
     if ($LASTEXITCODE -ne 0) { throw "Device milestone acceptance batch FAILED." }
+    & php artisan test tests/Feature/MfaConcurrencyTest.php
+    if ($LASTEXITCODE -ne 0) { throw "Two-process OTP contention test FAILED." }
     Write-Host "Focused milestone acceptance batch PASS. Browser E2E, production IPInfo and cron still require separate verification."
 }
 finally { Pop-Location }
