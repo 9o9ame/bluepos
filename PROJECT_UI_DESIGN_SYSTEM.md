@@ -457,3 +457,19 @@ npm run build
 - no large numeric overlay z-index values inside canonical `components/ui` CSS.
 
 If a real browser-semantic exception is required, update this document and the checker deliberately in the same reviewed change rather than bypassing the rule locally.
+
+
+## 2026-10-31 — Shared motion references (user-approved direction)
+
+The seven reference videos supplied on 2026-10-31 establish **animation behavior**, not permission to alter frozen geometry, control sizes, widths, spacing, border thickness, border radius, selected Theme & Appearance palette, data semantics, or workflows.
+
+Shared opt-in motion classes live in `frontend/src/motion.css`, imported once by `frontend/src/main.tsx`. Reuse these on the *existing* canonical components only:
+- Real dashboard KPI/chart entry: `bp-motion-enter`, `bp-motion-progress`, `bp-motion-ring`. Animate actual API values; never fabricate historical measurements.
+- Notifications and bell: `bp-motion-notice`, `bp-motion-bell` on existing accessible notification components, without replacing their notification/read logic.
+- CRUD buttons: `bp-motion-action`, preserving canonical semantic faces and current geometry. The user explicitly wants the reference's action semantics, but fixed hue values must continue coming from `--ui-button-*-face` and `--ui-{success|warning|danger|info}`, never from copied video hex.
+- Downloads: `bp-motion-download` with `data-busy` based on the **real export** lifecycle; never report success until the file is actually produced.
+- Skeleton loading: `bp-motion-skeleton` on existing-size placeholders, only when a genuine request is loading.
+- Single and from/to date controls: `bp-motion-date-cell` on the existing date-picker implementation. Preserve locale, bounds, valid range, keyboard behavior, filtering, and the format currently in use.
+- Copy control: `bp-motion-copy` with `data-copied` only after successful clipboard write and accessible status feedback.
+
+Motion must respect `[data-animations="off"]` and `prefers-reduced-motion: reduce`. Use appearance token colors, radius and shadow; animation does not create a second design system. Shared primitives are implemented, but **each workflow integration requires focused inspection and local verification**; these seven items are not all complete merely because classes exist.
