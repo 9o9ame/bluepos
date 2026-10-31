@@ -16,6 +16,7 @@ export function LoginPage() {
   const [challengeUlid, setChallengeUlid] = useState<string | null>(null)
   const [recoveryHint, setRecoveryHint] = useState<string | null>(null)
   const [trustDevice, setTrustDevice] = useState(true)
+  const [remember, setRemember] = useState(false)
   const [deviceMessage, setDeviceMessage] = useState<string | null>(null)
   const [approvalPending, setApprovalPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,13 +40,14 @@ export function LoginPage() {
           challenge_ulid: challengeUlid,
           code: mfaCode,
           trust_device: trustDevice,
+          remember,
           ...location,
         })
         navigate(session.must_change_password ? '/change-password' : '/', { replace: true })
         return
       }
 
-      const session = await login({ tenant_code: tenantCode, username, password, ...location })
+      const session = await login({ tenant_code: tenantCode, username, password, remember, ...location })
       navigate(session.must_change_password ? '/change-password' : '/', { replace: true })
     } catch (err) {
       if (err instanceof ApiClientError && (err.key === 'MFA_REQUIRED' || err.key === 'EMAIL_DELIVERY_FAILED')) {
@@ -111,6 +113,10 @@ export function LoginPage() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
+        </label>
+        <label className="flex items-center gap-2 text-[12px] font-semibold">
+          <input type="checkbox" checked={remember} disabled={submitting} onChange={(event) => setRemember(event.target.checked)} />
+          Remember Me
         </label>
         </> : null}
         {challengeUlid ? (
