@@ -67,12 +67,13 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
   const remainder = total === null ? 0 : Math.max(0, total - known)
   const rows: StatusDatum[] = remainder > 0 ? [...values, { label: 'Other statuses', count: remainder, tone: 'primary' }] : values
   const max = Math.max(1, ...rows.map(item => item.count))
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
   const points = rows.map((item, index) => ({
     x: rows.length === 1 ? 50 : 8 + (index * 84) / (rows.length - 1),
     y: 82 - (item.count / max) * 60,
     item,
   }))
-  const linePath = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ')
+  const linePath = points.length ? points.slice(1).reduce((path, point, index) => { const prev = points[index]; const mid = (prev.x + point.x) / 2; return `${path} C ${mid} ${prev.y}, ${mid} ${point.y}, ${point.x} ${point.y}` }, `M ${points[0].x} ${points[0].y}`) : ''
   const areaPath = points.length ? `${linePath} L ${points[points.length - 1].x} 88 L ${points[0].x} 88 Z` : ''
   let shareOffset = 0
   const slices = rows.map(item => {
@@ -98,10 +99,10 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
             </div>
           </div>
           <div className="platform-dashboard-chart-legend">
-            {rows.map(item => <div className="platform-dashboard-legend-line" key={item.label}>
+            {rows.map(item => <button type="button" className={`platform-dashboard-legend-line platform-dashboard-legend-action${selectedStatus === item.label ? " is-selected" : ""}`} key={item.label} onClick={() => setSelectedStatus(selectedStatus === item.label ? null : item.label)} aria-pressed={selectedStatus === item.label}>
               <span className={`platform-dashboard-legend-dot platform-dashboard-tone-${item.tone}`} />
               <span>{item.label}</span><strong>{item.count.toLocaleString()}</strong>
-            </div>)}
+            </button>)}
             {total === 0 ? <p className="text-[var(--ui-text-muted)]">No tenants yet.</p> : null}
           </div>
         </div>
