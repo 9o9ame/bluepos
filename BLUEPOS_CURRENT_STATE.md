@@ -2109,3 +2109,12 @@ Statuses: Completed = green, Partial = amber, Pending = red, In Progress = blue.
 - Commits: `913a5dde` (status bars/radial details), `de8180ca` (premium scoped styling), `946d8f06` (avoid duplicate labels).
 - **Outstanding:** User must pull branch and verify browser screenshot at /platform, mobile widths, theme variants and animations preference. Frontend typecheck/build have NOT been run in the GitHub-only environment. Visual matching is partial: 1:1 animation similarity to video is not yet verified, historical progress cannot be shown without a real API source. No invented time-series/revenue.
 - Security #50 Hostinger production retention scheduler remains deferred.
+
+
+## 2026-10-31 — Dashboard paused; remaining six motion workflows resumed
+
+- User explicitly paused Platform Dashboard charts. No dashboard TSX/CSS was changed in this batch.
+- Re-inspected `PROJECT_UI_DESIGN_SYSTEM.md` and canonical report toolbar, shared motion CSS, notification bell and list loader. Existing shared features: notification bell/inbox motion, action-button motion, copy feedback tied to copyLabel, and list loading shimmer. Do not claim their end-to-end rollout is finished.
+- **Committed:** `ReportViewerToolbar.tsx` wires existing `busy` state to CSV export button's `data-busy` and `aria-busy`, disables repeat clicks during busy work and displays a working label (commit `65a6cb56`). This is a UI state indicator, not a real byte-level progress meter; `busy` is the toolbar-wide state, not export-specific lifecycle.
+- **Committed:** `motion.css` disables residual button hover/active transforms and bell hover rotation when Animations Off or prefers-reduced-motion is active (commit `41381042`). Existing layout, colors and semantic actions unchanged.
+- **Pending:** Discover canonical date picker owner, date/range calendar animation integration; verify actual copy success and download lifecycle across consumers; cross-page notification tests; local frontend typecheck and browser checks. GitHub-only changes were not executed locally.
