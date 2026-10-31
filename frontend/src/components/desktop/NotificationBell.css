@@ -53,3 +53,21 @@
 }
 html[data-animations='off'] .bp-notification-item { transition: none; }
 @media (prefers-reduced-motion: reduce) { .bp-notification-item { transition: none; } }
+
+/* Security alerts: acknowledgement failures remain visible without changing
+   the approved bell/popover geometry or Theme & Appearance colors. */
+.bp-notification-error {
+  margin: 0;
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--ui-border);
+  color: var(--ui-danger);
+  font-size: 11px;
+}
+.bp-notification-item:disabled { cursor: wait; opacity: .7; }
+html[data-animations='off'] .bp-notification-trigger.bp-motion-bell:hover svg {
+  transform: none;
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bp-notification-trigger.bp-motion-bell:hover svg { transition: none; }
+}
