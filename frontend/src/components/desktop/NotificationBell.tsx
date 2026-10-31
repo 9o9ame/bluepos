@@ -140,7 +140,7 @@ export function NotificationBell({ session, onOpenDevices }: {
     <div className="bp-notification-root">
       <button
         type="button"
-        className={'bp-notification-trigger' + (ring ? ' bp-notification-ring' : '')}
+        className={'bp-notification-trigger bp-motion-bell' + (ring ? ' bp-notification-ring' : '')}
         title="Notifications"
         aria-label={unread ? unread + ' unread notifications' : 'Notifications'}
         aria-expanded={open}
@@ -157,7 +157,7 @@ export function NotificationBell({ session, onOpenDevices }: {
           </div>
           <div className="bp-notification-list">
             {notices.data?.notifications.length ? notices.data.notifications.slice(0, 5).map((notice) => (
-              <button type="button" key={notice.ulid} className="bp-notification-item" onClick={() => { setOpen(false); onOpenDevices() }}>
+              <button type="button" key={notice.ulid} className="bp-notification-item bp-motion-notice" onClick={() => { setOpen(false); onOpenDevices() }}>
                 <span>{notice.username} — {notice.device_name}</span>
                 <small>{notice.read_at ? 'Read' : 'Unread'} · {notice.status}</small>
               </button>
@@ -179,7 +179,7 @@ export function NotificationBell({ session, onOpenDevices }: {
         </section>
       ) : null}
       {toast ? (
-        <div className="bp-notification-toast" role="status" style={{ zIndex: UI_LAYER.feedback }}>
+        <div className="bp-notification-toast bp-motion-notice" role="status" style={{ zIndex: UI_LAYER.feedback }}>
           <Bell size={18} />
           <div><strong>New device approval request</strong><span>{toast.username} · {toast.device_name}</span></div>
           <button type="button" onClick={() => { setToast(null); onOpenDevices() }}>View</button>
