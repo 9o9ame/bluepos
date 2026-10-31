@@ -1,5 +1,6 @@
 import { requireBrowserLocation } from '../../utils/browserLocation'
 import '../../layouts/auth-showcase.css'
+import { PremiumOtpInput } from '../../components/auth/PremiumOtpInput'
 import { FormEvent, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { ApiClientError } from '../../api/client'
@@ -89,10 +90,12 @@ export function PlatformLoginPage() {
       <div className="auth-showcase-form-card">
         <div className="auth-showcase-heading">
           <div className="auth-brand">BLUEPOS PLATFORM</div>
-          <h1 className="auth-title">Sign in</h1>
+          {challengeUlid ? <span className="auth-otp-emblem" aria-hidden="true">✦</span> : null}
+          <h1 className="auth-title">{challengeUlid ? 'Verify your account' : 'Sign in'}</h1>
           <p className="auth-showcase-subtitle">Platform Administration</p>
         </div>
         <form className="space-y-3 px-5 py-4" onSubmit={onSubmit}>
+          {!challengeUlid ? <>
           <p className="text-[12px] text-[var(--ui-text-muted)]">
             Location permission is required for platform sign-in. Enable browser location to continue. Your raw coordinates are not stored in the platform account.
           </p>
@@ -125,45 +128,31 @@ export function PlatformLoginPage() {
             Remember Me
           </label>
           <p className="text-[12px] text-[var(--ui-text-muted)]">Remembered browsers can return without signing in again, including after Sign Out.</p>
+          </> : null}
           {challengeUlid ? (
-            <>
-              <p className="text-[12px] text-[var(--ui-text-muted)]">
-                Additional verification is required{recoveryHint ? ` (${recoveryHint})` : ''}.
-              </p>
+            <div className="space-y-3">
+              <p className="auth-otp-copy">Enter the six-digit verification code{recoveryHint ? ` (${recoveryHint})` : ''}.</p>
               {deliveryHint ? <p className="text-[12px] text-[var(--ui-warning)]">{deliveryHint}</p> : null}
-              <label className="block text-[12px] font-semibold">
-                Verification code
-                <input
-                  required
-                  inputMode="numeric"
-                  className="mt-1 h-9 w-full rounded border border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] px-2"
-                  value={mfaCode}
-                  onChange={(event) => setMfaCode(event.target.value)}
-                />
-              </label>
-              <button
-                type="button"
-                className="text-[12px] font-semibold text-[var(--ui-accent)] underline disabled:opacity-60"
-                disabled={resending}
-                onClick={() => void onResend()}
-              >
+              <PremiumOtpInput value={mfaCode} onChange={setMfaCode} disabled={submitting} />
+              <button type="button" className="auth-otp-back" disabled={resending} onClick={() => void onResend()}>
                 {resending ? 'Sending…' : 'Resend code'}
               </button>
-            </>
+              <button type="button" className="auth-otp-back block mx-auto" onClick={() => { setChallengeUlid(null); setMfaCode(''); setError(null) }}>Back to sign in</button>
+            </div>
           ) : null}
           {error ? <p className="text-[12px] text-[var(--ui-danger)]">{error}</p> : null}
           <button
             type="submit"
             className="h-9 w-full rounded bg-[var(--ui-accent)] text-sm font-semibold text-white disabled:opacity-60"
-            disabled={submitting}
+            disabled={submitting || (!!challengeUlid && mfaCode.length !== 6)}
           >
             {submitting ? 'Signing in…' : challengeUlid ? 'Verify' : 'Login'}
           </button>
-          <p className="text-center text-[12px] text-[var(--ui-text-muted)]">
+          {!challengeUlid ? <p className="text-center text-[12px] text-[var(--ui-text-muted)]">
             <Link className="font-semibold text-[var(--ui-accent)]" to="/platform/forgot-password">
               Forgot password
             </Link>
-          </p>
+          </p> : null}
         </form>
       </div>
       </div>
