@@ -249,3 +249,35 @@ html[data-animations='off'] .platform-dashboard-metric:hover .platform-dashboard
 .platform-dashboard-legend-action:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 1px; }
 html[data-animations='off'] .platform-dashboard-legend-action { transition: none; }
 @media (prefers-reduced-motion: reduce) { .platform-dashboard-legend-action { transition: none; } }
+
+/* Interactive snapshot-chart selection: keep the existing chart geometry. */
+.platform-dashboard-donut::before {
+  transition: background 300ms ease;
+}
+.platform-dashboard-legend-action.is-muted { opacity: .55; }
+.platform-dashboard-legend-action.is-selected { opacity: 1; }
+.platform-dashboard-legend-action { transition: background-color 250ms ease, opacity 250ms ease, box-shadow 250ms ease; }
+.platform-dashboard-donut-center span { text-align: center; max-width: 90%; }
+.platform-dashboard-profile-point {
+  transition: opacity 250ms ease, r 250ms ease;
+}
+.platform-dashboard-profile-point.is-muted { opacity: .2; }
+.platform-dashboard-profile-point.is-selected { r: 2.6; }
+.platform-dashboard-profile-labels .is-muted { opacity: .45; }
+.platform-dashboard-profile-labels .is-selected strong { color: var(--ui-accent-strong); }
+.platform-dashboard-retry {
+  margin-inline-start: 10px;
+  color: var(--ui-accent-strong);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.platform-dashboard-retry:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 3px; }
+html[data-animations='off'] .platform-dashboard-donut::before,
+html[data-animations='off'] .platform-dashboard-legend-action,
+html[data-animations='off'] .platform-dashboard-profile-point { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .platform-dashboard-donut::before,
+  .platform-dashboard-legend-action,
+  .platform-dashboard-profile-point { transition: none; }
+}
