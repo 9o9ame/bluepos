@@ -2012,3 +2012,10 @@ Statuses: Completed = green, Partial = amber, Pending = red, In Progress = blue.
 - #45 remains Partial: optional IPInfo token not verified in production; provider privacy/authorization and actual public-IP country/region/city observation remain unverified. Empty token intentionally returns Unknown and must never fabricate a place.
 - **#50 expressly DEFERRED by user until end of remaining milestones. Do not reintroduce it in upcoming active development batches or demand Hostinger cron setup now.** Retention backend tests PASS but production cron/privacy operational acceptance remains Partial.
 - Next active batch should group remaining monitoring/history requirements #24/#28/#29/#37/#39/#43/#44, while explaining #45 setup separately. Branch stays `feature/superadmin`; no production code/migration changes, no merge to main.
+
+
+## 2026-10-31 — Seven monitoring milestones acceptance batch prepared
+
+- Scope #24, #28, #29, #37, #39, #43, #44. Added `backend/scripts/verify-monitoring-milestones.ps1` (commit `227a6888`) with existing PostgreSQL `bluepos_test` guard and ten existing focused AuthenticationTest cases. Covers approval scope/details, tenant versus platform read authority, tenant location request evidence, login/IP history, browser/OS hints, pagination/filters, and platform device review monitoring. No production code or migration changed.
+- Tests have NOT yet run in this batch. Require user to run runner and verify browser views/role boundaries before accepting any of seven as Completed; avoid claiming seven new implementations. Remain 42 implementation-indicated/user-accepted Completed / 8 Partial / 0 Pending, with the seven named milestones In Progress; #50 deliberately deferred.
+- Prior #45 live IPInfo provider success is user verified but earlier repo documentation sync failed; preserve status as locally scoped accepted. No IP address or credentials recorded.
