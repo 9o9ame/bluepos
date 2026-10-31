@@ -80,7 +80,8 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
   const slices = rows.map(item => {
     const start = shareOffset
     shareOffset += total && total > 0 ? (item.count / total) * 100 : 0
-    const color = item.tone === 'success' ? 'var(--ui-success)' : item.tone === 'warning' ? 'var(--ui-warning)' : item.tone === 'danger' ? 'var(--ui-danger)' : 'var(--ui-accent)'
+    const baseColor = item.tone === 'success' ? 'var(--ui-success)' : item.tone === 'warning' ? 'var(--ui-warning)' : item.tone === 'danger' ? 'var(--ui-danger)' : 'var(--ui-accent)'
+    const color = selectedRow && selectedRow.label !== item.label ? `color-mix(in srgb, ${baseColor} 24%, var(--ui-surface-muted))` : baseColor
     return `${color} ${start}% ${shareOffset}%`
   })
   const donutGradient = total && total > 0 ? `conic-gradient(${slices.join(', ')})` : 'var(--ui-surface-muted)'
@@ -95,7 +96,6 @@ function StatusCharts({ values, total }: { values: StatusDatum[]; total: number 
           <div className="platform-dashboard-donut bp-motion-enter" role="img"
             aria-label={`Tenant status: ${rows.map(item => `${item.label} ${item.count}`).join(', ')}${selectedRow ? `. Selected: ${selectedRow.label} ${selectedRow.count}` : ''}`}
             style={{ '--donut-gradient': donutGradient } as CSSProperties}>
-            {selectedRow ? <div className="platform-dashboard-donut-selection" aria-hidden="true" /> : null}
             <div className="platform-dashboard-donut-center">
               <strong>{(selectedRow?.count ?? total).toLocaleString()}</strong><span>{selectedRow?.label ?? 'Tenants'}</span>
             </div>
