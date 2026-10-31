@@ -122,3 +122,23 @@
   .platform-dashboard-donut-layout { flex-wrap: wrap; }
   .platform-dashboard-donut { width: 144px; height: 144px; min-width: 144px; flex-basis: 144px; }
 }
+
+/* Reference-inspired dashboard composition; all counts are actual API snapshots. */
+.platform-dashboard-chart-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.platform-dashboard-chart-tag { border-radius: var(--control-radius); color: var(--ui-accent-strong); background: var(--ui-accent-soft); padding: 5px 9px; font-size: 11px; white-space: nowrap; text-decoration: none; }
+.platform-dashboard-profile-chart { height: 150px; margin-top: 12px; overflow: hidden; }
+.platform-dashboard-profile-chart svg { display: block; width: 100%; height: 100%; overflow: hidden; }
+.platform-dashboard-profile-gridline { stroke: var(--ui-border); stroke-width: .35px; vector-effect: non-scaling-stroke; }
+.platform-dashboard-profile-line { fill: none; stroke: var(--ui-accent); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; stroke-dasharray: 100; stroke-dashoffset: 0; animation: platform-dashboard-line-reveal 1400ms cubic-bezier(.22,1,.36,1) both; }
+.platform-dashboard-profile-point { fill: var(--ui-accent); stroke: var(--ui-surface); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.platform-dashboard-profile-labels { display: flex; justify-content: space-around; gap: 8px; padding-top: 9px; }
+.platform-dashboard-profile-labels div { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; font-size: 10px; color: var(--ui-text-muted); }
+.platform-dashboard-profile-labels strong { color: var(--ui-text); font-size: 12px; }
+.platform-dashboard-recent-table { border: 1px solid var(--ui-border); border-radius: var(--panel-radius); }
+.platform-dashboard-recent-table thead { background: var(--ui-table-header); color: var(--ui-table-header-text); }
+.platform-dashboard-recent-table th, .platform-dashboard-recent-table td { padding: 8px 10px; }
+.platform-dashboard-recent-table tbody tr:nth-child(even) { background: var(--ui-surface-subtle); }
+.platform-dashboard-recent-table tbody tr:hover { background: var(--ui-accent-soft); }
+@keyframes platform-dashboard-line-reveal { from { stroke-dashoffset: 100; opacity: .35; } to { stroke-dashoffset: 0; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .platform-dashboard-profile-line { animation: none; } }
+[data-animations="off"] .platform-dashboard-profile-line { animation: none; }
