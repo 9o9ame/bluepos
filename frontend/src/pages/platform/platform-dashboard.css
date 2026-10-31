@@ -142,3 +142,7 @@
 @keyframes platform-dashboard-line-reveal { from { stroke-dashoffset: 100; opacity: .35; } to { stroke-dashoffset: 0; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .platform-dashboard-profile-line { animation: none; } }
 [data-animations="off"] .platform-dashboard-profile-line { animation: none; }
+
+/* Match reference hierarchy: profile curve left, donut right. */
+.platform-dashboard-chart-card:first-child { order: 2; }
+.platform-dashboard-chart-card:nth-child(2) { order: 1; }
