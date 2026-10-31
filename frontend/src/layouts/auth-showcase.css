@@ -126,3 +126,87 @@
   .auth-showcase-ring { width: min(100%, 600px); aspect-ratio: auto; min-height: 520px; border-radius: var(--panel-radius); }
   .auth-showcase-form-card { height: auto; border-radius: var(--panel-radius); padding: 26px; }
 }
+
+/* Corrected against supplied Neumorphic-Login-Form source: the FORM face is the circle,
+   never a rectangular card sitting over a circular decoration. */
+.auth-showcase .auth-showcase-ring {
+  width: min(100%, 590px);
+  aspect-ratio: 1;
+  padding: 12px;
+  border-radius: 50%;
+  background: var(--ui-surface-subtle);
+  box-shadow:
+    -18px -18px 36px color-mix(in srgb, var(--ui-surface) 94%, transparent),
+    19px 21px 40px color-mix(in srgb, var(--ui-text) 24%, transparent),
+    inset -1px -1px 2px color-mix(in srgb, var(--ui-text) 10%, transparent);
+}
+.auth-showcase .auth-showcase-form-card,
+.auth-showcase .auth-card.auth-showcase-form-card,
+.auth-showcase .platform-auth-card.auth-showcase-form-card {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  max-width: none;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--ui-border) 40%, transparent);
+  background: var(--ui-surface-subtle);
+  color: var(--ui-text);
+  box-shadow:
+    inset 4px 4px 11px color-mix(in srgb, var(--ui-text) 13%, transparent),
+    inset -5px -5px 12px color-mix(in srgb, var(--ui-surface) 95%, transparent);
+  padding: clamp(32px, 4vw, 68px) clamp(56px, 5.9vw, 96px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: auto;
+}
+.auth-showcase .auth-card-header.auth-showcase-heading {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0 0 12px;
+}
+.auth-showcase .auth-card-body { padding: 0; background: transparent; }
+.auth-showcase .auth-showcase-form-card > form { padding: 0; }
+.auth-showcase .auth-showcase-form-card .auth-title { font-size: clamp(24px,2.5vw,34px); }
+.auth-showcase .auth-showcase-form-card input:not([type="checkbox"]) {
+  width: 100%;
+  border: 0;
+  border-radius: max(10px, var(--control-radius));
+  height: 42px;
+  background: var(--ui-surface-subtle);
+  box-shadow:
+    inset 5px 5px 10px color-mix(in srgb,var(--ui-text) 15%,transparent),
+    inset -5px -5px 10px color-mix(in srgb,var(--ui-surface) 90%,transparent);
+  transition: box-shadow 380ms ease, transform 380ms ease;
+}
+.auth-showcase .auth-showcase-form-card input:not([type="checkbox"]):focus {
+  transform: translateY(-1px);
+  box-shadow: var(--ui-focus-shadow),
+    inset 3px 3px 8px color-mix(in srgb,var(--ui-accent) 18%,transparent);
+}
+.auth-showcase .auth-showcase-form-card button[type="submit"] {
+  background: var(--ui-accent);
+  color: var(--ui-surface);
+  border-radius: max(10px, var(--control-radius));
+  box-shadow:
+    -5px -5px 11px color-mix(in srgb,var(--ui-surface) 92%,transparent),
+    6px 7px 13px color-mix(in srgb,var(--ui-text) 23%,transparent);
+  transition: transform 300ms ease, box-shadow 300ms ease;
+}
+.auth-showcase .auth-showcase-form-card button[type="submit"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 3px 7px 15px color-mix(in srgb,var(--ui-text) 26%,transparent),
+    inset 1px 1px 2px color-mix(in srgb,var(--ui-surface) 35%,transparent);
+}
+@media (max-width: 850px), (max-height: 660px) {
+  .auth-showcase .auth-showcase-ring { aspect-ratio: auto; border-radius: var(--panel-radius); }
+  .auth-showcase .auth-showcase-form-card { height: auto; border-radius: var(--panel-radius); padding: 28px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-showcase .auth-showcase-form-card input:not([type="checkbox"]),
+  .auth-showcase .auth-showcase-form-card button[type="submit"] { transition: none; }
+}
+[data-animations="off"] .auth-showcase .auth-showcase-form-card input:not([type="checkbox"]),
+[data-animations="off"] .auth-showcase .auth-showcase-form-card button[type="submit"] { transition: none; }
