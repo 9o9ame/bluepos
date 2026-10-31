@@ -2100,3 +2100,12 @@ Statuses: Completed = green, Partial = amber, Pending = red, In Progress = blue.
 - CSS respects existing theme tokens, preserved chart/card geometry and added motion-off/reduced-motion transition fallbacks. Commits: `e896f767`, `d0f40d79`, `4c6443ae`.
 - **Verification pending:** frontend typecheck/build and actual browser interaction, narrow viewport, theme/dark-mode, motion Off/reduced-motion accessibility review. GitHub remote edits are not locally executable here. User acceptance for chart visuals is still pending; do NOT claim the entire seven-video animation program complete.
 - Security milestone #50 (Hostinger production retention scheduler) remains deferred.
+
+
+## 2026-10-31 — Platform Dashboard chart reference-matching visual pass
+
+- User browser screenshot showed previous profile/donut visuals still basic, despite legend interactions. Confirmed target is **Super Admin /platform**, not the tenant dashboard. Located and inspected the actual user-provided `dashboard-charts.mp4`: premium progress widget reference uses a radial progress treatment, compact line chart and animated vertical bars. Reference's weekly activity and completion percentages are **not** available as real Platform API data.
+- **Changed:** `PlatformDashboardPage.tsx` and `platform-dashboard.css` on `feature/superadmin`. Donut now has stronger radial progress styling, prominent API-derived total/selected count and selected share, compact visual header and enhanced per-status legend. Existing curved status profile retained; added **animated vertical activity-like status bars based strictly on real Active/Trial/Suspended/Other status counts**. Explicitly NOT historical weekly activity. Removed duplicate status labels below the line plot. Motion Off and reduced-motion modes disable bar animation. No frozen layout/backend/auth changes.
+- Commits: `913a5dde` (status bars/radial details), `de8180ca` (premium scoped styling), `946d8f06` (avoid duplicate labels).
+- **Outstanding:** User must pull branch and verify browser screenshot at /platform, mobile widths, theme variants and animations preference. Frontend typecheck/build have NOT been run in the GitHub-only environment. Visual matching is partial: 1:1 animation similarity to video is not yet verified, historical progress cannot be shown without a real API source. No invented time-series/revenue.
+- Security #50 Hostinger production retention scheduler remains deferred.
