@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { fetchPlatformDashboard } from '../../api/platform'
@@ -51,7 +51,7 @@ function TenantMetric({ label, value, total, tone, index }: {
       </div>
       <div className="platform-dashboard-track" role="progressbar" aria-label={`${label} share of total tenants`}
         aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(share)}>
-        <span className="platform-dashboard-fill" style={{ '--metric-share': `${share}%` } as React.CSSProperties} />
+        <span key={value ?? 'loading'} className="platform-dashboard-fill" style={{ '--metric-share': `${share}%` } as CSSProperties} />
       </div>
       <div className="platform-dashboard-metric-caption">{value === null ? 'No data' : total === null ? 'Total unavailable' : `${Math.round(share)}% of total tenants`}</div>
     </div>
