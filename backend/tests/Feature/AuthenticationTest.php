@@ -2276,6 +2276,50 @@ class AuthenticationTest extends TestCase
         $this->assertNull($request->request_user_agent);
     }
 
+    public function test_tenant_remember_me_persists_only_the_validated_session_cookie(): void
+    {
+        $owner = $this->provisionOwner('tenant-remember-cookie');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $credentials = [
+            'tenant_code' => $this->tenantCode('tenant-remember-cookie'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ];
+
+        $this->postJson('/api/auth/login', $credentials + ['remember' => true])->assertOk();
+        $this->assertTrue(session()->get(\App\Actions\Auth\EstablishAuthSessionAction::REMEMBER));
+        $this->assertFalse((bool) config('session.expire_on_close'));
+        $this->assertNotNull(session()->get(\App\Actions\Auth\EstablishAuthSessionAction::AUTH_SESSION_ULID));
+
+        // Authenticated requests must retain the selected cookie behavior.
+        $this->getJson('/api/auth/me')->assertOk();
+        $this->assertFalse((bool) config('session.expire_on_close'));
+
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->getJson('/api/auth/me')->assertUnauthorized();
+
+        // No Laravel recaller token is minted: a revoked/logged-out browser
+        // must never bypass the server-side device and auth-session record.
+        $this->assertNull($owner->user->fresh()->getRememberToken());
+    }
+
+    public function test_tenant_remember_me_off_uses_browser_session_cookie(): void
+    {
+        $owner = $this->provisionOwner('tenant-no-remember-cookie');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('tenant-no-remember-cookie'),
+            'username' => 'owner',
+            'password' => 'password123',
+            'remember' => false,
+        ])->assertOk();
+
+        $this->assertFalse((bool) session()->get(\App\Actions\Auth\EstablishAuthSessionAction::REMEMBER));
+        $this->assertTrue((bool) config('session.expire_on_close'));
+        $this->getJson('/api/auth/me')->assertOk();
+        $this->assertTrue((bool) config('session.expire_on_close'));
+    }
+
     public function test_tenant_mfa_otp_is_consumed_once_and_replay_denied(): void
     {
         $owner = $this->provisionOwner('mfa-one-time');
