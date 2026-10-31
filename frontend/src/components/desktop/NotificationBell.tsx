@@ -51,6 +51,7 @@ export function NotificationBell({ session, onOpenDevices }: {
   const [ring, setRing] = useState(false)
   const known = useRef<Set<string> | null>(null)
   const [openingNotice, setOpeningNotice] = useState<string | null>(null)
+  const [noticeError, setNoticeError] = useState(false)
   const lastScope = useRef(scope)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ringTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -102,6 +103,7 @@ export function NotificationBell({ session, onOpenDevices }: {
     setTone(localStorage.getItem(preferenceKey) || '07')
     setOpen(false)
     setToast(null)
+    setNoticeError(false)
   }, [scope, preferenceKey])
 
   useEffect(() => {
@@ -139,6 +141,7 @@ export function NotificationBell({ session, onOpenDevices }: {
   async function openNotice(notice: DeviceAccessNotification) {
     if (openingNotice) return
     setOpeningNotice(notice.ulid)
+    setNoticeError(false)
     try {
       if (notice.read_at === null) {
         await markDeviceAccessNotificationRead(notice.ulid)
@@ -150,6 +153,7 @@ export function NotificationBell({ session, onOpenDevices }: {
     } catch {
       // Leave the unread item visible: a failed acknowledgement must not
       // pretend that the tenant owner's security alert was marked read.
+      setNoticeError(true)
       setOpen(true)
     } finally {
       setOpeningNotice(null)
@@ -179,6 +183,7 @@ export function NotificationBell({ session, onOpenDevices }: {
             <strong>Device approval alerts</strong>
             <button type="button" className="bp-notification-icon" onClick={() => setOpen(false)} aria-label="Close notifications"><X size={14} /></button>
           </div>
+          {noticeError ? <p className="bp-notification-error" role="alert">Could not mark this alert as read. Please try again.</p> : null}
           <div className="bp-notification-list">
             {notices.data?.notifications.length ? notices.data.notifications.slice(0, 5).map((notice) => (
               <button type="button" key={notice.ulid} className="bp-notification-item bp-motion-notice" disabled={openingNotice === notice.ulid} onClick={() => void openNotice(notice)}>
