@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { ApiClientError } from '../api/client'
 import { useAuth } from '../features/auth/AuthProvider'
 import { AuthLayout } from '../layouts/AuthLayout'
+import { PremiumOtpInput } from '../components/auth/PremiumOtpInput'
 
 export function LoginPage() {
   const { session, isLoading, login, verifyMfa, resendMfa } = useAuth()
@@ -74,11 +75,12 @@ export function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Sign in">
-      <p className="mb-3 text-[12px] text-[var(--ui-text-muted)]">
+    <AuthLayout title={challengeUlid ? "Verify your account" : "Sign in"}>
+      {!challengeUlid ? <p className="mb-3 text-[12px] text-[var(--ui-text-muted)]">
         Sign-in requires browser location permission. Only approximate coordinates are saved for 30 days and are visible to authorized tenant security staff and platform monitoring. Where enabled, a geolocation provider may also receive your public IP to estimate country, region and city; these location labels share the same 30-day retention. Denying permission prevents sign-in.
-      </p>
+      </p> : <div className="auth-otp-emblem" aria-hidden="true">✦</div>}
       <form className="space-y-3" onSubmit={onSubmit}>
+        {!challengeUlid ? <>
         <label className="block text-[12px] font-semibold">
           Tenant / Mart code
           <input
@@ -111,51 +113,30 @@ export function LoginPage() {
             onChange={(event) => setPassword(event.target.value)}
           />
         </label>
+        </> : null}
         {challengeUlid ? (
-          <>
-            <p className="text-[12px] text-[var(--ui-text-muted)]">
-              Additional verification is required{recoveryHint ? ` (${recoveryHint})` : ''}.
-            </p>
-            <label className="block text-[12px] font-semibold">
-              Verification code
-              <input
-                required
-                inputMode="numeric"
-                className="mt-1 h-9 w-full rounded border border-[var(--ui-border)] px-2"
-                value={mfaCode}
-                onChange={(event) => setMfaCode(event.target.value)}
-              />
-            </label>
-            <label className="flex items-center gap-2 text-[12px]">
-              <input type="checkbox" checked={trustDevice} onChange={(event) => setTrustDevice(event.target.checked)} />
+          <div className="space-y-3">
+            <p className="auth-otp-copy">Enter the six-digit recovery code{recoveryHint ? ` (${recoveryHint})` : ''}.</p>
+            <PremiumOtpInput value={mfaCode} onChange={setMfaCode} disabled={submitting} />
+            <label className="flex items-center justify-center gap-2 text-[12px]">
+              <input type="checkbox" checked={trustDevice} onChange={event => setTrustDevice(event.target.checked)} />
               Trust this device
             </label>
-            <button
-              type="button"
-              className="text-[12px] font-semibold text-[var(--ui-accent)] underline disabled:opacity-60"
-              disabled={resending}
-              onClick={() => {
-                if (!challengeUlid) {
+            <button type="button" className="auth-otp-back" disabled={resending} onClick={() => {
+              if (!challengeUlid) return
+              setError(null); setResending(true)
+              void resendMfa(challengeUlid).catch(err => {
+                if (err instanceof ApiClientError && (err.key === 'MFA_REQUIRED' || err.key === 'EMAIL_DELIVERY_FAILED')) {
+                  setChallengeUlid(typeof err.extra.challenge_ulid === 'string' ? err.extra.challenge_ulid : challengeUlid)
+                  setRecoveryHint(typeof err.extra.recovery_hint === 'string' ? err.extra.recovery_hint : recoveryHint)
+                  setError(err.key === 'EMAIL_DELIVERY_FAILED' ? err.message : null)
                   return
                 }
-                setError(null)
-                setResending(true)
-                void resendMfa(challengeUlid)
-                  .catch((err) => {
-                    if (err instanceof ApiClientError && (err.key === 'MFA_REQUIRED' || err.key === 'EMAIL_DELIVERY_FAILED')) {
-                      setChallengeUlid(typeof err.extra.challenge_ulid === 'string' ? err.extra.challenge_ulid : challengeUlid)
-                      setRecoveryHint(typeof err.extra.recovery_hint === 'string' ? err.extra.recovery_hint : recoveryHint)
-                      setError(err.key === 'EMAIL_DELIVERY_FAILED' ? err.message : null)
-                      return
-                    }
-                    setError(err instanceof ApiClientError ? err.message : 'Unable to resend the code.')
-                  })
-                  .finally(() => setResending(false))
-              }}
-            >
-              {resending ? 'Sending…' : 'Resend code'}
-            </button>
-          </>
+                setError(err instanceof ApiClientError ? err.message : 'Unable to resend the code.')
+              }).finally(() => setResending(false))
+            }}>{resending ? 'Sending…' : 'Resend code'}</button>
+            <button type="button" className="auth-otp-back block mx-auto" onClick={() => { setChallengeUlid(null); setMfaCode(''); setError(null) }}>Back to sign in</button>
+          </div>
         ) : null}
         {deviceMessage ? <p role="status" className="text-[12px] text-[var(--ui-warning)]">{deviceMessage}</p> : null}
         {approvalPending ? <p className="text-[12px] text-[var(--ui-text-muted)]">Approval does not sign you in automatically. Use Login again after your tenant owner approves the request.</p> : null}
@@ -163,15 +144,15 @@ export function LoginPage() {
         <button
           type="submit"
           className="h-9 w-full rounded bg-[var(--ui-accent)] text-sm font-semibold text-white disabled:opacity-60"
-          disabled={submitting}
+          disabled={submitting || (!!challengeUlid && mfaCode.length !== 6)}
         >
           {submitting ? 'Signing in…' : challengeUlid ? 'Verify' : 'Login'}
         </button>
-        <p className="text-center text-[12px] text-[var(--ui-text-muted)]">
+        {!challengeUlid ? <p className="text-center text-[12px] text-[var(--ui-text-muted)]">
           <Link className="font-semibold text-[var(--ui-accent)]" to="/forgot-password">
             Forgot password
           </Link>
-        </p>
+        </p> : null}
       </form>
     </AuthLayout>
   )
