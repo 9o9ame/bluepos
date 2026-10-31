@@ -2329,6 +2329,27 @@ class AuthenticationTest extends TestCase
         $this->assertFalse((bool) $membership->user->fresh()->must_change_password);
     }
 
+    public function test_owner_cannot_revoke_the_device_used_by_current_session(): void
+    {
+        $owner = $this->provisionOwner('owner-current-device-guard');
+        $this->attachTrustedDevice((int) $owner->tenant->id);
+        $device = \App\Models\Device::query()
+            ->where('tenant_id', $owner->tenant->id)->firstOrFail();
+
+        $this->postJson('/api/auth/login', [
+            'tenant_code' => $this->tenantCode('owner-current-device-guard'),
+            'username' => 'owner',
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->postJson('/api/devices/'.$device->ulid.'/revoke')
+            ->assertStatus(409)
+            ->assertJsonPath('error.key', 'CURRENT_DEVICE_REVOKE_DENIED');
+
+        $this->assertSame(\App\Enums\DeviceStatus::Active, $device->fresh()->status);
+        $this->getJson('/api/auth/me')->assertOk();
+    }
+
     public function test_tenant_remember_me_off_uses_browser_session_cookie(): void
     {
         $owner = $this->provisionOwner('tenant-no-remember-cookie');
