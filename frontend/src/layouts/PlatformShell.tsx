@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown, Fingerprint, KeyRound, LogOut, MonitorSmartphone, ShieldCheck, UserRound, Layers3 } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Fingerprint, KeyRound, LogOut, MonitorSmartphone, ShieldCheck, UserRound, Layers3, LayoutDashboard, Building2, CreditCard, Users, LockKeyhole, ClipboardList, Settings, Search } from 'lucide-react'
 import './platform-account-dropdown.css'
+import './platform-sidebar.css'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { usePlatformAuth } from '../features/platform/PlatformAuthProvider'
 import { usePlatformCan } from '../features/platform/usePlatformCan'
@@ -27,6 +28,8 @@ export function PlatformShell() {
   const canSettings = usePlatformCan('platform.settings.view')
   const [menuOpen, setMenuOpen] = useState(false)
   const [accessOpen, setAccessOpen] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarSearch, setSidebarSearch] = useState('')
   const canAccess = canUsers || canRoles || canPermissions
 
   const visiblePrimary = useMemo(
@@ -113,29 +116,55 @@ export function PlatformShell() {
         </div>
       </header>
       <div className="platform-body flex min-h-0 flex-1">
-        <nav className="platform-nav w-52 shrink-0 overflow-auto border-r border-[var(--ui-border)] bg-[var(--ui-surface-subtle)] p-2">
-          {visiblePrimary.map((link) => (
-            <NavItem key={link.to} to={link.to} label={link.label} end={link.end} />
-          ))}
-          {canAccess ? (
-            <div className="mt-2">
-              <button
-                type="button"
-                className="platform-access-toggle mb-1 w-full rounded px-2 py-1.5 text-left text-[12px] font-semibold text-[var(--ui-text)] hover:bg-[var(--ui-accent-soft)]"
-                onClick={() => setAccessOpen((open) => !open)}
-              >
-                Platform Access {accessOpen ? '▾' : '▸'}
+        <nav className="platform-sidebar-frame" data-collapsed={sidebarCollapsed} aria-label="Platform navigation">
+          <div className="platform-sidebar-panel">
+            <div className="platform-sidebar-brand">
+              <span className="platform-sidebar-brand-icon"><Layers3 size={18} aria-hidden="true" /></span>
+              <span className="platform-sidebar-brand-text">BluePOS Platform</span>
+              <button type="button" className="platform-sidebar-collapse" onClick={() => setSidebarCollapsed(value => !value)}
+                aria-label={sidebarCollapsed ? 'Expand platform sidebar' : 'Collapse platform sidebar'}
+                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+                {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
               </button>
-              {accessOpen
-                ? ACCESS.filter((item) => user?.permissions.includes(item.can)).map((item) => (
-                    <NavItem key={item.to} to={item.to} label={item.label} indent />
-                  ))
-                : null}
             </div>
-          ) : null}
-          {canAudit ? <NavItem to="/platform/security/audit" label="Audit" /> : null}
-          {canAudit ? <NavItem to="/platform/security/device-activity" label="Device Activity" /> : null}
-          {canSettings ? <NavItem to="/platform/settings" label="Settings" /> : null}
+            <label className="platform-sidebar-search">
+              <Search size={15} aria-hidden="true" />
+              {sidebarCollapsed ? null : <input type="search" aria-label="Search platform navigation" value={sidebarSearch}
+                onChange={event => setSidebarSearch(event.target.value)} placeholder="Search menu..." />}
+            </label>
+            <div className="platform-sidebar-label">{sidebarCollapsed ? '•' : 'MENU'}</div>
+            <div className="platform-sidebar-links">
+              {visiblePrimary.filter(item => item.label.toLowerCase().includes(sidebarSearch.toLowerCase())).map(item => (
+                <NavItem key={item.to} to={item.to} label={item.label} end={item.end} collapsed={sidebarCollapsed}
+                  icon={item.label === 'Dashboard' ? LayoutDashboard : item.label === 'Tenants' ? Building2 : CreditCard} />
+              ))}
+              {canAccess && (sidebarSearch === '' || 'platform access'.includes(sidebarSearch.toLowerCase()) ||
+                ACCESS.some(item => item.label.toLowerCase().includes(sidebarSearch.toLowerCase()))) ? (
+                <div className="platform-sidebar-group">
+                  <button type="button" className="platform-sidebar-group-trigger" onClick={() => setAccessOpen(value => !value)}
+                    aria-expanded={accessOpen} title="Platform Access">
+                    <LockKeyhole size={16} aria-hidden="true" />
+                    <span className="platform-sidebar-item-label">Platform Access</span>
+                    {accessOpen ? <ChevronDown size={13} className="platform-sidebar-group-chevron" /> : <ChevronRight size={13} className="platform-sidebar-group-chevron" />}
+                  </button>
+                  {accessOpen ? ACCESS.filter(item => user?.permissions.includes(item.can) && item.label.toLowerCase().includes(sidebarSearch.toLowerCase())).map(item => (
+                    <NavItem key={item.to} to={item.to} label={item.label} collapsed={sidebarCollapsed}
+                      icon={item.label === 'Users' ? Users : item.label === 'Roles' ? ShieldCheck : KeyRound} indent />
+                  )) : null}
+                </div>
+              ) : null}
+              {canAudit && 'audit'.includes(sidebarSearch.toLowerCase()) ? <NavItem to="/platform/security/audit" label="Audit" icon={ClipboardList} collapsed={sidebarCollapsed} /> : null}
+              {canAudit && 'device activity'.includes(sidebarSearch.toLowerCase()) ? <NavItem to="/platform/security/device-activity" label="Device Activity" icon={MonitorSmartphone} collapsed={sidebarCollapsed} /> : null}
+              {canSettings && 'settings'.includes(sidebarSearch.toLowerCase()) ? <NavItem to="/platform/settings" label="Settings" icon={Settings} collapsed={sidebarCollapsed} /> : null}
+            </div>
+            <div className="platform-sidebar-footer">
+              <div className="platform-sidebar-footer-rule" />
+              <button type="button" className="platform-sidebar-footer-item" onClick={() => navigate('/platform/account/profile')}
+                title="My Profile"><UserRound size={16} /><span className="platform-sidebar-item-label">My Profile</span></button>
+              <button type="button" className="platform-sidebar-footer-item" onClick={() => void logout()}
+                title="Sign Out"><LogOut size={16} /><span className="platform-sidebar-item-label">Sign Out</span></button>
+            </div>
+          </div>
         </nav>
         <main className="platform-main min-w-0 flex-1 overflow-auto p-4">
           <Outlet />
@@ -145,28 +174,21 @@ export function PlatformShell() {
   )
 }
 
-function NavItem({
-  to,
-  label,
-  end,
-  indent,
-}: {
+type SidebarIcon = typeof LayoutDashboard
+
+function NavItem({ to, label, end, indent, icon: Icon, collapsed }: {
   to: string
   label: string
   end?: boolean
   indent?: boolean
+  icon: SidebarIcon
+  collapsed: boolean
 }) {
   return (
-    <NavLink
-      to={to}
-      end={end}
-      className={({ isActive }) =>
-        `platform-nav-item mb-1 block rounded px-2 py-1.5 text-[12px] font-semibold ${indent ? 'ml-3' : ''} ${
-          isActive ? 'bg-[var(--ui-accent)] text-white' : 'text-[var(--ui-text)] hover:bg-[var(--ui-accent-soft)]'
-        }`
-      }
-    >
-      {label}
+    <NavLink to={to} end={end} title={collapsed ? label : undefined}
+      className={({ isActive }) => `platform-sidebar-link${isActive ? ' is-active' : ''}${indent ? ' is-indent' : ''}`}>
+      <Icon size={16} aria-hidden="true" />
+      <span className="platform-sidebar-item-label">{label}</span>
     </NavLink>
   )
 }
