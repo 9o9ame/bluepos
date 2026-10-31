@@ -53,3 +53,29 @@
   .bp-motion-action:hover, .bp-motion-action:active, .bp-motion-bell:hover { transform: none; }
   .bp-motion-action::after { display: none; }
 }
+
+/* Animation preference is authoritative for effects, not just transitions.
+   Keep the actual hover/active button colors supplied by Theme & Appearance. */
+html[data-animations='off'] .bp-motion-action:not(:disabled):is(:hover, :active),
+html[data-animations='off'] .bp-motion-bell:hover {
+  transform: none;
+  filter: none;
+}
+html[data-animations='off'] .bp-motion-action:not(:disabled):hover::after {
+  animation: none;
+  opacity: 0;
+}
+html[data-animations='off'] .bp-motion-download[data-busy='true']::after {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bp-motion-action:not(:disabled):is(:hover, :active),
+  .bp-motion-bell:hover {
+    transform: none;
+    filter: none;
+  }
+  .bp-motion-action:not(:disabled):hover::after {
+    animation: none;
+    opacity: 0;
+  }
+}
