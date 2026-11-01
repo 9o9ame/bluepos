@@ -56,7 +56,7 @@ export function NotificationBell({ session, onOpenDevices }: {
   const ringTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const notices = useQuery({
-    queryKey: ['device-access-inbox', scope, 1],
+    queryKey: ['device-access-inbox', session.tenant.ulid, session.user.ulid, 1],
     queryFn: () => fetchDeviceAccessNotifications(1),
     enabled: isOwner,
   })
@@ -151,7 +151,7 @@ export function NotificationBell({ session, onOpenDevices }: {
     try {
       if (notice.read_at === null) {
         await markDeviceAccessNotificationRead(notice.ulid)
-        await queryClient.invalidateQueries({ queryKey: ['device-access-inbox', scope] })
+        await queryClient.invalidateQueries({ queryKey: ['device-access-inbox', session.tenant.ulid, session.user.ulid] })
       }
       setOpen(false)
       setToast(null)
