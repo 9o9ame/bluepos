@@ -40,6 +40,23 @@ Report viewers: use `frontend/src/components/reports/ReportViewerToolbar.tsx` an
 
 ## 2. Theme & Appearance is authoritative
 
+Voucher identity is an approved fixed-color exception: Opening amber, Payment
+red, Receiving green and Journal indigo. The palette lives in `appearance.css`
+as `--ui-voucher-*` tokens. Selected workspace tabs retain that identity; form
+headers and table headings use soft versions with contrasting text. The heading
+row immediately under workspace tabs follows the selected Primary Theme.
+Entry controls keep accessible theme surfaces;
+Save/Post/Delete retain their semantic action colors. Ribbon menus use shared
+spaced, raised menu rows, with matching voucher badges where applicable. Ribbon
+dropdowns stay mounted for smooth hover opening/closing and retain the shared
+left-to-right color-fill effect. Keyboard/click navigation remains available.
+Workspace tab backgrounds and hover fills belong to the outer tab container.
+Report menu items declare a semantic Lucide `icon` and `iconTone` in the shared
+ribbon registry; colored icon plates use global semantic tokens. Disabled
+reports keep disabled actions and greyscale icons. Do not copy reference-app assets.
+Label and close buttons keep transparent faces so the entire tab reads as one
+continuous selected/hovered surface, with separate accessible click targets.
+
 All migrated and new UI must respond to the user-selected Theme & Appearance settings:
 
 - Appearance: Light / Dark / System

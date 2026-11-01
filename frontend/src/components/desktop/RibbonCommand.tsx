@@ -4,6 +4,7 @@ import { useAppearance } from '../../features/appearance/AppearanceProvider'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { laterPhaseHint, type RibbonCommandDef } from '../../features/workspace/modules'
 import { resolveRibbonCommandIcon } from '../../features/workspace/blueposIconMap'
+import { voucherAppearance } from '../../features/workspace/voucherAppearance'
 
 type RibbonCommandProps = RibbonCommandDef & {
   active?: boolean
@@ -60,7 +61,14 @@ export function RibbonCommand({
         : label
 
   return (
-    <div className="ribbon-command-wrap" ref={rootRef}>
+    <div className="ribbon-command-wrap" ref={rootRef}
+      onPointerEnter={event => { if (event.pointerType !== 'touch' && hasMenu && !disabled) setOpen(true) }}
+      onPointerLeave={event => { if (event.pointerType !== 'touch') setOpen(false) }}
+      onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false) }}
+      onKeyDown={event => {
+        if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); rootRef.current?.querySelector<HTMLButtonElement>('.ribbon-command')?.focus() }
+        if (hasMenu && !disabled && event.key === 'ArrowDown') { event.preventDefault(); setOpen(true); requestAnimationFrame(() => rootRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')?.focus()) }
+      }}>
       <button
         type="button"
         className={`ribbon-command ribbon-command-${id}${active ? ' is-active' : ''}${hasMenu ? ' has-menu' : ''}${open ? ' is-menu-open' : ''}`}
@@ -90,15 +98,18 @@ export function RibbonCommand({
           {hasMenu ? <ChevronDown size={11} aria-hidden /> : null}
         </span>
       </button>
-      {open && hasMenu ? (
-        <div className="ribbon-menu" role="menu">
+      {hasMenu ? (
+        <div className={`ribbon-menu${menu?.some(item => item.icon) ? ' has-icons' : ''}`} role="menu" data-open={open} aria-hidden={!open} ref={el => { if (el) el.inert = !open }}>
           {(menu ?? []).map((item) => {
             const itemLater = (item.status ?? 'later') === 'later'
+            const voucher = voucherAppearance(item.path)
+            const MenuIcon = item.icon
             return (
               <button
                 key={item.label}
                 type="button"
                 role="menuitem"
+                data-voucher-type={voucher?.type}
                 disabled={itemLater}
                 title={itemLater ? laterPhaseHint() : item.label}
                 onClick={() => {
@@ -108,7 +119,8 @@ export function RibbonCommand({
                   }
                 }}
               >
-                {item.label}
+                {MenuIcon ? <span className="ribbon-menu-icon" data-tone={item.iconTone ?? 'primary'} aria-hidden="true"><MenuIcon size={18} strokeWidth={1.9}/></span> : voucher ? <span className="ribbon-voucher-mark" aria-hidden="true">{voucher.badge}</span> : null}
+                <span>{item.label}</span>
               </button>
             )
           })}

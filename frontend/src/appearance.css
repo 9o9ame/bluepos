@@ -2678,3 +2678,178 @@ html[data-density] #root :where(
 *::-webkit-scrollbar-corner {
   background: var(--ui-surface-subtle);
 }
+
+/* Approved fixed voucher identities: the same hues across menu, tab and form. */
+:root {
+  --ui-voucher-opening: #b56a00;
+  --ui-voucher-payment: #c53b36;
+  --ui-voucher-receiving: #16834a;
+  --ui-voucher-journal: #4f46e5;
+}
+[data-voucher-type='opening'] { --voucher-accent: var(--ui-voucher-opening); }
+[data-voucher-type='payment'] { --voucher-accent: var(--ui-voucher-payment); }
+[data-voucher-type='receiving'] { --voucher-accent: var(--ui-voucher-receiving); }
+[data-voucher-type='journal'] { --voucher-accent: var(--ui-voucher-journal); }
+
+/* Shared ribbon popup: separated targets with a restrained raised face. */
+html #root .ribbon-menu {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--panel-radius);
+  background: linear-gradient(145deg, var(--ui-surface), var(--ui-surface-subtle));
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--ui-text) 16%, transparent);
+}
+html #root .ribbon-menu button[role='menuitem'] {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-control-border);
+  border-radius: var(--control-radius);
+  background: linear-gradient(145deg, var(--ui-surface), var(--ui-surface-muted));
+  color: var(--ui-text);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ui-surface) 85%, transparent), 0 2px 3px color-mix(in srgb, var(--ui-text) 13%, transparent);
+  line-height: 1.35;
+}
+html #root .ribbon-menu button[role='menuitem']:not(:disabled):is(:hover, :focus-visible) {
+  border-color: var(--voucher-accent, var(--ui-accent));
+  background: linear-gradient(145deg, var(--ui-surface), var(--ui-surface-muted));
+  color: var(--ui-text);
+}
+html #root .ribbon-menu button[role='menuitem']::before { content: ''; background: color-mix(in srgb, var(--voucher-accent, var(--ui-accent)) 30%, var(--ui-surface)); }
+html #root .ribbon-menu button[role='menuitem']:disabled { background: var(--ui-surface-muted); color: var(--ui-text-muted); opacity: .55; box-shadow: none; cursor: not-allowed; }
+.ribbon-voucher-mark { display: inline-grid; place-items: center; min-width: 28px; padding: 3px; border-radius: var(--control-radius); background: color-mix(in srgb, var(--voucher-accent) 72%, black); color: white; font-size: var(--ui-font-xs, 10px); font-weight: 800; }
+
+/* Soft fixed voucher identity; the workspace heading follows the app theme. */
+html #root .voucher-workspace {
+  --voucher-dark: color-mix(in srgb, var(--voucher-accent) 68%, black);
+  --voucher-face: linear-gradient(180deg, color-mix(in srgb, var(--voucher-accent) 18%, var(--ui-surface)), color-mix(in srgb, var(--voucher-accent) 28%, var(--ui-surface-subtle)));
+  --voucher-ink: color-mix(in srgb, var(--voucher-accent) 35%, var(--ui-text));
+  --ui-table-header: var(--voucher-face);
+  --ui-table-header-text: var(--ui-text);
+  border-color: var(--voucher-dark) !important;
+}
+html #root .voucher-workspace > .desktop-panel-header {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ui-accent) 8%, var(--ui-surface)), color-mix(in srgb, var(--ui-accent) 13%, var(--ui-surface-subtle))) !important;
+  color: var(--ui-accent-strong) !important;
+  border-color: var(--ui-border) !important;
+}
+html #root .voucher-workspace .voucher-title-badge { background: color-mix(in srgb, var(--voucher-accent) 48%, black); border-color: color-mix(in srgb, var(--voucher-accent) 50%, white); color: white; }
+html #root .voucher-workspace > .desktop-toolbar,
+html #root .voucher-workspace .voucher-filters { background: color-mix(in srgb, var(--voucher-accent) 8%, var(--ui-surface)) !important; border-color: var(--voucher-dark) !important; }
+html #root .voucher-workspace .voucher-tabs { background: color-mix(in srgb, var(--voucher-accent) 11%, var(--ui-surface)); border-color: var(--voucher-dark); }
+html #root .voucher-workspace .voucher-tabs .ui-button.is-primary { background: var(--voucher-face) !important; border-color: var(--voucher-dark) !important; color: var(--voucher-ink) !important; --bp-button-tone: var(--voucher-dark); }
+html #root .voucher-workspace .voucher-entry-meta { background: var(--voucher-face) !important; border-color: color-mix(in srgb, var(--voucher-accent) 50%, var(--ui-border)) !important; color: var(--voucher-ink); }
+html #root .voucher-workspace .voucher-entry-meta label > span { color: var(--voucher-ink) !important; }
+html #root .voucher-workspace .voucher-line-grid th { background: var(--voucher-face) !important; color: var(--voucher-ink) !important; border-color: color-mix(in srgb, var(--voucher-accent) 55%, white) !important; }
+html #root .voucher-workspace .voucher-line-grid-wrap { border-color: var(--voucher-dark); }
+html #root .voucher-workspace .voucher-totals { color: var(--voucher-dark); }
+html #root .voucher-workspace .voucher-totals strong { color: color-mix(in srgb, var(--voucher-accent) 85%, var(--ui-text)); }
+html #root .workspace-tab[data-voucher-type] { border-color: color-mix(in srgb, var(--voucher-accent) 65%, var(--ui-border)) !important; }
+html #root .workspace-tab[data-voucher-type].is-active {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--voucher-accent) 82%, black), color-mix(in srgb, var(--voucher-accent) 68%, black)) !important;
+  color: white !important;
+  box-shadow: var(--ui-control-shadow) !important;
+}
+/* Preserve readable identity text during the shared button hover wipe. */
+html #root .voucher-workspace .voucher-tabs .ui-button.is-primary::before { background: var(--voucher-face); }
+html #root .workspace-tab[data-voucher-type].is-active button::before { content: none; }
+:root[data-theme='dark'] #root .voucher-workspace .voucher-totals { color: var(--ui-text); }
+
+/* Match the platform account dropdown's mounted 3D reveal in both directions. */
+html #root .ribbon-menu {
+  animation: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-8px) scaleY(.97);
+  transform-origin: top center;
+  clip-path: inset(0 0 100% 0 round var(--panel-radius));
+  transition: clip-path 760ms cubic-bezier(.22,1,.36,1), opacity 650ms cubic-bezier(.22,1,.36,1), transform 760ms cubic-bezier(.22,1,.36,1), visibility 0s linear 760ms;
+  box-shadow: 5px 6px 14px color-mix(in srgb, var(--ui-text) 18%, transparent), -3px -3px 9px color-mix(in srgb, var(--ui-surface) 85%, transparent), inset 0 1px 0 var(--ui-surface);
+}
+html #root .ribbon-menu[data-open='true'] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scaleY(1);
+  clip-path: inset(0 0 0 0 round var(--panel-radius));
+  transition: clip-path 760ms cubic-bezier(.22,1,.36,1), opacity 650ms cubic-bezier(.22,1,.36,1), transform 760ms cubic-bezier(.22,1,.36,1), visibility 0s;
+}
+html #root .ribbon-menu button[role='menuitem'] { position: relative; isolation: isolate; overflow: hidden; }
+html #root .ribbon-menu button[role='menuitem'] > span { position: relative; z-index: 1; }
+html #root .ribbon-menu button[role='menuitem']::before {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  transform: scaleX(0); transform-origin: left center;
+  transition: transform var(--bp-motion-slow) cubic-bezier(.4,0,.2,1);
+}
+html #root .ribbon-menu button[role='menuitem']:not(:disabled):is(:hover, :focus-visible)::before { transform: scaleX(1); }
+html[data-animations='off'] #root .ribbon-menu,
+html[data-animations='off'] #root .ribbon-menu button::before { transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  html #root .ribbon-menu, html #root .ribbon-menu button::before { transition: none !important; }
+}
+
+/* A workspace tab is ONE painted surface; label and close stay separate hit areas. */
+html #root .workspace-tabs .workspace-tab {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+html #root .workspace-tabs .workspace-tab > button {
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  color: inherit !important;
+  filter: none !important;
+}
+html #root .workspace-tabs .workspace-tab > button::before,
+html #root .workspace-tabs .workspace-tab > button::after { content: none !important; }
+html #root .workspace-tabs .workspace-tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--voucher-accent, var(--ui-accent)) 30%, var(--ui-surface));
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--bp-motion-slow) cubic-bezier(.4,0,.2,1);
+}
+html #root .workspace-tabs .workspace-tab:not(.is-active):hover {
+  background: linear-gradient(180deg, var(--ui-surface), var(--ui-surface-subtle)) !important;
+}
+html #root .workspace-tabs .workspace-tab:not(.is-active):is(:hover, :focus-within)::before { transform: scaleX(1); }
+html #root .workspace-tabs .workspace-tab.is-active::before { content: none; }
+html #root .workspace-tabs .workspace-tab:focus-within { outline: 1px solid var(--voucher-accent, var(--ui-accent)); outline-offset: -2px; }
+html[data-animations='off'] #root .workspace-tab::before { transition: none !important; }
+@media (prefers-reduced-motion: reduce) { html #root .workspace-tab::before { transition: none !important; } }
+
+/* Report menu icon plates: existing Lucide vocabulary, semantic theme colors. */
+.ribbon-menu-icon {
+  --report-icon-tone: var(--ui-accent);
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--control-radius);
+  border: 1px solid color-mix(in srgb, var(--report-icon-tone) 22%, var(--ui-border));
+  color: color-mix(in srgb, var(--report-icon-tone) 80%, var(--ui-text));
+  background: linear-gradient(145deg, var(--ui-surface), color-mix(in srgb, var(--report-icon-tone) 16%, var(--ui-surface-subtle)));
+  box-shadow: inset 0 1px 0 var(--ui-surface), 0 1px 2px color-mix(in srgb, var(--report-icon-tone) 14%, transparent);
+}
+.ribbon-menu-icon[data-tone='success'] { --report-icon-tone: var(--ui-success); }
+.ribbon-menu-icon[data-tone='warning'] { --report-icon-tone: var(--ui-warning); }
+.ribbon-menu-icon[data-tone='danger'] { --report-icon-tone: var(--ui-danger); }
+.ribbon-menu-icon[data-tone='info'] { --report-icon-tone: var(--ui-info); }
+html #root .ribbon-menu button:disabled .ribbon-menu-icon { filter: grayscale(1); }
+html #root .ribbon-menu.has-icons { min-width: min(320px, calc(100vw - 24px)); max-width: calc(100vw - 24px); }

@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import { useWorkspace } from '../../features/workspace/WorkspaceProvider'
+import { voucherAppearance } from '../../features/workspace/voucherAppearance'
 
 export function WorkspaceTabBar() {
   const { tabs, activeKey, pendingKey, openModule, closeTab } = useWorkspace()
@@ -9,7 +10,7 @@ export function WorkspaceTabBar() {
       {tabs.map((tab) => {
         const selected = tab.key === (pendingKey ?? activeKey)
         return (
-          <div key={tab.key} className={`workspace-tab${selected ? ' is-active' : ''}`}>
+          <div key={tab.key} className={`workspace-tab${selected ? ' is-active' : ''}`} data-voucher-type={voucherAppearance(tab.path)?.type}>
             <button
               type="button"
               role="tab"

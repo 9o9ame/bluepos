@@ -1,5 +1,5 @@
 .voucher-workspace {
-  --voucher-accent: #4f46e5;
+  --voucher-accent: var(--ui-voucher-journal);
 
   display: flex;
   flex-direction: column;
@@ -13,19 +13,19 @@
  * Theme & Appearance still owns density, radius, shadows and surfaces.
  */
 .voucher-workspace-payment {
-  --voucher-accent: #c53b36;
+  --voucher-accent: var(--ui-voucher-payment);
 }
 
 .voucher-workspace-receiving {
-  --voucher-accent: #16834a;
+  --voucher-accent: var(--ui-voucher-receiving);
 }
 
 .voucher-workspace-opening {
-  --voucher-accent: #b56a00;
+  --voucher-accent: var(--ui-voucher-opening);
 }
 
 .voucher-workspace-journal {
-  --voucher-accent: #4f46e5;
+  --voucher-accent: var(--ui-voucher-journal);
 }
 
 .voucher-workspace > .desktop-panel-header {
