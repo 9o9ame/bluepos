@@ -89,20 +89,20 @@ html[data-animations='off'] .bp-motion-download[data-busy='true']::after {
  * geometry, dimensions, position, label, fields, layout or click handlers.
  * Add future module-specific command classes here only after inspection.
  */
-:is(.product-def-cmd, .sales-reference-action-icon, .pie-btn) {
+:is(.product-def-cmd, .sales-reference-action-icon, .pie-btn, .parties-vca-action, .parties-vca-shell-btn) {
   transition:
     filter var(--bp-motion-fast) ease,
     box-shadow var(--bp-motion-normal) var(--bp-motion-ease),
     border-color var(--bp-motion-fast) ease;
 }
-:is(.product-def-cmd, .sales-reference-action-icon, .pie-btn):not(:disabled):is(:hover, :focus-visible) {
+:is(.product-def-cmd, .sales-reference-action-icon, .pie-btn, .parties-vca-action, .parties-vca-shell-btn):not(:disabled):is(:hover, :focus-visible) {
   filter: brightness(1.06);
   box-shadow: var(--ui-control-shadow), 0 0 0 2px color-mix(in srgb, var(--ui-accent) 16%, transparent);
 }
-:is(.product-def-cmd, .sales-reference-action-icon, .pie-btn):not(:disabled):active {
+:is(.product-def-cmd, .sales-reference-action-icon, .pie-btn, .parties-vca-action, .parties-vca-shell-btn):not(:disabled):active {
   filter: brightness(.96);
 }
-html[data-animations='off'] :is(.product-def-cmd, .sales-reference-action-icon, .pie-btn) { transition: none; }
+html[data-animations='off'] :is(.product-def-cmd, .sales-reference-action-icon, .pie-btn, .parties-vca-action, .parties-vca-shell-btn) { transition: none; }
 @media (prefers-reduced-motion: reduce) {
-  :is(.product-def-cmd, .sales-reference-action-icon, .pie-btn) { transition: none; }
+  :is(.product-def-cmd, .sales-reference-action-icon, .pie-btn, .parties-vca-action, .parties-vca-shell-btn) { transition: none; }
 }
