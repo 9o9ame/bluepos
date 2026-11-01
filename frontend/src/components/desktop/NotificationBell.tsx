@@ -46,7 +46,6 @@ export function NotificationBell({ session, onOpenDevices }: {
   const preferenceKey = 'bluepos-notification-tone:' + scope
   const [tone, setTone] = useState(() => localStorage.getItem(preferenceKey) || '07')
   const [open, setOpen] = useState(false)
-  const hasRealtime = Boolean(import.meta.env.VITE_PUSHER_APP_KEY && import.meta.env.VITE_PUSHER_APP_CLUSTER)
   const [toast, setToast] = useState<DeviceAccessNotification | null>(null)
   const [ring, setRing] = useState(false)
   const known = useRef<Set<string> | null>(null)
@@ -60,8 +59,6 @@ export function NotificationBell({ session, onOpenDevices }: {
     queryKey: ['device-access-inbox', scope, 1],
     queryFn: () => fetchDeviceAccessNotifications(1),
     enabled: isOwner,
-    refetchInterval: hasRealtime ? 300000 : 60000, // Pusher-first; a five-minute safety recovery if connected.
-    refetchIntervalInBackground: false,
   })
 
   useEffect(() => {
