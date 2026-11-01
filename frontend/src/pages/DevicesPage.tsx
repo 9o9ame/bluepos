@@ -25,13 +25,13 @@ export function DevicesPage() {
   const canRevoke = useCan('devices.revoke')
   const canViewSessions = useCan('security.sessions.view')
   const [requestStatus, setRequestStatus] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending')
+  const [activeView, setActiveView] = useState<'requests' | 'history' | 'locations' | 'activity' | 'devices'>('requests')
   const [locationPage, setLocationPage] = useState(1)
   const locationQuery = useQuery({
     queryKey: ['tenant-location-history', locationPage],
     queryFn: () => fetchTenantLocationHistory(locationPage),
-    enabled: canReviewRequests,
-    refetchInterval: 300000, // Five-minute recovery; explicit refresh and realtime invalidation remain available
-    refetchIntervalInBackground: false,
+    enabled: canReviewRequests && activeView === 'locations',
+    
   })
   const [historyPage, setHistoryPage] = useState(1)
   const [historyDraft, setHistoryDraft] = useState<TenantLoginHistoryFilters>({ event: 'all' })
@@ -39,37 +39,30 @@ export function DevicesPage() {
   const historyQuery = useQuery({
     queryKey: ['tenant-login-history', historyPage, historyFilters],
     queryFn: () => fetchTenantLoginHistory(historyPage, historyFilters),
-    enabled: canReviewRequests,
-    refetchInterval: 300000, // Five-minute recovery; explicit refresh and realtime invalidation remain available
-    refetchIntervalInBackground: false,
+    enabled: canReviewRequests && activeView === 'history',
+    
   })
   const [inboxPage, setInboxPage] = useState(1)
   const inboxQuery = useQuery({
     queryKey: ['device-access-inbox', session?.tenant.ulid, session?.user.ulid, inboxPage],
     queryFn: () => fetchDeviceAccessNotifications(inboxPage),
-    enabled: canReviewRequests,
-    refetchInterval: 300000, // Five-minute recovery; explicit refresh and realtime invalidation remain available
-    refetchIntervalInBackground: false,
+    enabled: canReviewRequests && activeView === 'requests',
+    
   })
   const [markingRead, setMarkingRead] = useState<string | null>(null)
-  const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: fetchDevices })
+  const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: fetchDevices, enabled: activeView === 'devices' })
   const allAccessQuery = useQuery({
     queryKey: ['device-access-requests', 'all'],
     queryFn: () => fetchDeviceAccessRequests('all'),
-    enabled: canReviewRequests,
-    refetchInterval: 300000, // Five-minute recovery; explicit refresh and realtime invalidation remain available
-    refetchIntervalInBackground: false,
+    enabled: canReviewRequests && activeView === 'devices',
+    
   })
-  const requestsQuery = useQuery({ queryKey: ['device-access-requests', requestStatus], queryFn: () => fetchDeviceAccessRequests(requestStatus), enabled: canReviewRequests, refetchInterval: 300000, // Five-minute recovery; explicit refresh and realtime invalidation remain available
-    refetchIntervalInBackground: false })
-  const sessionsQuery = useQuery({ queryKey: ['security-sessions'], queryFn: fetchSecuritySessions, enabled: canViewSessions, refetchInterval: 300000, // Five-minute recovery; explicit refresh and realtime invalidation remain available
-    refetchIntervalInBackground: false })
+  const requestsQuery = useQuery({ queryKey: ['device-access-requests', requestStatus], queryFn: () => fetchDeviceAccessRequests(requestStatus), enabled: canReviewRequests && activeView === 'requests',  })
+  const sessionsQuery = useQuery({ queryKey: ['security-sessions'], queryFn: fetchSecuritySessions, enabled: canViewSessions && activeView === 'activity',  })
   const [reviewing, setReviewing] = useState<string | null>(null)
-  const branchesQuery = useQuery({ queryKey: ['branches'], queryFn: fetchBranches })
+  const branchesQuery = useQuery({ queryKey: ['branches'], queryFn: fetchBranches, enabled: activeView === 'devices' })
   const [error, setError] = useState<string | null>(null)
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
-  const [activeView, setActiveView] = useState<'requests' | 'history' | 'locations' | 'activity' | 'devices'>('requests')
-
   useWorkspaceHandlers({
     refresh: () => {
       void devicesQuery.refetch()
