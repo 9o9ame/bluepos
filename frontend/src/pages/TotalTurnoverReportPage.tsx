@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { Fragment, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
@@ -119,11 +121,11 @@ export function TotalTurnoverReportPage() {
     <ReportViewerToolbar ready={Boolean(data)} busy={resultQuery.isFetching} search={search}
       onSearchChange={setSearch} onFind={()=>Array.from(paperRef.current?.querySelectorAll('td') || []).find(x=>x.textContent?.toLowerCase().includes(search.toLowerCase()))?.scrollIntoView({block:'center'})}
       zoom={zoom} onZoomChange={setZoom} onPrint={()=>window.print()}
-      onCopy={()=>{if(paperRef.current)void navigator.clipboard.writeText(paperRef.current.innerText)}}
+      onCopy={()=>{return paperRef.current ? navigator.clipboard.writeText(paperRef.current.innerText) : false}}
       onExport={exportFile} onRefresh={()=>void resultQuery.refetch()}
       onEditOptions={()=>openModule('/reports/accounts/total-turnover')} onClose={closeActiveTab}/>
     {!selection && <p role="status">Report selection is not available in this browser session. Use Edit Options to select dates and filters, then open the preview again.</p>}
-    {selection && resultQuery.isLoading && <p>Loading turnover…</p>}
+    {selection && resultQuery.isLoading && <UiSkeleton label="Loading turnover…"/>}
     {resultQuery.isError && <p role="alert">Unable to load turnover report.</p>}
     {data && <article ref={paperRef} className={`turnover-paper ${mode === 'detailed' ? 'turnover-paper--detailed' : ''}`} style={{zoom:zoom+'%'}}>
       <header><strong>{session?.tenant.name}</strong>
@@ -165,8 +167,8 @@ export function TotalTurnoverReportPage() {
             <input type="radio" checked={period===value} onChange={()=>{setPeriod(value);if(value!=='custom'){const [a,b]=periodDates(value);setFrom(a);setTo(b)}}}/>{label}</label>)}
         </fieldset>
         <div className="turnover-dates"><strong>Date Selection</strong>
-          <label>From Date<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setPeriod('custom')}}/></label>
-          <label>To Date<input type="date" value={to} onChange={e=>{setTo(e.target.value);setPeriod('custom')}}/></label>
+          <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:from,onChange:e=>{setFrom(e.target.value);setPeriod('custom')}}} toInputProps={{type:"date",value:to,onChange:e=>{setTo(e.target.value);setPeriod('custom')}}}/></label>
+
           <label>Show Turnover above<input type="text" inputMode="decimal" value={above} onChange={e=>setAbove(e.target.value)}/></label>
         </div>
         <div><strong>Non Accounting Group Type</strong><div className="turnover-types"><label><input type="radio" checked={partyGroup==='accounts'} onChange={()=>setPartyGroup('accounts')}/>ACCOUNTS</label>
@@ -175,7 +177,7 @@ export function TotalTurnoverReportPage() {
           <label><input type="radio" checked={partyGroup==='vendors'} onChange={()=>setPartyGroup('vendors')}/>VENDORS</label>
           <label><input type="radio" disabled/>SALES MAN (pending mapping)</label></div></div>
         <div className="turnover-account-types"><strong>Account Type</strong><div className="turnover-types">
-          {typesQuery.isLoading && <p>Loading types…</p>}
+          {typesQuery.isLoading && <UiSkeleton label="Loading types…"/>}
           {typesQuery.isError && <p role="alert">Unable to load types.</p>}
           {(typesQuery.data?.account_types || []).map(t=><label key={t.ulid}><input type="checkbox" checked={groups.includes(t.ulid)} onChange={e=>setGroups(current=>e.target.checked?[...current,t.ulid]:current.filter(x=>x!==t.ulid))}/>{t.name}</label>)}
         </div></div>

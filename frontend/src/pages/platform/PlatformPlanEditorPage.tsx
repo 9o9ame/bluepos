@@ -1,3 +1,4 @@
+import { UiSkeleton } from '../../components/ui/UiSkeleton'
 import { FormEvent, useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
@@ -53,7 +54,7 @@ export function PlatformPlanEditorPage() {
   }
 
   if (!plan) {
-    return <p className="text-[12px]">Loading plan…</p>
+    return <UiSkeleton label="Loading plan…"/>
   }
 
   return (

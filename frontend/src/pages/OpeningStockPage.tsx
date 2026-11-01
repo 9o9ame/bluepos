@@ -1,3 +1,4 @@
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Boxes, Plus, RefreshCw, Save, Send, Trash2, X } from 'lucide-react'
@@ -422,7 +423,7 @@ export function OpeningStockPage() {
         </label>
         <label>
           <span>Date</span>
-          <input
+          <UiDatePicker
             type="date"
             value={documentDate}
             disabled={!editable}

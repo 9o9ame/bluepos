@@ -1,3 +1,4 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Gift, Plus, RefreshCw, Save, Trash2, X } from 'lucide-react'
@@ -274,22 +275,8 @@ export function SaleSchemesPage() {
                 required
               />
             </Field>
-            <Field label="Starts on">
-              <input
-                className="desktop-input"
-                type="date"
-                value={startsOn}
-                onChange={(e) => setStartsOn(e.target.value)}
-              />
-            </Field>
-            <Field label="Ends on">
-              <input
-                className="desktop-input"
-                type="date"
-                value={endsOn}
-                onChange={(e) => setEndsOn(e.target.value)}
-              />
-            </Field>
+            <Field label="Starts on"><span>Date range</span><UiDateRangePicker fromInputProps={{className:"desktop-input",type:"date",value:startsOn,onChange:(e) => setStartsOn(e.target.value)}} toInputProps={{className:"desktop-input",type:"date",value:endsOn,onChange:(e) => setEndsOn(e.target.value)}}/></Field>
+
             <Field label="Stackable">
               <label className="inline-flex items-center gap-2 text-[12px]">
                 <input

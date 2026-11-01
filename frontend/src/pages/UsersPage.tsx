@@ -445,7 +445,7 @@ export function UsersPage() {
         {tab === 'others' ? (
           <div className="configure-users-list">
             <div className="configure-users-grid">
-              <PosDataGrid
+              <PosDataGrid loading={membershipsQuery.isLoading}
                 columns={[
                   { key: 'username', header: 'User Name', width: 145, render: (row) => row.username },
                   { key: 'group', header: 'Group', width: 170, render: (row) => (row.roles ?? []).map((role) => role.name).join(', ') || '—' },
@@ -469,7 +469,7 @@ export function UsersPage() {
         {tab === 'salesman' ? (
           <div className="configure-users-list">
             <div className="configure-users-grid configure-users-salesman-grid">
-              <PosDataGrid
+              <PosDataGrid loading={membershipsQuery.isLoading}
                 columns={[
                   { key: 'user', header: 'User', width: 160, render: (row) => row.username },
                   {
@@ -551,7 +551,7 @@ export function UsersPage() {
         {tab === 'fp2' ? (
           <div className="configure-users-list">
             <div className="configure-users-grid configure-users-fingerprint-grid">
-              <PosDataGrid
+              <PosDataGrid loading={membershipsQuery.isLoading}
                 columns={[
                   {
                     key: 'row',
@@ -655,7 +655,7 @@ function UsersList({
   return (
     <div className="configure-users-list">
       <div className="configure-users-grid">
-        <PosDataGrid
+        <PosDataGrid loading={loading}
           columns={[
             { key: 'username', header: 'User Name', width: 160, render: (row) => row.username },
             { key: 'name', header: 'Name', width: 190, render: (row) => row.user?.name ?? '—' },

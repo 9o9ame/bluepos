@@ -240,7 +240,7 @@ export function ProductStockStatusReportPage() {
       </div>
 
       <div className="product-stock-status-grid">
-        <PosDataGrid
+        <PosDataGrid loading={reportQuery.isLoading}
           columns={columns}
           rows={report?.data ?? []}
           rowKey={(row) => row.product.ulid}

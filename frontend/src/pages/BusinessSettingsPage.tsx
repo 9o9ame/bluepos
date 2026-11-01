@@ -1,3 +1,4 @@
+import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { FormEvent, useState } from 'react'
 import { RefreshCw, Save, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -75,7 +76,7 @@ export function BusinessSettingsPage() {
   if (!query.data) {
     return (
       <DesktopPanel title="Business settings">
-        <p className="text-[12px]">Loading settings…</p>
+        <UiSkeleton label="Loading settings…"/>
       </DesktopPanel>
     )
   }

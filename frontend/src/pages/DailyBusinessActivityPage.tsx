@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
@@ -84,7 +86,8 @@ export function DailyBusinessActivityPage() {
     URL.revokeObjectURL(url)
   }
   const copyReport = async () => {
-    if (paperRef.current) await navigator.clipboard.writeText(paperRef.current.innerText || '')
+    if (!paperRef.current) return false
+    await navigator.clipboard.writeText(paperRef.current.innerText || '')
   }
   const findReport = () => {
     const term = search.trim().toLowerCase()
@@ -103,14 +106,14 @@ export function DailyBusinessActivityPage() {
       zoom={zoom}
       onZoomChange={setZoom}
       onPrint={() => window.print()}
-      onCopy={() => void copyReport()}
+      onCopy={copyReport}
       onExport={exportReport}
       onRefresh={() => void reportQuery.refetch()}
       onEditOptions={() => openModule('/reports/daily/business-activity')}
       onClose={closeActiveTab}
     />
     {!selection && <p role="status">Preview filters are not available in this session. Select Edit Options and open the report again.</p>}
-    {selection && reportQuery.isLoading && <p>Loading daily ledger report…</p>}
+    {selection && reportQuery.isLoading && <UiSkeleton label="Loading daily ledger report…"/>}
     {reportQuery.isError && <p role="alert">Unable to load report.</p>}
     {reportQuery.data && <article className="dba-paper" ref={paperRef} style={{ zoom: `${zoom}%` }}>
       <header><h1>DAILY LEDGER WISE ACTIVITY</h1>
@@ -150,7 +153,7 @@ export function DailyBusinessActivityPage() {
       <div className="dba-fields">
         <div><strong>Account Types</strong>
           <div className="dba-types">
-            {typesQuery.isLoading && <p>Loading account types…</p>}
+            {typesQuery.isLoading && <UiSkeleton label="Loading account types…"/>}
             {typesQuery.isError && <p role="alert">Unable to load account types.</p>}
             {(typesQuery.data?.account_types || []).map((type) => <label key={type.ulid}>
               <input type="checkbox" checked={selected.includes(type.ulid)} onChange={(event) =>
@@ -160,8 +163,8 @@ export function DailyBusinessActivityPage() {
           </div>
         </div>
         <div className="dba-dates">
-          <label>From<input type="date" value={start} onChange={(event) => setStart(event.target.value)} /></label>
-          <label>To<input type="date" value={end} onChange={(event) => setEnd(event.target.value)} /></label>
+          <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:start,onChange:(event) => setStart(event.target.value)}} toInputProps={{type:"date",value:end,onChange:(event) => setEnd(event.target.value)}}/></label>
+
         </div>
       </div>
     </div>

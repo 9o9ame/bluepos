@@ -32,6 +32,7 @@ type WorkspaceHandlers = {
 type WorkspaceContextValue = {
   tabs: OpenWorkspaceTab[]
   activeKey: string
+  pendingKey: string | null
   activeModule: WorkspaceModule
   ribbonTab: RibbonTabId
   setRibbonTab: (tab: RibbonTabId) => void
@@ -59,6 +60,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const [tabs, setTabs] = useState<OpenWorkspaceTab[]>([HOME_TAB])
   const [ribbonTab, setRibbonTab] = useState<RibbonTabId>('definition')
+  const [pendingKey, setPendingKey] = useState<string | null>(null)
   const handlersRef = useRef<WorkspaceHandlers>({})
   const tabsRef = useRef(tabs)
   tabsRef.current = tabs
@@ -70,8 +72,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   )
 
   useEffect(() => {
+    setPendingKey(null)
     setRibbonTab(activeModule.ribbon)
     setTabs((current) => {
+      const existing = current.find(tab => tab.key === identity.key)
+      if (existing?.path === identity.path && existing.title === identity.title) return current
       if (current.some((tab) => tab.key === identity.key)) {
         return current.map((tab) =>
           tab.key === identity.key ? { ...tab, path: identity.path, title: identity.title } : tab,
@@ -92,6 +97,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const openModule = useCallback(
     (path: string, options?: { newInstance?: boolean }) => {
+      const open = (destination: string) => {
+        const index = destination.indexOf('?')
+        const pathname = index >= 0 ? destination.slice(0, index) : destination
+        const module = resolveWorkspaceModule(pathname)
+        const target = moduleTabIdentity(module, pathname, index >= 0 ? destination.slice(index) : '')
+        // Tab feedback is urgent; router/page rendering may run in a transition.
+        setPendingKey(target.key)
+        setTabs(current => current.some(tab => tab.key === target.key) ? current : [...current, {
+          key: target.key, title: target.title, path: target.path,
+          closeable: module.closeable !== false && target.key !== 'home', dirty: false,
+        }])
+        navigate(destination)
+      }
       if (options?.newInstance) {
         const queryIndex = path.indexOf('?')
         const pathname = queryIndex >= 0 ? path.slice(0, queryIndex) : path
@@ -107,12 +125,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           const instance = highestInstance + 1
           const params = new URLSearchParams(queryIndex >= 0 ? path.slice(queryIndex + 1) : '')
           params.set('instance', String(instance))
-          navigate(`${pathname}?${params.toString()}`)
+          open(`${pathname}?${params.toString()}`)
           return
         }
       }
 
-      navigate(path)
+      open(path)
     },
     [navigate],
   )
@@ -147,7 +165,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [closeTab, identity.key])
 
   const markDirty = useCallback((key: string, dirty: boolean) => {
-    setTabs((current) => current.map((tab) => (tab.key === key ? { ...tab, dirty } : tab)))
+    setTabs((current) => current.some(tab => tab.key === key && tab.dirty !== dirty)
+      ? current.map((tab) => (tab.key === key ? { ...tab, dirty } : tab)) : current)
   }, [])
 
   const registerHandlers = useCallback((handlers: WorkspaceHandlers) => {
@@ -169,6 +188,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     () => ({
       tabs,
       activeKey: identity.key,
+      pendingKey,
       activeModule,
       ribbonTab,
       setRibbonTab,
@@ -183,6 +203,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [
       tabs,
       identity.key,
+      pendingKey,
       activeModule,
       ribbonTab,
       openModule,

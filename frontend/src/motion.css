@@ -1,5 +1,5 @@
 /*
- * BluePOS Motion Library — opt-in motion only.
+ * BluePOS Motion Library — shared control feedback.
  * Never changes component size, padding, radius, border width, or geometry.
  * Shared Theme & Appearance tokens are authoritative.
  */
@@ -105,4 +105,190 @@ html[data-animations='off'] .bp-motion-download[data-busy='true']::after {
 html[data-animations='off'] :is(.product-def-cmd, .sales-reference-action-icon, .pie-btn, .parties-vca-action, .parties-vca-shell-btn) { transition: none; }
 @media (prefers-reduced-motion: reduce) {
   :is(.product-def-cmd, .sales-reference-action-icon, .pie-btn, .parties-vca-action, .parties-vca-shell-btn) { transition: none; }
+}
+
+/* Tenant scope includes portalled dialogs. Paint only; preserve all geometry. */
+html[data-button-scope='tenant'] button {
+  filter: brightness(.96);
+  transition: filter var(--ui-transition-fast), box-shadow var(--ui-transition-fast);
+}
+html[data-button-scope='tenant'] button:not(:disabled):not([aria-disabled='true']):is(:hover, :focus-visible) { filter: brightness(.9); }
+html[data-button-scope='tenant'] button:not(:disabled):not([aria-disabled='true']):active { filter: brightness(.84); }
+html[data-button-scope='tenant'] button:is(:disabled, [aria-disabled='true']) { filter: none; }
+html[data-button-scope='tenant'] button svg { transition: transform var(--ui-transition-fast); transform-origin: center; }
+html[data-button-scope='tenant'] button:not(:disabled):not([aria-disabled='true']):hover svg { transform: translateY(-1px); }
+html[data-button-scope='tenant'] button:not(:disabled):not([aria-disabled='true']):hover :is(.lucide-copy, .lucide-clipboard-copy) { transform: translate(1px, -1px) rotate(-8deg); }
+@keyframes bp-button-download {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
+}
+html[data-button-scope='tenant'] button:not(:disabled):not([aria-disabled='true']):hover .lucide-download,
+html[data-button-scope='tenant'] button[data-busy='true'] .lucide-download { animation: bp-button-download var(--bp-motion-slow) var(--bp-motion-ease) infinite; }
+html[data-button-scope='tenant'] .bp-motion-copy[data-copied='true'] { background: var(--ui-button-success-face); color: color-mix(in srgb, var(--ui-success) 82%, var(--ui-text)); }
+/* Indeterminate feedback must not imply a fabricated completion percentage. */
+html[data-button-scope='tenant'] .bp-motion-download[data-busy='true']::after { animation: bp-motion-pulse var(--bp-motion-slow) ease-in-out infinite; }
+html[data-button-scope='tenant'][data-animations='off'] button,
+html[data-button-scope='tenant'][data-animations='off'] button svg { transition: none !important; }
+html[data-button-scope='tenant'][data-animations='off'] button svg,
+html[data-button-scope='tenant'][data-animations='off'] .bp-motion-download::after { animation: none !important; transform: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  html[data-button-scope='tenant'] button,
+  html[data-button-scope='tenant'] button svg { transition: none !important; }
+  html[data-button-scope='tenant'] button svg,
+  html[data-button-scope='tenant'] .bp-motion-download::after { animation: none !important; transform: none !important; }
+}
+
+/* Premium reference: the colored face grows from the LEFT and stays filled
+   while hovered. A separate layer keeps labels above it and preserves geometry. */
+:where(html[data-button-scope='tenant'] button) { position: relative; }
+html[data-button-scope='tenant'] button {
+  --bp-button-tone: var(--ui-accent);
+  isolation: isolate;
+  overflow: hidden;
+}
+html[data-button-scope='tenant'] button:is(.is-success, .is-save, .is-post, [data-tone='save'], [data-tone='success'], [data-action='save'], [data-action='activate'], [data-action='post'], [data-action='approve']) { --bp-button-tone: var(--ui-success); }
+html[data-button-scope='tenant'] button:is(.is-danger, .is-delete, .is-danger-ghost, [data-tone='delete'], [data-tone='danger'], [data-action='delete'], [data-action='remove'], [data-action='void'], [data-action='deactivate'], [data-action='reject']) { --bp-button-tone: var(--ui-danger); }
+html[data-button-scope='tenant'] button:is(.is-info, .is-refresh, .is-close, [data-tone='refresh'], [data-tone='close'], [data-tone='info'], [data-action='refresh'], [data-action='close'], [data-action='preview'], [data-action='print'], [data-action='search']) { --bp-button-tone: var(--ui-info); }
+html[data-button-scope='tenant'] button:is(.is-warning, [data-tone='warning'], [data-action='hold'], [data-action='retry']) { --bp-button-tone: var(--ui-warning); }
+html[data-button-scope='tenant'] button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--bp-button-tone) 38%, var(--ui-surface));
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--bp-motion-slow) cubic-bezier(.4, 0, .2, 1);
+}
+html[data-button-scope='tenant'] button:not(:disabled):not([aria-disabled='true']):is(:hover, :focus-visible)::before {
+  transform: scaleX(1);
+}
+/* Replace the old passing shine; the premium face remains until hover ends. */
+html[data-button-scope='tenant'] .bp-motion-action:not(.bp-motion-download):not(.bp-motion-copy)::after { content: none; }
+html[data-button-scope='tenant'] .bp-motion-action:not(:disabled):is(:hover, :active) { transform: none; }
+html[data-button-scope='tenant'][data-animations='off'] button::before { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  html[data-button-scope='tenant'] button::before { transition: none; }
+}
+
+/* Copy / download references have a rich gradient face of their own, rather
+   than inheriting the CRUD wipe. Keep their existing dimensions and shadows. */
+html[data-button-scope='tenant'] button:is(.bp-motion-copy, .bp-motion-download) {
+  background: linear-gradient(115deg, color-mix(in srgb, var(--ui-accent) 74%, black), color-mix(in srgb, var(--ui-info) 68%, black)) !important;
+  color: var(--ui-button-on-fill, #fff) !important;
+  border-color: color-mix(in srgb, var(--ui-accent) 70%, var(--ui-border)) !important;
+  transition: filter var(--bp-motion-fast), box-shadow var(--bp-motion-normal), background var(--bp-motion-normal);
+}
+html[data-button-scope='tenant'] button:is(.bp-motion-copy, .bp-motion-download)::before { content: none; }
+html[data-button-scope='tenant'] button:is(.bp-motion-copy, .bp-motion-download)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  height: auto;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 25%, color-mix(in srgb, var(--ui-surface) 30%, transparent) 50%, transparent 75%);
+  transform: translateX(-110%);
+  opacity: 0;
+}
+html[data-button-scope='tenant'] button:is(.bp-motion-copy, .bp-motion-download):not(:disabled):hover::after {
+  opacity: 1;
+  animation: bp-motion-sweep var(--bp-motion-slow) var(--bp-motion-ease) both;
+}
+html[data-button-scope='tenant'] button:is(.bp-motion-copy, .bp-motion-download)[data-feedback='error'] {
+  background: var(--ui-danger) !important;
+  border-color: var(--ui-danger) !important;
+}
+html[data-button-scope='tenant'] button:is(.bp-motion-copy, .bp-motion-download):disabled:not([data-feedback='busy']) {
+  background: var(--ui-surface-muted) !important;
+  color: var(--ui-text-muted) !important;
+  border-color: var(--ui-border) !important;
+}
+.ui-button-feedback-label { position: relative; }
+.ui-button-feedback-message { position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-start; white-space: nowrap; }
+@keyframes bp-button-confirm { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
+html[data-button-scope='tenant'] button[data-feedback='done'] :is(.ui-button-icon, .ui-button-feedback-message) { animation: bp-button-confirm var(--bp-motion-normal) var(--bp-motion-ease) both; }
+html[data-button-scope='tenant'] button.bp-motion-download[data-feedback='busy']::after {
+  opacity: .75;
+  animation: bp-motion-sweep var(--bp-motion-slow) ease-in-out infinite;
+}
+html[data-button-scope='tenant'][data-animations='off'] button:is(.bp-motion-copy, .bp-motion-download)::after,
+html[data-button-scope='tenant'][data-animations='off'] button[data-feedback] :is(.ui-button-icon, .ui-button-feedback-message) { animation: none !important; opacity: 1; }
+html[data-button-scope='tenant'][data-animations='off'] button:is(.bp-motion-copy, .bp-motion-download)::after { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  html[data-button-scope='tenant'] button:is(.bp-motion-copy, .bp-motion-download)::after { display: none; }
+  html[data-button-scope='tenant'] button[data-feedback] :is(.ui-button-icon, .ui-button-feedback-message) { animation: none !important; }
+}
+
+/* Premium video parity: success retains the gradient, draws a circular check,
+   and uses a reset countdown. Download morphs INSIDE its unchanged hit area. */
+html[data-button-scope='tenant'] button:is(.bp-motion-copy, .bp-motion-download)[data-feedback='done'] {
+  background: linear-gradient(115deg, color-mix(in srgb, var(--ui-accent) 74%, black), color-mix(in srgb, var(--ui-info) 68%, black)) !important;
+  border-color: color-mix(in srgb, var(--ui-accent) 70%, var(--ui-border)) !important;
+}
+.ui-button-ring-track { opacity: .22; }
+.ui-button-ring-progress { transform: rotate(-90deg); transform-origin: center; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.ui-button-ring-check { stroke-dasharray: 1; stroke-dashoffset: 0; }
+@keyframes bp-button-ring-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes bp-button-ring-turn { to { transform: rotate(270deg); } }
+@keyframes bp-button-reset { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+html[data-button-scope='tenant'] button[data-feedback='busy'] .ui-button-ring-progress {
+  stroke-dasharray: .28 .72;
+  stroke-dashoffset: 0;
+  animation: bp-button-ring-turn var(--bp-motion-slow) linear infinite;
+}
+html[data-button-scope='tenant'] button[data-feedback='done'] .ui-button-ring-progress {
+  stroke-dashoffset: 0;
+  animation: bp-button-ring-draw var(--bp-motion-normal) var(--bp-motion-ease) both;
+}
+html[data-button-scope='tenant'] button[data-feedback='done'] .ui-button-ring-check {
+  animation: bp-button-ring-draw var(--bp-motion-normal) var(--bp-motion-ease) var(--bp-motion-fast) both;
+}
+html[data-button-scope='tenant'] button.bp-motion-copy[data-feedback='done']::after {
+  inset: auto 0 0;
+  height: 2px;
+  opacity: .8;
+  background: currentColor;
+  transform-origin: left;
+  animation: bp-button-reset 1800ms linear both;
+}
+html[data-button-scope='tenant'] button.bp-motion-download[data-feedback]:is([data-feedback='busy'], [data-feedback='done']) {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--ui-accent-strong) !important;
+  box-shadow: none;
+}
+html[data-button-scope='tenant'] button.bp-motion-download[data-feedback]:is([data-feedback='busy'], [data-feedback='done']) .ui-button-feedback-label {
+  /* Keep live feedback available to assistive technology while face morphs. */
+  opacity: 0;
+}
+/* Reserve the ORIGINAL icon in flow; only its painted ring moves. */
+html[data-button-scope='tenant'] button[data-feedback] .ui-button-icon { position: relative; display: inline-flex; }
+.ui-button-icon-slot { display: inline-flex; }
+.ui-button-feedback-ring { position: absolute; inset: 0; }
+html[data-button-scope='tenant'] button.bp-motion-download[data-feedback]:is([data-feedback='busy'], [data-feedback='done']) .ui-button-icon {
+  position: static;
+  animation: none;
+}
+html[data-button-scope='tenant'] button.bp-motion-download[data-feedback]:is([data-feedback='busy'], [data-feedback='done']) .ui-button-feedback-ring {
+  position: absolute;
+  inset: 1px auto 1px 50%;
+  width: auto;
+  height: calc(100% - 2px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ui-accent) 74%, black), color-mix(in srgb, var(--ui-info) 68%, black));
+  color: var(--ui-button-on-fill, #fff);
+  transform: translateX(-50%);
+  animation: bp-button-circle-in var(--bp-motion-normal) var(--bp-motion-ease) both;
+}
+@keyframes bp-button-circle-in { from { opacity: .4; transform: translateX(-50%) scale(.6); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+
+/* Reduced motion keeps the real state, full confirmation ring and check. */
+html[data-button-scope='tenant'][data-animations='off'] button[data-feedback] :is(.ui-button-ring-progress, .ui-button-ring-check, .ui-button-feedback-ring, .ui-button-icon) { animation: none !important; }
+html[data-button-scope='tenant'][data-animations='off'] button.bp-motion-download[data-feedback]:is([data-feedback='busy'], [data-feedback='done']) .ui-button-feedback-ring { transform: translateX(-50%) !important; }
+@media (prefers-reduced-motion: reduce) {
+  html[data-button-scope='tenant'] button[data-feedback] :is(.ui-button-ring-progress, .ui-button-ring-check, .ui-button-feedback-ring, .ui-button-icon) { animation: none !important; }
+  html[data-button-scope='tenant'] button.bp-motion-download[data-feedback]:is([data-feedback='busy'], [data-feedback='done']) .ui-button-feedback-ring { transform: translateX(-50%) !important; }
 }

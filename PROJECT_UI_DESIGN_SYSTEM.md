@@ -452,6 +452,7 @@ npm run build
 ```
 
 `ui:check` currently enforces:
+- no raw date inputs outside `UiDatePicker`,
 - no raw single/multi `<select>` elements in React TSX; use `UiSelect` / `UiMultiSelect`,
 - no known hard-coded Primary Theme colors inside canonical `components/ui` CSS,
 - no large numeric overlay z-index values inside canonical `components/ui` CSS.
@@ -473,3 +474,33 @@ Shared opt-in motion classes live in `frontend/src/motion.css`, imported once by
 - Copy control: `bp-motion-copy` with `data-copied` only after successful clipboard write and accessible status feedback.
 
 Motion must respect `[data-animations="off"]` and `prefers-reduced-motion: reduce`. Use appearance token colors, radius and shadow; animation does not create a second design system. Shared primitives are implemented, but **each workflow integration requires focused inspection and local verification**; these seven items are not all complete merely because classes exist.
+
+## Premium dates, notification stacks and skeletons
+
+- `UiDatePicker` owns single-date and From/To calendars. Keep the native input's
+  geometry, props, ISO value, form serialization, constraints and change handlers.
+  Use `UiDateRangePicker` for From/To filters: one visible trigger and two native
+  form values preserving the original change handlers. Independent dates stay
+  single. The user-approved calendar has raised 3D faces using theme colors.
+  Calendars render in a portal using the shared overlay layer contract.
+- `UiNotificationStack` layers actual notifications with a count and navigation
+  dots. Back cards are inert. Navigation never marks security alerts read;
+  acknowledging a device alert continues through its existing server action.
+  The notification bar shows unread alerts only. Its close cross acknowledges
+  through the existing read endpoint; failed acknowledgements leave alerts visible.
+- `UiSkeleton` owns the premium avatar, lines and banner shimmer. Its color comes
+  from `--ui-accent`, so Theme & Appearance changes update it immediately.
+  Use its compact variant for incremental loading; use the card for initial data.
+  Render it only while the corresponding request is pending, preserving errors
+  and empty states. Both animation preferences remain authoritative.
+  Save/post and other blocking mutations retain the original spinner overlay.
+  Data skeletons belong only inside the card/table/content region awaiting data.
+  Keep module headers, filters and controls visible; do not replace the entire
+  workspace with a module-mount skeleton. Persistent document instances retain drafts.
+  Register a requested workspace tab immediately, independently of route/data
+  rendering. `PosDataGrid` paints its header and local loading region before
+  mounting cached rows. Product lists use its existing virtualization so a large
+  cache cannot block the first module paint; fetched rows reveal with shared motion.
+  Run `npm run ui:navigation-check` to verify tab navigation with a deliberately
+  unresolved data request and a 10,000-row cache (requires Edge/Chrome/Chromium;
+  `BLUEPOS_TEST_BROWSER` can specify its executable).

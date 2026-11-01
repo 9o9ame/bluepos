@@ -1,3 +1,4 @@
+import { UiSkeleton } from '../../components/ui/UiSkeleton'
 import { FormEvent, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useParams, useSearchParams } from 'react-router-dom'
@@ -89,7 +90,7 @@ export function PlatformTenantDetailPage() {
   }
 
   if (!tenant) {
-    return <p className="text-[12px]">Loading tenant…</p>
+    return <UiSkeleton label="Loading tenant…"/>
   }
 
   return (
@@ -384,7 +385,7 @@ export function PlatformTenantDetailPage() {
                 onClick={() => { setDevicesView(key); setHoverDevicesView(null) }}>{label}</button>
             ))}
           </div>
-          {devicesQuery.isLoading ? <p>Loading devices…</p> : null}
+          {devicesQuery.isLoading ? <UiSkeleton label="Loading devices…"/> : null}
           {devicesQuery.isError ? <p role="alert">Could not load devices.</p> : null}
           {displayDevicesView === 'devices' ? <div role="tabpanel" className="platform-tenant-monitor-grid">
             <table className="w-full border-collapse text-left">
@@ -459,7 +460,7 @@ export function PlatformTenantDetailPage() {
           <div className="mb-2 flex justify-between"><strong>Recent login activity (up to 100 sessions and 100 events)</strong>
             <button type="button" className="rounded border px-3 py-1" onClick={() => void activityQuery.refetch()}>Refresh</button></div>
           <p className="mb-2 text-slate-600">IP addresses and browser user agents are recorded by the server. IP is not an exact physical location.</p>
-          {activityQuery.isLoading ? <p>Loading activity…</p> : null}
+          {activityQuery.isLoading ? <UiSkeleton label="Loading activity…"/> : null}
           {activityQuery.isError ? <p role="alert">Unable to load activity or insufficient audit permission.</p> : null}
           <div role="tablist" aria-label="Login activity lists" className="platform-tenant-monitor-tabs" onMouseLeave={() => setHoverActivityView(null)}>
             {([['sessions', 'Sessions'], ['events', 'Security events']] as const).map(([key, label]) => (

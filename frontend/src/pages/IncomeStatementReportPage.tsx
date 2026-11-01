@@ -1,3 +1,5 @@
+import { UiSkeleton } from '../components/ui/UiSkeleton'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -61,11 +63,11 @@ export function IncomeStatementReportPage() {
       onFind={()=>Array.from(paperRef.current?.querySelectorAll('td,th')||[])
         .find(element=>element.textContent?.toLowerCase().includes(search.toLowerCase()))?.scrollIntoView({block:'center'})}
       onPrint={()=>window.print()}
-      onCopy={()=>{if(paperRef.current)void navigator.clipboard.writeText(paperRef.current.innerText)}}
+      onCopy={()=>{return paperRef.current ? navigator.clipboard.writeText(paperRef.current.innerText) : false}}
       onExport={exportReport} onRefresh={()=>void report.refetch()}
       onEditOptions={()=>openModule('/reports/accounts/income-statement')} onClose={closeActiveTab}/>
     {!selection&&<p role="status">Selection unavailable. Open Income Statement options and preview again.</p>}
-    {report.isLoading&&<p>Loading Income Statement…</p>}
+    {report.isLoading&&<UiSkeleton label="Loading Income Statement…"/>}
     {report.isError&&<p role="alert">Unable to load Income Statement.</p>}
     {report.data&&<article ref={paperRef} className="is-paper" style={{zoom:zoom+'%'}}>
       <header><h1>INCOME STATEMENT</h1><p>As on and Before {report.data.as_of_date}</p></header>
@@ -88,7 +90,7 @@ export function IncomeStatementReportPage() {
       <h2>Income Statement</h2>
       <div className="is-date-card">
         <strong>Date Selection</strong>
-        <label>Date <input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
+        <label>Date <UiDatePicker type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
         <p>Posted ledger basis. FIFO stock revaluation is not yet available.</p>
       </div>
     </div>

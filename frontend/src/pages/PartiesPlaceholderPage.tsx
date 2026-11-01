@@ -1,3 +1,6 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import {
   BookOpen,
@@ -1895,7 +1898,7 @@ export function PartiesPlaceholderPage({
                       <label htmlFor="vca-license">License</label>
                       <input id="vca-license" value={form.license} onChange={(e) => patchForm('license', e.target.value)} />
                       <label htmlFor="vca-issue">Issue</label>
-                      <input id="vca-issue" type="date" value={form.licenseIssue} onChange={(e) => patchForm('licenseIssue', e.target.value)} />
+                      <UiDatePicker id="vca-issue" type="date" value={form.licenseIssue} onChange={(e) => patchForm('licenseIssue', e.target.value)} />
                     </div>
                     <div className="parties-vca-field-row parties-vca-others-license">
                       <label htmlFor="vca-lic-type">Lic Type</label>
@@ -1905,7 +1908,7 @@ export function PartiesPlaceholderPage({
                         <option value="C">C</option>
                       </AnimatedSelect>
                       <label htmlFor="vca-exp">Exp</label>
-                      <input id="vca-exp" type="date" value={form.licenseExp} onChange={(e) => patchForm('licenseExp', e.target.value)} />
+                      <UiDatePicker id="vca-exp" type="date" value={form.licenseExp} onChange={(e) => patchForm('licenseExp', e.target.value)} />
                     </div>
                     <div className="parties-vca-check-row">
                       <ToggleSwitch
@@ -2481,7 +2484,7 @@ export function PartiesPlaceholderPage({
                   {ledgerVisibleColumns.map((key) => (
                     <th key={`filter:${key}`}>
                       {key === 'date' ? (
-                        <input
+                        <UiDatePicker
                           type="date"
                           value={ledgerDateFrom === ledgerDateTo ? ledgerDateFrom : ''}
                           aria-label="Filter ledger by date"
@@ -2510,8 +2513,7 @@ export function PartiesPlaceholderPage({
                 ) : ledgerLoading ? (
                   <tr>
                     <td colSpan={ledgerVisibleColumns.length} className="parties-vca-empty">
-                      Loading ledger…
-                    </td>
+                      <UiSkeleton compact label="Loading ledger…"/></td>
                   </tr>
                 ) : !ledger || ledger.rows.length === 0 ? (
                   <tr>
@@ -2628,28 +2630,14 @@ export function PartiesPlaceholderPage({
                   <button type="button" onClick={() => setLedgerFilterOpen(false)}>×</button>
                 </div>
                 <div className="parties-vca-ledger-filter-body">
-                  <label>
-                    <span>From date</span>
-                    <input
-                      type="date"
-                      value={ledgerDateFrom}
-                      onChange={(event) => {
+                  <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:ledgerDateFrom,onChange:(event) => {
                         setLedgerPage(1)
                         setLedgerDateFrom(event.target.value)
-                      }}
-                    />
-                  </label>
-                  <label>
-                    <span>To date</span>
-                    <input
-                      type="date"
-                      value={ledgerDateTo}
-                      onChange={(event) => {
+                      }}} toInputProps={{type:"date",value:ledgerDateTo,onChange:(event) => {
                         setLedgerPage(1)
                         setLedgerDateTo(event.target.value)
-                      }}
-                    />
-                  </label>
+                      }}}/></label>
+
                   <label>
                     <span>Find text</span>
                     <input
@@ -2850,7 +2838,7 @@ export function PartiesPlaceholderPage({
 
                 <div className="parties-coa-modern-tree__body">
                   {coaChartLoading ? (
-                    <div className="parties-vca-empty">Loading chart…</div>
+                    <UiSkeleton label="Loading chart…"/>
                   ) : coaGroupedRows.length === 0 ? (
                     <div className="parties-vca-empty">
                       No leaf accounts yet — save vendors, customers, or manual accounts
@@ -3008,7 +2996,7 @@ export function PartiesPlaceholderPage({
                 <tbody>
                   {coaChartLoading ? (
                     <tr>
-                      <td className="parties-vca-empty">Loading chart…</td>
+                      <td className="parties-vca-empty"><UiSkeleton compact label="Loading chart…"/></td>
                     </tr>
                   ) : coaGroupedRows.length === 0 ? (
                     <tr>

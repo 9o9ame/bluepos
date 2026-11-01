@@ -1,3 +1,4 @@
+import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useMemo, useState } from 'react'
 import { ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight, RefreshCw, Save, Trash2, X } from 'lucide-react'
 import { useParams } from 'react-router-dom'
@@ -68,7 +69,7 @@ export function RoleEditorPage() {
     return (
       <div className="classic-workspace is-groups">
         <div className="module-banner">Manage Groups</div>
-        <p className="p-3 text-[12px]">Loading role…</p>
+        <UiSkeleton label="Loading role…"/>
       </div>
     )
   }

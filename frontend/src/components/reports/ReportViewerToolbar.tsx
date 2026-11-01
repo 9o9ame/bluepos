@@ -12,9 +12,9 @@ type Props = {
   zoom: number
   onZoomChange: (value: number) => void
   onPrint: () => void
-  onCopy: () => void
+  onCopy: () => void | boolean | Promise<void | boolean>
   copyLabel?: string
-  onExport: (format: 'txt' | 'html' | 'csv') => void
+  onExport: (format: 'txt' | 'html' | 'csv') => void | boolean | Promise<void | boolean>
   onRefresh: () => void
   onEditOptions: () => void
   onClose: () => void
@@ -23,14 +23,14 @@ type Props = {
 /** Shared toolbar presentation; report data/actions remain owned by each report. */
 export function ReportViewerToolbar({
   ready, busy = false, search, onSearchChange, onFind, zoom, onZoomChange,
-  onPrint, onCopy, copyLabel = 'Copy', onExport, onRefresh, onEditOptions, onClose,
+  onPrint, onCopy, onExport, onRefresh, onEditOptions, onClose,
 }: Props) {
   return <div className="report-viewer-toolbar">
     <UiButton variant="info" icon={<Printer size={15}/>} label="Print / PDF" disabled={!ready} onClick={onPrint}/>
-    <UiButton variant="default" icon={<ClipboardCopy size={15}/>} label={copyLabel} className="bp-motion-copy" data-copied={/copied/i.test(copyLabel)} disabled={!ready} onClick={onCopy}/>
+    <UiButton variant="default" icon={<ClipboardCopy size={15}/>} label="Copy" feedback="copy" disabled={!ready} onAction={onCopy}/>
     <UiButton variant="default" icon={<FileText size={15}/>} label="Text" disabled={!ready} onClick={() => onExport('txt')}/>
     <UiButton variant="default" icon={<FileCode size={15}/>} label="HTML" disabled={!ready} onClick={() => onExport('html')}/>
-    <UiButton variant="info" icon={<Download size={15}/>} label={busy ? "Exporting…" : "Export CSV"} className="bp-motion-download" data-busy={busy ? "true" : "false"} aria-busy={busy} disabled={!ready || busy} onClick={() => onExport('csv')}/>
+    <UiButton variant="info" icon={<Download size={15}/>} label="Export CSV" feedback="download" disabled={!ready || busy} onAction={() => onExport('csv')}/>
     <UiSelect className="report-viewer-export-choice" aria-label="Export report format"
       value="" searchable={false} options={[
         { value: '', label: 'Export as…' },

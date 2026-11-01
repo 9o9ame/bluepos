@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../../components/ui/UiSkeleton'
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { RotateCcw, Search } from 'lucide-react'
@@ -116,23 +118,9 @@ export function SalesProductWiseSummary() {
             />
           </div>
 
-          <label>
-            <span>From</span>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(event) => setDateFrom(event.target.value)}
-            />
-          </label>
+          <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:dateFrom,onChange:(event) => setDateFrom(event.target.value)}} toInputProps={{type:"date",value:dateTo,onChange:(event) => setDateTo(event.target.value)}}/></label>
 
-          <label>
-            <span>To</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(event) => setDateTo(event.target.value)}
-            />
-          </label>
+
 
           <button type="button" className="sales-due-reset" onClick={resetFilters}>
             <RotateCcw size={13} />
@@ -203,7 +191,7 @@ export function SalesProductWiseSummary() {
 
         <div className="sales-infinite-status" role="status">
           {query.isFetchingNextPage
-            ? 'Loading more product activity…'
+            ? <UiSkeleton compact label="Loading more product activity…"/>
             : query.hasNextPage
               ? `Scroll for more · ${rows.length} of ${meta?.total ?? rows.length}`
               : rows.length > 0

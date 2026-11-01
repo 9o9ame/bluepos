@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "ui:check": "node scripts/ui-design-check.mjs",
+    "ui:navigation-check": "node scripts/workspace-navigation-check.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",

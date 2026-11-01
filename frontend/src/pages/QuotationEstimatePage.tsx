@@ -1,3 +1,4 @@
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { FileSearch, Plus, Printer, ReceiptText, RefreshCw, Save, X, XCircle } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -732,7 +733,7 @@ export function QuotationEstimatePage({ active = true }: { active?: boolean } = 
             </label>
             <label className="is-date">
               <span>Date</span>
-              <input
+              <UiDatePicker
                 className="desktop-input"
                 type="date"
                 value={quotationDate}

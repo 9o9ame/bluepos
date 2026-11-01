@@ -432,6 +432,7 @@ export function ProductTabularViewPage() {
       })
     } catch (error) {
       feedback.fromApiError(error, 'Unable to export the filtered product list.')
+      return false
     }
   }
 
@@ -574,7 +575,8 @@ export function ProductTabularViewPage() {
               variant="info"
               icon={<Download size={16} />}
               label="Export"
-              onClick={() => void exportFilteredProducts()}
+              feedback="download"
+              onAction={exportFilteredProducts}
             />
             <UiButton
               variant="info"
@@ -593,6 +595,7 @@ export function ProductTabularViewPage() {
 
       <div className="product-tabular-grid">
         <PosDataGrid
+          virtualize
           columns={columns}
           rows={rows}
           rowKey={(product) => product.ulid}

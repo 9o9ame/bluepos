@@ -1,0 +1,13 @@
+.ui-notification-stack { position: relative; padding-top: 30px; width: 100%; pointer-events: auto; }
+.ui-notification-stack-cards { display: grid; }
+.ui-notification-stack-layer { grid-area: 1 / 1; min-width: 0; align-self: end; transform: translateY(calc(var(--notice-layer) * -9px)) scale(calc(1 - var(--notice-layer) * .05)); transform-origin: center top; opacity: calc(1 - var(--notice-layer) * .25); pointer-events: none; transition: transform var(--ui-transition-normal), opacity var(--ui-transition-normal); }
+.ui-notification-stack-layer.is-front { position: relative; opacity: 1; pointer-events: auto; animation: ui-notice-front var(--bp-motion-normal) var(--bp-motion-ease) both; }
+.ui-notification-stack-count { position: absolute; right: 5px; top: 0; padding: 3px 8px; border-radius: var(--control-radius); background: var(--ui-accent); color: var(--ui-select-selected-text); box-shadow: var(--ui-control-shadow); font-size: var(--ui-font-xs, 11px); font-weight: 700; }
+.ui-notification-stack-dots { display: flex; justify-content: center; align-items: center; gap: 5px; padding: 10px 0 3px; }
+html .ui-notification-stack-dots button { min-width: 0; min-height: 0; width: 5px; height: 5px; padding: 0; border: 0; border-radius: var(--control-radius); background: color-mix(in srgb, var(--ui-accent) 25%, var(--ui-surface)); box-shadow: none; cursor: pointer; transition: width var(--ui-transition-normal), background-color var(--ui-transition-normal); }
+html .ui-notification-stack-dots button[aria-pressed='true'] { width: 15px; background: var(--ui-accent); }
+html .ui-notification-stack-dots button::before, html .ui-notification-stack-dots button::after { content: none; }
+.ui-notification-stack-layer .bp-notification-item { width: 100%; box-sizing: border-box; margin: 0; }
+@keyframes ui-notice-front { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+html[data-animations='off'] .ui-notification-stack * { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) { .ui-notification-stack * { animation: none !important; transition: none !important; } }

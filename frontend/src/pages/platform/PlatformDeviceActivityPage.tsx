@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../../components/ui/UiSkeleton'
 import { summarizeUserAgent } from '../../utils/userAgentSummary'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -41,12 +43,8 @@ export function PlatformDeviceActivityPage() {
         <label className="flex flex-col gap-1">IP address
           <input className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={ipAddress} onChange={e => { setIpAddress(e.target.value); updateFilters() }} placeholder="Any IP" />
         </label>
-        <label className="flex flex-col gap-1">From date
-          <input type="date" className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={since} onChange={e => { setSince(e.target.value); updateFilters() }} />
-        </label>
-        <label className="flex flex-col gap-1">To date
-          <input type="date" min={since || undefined} className="h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2" value={until} onChange={e => { setUntil(e.target.value); updateFilters() }} />
-        </label>
+        <label className="flex flex-col gap-1"><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",className:"h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2",value:since,onChange:e => { setSince(e.target.value); updateFilters() }}} toInputProps={{type:"date",min:since || undefined,className:"h-8 rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] px-2",value:until,onChange:e => { setUntil(e.target.value); updateFilters() }}}/></label>
+
         <div className="min-w-[190px]"><span>Event type</span>
           <UiSelect value={event} onChange={value => { setEvent(value); updateFilters() }} options={[
             {value:'',label:'All security events'}, {value:'LOGIN_SUCCESS',label:'Login success'},
@@ -86,7 +84,7 @@ export function PlatformDeviceActivityPage() {
         <UiButton variant="info" disabled={!query.data || eventPage >= query.data.pagination.events.last_page} onClick={() => setEventPage(page => page + 1)}>Next events</UiButton>
       </div>
       <h2 className="text-[13px] font-semibold">Recorded sessions</h2>
-      {query.isLoading ? <p className="text-[12px]">Loading activity…</p> : null}
+      {query.isLoading ? <UiSkeleton label="Loading activity…"/> : null}
       {query.isError ? <p role="alert" className="text-[12px] text-[var(--ui-danger)]">Unable to load activity.</p> : null}
       {!query.isLoading && !query.isError ? (
         <PosDataGrid

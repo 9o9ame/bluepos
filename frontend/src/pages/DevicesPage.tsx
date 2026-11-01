@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { summarizeUserAgent } from '../utils/userAgentSummary'
 import './devices-page.css'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -31,7 +33,7 @@ export function DevicesPage() {
     queryKey: ['tenant-location-history', locationPage],
     queryFn: () => fetchTenantLocationHistory(locationPage),
     enabled: canReviewRequests && activeView === 'locations',
-    
+
   })
   const [historyPage, setHistoryPage] = useState(1)
   const [historyDraft, setHistoryDraft] = useState<TenantLoginHistoryFilters>({ event: 'all' })
@@ -40,14 +42,14 @@ export function DevicesPage() {
     queryKey: ['tenant-login-history', historyPage, historyFilters],
     queryFn: () => fetchTenantLoginHistory(historyPage, historyFilters),
     enabled: canReviewRequests && activeView === 'history',
-    
+
   })
   const [inboxPage, setInboxPage] = useState(1)
   const inboxQuery = useQuery({
     queryKey: ['device-access-inbox', session?.tenant.ulid, session?.user.ulid, inboxPage],
     queryFn: () => fetchDeviceAccessNotifications(inboxPage),
     enabled: canReviewRequests && activeView === 'requests',
-    
+
   })
   const [markingRead, setMarkingRead] = useState<string | null>(null)
   const devicesQuery = useQuery({ queryKey: ['devices'], queryFn: fetchDevices, enabled: activeView === 'devices' })
@@ -55,7 +57,7 @@ export function DevicesPage() {
     queryKey: ['device-access-requests', 'all'],
     queryFn: () => fetchDeviceAccessRequests('all'),
     enabled: canReviewRequests && activeView === 'devices',
-    
+
   })
   const requestsQuery = useQuery({ queryKey: ['device-access-requests', requestStatus], queryFn: () => fetchDeviceAccessRequests(requestStatus), enabled: canReviewRequests && activeView === 'requests',  })
   const sessionsQuery = useQuery({ queryKey: ['security-sessions'], queryFn: fetchSecuritySessions, enabled: canViewSessions && activeView === 'activity',  })
@@ -185,7 +187,7 @@ export function DevicesPage() {
       {activeView === 'requests' && canReviewRequests ? (
         <section className="p-2">
           <h3 className="mb-2 text-[12px] font-semibold">Device &amp; network alerts ({inboxQuery.data?.unread_count ?? 0} unread)</h3>
-          {inboxQuery.isLoading ? <p className="text-[12px]">Loading alerts…</p> : null}
+          {inboxQuery.isLoading ? <UiSkeleton label="Loading alerts…"/> : null}
           {inboxQuery.isError ? <p role="alert" className="text-[12px] text-[var(--ui-danger)]">Unable to load alerts.</p> : null}
           {inboxQuery.data?.notifications.length === 0 ? <p className="text-[12px] text-[var(--ui-text-muted)]">No alerts recorded.</p> : null}
           <div className="flex flex-col gap-1">
@@ -213,14 +215,12 @@ export function DevicesPage() {
         <section className="p-2">
           <h3 className="mb-2 text-[12px] font-semibold">Employee device / network approval requests (pending: {requestsQuery.data?.pending_count ?? 0})</h3>
           <label className="mb-2 flex items-center gap-2 text-[12px]">Show
-            <select className="rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-1" value={requestStatus} onChange={(event) => setRequestStatus(event.target.value as typeof requestStatus)}>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="all">All</option>
-            </select>
+            <UiSelect value={requestStatus} onChange={(value) => setRequestStatus(value as typeof requestStatus)} options={[
+              {value:'pending',label:'Pending'}, {value:'approved',label:'Approved'},
+              {value:'rejected',label:'Rejected'}, {value:'all',label:'All'},
+            ]}/>
           </label>
-          {requestsQuery.isLoading ? <p className="text-[12px]">Loading requests…</p> : null}
+          {requestsQuery.isLoading ? <UiSkeleton label="Loading requests…"/> : null}
           {requestsQuery.isError ? <p className="text-[12px] text-[var(--ui-danger)]">Unable to load access requests.</p> : null}
           {(requestsQuery.data?.requests ?? []).length === 0 && !requestsQuery.isLoading && !requestsQuery.isError ? <p className="text-[12px] text-[var(--ui-text-muted)]">No matching access requests.</p> : null}
           <div className="flex flex-col gap-1">
@@ -277,12 +277,8 @@ export function DevicesPage() {
                 searchable={false}
               />
             </label>
-            <label className="flex flex-col gap-1">From
-              <input aria-label="History date from" type="date" className="rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-1 text-[var(--ui-text)]" value={historyDraft.date_from ?? ''} onChange={e => setHistoryDraft(v => ({ ...v, date_from: e.target.value }))} />
-            </label>
-            <label className="flex flex-col gap-1">To
-              <input aria-label="History date to" type="date" min={historyDraft.date_from || undefined} className="rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-1 text-[var(--ui-text)]" value={historyDraft.date_to ?? ''} onChange={e => setHistoryDraft(v => ({ ...v, date_to: e.target.value }))} />
-            </label>
+            <label className="flex flex-col gap-1"><span>Date range</span><UiDateRangePicker fromInputProps={{"aria-label":"History date from",type:"date",className:"rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-1 text-[var(--ui-text)]",value:historyDraft.date_from ?? '',onChange:e => setHistoryDraft(v => ({ ...v, date_from: e.target.value }))}} toInputProps={{"aria-label":"History date to",type:"date",min:historyDraft.date_from || undefined,className:"rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-1 text-[var(--ui-text)]",value:historyDraft.date_to ?? '',onChange:e => setHistoryDraft(v => ({ ...v, date_to: e.target.value }))}}/></label>
+
             <label className="flex flex-col gap-1">IP address
               <input aria-label="History IP address" className="rounded border border-[var(--ui-border)] bg-[var(--ui-surface)] p-1 text-[var(--ui-text)]" value={historyDraft.ip_address ?? ''} onChange={e => setHistoryDraft(v => ({ ...v, ip_address: e.target.value }))} placeholder="Exact IP" maxLength={45} />
             </label>
@@ -293,7 +289,7 @@ export function DevicesPage() {
               setHistoryPage(1)
             }} />
           </form>
-          {historyQuery.isLoading ? <p className="text-[12px]">Loading login history…</p> : null}
+          {historyQuery.isLoading ? <UiSkeleton label="Loading login history…"/> : null}
           {historyQuery.isError ? <p role="alert" className="text-[12px] text-[var(--ui-danger)]">Unable to load login history.</p> : null}
           {!historyQuery.isLoading && !historyQuery.isError ? (
             <div className="devices-grid-card devices-grid-card--history">
@@ -348,7 +344,7 @@ export function DevicesPage() {
       {activeView === 'activity' && canViewSessions ? (
         <section className="p-2">
           <h3 className="mb-2 text-[12px] font-semibold">Recent device / IP activity</h3>
-          {sessionsQuery.isLoading ? <p className="text-[12px] text-[var(--ui-text-muted)]">Loading activity…</p> : null}
+          {sessionsQuery.isLoading ? <UiSkeleton label="Loading activity…"/> : null}
           {sessionsQuery.isError ? <p className="text-[12px] text-[var(--ui-danger)]">Unable to load session activity.</p> : null}
           {!sessionsQuery.isLoading && !sessionsQuery.isError ? (
             <div className="devices-grid-card devices-grid-card--activity">

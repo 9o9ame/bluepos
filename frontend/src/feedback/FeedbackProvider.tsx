@@ -5,12 +5,14 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type CSSProperties,
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
 import { CheckCircle2, Info, Loader2, X, XCircle } from 'lucide-react'
+import { UiNotificationStack } from '../components/ui/UiNotificationStack'
 import { ApiClientError } from '../api/client'
 import { apiBusy } from './apiBusy'
 import './feedback.css'
@@ -65,6 +67,9 @@ function ToastCard({
   onDismiss: () => void
 }) {
   const [anchorStyle, setAnchorStyle] = useState<CSSProperties | undefined>()
+  const [leaving, setLeaving] = useState(false)
+  const dismissTimer = useRef<ReturnType<typeof setTimeout>>()
+  useEffect(() => () => clearTimeout(dismissTimer.current), [])
 
   useLayoutEffect(() => {
     if (!toast.anchor) {
@@ -104,7 +109,7 @@ function ToastCard({
 
   return (
     <div
-      className={`bp-toast bp-toast-${toast.tone}${toast.anchor ? ' is-anchored' : ''}`}
+      className={`bp-toast bp-toast-${toast.tone}${toast.anchor ? ' is-anchored' : ''}${leaving ? ' is-leaving' : ''}`}
       style={anchorStyle}
     >
       <span className="bp-toast-icon" aria-hidden="true">
@@ -124,7 +129,12 @@ function ToastCard({
         type="button"
         className="bp-toast-close"
         aria-label="Dismiss"
-        onClick={onDismiss}
+        disabled={leaving}
+        onClick={() => {
+          setLeaving(true)
+          const reduce = document.documentElement.dataset.animations === 'off' || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          dismissTimer.current = setTimeout(onDismiss, reduce ? 0 : 240)
+        }}
       >
         <X size={toast.tone === 'error' ? 16 : 14} />
       </button>
@@ -251,7 +261,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
                     className={`bp-toast-stack${stack === 'error' ? ' is-error-stack' : ''}`}
                     aria-live={stack === 'error' ? 'assertive' : 'polite'}
                   >
-                    {stackToasts.map((toast) => (
+                    <UiNotificationStack cards={stackToasts.slice().reverse().map((toast) => ({ key: String(toast.id), content: (
                       <ToastCard
                         key={toast.id}
                         toast={toast}
@@ -259,7 +269,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
                           setToasts((current) => current.filter((row) => row.id !== toast.id))
                         }
                       />
-                    ))}
+                    ) }))}/>
                   </div>
                 )
               })}

@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
@@ -189,12 +191,13 @@ export function CashBookReportPage() {
     URL.revokeObjectURL(url)
   }
   const copyReport = async () => {
-    if (!paperRef.current) return
+    if (!paperRef.current) return false
     try {
       await navigator.clipboard.writeText(paperRef.current.innerText || paperRef.current.textContent || '')
       setCopyLabel('Copied')
     } catch {
       setCopyLabel('Copy failed')
+      return false
     }
   }
   const findReport = () => {
@@ -257,7 +260,7 @@ export function CashBookReportPage() {
           zoom={zoom}
           onZoomChange={setZoom}
           onPrint={() => window.print()}
-          onCopy={() => void copyReport()}
+          onCopy={copyReport}
           copyLabel={copyLabel}
           onExport={exportFile}
           onRefresh={() => void reportQuery.refetch()}
@@ -268,8 +271,8 @@ export function CashBookReportPage() {
           <h1>Cash Flow Statement</h1>
           {flowPreview ? <span>From: {asLabel(from)}　To: {asLabel(to)}</span> : (
             <div className="cashbook-flow-filters">
-              <label>From: <input aria-label="Cash flow from date" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
-              <label>To: <input aria-label="Cash flow to date" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
+              <label><span>Date range</span><UiDateRangePicker fromInputProps={{"aria-label":"Cash flow from date",type:"date",value:from,onChange:(e) => setFrom(e.target.value)}} toInputProps={{"aria-label":"Cash flow to date",type:"date",value:to,onChange:(e) => setTo(e.target.value)}}/></label>
+
               <UiButton variant="info" icon={<RefreshCw size={15}/>} label="Refresh"
                 disabled={reportQuery.isFetching || !from || !to || from > to}
                 onClick={() => void reportQuery.refetch()} />
@@ -278,7 +281,7 @@ export function CashBookReportPage() {
         </div> : null}
         {cashFlow && from > to ? <p role="alert">From Date must not exceed To Date.</p> : null}
         {!stored ? <p role="status">Report filters are not available in this browser session. Use Edit Options to select them and open the report again.</p> : null}
-        {stored && reportQuery.isLoading ? <p>Loading Cash Book…</p> : null}
+        {stored && reportQuery.isLoading ? <UiSkeleton label="Loading Cash Book…"/> : null}
         {reportQuery.isError ? <p role="alert">Unable to load Cash Book. Please check the selected accounts and dates.</p> : null}
         {report ? <article className="cashbook-paper" ref={paperRef} style={{ zoom: `${flowPreview || preview ? zoom : 100}%` }}>
           <header className={cashFlow ? "cashbook-flow-print-heading" : undefined}><h2>{cashFlow ? 'Cash Flow Statement' : 'CASH BOOK'}</h2>
@@ -354,8 +357,8 @@ export function CashBookReportPage() {
         <div className="cashbook-selection-form">
           <h2>Selection Options</h2>
           <div className="cashbook-date-grid">
-            <label>From Date<input type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
-            <label>To Date<input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></label>
+            <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:from,onChange:(e) => setFrom(e.target.value)}} toInputProps={{type:"date",value:to,onChange:(e) => setTo(e.target.value)}}/></label>
+
           </div>
           <div className="cashbook-checkbox-grid">
           <label className="cashbook-check" title="Show posted purchase documents without cash/bank movements separately">

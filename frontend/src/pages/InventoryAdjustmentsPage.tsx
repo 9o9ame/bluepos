@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -956,7 +958,7 @@ export function InventoryAdjustmentsPage() {
               </label>
               <label>
                 <span>Date:</span>
-                <input
+                <UiDatePicker
                   type="date"
                   value={adjustmentDate}
                   disabled={!canAdjust}
@@ -1425,14 +1427,8 @@ export function InventoryAdjustmentsPage() {
                 onChange={(event) => setSearchQuery(event.target.value)}
               />
             </label>
-            <label>
-              <span>From:</span>
-              <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-            </label>
-            <label>
-              <span>To:</span>
-              <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
-            </label>
+            <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:fromDate,onChange:(event) => setFromDate(event.target.value)}} toInputProps={{type:"date",value:toDate,onChange:(event) => setToDate(event.target.value)}}/></label>
+
             <UiSelect
               className="inventory-adjustments-status-filter"
               value={statusFilter}
@@ -1457,7 +1453,7 @@ export function InventoryAdjustmentsPage() {
             </UiButton>
           </div>
           <div className="inventory-adjustments-report-grid">
-            <PosDataGrid
+            <PosDataGrid loading={listQuery.isLoading}
               columns={searchColumns}
               rows={listQuery.data ?? []}
               rowKey={(row) => row.ulid}
@@ -1487,14 +1483,8 @@ export function InventoryAdjustmentsPage() {
           </header>
 
           <div className="inventory-adjustments-report-toolbar">
-            <label>
-              <span>From Date:</span>
-              <input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-            </label>
-            <label>
-              <span>To Date:</span>
-              <input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
-            </label>
+            <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:fromDate,onChange:(event) => setFromDate(event.target.value)}} toInputProps={{type:"date",value:toDate,onChange:(event) => setToDate(event.target.value)}}/></label>
+
             <label className="inventory-adjustments-product-wise-search">
               <span>Product:</span>
               <input
@@ -1511,7 +1501,7 @@ export function InventoryAdjustmentsPage() {
             </UiButton>
           </div>
           <div className="inventory-adjustments-report-grid">
-            <PosDataGrid
+            <PosDataGrid loading={listQuery.isLoading}
               columns={productWiseColumns}
               rows={productWiseRows}
               rowKey={(row) => row.key}

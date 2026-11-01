@@ -144,7 +144,7 @@ export function BranchesPage() {
         </div>
 
         <div className="admin-branch-grid">
-          <PosDataGrid
+          <PosDataGrid loading={query.isLoading}
             columns={[
               { key: 'code', header: 'Code', width: 120, render: (row) => row.code },
               { key: 'name', header: 'Name', render: (row) => row.name },
@@ -383,7 +383,7 @@ export function WarehousesPage() {
         </div>
 
         <div className="admin-branch-grid">
-          <PosDataGrid
+          <PosDataGrid loading={query.isLoading}
             columns={[
               { key: 'code', header: 'Code', width: 120, render: (row) => row.code },
               { key: 'name', header: 'Name', render: (row) => row.name },
@@ -619,7 +619,7 @@ export function SecurityStatusPage() {
       </div>
 
       <div className="admin-security-grid">
-        <PosDataGrid
+        <PosDataGrid loading={sessionsQuery.isLoading}
           columns={[
             {
               key: 'user',

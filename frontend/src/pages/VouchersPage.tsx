@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { CheckCircle2, Plus, Printer, RefreshCw, Save, Search, Trash2, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -554,7 +556,7 @@ export function VouchersPage() {
               </label>
               <label className="voucher-date-field">
                 <span>Date</span>
-                <input className="desktop-input" type="date" value={entryDate} disabled={readOnly} onChange={(event) => setEntryDate(event.target.value)} />
+                <UiDatePicker className="desktop-input" type="date" value={entryDate} disabled={readOnly} onChange={(event) => setEntryDate(event.target.value)} />
               </label>
               <label className="voucher-time-field">
                 <span>Time</span>
@@ -765,8 +767,8 @@ export function VouchersPage() {
               ]}
               onChange={setStatusFilter}
             />
-            <input className="desktop-input" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
-            <input className="desktop-input" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+            <UiDateRangePicker fromInputProps={{className:"desktop-input",type:"date",value:dateFrom,onChange:(event) => setDateFrom(event.target.value)}} toInputProps={{className:"desktop-input",type:"date",value:dateTo,onChange:(event) => setDateTo(event.target.value)}}/>
+
           </div>
 
           <PosDataGrid
@@ -793,8 +795,8 @@ export function VouchersPage() {
       {tab === 'summary' ? (
         <div className="voucher-summary">
           <div className="voucher-filters">
-            <input className="desktop-input" type="date" value={summaryFrom} onChange={(event) => setSummaryFrom(event.target.value)} />
-            <input className="desktop-input" type="date" value={summaryTo} onChange={(event) => setSummaryTo(event.target.value)} />
+            <UiDateRangePicker fromInputProps={{className:"desktop-input",type:"date",value:summaryFrom,onChange:(event) => setSummaryFrom(event.target.value)}} toInputProps={{className:"desktop-input",type:"date",value:summaryTo,onChange:(event) => setSummaryTo(event.target.value)}}/>
+
             <UiSelect
               aria-label="Summary voucher type"
               value={summaryType}

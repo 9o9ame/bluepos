@@ -1,3 +1,5 @@
+import { UiSkeleton } from '../components/ui/UiSkeleton'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
@@ -81,11 +83,11 @@ export function BalanceSheetReportPage() {
       onFind={()=>Array.from(paperRef.current?.querySelectorAll('td,th')||[])
         .find(x=>x.textContent?.toLowerCase().includes(search.toLowerCase()))?.scrollIntoView({block:'center'})}
       zoom={zoom} onZoomChange={setZoom} onPrint={()=>window.print()}
-      onCopy={()=>{if(paperRef.current)void navigator.clipboard.writeText(paperRef.current.innerText)}}
+      onCopy={()=>{return paperRef.current ? navigator.clipboard.writeText(paperRef.current.innerText) : false}}
       onExport={exportFile} onRefresh={()=>void reportQuery.refetch()}
       onEditOptions={()=>openModule('/reports/accounts/balance-sheet')} onClose={closeActiveTab}/>
     {!selection && <p role="status">Report selection unavailable in this browser session. Open Selection Options and preview again.</p>}
-    {reportQuery.isLoading && <p>Loading Balance Sheet…</p>}
+    {reportQuery.isLoading && <UiSkeleton label="Loading Balance Sheet…"/>}
     {reportQuery.isError && <p role="alert">Unable to load Balance Sheet.</p>}
     {reportQuery.data && <article className="bs-paper" ref={paperRef} style={{zoom:zoom+'%'}}>
       <header><h2>BALANCE SHEET</h2><p>As on and Before {reportQuery.data.as_of_date}</p></header>
@@ -113,13 +115,13 @@ export function BalanceSheetReportPage() {
         <button type="button" aria-pressed={tab==='additional'} onClick={()=>setTab('additional')}>Additional Selection</button></div>
       {tab==='main'?<div className="bs-main">
         <strong>Show Balance Sheet as on:</strong>
-        <label className="bs-date-field"><span>Date</span><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
+        <label className="bs-date-field"><span>Date</span><UiDatePicker type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
         <label><input type="checkbox" checked={summarized} onChange={e=>setSummarized(e.target.checked)}/> Summarized Form</label>
         <label title="Original ordering rule is not yet mapped"><input type="checkbox" checked={arrangeIds} disabled/> Arrange By IDs (pending mapping)</label>
         <p>FIFO stock revaluation is not offered until a verified valuation source is available.</p>
       </div>:<div className="bs-additional">
         <section><strong>Account Type</strong><div className="bs-checklist">
-          {optionsQuery.isLoading&&<p>Loading types…</p>}
+          {optionsQuery.isLoading&&<UiSkeleton label="Loading types…"/>}
           {optionsQuery.isError&&<p role="alert">Unable to load account types.</p>}
           {(optionsQuery.data?.account_types||[]).map(t=><label key={t.ulid}>
             <input type="checkbox" checked={selectedTypes.includes(t.ulid)}

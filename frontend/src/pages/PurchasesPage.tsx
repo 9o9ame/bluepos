@@ -1,3 +1,6 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { FormEvent, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import {
   Plus,
@@ -2322,20 +2325,8 @@ export function PurchasesPage({
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          <input
-            className="desktop-input"
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            title="From"
-          />
-          <input
-            className="desktop-input"
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            title="To"
-          />
+          <UiDateRangePicker fromInputProps={{className:"desktop-input",type:"date",value:dateFrom,onChange:(e) => setDateFrom(e.target.value),title:"From"}} toInputProps={{className:"desktop-input",type:"date",value:dateTo,onChange:(e) => setDateTo(e.target.value),title:"To"}}/>
+
           <UiSelect menuMotion="reveal"
             aria-label="Supplier filter"
             value={supplierFilter}
@@ -2426,7 +2417,7 @@ export function PurchasesPage({
           <span>{listTotal} {listTotal === 1 ? 'record' : 'records'}</span>
           <span>
             {listQuery.isFetchingNextPage
-              ? 'Loading more…'
+              ? <UiSkeleton compact label="Loading more…"/>
               : listQuery.hasNextPage
                 ? `Loaded ${listRows.length}`
                 : 'All records loaded'}
@@ -2581,7 +2572,7 @@ export function PurchasesPage({
             </label>
             <label className="pie-field">
               <span>Invoice Date</span>
-              <input
+              <UiDatePicker
                 type="date"
                 value={invoiceDate}
                 disabled={!identityEditable}
@@ -2752,7 +2743,7 @@ export function PurchasesPage({
               <input value={freightAmount} disabled={!editable} onChange={(e) => setFreightAmount(e.target.value)} />
             </label>
             <label>
-              <span>Loading (+)</span>
+              <UiSkeleton label="Loading (+)"/>
               <input value={shellLoading} disabled={!editable} onChange={(e) => setShellLoading(e.target.value)} />
             </label>
             <label>
@@ -3014,7 +3005,7 @@ export function PurchasesPage({
             <div><span>Total Tax</span><strong>{displayTax}</strong></div>
             <div><span>Further Tax</span><strong>{displayFurther}</strong></div>
             <div><span>Freight (+)</span><strong>{money(freightAmount)}</strong></div>
-            <div><span>Loading (+)</span><strong>{money(shellLoading)}</strong></div>
+            <div><UiSkeleton label="Loading (+)"/><strong>{money(shellLoading)}</strong></div>
             <div><span>Other Chg (+)</span><strong>{money(otherCharges)}</strong></div>
             <div><span>Other Disc (−)</span><strong>{money(shellOtherDiscount)}</strong></div>
             <div><span>Trade Offer (−)</span><strong>{money(shellTradeOffer)}</strong></div>
@@ -3077,7 +3068,7 @@ export function PurchasesPage({
             </label>
             <label className="pie-field">
               <span>Due Date</span>
-              <input
+              <UiDatePicker
                 type="date"
                 value={dueDate}
                 disabled={!editable || shellPaymentTerms === 'cash'}

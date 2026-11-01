@@ -1,3 +1,4 @@
+import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { usePlatformAuth } from '../features/platform/PlatformAuthProvider'
 import { PlatformShell } from '../layouts/PlatformShell'
@@ -22,7 +23,7 @@ import { PlatformTenantsPage } from '../pages/platform/PlatformTenantsPage'
 import { PlatformUsersPage } from '../pages/platform/PlatformUsersPage'
 
 function Splash() {
-  return <div className="grid h-screen place-items-center bg-[var(--ui-bg)] text-sm text-[var(--ui-accent)]">Loading platform…</div>
+  return <div className="grid h-screen place-items-center bg-[var(--ui-bg)] text-sm text-[var(--ui-accent)]"><div className="w-72 max-w-full"><UiSkeleton label="Loading platform…"/></div></div>
 }
 
 function RequirePlatformAuth() {

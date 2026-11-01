@@ -1,3 +1,4 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
 import { Fragment, useMemo, useState } from 'react'
 import { BookOpen, Eye, Plus, Printer, XCircle } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -476,7 +477,7 @@ export function VendorCustomerLedgerPage() {
       <div className="party-ledger-layout">
         <section className="party-ledger-accounts" aria-label="Vendor Customer Accounts">
           <div className="party-ledger-grid-shell">
-            <PosDataGrid
+            <PosDataGrid loading={loading}
               columns={columns}
               rows={rows}
               rowKey={(row) => row.key}
@@ -647,24 +648,8 @@ export function VendorCustomerLedgerPage() {
                 </label>
 
                 <div className="party-ledger-dates">
-                  <label>
-                    <span>From:</span>
-                    <input
-                      type="date"
-                      value={dateFrom}
-                      disabled={allDates}
-                      onChange={(event) => setDateFrom(event.target.value)}
-                    />
-                  </label>
-                  <label>
-                    <span>To:</span>
-                    <input
-                      type="date"
-                      value={dateTo}
-                      disabled={allDates}
-                      onChange={(event) => setDateTo(event.target.value)}
-                    />
-                  </label>
+                  <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:dateFrom,disabled:allDates,onChange:(event) => setDateFrom(event.target.value)}} toInputProps={{type:"date",value:dateTo,disabled:allDates,onChange:(event) => setDateTo(event.target.value)}}/></label>
+
                 </div>
 
                 <div className="party-ledger-report-fields">

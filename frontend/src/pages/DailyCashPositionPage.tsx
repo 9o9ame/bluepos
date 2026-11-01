@@ -1,3 +1,6 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { useEffect, useMemo, useState } from 'react'
 import { Banknote, Printer, RefreshCw } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -84,7 +87,7 @@ function CashBalanceChart({
   ]
 
   if (loading && dates.length === 0) {
-    return <div className="dcp-dashboard-empty">Loading dashboard chart…</div>
+    return <UiSkeleton label="Loading dashboard chart…"/>
   }
 
   if (dates.length === 0 || series.length === 0) {
@@ -536,14 +539,8 @@ export function DailyCashPositionPage() {
 
         <div className="dcp-right-controls">
           <div className="dcp-dates">
-            <label>
-              <span>From:</span>
-              <input type="date" value={dateFrom} disabled={ignoreDate} onChange={(event) => setDateFrom(event.target.value)} />
-            </label>
-            <label>
-              <span>To:</span>
-              <input type="date" value={dateTo} disabled={ignoreDate} onChange={(event) => setDateTo(event.target.value)} />
-            </label>
+            <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:dateFrom,disabled:ignoreDate,onChange:(event) => setDateFrom(event.target.value)}} toInputProps={{type:"date",value:dateTo,disabled:ignoreDate,onChange:(event) => setDateTo(event.target.value)}}/></label>
+
           </div>
           <div className="dcp-actions">
             <UiButton variant="info" icon={<RefreshCw size={14} />} onClick={refresh}>Refresh</UiButton>
@@ -558,7 +555,7 @@ export function DailyCashPositionPage() {
       ) : null}
 
       <div className="dcp-grid-area">
-        <PosDataGrid
+        <PosDataGrid loading={reportQuery.isFetching}
           columns={columns}
           rows={report?.rows ?? []}
           rowKey={(row) => row.line_ulid}
@@ -591,7 +588,7 @@ export function DailyCashPositionPage() {
             <div className="dcp-credit-actions">
               <label>
                 <span>Date:</span>
-                <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+                <UiDatePicker rangeRole="to" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
               </label>
               <UiButton variant="info" icon={<RefreshCw size={14} />} onClick={refresh}>Refresh</UiButton>
               <UiButton variant="info" onClick={closeActiveTab}>Close</UiButton>
@@ -668,7 +665,7 @@ export function DailyCashPositionPage() {
 
           <div className="dcp-credit-grid-title">Overall Bank / Cash Position For The Date: {dateTo}</div>
           <div className="dcp-credit-grid">
-            <PosDataGrid
+            <PosDataGrid loading={summaryQuery.isFetching}
               columns={positionColumns}
               rows={cashCredit?.positions ?? []}
               rowKey={(row) => row.account.ulid}
@@ -693,7 +690,7 @@ export function DailyCashPositionPage() {
             <div className="dcp-dashboard-actions">
               <label>
                 <span>Date:</span>
-                <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+                <UiDatePicker rangeRole="to" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
               </label>
               <UiButton variant="info" icon={<RefreshCw size={14} />} onClick={refresh}>Refresh</UiButton>
               <UiButton variant="info" onClick={closeActiveTab}>Close</UiButton>
@@ -716,7 +713,7 @@ export function DailyCashPositionPage() {
             <div className="dcp-dashboard-side">
               <div className="dcp-dashboard-table-card is-debit">
                 <div className="dcp-dashboard-table-title">Debit Balance Accounts</div>
-                <PosDataGrid
+                <PosDataGrid loading={dashboardQuery.isFetching}
                   columns={dashboardAccountColumns}
                   rows={dashboard?.debit_accounts ?? []}
                   rowKey={(row) => row.account.ulid}
@@ -729,7 +726,7 @@ export function DailyCashPositionPage() {
 
               <div className="dcp-dashboard-table-card is-credit">
                 <div className="dcp-dashboard-table-title">Credit Balance Accounts</div>
-                <PosDataGrid
+                <PosDataGrid loading={dashboardQuery.isFetching}
                   columns={dashboardAccountColumns}
                   rows={dashboard?.credit_accounts ?? []}
                   rowKey={(row) => row.account.ulid}
@@ -752,7 +749,7 @@ export function DailyCashPositionPage() {
             <div className="dcp-day-close-actions">
               <label>
                 <span>Date:</span>
-                <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+                <UiDatePicker rangeRole="to" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
               </label>
               <UiButton variant="info" icon={<RefreshCw size={14} />} onClick={refresh}>Refresh</UiButton>
               <UiButton variant="info" onClick={() => window.print()}>POS Preview</UiButton>
@@ -768,7 +765,7 @@ export function DailyCashPositionPage() {
             <section className="dcp-day-close-card dcp-day-close-categories">
               <div className="dcp-day-close-card-title">Today's Category Wise Sale</div>
               <div className="dcp-day-close-grid">
-                <PosDataGrid
+                <PosDataGrid loading={dayCloseQuery.isFetching}
                   columns={dayCloseCategoryColumns}
                   rows={dayClose?.category_sales ?? []}
                   rowKey={(row) => row.category.ulid ?? row.category.code}
@@ -851,7 +848,7 @@ export function DailyCashPositionPage() {
             <section className="dcp-day-close-card dcp-day-close-positions">
               <div className="dcp-day-close-card-title">Today's Cash Counter Position</div>
               <div className="dcp-day-close-grid">
-                <PosDataGrid
+                <PosDataGrid loading={dayCloseQuery.isFetching}
                   columns={dayCloseShiftColumns}
                   rows={dayClose?.open_shift_positions ?? []}
                   rowKey={(row) => row.ulid}

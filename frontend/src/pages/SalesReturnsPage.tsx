@@ -1,3 +1,6 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Banknote, CheckCircle2, CreditCard, FileText, Landmark, RefreshCw, RotateCcw, Save, Search, Wallet, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -1080,7 +1083,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
 
                 <div className="sales-return-option-group is-date">
                   <label>Date:</label>
-                  <input
+                  <UiDatePicker
                     type="date"
                     value={returnDate}
                     disabled={readOnly || document?.status === 'posted'}
@@ -1404,7 +1407,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
                     </tr>
                   ))}
                   {returnableQuery.isFetching ? (
-                    <tr><td colSpan={11} className="sales-return-empty">Loading returnable sale lines…</td></tr>
+                    <tr><td colSpan={11} className="sales-return-empty"><UiSkeleton compact label="Loading returnable sale lines…"/></td></tr>
                   ) : null}
                   {returnableQuery.isError ? (
                     <tr><td colSpan={11} className="sales-return-empty">Could not load returnable sale lines. Use Refresh and try again.</td></tr>
@@ -1807,9 +1810,9 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
               onChange={(e) => setHistorySearch(e.target.value)}
             />
             <label>From</label>
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <UiDateRangePicker fromInputProps={{type:"date",value:dateFrom,onChange:(e) => setDateFrom(e.target.value)}} toInputProps={{type:"date",value:dateTo,onChange:(e) => setDateTo(e.target.value)}}/>
             <label>To</label>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+
             <UiButton variant="primary" onClick={() => void historyQuery.refetch()}>
               <Search size={13} />
               <span>View</span>
@@ -1865,11 +1868,7 @@ export function SalesReturnsPage({ active = true }: { active?: boolean } = {}) {
       {view === 'product' ? (
         <div className="sales-return-product-view">
           <div className="sales-return-filterbar">
-            <label>From Date</label>
-            <input type="date" value={productDateFrom} onChange={(e) => setProductDateFrom(e.target.value)} />
-            <label>To Date</label>
-            <input type="date" value={productDateTo} onChange={(e) => setProductDateTo(e.target.value)} />
-            <UiButton variant="primary" onClick={() => void productWiseQuery.refetch()}>
+            <label>Date range</label><UiDateRangePicker fromInputProps={{type:"date",value:productDateFrom,onChange:(e) => setProductDateFrom(e.target.value)}} toInputProps={{type:"date",value:productDateTo,onChange:(e) => setProductDateTo(e.target.value)}}/><UiButton variant="primary" onClick={() => void productWiseQuery.refetch()}>
               Show
             </UiButton>
           </div>

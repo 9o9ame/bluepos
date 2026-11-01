@@ -326,7 +326,7 @@ export function PriceListsPage() {
       </div>
 
       <div className="price-lists-grid-card">
-        <PosDataGrid
+        <PosDataGrid loading={productsQuery.isLoading}
           columns={columns}
           rows={rows}
           rowKey={(product) => product.ulid}

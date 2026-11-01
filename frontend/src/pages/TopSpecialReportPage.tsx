@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
@@ -108,11 +110,11 @@ export function TopSpecialReportPage() {
         target?.scrollIntoView({ block: 'center' }) }}
       zoom={zoom} onZoomChange={setZoom}
       onPrint={() => window.print()}
-      onCopy={() => { if (paperRef.current) void navigator.clipboard.writeText(paperRef.current.innerText) }}
+      onCopy={() => { return paperRef.current ? navigator.clipboard.writeText(paperRef.current.innerText) : false }}
       onExport={exportReport} onRefresh={() => void resultQuery.refetch()}
       onEditOptions={() => openModule('/reports/accounts/top-special')} onClose={closeActiveTab}/>
     {!selection && <p role="status">Preview filters are not available in this session. Select Edit Options and open the report again.</p>}
-    {selection && resultQuery.isLoading && <p>Loading Top Special…</p>}
+    {selection && resultQuery.isLoading && <UiSkeleton label="Loading Top Special…"/>}
     {resultQuery.isError && <p role="alert">Unable to load Top Special report.</p>}
     {data && <article className="top-special-paper" ref={paperRef} style={{ zoom: `${zoom}%` }}>
       <header><h1>TOP {selection?.top} {data.kind.toUpperCase()}</h1><p>From: {data.from} to: {data.to}</p></header>
@@ -163,8 +165,8 @@ export function TopSpecialReportPage() {
               {value:'products',label:'Products'},
               {value:'salespeople',label:'Sales Man',disabled:purchasing}]}/>
           <div className="top-special-date-row">
-            <label>From<input type="date" value={from} onChange={(e) => setFrom(e.target.value)}/></label>
-            <label>To<input type="date" value={to} onChange={(e) => setTo(e.target.value)}/></label>
+            <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:from,onChange:(e) => setFrom(e.target.value)}} toInputProps={{type:"date",value:to,onChange:(e) => setTo(e.target.value)}}/></label>
+
           </div>
           <UiSelect searchable={false} value={format} onChange={setFormat} options={[
             {value:'standard',label:'Standard Format'}, {value:'format1',label:'Format1'}]}/>

@@ -1,3 +1,4 @@
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Boxes, Plus, RefreshCw, Save, Send, Trash2, X } from 'lucide-react'
@@ -495,7 +496,7 @@ export function StockTakingPage() {
         </div>
 
         <div className="stock-taking-grid-card">
-          <PosDataGrid
+          <PosDataGrid loading={listQuery.isLoading}
             columns={listColumns}
             rows={listQuery.data ?? []}
             rowKey={(row) => row.ulid}
@@ -537,7 +538,7 @@ export function StockTakingPage() {
 
           <label className="stock-taking-toolbar-field stock-taking-toolbar-date">
             <span>Count Date</span>
-            <input
+            <UiDatePicker
               type="date"
               value={countDate}
               disabled={!editable}

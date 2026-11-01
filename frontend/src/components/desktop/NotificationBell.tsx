@@ -3,11 +3,13 @@ import Pusher from 'pusher-js'
 import { apiFetch } from '../../api/client'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bell, BellRing, CheckCheck, X } from 'lucide-react'
+import { Bell, BellRing, X } from 'lucide-react'
 import type { AuthSession } from '../../types/auth'
-import { fetchDeviceAccessNotifications, markDeviceAccessNotificationRead, type DeviceAccessNotification } from '../../api/devices'
+import { fetchDeviceAccessNotifications, markDeviceAccessNotificationRead, type DeviceAccessNotification, type DeviceAccessInbox } from '../../api/devices'
 import { UI_LAYER } from '../ui/uiLayers'
 import './NotificationBell.css'
+import { UiNotificationStack } from '../ui/UiNotificationStack'
+import { UiSkeleton } from '../ui/UiSkeleton'
 
 const TONES = [
   { value: '07', label: 'Notification 07', file: 'universfield-new-notification-07-210334.mp3' },
@@ -51,9 +53,20 @@ export function NotificationBell({ session, onOpenDevices }: {
   const known = useRef<Set<string> | null>(null)
   const [openingNotice, setOpeningNotice] = useState<string | null>(null)
   const [noticeError, setNoticeError] = useState(false)
+  const root = useRef<HTMLDivElement>(null)
+  const [leavingNotice, setLeavingNotice] = useState<string | null>(null)
   const lastScope = useRef(scope)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ringTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const outside = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', outside)
+    return () => document.removeEventListener('pointerdown', outside)
+  }, [open])
 
   const notices = useQuery({
     queryKey: ['device-access-inbox', session.tenant.ulid, session.user.ulid, 1],
@@ -144,24 +157,34 @@ export function NotificationBell({ session, onOpenDevices }: {
     if (ringTimer.current) clearTimeout(ringTimer.current)
   }, [])
 
-  async function openNotice(notice: DeviceAccessNotification) {
+  async function openNotice(notice: DeviceAccessNotification, navigateAfter = true) {
     if (openingNotice) return
     setOpeningNotice(notice.ulid)
     setNoticeError(false)
     try {
       if (notice.read_at === null) {
         await markDeviceAccessNotificationRead(notice.ulid)
-        await queryClient.invalidateQueries({ queryKey: ['device-access-inbox', session.tenant.ulid, session.user.ulid] })
+        if (!navigateAfter) {
+          setLeavingNotice(notice.ulid)
+          const reduce = document.documentElement.dataset.animations === 'off' || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          if (!reduce) await new Promise(resolve => setTimeout(resolve, 240))
+        }
+        queryClient.setQueriesData<DeviceAccessInbox>({ queryKey: ['device-access-inbox', session.tenant.ulid, session.user.ulid] }, current => current ? {
+          ...current,
+          unread_count: Math.max(0, current.unread_count - (current.notifications.some(row => row.ulid === notice.ulid && row.read_at === null) ? 1 : 0)),
+          notifications: current.notifications.map(row => row.ulid === notice.ulid ? { ...row, read_at: new Date().toISOString() } : row),
+        } : current)
+        void queryClient.invalidateQueries({ queryKey: ['device-access-inbox', session.tenant.ulid, session.user.ulid] })
       }
-      setOpen(false)
-      setToast(null)
-      onOpenDevices()
+      setToast(current => current?.ulid === notice.ulid ? null : current)
+      if (navigateAfter) { setOpen(false); onOpenDevices() }
     } catch {
       // Leave the unread item visible: a failed acknowledgement must not
       // pretend that the tenant owner's security alert was marked read.
       setNoticeError(true)
       setOpen(true)
     } finally {
+      setLeavingNotice(null)
       setOpeningNotice(null)
     }
   }
@@ -169,8 +192,9 @@ export function NotificationBell({ session, onOpenDevices }: {
   if (!isOwner) return null
 
   const unread = notices.data?.unread_count ?? 0
+  const unreadNotices = notices.data?.notifications.filter(notice => notice.read_at === null) ?? []
   return (
-    <div className="bp-notification-root" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false) }} onKeyDown={(event) => { if (event.key === 'Escape') setOpen(false) }}>
+    <div ref={root} className="bp-notification-root" onMouseEnter={() => setOpen(true)} onKeyDown={(event) => { if (event.key === 'Escape') setOpen(false) }}>
       <button
         type="button"
         className={'bp-notification-trigger bp-motion-bell' + (ring ? ' bp-notification-ring' : '')}
@@ -188,21 +212,24 @@ export function NotificationBell({ session, onOpenDevices }: {
           <div className="bp-notification-heading"><span className="bp-notification-heading-mark"><BellRing size={16} aria-hidden="true" /></span><div><strong>Notifications</strong><small>Device approval activity</small></div>{unread > 0 ? <span className="bp-notification-heading-count">{unread} new</span> : null}</div>
           {noticeError ? <p className="bp-notification-error" role="alert">Could not mark this alert as read. Please try again.</p> : null}
           <div className="bp-notification-list">
-            {notices.data?.notifications.length ? notices.data.notifications.slice(0, 5).map((notice) => (
-              <button type="button" key={notice.ulid} className="bp-notification-item bp-motion-notice" disabled={openingNotice === notice.ulid} onClick={() => void openNotice(notice)}>
-                <span className="bp-notification-card-icon"><Bell size={15} aria-hidden="true" /></span><span className="bp-notification-card-content"><strong>{notice.kind === 'new_network' ? 'New network request' : 'New device request'}</strong><span>{notice.username} · {notice.device_name}</span><small>{notice.read_at ? 'Read' : 'Unread'} · {notice.status}</small></span>{notice.read_at ? <CheckCheck size={15} className="bp-notification-read-icon" aria-hidden="true" /> : <span className="bp-notification-unread-dot" aria-hidden="true" />}
-              </button>
-            )) : <p className="bp-notification-empty">No notifications yet.</p>}
+            {notices.isLoading ? <UiSkeleton label="Loading notifications…"/> : unreadNotices.length ? <UiNotificationStack cards={unreadNotices.map((notice) => ({ key: notice.ulid, content: (
+              <div className={`bp-notification-item bp-motion-notice${leavingNotice === notice.ulid ? ' is-leaving' : ''}`}>
+                <button type="button" className="bp-notification-open" disabled={openingNotice !== null} onClick={() => void openNotice(notice)}>
+                  <span className="bp-notification-card-icon"><Bell size={15} aria-hidden="true" /></span><span className="bp-notification-card-content"><strong>{notice.kind === 'new_network' ? 'New network request' : 'New device request'}</strong><span>{notice.username} · {notice.device_name}</span><small>Unread · {notice.status}</small></span>
+                </button>
+                <button type="button" className="bp-notification-icon" disabled={openingNotice !== null} onClick={() => void openNotice(notice, false)} aria-label="Dismiss notification"><X size={14}/></button>
+              </div>
+            ) }))}/> : <p className="bp-notification-empty">No new notifications.</p>}
           </div>
           <button type="button" className="bp-notification-all" onClick={() => { setOpen(false); onOpenDevices() }}>View all in Devices</button>
         </section>
       ) : null}
-      {toast ? (
+      {toast && !notices.data?.notifications.some(notice => notice.ulid === toast.ulid && notice.read_at !== null) ? (
         <div className="bp-notification-toast bp-motion-notice" role="status" style={{ zIndex: UI_LAYER.feedback }}>
           <Bell size={18} />
           <div><strong>New device approval request</strong><span>{toast.username} · {toast.device_name}</span></div>
           <button type="button" onClick={() => void openNotice(toast)}>View</button>
-          <button type="button" className="bp-notification-icon" onClick={() => setToast(null)} aria-label="Dismiss alert"><X size={14} /></button>
+          <button type="button" className="bp-notification-icon" disabled={openingNotice !== null} onClick={() => void openNotice(toast, false)} aria-label="Dismiss alert"><X size={14} /></button>
         </div>
       ) : null}
     </div>

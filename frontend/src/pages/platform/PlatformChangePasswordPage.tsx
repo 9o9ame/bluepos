@@ -1,3 +1,4 @@
+import { UiSkeleton } from '../../components/ui/UiSkeleton'
 import { FormEvent, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { ApiClientError } from '../../api/client'
@@ -13,7 +14,7 @@ export function PlatformChangePasswordPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (isLoading) {
-    return <div className="platform-auth-page grid h-screen place-items-center bg-[var(--ui-bg)] text-sm text-[var(--ui-accent)]">Loading platform…</div>
+    return <UiSkeleton label="Loading platform…"/>
   }
   if (!user) {
     return <Navigate to="/platform/login" replace />

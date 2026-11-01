@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -83,11 +85,11 @@ export function DailyIncomeStatementReportPage() {
       onFind={()=>Array.from(paperRef.current?.querySelectorAll('td,th')||[])
         .find(element=>element.textContent?.toLowerCase().includes(search.toLowerCase()))?.scrollIntoView({block:'center'})}
       onPrint={()=>window.print()}
-      onCopy={()=>{if(paperRef.current)void navigator.clipboard.writeText(paperRef.current.innerText)}}
+      onCopy={()=>{return paperRef.current ? navigator.clipboard.writeText(paperRef.current.innerText) : false}}
       onExport={exportReport} onRefresh={()=>void report.refetch()}
       onEditOptions={()=>openModule('/reports/accounts/daily-income-statement')} onClose={closeActiveTab}/>
     {!selection&&<p role="status">Selection unavailable. Open Income Statement options and preview again.</p>}
-    {report.isLoading&&<p>Loading Income Statement…</p>}
+    {report.isLoading&&<UiSkeleton label="Loading Income Statement…"/>}
     {report.isError&&<p role="alert">Unable to load Income Statement.</p>}
     {report.data&&<article ref={paperRef} className="is-paper" style={{zoom:zoom+'%'}}>
       <header><h1>INCOME STATEMENT</h1><p>From {report.data.from} to {report.data.to}</p></header>
@@ -121,8 +123,8 @@ export function DailyIncomeStatementReportPage() {
           </label>)}
         </fieldset>
         <div className="is-period-dates">
-          <label>From Date<input type="date" value={from} onChange={e=>{setFrom(e.target.value);setPeriod('user_defined')}}/></label>
-          <label>To Date<input type="date" value={to} min={from} onChange={e=>{setTo(e.target.value);setPeriod('user_defined')}}/></label>
+          <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:from,onChange:e=>{setFrom(e.target.value);setPeriod('user_defined')}}} toInputProps={{type:"date",value:to,min:from,onChange:e=>{setTo(e.target.value);setPeriod('user_defined')}}}/></label>
+
         </div>
         <p>Posted P&L movement only. FIFO stock revaluation is not yet supported.</p>
       </div>

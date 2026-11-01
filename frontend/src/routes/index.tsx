@@ -1,3 +1,4 @@
+import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useCan } from '../features/auth/useCan'
@@ -55,7 +56,7 @@ import { WorkspacePage } from '../pages/WorkspacePage'
 function Splash() {
   return (
     <div className="grid h-screen place-items-center bg-[var(--ui-bg)] text-sm text-[var(--ui-text)]">
-      Loading BluePOS…
+      <div className="w-72 max-w-full"><UiSkeleton label="Loading BluePOS…"/></div>
     </div>
   )
 }

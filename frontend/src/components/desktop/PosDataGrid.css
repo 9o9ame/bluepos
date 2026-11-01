@@ -1,0 +1,4 @@
+.pos-grid-body-ready { animation: pos-grid-data-reveal var(--ui-transition-normal) both; }
+@keyframes pos-grid-data-reveal { from { opacity: .25; } to { opacity: 1; } }
+html[data-animations='off'] .pos-grid-body-ready { animation: none; }
+@media (prefers-reduced-motion: reduce) { .pos-grid-body-ready { animation: none; } }

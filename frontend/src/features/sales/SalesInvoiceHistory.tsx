@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../../components/ui/UiSkeleton'
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Eye, Printer, RotateCcw, Search, X } from 'lucide-react'
@@ -161,31 +163,13 @@ export function SalesInvoiceHistory({
           ) : null}
         </div>
 
-        <label className="sales-history-filter">
-          <span>From</span>
-          <input
-            type="date"
-            value={dateFrom}
-            disabled={disableSearchDates}
-            title={disableSearchDates ? 'Date search is disabled in Software Options.' : undefined}
-            onChange={(e) => {
+        <label className="sales-history-filter"><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:dateFrom,disabled:disableSearchDates,title:disableSearchDates ? 'Date search is disabled in Software Options.' : undefined,onChange:(e) => {
               setDateFrom(e.target.value)
-            }}
-          />
-        </label>
-
-        <label className="sales-history-filter">
-          <span>To</span>
-          <input
-            type="date"
-            value={dateTo}
-            disabled={disableSearchDates}
-            title={disableSearchDates ? 'Date search is disabled in Software Options.' : undefined}
-            onChange={(e) => {
+            }}} toInputProps={{type:"date",value:dateTo,disabled:disableSearchDates,title:disableSearchDates ? 'Date search is disabled in Software Options.' : undefined,onChange:(e) => {
               setDateTo(e.target.value)
-            }}
-          />
-        </label>
+            }}}/></label>
+
+
 
         <label className="sales-history-filter">
           <span>Salesman</span>
@@ -340,7 +324,7 @@ export function SalesInvoiceHistory({
 
         <div className="sales-infinite-status" role="status">
           {listQuery.isFetchingNextPage
-            ? 'Loading more invoices…'
+            ? <UiSkeleton compact label="Loading more invoices…"/>
             : listQuery.hasNextPage
               ? `Scroll for more · ${rows.length} of ${meta?.total ?? rows.length}`
               : rows.length > 0
@@ -351,7 +335,7 @@ export function SalesInvoiceHistory({
         {openUlid ? (
           <article className="sales-history-detail">
             {detailQuery.isFetching ? (
-              <div className="sales-history-detail-loading">Loading invoice…</div>
+              <UiSkeleton label="Loading invoice…"/>
             ) : detailQuery.data ? (
               <>
                 <header className="sales-history-detail-head">

@@ -95,5 +95,5 @@ export function fetchDeviceAccessNotifications(page = 1): Promise<DeviceAccessIn
 }
 
 export function markDeviceAccessNotificationRead(ulid: string): Promise<{ ulid: string; read: true }> {
-  return apiFetch(`/api/devices/access-notifications/${ulid}/read`, { method: 'POST' })
+  return apiFetch(`/api/devices/access-notifications/${ulid}/read`, { method: 'POST', busy: 'none' })
 }

@@ -1,3 +1,4 @@
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import {
   ChevronDown,
   CircleHelp,
@@ -1893,7 +1894,7 @@ export function SalesInvoicePage({
 
                   <label className="sales-responsive-date-label">Date</label>
 
-                  <input
+                  <UiDatePicker
                     type="date"
                     className="is-date sales-responsive-date-field"
                     value={saleDate}

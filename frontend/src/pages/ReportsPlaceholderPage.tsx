@@ -1,3 +1,4 @@
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { useState } from 'react'
 import { Eye, X } from 'lucide-react'
 import { Field } from '../components/desktop/DesktopPanel'
@@ -79,10 +80,10 @@ export function ReportsPlaceholderPage() {
 
         <div className="grid gap-2 content-start">
           <Field label="From">
-            <input className="desktop-input" type="date" disabled />
+            <UiDatePicker className="desktop-input" type="date" disabled />
           </Field>
           <Field label="To">
-            <input className="desktop-input" type="date" disabled />
+            <UiDatePicker className="desktop-input" type="date" disabled />
           </Field>
           <Field label="Only for">
             <UiSelect className="desktop-select" value="all" disabled options={[

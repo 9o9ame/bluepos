@@ -1,5 +1,7 @@
-import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type UIEvent } from 'react'
+import { startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type UIEvent } from 'react'
 import { ListLoadingIndicator } from '../ui/ListLoadingIndicator'
+import { UiSkeleton } from '../ui/UiSkeleton'
+import './PosDataGrid.css'
 
 export type PosGridColumn<T> = {
   key: string
@@ -43,6 +45,14 @@ export function PosDataGrid<T>({
   estimatedRowHeight = 22,
   overscan = 8,
 }: PosDataGridProps<T>) {
+  const [rowsReady, setRowsReady] = useState(false)
+  useEffect(() => {
+    // Paint the module controls/header before mounting its cached table rows.
+    let frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => startTransition(() => setRowsReady(true)))
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [])
   const wrapRef = useRef<HTMLDivElement | null>(null)
   const theadRef = useRef<HTMLTableSectionElement | null>(null)
   const firstRenderedRowRef = useRef<HTMLTableRowElement | null>(null)
@@ -75,7 +85,7 @@ export function PosDataGrid<T>({
     observer.observe(wrap)
 
     return () => observer.disconnect()
-  }, [virtualize, rows.length])
+  }, [virtualize, rows.length, rowsReady])
 
   function move(delta: number) {
     if (rows.length === 0) {
@@ -121,6 +131,7 @@ export function PosDataGrid<T>({
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (!rowsReady) return
     if (event.key === 'ArrowDown') {
       event.preventDefault()
       move(1)
@@ -173,7 +184,7 @@ export function PosDataGrid<T>({
     virtualize,
   ])
 
-  const renderedRows = virtualize
+  const renderedRows = !rowsReady ? [] : virtualize
     ? rows.slice(virtualWindow.start, virtualWindow.end)
     : rows
 
@@ -202,8 +213,8 @@ export function PosDataGrid<T>({
             </tr>
           ) : null}
         </thead>
-        <tbody>
-          {virtualize && virtualWindow.topSpacer > 0 ? (
+        <tbody className={rowsReady && rows.length > 0 ? 'pos-grid-body-ready' : undefined}>
+          {rowsReady && virtualize && virtualWindow.topSpacer > 0 ? (
             <tr aria-hidden="true">
               <td
                 colSpan={columns.length}
@@ -236,7 +247,7 @@ export function PosDataGrid<T>({
               </tr>
             )
           })}
-          {virtualize && virtualWindow.bottomSpacer > 0 ? (
+          {rowsReady && virtualize && virtualWindow.bottomSpacer > 0 ? (
             <tr aria-hidden="true">
               <td
                 colSpan={columns.length}
@@ -246,8 +257,8 @@ export function PosDataGrid<T>({
           ) : null}
         </tbody>
       </table>
-      {rows.length === 0 && !loading ? <div className="pos-grid-empty">{emptyMessage}</div> : null}
-      <ListLoadingIndicator visible={loading} label={loadingLabel} />
+      {!rowsReady && rows.length > 0 ? <UiSkeleton label={loadingLabel}/> : rows.length === 0 ? loading ? <UiSkeleton label={loadingLabel}/> : <div className="pos-grid-empty">{emptyMessage}</div> : null}
+      <ListLoadingIndicator visible={rowsReady && loading && rows.length > 0} label={loadingLabel} />
     </div>
   )
 }

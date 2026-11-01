@@ -1,3 +1,6 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -386,7 +389,6 @@ export function TrialBalanceReportPage() {
   const [arrangeIds] = useState(false)
   const [viewerSearch, setViewerSearch] = useState('')
   const [viewerZoom, setViewerZoom] = useState(100)
-  const [copyStatus, setCopyStatus] = useState('Copy')
   const [startDate, setStartDate] = useState(params.get('start_date') || today().slice(0, 8) + '01')
   const [endDate, setEndDate] = useState(params.get('end_date') || today())
   const [sixGrouping, setSixGrouping] = useState<TrialBalanceGroupBy>((params.get('group_by') || 'level_wise') as TrialBalanceGroupBy)
@@ -607,12 +609,12 @@ export function TrialBalanceReportPage() {
 
   const copyReport = async () => {
     const paper = reportPaperRef.current
-    if (!paper) return
+    if (!paper) return false
     try {
       await navigator.clipboard.writeText(paper.innerText || paper.textContent || '')
-      setCopyStatus('Copied')
+      return true
     } catch {
-      setCopyStatus('Copy failed')
+      return false
     }
   }
 
@@ -640,8 +642,8 @@ export function TrialBalanceReportPage() {
             <div className="tb6-selection-grid" role="tabpanel">
               <aside className="tb6-sidebar">
                 <div className="tb6-dates">
-                  <label>Start Date<input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></label>
-                  <label>Ending Date<input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></label>
+                  <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:startDate,onChange:(event) => setStartDate(event.target.value)}} toInputProps={{type:"date",value:endDate,onChange:(event) => setEndDate(event.target.value)}}/></label>
+
                 </div>
                 <label>Report Grouping
                   <UiSelect searchable={false} value={sixGrouping} options={GROUP_OPTIONS}
@@ -690,7 +692,7 @@ export function TrialBalanceReportPage() {
               <div className="tb6-filter-stack">
                 <div className="tb6-filter-panel">
                   <h3>Head Account Type</h3>
-                  {hierarchyQuery.isLoading ? <p>Loading account heads…</p> : null}
+                  {hierarchyQuery.isLoading ? <UiSkeleton label="Loading account heads…"/> : null}
                   {uniqueHierarchy('main_head').map(([ulid, name]) => (
                     <label className="tb6-checkbox" key={ulid}>
                       <input type="checkbox" checked={selectedMainHeads.includes(ulid)} onChange={() => toggleMainHead(ulid)} /> {name}
@@ -803,9 +805,9 @@ export function TrialBalanceReportPage() {
     const copySix = async () => {
       try {
         await navigator.clipboard.writeText(getPaperText())
-        setCopyStatus('Copied')
+        return true
       } catch {
-        setCopyStatus('Copy failed')
+        return false
       }
     }
     const findSix = () => {
@@ -824,10 +826,10 @@ export function TrialBalanceReportPage() {
       <section className="trial-balance-page trial-balance-viewer-page" aria-label="Six Column Trial Balance Report">
         <div className="trial-balance-viewer-toolbar">
           <UiButton variant="info" icon={<Printer size={15}/>} label="Print / PDF" disabled={!report} onClick={printSix} />
-          <UiButton variant="default" icon={<ClipboardCopy size={15}/>} label={copyStatus} disabled={!report} onClick={() => void copySix()} />
+          <UiButton variant="default" icon={<ClipboardCopy size={15}/>} label="Copy" feedback="copy" disabled={!report} onAction={copySix} />
           <UiButton variant="default" icon={<FileText size={15}/>} label="Text" disabled={!report} onClick={() => downloadSix('txt')} />
           <UiButton variant="default" icon={<FileCode size={15}/>} label="HTML" disabled={!report} onClick={() => downloadSix('html')} />
-          <UiButton variant="info" icon={<Download size={15}/>} label="Export CSV" disabled={!report} onClick={() => downloadSix('csv')} />
+          <UiButton variant="info" icon={<Download size={15}/>} label="Export CSV" feedback="download" disabled={!report} onAction={() => downloadSix('csv')} />
           <UiSelect className="trial-balance-export-choice" aria-label="Export report format"
             value="" searchable={false} options={[
               { value: '', label: 'Export as…' },
@@ -858,7 +860,7 @@ export function TrialBalanceReportPage() {
           <UiButton variant="info" icon={<X size={15}/>} label="Close" onClick={closeActiveTab} />
         </div>
         <div className="trial-balance-viewer-canvas">
-          {sixQuery.isLoading ? <div className="trial-balance-viewer-loading">Loading report…</div> : null}
+          {sixQuery.isLoading ? <UiSkeleton label="Loading report…"/> : null}
           {sixQuery.isError ? <div className="trial-balance-error" role="alert">Unable to load six-column Trial Balance.</div> : null}
           {report ? <div className="trial-balance-result" ref={reportPaperRef} style={{ zoom: `${viewerZoom}%` }}><SixColumnPreview report={report} separate={viewParam === 'dr_cr_separate'} title={sixTitle} separatePages={sixSeparatePages} datesOnly={sixDatesOnly} twoColumn={sixTwoColumn} displayCode={sixShowCode}/></div> : null}
         </div>
@@ -884,9 +886,9 @@ export function TrialBalanceReportPage() {
           <UiButton
             variant="default"
             icon={<ClipboardCopy size={15} />}
-            label={copyStatus}
+            label="Copy" feedback="copy"
             disabled={!report}
-            onClick={() => void copyReport()}
+            onAction={copyReport}
             title="Copy the report text to the clipboard."
           />
           <UiButton
@@ -906,9 +908,9 @@ export function TrialBalanceReportPage() {
           <UiButton
             variant="info"
             icon={<Download size={15} />}
-            label="Export CSV"
+            label="Export CSV" feedback="download"
             disabled={!report}
-            onClick={exportCsv}
+            onAction={exportCsv}
             title="Open the exported CSV in Excel or another spreadsheet app."
           />
           <UiSelect
@@ -984,7 +986,7 @@ export function TrialBalanceReportPage() {
 
         <div className="trial-balance-viewer-canvas" ref={viewerCanvasRef}>
           {viewerQuery.isLoading ? (
-            <div className="trial-balance-viewer-loading">Loading report…</div>
+            <UiSkeleton label="Loading report…"/>
           ) : report ? (
             <div className="trial-balance-result" ref={reportPaperRef} style={{ zoom: `${viewerZoom}%` }}>
               <div className="trial-balance-business-heading">
@@ -1017,7 +1019,7 @@ export function TrialBalanceReportPage() {
 
           <label>
             <span>As and Before Date:</span>
-            <input
+            <UiDatePicker
               type="date"
               value={asOfDate}
               onChange={(event) => setAsOfDate(event.target.value)}

@@ -137,3 +137,10 @@ html[data-animations='off'] .bp-notification-item { animation: none; }
   z-index: 1;
   pointer-events: none;
 }
+.bp-notification-open { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; border: 0; padding: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.bp-notification-open::before, .bp-notification-open::after { content: none !important; }
+/* Dismiss the acknowledged card while its notification panel remains open. */
+.bp-notification-item.is-leaving { pointer-events: none; animation: bp-notification-dismiss var(--bp-motion-fast) var(--bp-motion-ease) both; }
+@keyframes bp-notification-dismiss { to { opacity: 0; transform: translateX(24px) scale(.94); } }
+html[data-animations='off'] .bp-notification-item.is-leaving { animation: none; }
+@media (prefers-reduced-motion: reduce) { .bp-notification-item.is-leaving { animation: none; } }

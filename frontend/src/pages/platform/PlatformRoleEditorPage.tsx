@@ -1,3 +1,4 @@
+import { UiSkeleton } from '../../components/ui/UiSkeleton'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -68,7 +69,7 @@ export function PlatformRoleEditorPage() {
   })
 
   if (!role) {
-    return <p className="text-[12px]">Loading role…</p>
+    return <UiSkeleton label="Loading role…"/>
   }
 
   const locked = role.is_system || role.code === 'super_admin'

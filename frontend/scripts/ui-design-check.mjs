@@ -25,6 +25,9 @@ for (const file of files) {
   if (file.endsWith('.tsx') && /<select\b/.test(source)) {
     failures.push(`${relative}: native <select> found; use UiSelect/UiMultiSelect or document an approved exception.`)
   }
+  if (file.endsWith('.tsx') && relative !== 'components/ui/UiDatePicker.tsx' && /<input\b[^>]*\btype\s*=\s*['"]date['"]/s.test(source)) {
+    failures.push(`${relative}: native date input found; use UiDatePicker for single dates and linked From/To ranges.`)
+  }
 
   if (relative.startsWith('components/ui/') && file.endsWith('.css')) {
     const forbiddenPrimary = /#(?:1769aa|0f7dcc|1f4e79|2b6aa3|0969da|58a6ff|2388c9|3c94cf)\b/i

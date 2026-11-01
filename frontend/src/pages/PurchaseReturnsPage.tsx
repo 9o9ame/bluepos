@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { CheckCircle2, FileText, RefreshCw, RotateCcw, Save, Search, Trash2, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -950,7 +952,7 @@ export function PurchaseReturnsPage({
 
                 <div className="purchase-return-option-group is-date">
                   <label>Date:</label>
-                  <input
+                  <UiDatePicker
                     type="date"
                     value={returnDate}
                     disabled={!canModifyCurrent}
@@ -1090,7 +1092,7 @@ export function PurchaseReturnsPage({
             </fieldset>
           </section>
 
-          
+
             <div className="purchase-return-general">
               <div className="purchase-return-grid-wrap">
                 <PosEntryGrid
@@ -1515,18 +1517,8 @@ export function PurchaseReturnsPage({
               menuMinWidth={720}
               onChange={setSupplierFilter}
             />
-            <input
-              className="desktop-input"
-              type="date"
-              value={dateFrom}
-              onChange={(event) => setDateFrom(event.target.value)}
-            />
-            <input
-              className="desktop-input"
-              type="date"
-              value={dateTo}
-              onChange={(event) => setDateTo(event.target.value)}
-            />
+            <UiDateRangePicker fromInputProps={{className:"desktop-input",type:"date",value:dateFrom,onChange:(event) => setDateFrom(event.target.value)}} toInputProps={{className:"desktop-input",type:"date",value:dateTo,onChange:(event) => setDateTo(event.target.value)}}/>
+
             <DesktopButton
               icon={<RefreshCw size={13} />}
               label="Refresh"
@@ -1538,7 +1530,7 @@ export function PurchaseReturnsPage({
           {error ? <div className="purchase-return-error">{error}</div> : null}
 
           <div className="purchase-return-search-grid">
-            <PosDataGrid
+            <PosDataGrid loading={listQuery.isFetching}
               columns={[
                 {
                   key: 'document_number',
@@ -1628,21 +1620,7 @@ export function PurchaseReturnsPage({
       {view === 'product' ? (
         <div className="purchase-return-product-view">
           <div className="purchase-return-product-filters">
-            <label>From Date</label>
-            <input
-              className="desktop-input"
-              type="date"
-              value={productDateFrom}
-              onChange={(event) => setProductDateFrom(event.target.value)}
-            />
-            <label>To Date</label>
-            <input
-              className="desktop-input"
-              type="date"
-              value={productDateTo}
-              onChange={(event) => setProductDateTo(event.target.value)}
-            />
-            <UiButton variant="primary" onClick={() => void productWiseQuery.refetch()}>
+            <label>Date range</label><UiDateRangePicker fromInputProps={{className:"desktop-input",type:"date",value:productDateFrom,onChange:(event) => setProductDateFrom(event.target.value)}} toInputProps={{className:"desktop-input",type:"date",value:productDateTo,onChange:(event) => setProductDateTo(event.target.value)}}/><UiButton variant="primary" onClick={() => void productWiseQuery.refetch()}>
               Show
             </UiButton>
           </div>
@@ -1654,7 +1632,7 @@ export function PurchaseReturnsPage({
           ) : null}
 
           <div className="purchase-return-product-grid">
-            <PosDataGrid
+            <PosDataGrid loading={productWiseQuery.isFetching}
               columns={[
                 {
                   key: 'return_number',

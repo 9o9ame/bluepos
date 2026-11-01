@@ -1,3 +1,6 @@
+import { UiDateRangePicker } from '../../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../../components/ui/UiSkeleton'
+import { UiDatePicker } from '../../components/ui/UiDatePicker'
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { Plus, RotateCcw, Search } from 'lucide-react'
@@ -199,7 +202,7 @@ export function SalesExpenses() {
             <div className="sales-due-toolbar sales-expense-entry-toolbar">
             <label>
               <span>Date</span>
-              <input
+              <UiDatePicker
                 type="date"
                 value={expenseDate}
                 onChange={(event) => setExpenseDate(event.target.value)}
@@ -287,23 +290,9 @@ export function SalesExpenses() {
                   </div>
                 </label>
 
-                <label>
-                  <span>From</span>
-                  <input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(event) => setDateFrom(event.target.value)}
-                  />
-                </label>
+                <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:dateFrom,onChange:(event) => setDateFrom(event.target.value)}} toInputProps={{type:"date",value:dateTo,onChange:(event) => setDateTo(event.target.value)}}/></label>
 
-                <label>
-                  <span>To</span>
-                  <input
-                    type="date"
-                    value={dateTo}
-                    onChange={(event) => setDateTo(event.target.value)}
-                  />
-                </label>
+
 
                 <div className="sales-expense-button-field">
                   <span aria-hidden="true">&nbsp;</span>
@@ -385,7 +374,7 @@ export function SalesExpenses() {
 
           <div className="sales-infinite-status" role="status">
             {expensesQuery.isFetchingNextPage
-              ? 'Loading more expenses…'
+              ? <UiSkeleton compact label="Loading more expenses…"/>
               : expensesQuery.hasNextPage
                 ? `Scroll for more · ${rows.length} of ${meta?.total ?? rows.length}`
                 : rows.length > 0

@@ -1,3 +1,5 @@
+import { UiDateRangePicker } from '../../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../../components/ui/UiSkeleton'
 import { useDeferredValue, useMemo, useState } from 'react'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { Eye, Printer, RotateCcw, Search } from 'lucide-react'
@@ -170,7 +172,7 @@ export function SalesPendingInvoices({
         {(holdsQuery.data?.data.length ?? 0) === 0 ? (
           <div className="sales-pending-empty">
             {holdsQuery.isFetching
-              ? 'Loading held sales…'
+              ? <UiSkeleton compact label="Loading held sales…"/>
               : 'No held sales for this branch and warehouse.'}
           </div>
         ) : (
@@ -237,27 +239,13 @@ export function SalesPendingInvoices({
             />
           </div>
 
-          <label>
-            <span>From</span>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => {
+          <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:dateFrom,onChange:(e) => {
                 setDateFrom(e.target.value)
-              }}
-            />
-          </label>
-
-          <label>
-            <span>To</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => {
+              }}} toInputProps={{type:"date",value:dateTo,onChange:(e) => {
                 setDateTo(e.target.value)
-              }}
-            />
-          </label>
+              }}}/></label>
+
+
 
           <label>
             <span>Salesman</span>
@@ -368,7 +356,7 @@ export function SalesPendingInvoices({
 
         <div className="sales-infinite-status" role="status">
           {dueQuery.isFetchingNextPage
-            ? 'Loading more due invoices…'
+            ? <UiSkeleton compact label="Loading more due invoices…"/>
             : dueQuery.hasNextPage
               ? `Scroll for more · ${rows.length} of ${meta?.total ?? rows.length}`
               : rows.length > 0
@@ -379,7 +367,7 @@ export function SalesPendingInvoices({
         {openUlid ? (
           <div className="sales-due-detail">
             {detailQuery.isFetching ? (
-              <div className="sales-pending-empty">Loading invoice…</div>
+              <UiSkeleton label="Loading invoice…"/>
             ) : detailQuery.data ? (
               <>
                 <header className="sales-due-detail-head">

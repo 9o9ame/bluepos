@@ -200,9 +200,9 @@ export function ProductsPage({
   const localProducts = useLocalProducts(session, q, true, !embedded)
   const localSuppliers = useLocalSuppliers(session, embedded)
 
-  const products = localProducts.rows.filter((product) =>
+  const products = useMemo(() => localProducts.rows.filter((product) =>
     listCategoryUlid ? product.category?.ulid === listCategoryUlid : true,
-  )
+  ), [localProducts.rows, listCategoryUlid])
 
   const productQuery = useQuery({
     queryKey: ['product', selectedKey],
@@ -1896,6 +1896,7 @@ export function ProductsPage({
           </div>
 
           <PosDataGrid
+            virtualize
             columns={[
               { key: 'no', header: 'No', width: 56, render: (row: Product) => row.product_number },
               { key: 'name', header: 'Name', width: 190, render: (row: Product) => row.name },

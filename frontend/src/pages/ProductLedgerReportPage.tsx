@@ -1,3 +1,4 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronDown, ChevronLeft, ChevronRight, Eye, RefreshCw } from 'lucide-react'
@@ -301,29 +302,15 @@ export function ProductLedgerReportPage() {
           ) : null}
         </div>
 
-        <label>
-          <span>From:</span>
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(event) => {
+        <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:fromDate,onChange:(event) => {
               setFromDate(event.target.value)
               setPage(1)
-            }}
-          />
-        </label>
-
-        <label>
-          <span>To:</span>
-          <input
-            type="date"
-            value={toDate}
-            onChange={(event) => {
+            }}} toInputProps={{type:"date",value:toDate,onChange:(event) => {
               setToDate(event.target.value)
               setPage(1)
-            }}
-          />
-        </label>
+            }}}/></label>
+
+
 
         <UiButton
           variant="info"

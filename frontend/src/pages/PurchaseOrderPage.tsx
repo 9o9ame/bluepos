@@ -1,3 +1,6 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { AlertTriangle, FileSearch, LoaderCircle, Play, Plus, Printer, ReceiptText, RefreshCw, Save, XCircle } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -1084,7 +1087,7 @@ export function PurchaseOrderPage() {
 
                 <label className="po-option-date">
                   <span>Order Date</span>
-                  <input
+                  <UiDatePicker
                     type="date"
                     value={activeOrder?.order_date ?? orderDate}
                     disabled={readOnly}
@@ -1115,25 +1118,9 @@ export function PurchaseOrderPage() {
                   />
                 </label>
 
-                <label className="po-option-from">
-                  <span>From</span>
-                  <input
-                    type="date"
-                    value={dateFrom}
-                    disabled={readOnly || orderType !== 'between_dates'}
-                    onChange={(event) => setDateFrom(event.target.value)}
-                  />
-                </label>
+                <label className="po-option-from"><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:dateFrom,disabled:readOnly || orderType !== 'between_dates',onChange:(event) => setDateFrom(event.target.value)}} toInputProps={{type:"date",value:dateTo,disabled:readOnly || orderType !== 'between_dates',onChange:(event) => setDateTo(event.target.value)}}/></label>
 
-                <label className="po-option-to">
-                  <span>To</span>
-                  <input
-                    type="date"
-                    value={dateTo}
-                    disabled={readOnly || orderType !== 'between_dates'}
-                    onChange={(event) => setDateTo(event.target.value)}
-                  />
-                </label>
+
 
                 <label className="is-wide po-option-supplier">
                   <span>From / Supplier</span>
@@ -1181,7 +1168,7 @@ export function PurchaseOrderPage() {
 
                 <label className="po-option-expiry" title="Expiry behavior is not yet mapped to the current Purchase Order domain.">
                   <span>Expiry</span>
-                  <input
+                  <UiDatePicker
                     type="date"
                     value=""
                     disabled
@@ -1602,7 +1589,7 @@ export function PurchaseOrderPage() {
             {loadMoreMutation.isPending ? (
               <div className="purchase-order-load-more" role="status" aria-live="polite">
                 <LoaderCircle size={17} aria-hidden />
-                <span>Loading more products…</span>
+                <UiSkeleton label="Loading more products…"/>
               </div>
             ) : null}
           </div>
@@ -1642,22 +1629,8 @@ export function PurchaseOrderPage() {
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
             />
-            <label>
-              <span>From</span>
-              <input
-                type="date"
-                value={searchFrom}
-                onChange={(event) => setSearchFrom(event.target.value)}
-              />
-            </label>
-            <label>
-              <span>To</span>
-              <input
-                type="date"
-                value={searchTo}
-                onChange={(event) => setSearchTo(event.target.value)}
-              />
-            </label>
+            <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:searchFrom,onChange:(event) => setSearchFrom(event.target.value)}} toInputProps={{type:"date",value:searchTo,onChange:(event) => setSearchTo(event.target.value)}}/></label>
+
             <UiButton variant="info" onClick={() => void ordersQuery.refetch()}>
               View
             </UiButton>
@@ -1708,22 +1681,8 @@ export function PurchaseOrderPage() {
             <div className="purchase-order-status-selections-title">Selections:</div>
             <div className="purchase-order-status-selections-body">
               <div className="purchase-order-status-dates">
-                <label>
-                  <span>From:</span>
-                  <input
-                    type="date"
-                    value={statusFrom}
-                    onChange={(event) => setStatusFrom(event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>To:</span>
-                  <input
-                    type="date"
-                    value={statusTo}
-                    onChange={(event) => setStatusTo(event.target.value)}
-                  />
-                </label>
+                <label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:statusFrom,onChange:(event) => setStatusFrom(event.target.value)}} toInputProps={{type:"date",value:statusTo,onChange:(event) => setStatusTo(event.target.value)}}/></label>
+
               </div>
 
               <div className="purchase-order-status-actions">
@@ -1759,7 +1718,7 @@ export function PurchaseOrderPage() {
             </div>
           </section>
 
-          <PosDataGrid
+          <PosDataGrid loading={statusQuery.isLoading}
             columns={[
               {
                 key: 'order_id',

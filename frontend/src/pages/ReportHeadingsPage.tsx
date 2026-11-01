@@ -850,7 +850,7 @@ export function ReportHeadingsPage() {
             </div>
 
             <div className="report-headings-record-list">
-              <PosDataGrid
+              <PosDataGrid loading={query.isLoading}
                 columns={[
                   { key: 'head_id', header: 'Head ID', width: 120, render: (row: ReportHeading) => row.head_id },
                   { key: 'used_for', header: 'Used For', render: (row: ReportHeading) => row.used_for },

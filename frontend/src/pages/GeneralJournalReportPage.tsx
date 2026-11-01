@@ -1,8 +1,11 @@
+import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
+import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../api/client'
 import { UiButton } from '../components/ui/UiButton'
+import { UiSelect } from '../components/ui/UiSelect'
 import { ReportViewerToolbar } from '../components/reports/ReportViewerToolbar'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { savePreviewSelection, readPreviewSelection } from '../features/reports/previewSelection'
@@ -74,11 +77,11 @@ export function GeneralJournalReportPage(){
       onSearchChange={setSearch} onFind={()=>Array.from(paperRef.current?.querySelectorAll('td,th')||[])
         .find(x=>x.textContent?.toLowerCase().includes(search.toLowerCase()))?.scrollIntoView({block:'center'})}
       zoom={zoom} onZoomChange={setZoom} onPrint={()=>window.print()}
-      onCopy={()=>{if(paperRef.current)void navigator.clipboard.writeText(paperRef.current.innerText)}}
+      onCopy={()=>{return paperRef.current ? navigator.clipboard.writeText(paperRef.current.innerText) : false}}
       onExport={exportReport} onRefresh={()=>void report.refetch()}
       onEditOptions={()=>openModule('/reports/accounts/general-journal')} onClose={closeActiveTab}/>
     {!selected&&<p role="status">Selection unavailable; open report options and preview again.</p>}
-    {report.isLoading&&<p>Loading General Journal…</p>}
+    {report.isLoading&&<UiSkeleton label="Loading General Journal…"/>}
     {report.isError&&<p role="alert">Unable to load General Journal.</p>}
     {report.data&&<article className="gj-paper" ref={paperRef} style={{zoom:zoom+'%'}}>
       <header><h2>GENERAL JOURNAL VIEW</h2><p>From {report.data.from} to {report.data.to}</p></header>
@@ -101,23 +104,25 @@ export function GeneralJournalReportPage(){
   return <section className="gj-page gj-options">
     <div className="gj-panel"><h2>General Journal Selection</h2><div className="gj-content">
       <div className="gj-left">
-        <fieldset><legend>Date Selection</legend><label>From Date<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label>
-          <label>To Date<input type="date" value={to} min={from} onChange={e=>setTo(e.target.value)}/></label></fieldset>
+        <fieldset><legend>Date Selection</legend><label><span>Date range</span><UiDateRangePicker fromInputProps={{type:"date",value:from,onChange:e=>setFrom(e.target.value)}} toInputProps={{type:"date",value:to,min:from,onChange:e=>setTo(e.target.value)}}/></label>
+          </fieldset>
         <fieldset><legend>Transactions Selection (voucher number)</legend>
           <label>From Transaction #<input type="number" min="1" value={transactionFrom} onChange={e=>setTransactionFrom(e.target.value)}/></label>
           <label>To Transaction #<input type="number" min="1" value={transactionTo} onChange={e=>setTransactionTo(e.target.value)}/></label></fieldset>
         <label className="gj-inline"><input type="checkbox" checked={problematic} onChange={e=>setProblematic(e.target.checked)}/> Only Problematic Entries</label>
         <label className="gj-inline"><input type="checkbox" checked={narration} onChange={e=>setNarration(e.target.checked)}/> Narration Also</label>
-        <label>Print Format<select value={format} onChange={e=>setFormat(e.target.value as Selection['print_format'])}>
-          <option value="transaction_wise">Transaction Wise Format</option><option value="plain" disabled>Plain Format (pending mapping)</option>
-          <option value="group_by_doc" disabled>Group By Doc (pending mapping)</option><option value="single_line" disabled>Single Line Format (pending mapping)</option></select></label>
-        <label>Voucher Debit/Credit Difference<select value={balanceMode} onChange={e=>setBalanceMode(e.target.value as Selection['balance_mode'])}>
-          <option value="all">Any</option><option value="not_between">Not Between</option><option value="between">Between</option></select></label>
+        <label>Print Format<UiSelect value={format} onChange={value=>setFormat(value as Selection['print_format'])} options={[
+          {value:'transaction_wise',label:'Transaction Wise Format'}, {value:'plain',label:'Plain Format (pending mapping)',disabled:true},
+          {value:'group_by_doc',label:'Group By Doc (pending mapping)',disabled:true}, {value:'single_line',label:'Single Line Format (pending mapping)',disabled:true},
+        ]}/></label>
+        <label>Voucher Debit/Credit Difference<UiSelect value={balanceMode} onChange={value=>setBalanceMode(value as Selection['balance_mode'])} options={[
+          {value:'all',label:'Any'}, {value:'not_between',label:'Not Between'}, {value:'between',label:'Between'},
+        ]}/></label>
         {balanceMode!=='all'&&<div className="gj-balance-range"><label>From<input type="number" step="0.0001" min="0" value={balanceFrom} onChange={e=>setBalanceFrom(e.target.value)}/></label>
           <label>To<input type="number" step="0.0001" min="0" value={balanceTo} onChange={e=>setBalanceTo(e.target.value)}/></label></div>}
       </div>
       <fieldset className="gj-types"><legend>Posted Voucher Types</legend>
-        {options.isLoading&&<p>Loading types…</p>}{options.isError&&<p role="alert">Unable to load voucher types.</p>}
+        {options.isLoading&&<UiSkeleton label="Loading types…"/>}{options.isError&&<p role="alert">Unable to load voucher types.</p>}
         <div className="gj-types-scroll">{(options.data?.document_types||[]).map(type=><label key={type}>
           <input type="checkbox" checked={types.includes(type)} onChange={e=>setTypes(v=>e.target.checked?[...v,type]:v.filter(x=>x!==type))}/>
           {label(type)}</label>)}</div>
@@ -125,7 +130,7 @@ export function GeneralJournalReportPage(){
       </fieldset>
     </div>
       <div className="gj-trial-footer" aria-label="Trial Balance closing totals">
-        {trialQuery.isLoading ? <span role="status">Loading Trial totals…</span> :
+        {trialQuery.isLoading ? <UiSkeleton label="Loading Trial totals…"/> :
           trialQuery.isError ? <span role="alert">Unable to load Trial totals.</span> :
           trialQuery.data ? <>
             <div className="gj-trial-item"><strong>Trial (Dr)</strong><output>{amt(trialQuery.data.totals.debit)}</output></div>

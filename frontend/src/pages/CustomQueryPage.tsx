@@ -1,3 +1,4 @@
+import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Archive, Database, Download, Eye, FileSpreadsheet, FileText, Grid3X3, LifeBuoy, MessageSquareText, Pencil, Play, Printer, RefreshCw, Save, Search, ShieldCheck, TableProperties, Trash2, Wrench, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -322,7 +323,7 @@ export function CustomQueryPage() {
 
           <div className="custom-query-output">
             {bottomTab === 'results' ? (
-              <PosDataGrid
+              <PosDataGrid loading={runMutation.isPending}
                 columns={resultColumns}
                 rows={resultRows}
                 rowKey={(row) => row._rowKey}
@@ -599,7 +600,7 @@ export function CustomQueryPage() {
                 </div>
               </details>
             ))}
-            {catalogQuery.isLoading ? <div className="custom-query-browser-empty">Loading datasets…</div> : null}
+            {catalogQuery.isLoading ? <UiSkeleton label="Loading datasets…"/> : null}
             {catalogQuery.isError ? <div className="custom-query-browser-empty">Unable to load datasets.</div> : null}
             {!catalogQuery.isLoading && !catalogQuery.isError && filteredDatasets.length === 0 ? (
               <div className="custom-query-browser-empty">No matching datasets or columns.</div>

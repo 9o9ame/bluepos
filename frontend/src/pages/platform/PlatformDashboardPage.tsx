@@ -1,3 +1,4 @@
+import { UiSkeleton } from '../../components/ui/UiSkeleton'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
@@ -154,7 +155,7 @@ export function PlatformDashboardPage() {
         ))}
       </div>
       {query.isError ? <div className="platform-dashboard-card" role="alert">Unable to load dashboard charts. <button type="button" className="platform-dashboard-retry" onClick={() => void query.refetch()}>Retry</button></div> : null}
-      {query.isPending ? <div className="platform-dashboard-card" role="status">Loading tenant status charts…</div> : null}
+      {query.isPending ? <UiSkeleton label="Loading tenant status charts…"/> : null}
       {!query.isError && !query.isPending ? <StatusCharts total={total} values={[
         { label: 'Active', count: data?.tenants.active ?? 0, tone: 'success' },
         { label: 'Trial', count: data?.tenants.trial ?? 0, tone: 'warning' },

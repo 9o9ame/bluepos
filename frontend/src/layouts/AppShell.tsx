@@ -21,6 +21,11 @@ import { WorkspaceProvider, useWorkspace } from '../features/workspace/Workspace
 import { useWorkspaceShortcuts } from '../features/workspace/useWorkspaceShortcuts'
 
 export function AppShell() {
+  useEffect(() => {
+    // Root scope also covers tenant dialogs rendered through portals.
+    document.documentElement.dataset.buttonScope = 'tenant'
+    return () => { delete document.documentElement.dataset.buttonScope }
+  }, [])
   const { session, logout } = useAuth()
   const { setUserScope } = useAppearance()
   const navigate = useNavigate()
