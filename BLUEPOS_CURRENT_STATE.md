@@ -2210,3 +2210,9 @@ Statuses: Completed = green, Partial = amber, Pending = red, In Progress = blue.
 - Platform devices API exposes read-only tenant-scoped GET inventory, and does not register POST platform approval/revoke. Updated outdated platform test to assert scoped listing and 404 on legacy mutation endpoints, with no device/audit mutation.
 - Approved product behavior is staff login without mandatory password-change redirect and Owner current-device revoke prevention. Updated SecurityTest assertions accordingly; the staff can still voluntarily change the password.
 - Changes only in the three focused backend test files plus this document; no schema/migrations or production code changes. Tests **not run via remote GitHub editor**. Local main remains 24 commits unpublished due separate remote `commit_refs` failure; avoid force push/rebase or changing local main until Git issues resolved.
+
+
+## 2026-11-04 — Three additional isolated permission-test failures
+- User reproduced on `bluepos_test`: `CustomQueryTest::custom_query_requires_explicit_permission` 200 vs 403; `PurchasePaymentTest::purchase_payment_requires_permission_and_preserves_tenant_isolation` 201 vs 403; `StockRecalculationTest::recalculation_requires_explicit_permission` 200 vs 403.
+- Root cause: tests detach permission pivots from privileged Owner roles, but `PermissionService::hydrate()` deliberately grants privileged system roles all tenant keys. Updated exactly three test files to use existing `Tests\\TestCase::restrictCurrentMembershipWithoutPermission(key)` test-only helper, which replaces membership role assignments with a non-privileged role missing exactly the named permission. Original endpoint denial and tenant-isolation assertions remain.
+- No production permission code changed. Commits on `feature/superadmin`, targeted test reruns pending; no claim of PASS. Local `main` still unpublished due separate remote error and must not be reset/force pushed.
