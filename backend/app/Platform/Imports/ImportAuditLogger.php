@@ -17,7 +17,7 @@ final class ImportAuditLogger extends AuditLogger
         private readonly PlatformAuditLogger $platformAudit,
     ) {}
 
-    public function record(string $event, array $metadata = [], ?Request $request = null): void
+    public function record(string $event, array $metadata = [], ?Request $request = null, bool $serverResolvedIdentity = false): void
     {
         $this->platformAudit->record($event, [...$metadata, 'tenant_ulid' => $this->tenant->ulid,
             'execution_context' => 'platform_tenant_import'], $request, $this->actor);
