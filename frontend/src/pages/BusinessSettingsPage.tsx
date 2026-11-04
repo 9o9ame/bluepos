@@ -67,6 +67,10 @@ export function BusinessSettingsPage() {
         default_cash_account_ulid: String(form.get('default_cash_account_ulid') || '') || null,
         sales_clearing_account_ulid: String(form.get('sales_clearing_account_ulid') || '') || null,
         purchase_clearing_account_ulid: String(form.get('purchase_clearing_account_ulid') || '') || null,
+        sales_revenue_account_ulid: String(form.get('sales_revenue_account_ulid') || '') || null,
+        sales_tax_payable_account_ulid: String(form.get('sales_tax_payable_account_ulid') || '') || null,
+        inventory_account_ulid: String(form.get('inventory_account_ulid') || '') || null,
+        cogs_account_ulid: String(form.get('cogs_account_ulid') || '') || null,
       })
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Unable to save settings.')
@@ -239,6 +243,30 @@ export function BusinessSettingsPage() {
               ]}
             />
           </Field>
+          {([
+            ['sales_revenue_account_ulid', 'Sales Revenue Account', settings.sales_revenue_account_ulid],
+            ['sales_tax_payable_account_ulid', 'Sales Tax Payable Account', settings.sales_tax_payable_account_ulid],
+            ['inventory_account_ulid', 'Inventory Control Account', settings.inventory_account_ulid],
+            ['cogs_account_ulid', 'Cost of Goods Sold Account', settings.cogs_account_ulid],
+          ] as const).map(([name, label, value]) => (
+            <Field key={name} label={label}>
+              <UiSelect
+                key={`${name}-${value ?? 'none'}-${leafAccounts.length}`}
+                defaultValue={value ?? ''}
+                name={name}
+                disabled={!canManage}
+                triggerClassName="desktop-select"
+                aria-label={label}
+                options={[
+                  { value: '', label: '— Not configured —' },
+                  ...leafAccounts.map((account) => ({
+                    value: account.ulid,
+                    label: `${account.code} — ${account.name}`,
+                  })),
+                ]}
+              />
+            </Field>
+          ))}
         </FormGroup>
       </form>
     </DesktopPanel>
