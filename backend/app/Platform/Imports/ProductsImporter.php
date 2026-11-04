@@ -12,6 +12,7 @@ use App\Actions\Products\SyncProductPricesAction;
 use App\Actions\Products\SyncProductPrimarySupplierAction;
 use App\Catalog\TenantCatalog;
 use App\Models\BusinessSetting;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Platform\PlatformUser;
 use App\Models\Product;
@@ -31,6 +32,10 @@ final class ProductsImporter
     private array $skus;
 
     private array $categories;
+
+    private array $brands;
+
+    private array $units;
 
     private array $movementProducts;
 
@@ -71,8 +76,12 @@ final class ProductsImporter
         $this->skus = Product::query()->forTenant($id)->whereIn('sku', $codes)->get()->groupBy('sku')->all();
         // Category masters are small; preload once per bounded request.
         $this->categories = Category::query()->forTenant($id)->get()->groupBy(fn ($c) => AccountsImporter::normalize($c->name))->all();
-        $units = Unit::query()->forTenant($id)->where('is_active', true)->get()->filter(fn ($u) => AccountsImporter::normalize($u->code) === 'PCS' || AccountsImporter::normalize($u->name) === 'PCS');
-        $this->pcs = $units->count() === 1 ? $units->first() : null;
+        $units = Unit::query()->forTenant($id)->where('is_active', true)->get();
+        $this->units = $units->groupBy(fn ($u) => AccountsImporter::normalize($u->code))->all();
+        $pcs = $this->units['PCS'] ?? collect();
+        $this->pcs = $pcs->count() === 1 ? $pcs->first() : null;
+        $this->brands = Brand::query()->forTenant($id)->get()
+            ->groupBy(fn ($b) => AccountsImporter::normalize($b->name))->all();
         $productIds = array_merge(array_map(fn ($b) => $b->product_id, $this->barcodes),
             collect($this->skus)->flatten()->pluck('id')->all());
         $this->movementProducts = $this->warehouse ? array_fill_keys(StockMovement::query()->forTenant($id)
@@ -94,7 +103,20 @@ final class ProductsImporter
             return ['outcome' => 'skipped', 'warnings' => ['CODE matches conflicting products; review is required.']];
         }
         $product = $barcode ? Product::query()->forTenant($this->tenant->id)->whereKey($barcode->product_id)->firstOrFail() : $skus->first();
-        if (! $product && ! $this->pcs) {
+        // Existing identities are never modified on subsequent imports, including
+        // modified exports and source files in different order.
+        if ($product) {
+            return ['outcome' => 'reused', 'entity_ulid' => $product->ulid,
+                'warnings' => [], 'stock' => 'skipped'];
+        }
+        $unitName = AccountsImporter::normalize((string) ($row['unit'] ?? ''));
+        $unitKey = in_array($unitName, ['', 'EACH', 'PIECE', 'PIECES', 'UNIT'], true) ? 'PCS' : $unitName;
+        $unitMatches = $this->units[$unitKey] ?? collect();
+        if ($unitMatches->count() !== 1) {
+            return ['outcome' => 'skipped', 'warnings' => ['No unique active unit matches source U.O.M; product was not created.']];
+        }
+        $baseUnit = $unitMatches->first();
+        if (! $product && ! $baseUnit) {
             return ['outcome' => 'skipped', 'warnings' => ['Tenant has no unique active PCS unit; new product was not created.']];
         }
         if (! $product && ! $this->settingsReady) {
@@ -115,19 +137,36 @@ final class ProductsImporter
                 $this->categories[$key] = collect([$category]);
             }
         }
+        $brand = null;
+        if (trim((string) ($row['brand'] ?? '')) !== '') {
+            $brandName = trim((string) $row['brand']);
+            $brandKey = AccountsImporter::normalize($brandName);
+            $brandMatches = $this->brands[$brandKey] ?? collect();
+            if ($brandMatches->count() > 1 || ($brandMatches->count() === 1 && ! $brandMatches->first()->is_active)) {
+                return ['outcome' => 'skipped', 'warnings' => ['Brand is ambiguous or inactive.']];
+            }
+            $brand = $brandMatches->first();
+            if (! $brand) {
+                $brand = Brand::query()->create([
+                    'tenant_id' => $this->tenant->id,
+                    'code' => 'LEG-'.substr(hash('sha256', $brandKey), 0, 24),
+                    'name' => mb_substr($brandName, 0, 180), 'is_active' => true,
+                ]);
+                $this->brands[$brandKey] = collect([$brand]);
+            }
+        }
         $created = ! $product;
         if ($created) {
             $product = $this->create->execute(['name' => $row['name'], 'sku' => strlen($code) <= 64 ? $code : null,
-                'category_ulid' => $category?->ulid, 'base_unit_ulid' => $this->pcs->ulid,
-                'barcodes' => [['barcode' => $code, 'unit_ulid' => $this->pcs->ulid,
+                'category_ulid' => $category?->ulid, 'brand_ulid' => $brand?->ulid,
+                'base_unit_ulid' => $baseUnit->ulid,
+                'purchase_rate' => $this->decimal($row['cost'], 4) ? $row['cost'] : null,
+                'barcodes' => [['barcode' => $code, 'unit_ulid' => $baseUnit->ulid,
                     'conversion_factor' => '1.00000000', 'is_primary' => true, 'is_active' => true]]]);
             $this->barcodes[$code] = $product->barcodes->first();
             if ($product->sku) {
                 $this->skus[$code] = collect([$product]);
             }
-        } elseif ($category) {
-            $product->category_id = $category->id;
-            $product->save();
         }
         if ($this->decimal($row['retail'], 4)) {
             $this->prices->execute($product, [['price_type' => 'retail', 'amount' => $row['retail']]]);
