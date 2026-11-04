@@ -5,6 +5,7 @@ namespace App\Platform\Imports;
 use App\Actions\Inventory\CreateOpeningBalanceAction;
 use App\Actions\Inventory\PostOpeningBalanceAction;
 use App\Actions\Inventory\PostStockMovementAction;
+use App\Actions\Inventory\StockLedgerLock;
 use App\Actions\Inventory\UpsertOpeningBalanceLineAction;
 use App\Actions\Products\CreateProductAction;
 use App\Actions\Products\SyncProductBarcodesAction;
@@ -61,7 +62,7 @@ final class ProductsImporter
             $this->prices, new SyncProductPrimarySupplierAction($catalog, $ctx));
         $this->opening = new CreateOpeningBalanceAction($ctx, $catalog, $audit);
         $this->line = new UpsertOpeningBalanceLineAction($ctx, $catalog, $audit);
-        $this->post = new PostOpeningBalanceAction($ctx, new PostStockMovementAction($ctx), $audit);
+        $this->post = new PostOpeningBalanceAction($ctx, new PostStockMovementAction($ctx, app(StockLedgerLock::class)), $audit);
         $this->reload();
     }
 
