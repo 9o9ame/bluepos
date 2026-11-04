@@ -130,9 +130,9 @@ html[data-button-scope='tenant'] :is(button.ui-button, button.desktop-btn, butto
 html[data-button-scope='tenant'] .bp-motion-copy[data-copied='true'] { background: var(--ui-button-success-face); color: color-mix(in srgb, var(--ui-success) 82%, var(--ui-text)); }
 /* Indeterminate feedback must not imply a fabricated completion percentage. */
 html[data-button-scope='tenant'] .bp-motion-download[data-busy='true']::after { animation: bp-motion-pulse var(--bp-motion-slow) ease-in-out infinite; }
-html[data-button-scope='tenant'][data-animations='off'] button,
-html[data-button-scope='tenant'][data-animations='off'] button svg { transition: none !important; }
-html[data-button-scope='tenant'][data-animations='off'] button svg,
+html[data-button-scope='tenant'][data-animations='off'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem']),
+html[data-button-scope='tenant'][data-animations='off'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem']) svg { transition: none !important; }
+html[data-button-scope='tenant'][data-animations='off'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem']) svg,
 html[data-button-scope='tenant'][data-animations='off'] .bp-motion-download::after { animation: none !important; transform: none !important; }
 @media (prefers-reduced-motion: reduce) {
   html[data-button-scope='tenant'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem']),
@@ -171,7 +171,7 @@ html[data-button-scope='tenant'] :is(button.ui-button, button.desktop-btn, butto
 /* Replace the old passing shine; the premium face remains until hover ends. */
 html[data-button-scope='tenant'] .bp-motion-action:not(.bp-motion-download):not(.bp-motion-copy)::after { content: none; }
 html[data-button-scope='tenant'] .bp-motion-action:not(:disabled):is(:hover, :active) { transform: none; }
-html[data-button-scope='tenant'][data-animations='off'] button::before { transition: none; }
+html[data-button-scope='tenant'][data-animations='off'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem'])::before { transition: none; }
 @media (prefers-reduced-motion: reduce) {
   html[data-button-scope='tenant'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem'])::before { transition: none; }
 }
@@ -216,9 +216,9 @@ html[data-button-scope='tenant'] :is(button.ui-button, button.desktop-btn, butto
   opacity: .75;
   animation: bp-motion-sweep var(--bp-motion-slow) ease-in-out infinite;
 }
-html[data-button-scope='tenant'][data-animations='off'] button:is(.bp-motion-copy, .bp-motion-download)::after,
-html[data-button-scope='tenant'][data-animations='off'] button[data-feedback] :is(.ui-button-icon, .ui-button-feedback-message) { animation: none !important; opacity: 1; }
-html[data-button-scope='tenant'][data-animations='off'] button:is(.bp-motion-copy, .bp-motion-download)::after { display: none; }
+html[data-button-scope='tenant'][data-animations='off'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem']):is(.bp-motion-copy, .bp-motion-download)::after,
+html[data-button-scope='tenant'][data-animations='off'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem'])[data-feedback] :is(.ui-button-icon, .ui-button-feedback-message) { animation: none !important; opacity: 1; }
+html[data-button-scope='tenant'][data-animations='off'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem']):is(.bp-motion-copy, .bp-motion-download)::after { display: none; }
 @media (prefers-reduced-motion: reduce) {
   html[data-button-scope='tenant'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem']):is(.bp-motion-copy, .bp-motion-download)::after { display: none; }
   html[data-button-scope='tenant'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem'])[data-feedback] :is(.ui-button-icon, .ui-button-feedback-message) { animation: none !important; }
@@ -289,8 +289,8 @@ html[data-button-scope='tenant'] :is(button.ui-button, button.desktop-btn, butto
 @keyframes bp-button-circle-in { from { opacity: .4; transform: translateX(-50%) scale(.6); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
 
 /* Reduced motion keeps the real state, full confirmation ring and check. */
-html[data-button-scope='tenant'][data-animations='off'] button[data-feedback] :is(.ui-button-ring-progress, .ui-button-ring-check, .ui-button-feedback-ring, .ui-button-icon) { animation: none !important; }
-html[data-button-scope='tenant'][data-animations='off'] button.bp-motion-download[data-feedback]:is([data-feedback='busy'], [data-feedback='done']) .ui-button-feedback-ring { transform: translateX(-50%) !important; }
+html[data-button-scope='tenant'][data-animations='off'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem'])[data-feedback] :is(.ui-button-ring-progress, .ui-button-ring-check, .ui-button-feedback-ring, .ui-button-icon) { animation: none !important; }
+html[data-button-scope='tenant'][data-animations='off'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem']).bp-motion-download[data-feedback]:is([data-feedback='busy'], [data-feedback='done']) .ui-button-feedback-ring { transform: translateX(-50%) !important; }
 @media (prefers-reduced-motion: reduce) {
   html[data-button-scope='tenant'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem'])[data-feedback] :is(.ui-button-ring-progress, .ui-button-ring-check, .ui-button-feedback-ring, .ui-button-icon) { animation: none !important; }
   html[data-button-scope='tenant'] :is(button.ui-button, button.desktop-btn, button[role='tab'], button.ribbon-tab, button.ribbon-command, button.product-def-cmd, button.sales-reference-action-icon, button.pie-btn, button.parties-vca-action, button.parties-vca-shell-btn, .ribbon-menu button[role='menuitem']).bp-motion-download[data-feedback]:is([data-feedback='busy'], [data-feedback='done']) .ui-button-feedback-ring { transform: translateX(-50%) !important; }
