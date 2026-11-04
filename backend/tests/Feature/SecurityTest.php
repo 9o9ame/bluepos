@@ -96,7 +96,7 @@ class SecurityTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function test_temporary_password_forces_change_then_clears(): void
+    public function test_staff_temporary_password_does_not_force_change_and_can_be_changed(): void
     {
         $owner = $this->signInOwner('tmppass')->assertOk();
         $this->postJson('/api/memberships', [
@@ -109,10 +109,13 @@ class SecurityTest extends TestCase
         ])->assertCreated()->assertJsonMissingPath('password');
         $this->postJson('/api/auth/logout')->assertOk();
 
-        $this->loginAs('tmppass', 'temp-cashier', 'temporary1')->assertOk();
+        $this->loginAs('tmppass', 'temp-cashier', 'temporary1')
+            ->assertOk()->assertJsonPath('must_change_password', false);
+        // Staff has no role-list permission, but is not blocked by a
+        // mandatory password-change gate reserved for the tenant Owner.
         $this->getJson('/api/roles')
             ->assertForbidden()
-            ->assertJsonPath('error.key', 'PASSWORD_CHANGE_REQUIRED');
+            ->assertJsonPath('error.key', 'FORBIDDEN');
 
         $this->postJson('/api/auth/change-password', [
             'current_password' => 'temporary1',
@@ -186,15 +189,16 @@ class SecurityTest extends TestCase
         $this->loginAs('devstaff', 'cashier-devstaff')->assertOk();
     }
 
-    public function test_revoked_device_blocks_login_and_session(): void
+    public function test_owner_cannot_revoke_current_device_or_invalidate_own_session(): void
     {
         $this->signInOwner('devrev')->assertOk();
         $devices = $this->getJson('/api/devices')->assertOk()->json();
         $ulid = $devices[0]['ulid'];
-        $this->postJson('/api/devices/'.$ulid.'/revoke')->assertOk()->assertJsonPath('status', 'revoked');
-        $this->getJson('/api/auth/me')
-            ->assertForbidden()
-            ->assertJsonPath('error.key', 'DEVICE_REVOKED');
+        $this->postJson('/api/devices/'.$ulid.'/revoke')
+            ->assertStatus(409)
+            ->assertJsonPath('error.key', 'CURRENT_DEVICE_REVOKE_DENIED');
+        $this->getJson('/api/auth/me')->assertOk();
+        $this->assertSame(DeviceStatus::Active, Device::query()->where('ulid', $ulid)->firstOrFail()->status);
     }
 
     public function test_cashier_cannot_approve_device_but_owner_can(): void
