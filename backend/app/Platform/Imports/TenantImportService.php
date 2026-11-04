@@ -125,7 +125,7 @@ final class TenantImportService
         return ['ulid' => $batch->ulid, 'tenant_ulid' => $tenant->ulid, 'format' => $batch->format,
             'status' => $batch->status, 'processed' => $results->count(), 'total' => count($parsed['rows']), 'replayed' => $replay, ...$counts, 'stock' => $stock,
             'warnings' => $warnings, 'rows' => $results->all(),
-            'ignored_fields' => $batch->format === 'products' ? ['In Carton: unit/conversion semantics are unspecified.'] : [],
+            'ignored_fields' => $parsed['ignored_fields'] ?? ($batch->format === 'products' ? ['In Carton: unit/conversion semantics are unspecified.'] : []),
             'retry_note' => 'Processed rows are persisted. Re-upload resumes unprocessed rows; completed row outcomes, including skips/failures, are replayed.'];
     }
 
