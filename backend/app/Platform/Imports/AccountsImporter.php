@@ -38,7 +38,9 @@ final class AccountsImporter
         if (! $class || $row['name'] === '' || mb_strlen($row['name']) > 180) {
             return ['outcome' => 'skipped', 'warnings' => ['Unsupported TYPE or invalid source name.']];
         }
-        $matches = $this->types[self::normalize($row['account_type'])] ?? collect();
+        $matches = isset($row['account_type_code'])
+            ? AccountType::query()->forTenant($this->tenant->id)->where('code', $row['account_type_code'])->where('is_active', true)->with('subHead.mainHead')->get()
+            : ($this->types[self::normalize($row['account_type'])] ?? collect());
         if ($matches->count() !== 1 || ! $matches->first()->subHead?->is_active
             || ! $matches->first()->subHead?->mainHead?->is_active
             || (int) $matches->first()->subHead->tenant_id !== (int) $this->tenant->id
@@ -51,6 +53,8 @@ final class AccountsImporter
         if (strlen($code) > 64 || strlen($row['contact']) > 64) {
             return ['outcome' => 'skipped', 'warnings' => ['Source code/contact exceeds domain field length.']];
         }
+        // Source code is stable across CSV, XLSX and PDF exports. Never
+        // overwrite an existing tenant record when another export is imported.
         $existing = $class::query()->forTenant($this->tenant->id)->where('code', $code)->first();
         if ($existing) {
             if (self::normalize($existing->name) !== self::normalize($row['name'])
