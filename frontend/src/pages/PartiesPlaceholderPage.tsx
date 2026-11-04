@@ -663,21 +663,21 @@ export function PartiesPlaceholderPage({
 
     try {
       let data: Party[]
-      if (filter === 'ACCOUNTS') {
-        const [profiles, legacyAccounts] = await Promise.all([
-          fetchPartyProfiles('account'),
-          fetchParties('account'),
-        ])
-        data = [...profiles, ...legacyAccounts]
-      } else if (filter === 'ALL') {
-        const [profiles, accounts] = await Promise.all([
-          fetchPartyProfiles('all'),
-          fetchParties('account'),
-        ])
-        data = [...profiles, ...accounts]
+      if (filter === 'SALES MAN') {
+        data = await fetchPartyProfiles('salesman')
       } else {
-        const type = uiTypeToFilter(filter) as PartyBusinessType
-        data = await fetchPartyProfiles(type)
+        // Legacy imported vendors/customers/accounts have no PartyProfile.
+        // Merge them with modern profiles without showing linked party rows twice.
+        const type = uiTypeToFilter(filter)
+        const [profiles, legacyParties] = await Promise.all([
+          fetchPartyProfiles(type === 'all' ? 'all' : type as PartyBusinessType),
+          fetchParties(type),
+        ])
+        const profileIds = new Set(profiles.map((party) => party.identity_ulid ?? party.ulid))
+        data = [
+          ...profiles,
+          ...legacyParties.filter((party) => !party.identity_ulid || !profileIds.has(party.identity_ulid)),
+        ]
       }
 
       setParties(data)
