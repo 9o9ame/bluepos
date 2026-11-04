@@ -105,8 +105,7 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
         ) : null}
 
         <p>
-          Accounts do not require a warehouse. Negative stock is skipped. Existing movement
-          history prevents another opening for that product/warehouse.
+          Accounts do not require a warehouse. Existing product/account codes are left unchanged. Negative stock is skipped. PDF account imports require text extraction support on the server.
         </p>
 
         {pending ? (
@@ -124,7 +123,7 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
               {result.format} import {result.replayed ? 'replayed (no new changes)' : result.status}
             </p>
             <p>
-              Created: {result.created} · Updated/reused: {result.updated + result.reused} ·
+              Created: {result.created} · Already present: {result.reused} · Updated: {result.updated} ·
               Skipped: {result.skipped} · Failed: {result.failed} · Warnings: {result.warnings.length}
             </p>
             {result.format === 'products' ? (
