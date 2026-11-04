@@ -18,7 +18,7 @@ class TenantImportRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['file' => ['required', 'file', 'extensions:xlsx', 'mimes:xlsx', 'max:10240'],
+        return ['file' => ['required', 'file', 'extensions:xlsx,csv,pdf', 'mimes:xlsx,csv,txt,pdf', 'max:10240'],
             'warehouse_ulid' => ['nullable', 'ulid']];
     }
 }
