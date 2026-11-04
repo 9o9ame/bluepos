@@ -64,7 +64,7 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
         }}
       >
         <label className="block font-semibold">
-          Accounts or Products XLSX
+          Products XLSX or Accounts CSV / XLSX / PDF
           <input
             type="file"
             accept=".xlsx"
