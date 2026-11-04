@@ -104,7 +104,7 @@ class PlatformTenantImportTest extends TestCase
         $this->assertNoInternalIds($normal->json());
     }
 
-    public function test_edited_workbook_updates_catalog_without_reopening_stock_or_units(): void
+    public function test_edited_workbook_skips_existing_products_without_reopening_stock_or_units(): void
     {
         $tenant = $this->readyTenant('imp-edited');
         $warehouse = Warehouse::query()->forTenant($tenant->id)->firstOrFail();
@@ -114,12 +114,12 @@ class PlatformTenantImportTest extends TestCase
         $kg = Unit::query()->forTenant($tenant->id)->where('code', 'KG')->firstOrFail();
         $product->base_unit_id = $kg->id;
         $product->save();
-        $response = $this->upload($tenant, $this->products('400'), $warehouse->ulid)->assertOk()->assertJsonPath('updated', 3)->assertJsonPath('stock.posted', 0);
+        $response = $this->upload($tenant, $this->products('400'), $warehouse->ulid)->assertOk()->assertJsonPath('reused', 3)->assertJsonPath('updated', 0)->assertJsonPath('stock.posted', 0);
         $this->assertSame($kg->id, $product->fresh()->base_unit_id);
         $this->assertSame(1, StockMovement::query()->count());
-        $this->assertSame('400.0000', ProductPrice::query()->where('product_id', $product->id)->where('price_type', 'retail')->sole()->amount);
+        $this->assertSame('390.0000', ProductPrice::query()->where('product_id', $product->id)->where('price_type', 'retail')->sole()->amount);
         $this->assertSame(3, ProductBarcode::query()->count());
-        $this->assertTrue(collect($response->json('warnings'))->contains(fn ($w) => str_contains($w['message'], 'movement history')));
+        $this->assertSame([], $response->json('warnings'));
     }
 
     public function test_catalog_only_and_missing_pcs_do_not_create_stock_or_partial_products(): void
@@ -146,7 +146,7 @@ class PlatformTenantImportTest extends TestCase
         $this->upload($a, $this->products(), $wb->ulid)->assertNotFound();
         $this->assertSame(0, TenantImport::query()->count());
         $this->upload($a, $this->products())->assertOk();
-        $this->upload($a, $this->products(), $wa->ulid)->assertStatus(422);
+        $this->upload($a, $this->products(), $wa->ulid)->assertOk()->assertJsonPath('replayed', true);
         $this->assertSame(0, StockMovement::query()->count());
         $this->post('/api/platform/tenants/'.$a->id.'/imports', ['file' => $this->accounts()])->assertNotFound();
     }
@@ -171,7 +171,7 @@ class PlatformTenantImportTest extends TestCase
         // Simulate an interruption after two rows: remove only test-fixture metadata
         // for the third row. Its product remains and must be safely reused.
         TenantImportRow::query()->where('import_id', $batch->id)->where('source_row', 10)->delete();
-        $this->upload($tenant, $this->products())->assertOk()->assertJsonPath('created', 2)->assertJsonPath('updated', 1);
+        $this->upload($tenant, $this->products())->assertOk()->assertJsonPath('created', 2)->assertJsonPath('reused', 1);
         $this->assertSame(3, Product::query()->forTenant($tenant->id)->count());
         $this->assertSame(3, TenantImportRow::query()->count());
     }
@@ -200,7 +200,7 @@ class PlatformTenantImportTest extends TestCase
         $warehouse = Warehouse::query()->forTenant($tenant->id)->firstOrFail();
         $result = $this->upload($tenant, $this->products('410'), $warehouse->ulid)->assertOk()->assertJsonPath('stock.posted', 0);
         $this->assertSame(0, StockMovement::query()->count());
-        $this->assertTrue(collect($result->json('warnings'))->contains(fn ($w) => str_contains($w['message'], 'unit/barcode conversion')));
+        $this->assertSame(3, $result->json('reused'));
     }
 
     public function test_bounded_chunks_resume_and_do_not_repeat_account_creations(): void
@@ -240,6 +240,47 @@ class PlatformTenantImportTest extends TestCase
         $this->upload($tenant, $file)->assertOk()->assertJsonPath('skipped', 3)->assertJsonPath('created', 0);
         $this->assertSame(0, Product::query()->forTenant($tenant->id)->count());
         $this->assertSame(0, Category::query()->forTenant($tenant->id)->count());
+    }
+
+
+    public function test_account_list_csv_and_xlsx_detect_headers_and_skip_existing_records(): void
+    {
+        $tenant = $this->readyTenant('imp-account-exports');
+        $this->signInPlatformAdmin('imp-account-exports-admin');
+        $headers = ['Main Head', 'Account', 'Head', 'Sub Head'];
+        $data = [
+            ['01-ASSETS', '00064-CSV Customer', '010-CURRENT ASSETS', '0011-ACCOUNT RECEIVABLE'],
+            ['02-LIABILITIES', '00016-CSV Supplier', '020-SHORT TERM LIABILITIES', '0020-ACCOUNT PAYABLE'],
+            ['03-EXPENSES', '00033-Office Expense', '030-EXPENSES', '0030-EXPENSES'],
+            ['03-EXPENSES', '', '030-EXPENSES', '0031-INCOME TAX'],
+        ];
+        $csv = implode("\n", array_map(fn ($row) => implode(',', $row), array_merge([$headers], $data)))."\n";
+        $csvFile = UploadedFile::fake()->createWithContent('accounts.csv', $csv);
+        $this->upload($tenant, $csvFile)->assertOk()->assertJsonPath('created', 3)->assertJsonPath('failed', 0);
+        $xlsx = UploadedFile::fake()->createWithContent('accounts.xlsx', app(SimpleXlsx::class)->write($headers, $data));
+        $this->upload($tenant, $xlsx)->assertOk()->assertJsonPath('created', 0)->assertJsonPath('reused', 3);
+        $this->assertSame(1, Supplier::query()->forTenant($tenant->id)->count());
+        $this->assertSame(1, Customer::query()->forTenant($tenant->id)->count());
+        $this->assertDatabaseHas('accounts', ['tenant_id' => $tenant->id, 'code' => '00033']);
+    }
+
+    public function test_sale_details_xlsx_maps_product_columns_and_skips_repeat_with_new_rows(): void
+    {
+        $tenant = $this->readyTenant('imp-sale-details');
+        $this->signInPlatformAdmin('imp-sale-details-admin');
+        $headers = ['ID', 'Disc', 'CODE', 'Description', 'Manufacturer', 'Category', 'U.O.M', 'Cost Price', 'Margin', 'Selling', 'In Stock'];
+        $make = fn ($rows) => UploadedFile::fake()->createWithContent('products.xlsx', app(SimpleXlsx::class)->write($headers, $rows));
+        $first = [['1', '', 'P-001', 'Milk One', 'BRAND ONE', 'DAIRY', 'EACH', '40', '10', '50', '0']];
+        $this->upload($tenant, $make($first))->assertOk()->assertJsonPath('created', 1);
+        $second = array_merge($first, [['2', '', 'P-002', 'Milk Two', 'BRAND ONE', 'DAIRY', 'EACH', '60', '10', '75', '0']]);
+        $this->upload($tenant, $make($second))->assertOk()
+            ->assertJsonPath('created', 1)->assertJsonPath('reused', 1)->assertJsonPath('failed', 0);
+        $this->assertSame(2, Product::query()->forTenant($tenant->id)->count());
+        $existing = Product::query()->forTenant($tenant->id)->where('sku', 'P-001')->firstOrFail();
+        $this->assertSame('Milk One', $existing->name);
+        $this->assertSame('BRAND ONE', $existing->brand->name);
+        $this->assertSame('DAIRY', $existing->category->name);
+        $this->assertSame('PCS', $existing->baseUnit->code);
     }
 
     private function readyTenant(string $suffix)
