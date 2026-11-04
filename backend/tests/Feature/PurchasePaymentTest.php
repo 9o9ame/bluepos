@@ -172,18 +172,9 @@ class PurchasePaymentTest extends TestCase
         $this->configureAccounts();
         $purchaseA = $this->createPostedPurchase('pur-pay-tenant-a', '50.0000');
 
-        $context = app(TenantContext::class);
-        $roleIds = $context->membership()
-            ->roles()
-            ->where('roles.tenant_id', $context->tenantId())
-            ->pluck('roles.id');
-        $permissionId = DB::table('permissions')->where('key', 'payments.create')->value('id');
-
-        DB::table('role_permissions')
-            ->whereIn('role_id', $roleIds)
-            ->where('permission_id', $permissionId)
-            ->delete();
-        app()->forgetInstance(\App\Authz\PermissionService::class);
+        // Owner authority grants all permissions even when pivot rows are
+        // detached. A restricted role exercises the real denial path.
+        $this->restrictCurrentMembershipWithoutPermission('payments.create');
 
         $this->postJson(
             '/api/purchases/'.$purchaseA.'/payments',
