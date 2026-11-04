@@ -390,15 +390,8 @@ class VoucherTest extends TestCase
     {
         $this->signInOwner('voucher-permission')->assertOk();
 
-        $tenant = app(TenantContext::class);
-        $role = $tenant->membership()
-            ->roles()
-            ->where('roles.tenant_id', $tenant->tenantId())
-            ->firstOrFail();
-        $permission = Permission::query()->where('key', 'vouchers.create')->firstOrFail();
-
-        $role->permissions()->detach($permission->id);
-        app()->forgetInstance(PermissionService::class);
+        // Use a non-privileged membership for the negative permission case.
+        $this->restrictCurrentMembershipWithoutPermission('vouchers.create');
 
         $cash = $this->leafAccount('Voucher Permission Cash', 'V-CASH-P', '0010');
         $expense = $this->leafAccount('Voucher Permission Expense', 'V-EXP-P', '0030');
