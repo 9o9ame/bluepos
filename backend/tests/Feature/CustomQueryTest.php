@@ -81,14 +81,9 @@ class CustomQueryTest extends TestCase
 
         $savedUlid = (string) $saved->json('ulid');
 
-        $context = app(TenantContext::class);
-        $permission = Permission::query()->where('key', 'database.query.read')->firstOrFail();
-
-        foreach ($context->membership()->roles as $role) {
-            $role->permissions()->detach($permission->id);
-        }
-
-        app(PermissionService::class)->clearCache();
+        // An Owner role has privileged permissions regardless of the pivot.
+        // Replace its role assignment with a non-privileged test role.
+        $this->restrictCurrentMembershipWithoutPermission('database.query.read');
 
         $this->getJson('/api/custom-query/catalog')->assertForbidden();
         $this->postJson('/api/custom-query/run', [
