@@ -180,17 +180,8 @@ class SalePricingAndUnitTest extends TestCase
         $product = $this->createProduct('Protected Price Item', '100.0000');
         $this->giveStock($product, '10');
 
-        $permission = Permission::query()
-            ->where('key', 'sales.override_price')
-            ->firstOrFail();
-
-        $membership = app(TenantContext::class)->membership();
-
-        foreach ($membership->roles()->get() as $role) {
-            $role->permissions()->detach($permission->id);
-        }
-
-        app(PermissionService::class)->clearCache();
+        // A privileged Owner cannot be denied by editing pivot records.
+        $this->restrictCurrentMembershipWithoutPermission('sales.override_price');
 
         $this->postJson('/api/sales', [
             'items' => [[
