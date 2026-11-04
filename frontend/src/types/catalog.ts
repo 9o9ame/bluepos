@@ -167,6 +167,14 @@ export type BusinessSettings = {
     code: string
     name: string
   } | null
+  sales_revenue_account_ulid: string | null
+  sales_revenue_account: { ulid: string; code: string; name: string } | null
+  sales_tax_payable_account_ulid: string | null
+  sales_tax_payable_account: { ulid: string; code: string; name: string } | null
+  inventory_account_ulid: string | null
+  inventory_account: { ulid: string; code: string; name: string } | null
+  cogs_account_ulid: string | null
+  cogs_account: { ulid: string; code: string; name: string } | null
 }
 
 export type ProductBarcode = {
