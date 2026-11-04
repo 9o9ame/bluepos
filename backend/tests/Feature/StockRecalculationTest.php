@@ -146,14 +146,8 @@ class StockRecalculationTest extends TestCase
     {
         $this->signInOwner('stock-recalc-permission')->assertOk();
 
-        $context = app(TenantContext::class);
-        $permission = Permission::query()->where('key', 'inventory.recalculate')->firstOrFail();
-
-        foreach ($context->membership()->roles as $role) {
-            $role->permissions()->detach($permission->id);
-        }
-
-        app(PermissionService::class)->clearCache();
+        // Explicit denial is meaningful only without a privileged Owner role.
+        $this->restrictCurrentMembershipWithoutPermission('inventory.recalculate');
 
         $this->postJson('/api/inventory/stock/recalculate')->assertForbidden();
     }
