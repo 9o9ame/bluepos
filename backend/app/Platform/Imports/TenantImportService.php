@@ -41,11 +41,8 @@ final class TenantImportService
             Tenant::query()->whereKey($tenant->id)->lockForUpdate()->firstOrFail();
             $existing = TenantImport::query()->where('tenant_id', $tenant->id)->where('fingerprint', $parsed['fingerprint'])->lockForUpdate()->first();
             if ($existing) {
-                // The first attempt fixes the warehouse, including catalog-only (NULL).
-                if ($parsed['format'] === 'products' && $existing->warehouse_id !== $warehouse?->id) {
-                    throw ValidationException::withMessages(['warehouse_ulid' => 'This workbook was already imported with another stock destination (or catalog only). Its stock destination cannot be changed on replay.']);
-                }
-
+                // Identical replay is read-only even if the warehouse selector changed.
+                // Never repost stock, mutate posted financial records, or fail a retry.
                 return $existing;
             }
 
