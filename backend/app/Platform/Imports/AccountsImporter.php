@@ -64,12 +64,7 @@ final class AccountsImporter
                 return ['outcome' => 'skipped', 'warnings' => ['Code matches a conflicting identity; no merge or overwrite performed.']];
             }
 
-            if ($existing instanceof Supplier) {
-                $this->leaf->syncSupplier($existing);
-            } elseif ($existing instanceof Customer) {
-                $this->leaf->syncCustomer($existing);
-            }
-
+            // A repeated import must be read-only for an existing identity.
             return ['outcome' => 'reused', 'entity_ulid' => $existing->ulid, 'warnings' => []];
         }
         // Names are not unique identifiers. Without a code, a pre-existing name needs review.
