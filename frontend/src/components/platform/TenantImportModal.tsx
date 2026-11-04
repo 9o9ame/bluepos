@@ -67,7 +67,7 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
           Products XLSX or Accounts CSV / XLSX / PDF
           <input
             type="file"
-            accept=".xlsx"
+            accept=".xlsx,.csv,.pdf"
             required
             disabled={pending}
             className="mt-1 block w-full"
