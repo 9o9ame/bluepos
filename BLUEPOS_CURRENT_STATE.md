@@ -2187,3 +2187,11 @@ Statuses: Completed = green, Partial = amber, Pending = red, In Progress = blue.
 - User ran `PlatformTenantImportTest` against `bluepos_test`: 5 PASS, 9 FAIL (116 assertions), no production DB touched. Eight product cases crashed with 500 because manually constructed `PostStockMovementAction` was missing newly required `StockLedgerLock` dependency. `ProductsImporter` now passes the existing shared `StockLedgerLock` via Laravel container, retaining original posting and advisory transaction lock.
 - Account CSV followed by XLSX reported `created: 3` on the second upload, causing one incorrect new test assertion: the parser deliberately generates the same normalized fingerprint across formats and returns `replayed: true` with the *historical* first batch counters, without new writes. Test now verifies `replayed: true`, unchanged supplier/customer and three stored import rows rather than treating replay totals as current writes.
 - Updated code and test committed on `feature/superadmin`; repeat focused suite execution is **pending**, not assumed PASS. Do not merge/deploy until subsequent validation.
+
+
+## 2026-11-04 — Imported accounts missing from Data Entry Details list
+
+- User confirmed actual Products XLSX import and Accounts PDF import succeed; Accounts PDF returned 185 created and 0 failed in screenshot. `/definition/parties` Data Entry Details showed only 27 records although Bulk Updation showed numerous imported parties.
+- Root cause: `frontend/src/pages/PartiesPlaceholderPage.tsx` `loadParties('ALL')` combined modern PartyProfiles with ONLY `fetchParties('account')`, unintentionally excluding legacy/imported supplier and customer records; filtered Vendor/Customer views likewise only fetched profiles.
+- Frontend fix: for non-salesman list filters, fetch profiles and existing legacy /api/parties(type) in parallel; merge legacy records not represented by modern profile IDs, preserving canonical profile display and preventing duplicate linked rows. No API/migrations/import data/approved UI geometry changed. Unmerged on `feature/superadmin`.
+- User browser verification pending: refresh the tenant Data Entry Details tab, verify imported vendors/customers/accounts visible, number consistent with distinct records, and selecting an imported row opens correct form. No build/test run for this localized fix per user preference.
