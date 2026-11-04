@@ -499,10 +499,18 @@ export function PartiesPlaceholderPage({
     const normalized = normalizePartyName(form.name)
     if (!normalized) return null
 
+    // The selected legacy party and modern profile represent the same record
+    // being edited, not a new duplicate. Keep validation for every OTHER party.
+    const editingKey = form.identityUlid
+      ? `profile:${form.identityUlid}`
+      : form.ulid && form.type !== 'ALL'
+        ? `${uiTypeToFilter(form.type)}:${form.ulid}`
+        : null
     return rows.find(
-      (row) => row.key !== selectedKey && normalizePartyName(row.name) === normalized,
+      (row) => row.key !== selectedKey && row.key !== editingKey
+        && normalizePartyName(row.name) === normalized,
     ) ?? null
-  }, [form.name, rows, selectedKey])
+  }, [form.name, form.identityUlid, form.ulid, form.type, rows, selectedKey])
 
   const filteredRows = useMemo(() => {
     const explicitQuery = searchQuery.trim().toLocaleLowerCase()
@@ -607,6 +615,9 @@ export function PartiesPlaceholderPage({
     bankRows.some((r) => r.dirty) ||
     openingRows.some((r) => r.dirty)
   const isManualAccount = form.type === 'ACCOUNTS' && !form.identityUlid && Boolean(form.ulid)
+  const isLegacyParty = !form.identityUlid && Boolean(form.ulid)
+    && (form.type === 'VENDORS' || form.type === 'CUSTOMERS')
+  const editingExisting = Boolean(selectedKey && (form.ulid || form.identityUlid))
   const canSave =
     !saving &&
     form.name.trim().length > 0 &&
@@ -1209,13 +1220,14 @@ export function PartiesPlaceholderPage({
       return
     }
 
-    const manualAccount = form.type === 'ACCOUNTS' && !form.identityUlid && Boolean(form.ulid)
-    if (manualAccount && !form.accountTypeUlid.trim()) {
+    const manualAccount = isManualAccount
+    const legacyParty = isLegacyParty
+    if ((manualAccount || legacyParty) && !form.accountTypeUlid.trim()) {
       reportError('Account Type is required. Create one via + Account Type if needed.')
       return
     }
 
-    if (!manualAccount) {
+    if (!manualAccount && !legacyParty) {
       if (form.types.length === 0) {
         reportError('Select at least one Type.')
         return
@@ -1268,7 +1280,7 @@ export function PartiesPlaceholderPage({
     }
 
     try {
-      const wasNew = manualAccount ? !form.ulid : !form.identityUlid
+      const wasNew = !editingExisting
       let saved: Party
 
       if (manualAccount) {
@@ -1291,6 +1303,16 @@ export function PartiesPlaceholderPage({
         saved = form.ulid
           ? await updateParty(form.ulid, payload)
           : await createParty(payload)
+      } else if (legacyParty) {
+        // Imported legacy vendors/customers do not have a PartyProfile.
+        // Updating their existing ULID must never create a second identity.
+        const partyType = form.type === 'VENDORS' ? 'vendor' as const : 'customer' as const
+        saved = await updateParty(form.ulid, {
+          party_type: partyType,
+          code: form.code.trim(),
+          account_type_ulid: form.accountTypeUlid.trim(),
+          ...common,
+        })
       } else {
         const requestedPrimary = uiTypeToApi(form.type)
         const primaryType: PartyBusinessType =
@@ -1386,7 +1408,7 @@ export function PartiesPlaceholderPage({
         setOpeningRows([])
       }
 
-      feedback.success(wasNew ? 'Party created successfully.' : 'Party saved successfully.')
+      feedback.success(wasNew ? 'Party created successfully.' : 'Party updated successfully.')
       onSaved?.(finalSaved)
     } catch (err) {
       const message = errMessage(err)
@@ -1568,17 +1590,11 @@ export function PartiesPlaceholderPage({
             type="button"
             className="parties-vca-action is-save"
             disabled={!canSave}
-            title={
-              CREATABLE_TYPES.includes(form.type)
-                ? form.ulid
-                  ? 'Update party'
-                  : 'Create party'
-                : 'Select a creatable party type'
-            }
+            title={editingExisting ? 'Update selected party' : 'Create party'}
             onClick={() => void save()}
           >
             <Save size={16} />
-            <span>{saving ? 'Saving…' : 'Save'}</span>
+            <span>{saving ? (editingExisting ? 'Updating…' : 'Saving…') : (editingExisting ? 'Update' : 'Save')}</span>
           </button>
           <button type="button" className="parties-vca-action is-refresh" disabled={loading} onClick={() => void refresh()}>
             <RefreshCw size={16} />
