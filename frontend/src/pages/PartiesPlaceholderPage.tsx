@@ -435,7 +435,7 @@ export function PartiesPlaceholderPage({
   const [viewTab, setViewTab] = useState<ViewTab>('entry')
   const [subTab, setSubTab] = useState<DetailTab>('contact')
   const [listFilter] = useState<PartyType>(initialPartyFilter)
-  const [form, setForm] = useState(() => emptyForm(initialPartyFilter))
+  const [form, setForm] = useState(() => emptyForm(CREATABLE_TYPES.includes(initialPartyFilter) ? initialPartyFilter : 'VENDORS'))
   const [parties, setParties] = useState<Party[]>([])
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -479,7 +479,7 @@ export function PartiesPlaceholderPage({
   const [ledgerColumnOrder, setLedgerColumnOrder] = useState<LedgerGroupKey[]>(DEFAULT_LEDGER_COLUMN_ORDER)
   const [ledgerFilterOpen, setLedgerFilterOpen] = useState(false)
   const [ensureBusy, setEnsureBusy] = useState(false)
-  const baselineRef = useRef(formSnapshot(emptyForm(initialPartyFilter)))
+  const baselineRef = useRef(formSnapshot(emptyForm(CREATABLE_TYPES.includes(initialPartyFilter) ? initialPartyFilter : 'VENDORS')))
 
   const rows: PartyListRow[] = useMemo(
     () =>
@@ -498,6 +498,11 @@ export function PartiesPlaceholderPage({
   const duplicateNameRow = useMemo(() => {
     const normalized = normalizePartyName(form.name)
     if (!normalized) return null
+    const selectedRow = rows.find((row) => row.key === selectedKey)
+    // Preserve a selected record's original name, even if the database
+    // already contains another legacy party with that same display name.
+    // Changing the name still runs the normal duplicate validation.
+    if (selectedRow && normalizePartyName(selectedRow.name) === normalized) return null
 
     // The selected legacy party and modern profile represent the same record
     // being edited, not a new duplicate. Keep validation for every OTHER party.
