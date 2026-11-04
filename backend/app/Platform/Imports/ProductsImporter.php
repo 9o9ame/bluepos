@@ -39,8 +39,6 @@ final class ProductsImporter
 
     private array $movementProducts;
 
-    private ?Unit $pcs;
-
     private bool $settingsReady;
 
     private CreateProductAction $create;
@@ -78,8 +76,6 @@ final class ProductsImporter
         $this->categories = Category::query()->forTenant($id)->get()->groupBy(fn ($c) => AccountsImporter::normalize($c->name))->all();
         $units = Unit::query()->forTenant($id)->where('is_active', true)->get();
         $this->units = $units->groupBy(fn ($u) => AccountsImporter::normalize($u->code))->all();
-        $pcs = $this->units['PCS'] ?? collect();
-        $this->pcs = $pcs->count() === 1 ? $pcs->first() : null;
         $this->brands = Brand::query()->forTenant($id)->get()
             ->groupBy(fn ($b) => AccountsImporter::normalize($b->name))->all();
         $productIds = array_merge(array_map(fn ($b) => $b->product_id, $this->barcodes),
@@ -116,9 +112,6 @@ final class ProductsImporter
             return ['outcome' => 'skipped', 'warnings' => ['No unique active unit matches source U.O.M; product was not created.']];
         }
         $baseUnit = $unitMatches->first();
-        if (! $product && ! $baseUnit) {
-            return ['outcome' => 'skipped', 'warnings' => ['Tenant has no unique active PCS unit; new product was not created.']];
-        }
         if (! $product && ! $this->settingsReady) {
             return ['outcome' => 'skipped', 'warnings' => ['Tenant catalog settings are missing; initialize the tenant catalog before creating products.']];
         }
