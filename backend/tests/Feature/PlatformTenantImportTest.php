@@ -258,7 +258,13 @@ class PlatformTenantImportTest extends TestCase
         $csvFile = UploadedFile::fake()->createWithContent('accounts.csv', $csv);
         $this->upload($tenant, $csvFile)->assertOk()->assertJsonPath('created', 3)->assertJsonPath('failed', 0);
         $xlsx = UploadedFile::fake()->createWithContent('accounts.xlsx', app(SimpleXlsx::class)->write($headers, $data));
-        $this->upload($tenant, $xlsx)->assertOk()->assertJsonPath('created', 0)->assertJsonPath('reused', 3);
+        // Both formats normalize to the same content fingerprint. A replay reports
+        // the original batch totals but performs zero additional writes.
+        $this->upload($tenant, $xlsx)->assertOk()->assertJsonPath('replayed', true)
+            ->assertJsonPath('created', 3)->assertJsonPath('failed', 0);
+        $this->assertSame(1, Supplier::query()->forTenant($tenant->id)->count());
+        $this->assertSame(1, Customer::query()->forTenant($tenant->id)->count());
+        $this->assertSame(3, TenantImportRow::query()->count());
         $this->assertSame(1, Supplier::query()->forTenant($tenant->id)->count());
         $this->assertSame(1, Customer::query()->forTenant($tenant->id)->count());
         $this->assertDatabaseHas('accounts', ['tenant_id' => $tenant->id, 'code' => '00033']);
