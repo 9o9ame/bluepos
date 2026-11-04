@@ -39,7 +39,7 @@ final class WorkbookParser
                     'formula' => $entry['formula'],
                 ];
             }
-            return $this->result('products', $rows);
+            return $this->result('products', $rows) + ['ignored_fields' => ['Disc and Margin are not authoritative pricing fields; skipped.']];
         }
         $first = $matrix[1]['cells'] ?? [];
         if ($first === ['A' => 'ID', 'B' => 'CODE', 'C' => 'Vendor / Customer / Accounts', 'D' => 'Contacts', 'E' => 'Account Type', 'F' => 'TYPE']) {
