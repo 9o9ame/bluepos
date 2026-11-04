@@ -23,7 +23,7 @@ final class TenantImportService
 
     public function execute(Tenant $tenant, PlatformUser $actor, UploadedFile $file, ?string $warehouseUlid): array
     {
-        $parsed = $this->parser->parse($file->getRealPath());
+        $parsed = $this->parser->parse($file->getRealPath(), strtolower($file->getClientOriginalExtension()));
         $warehouse = null;
         if ($warehouseUlid) {
             $warehouse = Warehouse::query()->forTenant($tenant->id)->where('ulid', $warehouseUlid)->first();
