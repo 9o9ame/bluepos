@@ -177,26 +177,9 @@ class CollectSalePaymentTest extends TestCase
     {
         $this->signInOwner('pay-initial-authz')->assertOk();
 
-        $context = app(\App\Tenancy\TenantContext::class);
-        $roleIds = $context->membership()
-            ->roles()
-            ->where('roles.tenant_id', $context->tenantId())
-            ->pluck('roles.id');
-
-        $paymentPermissionId = DB::table('permissions')
-            ->where('key', 'payments.create')
-            ->value('id');
-
-        DB::table('role_permissions')
-            ->whereIn('role_id', $roleIds)
-            ->where('permission_id', $paymentPermissionId)
-            ->delete();
-
-        // PermissionService is scoped and memoizes keys for the active
-        // membership. Re-resolve it after mutating role_permissions directly
-        // so this request reflects the same fresh permission state production
-        // would see on a new request.
-        app()->forgetInstance(\App\Authz\PermissionService::class);
+        // The Owner role is privileged: detaching a permission pivot never
+        // revokes its catalogue permissions. Test with a restricted role.
+        $this->restrictCurrentMembershipWithoutPermission('payments.create');
 
         $product = $this->createProduct('Initial Payment Authz', '100.0000');
         $this->giveStock($product, '10');
