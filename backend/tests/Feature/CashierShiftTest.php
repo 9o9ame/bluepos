@@ -152,16 +152,25 @@ class CashierShiftTest extends TestCase
 
     public function test_shift_permissions_and_branch_isolation_are_enforced(): void
     {
-        $this->signInOwner('cash-shift-permissions')->assertOk();
-
+        $owner = $this->signInOwner('cash-shift-permissions')->assertOk();
         $tenant = app(TenantContext::class);
-        $role = $tenant->membership()
-            ->roles()
-            ->where('roles.tenant_id', $tenant->tenantId())
-            ->firstOrFail();
-
+        // Owner permissions are privileged and cannot be removed by detaching
+        // a role permission. Exercise denial with a real non-owner membership.
+        $role = \App\Models\Role::query()->forTenant($tenant->tenantId())
+            ->where('code', 'cashier')->firstOrFail();
         $openPermission = Permission::query()->where('key', 'cash_sessions.open')->firstOrFail();
-        $role->permissions()->detach($openPermission->id);
+        $closePermission = Permission::query()->where('key', 'cash_sessions.close')->firstOrFail();
+        $role->permissions()->detach([$openPermission->id, $closePermission->id]);
+        $this->postJson('/api/memberships', [
+            'name' => 'Cash Shift Cashier',
+            'username' => 'cashier-shift',
+            'password' => 'password123',
+            'must_change_password' => false,
+            'roles' => [$role->ulid],
+            'branches' => [$owner->json('branch.ulid')],
+        ])->assertCreated();
+        $this->postJson('/api/auth/logout')->assertOk();
+        $this->loginAs('cash-shift-permissions', 'cashier-shift')->assertOk();
         app(PermissionService::class)->clearCache();
 
         $this->postJson(
@@ -181,7 +190,6 @@ class CashierShiftTest extends TestCase
             $this->idem('cash-shift-permission-open'),
         )->assertCreated()->json('ulid');
 
-        $closePermission = Permission::query()->where('key', 'cash_sessions.close')->firstOrFail();
         $role->permissions()->detach($closePermission->id);
         app(PermissionService::class)->clearCache();
 
