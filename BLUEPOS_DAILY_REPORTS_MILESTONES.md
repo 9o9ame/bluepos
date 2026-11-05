@@ -1,7 +1,7 @@
 # BluePOS Daily Reports — Implementation / Verification Milestones
 
 **Branch:** `feature/reports` (user explicitly approved mixed-module work on this branch).
-**Status:** Four new report routes and UI screens implemented. Final local validation and browser acceptance are pending. Do not merge to `main` until approved.
+**Status:** DR-0 through DR-6 **COMPLETED — user accepted on 2026-11-05**. User confirms all four reports working. This is functional acceptance, not proof that every automated test and export scenario passed. Do not merge to `main` until separately approved.
 **Reference:** Four uploaded screenshot packs and two reference PDFs (2026-11-05).
 **Authority:** `PROJECT_UI_DESIGN_SYSTEM.md`, current repository code and server-resolved context.
 
@@ -9,13 +9,13 @@
 
 | Milestone | Report | UI route | API route | Status |
 | --- | --- | --- | --- | --- |
-| DR-0 | Source/reference inventory | — | — | Inspected |
-| DR-1 | Shared context and report viewer | Shared `ReportViewerToolbar` | Authenticated + scoped report controllers | Implemented; tests pending |
-| DR-2 | Daily Activity Report | `/reports/daily/activity-summary` | `GET /api/reports/daily/activity-summary` | Implemented; browser comparison pending |
-| DR-3 | Detail Sale + Stock + Profit Loss | `/reports/daily/detail-sale-stock-profit` | `GET /api/reports/daily/detail-sale-stock-profit` | Implemented; browser comparison pending |
-| DR-4 | Business by Groups | `/reports/daily/business-by-groups` | `GET /api/reports/daily/business-by-groups` | Implemented; browser comparison pending |
-| DR-5 | Daily Product Profit/Loss | `/reports/daily/profit-loss` | `GET /api/reports/daily/profit-loss` | Implemented; browser comparison pending |
-| DR-6 | Regression and freeze | All above | Tests below | Pending local execution + user signoff |
+| DR-0 | Source/reference inventory | — | — | **COMPLETED** |
+| DR-1 | Shared context and report viewer | Shared `ReportViewerToolbar` | Authenticated + scoped report controllers | **COMPLETED — user accepted** |
+| DR-2 | Daily Activity Report | `/reports/daily/activity-summary` | `GET /api/reports/daily/activity-summary` | **COMPLETED — user accepted** |
+| DR-3 | Detail Sale + Stock + Profit Loss | `/reports/daily/detail-sale-stock-profit` | `GET /api/reports/daily/detail-sale-stock-profit` | **COMPLETED — user accepted** |
+| DR-4 | Business by Groups | `/reports/daily/business-by-groups` | `GET /api/reports/daily/business-by-groups` | **COMPLETED — user accepted** |
+| DR-5 | Daily Product Profit/Loss | `/reports/daily/profit-loss` | `GET /api/reports/daily/profit-loss` | **COMPLETED — user accepted** |
+| DR-6 | Regression and freeze | All above | Tests below | **COMPLETED — functional acceptance; automated rerun not evidenced** |
 
 **Existing** `/reports/daily/business-activity` remains the old **Daily Ledger Wise Activity**. It was deliberately preserved. The new **Daily Activity Report** is a separate item in the Daily Reports ribbon.
 
@@ -34,9 +34,9 @@
 - Missing historical cost / stock mismatch / unreconciled document lines yield `null` profit instead of fabricated cost.
 - Existing posted sales, purchase documents, journal records and stock movements have not been mutated.
 
-## Focused validation required
+## Validation evidence and optional final regression
 
-Run only on `bluepos_test`:
+User-reported final result: **all four reports working**. Previously supplied focused test run: **10 passed / 1 failed** (invalid 28-character ULID in test fixture). The fixture was subsequently corrected in commit `66a23b83`; no post-fix rerun output is recorded in this conversation. Frontend typecheck/build output for the final report commit is likewise not recorded. For independent verification before a future main merge, run only on `bluepos_test`:
 ```powershell
 cd C:\laragon\www\bluepos\backend
 $env:APP_ENV = "testing"
@@ -47,11 +47,11 @@ Remove-Item Env:DB_DATABASE -ErrorAction SilentlyContinue
 ```
 Then `frontend/npm run typecheck`, `frontend/npx vite build`; manually verify all four option screens, previews, dates, empty states, quantity/value reconciliation, print/export and cross-account visibility.
 
-## Known limitations pending acceptance
+## Known limitations retained after functional acceptance
 
 - Report browser layout is BluePOS-styled and functionally analogous to the reference screenshots, not a pixel clone of the third-party UI.
 - Historical product category/brand grouping reflects the currently linked product hierarchy; no historical dimension snapshot is invented.
 - Operational sale cost may be unavailable when stock cost snapshots are null or postings and effective document quantities do not align.
 - Older Income Statement accounting-control configuration and historical posting remain a separate project issue; new read-only reports do not repair posted journals.
-- No remote PHP test runner / Vite compiler is available through the GitHub connector. Do not mark tests or browser parity PASSED until local evidence is supplied.
+- GitHub connector cannot execute local PHP or Vite checks. User confirms the reports work, but no post-fix automated suite or final frontend build evidence was provided; do not label these checks PASS without output.
 - No database schema migration, destructive command, branch switch, or main merge in this implementation.
