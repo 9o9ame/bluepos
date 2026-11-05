@@ -113,6 +113,11 @@ final class TenantImportService
             });
             $batch->refresh();
         }
+        if ($background) {
+            // Workers should not materialize/recount every historical result and warning
+            // after each chunk; the progress endpoint uses database aggregates.
+            return ['status' => $batch->status, 'ulid' => $batch->ulid];
+        }
         $results = TenantImportRow::query()->where('import_id', $batch->id)->orderBy('source_row')->get()->pluck('result');
         $counts = array_fill_keys(['created', 'updated', 'reused', 'skipped', 'failed'], 0);
         $warnings = [];
