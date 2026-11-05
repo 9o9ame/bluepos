@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\Reports;
 
 use App\Actions\Purchases\BuildPurchaseEffectiveSnapshotAction;
+use App\Actions\Purchases\BuildPurchaseReturnEffectiveSnapshotAction;
 use App\Actions\Sales\BuildSaleEffectiveSnapshotAction;
+use App\Actions\Sales\BuildSaleReturnEffectiveSnapshotAction;
 use App\Authz\PermissionService;
 use App\Enums\PurchaseInvoiceStatus;
 use App\Enums\PurchaseReturnStatus;
@@ -27,6 +29,8 @@ class DailyActivitySummaryReportController extends Controller
         private readonly PermissionService $permissions,
         private readonly BuildSaleEffectiveSnapshotAction $saleSnapshots,
         private readonly BuildPurchaseEffectiveSnapshotAction $purchaseSnapshots,
+        private readonly BuildSaleReturnEffectiveSnapshotAction $saleReturnSnapshots,
+        private readonly BuildPurchaseReturnEffectiveSnapshotAction $purchaseReturnSnapshots,
     ) {}
 
     public function __invoke(Request $request, TenantContext $context): JsonResponse
@@ -86,6 +90,7 @@ class DailyActivitySummaryReportController extends Controller
                 'document_number' => $sale->document_number,
                 'party' => (string) ($effective['customer']['name'] ?? $effective['customer_name'] ?? 'Walk-in'),
                 'amount' => $amount,
+                'lines' => $this->documentLines((array) ($effective['items'] ?? [])),
             ];
             $totals['sale'] = bcadd($totals['sale'], $amount, 4);
         }
@@ -97,26 +102,35 @@ class DailyActivitySummaryReportController extends Controller
                 'document_number' => $purchase->document_number,
                 'party' => (string) ($effective['supplier']['name'] ?? ''),
                 'amount' => $amount,
+                'lines' => $this->documentLines((array) ($effective['lines'] ?? [])),
             ];
             $totals['purchase'] = bcadd($totals['purchase'], $amount, 4);
         }
         foreach ($saleReturns as $returned) {
+            $effective = $this->saleReturnSnapshots->current($returned);
+            $amount = (string) ($effective['grand_total'] ?? $returned->grand_total);
             $documents[] = [
                 'ulid' => $returned->ulid, 'type' => 'sale_return',
                 'date' => $returned->return_date->toDateString(),
                 'document_number' => $returned->document_number,
-                'party' => '', 'amount' => (string) $returned->grand_total,
+                'party' => (string) ($effective['customer']['name'] ?? ''),
+                'amount' => $amount,
+                'lines' => $this->documentLines((array) ($effective['lines'] ?? [])),
             ];
-            $totals['sale_return'] = bcadd($totals['sale_return'], (string) $returned->grand_total, 4);
+            $totals['sale_return'] = bcadd($totals['sale_return'], $amount, 4);
         }
         foreach ($purchaseReturns as $returned) {
+            $effective = $this->purchaseReturnSnapshots->current($returned);
+            $amount = (string) ($effective['grand_total'] ?? $returned->grand_total);
             $documents[] = [
                 'ulid' => $returned->ulid, 'type' => 'purchase_return',
                 'date' => $returned->return_date->toDateString(),
                 'document_number' => $returned->document_number,
-                'party' => '', 'amount' => (string) $returned->grand_total,
+                'party' => (string) ($effective['supplier']['name'] ?? ''),
+                'amount' => $amount,
+                'lines' => $this->documentLines((array) ($effective['lines'] ?? [])),
             ];
-            $totals['purchase_return'] = bcadd($totals['purchase_return'], (string) $returned->grand_total, 4);
+            $totals['purchase_return'] = bcadd($totals['purchase_return'], $amount, 4);
         }
         usort($documents, static fn (array $a, array $b): int =>
             [$a['date'], $a['type'], $a['document_number']] <=> [$b['date'], $b['type'], $b['document_number']]);
@@ -124,7 +138,7 @@ class DailyActivitySummaryReportController extends Controller
         // The stock sheet reflects append-only movement quantities, not invoice item quantities.
         $stock = StockMovement::query()->forTenant($tenantId)
             ->where('branch_id', $branchId)->where('warehouse_id', $warehouseId)
-            ->whereBetween('occurred_at', [$from, $to])
+            ->where('occurred_at', '<=', $to)
             ->with('product:id,ulid,name,product_number')
             ->orderBy('occurred_at')->orderBy('id')->get();
 
@@ -139,10 +153,17 @@ class DailyActivitySummaryReportController extends Controller
                 $stockRows[$key] = [
                     'product' => ['ulid' => $product->ulid, 'name' => $product->name,
                         'product_number' => $product->product_number],
-                    'quantity_change' => '0.000000', 'movements' => [],
+                    'opening_quantity' => '0.000000',
+                    'quantity_change' => '0.000000', 'closing_quantity' => '0.000000',
+                    'movements' => [],
                 ];
             }
             $quantity = (string) $movement->quantity;
+            $stockRows[$key]['closing_quantity'] = bcadd($stockRows[$key]['closing_quantity'], $quantity, 6);
+            if ($movement->occurred_at < $from) {
+                $stockRows[$key]['opening_quantity'] = bcadd($stockRows[$key]['opening_quantity'], $quantity, 6);
+                continue;
+            }
             $type = $movement->movement_type->value;
             $stockRows[$key]['quantity_change'] = bcadd($stockRows[$key]['quantity_change'], $quantity, 6);
             $stockRows[$key]['movements'][$type] = bcadd(
@@ -152,14 +173,32 @@ class DailyActivitySummaryReportController extends Controller
 
         return response()->json([
             'from' => $filters['from'], 'to' => $filters['to'],
+            'business_name' => $context->tenant()->name,
             'documents' => $documents, 'totals' => $totals,
             'stock' => array_values($stockRows),
             'basis' => 'posted_documents_and_append_only_stock_movements',
             'limitations' => [
                 'Document totals are gross, inclusive of configured taxes; they are not accounting revenue or profit.',
                 'Stock movement grouping uses movement occurred_at; posted document dates may differ.',
-                'Stock sheet shows period quantity changes, not opening/closing stock valuations.',
+                'Stock sheet opening and closing quantities are movement-derived, not cost valuations.',
             ],
         ]);
+    }
+
+    /** @param array<int, array<string, mixed>> $items */
+    private function documentLines(array $items): array
+    {
+        return collect($items)->map(static fn (array $line): array => [
+            'ulid' => (string) ($line['ulid'] ?? ''),
+            'product' => [
+                'ulid' => (string) ($line['product']['ulid'] ?? ''),
+                'name' => (string) ($line['product']['name'] ?? '—'),
+                'product_number' => (string) ($line['product']['product_number'] ?? ''),
+            ],
+            'quantity' => (string) ($line['quantity'] ?? '0'),
+            'base_quantity' => (string) ($line['stock_quantity'] ?? $line['base_quantity'] ?? '0'),
+            'rate' => (string) ($line['unit_price'] ?? $line['unit_cost'] ?? '0'),
+            'amount' => (string) ($line['line_total'] ?? '0'),
+        ])->values()->all();
     }
 }
