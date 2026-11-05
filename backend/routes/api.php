@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\Reports\GeneralJournalReportController;
 use App\Http\Controllers\Api\Reports\CashBookReportController;
 use App\Http\Controllers\Api\Reports\DailyBusinessActivityController;
 use App\Http\Controllers\Api\Reports\DailyActivitySummaryReportController;
+use App\Http\Controllers\Api\Reports\ProductDailyReportsController;
 use App\Http\Controllers\Api\Reports\TopSpecialReportController;
 use App\Http\Controllers\Api\Reports\TotalTurnoverReportController;
 use App\Http\Controllers\Api\ReportHeadingController;
@@ -334,6 +335,10 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::get('/reports/accounting/cash-book', CashBookReportController::class);
     Route::post('/reports/accounting/cash-book/preview', CashBookReportController::class);
     Route::get('/reports/daily/activity-summary', DailyActivitySummaryReportController::class);
+    Route::get('/reports/daily/product-options', [ProductDailyReportsController::class, 'options']);
+    Route::get('/reports/daily/detail-sale-stock-profit', [ProductDailyReportsController::class, 'stock']);
+    Route::get('/reports/daily/business-by-groups', [ProductDailyReportsController::class, 'groups']);
+    Route::get('/reports/daily/profit-loss', [ProductDailyReportsController::class, 'profit']);
     Route::get('/reports/accounting/daily-business-activity/types', [DailyBusinessActivityController::class, 'types']);
     Route::get('/reports/accounting/daily-business-activity', [DailyBusinessActivityController::class, 'report']);
     Route::post('/reports/accounting/daily-business-activity/preview', [DailyBusinessActivityController::class, 'report']);
