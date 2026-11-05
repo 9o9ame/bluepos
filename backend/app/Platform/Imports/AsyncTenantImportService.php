@@ -105,6 +105,8 @@ final class AsyncTenantImportService
         if ($batch->status !== 'completed') {
             ProcessTenantImport::dispatch($batch->id)->onQueue('imports')->delay(now()->addSecond());
         } else {
+            $batch->last_error = null;
+            $batch->save();
             Storage::disk('local')->delete($batch->source_path);
         }
     }
