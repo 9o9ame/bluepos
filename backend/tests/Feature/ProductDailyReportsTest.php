@@ -111,6 +111,7 @@ class ProductDailyReportsTest extends TestCase
         $product = $this->product('Private First Tenant Stock', '100.0000');
         $this->movement($product, '2026-11-04', '4.000000', '20.0000', StockMovementType::Purchase);
 
+        $this->postJson('/api/auth/logout')->assertOk();
         $this->signInOwner('daily-tenant-b')->assertOk();
         $this->getJson('/api/reports/daily/detail-sale-stock-profit?from=2026-11-01&to=2026-11-05')
             ->assertOk()->assertJsonCount(0, 'rows');
