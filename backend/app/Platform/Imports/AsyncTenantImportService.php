@@ -64,7 +64,9 @@ final class AsyncTenantImportService
 
         if ($batch->status !== 'completed') {
             $path = 'platform-imports/'.$tenant->ulid.'/'.$batch->ulid.'.json';
-            if (! Storage::disk('local')->put($path, json_encode($parsed, JSON_THROW_ON_ERROR))) {
+            // A concurrent retry must never truncate a file being read by a worker.
+            if (! Storage::disk('local')->exists($path)
+                && ! Storage::disk('local')->put($path, json_encode($parsed, JSON_THROW_ON_ERROR))) {
                 throw new ApiException('IMPORT_STORAGE_FAILED', 'Cannot securely stage the source file.', 500);
             }
             $batch->source_path = $path;
