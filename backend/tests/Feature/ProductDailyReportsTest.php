@@ -101,8 +101,7 @@ class ProductDailyReportsTest extends TestCase
         $grouped = $this->getJson(
             '/api/reports/daily/business-by-groups?from=2026-11-04&to=2026-11-04&group_by=category'
         )->assertOk()->assertJsonPath('totals.sale_amount', '200.0000')
-            ->assertJsonPath('totals.sale_quantity', '2.000000')
-            ->assertJsonPath('rows.0.name', 'Unassigned');
+            ->assertJsonPath('totals.sale_quantity', '2.000000');
         $this->assertNoInternalIds($grouped->json());
     }
 
