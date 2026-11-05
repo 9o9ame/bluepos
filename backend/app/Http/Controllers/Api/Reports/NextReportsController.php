@@ -243,16 +243,30 @@ final class NextReportsController extends Controller
             throw new ApiException('REPORT_TOO_LARGE','Select a shorter range (over 5000 movements).',422);
         }
         $canCost = $this->permissions->can('inventory.view');
+        $canSales = $this->permissions->can('reports.accounting');
+        $documentMap = $canSales
+            ? $this->documents->read($context,$f['from'],$f['to'])->keyBy('ulid')
+            : collect();
         $rows=[];$in='0.000000';$out='0.000000';
         foreach ($q->get() as $m) {
+            $movementType = $m->movement_type->value;
+            if (($f['types'] ?? []) !== []) {
+                $effectiveKind = str_starts_with($movementType,'sale_return') ? 'sale_return'
+                    : (str_starts_with($movementType,'purchase_return') ? 'purchase_return'
+                    : (str_starts_with($movementType,'sale') ? 'sale'
+                    : (str_starts_with($movementType,'purchase') ? 'purchase' : 'other')));
+                if (! in_array($effectiveKind,$f['types'],true)) continue;
+            }
             $qty=(string)$m->quantity;
             $inQty=bccomp($qty,'0',6)>0?$qty:'0.000000';
             $outQty=bccomp($qty,'0',6)<0?bcmul($qty,'-1',6):'0.000000';
             $in=bcadd($in,$inQty,6);$out=bcadd($out,$outQty,6);
             $rows[]=[
                 'ulid'=>$m->ulid,'date'=>$m->occurred_at->toDateString(),
-                'type'=>$m->movement_type->value,
+                'type'=>$movementType,
                 'document_ulid'=>$m->reference_ulid,
+                'number'=>$canSales ? ($documentMap->get($m->reference_ulid)['number'] ?? null) : null,
+                'party'=>$canSales ? ($documentMap->get($m->reference_ulid)['party_name'] ?? null) : null,
                 'product'=>$m->product?->only(['ulid','name','product_number']),
                 'quantity_in'=>$inQty,'quantity_out'=>$outQty,
                 'unit_cost'=>$canCost?$m->unit_cost:null,'total_cost'=>$canCost?$m->total_cost:null,
@@ -262,6 +276,7 @@ final class NextReportsController extends Controller
             'rows'=>$rows,'totals'=>['in'=>$in,'out'=>$out,'net'=>bcsub($in,$out,6)],
             'limitations'=>[
                 'These are append-only stock movements, including amendments and adjustments.',
+                'Document numbers/parties are shown only if matched to posted documents in the selected date window.',
                 'Movement cost is historical stock cost, NOT sale revenue. Cost is hidden without inventory.view.',
             ],
         ]);
