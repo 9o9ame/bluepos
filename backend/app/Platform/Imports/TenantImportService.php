@@ -53,8 +53,18 @@ final class TenantImportService
         });
         $replay = $batch->status === 'completed';
         if (! $replay) {
-            $processed = array_fill_keys(TenantImportRow::query()->where('import_id', $batch->id)->pluck('source_row')->all(), true);
-            $pending = array_values(array_filter($parsed['rows'], fn ($row) => ! isset($processed[$row['row']])));
+            // Queue workers process the source in increasing source-row order.
+            // The last committed source row is a durable cursor; the row transaction
+            // below still independently rejects duplicate source rows.
+            $cursor = $background
+                ? (int) (TenantImportRow::query()->where('import_id', $batch->id)->max('source_row') ?? 0)
+                : 0;
+            $processed = $background ? [] : array_fill_keys(
+                TenantImportRow::query()->where('import_id', $batch->id)->pluck('source_row')->all(), true
+            );
+            $pending = array_values(array_filter($parsed['rows'], fn ($row) =>
+                $background ? $row['row'] > $cursor : ! isset($processed[$row['row']])));
+
             // Keep platform imports safely below typical reverse-proxy/FPM request budgets.
             // Each row commits independently; re-uploading the same source resumes progress.
             $chunk = array_slice($pending, 0, $background ? 120 : 20);
