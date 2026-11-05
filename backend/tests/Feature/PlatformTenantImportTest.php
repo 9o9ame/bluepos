@@ -316,7 +316,7 @@ class PlatformTenantImportTest extends TestCase
         $response = $this->post($route, ['file' => $this->accounts()])
             ->assertStatus(202)->assertJsonPath('status', 'processing')
             ->assertJsonPath('processed', 0)->assertJsonPath('total', 1);
-        $batch = TenantImport::query()->forTenant($tenant->id)->sole();
+        $batch = TenantImport::query()->where('tenant_id', $tenant->id)->sole();
         $this->assertNotNull($batch->source_path);
         Storage::disk('local')->assertExists($batch->source_path);
         Queue::assertPushed(ProcessTenantImport::class);
@@ -363,7 +363,7 @@ class PlatformTenantImportTest extends TestCase
         $this->post('/api/platform/tenants/'.$tenant->ulid.'/imports/async',
             ['file' => $this->accounts()])->assertStatus(503)
             ->assertJsonPath('error.key', 'IMPORT_QUEUE_UNAVAILABLE');
-        $this->assertSame(0, TenantImport::query()->forTenant($tenant->id)->count());
+        $this->assertSame(0, TenantImport::query()->where('tenant_id', $tenant->id)->count());
     }
 
     private function readyTenant(string $suffix)
