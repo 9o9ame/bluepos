@@ -116,6 +116,48 @@ class ProductDailyReportsTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_missing_cost_snapshot_does_not_create_fake_profit(): void
+    {
+        $this->signInOwner('daily-profit-no-cost')->assertOk();
+        $product = $this->product('Daily Cost Unavailable', '90.0000');
+        $context = app(TenantContext::class);
+        StockBalance::query()->updateOrCreate([
+            'tenant_id' => $context->tenantId(), 'warehouse_id' => $context->warehouseId(),
+            'product_id' => $product->id,
+        ], [
+            'branch_id' => $context->branchId(),
+            'quantity' => '10.000000',
+            'average_cost' => null,
+            'stock_value' => null,
+        ]);
+        $this->postJson('/api/sales', [
+            'sale_date' => '2026-11-04',
+            'items' => [['product_ulid' => $product->ulid, 'quantity' => '2']],
+        ], ['Idempotency-Key' => 'daily-profit-no-cost-sale'])->assertCreated();
+        $response = $this->getJson('/api/reports/daily/profit-loss?from=2026-11-04&to=2026-11-04')
+            ->assertOk()
+            ->assertJsonPath('rows.0.sale_amount', '180.0000')
+            ->assertJsonPath('rows.0.cost_verified', false)
+            ->assertJsonPath('rows.0.cost_amount', null)
+            ->assertJsonPath('rows.0.gross_profit', null)
+            ->assertJsonPath('totals.gross_profit', null);
+        $this->assertNoInternalIds($response->json());
+    }
+
+    public function test_inventory_reporter_cannot_read_stock_cost_without_inventory_view(): void
+    {
+        $this->signInOwner('daily-cost-authz')->assertOk();
+        $product = $this->product('Daily Restricted Cost', '100.0000');
+        $this->movement($product, '2026-11-04', '1.000000', '25.0000', StockMovementType::Purchase);
+        $this->restrictCurrentMembershipWithoutPermission('inventory.view');
+
+        $this->getJson('/api/reports/daily/detail-sale-stock-profit?from=2026-11-01&to=2026-11-05')
+            ->assertOk()
+            ->assertJsonPath('rows.0.cost_of_sales', null);
+        $this->getJson('/api/reports/daily/profit-loss?from=2026-11-01&to=2026-11-05')
+            ->assertForbidden();
+    }
+
     private function product(string $name, string $price): Product
     {
         $units = $this->getJson('/api/units')->assertOk()->json();
