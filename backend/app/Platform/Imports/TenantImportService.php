@@ -21,6 +21,13 @@ final class TenantImportService
 {
     public function __construct(private readonly WorkbookParser $parser, private readonly PlatformAuditLogger $audit) {}
 
+    public function cacheConflictIndex(array $parsed): array
+    {
+        $parsed['conflicts'] = $this->conflicts($parsed['rows'], $parsed['format']);
+
+        return $parsed;
+    }
+
     public function execute(Tenant $tenant, PlatformUser $actor, UploadedFile $file, ?string $warehouseUlid, ?array $parsedOverride = null, bool $background = false): array
     {
         $parsed = $parsedOverride ?? $this->parser->parse($file->getRealPath(), strtolower($file->getClientOriginalExtension()));
@@ -71,7 +78,7 @@ final class TenantImportService
             $requestStartedAt = microtime(true);
             $importer = $parsed['format'] === 'accounts'
                 ? new AccountsImporter($tenant, app(PartyLeafAccountSync::class)) : new ProductsImporter($tenant, $warehouse, $chunk, $actor);
-            $conflicts = $this->conflicts($parsed['rows'], $parsed['format']);
+            $conflicts = $parsed['conflicts'] ?? $this->conflicts($parsed['rows'], $parsed['format']);
             foreach ($chunk as $row) {
                 // Never interrupt an active row transaction. Stop *between* rows
                 // so the next identical request can resume with no duplicate writes.
