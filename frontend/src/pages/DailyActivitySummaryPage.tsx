@@ -9,6 +9,14 @@ import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import './DailyBusinessActivityPage.css'
 
+type DocumentLine = {
+  ulid: string
+  product: { ulid: string; product_number: string; name: string }
+  quantity: string
+  base_quantity: string
+  rate: string
+  amount: string
+}
 type DocumentRow = {
   ulid: string
   type: 'sale' | 'purchase' | 'sale_return' | 'purchase_return'
@@ -16,15 +24,19 @@ type DocumentRow = {
   document_number: string
   party: string
   amount: string
+  lines: DocumentLine[]
 }
 type StockRow = {
   product: { ulid: string; name: string; product_number: string }
+  opening_quantity: string
   quantity_change: string
+  closing_quantity: string
   movements: Record<string, string>
 }
 type DailyActivity = {
   from: string
   to: string
+  business_name: string
   documents: DocumentRow[]
   totals: Record<DocumentRow['type'], string>
   stock: StockRow[]
@@ -70,9 +82,13 @@ export function DailyActivitySummaryPage() {
     const csvCell = (v: string) => '"' + (/^[\s]*[=+@-]/.test(v) ? "'" : '') + v.replace(/"/g, '""') + '"'
     const content = kind === 'csv'
       ? '\uFEFF' + [
-          ['Type', 'Date', 'Document', 'Party', 'Amount'],
-          ...query.data.documents.map(row =>
-            [labels[row.type], row.date, row.document_number, row.party, row.amount]),
+          ['Type', 'Date', 'Document', 'Party', 'Product', 'Quantity', 'Rate', 'Line Amount', 'Document Total'],
+          ...query.data.documents.flatMap(row =>
+            row.lines.length
+              ? row.lines.map(item => [labels[row.type], row.date, row.document_number,
+                  row.party, item.product.name, item.quantity, item.rate, item.amount, row.amount])
+              : [[labels[row.type], row.date, row.document_number, row.party,
+                  '', '', '', '', row.amount]]),
         ].map(line => line.map(csvCell).join(',')).join('\r\n')
       : kind === 'html'
         ? '<!doctype html><html><head><meta charset="utf-8"></head><body>' +
@@ -133,14 +149,23 @@ export function DailyActivitySummaryPage() {
     {query.isLoading && <UiSkeleton label="Loading daily activity report…" />}
     {query.isError && <p role="alert">Unable to load daily activity report.</p>}
     {query.data && <article className="dba-paper" ref={paperRef} style={{ zoom: zoom + '%' }}>
-      <header><h1>DAILY ACTIVITY REPORT</h1><p>From {query.data.from} to {query.data.to}</p></header>
+      <header><h1>DAILY ACTIVITY REPORT</h1><p>{query.data.business_name}</p>
+        <p>From {query.data.from} to {query.data.to}</p></header>
       <h2>Sale / Purchase Detail for the Date</h2>
       <table>
         <thead><tr><th>Date</th><th>Type</th><th>Document</th><th>Party</th><th>Amount</th></tr></thead>
         <tbody>
           {query.data.documents.map(row => <tr key={row.type + row.ulid}>
             <td>{row.date}</td><td>{labels[row.type]}</td><td>{row.document_number}</td>
-            <td>{row.party || '—'}</td><td className="dba-amount">{format(row.amount)}</td>
+            <td>{row.party || '—'}
+              {row.lines.length > 0 && <div className="dba-account-meta">
+                {row.lines.map((item, index) => <div key={item.ulid || index}>
+                  {item.product.product_number} — {item.product.name}:
+                  {' '}{format(item.quantity)} × {format(item.rate)} = {format(item.amount)}
+                </div>)}
+              </div>}
+            </td>
+            <td className="dba-amount">{format(row.amount)}</td>
           </tr>)}
           {query.data.documents.length === 0 && <tr><td colSpan={5}>No posted documents for this period.</td></tr>}
         </tbody>
@@ -152,14 +177,16 @@ export function DailyActivitySummaryPage() {
       </table>
       <h2>Stock Sheet — Period Movement</h2>
       <table>
-        <thead><tr><th>Product</th><th>Movement type / Quantity</th><th>Net quantity change</th></tr></thead>
+        <thead><tr><th>Product</th><th>Opening</th><th>Movement type / Quantity</th><th>Net quantity change</th><th>Closing</th></tr></thead>
         <tbody>{query.data.stock.map(row => <tr key={row.product.ulid}>
           <td>{row.product.product_number} — {row.product.name}</td>
+          <td className="dba-amount">{format(row.opening_quantity)}</td>
           <td>{Object.entries(row.movements).map(([type, qty]) =>
             <div key={type}>{type.replace(/_/g, ' ')}: {format(qty)}</div>)}</td>
           <td className="dba-amount">{format(row.quantity_change)}</td>
+          <td className="dba-amount">{format(row.closing_quantity)}</td>
         </tr>)}
-        {query.data.stock.length === 0 && <tr><td colSpan={3}>No stock movements for this period.</td></tr>}
+        {query.data.stock.length === 0 && <tr><td colSpan={5}>No stock movements for this period.</td></tr>}
         </tbody>
       </table>
       {query.data.limitations.map(note => <p key={note}>{note}</p>)}
