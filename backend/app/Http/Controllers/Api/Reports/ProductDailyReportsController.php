@@ -77,7 +77,6 @@ class ProductDailyReportsController extends Controller
         $grouped = [];
         $totals = ['sale_amount' => '0.0000', 'sale_quantity' => '0.000000', 'stock_change' => '0.000000'];
         foreach ($products as $product) {
-            $id = $dimension === 'brand' ? $product->brand_id : $product->category_id;
             $ulid = $dimension === 'brand' ? $product->brand?->ulid : $product->category?->ulid;
             $label = $dimension === 'brand' ? $product->brand?->name : $product->category?->name;
             $key = $ulid ?? 'unassigned';
@@ -196,7 +195,7 @@ class ProductDailyReportsController extends Controller
                 fn ($c) => $c->where('ulid', $filters['category_ulid'])->where('tenant_id', $context->tenantId())))
             ->when(! empty($filters['brand_ulid']), fn ($q) => $q->whereHas('brand',
                 fn ($b) => $b->where('ulid', $filters['brand_ulid'])->where('tenant_id', $context->tenantId())))
-            ->with('category:id,ulid,name', 'brand:id,ulid,name')
+            ->with(['category:id,ulid,name', 'brand:id,ulid,name'])
             ->orderBy('name')->get();
     }
 
@@ -285,8 +284,25 @@ class ProductDailyReportsController extends Controller
                 bcsub((string) ($snapshot['subtotal'] ?? '0'), (string) ($snapshot['discount_amount'] ?? '0'), 4),
                 (string) ($snapshot['invoice_discount_amount'] ?? '0'), 4
             );
-            // If totals differ, line-level allocations are not safely reconstructible.
-            $reconcilable = bccomp($netLineTotal, $netRevenue, 4) === 0;
+            $difference = bcsub($netRevenue, $netLineTotal, 4);
+            $reconcilable = bccomp($difference, '0', 4) === 0
+                || (bccomp($netLineTotal, '0', 4) > 0 && bccomp($netRevenue, '0', 4) >= 0);
+            $allocations = [];
+            if ($reconcilable && bccomp($difference, '0', 4) !== 0) {
+                $eligible = $fullItems->filter(fn ($item) => bccomp(bcsub(
+                    (string) ($item['line_total'] ?? '0'), (string) ($item['tax_amount'] ?? '0'), 4
+                ), '0', 4) > 0);
+                $lastKey = $eligible->keys()->last();
+                $remaining = $difference;
+                foreach ($eligible as $key => $item) {
+                    $base = bcsub((string) ($item['line_total'] ?? '0'), (string) ($item['tax_amount'] ?? '0'), 4);
+                    $allocation = $key === $lastKey ? $remaining : bcdiv(
+                        bcmul($difference, $base, 8), $netLineTotal, 4
+                    );
+                    $allocations[$item['ulid'] ?? (string) $key] = $allocation;
+                    $remaining = bcsub($remaining, $allocation, 4);
+                }
+            }
             foreach ($items as $item) {
                 $id = $ulidToId->get($item['product']['ulid']);
                 if (! isset($rows[$id])) $rows[$id] = [
@@ -294,6 +310,7 @@ class ProductDailyReportsController extends Controller
                 ];
                 $rows[$id]['sale_quantity'] = bcadd($rows[$id]['sale_quantity'], (string) ($item['stock_quantity'] ?? '0'), 6);
                 $amount = bcsub((string) ($item['line_total'] ?? '0'), (string) ($item['tax_amount'] ?? '0'), 4);
+                $amount = bcadd($amount, $allocations[$item['ulid'] ?? ''] ?? '0.0000', 4);
                 $rows[$id]['sale_amount'] = bcadd($rows[$id]['sale_amount'], $amount, 4);
                 if (! $reconcilable) $rows[$id]['amount_unavailable'] = true;
             }
