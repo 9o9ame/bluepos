@@ -1,3 +1,15 @@
+## 2026-11-05 — Platform tenant imports: 504 timeout mitigation and PDF diagnostics (validation pending)
+
+- User supplied production screenshots: product XLSX upload hit nginx **504 Gateway Time-out**; account PDF returned **Cannot safely extract text from this PDF**. These are separate failures. Production server diagnostics, logs, exact files and PHP/PDF tool availability have not yet been verified.
+- `feature/administration` created from synchronized `main` because this is the allowed module branch and no remote administration branch existed.
+- In `TenantImportService`, reduce a single HTTP request from 100 to at most 20 rows, with a roughly 10-second cooperative processing budget checked **between committed rows**; saved progress remains idempotent and replayable with the identical source. No existing imports or stock movements changed.
+- Updated bounded-chunk regression to verify progressive completion and replay instead of assuming two fixed requests.
+- `WorkbookParser` now distinguishes PDF extraction nonzero exit, oversized text and blank/scanned PDF; `TenantImportModal` explains 502/503/504 and safe **same-file** retry.
+- **Not verified:** no PHP feature tests or frontend typecheck/build executed by GitHub connector; no production PDF sample was uploaded; no Hostinger shell or logs inspected. PDF relies on `pdftotext` and an expected hierarchical account format. Need verify `pdftotext -v` / `command -v pdftotext` on hosting and if output is text-selectable; CSV/XLSX is supported fallback. No production server/nginx settings modified.
+- **Pending local focused check:** `php artisan test tests/Feature/PlatformTenantImportTest.php` on `bluepos_test`, `npm run typecheck`, `npx vite build`; then staging browser retry of original XLSX and PDF with log inspection. No `main` merge or production deployment without review.
+
+---
+
 ## 2026-11-05 — Next Reports six-family implementation; local validation pending
 
 - On approved `feature/reports`, added a read-only effective posted-document reader, six new report endpoints, shared selectable/previewable UI and focused PHPUnit test candidate. Files and complete scope at `BLUEPOS_NEXT_REPORTS_MILESTONES.md`.
