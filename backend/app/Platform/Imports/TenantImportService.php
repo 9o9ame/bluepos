@@ -21,9 +21,9 @@ final class TenantImportService
 {
     public function __construct(private readonly WorkbookParser $parser, private readonly PlatformAuditLogger $audit) {}
 
-    public function execute(Tenant $tenant, PlatformUser $actor, UploadedFile $file, ?string $warehouseUlid): array
+    public function execute(Tenant $tenant, PlatformUser $actor, UploadedFile $file, ?string $warehouseUlid, ?array $parsedOverride = null, bool $background = false): array
     {
-        $parsed = $this->parser->parse($file->getRealPath(), strtolower($file->getClientOriginalExtension()));
+        $parsed = $parsedOverride ?? $this->parser->parse($file->getRealPath(), strtolower($file->getClientOriginalExtension()));
         $warehouse = null;
         if ($warehouseUlid) {
             $warehouse = Warehouse::query()->forTenant($tenant->id)->where('ulid', $warehouseUlid)->first();
@@ -57,7 +57,7 @@ final class TenantImportService
             $pending = array_values(array_filter($parsed['rows'], fn ($row) => ! isset($processed[$row['row']])));
             // Keep platform imports safely below typical reverse-proxy/FPM request budgets.
             // Each row commits independently; re-uploading the same source resumes progress.
-            $chunk = array_slice($pending, 0, 20);
+            $chunk = array_slice($pending, 0, $background ? 120 : 20);
             $requestStartedAt = microtime(true);
             $importer = $parsed['format'] === 'accounts'
                 ? new AccountsImporter($tenant, app(PartyLeafAccountSync::class)) : new ProductsImporter($tenant, $warehouse, $chunk, $actor);
@@ -65,7 +65,7 @@ final class TenantImportService
             foreach ($chunk as $row) {
                 // Never interrupt an active row transaction. Stop *between* rows
                 // so the next identical request can resume with no duplicate writes.
-                if (microtime(true) - $requestStartedAt >= 10) {
+                if (microtime(true) - $requestStartedAt >= ($background ? 40 : 10)) {
                     break;
                 }
                 DB::transaction(function () use ($tenant, $batch, $row, $importer, $conflicts) {
