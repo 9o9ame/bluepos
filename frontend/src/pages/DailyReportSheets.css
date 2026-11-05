@@ -58,3 +58,33 @@
   .daily-report-sheet > table tr {break-inside:avoid;page-break-inside:avoid;}
   .daily-report-sheet h2 {break-after:avoid;}
 }
+
+/* New report selection + ledger grid only; existing frozen reports are unaffected. */
+.daily-report-sheet section > table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:11px;
+}
+.daily-report-sheet section > table td,
+.daily-report-sheet section > table th {
+  border:1px solid var(--ui-table-border);
+  padding:5px 7px;
+}
+.daily-report-sheet section > table thead th {
+  background:var(--ui-table-header);
+  color:var(--ui-table-header-text);
+  font-weight:700;
+}
+.daily-report-sheet .dba-report-totals p {
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  border:1px solid var(--ui-border);
+  padding:8px;
+  background:var(--ui-surface-muted);
+}
+.daily-report-sheet .dba-report-totals span {font-variant-numeric:tabular-nums;}
+@media print {
+  .daily-report-sheet section > table thead {display:table-header-group;}
+  .daily-report-sheet section > table tr {break-inside:avoid;}
+}
