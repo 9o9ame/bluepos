@@ -16,7 +16,7 @@ type Item = { ulid: string; product_number: string; name: string; category: Choi
 type StockRow = {
   product: Item; opening_quantity: string; period_change: string; closing_quantity: string
   movements: Record<string, string>; cost_of_sales: string | null; missing_cost: boolean
-  sale_quantity: string; sale_amount: string; gross_profit: string | null
+  sale_quantity: string | null; sale_amount: string | null; gross_profit: string | null
 }
 type GroupRow = { ulid: string | null; name: string; products: number; sale_quantity: string; sale_amount: string; purchase_quantity: string; purchase_amount: string; stock_change: string }
 type ProfitRow = { product: Item; sale_quantity: string; sale_amount: string; cost_amount: string | null; gross_profit: string | null; margin_percent: string | null; cost_verified: boolean }
@@ -45,9 +45,13 @@ const localDate = () => {
   const d = new Date()
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
 }
-const display = (s: string | null | undefined) =>
-  s == null ? '— Unavailable —' :
-    /^-?\d+(?:\.\d+)?$/.test(s) ? s.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : s
+const display = (s: string | null | undefined) => {
+  if (s == null) return '— Unavailable —'
+  if (!/^-?\d+(?:\.\d+)?$/.test(s)) return s
+  const [whole, fraction] = s.split('.')
+  const formatted = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return fraction === undefined ? formatted : formatted + '.' + fraction
+}
 
 export function ProductDailyReportPage({ kind }: { kind: Kind }) {
   const { openModule, closeActiveTab } = useWorkspace()
@@ -87,8 +91,9 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
     if (kind === 'stock') return (report.rows as StockRow[]).map(row => [
       row.product.name, row.opening_quantity,
       Object.entries(row.movements).map(([k, v]) => k + ': ' + v).join(' / '),
-      row.period_change, row.closing_quantity, row.sale_quantity, row.sale_amount,
-      row.cost_of_sales ?? 'Unavailable', row.gross_profit ?? 'Unavailable',
+      row.period_change, row.closing_quantity, row.sale_quantity ?? 'Unavailable',
+      row.sale_amount ?? 'Unavailable', row.cost_of_sales ?? 'Unavailable',
+      row.gross_profit ?? 'Unavailable',
     ])
     if (kind === 'groups') return (report.rows as GroupRow[]).map(row => [
       row.name, String(row.products), row.purchase_quantity, row.purchase_amount, row.sale_quantity, row.sale_amount, row.stock_change,
