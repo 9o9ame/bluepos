@@ -22,7 +22,7 @@ use Illuminate\Validation\ValidationException;
  */
 final class AsyncTenantImportService
 {
-    public function __construct(private readonly WorkbookParser $parser) {}
+    public function __construct(private readonly WorkbookParser $parser, private readonly TenantImportService $imports) {}
 
     public function start(Tenant $tenant, PlatformUser $actor, UploadedFile $file, ?string $warehouseUlid): array
     {
@@ -31,7 +31,7 @@ final class AsyncTenantImportService
                 'Background import requires a running database or Redis queue worker.', 503);
         }
 
-        $parsed = $this->parser->parse($file->getRealPath(), strtolower($file->getClientOriginalExtension()));
+        $parsed = $this->imports->cacheConflictIndex($this->parser->parse($file->getRealPath(), strtolower($file->getClientOriginalExtension())));
         $warehouse = null;
         if ($warehouseUlid) {
             $warehouse = Warehouse::query()->forTenant($tenant->id)->where('ulid', $warehouseUlid)->first();
