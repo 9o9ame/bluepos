@@ -1,3 +1,12 @@
+## 2026-11-05 — Next Reports six-family implementation; local validation pending
+
+- On approved `feature/reports`, added a read-only effective posted-document reader, six new report endpoints, shared selectable/previewable UI and focused PHPUnit test candidate. Files and complete scope at `BLUEPOS_NEXT_REPORTS_MILESTONES.md`.
+- NR-0 scoped inspection complete; NR-1 shared foundation and NR-2 Advance Sales, NR-3 Day Book+Ledger, NR-4 Product Wise Transactions, NR-5 Detailed Transactions (summary/day matrix/detail) implemented in source; NR-6 FBR sales/purchase **internal review** registers implemented with short and invoice views; NR-7 local execution + browser acceptance pending. No FBR compliance/export certification claimed.
+- New endpoints read server-scoped tenant/branch/warehouse, posted source snapshots and append-only stock records; amounts from posted data, decimal BCMath, no source mutation. Historical stock figure unavailable when movement link missing; journal ledger is posted-only. RBAC gates, date bounds, document/stock preview size limits and CSV formula-escaping included.
+- Source files were re-fetched from remote after modifications; **no PHP tests, frontend typecheck or Vite build executed in the GitHub-only environment**. Must run targeted tests on `bluepos_test` and frontend checks locally before acceptance; user will supply output and six browser previews. Existing DR-0–DR-6 user-accepted reports untouched; `main` unmerged.
+ 
+---
+
 ## 2026-11-05 — Next six Reports roadmap created; NR-0 inspection started
 
 - User supplied Advance Sales View screenshot and five reference ZIP packs: Day Book, Product Wise Transactions, Detailed Transactions, FBR Sales Register, FBR Purchase Register. Reference PDFs include Day Book and Ledger, Product Wise Transactions, Transaction Summary / Day-by-Day / Detail; Product Transactions also has XLSX.
