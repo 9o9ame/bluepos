@@ -55,11 +55,19 @@ final class TenantImportService
         if (! $replay) {
             $processed = array_fill_keys(TenantImportRow::query()->where('import_id', $batch->id)->pluck('source_row')->all(), true);
             $pending = array_values(array_filter($parsed['rows'], fn ($row) => ! isset($processed[$row['row']])));
-            $chunk = array_slice($pending, 0, 100);
+            // Keep platform imports safely below typical reverse-proxy/FPM request budgets.
+            // Each row commits independently; re-uploading the same source resumes progress.
+            $chunk = array_slice($pending, 0, 20);
+            $requestStartedAt = microtime(true);
             $importer = $parsed['format'] === 'accounts'
                 ? new AccountsImporter($tenant, app(PartyLeafAccountSync::class)) : new ProductsImporter($tenant, $warehouse, $chunk, $actor);
             $conflicts = $this->conflicts($parsed['rows'], $parsed['format']);
             foreach ($chunk as $row) {
+                // Never interrupt an active row transaction. Stop *between* rows
+                // so the next identical request can resume with no duplicate writes.
+                if (microtime(true) - $requestStartedAt >= 10) {
+                    break;
+                }
                 DB::transaction(function () use ($tenant, $batch, $row, $importer, $conflicts) {
                     // Bounded row transaction serializes identity/sequence allocation within tenant.
                     Tenant::query()->whereKey($tenant->id)->lockForUpdate()->firstOrFail();
