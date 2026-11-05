@@ -141,6 +141,11 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
             {' '}Re-selecting the identical source file safely resumes an unfinished legacy import.
           </p>
         ) : null}
+        {result?.attention_required ? (
+          <p role="alert" className="text-[var(--ui-danger)]">
+            {result.worker_message ?? 'Import worker needs attention.'}
+          </p>
+        ) : null}
         {progress.isError ? <p role="alert" className="text-[var(--ui-danger)]">
           Unable to refresh progress. Completed rows remain saved; reopen this dialog to check again.
         </p> : null}
