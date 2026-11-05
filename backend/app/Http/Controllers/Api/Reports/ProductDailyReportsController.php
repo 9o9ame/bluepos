@@ -258,7 +258,10 @@ class ProductDailyReportsController extends Controller
                 fn ($c) => $c->where('ulid', $filters['category_ulid'])->where('tenant_id', $context->tenantId())))
             ->when(! empty($filters['brand_ulid']), fn ($q) => $q->whereHas('brand',
                 fn ($b) => $b->where('ulid', $filters['brand_ulid'])->where('tenant_id', $context->tenantId())))
-            ->with(['category:id,ulid,name', 'brand:id,ulid,name'])
+            ->with([
+                'category' => fn ($q) => $q->where('tenant_id', $context->tenantId())->select('id', 'ulid', 'name'),
+                'brand' => fn ($q) => $q->where('tenant_id', $context->tenantId())->select('id', 'ulid', 'name'),
+            ])
             ->orderBy('name')->get();
     }
 
