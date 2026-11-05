@@ -334,6 +334,33 @@ class PlatformTenantImportTest extends TestCase
         $this->assertSame(1, TenantImportRow::query()->where('import_id', $batch->id)->count());
     }
 
+    public function test_async_product_opening_stock_is_posted_once_across_identical_reupload(): void
+    {
+        Storage::fake('local');
+        Queue::fake();
+        config(['queue.default' => 'database']);
+        $tenant = $this->readyTenant('imp-async-stock');
+        $warehouse = Warehouse::query()->forTenant($tenant->id)->firstOrFail();
+        $this->signInPlatformAdmin('imp-async-stock-admin');
+        $route = '/api/platform/tenants/'.$tenant->ulid.'/imports/async';
+
+        $initial = $this->post($route, [
+            'file' => $this->products(), 'warehouse_ulid' => $warehouse->ulid,
+        ])->assertStatus(202)->assertJsonPath('total', 3);
+        $batch = TenantImport::query()->where('tenant_id', $tenant->id)->sole();
+        app(AsyncTenantImportService::class)->process($batch->id, app(TenantImportService::class));
+        $this->getJson('/api/platform/tenants/'.$tenant->ulid.'/imports/'.$initial->json('ulid'))
+            ->assertOk()->assertJsonPath('status', 'completed')
+            ->assertJsonPath('stock.posted', 1);
+        $this->assertSame(1, StockMovement::query()->forTenant($tenant->id)->count());
+
+        $this->post($route, [
+            'file' => $this->products(), 'warehouse_ulid' => $warehouse->ulid,
+        ])->assertStatus(202)->assertJsonPath('replayed', true);
+        $this->assertSame(1, StockMovement::query()->forTenant($tenant->id)->count());
+        $this->assertSame(3, Product::query()->forTenant($tenant->id)->count());
+    }
+
     public function test_async_import_status_is_tenant_scoped_and_requires_platform_authorization(): void
     {
         Storage::fake('local');
