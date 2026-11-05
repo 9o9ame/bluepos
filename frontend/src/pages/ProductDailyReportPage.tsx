@@ -15,7 +15,7 @@ type Choice = { ulid: string; name: string }
 type Item = { ulid: string; product_number: string; name: string; category: Choice | null; brand: Choice | null }
 type StockRow = {
   product: Item; opening_quantity: string; period_change: string; closing_quantity: string
-  movements: Record<string, string>; cost_of_sales: string; missing_cost: boolean
+  movements: Record<string, string>; cost_of_sales: string | null; missing_cost: boolean
 }
 type GroupRow = { ulid: string | null; name: string; products: number; sale_quantity: string; sale_amount: string; stock_change: string }
 type ProfitRow = { product: Item; sale_quantity: string; sale_amount: string; cost_amount: string | null; gross_profit: string | null; margin_percent: string | null; cost_verified: boolean }
@@ -45,12 +45,8 @@ const localDate = () => {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
 }
 const display = (s: string | null | undefined) =>
-  s == null ? '— Unavailable —' : s.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-const movement = (row: StockRow, ...kinds: string[]) =>
-  kinds.reduce((total, kind) => {
-    // Presentation only: render underlying server-calculated movement amounts without float arithmetic.
-    return total.concat(row.movements[kind] ? kind.replace(/_/g, ' ') + ': ' + display(row.movements[kind]) : '')
-  }, [] as string[]).filter(Boolean).join(' / ') || '—'
+  s == null ? '— Unavailable —' :
+    /^-?\d+(?:\.\d+)?$/.test(s) ? s.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : s
 
 export function ProductDailyReportPage({ kind }: { kind: Kind }) {
   const { openModule, closeActiveTab } = useWorkspace()
