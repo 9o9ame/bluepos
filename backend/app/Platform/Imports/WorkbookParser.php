@@ -151,8 +151,17 @@ final class WorkbookParser
         } catch (\Throwable) {
             throw new ApiException('VALIDATION_FAILED', 'PDF import needs the pdftotext utility installed on the server; upload the CSV or XLSX export instead.', 422);
         }
-        if (! $process->isSuccessful() || strlen($process->getOutput()) > 3 * 1024 * 1024) {
-            throw new ApiException('VALIDATION_FAILED', 'Cannot safely extract text from this PDF. Use CSV or XLSX export.', 422);
+        if (! $process->isSuccessful()) {
+            throw new ApiException('VALIDATION_FAILED',
+                'PDF text extraction failed. The file may be scanned, damaged or protected; use the source CSV/XLSX account export.', 422);
+        }
+        if (strlen($process->getOutput()) > 3 * 1024 * 1024) {
+            throw new ApiException('VALIDATION_FAILED',
+                'Extracted PDF text exceeds the supported size limit. Use CSV or XLSX export.', 422);
+        }
+        if (trim($process->getOutput()) === '') {
+            throw new ApiException('VALIDATION_FAILED',
+                'No selectable text was found in the PDF. Image-only/scanned PDFs cannot be safely imported; use CSV or XLSX.', 422);
         }
         $matrix = [1 => ['cells' => ['A' => 'Main Head', 'B' => 'Account', 'C' => 'Head', 'D' => 'Sub Head'], 'formula' => false]];
         $number = 1;
