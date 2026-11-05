@@ -26,7 +26,7 @@ final class AsyncTenantImportService
 
     public function start(Tenant $tenant, PlatformUser $actor, UploadedFile $file, ?string $warehouseUlid): array
     {
-        if (config('queue.default') === 'sync') {
+        if (! in_array(config('queue.default'), ['database', 'redis', 'sqs', 'beanstalkd'], true)) {
             throw new ApiException('IMPORT_QUEUE_UNAVAILABLE',
                 'Background import requires a running database or Redis queue worker.', 503);
         }
