@@ -60,8 +60,9 @@ const columns: Record<Kind, { key: string; title: string }[]> = {
     {key:'party',title:'Party'}, {key:'amount',title:'Amount'},
   ],
   'product-transactions': [
-    {key:'date',title:'Date'}, {key:'type',title:'Movement'}, {key:'document_ulid',title:'Reference'},
-    {key:'product',title:'Product'}, {key:'quantity_in',title:'Qty In'}, {key:'quantity_out',title:'Qty Out'},
+    {key:'date',title:'Date'}, {key:'type',title:'Movement'}, {key:'number',title:'Document'},
+    {key:'party',title:'Party'}, {key:'product',title:'Product'},
+    {key:'quantity_in',title:'Qty In'}, {key:'quantity_out',title:'Qty Out'},
     {key:'unit_cost',title:'Unit Cost'}, {key:'total_cost',title:'Movement Cost'},
   ],
   detailed: [
@@ -188,7 +189,7 @@ export function NextReportsPage({ kind }: { kind: Kind }) {
                 options={[{value:'',label:'All accounts'},
                   ...(options.data?.accounts ?? []).map(p => ({value:p.ulid,label:[p.code,p.name].filter(Boolean).join(' — ')}))]}/>
             </label>}
-          {(kind === 'daybook' || kind === 'detailed') && <div className="dba-types">
+          {(kind === 'daybook' || kind === 'detailed' || kind === 'product-transactions') && <div className="dba-types">
             <strong>Document types (none selected = all)</strong>
             {TYPES.map(type => <label key={type}>
               <input type="checkbox" checked={types.includes(type)} onChange={event =>
