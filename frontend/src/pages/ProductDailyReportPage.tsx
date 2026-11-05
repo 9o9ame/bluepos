@@ -18,12 +18,12 @@ type StockRow = {
   movements: Record<string, string>; cost_of_sales: string | null; missing_cost: boolean
   sale_quantity: string; sale_amount: string; gross_profit: string | null
 }
-type GroupRow = { ulid: string | null; name: string; products: number; sale_quantity: string; sale_amount: string; stock_change: string }
+type GroupRow = { ulid: string | null; name: string; products: number; sale_quantity: string; sale_amount: string; purchase_quantity: string; purchase_amount: string; stock_change: string }
 type ProfitRow = { product: Item; sale_quantity: string; sale_amount: string; cost_amount: string | null; gross_profit: string | null; margin_percent: string | null; cost_verified: boolean }
 type Report = {
   from: string; to: string; basis: string; limitations: string[]
   rows: StockRow[] | GroupRow[] | ProfitRow[]
-  totals?: { sale_amount: string; sale_quantity: string; stock_change?: string; cost_amount?: string | null; gross_profit?: string | null }
+  totals?: { sale_amount: string; sale_quantity: string; purchase_amount?: string; purchase_quantity?: string; stock_change?: string; cost_amount?: string | null; gross_profit?: string | null }
   group_by?: string
 }
 const pathFor: Record<Kind, string> = {
@@ -80,7 +80,7 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
   const columns: string[] = kind === 'stock'
     ? ['Product', 'Opening Qty', 'Movement', 'Net Qty Change', 'Closing Qty', 'Sold Qty', 'Net Sale', 'Sales Cost', 'Gross Profit']
     : kind === 'groups'
-      ? ['Group', 'Products', 'Sales Qty', 'Sale Amount ex Tax', 'Net Stock Change']
+      ? ['Group', 'Products', 'Purchases Qty', 'Purchase Amount ex Tax', 'Sales Qty', 'Sale Amount ex Tax', 'Net Stock Change']
       : ['Product', 'Sale Qty', 'Sale Amount ex Tax', 'Cost Amount', 'Gross Profit', 'Margin %']
   const tableRows = (): string[][] => {
     if (!report) return []
@@ -91,7 +91,7 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
       row.cost_of_sales ?? 'Unavailable', row.gross_profit ?? 'Unavailable',
     ])
     if (kind === 'groups') return (report.rows as GroupRow[]).map(row => [
-      row.name, String(row.products), row.sale_quantity, row.sale_amount, row.stock_change,
+      row.name, String(row.products), row.purchase_quantity, row.purchase_amount, row.sale_quantity, row.sale_amount, row.stock_change,
     ])
     return (report.rows as ProfitRow[]).map(row => [
       row.product.name, row.sale_quantity, row.sale_amount, row.cost_amount ?? 'Unavailable',
@@ -199,7 +199,10 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
         {report.totals && <tfoot><tr>
           <th>Totals</th>
           {kind === 'groups'
-            ? <><td>—</td><td className="dba-amount">{display(report.totals.sale_quantity)}</td>
+            ? <><td>—</td>
+                <td className="dba-amount">{display(report.totals.purchase_quantity)}</td>
+                <td className="dba-amount">{display(report.totals.purchase_amount)}</td>
+                <td className="dba-amount">{display(report.totals.sale_quantity)}</td>
                 <td className="dba-amount">{display(report.totals.sale_amount)}</td>
                 <td className="dba-amount">{display(report.totals.stock_change)}</td></>
             : <><td className="dba-amount">{display(report.totals.sale_quantity)}</td>
