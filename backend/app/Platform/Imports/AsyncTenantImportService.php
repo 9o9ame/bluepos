@@ -71,6 +71,7 @@ final class AsyncTenantImportService
             }
             $batch->source_path = $path;
             $batch->total_rows = count($parsed['rows']);
+            $batch->last_error = null;
             $batch->save();
             ProcessTenantImport::dispatch($batch->id)->onQueue('imports');
         }
@@ -142,6 +143,8 @@ final class AsyncTenantImportService
             'processed' => (int) (clone $query)->count(),
             'total' => (int) ($batch->total_rows ?? 0),
             'replayed' => $batch->status === 'completed',
+            'attention_required' => $batch->last_error !== null,
+            'worker_message' => $batch->last_error,
             'created' => (int) ($counts['created'] ?? 0),
             'updated' => (int) ($counts['updated'] ?? 0),
             'reused' => (int) ($counts['reused'] ?? 0),
