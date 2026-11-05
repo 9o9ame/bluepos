@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\Api\Reports;
 
+use App\Actions\Purchases\BuildPurchaseEffectiveSnapshotAction;
+use App\Actions\Purchases\BuildPurchaseReturnEffectiveSnapshotAction;
 use App\Actions\Sales\BuildSaleEffectiveSnapshotAction;
 use App\Actions\Sales\BuildSaleReturnEffectiveSnapshotAction;
 use App\Authz\PermissionService;
+use App\Enums\PurchaseInvoiceStatus;
+use App\Enums\PurchaseReturnStatus;
 use App\Enums\SaleReturnStatus;
 use App\Enums\SaleStatus;
 use App\Exceptions\ApiException;
@@ -12,6 +16,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\PurchaseInvoice;
+use App\Models\PurchaseReturn;
 use App\Models\Sale;
 use App\Models\SaleReturn;
 use App\Tenancy\TenantContext;
@@ -28,6 +34,8 @@ class ProductDailyReportsController extends Controller
         private readonly PermissionService $permissions,
         private readonly BuildSaleEffectiveSnapshotAction $saleSnapshots,
         private readonly BuildSaleReturnEffectiveSnapshotAction $saleReturnSnapshots,
+        private readonly BuildPurchaseEffectiveSnapshotAction $purchaseSnapshots,
+        private readonly BuildPurchaseReturnEffectiveSnapshotAction $purchaseReturnSnapshots,
     ) {}
 
     private function authorizeReport(): void
@@ -109,33 +117,48 @@ class ProductDailyReportsController extends Controller
         $products = $this->products($context, $filters);
         $stock = $this->stockFacts($context, $filters, $products);
         $trade = $this->saleFacts($context, $filters, $products);
+        $purchases = $this->purchaseFacts($context, $filters, $products);
         $dimension = $filters['group_by'];
         $grouped = [];
-        $totals = ['sale_amount' => '0.0000', 'sale_quantity' => '0.000000', 'stock_change' => '0.000000'];
+        $totals = [
+            'sale_amount' => '0.0000', 'sale_quantity' => '0.000000',
+            'purchase_amount' => '0.0000', 'purchase_quantity' => '0.000000',
+            'stock_change' => '0.000000',
+        ];
         foreach ($products as $product) {
             $ulid = $dimension === 'brand' ? $product->brand?->ulid : $product->category?->ulid;
             $label = $dimension === 'brand' ? $product->brand?->name : $product->category?->name;
             $key = $ulid ?? 'unassigned';
             $amount = $trade[$product->id]['sale_amount'] ?? '0.0000';
             $qty = $trade[$product->id]['sale_quantity'] ?? '0.000000';
+            $purchaseAmount = $purchases[$product->id]['purchase_amount'] ?? '0.0000';
+            $purchaseQty = $purchases[$product->id]['purchase_quantity'] ?? '0.000000';
             $change = $stock[$product->id]['period_change'] ?? '0.000000';
-            if (bccomp($amount, '0', 4) === 0 && bccomp($qty, '0', 6) === 0 && bccomp($change, '0', 6) === 0) {
+            if (bccomp($amount, '0', 4) === 0 && bccomp($qty, '0', 6) === 0
+                && bccomp($purchaseAmount, '0', 4) === 0
+                && bccomp($purchaseQty, '0', 6) === 0
+                && bccomp($change, '0', 6) === 0) {
                 continue;
             }
             if (! isset($grouped[$key])) {
                 $grouped[$key] = [
                     'ulid' => $ulid, 'name' => $label ?? 'Unassigned',
                     'sale_amount' => '0.0000', 'sale_quantity' => '0.000000',
+                    'purchase_amount' => '0.0000', 'purchase_quantity' => '0.000000',
                     'stock_change' => '0.000000', 'products' => 0,
                 ];
             }
             $grouped[$key]['sale_amount'] = bcadd($grouped[$key]['sale_amount'], $amount, 4);
             $grouped[$key]['sale_quantity'] = bcadd($grouped[$key]['sale_quantity'], $qty, 6);
             $grouped[$key]['stock_change'] = bcadd($grouped[$key]['stock_change'], $change, 6);
+            $grouped[$key]['purchase_amount'] = bcadd($grouped[$key]['purchase_amount'], $purchaseAmount, 4);
+            $grouped[$key]['purchase_quantity'] = bcadd($grouped[$key]['purchase_quantity'], $purchaseQty, 6);
             $grouped[$key]['products']++;
             $totals['sale_amount'] = bcadd($totals['sale_amount'], $amount, 4);
             $totals['sale_quantity'] = bcadd($totals['sale_quantity'], $qty, 6);
             $totals['stock_change'] = bcadd($totals['stock_change'], $change, 6);
+            $totals['purchase_amount'] = bcadd($totals['purchase_amount'], $purchaseAmount, 4);
+            $totals['purchase_quantity'] = bcadd($totals['purchase_quantity'], $purchaseQty, 6);
         }
         $rows = array_values($grouped);
         usort($rows, static fn ($a, $b) => strcmp($a['name'], $b['name']));
@@ -146,7 +169,8 @@ class ProductDailyReportsController extends Controller
             'basis' => 'posted_sales_and_returns_plus_stock_movements',
             'limitations' => [
                 'Sale amounts exclude reported sales tax and account for invoice-level discounts.',
-                'Stock changes include all movement types and are not sales quantities.',
+                'Purchase amounts reflect posted document line amounts excluding line taxes; invoice-level freight and charges are not allocated.',
+                'Stock changes include all movement types and are not sales or purchase quantities.',
                 'Unassigned products form a separate group; company grouping uses the actual product brand.',
             ],
         ]);
@@ -305,6 +329,60 @@ class ProductDailyReportsController extends Controller
                 $rows[$id]['cost_sale_quantity'] = bcsub($rows[$id]['cost_sale_quantity'], $period, 6);
                 $rows[$id]['cost_of_sales'] = bcsub($rows[$id]['cost_of_sales'], (string) $fact->period_cost, 4);
                 if ((int) $fact->missing_count > 0) $rows[$id]['missing_cost'] = true;
+            }
+        }
+
+        return $rows;
+    }
+
+
+    private function purchaseFacts(TenantContext $context, array $filters, Collection $products): array
+    {
+        if ($products->isEmpty()) return [];
+        $ulidToId = $products->pluck('id', 'ulid');
+        $rows = [];
+        $purchases = PurchaseInvoice::query()->forTenant($context->tenantId())
+            ->where('branch_id', $context->branchId())
+            ->where('warehouse_id', $context->warehouseId())
+            ->where('status', PurchaseInvoiceStatus::Posted->value)
+            ->whereBetween('invoice_date', [$filters['from'], $filters['to']])
+            ->with('latestRevision')->get();
+        foreach ($purchases as $purchase) {
+            $effective = $this->purchaseSnapshots->current($purchase);
+            foreach ($effective['lines'] ?? [] as $line) {
+                $ulid = $line['product']['ulid'] ?? null;
+                if (! $ulid || ! $ulidToId->has($ulid)) continue;
+                $id = $ulidToId->get($ulid);
+                if (! isset($rows[$id])) $rows[$id] = [
+                    'purchase_quantity' => '0.000000', 'purchase_amount' => '0.0000',
+                ];
+                $qty = (string) ($line['base_quantity'] ?? '0');
+                $amount = bcsub(
+                    bcsub((string) ($line['line_total'] ?? '0'), (string) ($line['tax_amount'] ?? '0'), 4),
+                    (string) ($line['further_tax_amount'] ?? '0'), 4
+                );
+                $rows[$id]['purchase_quantity'] = bcadd($rows[$id]['purchase_quantity'], $qty, 6);
+                $rows[$id]['purchase_amount'] = bcadd($rows[$id]['purchase_amount'], $amount, 4);
+            }
+        }
+        $returns = PurchaseReturn::query()->forTenant($context->tenantId())
+            ->where('branch_id', $context->branchId())
+            ->where('warehouse_id', $context->warehouseId())
+            ->where('status', PurchaseReturnStatus::Posted->value)
+            ->whereBetween('return_date', [$filters['from'], $filters['to']])
+            ->with('latestRevision')->get();
+        foreach ($returns as $returned) {
+            $effective = $this->purchaseReturnSnapshots->current($returned);
+            foreach ($effective['lines'] ?? [] as $line) {
+                $ulid = $line['product']['ulid'] ?? null;
+                if (! $ulid || ! $ulidToId->has($ulid)) continue;
+                $id = $ulidToId->get($ulid);
+                if (! isset($rows[$id])) $rows[$id] = [
+                    'purchase_quantity' => '0.000000', 'purchase_amount' => '0.0000',
+                ];
+                $amount = bcsub((string) ($line['line_total'] ?? '0'), (string) ($line['tax_amount'] ?? '0'), 4);
+                $rows[$id]['purchase_quantity'] = bcsub($rows[$id]['purchase_quantity'], (string) ($line['base_quantity'] ?? '0'), 6);
+                $rows[$id]['purchase_amount'] = bcsub($rows[$id]['purchase_amount'], $amount, 4);
             }
         }
 
