@@ -421,6 +421,54 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-advance-sales',
+    title: 'Advance Sales View',
+    path: '/reports/advance-sales',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.inventory',
+  },
+  {
+    key: 'report-daybook',
+    title: 'Day Book (Daily Business Summary)',
+    path: '/reports/daily/day-book',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
+    key: 'report-product-transactions',
+    title: 'Product Wise Transaction (Grid)',
+    path: '/reports/daily/product-transactions',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.inventory',
+  },
+  {
+    key: 'report-detailed-transactions',
+    title: 'Detailed Transactions Wise Report',
+    path: '/reports/daily/detailed-transactions',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
+    key: 'report-fbr-sales',
+    title: 'FBR Sales Register — Internal Review',
+    path: '/reports/daily/fbr-sales-register',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
+    key: 'report-fbr-purchases',
+    title: 'FBR Purchase Register — Internal Review',
+    path: '/reports/daily/fbr-purchase-register',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
     key: 'report-daily-activity-summary',
     title: 'Daily Activity Report',
     path: '/reports/daily/activity-summary',
@@ -699,11 +747,11 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Daily Activity Report', icon: CalendarDays, iconTone: 'success', status: 'ready', path: '/reports/daily/activity-summary' },
             { label: 'Detail Sale + Stock + Profit Loss Report', icon: Layers, iconTone: 'primary', status: 'ready', path: '/reports/daily/detail-sale-stock-profit' },
             { label: 'Business By Group', icon: Network, iconTone: 'warning', status: 'ready', path: '/reports/daily/business-by-groups' },
-            { label: 'Day Book (Daily Business Summary)', icon: BookOpen, iconTone: 'info', ...LATER },
-            { label: 'Product Wise Transaction (Grid)', icon: TableProperties, iconTone: 'primary', ...LATER },
-            { label: 'Detailed Transactions Wise Report', icon: ScrollText, iconTone: 'info', ...LATER },
-            { label: 'FBR Sales Register', icon: ReceiptText, iconTone: 'success', ...LATER },
-            { label: 'FBR Purchase Register', icon: ClipboardCheck, iconTone: 'warning', ...LATER },
+            { label: 'Day Book (Daily Business Summary)', icon: BookOpen, iconTone: 'info', status: 'ready', path: '/reports/daily/day-book' },
+            { label: 'Product Wise Transaction (Grid)', icon: TableProperties, iconTone: 'primary', status: 'ready', path: '/reports/daily/product-transactions' },
+            { label: 'Detailed Transactions Wise Report', icon: ScrollText, iconTone: 'info', status: 'ready', path: '/reports/daily/detailed-transactions' },
+            { label: 'FBR Sales Register', icon: ReceiptText, iconTone: 'success', status: 'ready', path: '/reports/daily/fbr-sales-register' },
+            { label: 'FBR Purchase Register', icon: ClipboardCheck, iconTone: 'warning', status: 'ready', path: '/reports/daily/fbr-purchase-register' },
           ],
         },
         {
@@ -727,7 +775,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Barcode Printing', icon: Barcode, iconTone: 'info', ...LATER },
           ],
         },
-        { id: 'advance-sales', label: 'Advance Sales View', icon: BarChart3, status: 'later', tone: 'teal' },
+        { id: 'advance-sales', label: 'Advance Sales View', icon: BarChart3, moduleKey: 'report-advance-sales', status: 'ready', tone: 'teal' },
         {
           id: 'party-reports',
           label: 'Vendor / Customer Reports',
@@ -849,6 +897,12 @@ export function moduleTabIdentity(
   }
 
   if (['report-detail-sale-stock-profit', 'report-business-by-groups', 'report-daily-profit-loss'].includes(module.key)
+    && new URLSearchParams(search).get('view') === 'preview') {
+    return { key: module.key + ':preview', title: module.title + ' Preview', path: pathname + search }
+  }
+
+  if (['report-advance-sales','report-daybook','report-product-transactions',
+    'report-detailed-transactions','report-fbr-sales','report-fbr-purchases'].includes(module.key)
     && new URLSearchParams(search).get('view') === 'preview') {
     return { key: module.key + ':preview', title: module.title + ' Preview', path: pathname + search }
   }
