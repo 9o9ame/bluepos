@@ -14,12 +14,12 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleReturn;
-use App\Models\StockMovement;
 use App\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ProductDailyReportsController extends Controller
@@ -252,43 +252,62 @@ class ProductDailyReportsController extends Controller
     {
         $ids = $products->pluck('id')->all();
         if ($ids === []) return [];
-        $end = CarbonImmutable::createFromFormat('Y-m-d', $filters['to'])->endOfDay();
-        $movements = StockMovement::query()->forTenant($context->tenantId())
+        $from = CarbonImmutable::createFromFormat('Y-m-d', $filters['from'])->startOfDay();
+        $to = CarbonImmutable::createFromFormat('Y-m-d', $filters['to'])->endOfDay();
+
+        // Aggregate on PostgreSQL: do not load every historical stock movement into PHP.
+        $facts = DB::table('stock_movements')
+            ->select('product_id', 'movement_type')
+            ->selectRaw('COALESCE(SUM(CASE WHEN occurred_at < ? THEN quantity ELSE 0 END), 0) AS opening_qty,
+                COALESCE(SUM(CASE WHEN occurred_at >= ? THEN quantity ELSE 0 END), 0) AS period_qty,
+                COALESCE(SUM(quantity), 0) AS closing_qty,
+                COALESCE(SUM(CASE WHEN occurred_at >= ? THEN total_cost ELSE 0 END), 0) AS period_cost,
+                COALESCE(SUM(CASE WHEN occurred_at >= ? AND total_cost IS NULL THEN 1 ELSE 0 END), 0) AS missing_count',
+                [$from, $from, $from, $from])
+            ->where('tenant_id', $context->tenantId())
             ->where('branch_id', $context->branchId())
             ->where('warehouse_id', $context->warehouseId())
-            ->whereIn('product_id', $ids)->where('occurred_at', '<=', $end)
-            ->orderBy('occurred_at')->orderBy('id')->get();
+            ->whereIn('product_id', $ids)
+            ->where('occurred_at', '<=', $to)
+            ->groupBy('product_id', 'movement_type')
+            ->get();
+
         $productMap = $products->keyBy('id');
         $rows = [];
-        foreach ($movements as $m) {
-            $id = $m->product_id;
+        foreach ($facts as $fact) {
+            $id = (int) $fact->product_id;
             $product = $productMap->get($id);
             if (! $product) continue;
             if (! isset($rows[$id])) {
                 $rows[$id] = [
                     'product' => $this->productData($product),
-                    'opening_quantity' => '0.000000', 'period_change' => '0.000000',
-                    'closing_quantity' => '0.000000', 'movements' => [],
+                    'opening_quantity' => '0.000000',
+                    'period_change' => '0.000000',
+                    'closing_quantity' => '0.000000',
+                    'movements' => [],
                     'cost_of_sales' => '0.0000', 'cost_sale_quantity' => '0.000000',
                     'missing_cost' => false,
                 ];
             }
-            $qty = (string) $m->quantity;
-            $date = $m->occurred_at->toDateString();
-            $rows[$id]['closing_quantity'] = bcadd($rows[$id]['closing_quantity'], $qty, 6);
-            if ($date < $filters['from']) {
-                $rows[$id]['opening_quantity'] = bcadd($rows[$id]['opening_quantity'], $qty, 6);
-                continue;
+            $opening = (string) $fact->opening_qty;
+            $period = (string) $fact->period_qty;
+            $closing = (string) $fact->closing_qty;
+            $rows[$id]['opening_quantity'] = bcadd($rows[$id]['opening_quantity'], $opening, 6);
+            $rows[$id]['period_change'] = bcadd($rows[$id]['period_change'], $period, 6);
+            $rows[$id]['closing_quantity'] = bcadd($rows[$id]['closing_quantity'], $closing, 6);
+            $type = (string) $fact->movement_type;
+            if (bccomp($period, '0', 6) !== 0) {
+                $rows[$id]['movements'][$type] = bcadd(
+                    $rows[$id]['movements'][$type] ?? '0.000000', $period, 6
+                );
             }
-            $rows[$id]['period_change'] = bcadd($rows[$id]['period_change'], $qty, 6);
-            $type = $m->movement_type->value;
-            $rows[$id]['movements'][$type] = bcadd($rows[$id]['movements'][$type] ?? '0.000000', $qty, 6);
             if (in_array($type, ['sale', 'sale_amendment', 'sale_return', 'sale_return_amendment'], true)) {
-                $rows[$id]['cost_sale_quantity'] = bcsub($rows[$id]['cost_sale_quantity'], $qty, 6);
-                if ($m->total_cost === null) $rows[$id]['missing_cost'] = true;
-                else $rows[$id]['cost_of_sales'] = bcsub($rows[$id]['cost_of_sales'], (string) $m->total_cost, 4);
+                $rows[$id]['cost_sale_quantity'] = bcsub($rows[$id]['cost_sale_quantity'], $period, 6);
+                $rows[$id]['cost_of_sales'] = bcsub($rows[$id]['cost_of_sales'], (string) $fact->period_cost, 4);
+                if ((int) $fact->missing_count > 0) $rows[$id]['missing_cost'] = true;
             }
         }
+
         return $rows;
     }
 
