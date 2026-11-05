@@ -54,6 +54,13 @@ class ProductDailyReportsController extends Controller
         $filters = $this->filters($request, $context);
         $products = $this->products($context, $filters);
         $stock = $this->stockFacts($context, $filters, $products);
+        if (! $this->permissions->can('inventory.view')) {
+            foreach ($stock as &$row) {
+                $row['cost_of_sales'] = null;
+                $row['missing_cost'] = true;
+            }
+            unset($row);
+        }
 
         return response()->json([
             'from' => $filters['from'], 'to' => $filters['to'],
@@ -119,6 +126,9 @@ class ProductDailyReportsController extends Controller
     public function profit(Request $request, TenantContext $context): JsonResponse
     {
         $this->authorizeReport();
+        if (! $this->permissions->can('inventory.view')) {
+            throw new ApiException('FORBIDDEN', 'You are not allowed to view stock costing.', 403);
+        }
         $filters = $this->filters($request, $context);
         $products = $this->products($context, $filters);
         $stock = $this->stockFacts($context, $filters, $products);
