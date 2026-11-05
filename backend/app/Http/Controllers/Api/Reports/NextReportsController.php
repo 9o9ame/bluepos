@@ -152,6 +152,36 @@ final class NextReportsController extends Controller
             ];
             $totals[$d['type']] = bcadd($totals[$d['type']],$d['amount'],4);
         }
+        // Show posted standalone vouchers separately from operational sales/purchases.
+        // Journal debit/credit legs are not added to invoice gross totals.
+        $voucherTypes = [
+            JournalEntry::DOCUMENT_PAYMENT_VOUCHER,
+            JournalEntry::DOCUMENT_RECEIVING_VOUCHER,
+            JournalEntry::DOCUMENT_JOURNAL_VOUCHER,
+        ];
+        $voucherQuery = JournalEntry::query()->forTenant($context->tenantId())
+            ->where('branch_id',$context->branchId())
+            ->where('status',JournalStatus::Posted->value)
+            ->whereIn('document_type',$voucherTypes)
+            ->whereBetween('entry_date',[$f['from'],$f['to']])
+            ->with('lines')->orderBy('entry_date')->orderBy('id');
+        $groups['voucher'] = [];
+        $totals['voucher_debits'] = '0.0000';
+        $totals['voucher_credits'] = '0.0000';
+        foreach ($voucherQuery->get() as $entry) {
+            $debits = '0.0000'; $credits = '0.0000';
+            foreach ($entry->lines as $line) {
+                $debits = bcadd($debits,(string)$line->debit,4);
+                $credits = bcadd($credits,(string)$line->credit,4);
+            }
+            $groups['voucher'][] = [
+                'ulid'=>$entry->ulid,'date'=>$entry->entry_date->toDateString(),
+                'number'=>$entry->voucher_number,'party'=>$entry->description,
+                'amount'=>$debits,
+            ];
+            $totals['voucher_debits'] = bcadd($totals['voucher_debits'],$debits,4);
+            $totals['voucher_credits'] = bcadd($totals['voucher_credits'],$credits,4);
+        }
         $ledger = null;
         if (($f['format'] ?? '') === 'ledger') {
             if (empty($f['account_ulid'])) {
