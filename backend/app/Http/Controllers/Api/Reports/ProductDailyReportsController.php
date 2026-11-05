@@ -248,7 +248,7 @@ class ProductDailyReportsController extends Controller
         ]);
         $from = CarbonImmutable::createFromFormat('Y-m-d', $filters['from']);
         $to = CarbonImmutable::createFromFormat('Y-m-d', $filters['to']);
-        if ($from->diffInDays($to) > 31) {
+        if ($from->diffInDays($to) >= 31) {
             throw new ApiException('REPORT_DATE_RANGE_TOO_LARGE', 'Select 31 days or less.', 422);
         }
 
