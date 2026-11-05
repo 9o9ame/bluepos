@@ -124,10 +124,35 @@ export function NextReportsPage({ kind }: { kind: Kind }) {
     : Array.isArray(report.rows)
       ? report.rows
       : Object.entries(report.rows).flatMap(([type, parts]) => parts.map(item => ({...item, type})))
-  const headers = columns[kind]
+  const calendarDays = (() => {
+    if (kind !== 'detailed' || params.get('format') !== 'daily') return []
+    const fromDate = params.get('from')
+    const toDate = params.get('to')
+    if (!fromDate || !toDate) return []
+    const start = new Date(fromDate + 'T00:00:00Z')
+    const end = new Date(toDate + 'T00:00:00Z')
+    const result: string[] = []
+    for (let t = start.getTime(); t <= end.getTime() && result.length < 31; t += 86400000)
+      result.push(new Date(t).toISOString().slice(0, 10))
+    return result
+  })()
+  const headers = calendarDays.length
+    ? [
+        {key:'type',title:'Type'}, {key:'party',title:'Party'},
+        ...calendarDays.map(day => ({key:'day:' + day,title:day.slice(8)})),
+        {key:'amount',title:'Total'},
+      ]
+    : columns[kind]
+  const cell = (row: Record<string, unknown>, key: string): unknown => {
+    if (key.startsWith('day:')) {
+      const days = row.days as Record<string, string> | undefined
+      return days?.[key.slice(4)] ?? '0.0000'
+    }
+    return row[key]
+  }
   const exportRows = () => [
     headers.map(column => column.title),
-    ...rows.map(row => headers.map(col => present(row[col.key]))),
+    ...rows.map(row => headers.map(col => present(cell(row,col.key)))),
   ]
   const exportContent = (type: 'txt' | 'html' | 'csv') => {
     if (!report || !paper.current) return
@@ -240,9 +265,9 @@ export function NextReportsPage({ kind }: { kind: Kind }) {
         <thead><tr>{headers.map(col => <th key={col.key}>{col.title}</th>)}</tr></thead>
         <tbody>
           {rows.map((row,i) => <tr key={String(row.line_ulid ?? row.ulid ?? row.document_ulid ?? i) + '-' + i}>
-            {headers.map(col => <td key={col.key} className={typeof row[col.key] === 'string' &&
-                /^-?\d+(?:\.\d+)?$/.test(String(row[col.key])) ? 'dba-amount' : undefined}>
-              {display(row[col.key])}
+            {headers.map(col => <td key={col.key} className={typeof cell(row,col.key) === 'string' &&
+                /^-?\d+(?:\.\d+)?$/.test(String(cell(row,col.key))) ? 'dba-amount' : undefined}>
+              {display(cell(row,col.key))}
               {kind === 'detailed' && col.key === 'party' && Array.isArray(row.lines) &&
                 <div className="dba-account-meta">
                   {(row.lines as {product?:{name:string};quantity:string;amount:string}[]).map((line,j) =>
