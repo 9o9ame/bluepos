@@ -272,29 +272,33 @@ final class NextReportsController extends Controller
         $f = $this->filters($request,$context,'detailed');
         $docs=$this->documents->read($context,$f['from'],$f['to'],$f['types'] ?? []);
         $format=$f['format'] ?? 'summary';
+        if (! empty($f['account_ulid'])) {
+            throw new ApiException('PARTY_FILTER_NOT_SUPPORTED',
+                'Select document types and dates; an account ID is not a party ID.',422);
+        }
         if (! in_array($format,['summary','daily','detail'],true)) {
             throw new ApiException('REPORT_FORMAT_INVALID','Invalid detailed report format.',422);
         }
         $rows=[];$totals=['amount'=>'0.0000','count'=>0];
         foreach ($docs as $d) {
-            if (! empty($f['account_ulid']) && ($d['party']['ulid'] ?? null) !== $f['account_ulid']) {
-                // Account identifiers cannot be compared to party identifiers.
-                throw new ApiException('PARTY_FILTER_NOT_SUPPORTED','Filter this report by document type or date.',422);
-            }
             $sign=in_array($d['type'],['sale_return','purchase_return'],true)?'-1':'1';
             $signed=bcmul($d['amount'],$sign,4);
             $totals['amount']=bcadd($totals['amount'],$signed,4);$totals['count']++;
-            $key=$format==='daily'?$d['date']:($format==='summary'?($d['type'].'|'.$d['party_name']):$d['ulid']);
+            $key=$format==='daily'?($d['type'].'|'.$d['party_name'])
+                :($format==='summary'?($d['type'].'|'.$d['party_name']):$d['ulid']);
             if (! isset($rows[$key])) {
                 $rows[$key]=[
                     'date'=>$format==='daily'?$d['date']:$d['date'],
                     'type'=>$d['type'],
                     'party'=>$d['party_name'],'number'=>$format==='detail'?$d['number']:null,
-                    'count'=>0,'amount'=>'0.0000','lines'=>[],
+                    'count'=>0,'amount'=>'0.0000','lines'=>[], 'days'=>[],
                 ];
             }
             $rows[$key]['count']++;
             $rows[$key]['amount']=bcadd($rows[$key]['amount'],$signed,4);
+            if ($format==='daily') $rows[$key]['days'][$d['date']] = bcadd(
+                $rows[$key]['days'][$d['date']] ?? '0.0000', $signed, 4
+            );
             if ($format==='detail') $rows[$key]['lines']=$d['lines'];
         }
         return response()->json([
