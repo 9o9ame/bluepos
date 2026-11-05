@@ -421,6 +421,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-daily-activity-summary',
+    title: 'Daily Activity Report',
+    path: '/reports/daily/activity-summary',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
     key: 'report-daily-business-activity',
     title: 'Daily Business Activity Account wise',
     path: '/reports/daily/business-activity',
@@ -664,6 +672,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Report workspace', icon: LayoutGrid, iconTone: 'primary', status: 'shell', path: '/reports' },
             { label: 'Profit & Loss Report', icon: BarChart3, iconTone: 'success', ...LATER },
             { label: 'Daily Business Activity Account wise', icon: ClipboardList, iconTone: 'info', status: 'ready', path: '/reports/daily/business-activity' },
+            { label: 'Daily Activity Report', icon: CalendarDays, iconTone: 'success', status: 'ready', path: '/reports/daily/activity-summary' },
             { label: 'Detail Sale + Stock + Profit Loss Report', icon: Layers, iconTone: 'primary', ...LATER },
             { label: 'Business By Group', icon: Network, iconTone: 'warning', ...LATER },
             { label: 'Day Book (Daily Business Summary)', icon: BookOpen, iconTone: 'info', ...LATER },
@@ -813,6 +822,10 @@ export function moduleTabIdentity(
   }
   if (module.key === 'report-top-special' && new URLSearchParams(search).get('view') === 'preview') {
     return { key: 'report-top-special:preview', title: 'Top Special Preview', path: pathname + search }
+  }
+
+  if (module.key === 'report-daily-activity-summary' && new URLSearchParams(search).get('view') === 'preview') {
+    return { key: 'report-daily-activity-summary:preview', title: 'Daily Activity Report Preview', path: pathname + search }
   }
 
   if (module.key === 'report-daily-business-activity' && new URLSearchParams(search).get('view') === 'preview') {
