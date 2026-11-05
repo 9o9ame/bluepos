@@ -191,7 +191,7 @@ export function NextReportsPage({ kind }: { kind: Kind }) {
             </label>}
           {(kind === 'daybook' || kind === 'detailed' || kind === 'product-transactions') && <div className="dba-types">
             <strong>Document types (none selected = all)</strong>
-            {TYPES.map(type => <label key={type}>
+            {(kind === 'daybook' ? [...TYPES, 'voucher'] : [...TYPES]).map(type => <label key={type}>
               <input type="checkbox" checked={types.includes(type)} onChange={event =>
                 setTypes(previous => event.target.checked ? [...previous, type] : previous.filter(t => t !== type))}/>
               {titleType(type)}
