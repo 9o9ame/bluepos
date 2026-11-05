@@ -8,6 +8,7 @@ import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
 import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import './DailyBusinessActivityPage.css'
+import './DailyReportSheets.css'
 
 type DocumentLine = {
   ulid: string
@@ -148,7 +149,7 @@ export function DailyActivitySummaryPage() {
     />
     {query.isLoading && <UiSkeleton label="Loading daily activity report…" />}
     {query.isError && <p role="alert">Unable to load daily activity report.</p>}
-    {query.data && <article className="dba-paper" ref={paperRef} style={{ zoom: zoom + '%' }}>
+    {query.data && <article className="dba-paper daily-report-sheet" ref={paperRef} style={{ zoom: zoom + '%' }}>
       <header><h1>DAILY ACTIVITY REPORT</h1><p>{query.data.business_name}</p>
         <p>From {query.data.from} to {query.data.to}</p></header>
       <h2>Sale / Purchase Detail for the Date</h2>
