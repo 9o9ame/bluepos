@@ -5,6 +5,8 @@ export type TenantImportResult = {
   format: string
   replayed: boolean
   status: 'processing' | 'completed'
+  attention_required?: boolean
+  worker_message?: string | null
   processed: number
   total: number
   created: number
