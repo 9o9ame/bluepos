@@ -126,8 +126,12 @@ export function AppRoutes() {
             <Route path="/reports/daily/business-activity" element={<DailyBusinessActivityPage />} />
             <Route path="/reports/daily/activity-summary" element={<DailyActivitySummaryPage />} />
             <Route path="/reports/daily/detail-sale-stock-profit" element={<ProductDailyReportPage kind="stock" />} />
-            <Route path="/reports/daily/business-by-groups" element={<ProductDailyReportPage kind="groups" />} />
-            <Route path="/reports/daily/profit-loss" element={<ProductDailyReportPage kind="profit" />} />
+            <Route element={<RequirePermission permission="reports.accounting" />}>
+              <Route path="/reports/daily/business-by-groups" element={<ProductDailyReportPage kind="groups" />} />
+              <Route element={<RequirePermission permission="inventory.view" />}>
+                <Route path="/reports/daily/profit-loss" element={<ProductDailyReportPage kind="profit" />} />
+              </Route>
+            </Route>
             <Route path="/reports/accounts/top-special" element={<TopSpecialReportPage />} />
             <Route path="/reports/accounts/total-turnover" element={<TotalTurnoverReportPage />} />
           </Route>
