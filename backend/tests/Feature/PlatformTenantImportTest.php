@@ -3,6 +3,9 @@
 namespace Tests\Feature;
 
 use App\Accounting\PartyLeafAccountSync;
+use App\Jobs\ProcessTenantImport;
+use App\Platform\Imports\AsyncTenantImportService;
+use App\Platform\Imports\TenantImportService;
 use App\Catalog\TenantCatalogProvisioner;
 use App\Models\Category;
 use App\Models\Customer;
@@ -20,6 +23,8 @@ use App\Models\Warehouse;
 use App\Support\SimpleXlsx;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -297,6 +302,68 @@ class PlatformTenantImportTest extends TestCase
         $this->assertSame('BRAND ONE', $existing->brand->name);
         $this->assertSame('DAIRY', $existing->category->name);
         $this->assertSame('PCS', $existing->baseUnit->code);
+    }
+
+    public function test_async_upload_stages_once_and_worker_commits_without_reposting_on_replay(): void
+    {
+        Storage::fake('local');
+        Queue::fake();
+        config(['queue.default' => 'database']);
+        $tenant = $this->readyTenant('imp-async-once');
+        $this->signInPlatformAdmin('imp-async-once-admin');
+        $route = '/api/platform/tenants/'.$tenant->ulid.'/imports/async';
+
+        $response = $this->post($route, ['file' => $this->accounts()])
+            ->assertStatus(202)->assertJsonPath('status', 'processing')
+            ->assertJsonPath('processed', 0)->assertJsonPath('total', 1);
+        $batch = TenantImport::query()->forTenant($tenant->id)->sole();
+        $this->assertNotNull($batch->source_path);
+        Storage::disk('local')->assertExists($batch->source_path);
+        Queue::assertPushed(ProcessTenantImport::class);
+
+        app(AsyncTenantImportService::class)->process($batch->id, app(TenantImportService::class));
+        $this->getJson('/api/platform/tenants/'.$tenant->ulid.'/imports/'.$batch->ulid)
+            ->assertOk()->assertJsonPath('status', 'completed')
+            ->assertJsonPath('processed', 1)->assertJsonPath('created', 1);
+        Storage::disk('local')->assertMissing($batch->source_path);
+        $this->assertSame(1, Supplier::query()->forTenant($tenant->id)->count());
+
+        $this->post($route, ['file' => $this->accounts()])
+            ->assertStatus(202)->assertJsonPath('replayed', true);
+        $this->assertSame(1, Supplier::query()->forTenant($tenant->id)->count());
+        $this->assertSame(1, TenantImportRow::query()->where('import_id', $batch->id)->count());
+    }
+
+    public function test_async_import_status_is_tenant_scoped_and_requires_platform_authorization(): void
+    {
+        Storage::fake('local');
+        Queue::fake();
+        config(['queue.default' => 'database']);
+        $tenant = $this->readyTenant('imp-async-tenant');
+        $other = $this->readyTenant('imp-async-other');
+        $this->signInPlatformAdmin('imp-async-tenant-admin');
+        $batch = $this->post('/api/platform/tenants/'.$tenant->ulid.'/imports/async',
+            ['file' => $this->accounts()])->assertStatus(202)->json();
+
+        $this->getJson('/api/platform/tenants/'.$other->ulid.'/imports/'.$batch['ulid'])
+            ->assertNotFound();
+        $this->getJson('/api/platform/tenants/'.$tenant->ulid.'/imports/active')
+            ->assertOk()->assertJsonPath('ulid', $batch['ulid']);
+
+        $this->postJson('/api/platform/auth/logout')->assertOk();
+        $this->getJson('/api/platform/tenants/'.$tenant->ulid.'/imports/'.$batch['ulid'])
+            ->assertUnauthorized();
+    }
+
+    public function test_async_endpoint_refuses_sync_queue_instead_of_blocking_http(): void
+    {
+        $tenant = $this->readyTenant('imp-async-sync');
+        $this->signInPlatformAdmin('imp-async-sync-admin');
+        config(['queue.default' => 'sync']);
+        $this->post('/api/platform/tenants/'.$tenant->ulid.'/imports/async',
+            ['file' => $this->accounts()])->assertStatus(503)
+            ->assertJsonPath('error.key', 'IMPORT_QUEUE_UNAVAILABLE');
+        $this->assertSame(0, TenantImport::query()->forTenant($tenant->id)->count());
     }
 
     private function readyTenant(string $suffix)
