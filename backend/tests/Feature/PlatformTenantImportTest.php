@@ -211,10 +211,20 @@ class PlatformTenantImportTest extends TestCase
         for ($i = 1; $i <= 101; $i++) {
             $rows[] = [(string) $i, 'CHUNK'.$i, 'Chunk Vendor '.$i, '', 'ACCOUNT PAYABLE', 'VENDORS'];
         }
-        $this->upload($tenant, $this->accounts($rows))->assertOk()->assertJsonPath('status', 'processing')
-            ->assertJsonPath('processed', 100)->assertJsonPath('total', 101)->assertJsonPath('created', 100);
-        $this->upload($tenant, $this->accounts($rows))->assertOk()->assertJsonPath('status', 'completed')
-            ->assertJsonPath('processed', 101)->assertJsonPath('created', 101);
+        $first = $this->upload($tenant, $this->accounts($rows))->assertOk()
+            ->assertJsonPath('status', 'processing')->assertJsonPath('total', 101);
+        $this->assertGreaterThanOrEqual(1, $first->json('processed'));
+        $this->assertLessThanOrEqual(20, $first->json('processed'));
+        $previous = $first->json('processed');
+        $result = $first;
+        for ($attempt = 0; $attempt < 101 && $result->json('status') === 'processing'; $attempt++) {
+            $result = $this->upload($tenant, $this->accounts($rows))->assertOk();
+            $this->assertGreaterThan($previous, $result->json('processed'));
+            $this->assertLessThanOrEqual(20, $result->json('processed') - $previous);
+            $previous = $result->json('processed');
+        }
+        $result->assertJsonPath('status', 'completed')->assertJsonPath('processed', 101)
+            ->assertJsonPath('created', 101);
         $this->upload($tenant, $this->accounts($rows))->assertOk()->assertJsonPath('replayed', true);
         $this->assertSame(101, Supplier::query()->forTenant($tenant->id)->count());
     }
