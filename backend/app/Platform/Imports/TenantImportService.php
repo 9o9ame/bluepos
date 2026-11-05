@@ -131,8 +131,15 @@ final class TenantImportService
             $batch->refresh();
         }
         if ($background) {
-            // Workers should not materialize/recount every historical result and warning
-            // after each chunk; the progress endpoint uses database aggregates.
+            // Workers should not materialize every historical result and warning
+            // after each chunk. Keep the audit trail on final completion.
+            if ($batch->status === 'completed') {
+                $this->audit->record('TENANT_IMPORT_COMPLETED', [
+                    'resource_type' => 'tenant_import', 'resource_ulid' => $batch->ulid,
+                    'tenant_ulid' => $tenant->ulid, 'format' => $parsed['format'],
+                    'processed' => count($parsed['rows']),
+                ], null, $actor);
+            }
             return ['status' => $batch->status, 'ulid' => $batch->ulid];
         }
         $results = TenantImportRow::query()->where('import_id', $batch->id)->orderBy('source_row')->get()->pluck('result');
