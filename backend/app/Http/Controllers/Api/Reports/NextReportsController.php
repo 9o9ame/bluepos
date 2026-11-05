@@ -346,9 +346,36 @@ final class NextReportsController extends Controller
             $total['tax']=bcadd($total['tax'],$signedTax,4);
             $total['gross']=bcadd($total['gross'],$gross,4);
         }
+        $format = $f['format'] ?? 'short';
+        if (! in_array($format,['short','invoice'],true)) {
+            throw new ApiException('REPORT_FORMAT_INVALID','Invalid register format.',422);
+        }
+        if ($format === 'short') {
+            $summaries = [];
+            foreach ($rows as $line) {
+                $key = $line['type'].'|'.$line['document_ulid'];
+                if (! isset($summaries[$key])) {
+                    $summaries[$key] = [
+                        'document_ulid'=>$line['document_ulid'],
+                        'date'=>$line['date'],'number'=>$line['number'],
+                        'type'=>$line['type'],'party'=>$line['party'],
+                        'party_ntn'=>$line['party_ntn'],'party_strn'=>$line['party_strn'],
+                        'product'=>null,'hs_code'=>null,'quantity'=>'0.000000',
+                        'tax_rate'=>null,'value'=>'0.0000','tax'=>'0.0000',
+                        'gross'=>'0.0000','line_count'=>0,
+                    ];
+                }
+                $summaries[$key]['quantity'] = bcadd($summaries[$key]['quantity'],$line['quantity'],6);
+                $summaries[$key]['value'] = bcadd($summaries[$key]['value'],$line['value'],4);
+                $summaries[$key]['tax'] = bcadd($summaries[$key]['tax'],$line['tax'],4);
+                $summaries[$key]['gross'] = bcadd($summaries[$key]['gross'],$line['gross'],4);
+                $summaries[$key]['line_count']++;
+            }
+            $rows = array_values($summaries);
+        }
         $settings=BusinessSetting::query()->forTenant($context->tenantId())->first();
         return response()->json([
-            'register'=>$register,'rows'=>$rows,'totals'=>$total,
+            'register'=>$register,'format'=>$format,'rows'=>$rows,'totals'=>$total,
             'registered_number'=>$settings?->tax_registration_number,
             'compliance_ready'=>false,
             'limitations'=>[
