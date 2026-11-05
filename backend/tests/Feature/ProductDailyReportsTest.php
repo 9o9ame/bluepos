@@ -105,6 +105,21 @@ class ProductDailyReportsTest extends TestCase
         $this->assertNoInternalIds($grouped->json());
     }
 
+    public function test_other_tenant_cannot_read_first_tenant_stock_or_profit(): void
+    {
+        $this->signInOwner('daily-tenant-a')->assertOk();
+        $product = $this->product('Private First Tenant Stock', '100.0000');
+        $this->movement($product, '2026-11-04', '4.000000', '20.0000', StockMovementType::Purchase);
+
+        $this->signInOwner('daily-tenant-b')->assertOk();
+        $this->getJson('/api/reports/daily/detail-sale-stock-profit?from=2026-11-01&to=2026-11-05')
+            ->assertOk()->assertJsonCount(0, 'rows');
+        $this->getJson('/api/reports/daily/business-by-groups?from=2026-11-01&to=2026-11-05&group_by=brand')
+            ->assertOk()->assertJsonCount(0, 'rows');
+        $this->getJson('/api/reports/daily/profit-loss?from=2026-11-01&to=2026-11-05')
+            ->assertOk()->assertJsonCount(0, 'rows');
+    }
+
     public function test_dates_filters_and_permission_are_enforced(): void
     {
         $this->signInOwner('daily-product-guards')->assertOk();
