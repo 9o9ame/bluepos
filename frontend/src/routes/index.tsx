@@ -126,9 +126,10 @@ export function AppRoutes() {
             <Route path="/reports/accounts/cash-book" element={<CashBookReportPage />} />
             <Route path="/reports/daily/business-activity" element={<DailyBusinessActivityPage />} />
             <Route path="/reports/daily/activity-summary" element={<DailyActivitySummaryPage />} />
-            <Route path="/reports/advance-sales" element={<NextReportsPage kind="advance" />} />
+            <Route element={<RequirePermission permission="reports.inventory" />}>
+              <Route path="/reports/advance-sales" element={<NextReportsPage kind="advance" />} />
+            </Route>
             <Route path="/reports/daily/day-book" element={<NextReportsPage kind="daybook" />} />
-            <Route path="/reports/daily/product-transactions" element={<NextReportsPage kind="product-transactions" />} />
             <Route path="/reports/daily/detailed-transactions" element={<NextReportsPage kind="detailed" />} />
             <Route path="/reports/daily/fbr-sales-register" element={<NextReportsPage kind="fbr-sales" />} />
             <Route path="/reports/daily/fbr-purchase-register" element={<NextReportsPage kind="fbr-purchases" />} />
@@ -143,6 +144,7 @@ export function AppRoutes() {
             <Route path="/reports/accounts/total-turnover" element={<TotalTurnoverReportPage />} />
           </Route>
           <Route element={<RequirePermission permission="reports.inventory" />}>
+            <Route path="/reports/daily/product-transactions" element={<NextReportsPage kind="product-transactions" />} />
             <Route path="/reports/products/stock-status" element={<ProductStockStatusReportPage />} />
             <Route path="/reports/products/ledger" element={<ProductLedgerReportPage />} />
           </Route>
