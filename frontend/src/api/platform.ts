@@ -32,6 +32,12 @@ export function startTenantImport(tenantUlid: string, file: File, warehouseUlid:
   })
 }
 
+export function fetchActiveTenantImport(tenantUlid: string) {
+  return apiFetch<TenantImportResult | null>(
+    `/api/platform/tenants/${tenantUlid}/imports/active`, { busy: 'none' },
+  )
+}
+
 export function fetchTenantImportProgress(tenantUlid: string, importUlid: string) {
   return apiFetch<TenantImportResult>(
     `/api/platform/tenants/${tenantUlid}/imports/${importUlid}`, { busy: 'none' },
