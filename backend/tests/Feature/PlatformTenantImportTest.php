@@ -382,6 +382,24 @@ class PlatformTenantImportTest extends TestCase
             ->assertUnauthorized();
     }
 
+    public function test_async_worker_failure_surfaces_safe_recoverable_status(): void
+    {
+        Storage::fake('local');
+        Queue::fake();
+        config(['queue.default' => 'database']);
+        $tenant = $this->readyTenant('imp-async-failed');
+        $this->signInPlatformAdmin('imp-async-failed-admin');
+        $batchUlid = $this->post('/api/platform/tenants/'.$tenant->ulid.'/imports/async',
+            ['file' => $this->accounts()])->assertStatus(202)->json('ulid');
+        $batch = TenantImport::query()->where('tenant_id', $tenant->id)->sole();
+
+        (new ProcessTenantImport($batch->id))->failed(new \RuntimeException('sensitive DB error text'));
+        $this->getJson('/api/platform/tenants/'.$tenant->ulid.'/imports/'.$batchUlid)
+            ->assertOk()->assertJsonPath('attention_required', true);
+        $this->assertStringNotContainsString('sensitive',
+            (string) $batch->fresh()->last_error);
+    }
+
     public function test_async_endpoint_refuses_sync_queue_instead_of_blocking_http(): void
     {
         $tenant = $this->readyTenant('imp-async-sync');
