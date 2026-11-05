@@ -1,3 +1,13 @@
+## 2026-11-05 — Next six Reports roadmap created; NR-0 inspection started
+
+- User supplied Advance Sales View screenshot and five reference ZIP packs: Day Book, Product Wise Transactions, Detailed Transactions, FBR Sales Register, FBR Purchase Register. Reference PDFs include Day Book and Ledger, Product Wise Transactions, Transaction Summary / Day-by-Day / Detail; Product Transactions also has XLSX.
+- **New plan:** `BLUEPOS_NEXT_REPORTS_MILESTONES.md` defines NR-0 through NR-7 covering six report families and a final acceptance phase. All are PLANNED except NR-0 IN PROGRESS. Prior DR-0 through DR-6 remain user-accepted and untouched.
+- Initial code inspection: Five Daily Reports entries already exist as disabled placeholders in `frontend/src/features/workspace/modules.ts`; Advance Sales is a disabled command. Existing Product Ledger offers read-only opening/running stock logic; Sale/SaleItem/StockMovement/SaleReturn models expose document date, line amounts and stock movement links. Do not assume reference-app negative stock is correct: confirm Stock@ versus Current Stock meaning before implementing.
+- FBR register screenshots show date and filtered-item selection but not authoritative tax columns, so official Pakistan FBR requirements must be verified before any compliance-ready claims. No new report endpoints or UI were implemented by this roadmap phase.
+- No migrations, no persistent data changes, no tests run, no changes to main. Development stays on `feature/reports`.
+
+---
+
 ## 2026-11-05 — Four Daily Reports DR-0 to DR-6 user-accepted on feature/reports
 
 - User approved continuous implementation of Daily Reports in existing `feature/reports` branch. Four reference screenshot packs and two PDFs reviewed; full milestone contract at `BLUEPOS_DAILY_REPORTS_MILESTONES.md`.
