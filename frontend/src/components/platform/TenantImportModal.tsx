@@ -56,9 +56,11 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
             } while (next.status === 'processing')
           })()
             .catch((err) => setError(
-              err instanceof ApiClientError
-                ? [err.message, ...Object.values(err.fields ?? {}).flat()].join(' ')
-                : 'Unable to import workbook. Retry the same file safely.',
+              err instanceof ApiClientError && [502, 503, 504].includes(err.status)
+                ? 'Server timed out while importing. Some rows may already be saved. Retry the SAME file to resume safely; do not change the warehouse or source data.'
+                : err instanceof ApiClientError
+                  ? [err.message, ...Object.values(err.fields ?? {}).flat()].join(' ')
+                  : 'Import connection failed. Some rows may already be saved. Retry the same file to resume safely.',
             ))
             .finally(() => setPending(false))
         }}
