@@ -16,6 +16,7 @@ type Item = { ulid: string; product_number: string; name: string; category: Choi
 type StockRow = {
   product: Item; opening_quantity: string; period_change: string; closing_quantity: string
   movements: Record<string, string>; cost_of_sales: string | null; missing_cost: boolean
+  sale_quantity: string; sale_amount: string; gross_profit: string | null
 }
 type GroupRow = { ulid: string | null; name: string; products: number; sale_quantity: string; sale_amount: string; stock_change: string }
 type ProfitRow = { product: Item; sale_quantity: string; sale_amount: string; cost_amount: string | null; gross_profit: string | null; margin_percent: string | null; cost_verified: boolean }
@@ -77,7 +78,7 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
   const report = query.data
   const csvSafe = (value: string) => '"' + (/^\s*[=+@-]/.test(value) ? "'" : '') + value.replace(/"/g, '""') + '"'
   const columns: string[] = kind === 'stock'
-    ? ['Product', 'Opening Qty', 'Movement', 'Net Qty Change', 'Closing Qty', 'Sales Cost']
+    ? ['Product', 'Opening Qty', 'Movement', 'Net Qty Change', 'Closing Qty', 'Sold Qty', 'Net Sale', 'Sales Cost', 'Gross Profit']
     : kind === 'groups'
       ? ['Group', 'Products', 'Sales Qty', 'Sale Amount ex Tax', 'Net Stock Change']
       : ['Product', 'Sale Qty', 'Sale Amount ex Tax', 'Cost Amount', 'Gross Profit', 'Margin %']
@@ -86,7 +87,8 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
     if (kind === 'stock') return (report.rows as StockRow[]).map(row => [
       row.product.name, row.opening_quantity,
       Object.entries(row.movements).map(([k, v]) => k + ': ' + v).join(' / '),
-      row.period_change, row.closing_quantity, row.missing_cost ? 'Unavailable' : row.cost_of_sales,
+      row.period_change, row.closing_quantity, row.sale_quantity, row.sale_amount,
+      row.cost_of_sales ?? 'Unavailable', row.gross_profit ?? 'Unavailable',
     ])
     if (kind === 'groups') return (report.rows as GroupRow[]).map(row => [
       row.name, String(row.products), row.sale_quantity, row.sale_amount, row.stock_change,
