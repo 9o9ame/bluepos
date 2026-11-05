@@ -46,7 +46,7 @@ class DailyActivitySummaryReportController extends Controller
         ]);
         $from = CarbonImmutable::createFromFormat('Y-m-d', $filters['from'])->startOfDay();
         $to = CarbonImmutable::createFromFormat('Y-m-d', $filters['to'])->endOfDay();
-        if ($from->diffInDays($to) > 31) {
+        if ($from->diffInDays($to) >= 31) {
             throw new ApiException('REPORT_DATE_RANGE_TOO_LARGE', 'Select a range of 31 days or less.', 422);
         }
 
