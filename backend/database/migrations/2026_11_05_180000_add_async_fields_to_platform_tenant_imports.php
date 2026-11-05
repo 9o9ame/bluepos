@@ -9,11 +9,12 @@ return new class extends Migration {
         Schema::table('platform_tenant_imports', function (Blueprint $table) {
             $table->string('source_path', 255)->nullable();
             $table->unsignedInteger('total_rows')->nullable();
+            $table->string('last_error', 255)->nullable();
         });
     }
     public function down(): void {
         Schema::table('platform_tenant_imports', function (Blueprint $table) {
-            $table->dropColumn(['source_path', 'total_rows']);
+            $table->dropColumn(['source_path', 'total_rows', 'last_error']);
         });
     }
 };
