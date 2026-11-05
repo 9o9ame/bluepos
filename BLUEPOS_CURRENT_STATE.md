@@ -1,10 +1,10 @@
-## 2026-11-05 — Four Daily Reports implemented on feature/reports; acceptance pending
+## 2026-11-05 — Four Daily Reports DR-0 to DR-6 user-accepted on feature/reports
 
 - User approved continuous implementation of Daily Reports in existing `feature/reports` branch. Four reference screenshot packs and two PDFs reviewed; full milestone contract at `BLUEPOS_DAILY_REPORTS_MILESTONES.md`.
 - Added separate Daily Activity Report while retaining previously approved Daily Ledger Wise Activity. New read-only reports: Daily Activity, Detail Sale + Stock + Profit/Loss, Business by Groups, Daily Profit/Loss. Reports have separate selection/preview routes, shared `ReportViewerToolbar`, scoped report-table print styles, date filters and CSV/Text/HTML export.
 - Server reads only posted sales/purchases/returns and append-only stock movement cost snapshots, with tenant/branch/warehouse from `TenantContext`. Cost data requires `inventory.view`; sales amounts require `reports.accounting`; inventory entitlement and `reports.inventory` apply to stock-based endpoints. Money/quantity sums use BCMath; historical cost gaps lead to unavailable profit instead of fabricated values.
 - New backend feature tests cover API auth/date validation, empty reports, posted document/stock dates, warehouse isolation, group total reconciliation, sale gross profit, missing-cost behavior and restricted cost visibility.
-- **Verification pending:** new focused Laravel tests were not executable through GitHub connector, frontend typecheck/build and browser screenshot comparison remain pending. User will pull on `feature/reports`, test only `bluepos_test`, and verify each of four report previews. Do not merge or freeze before acceptance. No schema migrations, no persistent DB writes and no changes to posted journals.
+- **User acceptance (2026-11-05):** User explicitly confirms all four reports working and requested DR-0 through DR-6 marked completed, with next reporting references to follow. `BLUEPOS_DAILY_REPORTS_MILESTONES.md` marks all milestones **COMPLETED (user accepted)**. Last supplied test evidence was 10 PASS / 1 FAIL caused by invalid 28-character ULID in a newly written test fixture; the fixture was corrected in commit `66a23b83`, but no subsequent rerun result or final frontend typecheck/build output is recorded. These automated checks remain **unverified**, not falsely marked PASS. No migrations, no persistent DB writes and no changes to posted journals; `main` remains unmerged pending explicit approval.
 
 ---
 
