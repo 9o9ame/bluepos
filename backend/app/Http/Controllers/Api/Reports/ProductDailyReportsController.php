@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Reports;
 
 use App\Actions\Sales\BuildSaleEffectiveSnapshotAction;
+use App\Actions\Sales\BuildSaleReturnEffectiveSnapshotAction;
 use App\Authz\PermissionService;
 use App\Enums\SaleReturnStatus;
 use App\Enums\SaleStatus;
@@ -26,6 +27,7 @@ class ProductDailyReportsController extends Controller
     public function __construct(
         private readonly PermissionService $permissions,
         private readonly BuildSaleEffectiveSnapshotAction $saleSnapshots,
+        private readonly BuildSaleReturnEffectiveSnapshotAction $saleReturnSnapshots,
     ) {}
 
     private function authorizeReport(): void
@@ -54,7 +56,8 @@ class ProductDailyReportsController extends Controller
         $filters = $this->filters($request, $context);
         $products = $this->products($context, $filters);
         $stock = $this->stockFacts($context, $filters, $products);
-        $trade = $this->saleFacts($context, $filters, $products);
+        $canViewSales = $this->permissions->can('reports.accounting');
+        $trade = $canViewSales ? $this->saleFacts($context, $filters, $products) : [];
         $canViewCost = $this->permissions->can('inventory.view');
         foreach ($trade as $productId => $sale) {
             if (! isset($stock[$productId])) {
@@ -71,8 +74,8 @@ class ProductDailyReportsController extends Controller
         }
         foreach ($stock as $productId => &$row) {
             $sale = $trade[$productId] ?? null;
-            $row['sale_quantity'] = $sale['sale_quantity'] ?? '0.000000';
-            $row['sale_amount'] = $sale['sale_amount'] ?? '0.0000';
+            $row['sale_quantity'] = $canViewSales ? ($sale['sale_quantity'] ?? '0.000000') : null;
+            $row['sale_amount'] = $canViewSales ? ($sale['sale_amount'] ?? '0.0000') : null;
             $verified = $canViewCost && $sale
                 && ! $sale['amount_unavailable'] && ! $row['missing_cost']
                 && bccomp($row['cost_sale_quantity'], $sale['sale_quantity'], 6) === 0;
@@ -99,6 +102,9 @@ class ProductDailyReportsController extends Controller
     public function groups(Request $request, TenantContext $context): JsonResponse
     {
         $this->authorizeReport();
+        if (! $this->permissions->can('reports.accounting')) {
+            throw new ApiException('FORBIDDEN', 'You are not allowed to view sales reports.', 403);
+        }
         $filters = $this->filters($request, $context, true);
         $products = $this->products($context, $filters);
         $stock = $this->stockFacts($context, $filters, $products);
@@ -149,8 +155,8 @@ class ProductDailyReportsController extends Controller
     public function profit(Request $request, TenantContext $context): JsonResponse
     {
         $this->authorizeReport();
-        if (! $this->permissions->can('inventory.view')) {
-            throw new ApiException('FORBIDDEN', 'You are not allowed to view stock costing.', 403);
+        if (! $this->permissions->can('inventory.view') || ! $this->permissions->can('reports.accounting')) {
+            throw new ApiException('FORBIDDEN', 'You are not allowed to view sales costing.', 403);
         }
         $filters = $this->filters($request, $context);
         $products = $this->products($context, $filters);
@@ -288,8 +294,7 @@ class ProductDailyReportsController extends Controller
 
     private function saleFacts(TenantContext $context, array $filters, Collection $products): array
     {
-        $productIds = $products->pluck('id')->all();
-        if ($productIds === []) return [];
+        if ($products->isEmpty()) return [];
         $ulidToId = $products->pluck('id', 'ulid');
         $rows = [];
         $sales = Sale::query()->forTenant($context->tenantId())
@@ -354,16 +359,18 @@ class ProductDailyReportsController extends Controller
             ->where('warehouse_id', $context->warehouseId())
             ->where('status', SaleReturnStatus::Posted->value)
             ->whereBetween('return_date', [$filters['from'], $filters['to']])
-            ->with('lines.product')->get();
+            ->with('latestRevision')->get();
         foreach ($returns as $return) {
-            foreach ($return->lines as $line) {
-                if (! in_array($line->product_id, $productIds, true)) continue;
-                $id = $line->product_id;
+            $snapshot = $this->saleReturnSnapshots->current($return);
+            foreach ($snapshot['lines'] ?? [] as $line) {
+                $productUlid = $line['product']['ulid'] ?? null;
+                if (! $productUlid || ! $ulidToId->has($productUlid)) continue;
+                $id = $ulidToId->get($productUlid);
                 if (! isset($rows[$id])) $rows[$id] = [
                     'sale_quantity' => '0.000000', 'sale_amount' => '0.0000', 'amount_unavailable' => false,
                 ];
-                $rows[$id]['sale_quantity'] = bcsub($rows[$id]['sale_quantity'], (string) $line->stock_quantity, 6);
-                $amount = bcsub((string) $line->line_total, (string) $line->tax_amount, 4);
+                $rows[$id]['sale_quantity'] = bcsub($rows[$id]['sale_quantity'], (string) ($line['stock_quantity'] ?? '0'), 6);
+                $amount = bcsub((string) ($line['line_total'] ?? '0'), (string) ($line['tax_amount'] ?? '0'), 4);
                 $rows[$id]['sale_amount'] = bcsub($rows[$id]['sale_amount'], $amount, 4);
             }
         }
