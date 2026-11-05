@@ -429,6 +429,30 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-detail-sale-stock-profit',
+    title: 'Detail Sale + Stock + Profit Loss Report',
+    path: '/reports/daily/detail-sale-stock-profit',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.inventory',
+  },
+  {
+    key: 'report-business-by-groups',
+    title: 'Business By Group',
+    path: '/reports/daily/business-by-groups',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.inventory',
+  },
+  {
+    key: 'report-daily-profit-loss',
+    title: 'Profit & Loss Report',
+    path: '/reports/daily/profit-loss',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.inventory',
+  },
+  {
     key: 'report-daily-business-activity',
     title: 'Daily Business Activity Account wise',
     path: '/reports/daily/business-activity',
@@ -670,11 +694,11 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
           hasMenu: true,
           menu: [
             { label: 'Report workspace', icon: LayoutGrid, iconTone: 'primary', status: 'shell', path: '/reports' },
-            { label: 'Profit & Loss Report', icon: BarChart3, iconTone: 'success', ...LATER },
+            { label: 'Profit & Loss Report', icon: BarChart3, iconTone: 'success', status: 'ready', path: '/reports/daily/profit-loss' },
             { label: 'Daily Business Activity Account wise', icon: ClipboardList, iconTone: 'info', status: 'ready', path: '/reports/daily/business-activity' },
             { label: 'Daily Activity Report', icon: CalendarDays, iconTone: 'success', status: 'ready', path: '/reports/daily/activity-summary' },
-            { label: 'Detail Sale + Stock + Profit Loss Report', icon: Layers, iconTone: 'primary', ...LATER },
-            { label: 'Business By Group', icon: Network, iconTone: 'warning', ...LATER },
+            { label: 'Detail Sale + Stock + Profit Loss Report', icon: Layers, iconTone: 'primary', status: 'ready', path: '/reports/daily/detail-sale-stock-profit' },
+            { label: 'Business By Group', icon: Network, iconTone: 'warning', status: 'ready', path: '/reports/daily/business-by-groups' },
             { label: 'Day Book (Daily Business Summary)', icon: BookOpen, iconTone: 'info', ...LATER },
             { label: 'Product Wise Transaction (Grid)', icon: TableProperties, iconTone: 'primary', ...LATER },
             { label: 'Detailed Transactions Wise Report', icon: ScrollText, iconTone: 'info', ...LATER },
@@ -822,6 +846,11 @@ export function moduleTabIdentity(
   }
   if (module.key === 'report-top-special' && new URLSearchParams(search).get('view') === 'preview') {
     return { key: 'report-top-special:preview', title: 'Top Special Preview', path: pathname + search }
+  }
+
+  if (['report-detail-sale-stock-profit', 'report-business-by-groups', 'report-daily-profit-loss'].includes(module.key)
+    && new URLSearchParams(search).get('view') === 'preview') {
+    return { key: module.key + ':preview', title: module.title + ' Preview', path: pathname + search }
   }
 
   if (module.key === 'report-daily-activity-summary' && new URLSearchParams(search).get('view') === 'preview') {
