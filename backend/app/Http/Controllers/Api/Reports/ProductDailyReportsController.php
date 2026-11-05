@@ -54,13 +54,36 @@ class ProductDailyReportsController extends Controller
         $filters = $this->filters($request, $context);
         $products = $this->products($context, $filters);
         $stock = $this->stockFacts($context, $filters, $products);
-        if (! $this->permissions->can('inventory.view')) {
-            foreach ($stock as &$row) {
+        $trade = $this->saleFacts($context, $filters, $products);
+        $canViewCost = $this->permissions->can('inventory.view');
+        foreach ($trade as $productId => $sale) {
+            if (! isset($stock[$productId])) {
+                $product = $products->firstWhere('id', $productId);
+                if (! $product) continue;
+                $stock[$productId] = [
+                    'product' => $this->productData($product),
+                    'opening_quantity' => '0.000000',
+                    'period_change' => '0.000000', 'closing_quantity' => '0.000000',
+                    'movements' => [], 'cost_of_sales' => '0.0000',
+                    'cost_sale_quantity' => '0.000000', 'missing_cost' => true,
+                ];
+            }
+        }
+        foreach ($stock as $productId => &$row) {
+            $sale = $trade[$productId] ?? null;
+            $row['sale_quantity'] = $sale['sale_quantity'] ?? '0.000000';
+            $row['sale_amount'] = $sale['sale_amount'] ?? '0.0000';
+            $verified = $canViewCost && $sale
+                && ! $sale['amount_unavailable'] && ! $row['missing_cost']
+                && bccomp($row['cost_sale_quantity'], $sale['sale_quantity'], 6) === 0;
+            $row['gross_profit'] = $verified
+                ? bcsub($sale['sale_amount'], $row['cost_of_sales'], 4) : null;
+            if (! $canViewCost) {
                 $row['cost_of_sales'] = null;
                 $row['missing_cost'] = true;
             }
-            unset($row);
         }
+        unset($row);
 
         return response()->json([
             'from' => $filters['from'], 'to' => $filters['to'],
