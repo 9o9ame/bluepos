@@ -45,8 +45,8 @@ final class NextReportsController extends Controller
         $data = $request->validate([
             'from' => ['required', 'date_format:Y-m-d'],
             'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from'],
-            'types' => ['sometimes', 'array', 'max:4'],
-            'types.*' => ['required', Rule::in(['sale','purchase','sale_return','purchase_return'])],
+            'types' => ['sometimes', 'array', 'max:5'],
+            'types.*' => ['required', Rule::in(['sale','purchase','sale_return','purchase_return','voucher'])],
             'product_ulid' => ['nullable', 'string', 'ulid', Rule::exists('products','ulid')
                 ->where('tenant_id', $context->tenantId())],
             'account_ulid' => ['nullable', 'string', 'ulid', Rule::exists('accounts','ulid')
@@ -168,6 +168,9 @@ final class NextReportsController extends Controller
             ->whereIn('document_type',$voucherTypes)
             ->whereBetween('entry_date',[$f['from'],$f['to']])
             ->with('lines')->orderBy('entry_date')->orderBy('id');
+        if (($f['types'] ?? []) !== [] && ! in_array('voucher',$f['types'],true)) {
+            $voucherQuery->whereRaw('1 = 0');
+        }
         if ((clone $voucherQuery)->count() > 2000) {
             throw new ApiException('REPORT_TOO_LARGE','Select a shorter range for posted vouchers.',422);
         }
