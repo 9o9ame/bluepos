@@ -10,8 +10,8 @@
 - Background queue `ProcessTenantImport` on dedicated `imports` queue, serialized by overlapping lock; 120 rows/40s bounded service execution, then schedules another job if incomplete.
 - Existing `TenantImportService` retains row-level locks, canonical product/party matching, append-only stock movement posting, double-entry protections, validation and source-row checkpoint idempotency. Background path skips expensive all-history response and resumes from last committed source row; per-file duplicate/conflict checks staged once.
 - New React UI uploads one time and polls status. Closing the modal no longer stops background work; reopen to reconnect to active batch.
-- Non-destructive additive migration: `platform_tenant_imports.source_path` (nullable string), `total_rows` (nullable unsigned integer). `down()` drops only those two columns.
-- Focused tests added to `PlatformTenantImportTest.php` for queue dispatch, worker completion, same-file replay, warehouse stock exactly once, tenant isolation and refusal to run with a synchronous queue.
+- Non-destructive additive migration: `platform_tenant_imports.source_path` (nullable string), `total_rows` (nullable unsigned integer), `last_error` (nullable string). `down()` reverses only these added columns.
+- Focused tests added to `PlatformTenantImportTest.php` for queue dispatch, worker completion, same-file replay, warehouse stock exactly once, tenant isolation, PII-safe failed-worker recovery and refusal to run with a synchronous queue.
 
 ## Production prerequisites
 
@@ -52,7 +52,7 @@ The migrate command is additive and test-DB only, **never run it against `bluepo
 - XLSX parse is still synchronous within first upload request; this is expected to be manageable for a few thousand rows but needs streaming worker-side validation for huge workbooks.
 - Domain-ledger opening-stock posting remains per product, potentially the dominant processing cost. Do not bypass accounting or manufacture product balances to speed it up.
 - Profile before selecting batch-aggregation strategy. 100,000 product rows require streaming parse and staged chunk files/DB rows rather than one in-memory JSON array. No throughput/ETA guarantees until benchmark.
-- Permanent worker failure currently leaves a processing batch requiring admin inspection/re-upload. A dedicated failed-status/recovery interface can be added after queue operations are benchmarked.
+- Permanent worker exhaustion sets a PII-safe `last_error`, shown as `attention_required` in the progress response and dialog. Re-uploading the same source clears the worker error and resumes row checkpoints; queue worker availability must still be verified.
 - This is a staged throughput improvement (request/parse overhead removed and progress detached from the browser), **not** a verified 100k-row bulk import engine.
 
 ## Source changes
