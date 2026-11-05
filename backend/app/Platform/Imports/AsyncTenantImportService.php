@@ -143,7 +143,8 @@ final class AsyncTenantImportService
             'ulid' => $batch->ulid, 'tenant_ulid' => $tenant->ulid,
             'format' => $batch->format, 'status' => $batch->status,
             'processed' => (int) (clone $query)->count(),
-            'total' => (int) ($batch->total_rows ?? 0),
+            'total' => (int) ($batch->total_rows ?? ($batch->status === 'completed'
+                ? (clone $query)->count() : 0)),
             'replayed' => $batch->status === 'completed',
             'attention_required' => $batch->last_error !== null,
             'worker_message' => $batch->last_error,
