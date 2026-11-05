@@ -37,6 +37,7 @@ import { DailyIncomeStatementReportPage } from '../pages/DailyIncomeStatementRep
 import { GeneralJournalReportPage } from '../pages/GeneralJournalReportPage'
 import { CashBookReportPage } from '../pages/CashBookReportPage'
 import { DailyBusinessActivityPage } from '../pages/DailyBusinessActivityPage'
+import { DailyActivitySummaryPage } from '../pages/DailyActivitySummaryPage'
 import { TopSpecialReportPage } from '../pages/TopSpecialReportPage'
 import { TotalTurnoverReportPage } from '../pages/TotalTurnoverReportPage'
 import { ReportHeadingsPage } from '../pages/ReportHeadingsPage'
@@ -122,6 +123,7 @@ export function AppRoutes() {
             <Route path="/reports/accounts/general-journal" element={<GeneralJournalReportPage />} />
             <Route path="/reports/accounts/cash-book" element={<CashBookReportPage />} />
             <Route path="/reports/daily/business-activity" element={<DailyBusinessActivityPage />} />
+            <Route path="/reports/daily/activity-summary" element={<DailyActivitySummaryPage />} />
             <Route path="/reports/accounts/top-special" element={<TopSpecialReportPage />} />
             <Route path="/reports/accounts/total-turnover" element={<TotalTurnoverReportPage />} />
           </Route>
