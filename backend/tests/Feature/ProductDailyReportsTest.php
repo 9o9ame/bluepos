@@ -97,6 +97,13 @@ class ProductDailyReportsTest extends TestCase
             ->assertJsonPath('rows.0.gross_profit', '180.0000')
             ->assertJsonPath('totals.gross_profit', '180.0000');
         $this->assertNoInternalIds($response->json());
+
+        $grouped = $this->getJson(
+            '/api/reports/daily/business-by-groups?from=2026-11-04&to=2026-11-04&group_by=category'
+        )->assertOk()->assertJsonPath('totals.sale_amount', '200.0000')
+            ->assertJsonPath('totals.sale_quantity', '2.000000')
+            ->assertJsonPath('rows.0.name', 'Unassigned');
+        $this->assertNoInternalIds($grouped->json());
     }
 
     public function test_dates_filters_and_permission_are_enforced(): void
