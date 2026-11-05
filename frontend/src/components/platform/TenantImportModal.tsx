@@ -49,7 +49,7 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
             type="submit"
             form="tenant-import-form"
             variant="primary"
-            disabled={!file || pending || result?.status === 'processing'}
+            disabled={!file || pending}
           >
             {pending ? 'Importing…' : 'Import'}
           </UiButton>
@@ -134,8 +134,11 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
 
         {result?.status === 'processing' ? (
           <p role="status">
-            Background import running: {result.processed} / {result.total} rows processed.
-            {' '}You may close this dialog; progress will be available when reopened.
+            {result.total > 0
+              ? `Background import: ${result.processed} / ${result.total} rows processed.`
+              : `Previous import: ${result.processed} rows already saved.`}
+            {' '}You may close this dialog and reopen to check progress.
+            {' '}Re-selecting the identical source file safely resumes an unfinished legacy import.
           </p>
         ) : null}
         {progress.isError ? <p role="alert" className="text-[var(--ui-danger)]">
