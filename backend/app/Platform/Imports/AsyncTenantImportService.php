@@ -114,6 +114,13 @@ final class AsyncTenantImportService
         $query = TenantImportRow::query()->where('import_id', $batch->id);
         $counts = (clone $query)->selectRaw('outcome, count(*) as row_count')
             ->groupBy('outcome')->pluck('row_count', 'outcome');
+        $stockCounts = (clone $query)->selectRaw("result->>'stock' as stock_outcome, count(*) as row_count")
+            ->groupByRaw("result->>'stock'")->pluck('row_count', 'stock_outcome');
+        $stock = [
+            'posted' => (int) ($stockCounts['posted'] ?? 0),
+            'skipped' => (int) ($stockCounts['skipped'] ?? 0),
+            'zero' => (int) ($stockCounts['zero'] ?? 0),
+        ];
         $warnings = [];
         foreach ((clone $query)->orderByDesc('source_row')->limit(15)->get(['result']) as $row) {
             $result = $row->result ?? [];
@@ -138,7 +145,7 @@ final class AsyncTenantImportService
             'reused' => (int) ($counts['reused'] ?? 0),
             'skipped' => (int) ($counts['skipped'] ?? 0),
             'failed' => (int) ($counts['failed'] ?? 0),
-            'stock' => ['posted' => 0, 'skipped' => 0, 'zero' => 0],
+            'stock' => $stock,
             'warnings' => $warnings, 'rows' => [],
             'ignored_fields' => [],
             'retry_note' => 'Worker saves row checkpoints; re-uploading the identical source resumes incomplete work.',
