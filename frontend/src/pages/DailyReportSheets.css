@@ -1,0 +1,60 @@
+/* Scoped to the new Daily Reports; existing frozen/approved reports are untouched. */
+.daily-report-sheet { width:min(1280px,calc(100% - 32px)); overflow-x:auto; }
+.daily-report-sheet h2 {
+  margin:22px 0 8px;
+  padding:5px 8px;
+  font-size:13px;
+  font-weight:750;
+  color:var(--ui-text);
+  background:var(--ui-surface-muted);
+  border-bottom:1px solid var(--ui-border);
+}
+.daily-report-sheet > table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:11px;
+  color:var(--ui-text);
+}
+.daily-report-sheet > table th,
+.daily-report-sheet > table td {
+  padding:5px 7px;
+  border:1px solid var(--ui-table-border);
+  vertical-align:top;
+  text-align:left;
+}
+.daily-report-sheet > table thead th {
+  background:var(--ui-table-header);
+  color:var(--ui-table-header-text);
+  font-weight:700;
+  white-space:nowrap;
+}
+.daily-report-sheet > table .dba-amount {
+  text-align:right;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.daily-report-sheet > table tfoot th,
+.daily-report-sheet > table tfoot td {
+  background:var(--ui-surface-muted);
+  font-weight:700;
+}
+.daily-report-sheet > p {font-size:11px;color:var(--ui-text-muted);margin:8px 0;}
+.daily-report-sheet > table tr {break-inside:avoid;}
+.daily-report-sheet .dba-account-meta {
+  display:block;
+  padding:3px 0 0;
+  text-align:left;
+  font-weight:400;
+}
+.daily-report-sheet .dba-account-meta > div {padding:2px 0;}
+@media(max-width:700px) {
+  .daily-report-sheet {width:100%;padding:10px;}
+  .daily-report-sheet > table {min-width:660px;}
+}
+@media print {
+  .daily-report-sheet {overflow:visible!important;width:100%!important;font-size:9px;}
+  .daily-report-sheet > table {font-size:9px;}
+  .daily-report-sheet > table thead {display:table-header-group;}
+  .daily-report-sheet > table tr {break-inside:avoid;page-break-inside:avoid;}
+  .daily-report-sheet h2 {break-after:avoid;}
+}
