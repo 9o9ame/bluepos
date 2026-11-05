@@ -375,12 +375,11 @@ final class NextReportsController extends Controller
                         'date'=>$line['date'],'number'=>$line['number'],
                         'type'=>$line['type'],'party'=>$line['party'],
                         'party_ntn'=>$line['party_ntn'],'party_strn'=>$line['party_strn'],
-                        'product'=>null,'hs_code'=>null,'quantity'=>'0.000000',
+                        'product'=>null,'hs_code'=>null,'quantity'=>null,
                         'tax_rate'=>null,'value'=>'0.0000','tax'=>'0.0000',
                         'gross'=>'0.0000','line_count'=>0,
                     ];
                 }
-                $summaries[$key]['quantity'] = bcadd($summaries[$key]['quantity'],$line['quantity'],6);
                 $summaries[$key]['value'] = bcadd($summaries[$key]['value'],$line['value'],4);
                 $summaries[$key]['tax'] = bcadd($summaries[$key]['tax'],$line['tax'],4);
                 $summaries[$key]['gross'] = bcadd($summaries[$key]['gross'],$line['gross'],4);
@@ -396,6 +395,7 @@ final class NextReportsController extends Controller
             'limitations'=>[
                 'INTERNAL TAX REVIEW ONLY: not an FBR Annex A/C upload or digital invoice.',
                 'Invoice-level discounts, freight, withholding and some taxes are not allocated to individual lines.',
+                'Short format intentionally does not sum quantities across different items or units.',
                 'Verify taxable value, registration, buyer/supplier details and the current official filing schema before filing.',
             ],
         ]);
