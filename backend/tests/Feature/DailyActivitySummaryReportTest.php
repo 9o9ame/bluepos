@@ -87,7 +87,7 @@ class DailyActivitySummaryReportTest extends TestCase
             'unit_cost' => '10.0000',
             'total_cost' => '100.0000',
             'reference_type' => 'report_test',
-            'reference_ulid' => '01DAILYSUMMARYOPEN0000000000',
+            'reference_ulid' => (string) \Illuminate\Support\Str::ulid(),
             'occurred_at' => '2026-11-03 09:00:00',
             'posted_by' => $context->userId(),
         ]);
