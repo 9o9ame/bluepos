@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ApiClientError } from '../../api/client'
-import { fetchTenantImportWarehouses, importTenantWorkbook, type TenantImportResult } from '../../api/platform'
+import { fetchTenantImportWarehouses, fetchActiveTenantImport, fetchTenantImportProgress, startTenantImport, type TenantImportResult } from '../../api/platform'
 import { usePlatformAuth } from '../../features/platform/PlatformAuthProvider'
 import type { PlatformTenant } from '../../types/platform'
 import { UiSelect } from '../ui/UiSelect'
@@ -16,8 +16,26 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
   const [file, setFile] = useState<File | null>(null)
   const [warehouse, setWarehouse] = useState('')
   const [pending, setPending] = useState(false)
+  const [batchUlid, setBatchUlid] = useState<string | null>(null)
   const [result, setResult] = useState<TenantImportResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const active = useQuery({
+    queryKey: ['platform', 'active-tenant-import', tenant.ulid],
+    queryFn: () => fetchActiveTenantImport(tenant.ulid),
+    refetchInterval: 10000,
+  })
+  const progress = useQuery({
+    queryKey: ['platform', 'tenant-import-progress', tenant.ulid, batchUlid],
+    queryFn: () => fetchTenantImportProgress(tenant.ulid, batchUlid!),
+    enabled: Boolean(batchUlid),
+    refetchInterval: (query) => query.state.data?.status === 'completed' ? false : 2000,
+  })
+  useEffect(() => {
+    if (!batchUlid && active.data?.ulid) setBatchUlid(active.data.ulid)
+  }, [active.data?.ulid, batchUlid])
+  useEffect(() => {
+    if (progress.data) setResult(progress.data)
+  }, [progress.data])
 
   return (
     <UiModal
@@ -31,11 +49,11 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
             type="submit"
             form="tenant-import-form"
             variant="primary"
-            disabled={!file || pending}
+            disabled={!file || pending || result?.status === 'processing'}
           >
             {pending ? 'Importing…' : 'Import'}
           </UiButton>
-          <UiButton disabled={pending} onClick={onClose}>Close</UiButton>
+          <UiButton onClick={onClose}>Close</UiButton>
         </>
       }
     >
@@ -48,13 +66,11 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
           setPending(true)
           setError(null)
           setResult(null)
-          void (async () => {
-            let next: TenantImportResult
-            do {
-              next = await withRecentMfa(() => importTenantWorkbook(tenant.ulid, file, warehouse))
+          void withRecentMfa(() => startTenantImport(tenant.ulid, file, warehouse))
+            .then((next: TenantImportResult) => {
+              setBatchUlid(next.ulid)
               setResult(next)
-            } while (next.status === 'processing')
-          })()
+            })
             .catch((err) => setError(
               err instanceof ApiClientError && [502, 503, 504].includes(err.status)
                 ? 'Server timed out while importing. Some rows may already be saved. Retry the SAME file to resume safely; do not change the warehouse or source data.'
@@ -112,12 +128,20 @@ export function TenantImportModal({ tenant, onClose }: { tenant: PlatformTenant;
 
         {pending ? (
           <p role="status">
-            Uploading and importing… {result ? `${result.processed} / ${result.total} rows processed.` : ''}
-            {' '}Keep this dialog open. A retry of the same workbook resumes saved progress.
+            Uploading source once and scheduling the import…
           </p>
         ) : null}
 
-        {error ? <p role="alert" className="text-[var(--ui-danger)]">{error}</p> : null}
+        {result?.status === 'processing' ? (
+          <p role="status">
+            Background import running: {result.processed} / {result.total} rows processed.
+            {' '}You may close this dialog; progress will be available when reopened.
+          </p>
+        ) : null}
+        {progress.isError ? <p role="alert" className="text-[var(--ui-danger)]">
+          Unable to refresh progress. Completed rows remain saved; reopen this dialog to check again.
+        </p> : null}
+                {error ? <p role="alert" className="text-[var(--ui-danger)]">{error}</p> : null}
 
         {result ? (
           <div role="status" className="space-y-2 rounded border border-[var(--ui-border)] p-3">
