@@ -95,10 +95,14 @@ class ProductDailyReportsController extends Controller
             }
         }
         unset($row);
+        $rows = array_values($stock);
+        usort($rows, static fn ($a, $b) => strcmp(
+            $a['product']['product_number'] ?? '', $b['product']['product_number'] ?? ''
+        ));
 
         return response()->json([
             'from' => $filters['from'], 'to' => $filters['to'],
-            'rows' => array_values($stock), 'basis' => 'append_only_stock_movements',
+            'rows' => $rows, 'basis' => 'append_only_stock_movements',
             'limitations' => [
                 'Quantity is in base units. Opening plus signed period movements equals closing.',
                 'Stock cost is based on movement cost snapshots, not current product purchase rates.',
