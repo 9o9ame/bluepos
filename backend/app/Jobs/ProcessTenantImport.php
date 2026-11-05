@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\Platform\TenantImport;
 use App\Platform\Imports\AsyncTenantImportService;
 use App\Platform\Imports\TenantImportService;
 use Illuminate\Bus\Queueable;
@@ -29,5 +30,12 @@ final class ProcessTenantImport implements ShouldQueue
     public function handle(AsyncTenantImportService $coordinator, TenantImportService $importer): void
     {
         $coordinator->process($this->batchId, $importer);
+    }
+
+    public function failed(?\Throwable $e): void
+    {
+        // Do not persist exception messages: they may contain PII, file values or SQL.
+        TenantImport::query()->whereKey($this->batchId)->where('status', 'processing')
+            ->update(['last_error' => 'Worker exhausted retries. Re-upload the identical source to resume.']);
     }
 }
