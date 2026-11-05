@@ -100,13 +100,36 @@ class NextReportsTest extends TestCase
         $this->getJson('/api/reports/next/detailed-transactions'.$q.'&format=detail')
             ->assertOk()->assertJsonPath('totals.amount','240.0000')
             ->assertJsonPath('rows.0.lines.0.product.ulid',$product->ulid);
-        $fbr=$this->getJson('/api/reports/next/fbr/sales'.$q)
+        $this->getJson('/api/reports/next/detailed-transactions'.$q.'&format=daily')
+            ->assertOk()->assertJsonPath('rows.0.days.2026-11-04','240.0000');
+        $fbr=$this->getJson('/api/reports/next/fbr/sales'.$q.'&format=invoice')
             ->assertOk()->assertJsonPath('compliance_ready',false)
+            ->assertJsonPath('format','invoice')
             ->assertJsonPath('rows.0.quantity','2.000000');
+        $this->getJson('/api/reports/next/fbr/sales'.$q.'&format=short')
+            ->assertOk()->assertJsonPath('format','short')
+            ->assertJsonPath('rows.0.line_count',1)
+            ->assertJsonPath('rows.0.quantity',null);
         $this->assertNoInternalIds($fbr->json());
         $this->getJson('/api/reports/next/product-transactions'.$q)
             ->assertOk()->assertJsonCount(1,'rows')
             ->assertJsonPath('totals.out','2.000000');
+    }
+
+    public function test_daybook_account_ledger_requires_selected_account(): void
+    {
+        $this->signInOwner('next-reports-ledger')->assertOk();
+        $this->getJson('/api/reports/next/day-book?from=2026-11-04&to=2026-11-04&format=ledger')
+            ->assertUnprocessable()
+            ->assertJsonPath('error.key','ACCOUNT_REQUIRED');
+    }
+
+    public function test_cost_visibility_is_separate_from_stock_report_permission(): void
+    {
+        $this->signInOwner('next-reports-cost')->assertOk();
+        $this->restrictCurrentMembershipWithoutPermission('inventory.view');
+        $this->getJson('/api/reports/next/product-transactions?from=2026-11-04&to=2026-11-04')
+            ->assertOk();
     }
 
     public function test_role_permission_denial_on_sensitive_register_and_stock_views(): void
