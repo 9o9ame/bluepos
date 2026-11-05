@@ -9,6 +9,7 @@ import { UiButton } from '../components/ui/UiButton'
 import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import './DailyBusinessActivityPage.css'
+import './DailyReportSheets.css'
 
 type Kind = 'stock' | 'groups' | 'profit'
 type Choice = { ulid: string; name: string }
@@ -192,7 +193,7 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
     />
     {query.isLoading && <UiSkeleton label="Loading product daily report…" />}
     {query.isError && <p role="alert">Unable to load product daily report.</p>}
-    {report && <article className="dba-paper" ref={paperRef} style={{ zoom: zoom + '%' }}>
+    {report && <article className="dba-paper daily-report-sheet" ref={paperRef} style={{ zoom: zoom + '%' }}>
       <header><h1>{titleFor[kind]}</h1><p>From {report.from} to {report.to}</p></header>
       <table>
         <thead><tr>{columns.map(column => <th key={column}>{column}</th>)}</tr></thead>
