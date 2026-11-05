@@ -1,6 +1,6 @@
 # BluePOS — Next Reports Milestones (2026-11-05)
 
-**Branch:** `feature/reports` only. **Status:** Planning recorded; implementation pending.
+**Branch:** `feature/reports` only. **Status:** Six report families implemented in source; focused PHPUnit, typecheck/build and browser acceptance remain pending. FBR outputs are **internal review registers** and are NOT filing-ready.
 **Source references:** User-uploaded Advance Sales View JPEG; Day Book, Product Wise Transactions, Detailed Transactions, FBR Sales Register, and FBR Purchase Register ZIPs (screenshots plus 5 PDFs and one XLSX in these packs). Source samples illustrate workflows, not proof of BluePOS schema or current FBR compliance.
 **Design authority:** `PROJECT_UI_DESIGN_SYSTEM.md`. Preserve existing frozen and user-accepted Daily Reports, Sales Invoice and Purchase Invoice. Use `UiSelect`, `UiButton`, `PosDataGrid`, and `ReportViewerToolbar` as applicable.
 
@@ -19,14 +19,14 @@
 
 | Milestone | Work | Definition of done | Status |
 | --- | --- | --- | --- |
-| **NR-0** | Reference-to-BluePOS mapping, existing route/model/data inspection, financial meaning, permissions, and UI layout constraints | Six report contracts + reuse matrix documented; ambiguities named without guessing | **IN PROGRESS** |
-| **NR-1** | Shared read-only reporting foundation | Server-scoped date/document/party/product filters; stable public ULIDs; zero write actions; shared viewer/exports; focused validation for 403, tenant/branch/warehouse and date ranges | PLANNED |
-| **NR-2** | Advance Sales View | Transaction-line grid, posted sales/returns/amendment behavior, audited quantity/rate/amount, stock column semantics reconciled, filters/totals; no mutation of existing product ledger | PLANNED |
-| **NR-3** | Day Book + optional ledger | Grouped document sources and exact debit/credit totals; opening/running/closing from existing journal flow; date/status, reversal, amendments and duplicate prevention verified | PLANNED |
-| **NR-4** | Product Wise Transactions | Purchase/sale/returns/adjustment movement data, document filters, product/category/brand, base-unit precision and reconciliation with existing stock ledger, preview/CSV/print | PLANNED |
-| **NR-5** | Detailed Transactions (three views) | Party summary, calendar day-by-day, detailed invoice/transaction report; posted-document totals reconcile with actual source snapshots and date grouping | PLANNED |
-| **NR-6** | FBR Sales + Purchase Registers | Official field/format requirements verified first; tenant registration/tax configuration checked; taxable/non-taxable/returns/credit-note handling; no fabricated NTN/STRN or false compliance claim | PLANNED |
-| **NR-7** | End-to-end focused regression + browser acceptance | Tests on `bluepos_test`; frontend typecheck/build, CSV formula injection safety, export+print, pagination/performance, cross-tenant and role tests; user browser signoff on six reports; documentation updated; main unmerged until approval | PLANNED |
+| **NR-0** | Reference-to-BluePOS mapping, existing route/model/data inspection, financial meaning, permissions, and UI layout constraints | Six report contracts + reuse matrix documented; ambiguities named without guessing | **COMPLETED — scoped inspection** |
+| **NR-1** | Shared read-only reporting foundation | Server-scoped date/document/party/product filters; stable public ULIDs; zero write actions; shared viewer/exports; focused validation for 403, tenant/branch/warehouse and date ranges | **IMPLEMENTED — tests pending** |
+| **NR-2** | Advance Sales View | Transaction-line grid, posted sales, movement-linked Stock@, current warehouse balance, rates/amounts, filters/totals; amended lines without matching movement are explicitly unavailable | **IMPLEMENTED — browser pending** |
+| **NR-3** | Day Book + optional ledger | Grouped posted documents, separate posted voucher groups; optional account journal opening/running/closing (no double counted invoice totals) | **IMPLEMENTED — financial tests pending** |
+| **NR-4** | Product Wise Transactions | Append-only movements, transaction-type/product/date filters, matching document references/party where authorized, cost-column guard, preview/CSV/print | **IMPLEMENTED — coverage/filters pending** |
+| **NR-5** | Detailed Transactions (three views) | Party summary, date-column day-by-day matrix, detailed posted document lines, effective snapshots and signed returns | **IMPLEMENTED — browser pending** |
+| **NR-6** | FBR Sales + Purchase Registers | Internal review registers with short/invoice mode, signed returns, line taxes and party registration if present. **Official filing/digital invoicing compliance NOT implemented**; needs statutory mapping/integration review | **INTERNAL VIEW IMPLEMENTED — compliance pending** |
+| **NR-7** | End-to-end focused regression + browser acceptance | Focused tests added at `backend/tests/Feature/NextReportsTest.php`; local PHPUnit on `bluepos_test`, frontend typecheck/build and browser signoff still required | **PENDING LOCAL VERIFICATION** |
 
 ## Sequencing and controls
 
@@ -44,3 +44,14 @@
 - `PROJECT_UI_DESIGN_SYSTEM.md` explicitly mandates the shared report viewer, theme tokens and preserved frozen UI.
 - Existing product/stock reports and accounting journals are reuse candidates, **not** evidence that the new six reports are implemented.
 - Need verify FBR reporting obligations against current official guidance at implementation time; screenshots alone are insufficient for authoritative tax register calculations.
+
+## 2026-11-05 — Implementation update (GitHub only)
+
+- **Added:** `backend/app/Reports/NextReportDocumentReader.php` (effective posted document snapshots) and `backend/app/Http/Controllers/Api/Reports/NextReportsController.php` (six read-only report APIs).
+- **Added:** `frontend/src/pages/NextReportsPage.tsx` (shared selection, table previews, exports, Day Book ledger, Detailed Transactions date matrix).
+- **Added:** `backend/tests/Feature/NextReportsTest.php` (auth, validation, posted sale, FBR internal mode, ledger guard and tenant filter cases).
+- **Updated:** `backend/routes/api.php`, `frontend/src/routes/index.tsx`, `frontend/src/features/workspace/modules.ts`, `frontend/src/pages/DailyReportSheets.css`.
+- **Static review:** All new files fetched back from branch; routes, menu paths and paired bracket counts checked. This is **not** execution of PHP/Laravel or TypeScript/Vite.
+- **Important limitations:** Advance Sales may show unavailable historical Stock@ for amendments with no matching immutable movement line. Product transaction cost is stock movement cost, never fabricated sale revenue. Detailed report day-by-day uses actual document dates; category/brand historical snapshots are not invented. Day Book ledger includes only posted journal entries. FBR review register does not implement official Annex file upload, digital invoice/HMAC/integrator workflow, complete statutory discount allocations or certification.
+- **Official references consulted:** `https://fbr.gov.pk/categ/sales-tax-records/51148/50854/121149` (Sales records), `https://fbr.gov.pk/categ/sales-tax-records/51148/50854/121150` (Purchase records), `https://fbr.gov.pk/categ/sales-tax-rules-2006/302` (rules index), `https://fbr.gov.pk/faqs/173967/173969` (digital invoice integration FAQs).
+- **Next checkpoint:** Pull `feature/reports`; run focused PHPUnit on `bluepos_test` and frontend typecheck/build. Resolve failures before accepting all six browser previews. No branch switch, migration, persisted DB modifications or merge to `main`.
