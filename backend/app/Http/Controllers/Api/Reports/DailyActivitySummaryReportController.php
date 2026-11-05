@@ -35,7 +35,8 @@ class DailyActivitySummaryReportController extends Controller
 
     public function __invoke(Request $request, TenantContext $context): JsonResponse
     {
-        if (! $this->permissions->can('reports.accounting')) {
+        if (! $this->permissions->can('reports.accounting')
+            || ! $this->permissions->can('reports.inventory')) {
             throw new ApiException('FORBIDDEN', 'You are not allowed to view accounting reports.', 403);
         }
 
