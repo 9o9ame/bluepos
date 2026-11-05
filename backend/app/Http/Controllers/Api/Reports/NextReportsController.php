@@ -105,11 +105,14 @@ final class NextReportsController extends Controller
         $balances = StockBalance::query()->forTenant($context->tenantId())
             ->where('branch_id',$context->branchId())->where('warehouse_id',$context->warehouseId())
             ->whereIn('product_id',$ids)->get()->keyBy('product_id');
-        $movements = StockMovement::query()->forTenant($context->tenantId())
+        $movementQuery = StockMovement::query()->forTenant($context->tenantId())
             ->where('branch_id',$context->branchId())->where('warehouse_id',$context->warehouseId())
             ->whereIn('product_id',$ids)
-            ->where('occurred_at','<=',CarbonImmutable::createFromFormat('Y-m-d', $f['to'])->endOfDay())
-            ->orderBy('occurred_at')->orderBy('id')->get();
+            ->where('occurred_at','<=',CarbonImmutable::createFromFormat('Y-m-d', $f['to'])->endOfDay());
+        if ((clone $movementQuery)->count() > 100000) {
+            throw new ApiException('REPORT_TOO_LARGE','Stock history too large for this preview.',422);
+        }
+        $movements = $movementQuery->orderBy('occurred_at')->orderBy('id')->get();
         $running = [];
         $lineStock = [];
         foreach ($movements as $m) {
@@ -165,6 +168,9 @@ final class NextReportsController extends Controller
             ->whereIn('document_type',$voucherTypes)
             ->whereBetween('entry_date',[$f['from'],$f['to']])
             ->with('lines')->orderBy('entry_date')->orderBy('id');
+        if ((clone $voucherQuery)->count() > 2000) {
+            throw new ApiException('REPORT_TOO_LARGE','Select a shorter range for posted vouchers.',422);
+        }
         $groups['voucher'] = [];
         $totals['voucher_debits'] = '0.0000';
         $totals['voucher_credits'] = '0.0000';
