@@ -1,3 +1,14 @@
+## 2026-11-05 — Async tenant bulk import staged on feature/administration (UNVERIFIED)
+
+- User reported 1,300/4,477 products after approximately 30 minutes with the old repeated-upload flow. Root costs inspected: every request reparsed XLSX, performed per-row DB transactions/stock postings and rebuilt all-result response; `SimpleXlsx` hard-limits XLSX to 10,000 rows.
+- Added one-time upload + private cached parsed source + `imports` database queue background worker, authorized tenant-scoped status API, active-job reconnection, client progress polling and additive `source_path`/`total_rows` migration. Reuses original importer and opening-stock posting actions; persistent source-row checkpoints and tenant locks remain.
+- Background worker chunks: up to 120 rows or 40 seconds, with last-committed row cursor, cached duplicate index, no all-history response generation. Worker must run on persistent queue (NOT `sync`); private source file is deleted on completion. No production DB/server changes made.
+- Focused test candidates added for background completion, re-upload idempotency, tenant isolation and exactly-once opening stock. **No Laravel tests, frontend typecheck/build, migration or browser verification actually executed by GitHub connector**. Need local results on `bluepos_test` before approval.
+- Documented setup, safe test commands and outstanding 100k work in `BLUEPOS_ASYNC_BULK_IMPORT.md`. **Not 100k-ready**: current XLSX parser 10k cap, first-upload parsing still synchronous, per-product financial stock posting remains costly. Cannot promise throughput without benchmark.
+- `main` untouched; not ready to merge/deploy without focused tests and queue/hosting checks. Do not interrupt current production import or run unsafe reuploads.
+
+---
+
 ## 2026-11-05 — Platform tenant imports: 504 timeout mitigation and PDF diagnostics (validation pending)
 
 - User supplied production screenshots: product XLSX upload hit nginx **504 Gateway Time-out**; account PDF returned **Cannot safely extract text from this PDF**. These are separate failures. Production server diagnostics, logs, exact files and PHP/PDF tool availability have not yet been verified.
