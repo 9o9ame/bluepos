@@ -38,6 +38,17 @@ class TenantImportController extends Controller
         );
     }
 
+    public function active(string $tenantUlid, PlatformContext $context,
+        AsyncTenantImportService $service): JsonResponse
+    {
+        $tenant = Tenant::query()->where('ulid', $tenantUlid)->firstOrFail();
+        Gate::forUser($context->user())->authorize('importData', $tenant);
+        $batch = TenantImport::query()->where('tenant_id', $tenant->id)
+            ->where('status', 'processing')->orderByDesc('id')->first();
+
+        return response()->json($batch ? $service->progress($tenant, $batch) : null);
+    }
+
     public function progress(string $tenantUlid, string $importUlid,
         PlatformContext $context, AsyncTenantImportService $service): JsonResponse
     {
