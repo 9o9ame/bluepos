@@ -67,9 +67,17 @@ final class AccountsImporter
             // A repeated import must be read-only for an existing identity.
             return ['outcome' => 'reused', 'entity_ulid' => $existing->ulid, 'warnings' => []];
         }
-        // Names are not unique identifiers. Without a code, a pre-existing name needs review.
-        if ($row['code'] === '' && $class::query()->forTenant($this->tenant->id)->whereRaw('upper(trim(name)) = ?', [self::normalize($row['name'])])->exists()) {
-            return ['outcome' => 'skipped', 'warnings' => ['Name already exists with a different code; source has no safe matching code.']];
+        // The requested import policy is name-safe even if the source has a
+        // different CODE. Check all party types and ledger accounts, including
+        // parties imported in earlier rows. Never merge or change an existing name.
+        $name = self::normalize($row['name']);
+        foreach ([Account::class, Supplier::class, Customer::class] as $candidate) {
+            if ($candidate::query()->forTenant($this->tenant->id)
+                ->whereRaw('upper(trim(name)) = ?', [$name])->exists()) {
+                return ['outcome' => 'skipped', 'warnings' => [
+                    'Account/party name already exists in this tenant; new CODE and ledger records were not imported.',
+                ]];
+            }
         }
         if (Account::query()->forTenant($this->tenant->id)->where('code', $code)->exists()) {
             return ['outcome' => 'skipped', 'warnings' => ['Code is already assigned to a ledger account.']];
