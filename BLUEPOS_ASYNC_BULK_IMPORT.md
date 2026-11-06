@@ -13,6 +13,14 @@
 - Non-destructive additive migration: `platform_tenant_imports.source_path` (nullable string), `total_rows` (nullable unsigned integer), `last_error` (nullable string). `down()` reverses only these added columns.
 - Focused tests added to `PlatformTenantImportTest.php` for queue dispatch, worker completion, same-file replay, warehouse stock exactly once, tenant isolation, PII-safe failed-worker recovery and refusal to run with a synchronous queue.
 
+## Duplicate-name import protection (2026-11-06)
+
+- Before creating a new **product**, skip a source row when the selected tenant already contains a product with the same trimmed/case-insensitive name, even when the CODE differs. No price or opening stock is posted for the skipped row.
+- Before creating an **account, supplier or customer**, skip a source row when any account/party category in the selected tenant already contains the same trimmed/case-insensitive name, even if the source CODE differs. Existing party and ledger records remain unchanged.
+- Exact existing source CODE identities retain the original read-only `reused` outcome (no mutations); name collisions with *different* codes are counted as `skipped` and receive a descriptive warning. This policy may intentionally skip legitimate same-name but distinct items; review skipped rows after import.
+- No tenant-global unique-name constraint or destructive rename/deduplication migration was added. Focused regression test candidates cover duplicate product names, stock/price immutability, duplicate account names across party categories, tenant isolation and mixed unique rows.
+- GitHub connector cannot execute PHP tests. Run updated `PlatformTenantImportTest.php` on `bluepos_test` before approval or production deployment.
+
 ## Production prerequisites
 
 1. Apply additive migration after deployment and backup review, without refreshing/truncating production DB.
