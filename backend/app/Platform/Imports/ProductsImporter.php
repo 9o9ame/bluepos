@@ -106,6 +106,16 @@ final class ProductsImporter
             return ['outcome' => 'reused', 'entity_ulid' => $product->ulid,
                 'warnings' => [], 'stock' => 'skipped'];
         }
+        // Names from legacy exports are not stable product identifiers. A new
+        // CODE must not create a duplicate of a product already named in this tenant.
+        // This check runs under TenantImportService's tenant row lock, including
+        // records created by an earlier row or a concurrent import.
+        if (Product::query()->forTenant($this->tenant->id)
+            ->whereRaw('upper(trim(name)) = ?', [AccountsImporter::normalize($row['name'])])->exists()) {
+            return ['outcome' => 'skipped', 'warnings' => [
+                'Product name already exists in this tenant; new CODE, prices and opening stock were not imported.',
+            ], 'stock' => 'skipped'];
+        }
         $unitName = AccountsImporter::normalize((string) ($row['unit'] ?? ''));
         $unitKey = in_array($unitName, ['', 'EACH', 'PIECE', 'PIECES', 'UNIT'], true) ? 'PCS' : $unitName;
         $unitMatches = $this->units[$unitKey] ?? collect();
