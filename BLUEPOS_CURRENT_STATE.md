@@ -1,3 +1,12 @@
+## 2026-11-06 — Import duplicate-name skip protection (validation pending)
+
+- On `feature/administration`, updated `ProductsImporter` to skip creation when the tenant already has a product with the same trimmed/case-insensitive name, even if the source CODE differs; no new price or opening stock posting for that row.
+- Updated `AccountsImporter` to skip creation when any tenant Account, Supplier or Customer has the same trimmed/case-insensitive name, regardless of a different source CODE. Existing matching CODE is still read-only `reused` (no write).
+- Added focused regression test candidates for mixed duplicate/unique products, duplicate account names across party types, tenant isolation and stock/price preservation. **Tests not run from GitHub connector**; production deployment pending. Existing live import data unchanged.
+- See `BLUEPOS_ASYNC_BULK_IMPORT.md` for duplicate-name policy and deployment validation requirement.
+
+---
+
 ## 2026-11-05 — Async tenant bulk import staged on feature/administration (UNVERIFIED)
 
 - User reported 1,300/4,477 products after approximately 30 minutes with the old repeated-upload flow. Root costs inspected: every request reparsed XLSX, performed per-row DB transactions/stock postings and rebuilt all-result response; `SimpleXlsx` hard-limits XLSX to 10,000 rows.
