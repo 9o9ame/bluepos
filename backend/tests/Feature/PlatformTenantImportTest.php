@@ -411,6 +411,60 @@ class PlatformTenantImportTest extends TestCase
         $this->assertSame(0, TenantImport::query()->where('tenant_id', $tenant->id)->count());
     }
 
+    public function test_import_skips_same_product_name_with_new_code_without_price_or_stock_changes(): void
+    {
+        $tenant = $this->readyTenant('imp-name-product');
+        $warehouse = Warehouse::query()->forTenant($tenant->id)->firstOrFail();
+        $this->signInPlatformAdmin('imp-name-product-admin');
+        $this->upload($tenant, $this->products(), $warehouse->ulid)->assertOk()
+            ->assertJsonPath('created', 3)->assertJsonPath('stock.posted', 1);
+        $original = Product::query()->forTenant($tenant->id)->where('sku', '001234')->firstOrFail();
+        $price = ProductPrice::query()->where('product_id', $original->id)->where('price_type', 'retail')->firstOrFail()->amount;
+        $moves = StockMovement::query()->forTenant($tenant->id)->count();
+
+        $source = UploadedFile::fake()->createWithContent('product-names.xlsx', app(SimpleXlsx::class)->write(
+            ['ID', 'Disc', 'CODE', 'Description', 'Manufacturer', 'Category', 'U.O.M', 'Cost Price', 'Margin', 'Selling', 'In Stock'],
+            [
+                ['1', '', 'NEW-999', '  room spray  ', '', 'AIR FRESHENER', 'EACH', '99', '', '999', '100'],
+                ['2', '', 'NEW-998', 'New Unique Product', '', 'OTHER', 'EACH', '12', '', '20', '0'],
+            ]
+        ));
+        $this->upload($tenant, $source, $warehouse->ulid)->assertOk()
+            ->assertJsonPath('skipped', 1)->assertJsonPath('created', 1)
+            ->assertJsonPath('stock.posted', 0);
+
+        $this->assertSame(4, Product::query()->forTenant($tenant->id)->count());
+        $this->assertSame(0, Product::query()->forTenant($tenant->id)->where('sku', 'NEW-999')->count());
+        $this->assertSame($moves, StockMovement::query()->forTenant($tenant->id)->count());
+        $this->assertSame((string) $price, (string) ProductPrice::query()->where('product_id', $original->id)
+            ->where('price_type', 'retail')->firstOrFail()->amount);
+    }
+
+    public function test_import_skips_existing_account_name_with_different_code_across_party_types(): void
+    {
+        $tenant = $this->readyTenant('imp-name-account');
+        $other = $this->readyTenant('imp-name-account-other');
+        $this->signInPlatformAdmin('imp-name-account-admin');
+        $this->upload($tenant, $this->accounts([['1', 'V001', 'Vendor One', '', 'ACCOUNT PAYABLE', 'VENDORS']]))
+            ->assertOk()->assertJsonPath('created', 1);
+
+        $source = $this->accounts([
+            ['1', 'V777', ' vendor one ', '', 'ACCOUNT PAYABLE', 'VENDORS'],
+            ['2', 'C777', 'VENDOR ONE', '', 'ACCOUNT RECEIVABLE', 'CUSTOMERS'],
+            ['3', 'A777', 'Vendor One', '', 'EXPENSES', 'ACCOUNTS'],
+            ['4', 'V778', 'New Vendor', '', 'ACCOUNT PAYABLE', 'VENDORS'],
+        ]);
+        $this->upload($tenant, $source)->assertOk()
+            ->assertJsonPath('skipped', 3)->assertJsonPath('created', 1);
+
+        $this->assertSame(0, Supplier::query()->forTenant($tenant->id)->where('code', 'V777')->count());
+        $this->assertSame(0, Customer::query()->forTenant($tenant->id)->where('code', 'C777')->count());
+        $this->assertDatabaseMissing('accounts', ['tenant_id' => $tenant->id, 'code' => 'A777']);
+        $this->assertSame(2, Supplier::query()->forTenant($tenant->id)->count());
+        $this->assertSame(0, Customer::query()->forTenant($tenant->id)->count());
+        $this->assertSame(0, Supplier::query()->forTenant($other->id)->count());
+    }
+
     private function readyTenant(string $suffix)
     {
         $tenant = $this->provisionOwner($suffix)->tenant;
