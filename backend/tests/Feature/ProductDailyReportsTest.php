@@ -94,6 +94,8 @@ class ProductDailyReportsTest extends TestCase
             ->assertJsonPath('rows.0.sale_quantity', '2.000000')
             ->assertJsonPath('rows.0.sale_amount', '200.0000')
             ->assertJsonPath('rows.0.cost_amount', '20.0000')
+            ->assertJsonPath('rows.0.sale_rate', '100.0000')
+            ->assertJsonPath('rows.0.cost_rate', '10.0000')
             ->assertJsonPath('rows.0.gross_profit', '180.0000')
             ->assertJsonPath('totals.gross_profit', '180.0000');
         $this->assertNoInternalIds($response->json());
