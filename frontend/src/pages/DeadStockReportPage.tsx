@@ -28,6 +28,7 @@ type Result = {
     cutoff: string
     as_of: string
     activity_mode: 'any_activity' | 'sale_only'
+    valuation_basis: 'current_stock_balance' | 'historical_stock_movements_quantity_only'
     definition: string
     warehouse: { ulid: string; name: string }
     current_page: number
@@ -152,7 +153,9 @@ export function DeadStockReportPage() {
         </tr>)}
         {rows.length === 0 && <tr><td colSpan={headings.length}>No matching dead stock.</td></tr>}
         </tbody></table>
-      <p>Stock value is hidden without inventory cost permission. Exports contain only the currently displayed page.</p>
+      <p>{meta.valuation_basis === 'historical_stock_movements_quantity_only'
+        ? 'Historical quantities are reconstructed from posted stock movements. Historical average cost and valuation are unavailable.'
+        : 'Current stock cost/value is hidden without inventory cost permission.'} Exports contain only the currently displayed page.</p>
     </article>}
     {meta && <div className="dba-actions">
       <UiButton label="Previous" disabled={page <= 1 || query.isFetching}
