@@ -6,6 +6,7 @@ import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import { useAuth } from '../features/auth/AuthProvider'
 import type { ProductStockStatusRow } from '../types/inventory'
 import './DailyBusinessActivityPage.css'
 import './DailyReportSheets.css'
@@ -47,6 +48,7 @@ function save(kind:'csv'|'txt'|'html',columns:string[],rows:string[][]){
   URL.revokeObjectURL(uri)
 }
 export function PriceListReportPage(){
+  const { session } = useAuth()
   const {closeActiveTab}=useWorkspace()
   const [mode,setMode]=useState<Format>('prices')
   const [search,setSearch]=useState('')
@@ -56,7 +58,7 @@ export function PriceListReportPage(){
   const [zoom,setZoom]=useState(100)
   const paper=useRef<HTMLElement>(null)
   const query=useQuery({
-    queryKey:['reports','price-list',mode,selectedSearch,page],
+    queryKey:[session?.tenant.ulid,session?.branch.ulid,session?.warehouse.ulid,'reports','price-list',mode,selectedSearch,page],
     queryFn:()=>fetchProductStockStatusReport({
       q:selectedSearch||undefined,
       active_only:false,
