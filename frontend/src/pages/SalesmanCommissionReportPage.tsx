@@ -11,7 +11,7 @@ import './DailyBusinessActivityPage.css'
 import './DailyReportSheets.css'
 
 type CommissionRow = {
-  document_ulid:string;document_number:string;document_type:string;date:string
+  document_ulid:string;line_ulid:string|null;document_number:string;document_type:string;date:string
   salesman:{ulid:string|null;name:string|null}|null
   customer:string|null
   product:{ulid:string;product_number:string|null;name:string|null}
@@ -27,6 +27,8 @@ type Result={data:CommissionRow[];meta:{
   from_date:string;to_date:string;warehouse:{ulid:string;name:string}
   total:number;current_page:number;last_page:number;per_page:number
   commission_calculation_available:boolean;limitations:string[]
+  selected_salesman_ulid:string|null
+  totals:{base_quantity:string;line_amount_ex_tax_before_invoice_discount:string}
 }}
 const dateLocal=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 const headers=['Sale #','Date','Type','Salesman','Customer','Product #','Product','Sale Qty',
@@ -105,11 +107,12 @@ export function SalesmanCommissionReportPage(){
         <p>{report.meta.total} posted source lines · Page {report.meta.current_page} / {report.meta.last_page}</p>
       </header>
       <table><thead><tr>{headers.map(title=><th key={title}>{title}</th>)}</tr></thead>
-        <tbody>{report.data.map((row,index)=><tr key={row.document_ulid+':'+row.product.ulid+':'+index}>
+        <tbody>{report.data.map((row,index)=><tr key={row.document_ulid+':'+(row.line_ulid??String(index))}>
           {cells(row).map((cell,j)=><td key={j}>{cell}</td>)}
         </tr>)}
           {report.data.length===0&&<tr><td colSpan={headers.length}>No assigned posted sales matched.</td></tr>}</tbody>
       </table>
+      <p>All matching posted lines — Signed Qty: {report.meta.totals.base_quantity} · Signed Line Sale (Ex Tax): {report.meta.totals.line_amount_ex_tax_before_invoice_discount}</p>
       <p>* Line amount excludes line tax but does not allocate invoice-level discounts. Not a payable commission basis.</p>
       {report.meta.limitations.map(note=><p key={note}>{note}</p>)}
       <p>Commission percentage and per-unit rates are unconfigured, so payable commission is deliberately unavailable.</p>
