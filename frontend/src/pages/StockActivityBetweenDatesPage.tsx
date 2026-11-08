@@ -137,7 +137,7 @@ export function StockActivityBetweenDatesPage() {
       </header>
       <table><thead><tr>{titlesByMode[mode].map(title=><th key={title}>{title}</th>)}</tr></thead>
         <tbody>{report.data.map(row=><tr key={row.product.ulid}>{cells(row,mode).map((cell,i)=><td key={i}>{cell}</td>)}</tr>)}
-          {report.data.length===0&&<tr><td colSpan={titlesByMode[mode].length}>No posted movements.</td></tr>
+          {report.data.length===0&&<tr><td colSpan={titlesByMode[mode].length}>No posted movements.</td></tr>}
         </tbody>
       </table>
       <p>All matching products: {fields.map(field=><span key={field}>{field.replace(/_/g,' ')}: {report.meta.totals[field]} · </span>)}</p>
