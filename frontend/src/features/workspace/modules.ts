@@ -526,6 +526,15 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     entitlement: 'inventory',
   },
   {
+    key: 'report-dead-stock',
+    title: 'Dead Stock Report',
+    path: '/reports/products/dead-stock',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.inventory',
+    entitlement: 'inventory',
+  },
+  {
     key: 'report-product-ledger',
     title: 'Product Ledger',
     path: '/reports/products/ledger',
