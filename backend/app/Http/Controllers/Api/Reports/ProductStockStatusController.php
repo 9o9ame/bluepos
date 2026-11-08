@@ -145,7 +145,20 @@ class ProductStockStatusController extends Controller
                 ->where('quantity', '!=', 0));
         }
 
-        if ($request->boolean('low_stock')) {
+        if ($request->boolean('below_reorder')) {
+            $query->whereNotNull('reorder_level')->where(function ($products) use ($tenantContext): void {
+                $products->whereDoesntHave('stockBalances', fn ($balances) => $balances
+                    ->where('tenant_id', $tenantContext->tenantId())
+                    ->where('branch_id', $tenantContext->branchId())
+                    ->where('warehouse_id', $tenantContext->warehouseId())
+                    ->whereRaw('0 < products.reorder_level'))
+                    ->orWhereHas('stockBalances', fn ($balances) => $balances
+                        ->where('tenant_id', $tenantContext->tenantId())
+                        ->where('branch_id', $tenantContext->branchId())
+                        ->where('warehouse_id', $tenantContext->warehouseId())
+                        ->whereColumn('stock_balances.quantity', '<', 'products.reorder_level'));
+            });
+        } elseif ($request->boolean('low_stock')) {
             $query
                 ->whereNotNull('reorder_level')
                 ->where(function ($products) use ($tenantContext): void {
