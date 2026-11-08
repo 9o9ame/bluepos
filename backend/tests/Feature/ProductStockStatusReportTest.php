@@ -75,6 +75,11 @@ class ProductStockStatusReportTest extends TestCase
         $this->assertSame('0.000000', $rows[$zeroUlid]['quantity']);
 
         $this->assertSame('11.000000', bcadd((string) $all->json('meta.totals.quantity'), '0', 6));
+        $categoryQuantity = '0.000000';
+        foreach ($all->json('meta.category_totals') as $group) {
+            $categoryQuantity = bcadd($categoryQuantity, (string) $group['quantity'], 6);
+        }
+        $this->assertSame('11.000000', $categoryQuantity);
         $this->assertSame('62.0000', bcadd((string) $all->json('meta.totals.stock_value'), '0', 4));
         $this->assertSame('124.0000', bcadd((string) $all->json('meta.totals.retail_stock_value'), '0', 4));
         $this->assertNoInternalIds($all->json());
@@ -135,7 +140,8 @@ class ProductStockStatusReportTest extends TestCase
             ->assertJsonPath('data.0.average_cost', null)
             ->assertJsonPath('data.0.stock_value', null)
             ->assertJsonPath('data.0.purchase_rate', null)
-            ->assertJsonPath('meta.totals.stock_value', null);
+            ->assertJsonPath('meta.totals.stock_value', null)
+            ->assertJsonPath('meta.category_totals.0.stock_value', null);
 
         $this->assertSame('2.000000', $report->json('data.0.quantity'));
         $this->assertNoInternalIds($report->json());
