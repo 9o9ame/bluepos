@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Account;
 use App\Models\BusinessSetting;
+use App\Models\JournalEntry;
+use App\Models\JournalLine;
+use App\Enums\JournalStatus;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -55,6 +58,75 @@ final class OutstandingBalancesReportTest extends TestCase
 
         $this->getJson('/api/reports/accounts/outstanding-balances?as_of=bad&party_type=customer')
             ->assertUnprocessable();
+    }
+
+    public function test_receipt_reversal_after_as_of_does_not_erase_historical_receipt(): void
+    {
+        $this->signInOwner('outstanding-reversal-cutoff')->assertOk();
+        $context = app(TenantContext::class);
+        $customer = $this->postJson('/api/parties', [
+            'party_type' => 'customer', 'code' => 'OUT-REV-1',
+            'name' => 'Receipt Reversal Cutoff Customer',
+            'account_type_ulid' => $this->referenceAccountTypeUlid('0011'),
+        ])->assertCreated()->json('ulid');
+        $leaf = Account::query()->forTenant($context->tenantId())
+            ->whereHas('customer', fn ($q) => $q->where('ulid', $customer))
+            ->firstOrFail();
+
+        $receipt = JournalEntry::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'document_type' => JournalEntry::DOCUMENT_RECEIVING_VOUCHER,
+            'entry_date' => '2026-10-10',
+            'voucher_number' => 'REV-CUTOFF-RECEIPT',
+            'status' => JournalStatus::Posted,
+            'created_by' => $context->userId(),
+            'posted_by' => $context->userId(),
+            'posted_at' => now(),
+        ]);
+        JournalLine::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'journal_entry_id' => $receipt->id,
+            'account_id' => $leaf->id,
+            'debit' => '0.0000',
+            'credit' => '40.0000',
+            'sort_order' => 1,
+        ]);
+
+        $reversal = JournalEntry::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'branch_id' => $context->branchId(),
+            'document_type' => JournalEntry::DOCUMENT_RECEIVING_VOUCHER,
+            'entry_date' => '2026-10-20',
+            'voucher_number' => 'REV-CUTOFF-REVERSAL',
+            'status' => JournalStatus::Posted,
+            'reverses_journal_entry_id' => $receipt->id,
+            'created_by' => $context->userId(),
+            'posted_by' => $context->userId(),
+            'posted_at' => now(),
+        ]);
+        JournalLine::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'journal_entry_id' => $reversal->id,
+            'account_id' => $leaf->id,
+            'debit' => '40.0000',
+            'credit' => '0.0000',
+            'sort_order' => 1,
+        ]);
+
+        $base = '/api/reports/accounts/outstanding-balances?party_type=customer&q=Receipt%20Reversal%20Cutoff';
+        $before = $this->getJson($base.'&as_of=2026-10-15')
+            ->assertOk()->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.last_receipt_date', '2026-10-10')
+            ->assertJsonPath('data.0.received_amount', '40.0000')
+            ->assertJsonPath('data.0.days_since_receipt', 5);
+        $this->assertNoInternalIds($before->json());
+
+        $after = $this->getJson($base.'&as_of=2026-10-25')
+            ->assertOk()->assertJsonPath('data.0.last_receipt_date', null)
+            ->assertJsonPath('data.0.received_amount', null)
+            ->assertJsonPath('data.0.balance', '0.0000');
+        $this->assertNoInternalIds($after->json());
     }
 
     public function test_outstanding_balance_is_tenant_isolated(): void
