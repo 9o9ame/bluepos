@@ -1,0 +1,64 @@
+# BluePOS Remaining Reports — Implementation Milestones (2026-11-08 v2)
+
+**Branch:** `feature/reports` ONLY. **Status:** Plan and reference analysis recorded; not all reports implemented. Existing BluePOS Daily Reports and Sales Invoice UI are frozen/user accepted. The plan extends `BLUEPOS_REMAINING_REPORTS_2026_11_08.md` and does not supersede existing implementation.
+
+## Reference inventory and exact layouts
+
+- Prior 4 standalone screenshots: Advance Sales, Vendor/Customer Ledger Options, Inactive Customers, Salesman Commissions.
+- Prior 10 ZIP reference packs: Outstanding Balance, Product Ledger, Product GL, Daily/Monthly PL, Stock Status, Stock Activity Between Dates, Price List, Dead Stock, Expiry Stock, Barcode Printing.
+- Newly supplied standalone PDFs: `product-gl (Grid).pdf` (4 pages); `Daily  Monthly PL.pdf` (4 pages); `Stock Status.pdf` (115 pages).
+- Newly supplied ZIPs, 3 PDFs each:
+  - **Stock Activity Between Dates:** `qty-between-dates.pdf` (83 pages), `doc-wise-stock.pdf` (153 pages), `sales-activity-sales&stock.pdf` (119 pages).
+  - **Price List:** `price-list-show-sales+purchase-price.pdf` (116 pages), `stock-position price-list lessthen reorder.pdf` (58 pages), `price-list-stock-position price-list less then reorder.pdf` (58 pages).
+  - **Outstanding Balances:** `balances-address_plus_phone.pdf` (2 pages), `current_plus_future.pdf` (3 pages), `balance-with-add.pdf` (3 pages).
+
+### Evidence-derived report contracts
+
+1. Product GL PDF: product-level Opening, Debit Qty, Credit Qty, Closing; signed Dr/Cr shown in reference. 4-page footer has opening 3,213.81, debit 169, credit 331, closing 3,051.81. For BluePOS use signed quantity with labelled Dr/Cr presentation, never imply positive negative inventory is invalid. Reconcile opening + inbound - outbound = closing; reversals/amendments must retain their actual signs.
+2. Daily/Monthly PL PDF: `DAILY PROFIT LOSS SUMMARY by PRODUCT NAME WISE`, date 08-Nov-2026, `Costing: MovingAverage`, columns DOC, Narration, Sale Qty, Sale AMT, Cost AMT, Sale Rate, Cost Rate, P/L and final margin percent. Reference grand quantity 333, revenue 25,223.26, cost 21,062.24, profit 4,161, ~16.5%. This is product gross profit; **not** ledger net Income Statement. Source PDF is a daily example; monthly selection behavior must be mapped from screenshots, not invented.
+3. Stock Status PDF: `Stock Position As on` date with category groups, group counts, product ID/code/name, Carton, PCs, In Stock, MV Rate, Amount, category subtotals/grand totals; includes zero and negative on-hand. BluePOS must use available stock balances and actual conversion factors only; no invented historical moving-average valuation.
+4. Stock Activity PDFs are **three distinct views**: category-level opening/purchases/sales/returns/adjustments/closing plus average sales; document-wise PSJ/PRJ/SLJ/SRJ quantity and value plus total; Sales & Stock Statement with opening, purchases, returns, gross/net sales and other movements. Reconcile against append-only posted stock movements; averages depend on stated lookback, avoid assumed denominators.
+5. Price List PDFs are **three views**: Sales + Purchase Price with retail and purchase rate; and two `Less than Reorder Level` formats with In Stock, Re Order, signed Less (one packs/carton presentation). Use current price configurations; restrict cost/purchase rate by permissions; reorder difference = stock - reorder with exact decimal arithmetic.
+6. Outstanding Balances are **three formats**: account title/address/NTN/mobile/license/license expiry/balance; address/phone/last sale/net balance/received; current/future due, last receipt date, elapsed days, remarks. Only show columns backed by real schema; future due requires actual due dates, never infer them.
+7. Other supplied reports: Advance Sales, Vendor/Customer Ledger Options, Inactive Customers, Salesman Commissions, Product Ledger, Dead Stock, Expiry Stock, Barcode Printing remain in `BLUEPOS_REMAINING_REPORTS_2026_11_08.md`.
+
+## Milestones and definition of done
+
+| ID | Milestone | Deliverables | Acceptance / tests | Status |
+| --- | --- | --- | --- | --- |
+| RR-0 | Reference reconciliation | Inventory PDFs/ZIPs/screenshots, compare existing routes/models/pages and frozen UI | No invented data, code/doc conflicts flagged, row/column matrix | **DONE** |
+| RR-1 | Baseline and shared report contracts | Reuse existing ReportViewerToolbar, report RBAC, option/preview/export patterns | Tenant, branch, warehouse, export permissions, ULID only, decimal strings, no mutations; design guard | **INSPECTED; executable regression pending** |
+| RR-2 | Stock Status + Price List / Reorder | Existing StockStatus report: signed reorder variance and optional print variants; new retail/purchase price view and category totals only where supported | Quantity, cost permission, category-group subtotal, zero/negative stock, fractions, conversions, 100+ pages pagination/print | **IN PROGRESS — reorder variance first slice** |
+| RR-3 | Product GL grid | Product Opening/Debit/Credit/Closing by date, print/CSV, optionally category | Opening + signed movements = closing incl negatives, amendments, tenant/warehouse and dates, page-independent totals | NOT STARTED |
+| RR-4 | Stock Activity Between Dates | Category stock balance, document-wise stock, sales-and-stock formats with source-linked qty/value | Three separate modes; posting reconciliation, signed returns, document linkage, no stock double count | NOT STARTED |
+| RR-5 | Daily/Monthly Product Profit/Loss | Product gross P/L: sale qty, revenue, movement-snapshot COGS, rates, amount/margin; day/month group options | Missing cost -> unavailable, not 0; returns, price discounts, precision; reconcile sales vs posted movement costs; distinguish net ledger statement | NOT STARTED |
+| RR-6 | Outstanding Balances (3 modes) | Ledger as-of positions, phone/address contact variant, current/future due only when supported | Posted journal balances match ledger, date cutoff, Dr/Cr sign, tenant RBAC, missing due/last sale blanks, no unauthorized PII | NOT STARTED |
+| RR-7 | Vendor/Customer Ledger Options | Account selection, dates, document selection, summary/detail, existing ledger reuse | Open/running/closing, debit credit polarity, opening and posting controls, cross-tenant denial | NOT STARTED |
+| RR-8 | Inactive Customers | Last sale date, adjustable inactivity, customer filters supported by schema | No sale vs cancelled/unposted, inclusivity, balance visibility RBAC | NOT STARTED |
+| RR-9 | Salesman Commissions | Configured commission basis, salesman allocations, sales/returns, totals | Do not invent commission %; nullable rates until verified, discounts/cost RBAC, posted-only calculation | BLOCKED ON COMMISSION RULE/SOURCE VERIFICATION |
+| RR-10 | Dead Stock | On-hand positive stock, no outbound posted sale over selected days, preview/export | Tenant/warehouse, cost access, tests/browser validation | **IMPLEMENTED IN SOURCE previously; validation pending** |
+| RR-11 | Expiry Stock | Actual lot/batch expiry and remaining qty, aging/filter/print | Block if no reliable persisted expiry-by-lot; no fake dates | SCHEMA CHECK PENDING |
+| RR-12 | Barcode Printing | Reuse existing print engine, align reference options and selected quantity/format | Printer/browser preview and label measurements, no frozen Definition changes | EXISTING FEATURE; GAP CHECK PENDING |
+| RR-13 | End-to-end validation and freeze | Focused PHPUnit (bluepos_test), `npm run ui:check`, `npm run typecheck`, `npm run build`, browser acceptance/print | All report totals, filters, 403/IDOR, warehouse/branch/tenant, exact decimals, CSV formula safety | PENDING |
+
+## Implementation rules
+
+- Slices should remain bounded, reversible, and confined to `feature/reports`; **never implement on main**. No merge until user-reviewed and tested.
+- Read `PROJECT_UI_DESIGN_SYSTEM.md` before UI edits; use canonical UiButton, UiSelect, PosDataGrid, and ReportViewerToolbar; no rewrites of frozen layouts.
+- Tenant/branch/warehouse context always server-resolved; no client-authoritative IDs, prices, cost, balances, commission or totals.
+- Financial amounts NUMERIC(20,4), quantity NUMERIC(20,6); BC/SQL NUMERIC, not floats. Read-only posted financial records, immutable stock movement data, no parallel ledgers.
+- Existing Product Ledger, Stock Status, Daily Income Statement, four accepted Daily Reports, six staged next reports, Barcode Printing must be inspected before new parallel code.
+- If referenced historical cost, stock snapshot, carton conversion, expiry batch or due date unavailable, return null/unsupported rather than fabricated values.
+- Focused tests use `bluepos_test` exclusively; no persistent-DB automated tests. The GitHub connector can commit but cannot run local Laravel/Vite, so never mark executable tests passed without user output.
+
+## Pull / verification commands
+
+```powershell
+cd C:\laragon\www\bluepos
+git status -sb
+git switch feature/reports
+git pull --ff-only origin feature/reports
+git status -sb
+```
+
+Backend tests only after change-specific test file is named; use `$env:APP_ENV='testing'; $env:DB_DATABASE='bluepos_test'`, then clear both variables in finally. UI: `npm run ui:check`, `npm run typecheck`, `npm run build`.
