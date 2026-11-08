@@ -559,6 +559,15 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     entitlement: 'inventory',
   },
   {
+    key: 'report-purchase-expiry-reference',
+    title: 'Purchase Expiry Reference',
+    path: '/reports/products/purchase-expiry-reference',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.inventory',
+    entitlement: 'inventory',
+  },
+  {
     key: 'report-dead-stock',
     title: 'Dead Stock Report',
     path: '/reports/products/dead-stock',
@@ -832,7 +841,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Stock Activity Between Dates', icon: ArrowLeftRight, iconTone: 'info', status: 'ready', path: '/reports/products/stock-activity' },
             { label: 'Price List', icon: Tags, iconTone: 'warning', status: 'ready', path: '/reports/products/price-list' },
             { label: 'Dead Stock', icon: PackageX, iconTone: 'danger', status: 'ready', path: '/reports/products/dead-stock' },
-            { label: 'Expiry and Near to Expiry Stock', icon: CalendarClock, iconTone: 'warning', ...LATER },
+            { label: 'Purchase Expiry Reference (Not Remaining Stock)', icon: CalendarClock, iconTone: 'warning', status: 'ready', path: '/reports/products/purchase-expiry-reference' }
             { label: 'Barcode Printing', icon: Barcode, iconTone: 'info', status: 'ready', path: '/definition/barcode-printing' },
           ],
         },
