@@ -152,6 +152,8 @@ export function BarcodePrintingPage() {
   const { session } = useAuth()
   const { closeActiveTab } = useWorkspace()
   const initializedProduct = useRef<string | null>(null)
+  const contextKey = [session?.tenant.ulid, session?.branch.ulid, session?.warehouse.ulid].join(':')
+  const previousContextKey = useRef(contextKey)
   const remembered = useMemo(() => loadBarcodePrintSettings(), [])
 
   const [search, setSearch] = useState('')
@@ -193,6 +195,15 @@ export function BarcodePrintingPage() {
   const [queue, setQueue] = useState<PrintQueueLine[]>([])
   const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (previousContextKey.current === contextKey) return
+    previousContextKey.current = contextKey
+    initializedProduct.current = null
+    setQueue([])
+    setSelectedQueueId(null)
+    setError(null)
+  }, [contextKey])
 
   const categories = useQuery({
     queryKey: [session?.tenant.ulid, 'barcode-print-categories'],
