@@ -16,7 +16,7 @@ type CustomerRow={
   last_sale_date:string|null;days_inactive:number|null
 }
 type Result={data:CustomerRow[];meta:{
-  as_of:string;min_days:number;max_days:number;include_never:boolean;having_balance_only:boolean
+  as_of:string;min_days:number;max_days:number;include_never:boolean;having_balance_only:boolean;area:string|null
   branch_ulid:string;current_page:number;last_page:number;total:number;definition:string
 }}
 const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
@@ -45,16 +45,17 @@ export function InactiveCustomersReportPage(){
   const [includeNever,setIncludeNever]=useState(false)
   const [havingBalanceOnly,setHavingBalanceOnly]=useState(false)
   const [search,setSearch]=useState('')
+  const [area,setArea]=useState('')
   const [selected,setSelected]=useState('')
   const [page,setPage]=useState(1)
   const [preview,setPreview]=useState(false)
   const [zoom,setZoom]=useState(100)
   const paper=useRef<HTMLElement>(null)
   const query=useQuery({
-    queryKey:[session?.tenant.ulid,session?.branch.ulid,session?.warehouse.ulid,'reports','inactive-customers',asOf,minDays,maxDays,includeNever,havingBalanceOnly,selected,page],
+    queryKey:[session?.tenant.ulid,session?.branch.ulid,session?.warehouse.ulid,'reports','inactive-customers',asOf,minDays,maxDays,includeNever,havingBalanceOnly,area,selected,page],
     queryFn:()=>apiFetch<Result>('/api/reports/accounts/inactive-customers?'+new URLSearchParams({
       as_of:asOf,min_days:String(minDays),max_days:String(maxDays),
-      include_never:includeNever?'1':'0',having_balance_only:havingBalanceOnly?'1':'0',q:selected,page:String(page),per_page:'100',
+      include_never:includeNever?'1':'0',having_balance_only:havingBalanceOnly?'1':'0',q:selected,area:area.trim(),page:String(page),per_page:'100',
     }),{busy:'none'}),
     enabled:preview&&!!asOf&&minDays>=1&&maxDays>=minDays&&maxDays<=3650,
   })
@@ -70,6 +71,7 @@ export function InactiveCustomersReportPage(){
         <input type="number" min={1} max={3650} value={maxDays} onChange={e=>setMaxDays(Number(e.target.value))}/>
       </label>
       <label>Search <input value={search} onChange={e=>setSearch(e.target.value)} maxLength={180}/></label>
+      <label>Customer Area (exact) <input value={area} onChange={e=>setArea(e.target.value)} maxLength={120}/></label>
       <label><input type="checkbox" checked={includeNever} onChange={e=>setIncludeNever(e.target.checked)}/>
         Include customers without recorded sales
       </label>
