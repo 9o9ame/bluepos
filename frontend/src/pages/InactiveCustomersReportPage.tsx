@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../api/client'
 import { ReportViewerToolbar } from '../components/reports/ReportViewerToolbar'
 import { UiButton } from '../components/ui/UiButton'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
 import { useAuth } from '../features/auth/AuthProvider'
@@ -61,7 +62,7 @@ export function InactiveCustomersReportPage(){
   if(!preview)return <section className="dba-page">
     <header><h1>Inactive Customers Report</h1><p>Customers whose last posted sale falls within an inactivity range.</p></header>
     <div className="dba-options">
-      <label>As Of <input type="date" value={asOf} onChange={e=>setAsOf(e.target.value)}/></label>
+      <label>As Of <UiDatePicker type="date" value={asOf} onChange={e=>setAsOf(e.target.value)}/></label>
       <label>Inactive From (days)
         <input type="number" min={1} max={3650} value={minDays} onChange={e=>setMinDays(Number(e.target.value))}/>
       </label>
