@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Product;
+use App\Models\PartyProfile;
 use App\Models\StockBalance;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -58,10 +59,38 @@ final class SalesmanCommissionReportTest extends TestCase
             ->assertJsonPath('data.0.salesman.name', 'Verified Salesman Test')
             ->assertJsonPath('data.0.product.ulid', $productUlid)
             ->assertJsonPath('data.0.base_quantity', '2.000000')
+            ->assertJsonPath('meta.totals.base_quantity', '2.000000')
+            ->assertJsonPath('meta.selected_salesman_ulid', null)
             ->assertJsonPath('data.0.commission_percent', null)
             ->assertJsonPath('data.0.commission_per_base_unit', null)
             ->assertJsonPath('data.0.commission_amount', null);
         $this->assertNoInternalIds($result->json());
+
+        $profile = PartyProfile::query()
+            ->forTenant($context->tenantId())
+            ->where('name', 'Verified Salesman Test')->firstOrFail();
+        $selected = $this->getJson('/api/reports/sales/salesman-commission?from_date=2026-11-04&to_date=2026-11-04&salesman_ulid='.$profile->ulid)
+            ->assertOk()
+            ->assertJsonPath('meta.selected_salesman_ulid', $profile->ulid)
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('meta.totals.base_quantity', '2.000000');
+        $this->assertNoInternalIds($selected->json());
+
+        $different = $this->postJson('/api/party-profiles', [
+            'party_types' => ['salesman'],
+            'primary_type' => 'salesman',
+            'name' => 'Different Salesman Test',
+        ])->assertCreated();
+        $differentProfile = PartyProfile::query()
+            ->forTenant($context->tenantId())
+            ->where('name', 'Different Salesman Test')->firstOrFail();
+        $this->getJson('/api/reports/sales/salesman-commission?from_date=2026-11-04&to_date=2026-11-04&salesman_ulid='.$differentProfile->ulid)
+            ->assertOk()
+            ->assertJsonPath('meta.total', 0)
+            ->assertJsonPath('meta.totals.base_quantity', '0.000000');
+
+        $this->getJson('/api/reports/sales/salesman-commission?from_date=2026-11-04&to_date=2026-11-04&salesman_ulid=01ARZ3NDEKTSV4RRFFQ69G5FAV')
+            ->assertUnprocessable();
 
         $this->getJson('/api/reports/sales/salesman-commission?from_date=2026-10-01&to_date=2026-11-08')
             ->assertUnprocessable();
