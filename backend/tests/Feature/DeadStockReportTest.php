@@ -46,6 +46,15 @@ final class DeadStockReportTest extends TestCase
         $this->assertSame('90', (string) $response->json('meta.days'));
         $this->assertNoInternalIds($response->json());
 
+        // A recent purchase breaks the reference "last stock activity" definition,
+        // but does not break the optional "last outbound sale" definition.
+        $this->sale($stale, $context->warehouseId(), now()->subDays(2), StockMovementType::Purchase);
+        $this->getJson('/api/reports/products/dead-stock?days=90')
+            ->assertOk()->assertJsonPath('meta.total', 0);
+        $this->getJson('/api/reports/products/dead-stock?days=90&activity_mode=sale_only')
+            ->assertOk()->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.product.ulid', $stale->ulid);
+
         $this->getJson('/api/reports/products/dead-stock?days=200')->assertOk()
             ->assertJsonPath('meta.total', 0);
         $this->getJson('/api/reports/products/dead-stock?days=0')->assertUnprocessable();
@@ -112,7 +121,7 @@ final class DeadStockReportTest extends TestCase
         ]);
     }
 
-    private function sale(Product $product, int $warehouseId, $occurredAt): void
+    private function sale(Product $product, int $warehouseId, $occurredAt, StockMovementType $type = StockMovementType::Sale): void
     {
         $context = app(TenantContext::class);
         StockMovement::query()->create([
@@ -120,10 +129,10 @@ final class DeadStockReportTest extends TestCase
             'branch_id' => $context->branchId(),
             'warehouse_id' => $warehouseId,
             'product_id' => $product->id,
-            'movement_type' => StockMovementType::Sale,
-            'quantity' => '-1.000000',
+            'movement_type' => $type,
+            'quantity' => $type === StockMovementType::Purchase ? '1.000000' : '-1.000000',
             'unit_cost' => '5.0000',
-            'total_cost' => '-5.0000',
+            'total_cost' => $type === StockMovementType::Purchase ? '5.0000' : '-5.0000',
             'reference_type' => 'sale',
             'reference_ulid' => (string) \Illuminate\Support\Str::ulid(),
             'occurred_at' => $occurredAt,
