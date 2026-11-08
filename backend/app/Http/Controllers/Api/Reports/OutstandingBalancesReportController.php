@@ -110,7 +110,9 @@ final class OutstandingBalancesReportController extends Controller
                 ->from('journal_entries as reversal_entries')
                 ->whereColumn('reversal_entries.reverses_journal_entry_id', 'receipt_entries.id')
                 ->where('reversal_entries.tenant_id', $context->tenantId())
-                ->where('reversal_entries.status', JournalStatus::Posted->value))
+                ->where('reversal_entries.branch_id', $context->branchId())
+                ->where('reversal_entries.status', JournalStatus::Posted->value)
+                ->where('reversal_entries.entry_date', '<=', $input['as_of']))
             ->whereIn('receipt_lines.account_id', $ids)
             ->where('receipt_lines.'.$entryAmountColumn, '>', 0)
             ->selectRaw('receipt_lines.account_id, MAX(receipt_entries.entry_date) AS last_receipt_date,
