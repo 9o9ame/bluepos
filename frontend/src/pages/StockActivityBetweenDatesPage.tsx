@@ -6,6 +6,7 @@ import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import { useAuth } from '../features/auth/AuthProvider'
 import './DailyBusinessActivityPage.css'
 import './DailyReportSheets.css'
 
@@ -53,6 +54,7 @@ function download(format:'txt'|'html'|'csv', rows:Activity[]) {
   URL.revokeObjectURL(url)
 }
 export function StockActivityBetweenDatesPage() {
+  const { session } = useAuth()
   const {closeActiveTab}=useWorkspace()
   const [from,setFrom]=useState(dateLocal())
   const [to,setTo]=useState(dateLocal())
@@ -63,7 +65,7 @@ export function StockActivityBetweenDatesPage() {
   const [zoom,setZoom]=useState(100)
   const paper=useRef<HTMLElement>(null)
   const query=useQuery({
-    queryKey:['reports','stock-activity',from,to,selectedSearch,page],
+    queryKey:[session?.tenant.ulid,session?.branch.ulid,session?.warehouse.ulid,'reports','stock-activity',from,to,selectedSearch,page],
     queryFn:()=>apiFetch<Report>('/api/reports/products/stock-activity?'+new URLSearchParams({
       from_date:from,to_date:to,q:selectedSearch,page:String(page),per_page:'100',
     }),{busy:'none'}),
