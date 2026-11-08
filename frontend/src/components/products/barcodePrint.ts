@@ -283,12 +283,24 @@ function printDocument(
   const top = Math.max(-5, Math.min(10, normalized.marginTopMm))
   const scale = Math.max(0.7, Math.min(1.3, normalized.scaleFactor))
 
-  const expanded = payloads.flatMap((payload) => {
-    const copies = Math.max(1, Math.min(100, Math.floor(payload.copies || 1)))
-    return Array.from({ length: copies }, () =>
-      buildLabelHtml(payload, normalized, style),
-    )
+  // The queue accepts up to 999 copies per barcode. Reject excessive
+  // combined jobs explicitly instead of silently truncating to 100 copies.
+  const quantities = payloads.map((payload) => {
+    if (!Number.isSafeInteger(payload.copies) || payload.copies < 1 || payload.copies > 999) {
+      throw new Error('Each barcode row must have between 1 and 999 label copies.')
+    }
+    return payload.copies
   })
+  const requestedLabels = quantities.reduce((total, copies) => total + copies, 0)
+  if (requestedLabels > 5000) {
+    throw new Error('A print job can contain at most 5,000 labels. Print smaller batches.')
+  }
+
+  const expanded = payloads.flatMap((payload, index) =>
+    Array.from({ length: quantities[index] }, () =>
+      buildLabelHtml(payload, normalized, style),
+    ),
+  )
 
   if (expanded.length === 0) {
     throw new Error('There are no barcode labels to print.')
