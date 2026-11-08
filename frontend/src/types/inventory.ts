@@ -165,6 +165,7 @@ export type ProductStockStatusRow = {
   }
   quantity: string
   reorder_level: string | null
+  reorder_variance: string | null
   average_cost: string | null
   stock_value: string | null
   retail_rate: string | null
