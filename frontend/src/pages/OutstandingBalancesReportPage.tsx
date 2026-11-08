@@ -17,6 +17,7 @@ type BalanceRow = {
   address: string | null; mobile: string | null; phone: string | null; ntn: string | null
   license_number: string | null; license_expires_on: string | null; last_sale_date: string | null
   balance: string; current_due: string | null; future_due: string | null
+  last_receipt_date: string | null; days_since_receipt: number | null; received_amount: string | null
 }
 type BalanceReport = {
   data: BalanceRow[]
@@ -39,11 +40,12 @@ const fields: Record<Mode, {key:keyof BalanceRow;label:string}[]> = {
   contact:[
     {key:'code',label:'Code'},{key:'name',label:'Account / Party'},{key:'address',label:'Address'},
     {key:'phone',label:'Phone'},{key:'mobile',label:'Mobile'},{key:'last_sale_date',label:'Last Sale'},
-    {key:'balance',label:'Net Balance'},
+    {key:'balance',label:'Net Balance'}, {key:'received_amount',label:'Received Amount'},
   ],
   current_future:[
     {key:'code',label:'Code'},{key:'name',label:'Account / Party'},
-    {key:'balance',label:'Balance'},{key:'current_due',label:'Current Due'},
+    {key:'balance',label:'Balance'},{key:'last_receipt_date',label:'Last Receipt'},
+    {key:'days_since_receipt',label:'Days'},{key:'current_due',label:'Current Due'},
     {key:'future_due',label:'Future Due'},
   ],
 }
