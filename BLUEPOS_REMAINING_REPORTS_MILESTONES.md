@@ -118,3 +118,11 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 - Added fractional/negative stock, missing balance, equal quantity and zero reorder threshold regression in `ProductStockStatusReportTest` using `bluepos_test` in CI.
 - Previous GitHub Actions reports validation run #37 passed its backend focused suite, UI design check, TypeScript and build. **This new change requires another CI result; browser PDF parity remains pending.**
 - Scope: `ProductStockStatusController.php`, `ProductStockStatusReportTest.php`; no migration, no main merge.
+
+## RR-3 Product GL — pagination and reference totals regression (2026-11-08)
+
+- Existing Product GL reads immutable stock movements with server-selected tenant, branch and warehouse, opening before start date and debit/credit by signed movement quantity within the period.
+- New focused regression covers multiple products across separate pages, all-match opening/debit/credit/closing totals, fractional quantities, negative closing, excluding post-end-date movements and public ULID safety. Grand totals remain unchanged when navigating pages.
+- Report viewer CSV/TXT/HTML export now includes a labeled **GRAND TOTAL (ALL MATCHING PRODUCTS)** footer alongside current-page rows. Export deliberately does not claim to include every row when paginated.
+- Browser/PDF visual acceptance remains the user's final step. This slice needs CI passing before status is marked validated.
+- Changed: `backend/tests/Feature/ProductGlGridReportTest.php`, `frontend/src/pages/ProductGlGridPage.tsx`. No migrations or global CSS changes.
