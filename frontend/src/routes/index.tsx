@@ -30,6 +30,7 @@ import { PurchaseReturnsPage } from '../pages/PurchaseReturnsPage'
 import { ReportsPlaceholderPage } from '../pages/ReportsPlaceholderPage'
 import { ProductStockStatusReportPage } from '../pages/ProductStockStatusReportPage'
 import { DeadStockReportPage } from '../pages/DeadStockReportPage'
+import { PurchaseExpiryReferenceReportPage } from '../pages/PurchaseExpiryReferenceReportPage'
 import { ProductLedgerReportPage } from '../pages/ProductLedgerReportPage'
 import { ProductGlGridPage } from '../pages/ProductGlGridPage'
 import { StockActivityBetweenDatesPage } from '../pages/StockActivityBetweenDatesPage'
@@ -158,6 +159,7 @@ export function AppRoutes() {
             <Route path="/reports/products/stock-status" element={<ProductStockStatusReportPage />} />
             <Route path="/reports/products/price-list" element={<PriceListReportPage />} />
             <Route path="/reports/products/dead-stock" element={<DeadStockReportPage />} />
+            <Route path="/reports/products/purchase-expiry-reference" element={<PurchaseExpiryReferenceReportPage />} />
             <Route path="/reports/products/ledger" element={<ProductLedgerReportPage />} />
             <Route path="/reports/products/gl-grid" element={<ProductGlGridPage />} />
             <Route path="/reports/products/stock-activity" element={<StockActivityBetweenDatesPage />} />
