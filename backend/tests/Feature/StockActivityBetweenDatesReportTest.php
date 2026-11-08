@@ -45,6 +45,11 @@ final class StockActivityBetweenDatesReportTest extends TestCase
             ->assertJsonPath('data.0.sale_returns', '2.000000')
             ->assertJsonPath('data.0.other_movements', '-3.000000')
             ->assertJsonPath('data.0.closing', '9.000000')
+            ->assertJsonPath('data.0.purchase_cost', '5.0000')
+            ->assertJsonPath('data.0.purchase_return_cost', '-1.0000')
+            ->assertJsonPath('data.0.sale_cost', '-4.0000')
+            ->assertJsonPath('data.0.sale_return_cost', '2.0000')
+            ->assertJsonPath('data.0.closing_cost', '9.0000')
             ->assertJsonPath('meta.totals.closing', '9.000000');
         $this->assertNoInternalIds($result->json());
 
