@@ -176,3 +176,10 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 - Updated the shared report viewer with explicitly labeled all-matching quantities and line amounts. Added focused test for single salesman selection, another salesman, unknown ULID, and totals.
 - **No commission percentage, per-unit rate, or payable commission is calculated**: verified rates, commission basis, invoice-discount allocation and financial approval are not available in current domain models. RR-9 full payable-commission parity remains blocked by those real dependencies; source-register integrity is separately testable.
 - Changed: `SalesmanCommissionReportController.php`, `SalesmanCommissionReportPage.tsx`, `SalesmanCommissionReportTest.php`. No migrations or `main` changes; CI validation pending.
+
+## RR-10 historical as-of Dead Stock correctness — 2026-11-08
+
+- Found and corrected a historical-report defect: prior `as_of` selected older dates but always displayed **current** `stock_balances.quantity`. Historical dates now build quantities from signed append-only `stock_movements` summed up to the requested as-of day, including products sold out since then. Current-day mode retains current stock balance semantics.
+- Both activity modes use the selected date boundary for last stock activity and outbound sale checks. Future as-of dates are rejected. Historical `average_cost` and `stock_value` are explicitly **null**: the system cannot reconstruct a reliable historical moving-average valuation merely from today's balance, and must not invent it.
+- Added `DeadStockReportTest` for historical quantity despite current zero stock, a later sale excluded from old as-of stock, historical inactivity days, null valuation, ULID-only output and future-date rejection.
+- Updated existing report viewer to explain `valuation_basis`. This remains a read-only source correction, no schema changes or mutation of posted records. Files: `DeadStockReportController.php`, `DeadStockReportTest.php`, `DeadStockReportPage.tsx`. CI and final PDF/browser acceptance pending.
