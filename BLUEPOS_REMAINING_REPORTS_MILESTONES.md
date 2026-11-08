@@ -36,7 +36,7 @@
 | RR-7 | Vendor/Customer Ledger Options | Account selection, dates, document selection, summary/detail, existing ledger reuse | Open/running/closing, debit credit polarity, opening and posting controls, cross-tenant denial | **EXISTING CORE CONFIRMED; PDF PARITY + TESTS PENDING** |
 | RR-8 | Inactive Customers | Last sale date, adjustable inactivity, customer filters supported by schema | No sale vs cancelled/unposted, inclusivity, balance visibility RBAC | **SOURCE IMPLEMENTED; tests/browser pending** |
 | RR-9 | Salesman Commissions | Configured commission basis, salesman allocations, sales/returns, totals | Do not invent commission %; nullable rates until verified, discounts/cost RBAC, posted-only calculation | BLOCKED ON COMMISSION RULE/SOURCE VERIFICATION |
-| RR-10 | Dead Stock | On-hand positive stock, no outbound posted sale over selected days, preview/export | Tenant/warehouse, cost access, tests/browser validation | **IMPLEMENTED IN SOURCE previously; validation pending** |
+| RR-10 | Dead Stock | On-hand positive stock, no outbound posted sale over selected days, preview/export | Tenant/warehouse, cost access, tests/browser validation | **SOURCE + FOCUSED CI VALIDATED; BROWSER/PDF ACCEPTANCE PENDING** |
 | RR-11 | Expiry Stock | Actual lot/batch expiry and remaining qty, aging/filter/print | Block if no reliable persisted expiry-by-lot; no fake dates | **BLOCKED: NO VERIFIED LOT-EXPIRY QUANTITY SOURCE** |
 | RR-12 | Barcode Printing | Reuse existing print engine, align reference options and selected quantity/format | Printer/browser preview and label measurements, no frozen Definition changes | **EXISTING FEATURE; REFERENCE BROWSER GAP CHECK PENDING** |
 | RR-13 | End-to-end validation and freeze | Focused PHPUnit (bluepos_test), `npm run ui:check`, `npm run typecheck`, `npm run build`, browser acceptance/print | All report totals, filters, 403/IDOR, warehouse/branch/tenant, exact decimals, CSV formula safety | PENDING |
@@ -183,3 +183,7 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 - Both activity modes use the selected date boundary for last stock activity and outbound sale checks. Future as-of dates are rejected. Historical `average_cost` and `stock_value` are explicitly **null**: the system cannot reconstruct a reliable historical moving-average valuation merely from today's balance, and must not invent it.
 - Added `DeadStockReportTest` for historical quantity despite current zero stock, a later sale excluded from old as-of stock, historical inactivity days, null valuation, ULID-only output and future-date rejection.
 - Updated existing report viewer to explain `valuation_basis`. This remains a read-only source correction, no schema changes or mutation of posted records. Files: `DeadStockReportController.php`, `DeadStockReportTest.php`, `DeadStockReportPage.tsx`. CI and final PDF/browser acceptance pending.
+
+### RR-10 CI result
+
+GitHub Actions Reports validation run **#79** passed focused backend reports tests on ephemeral `bluepos_test` and frontend UI checks, TypeScript and production build after historical quantity reconstruction. User browser/PDF acceptance remains pending. Historical moving-average valuation remains unavailable by design (null rather than a fabricated value).
