@@ -126,3 +126,10 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 - Report viewer CSV/TXT/HTML export now includes a labeled **GRAND TOTAL (ALL MATCHING PRODUCTS)** footer alongside current-page rows. Export deliberately does not claim to include every row when paginated.
 - Browser/PDF visual acceptance remains the user's final step. This slice needs CI passing before status is marked validated.
 - Changed: `backend/tests/Feature/ProductGlGridReportTest.php`, `frontend/src/pages/ProductGlGridPage.tsx`. No migrations or global CSS changes.
+
+## RR-4 category summary reconciliation — 2026-11-08
+
+- Added server-derived category subtotals for Stock Activity Between Dates from the **same filtered posted stock-movement product summaries**, grouped by actual category ULID (so same-name categories stay distinct). Includes opening, purchases, purchase returns, sales, sale returns, other and closing signed quantities; no independent ledger or new schema.
+- Quantity view now shows full-filter category subtotal table across all pages; document-wise cost and Sales & Stock source screens remain separate. Existing grand totals remain unchanged and full-filter scoped.
+- Focused `StockActivityBetweenDatesReportTest.php` added for category totals, two-page aggregation, fractional quantities, future-movement exclusion, and existing warehouse/tenant isolation.
+- Files: `backend/app/Http/Controllers/Api/Reports/StockActivityBetweenDatesController.php`, `frontend/src/pages/StockActivityBetweenDatesPage.tsx`, `backend/tests/Feature/StockActivityBetweenDatesReportTest.php`. No migration. **Validation and PDF/browser acceptance pending until CI reports completion.**
