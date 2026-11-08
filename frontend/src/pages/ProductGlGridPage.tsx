@@ -96,7 +96,14 @@ export function ProductGlGridPage() {
       zoom={zoom} onZoomChange={setZoom}
       onPrint={() => window.print()}
       onCopy={async () => {if(paper.current)await navigator.clipboard.writeText(paper.current.innerText)}}
-      onExport={type => download([columns, ... (report?.data ?? []).map(cells)], type)}
+      onExport={type => download([
+        columns,
+        ... (report?.data ?? []).map(cells),
+        ...(totals ? [[
+          'GRAND TOTAL (ALL MATCHING PRODUCTS)', totals.opening,
+          totals.debit, totals.credit, totals.closing,
+        ]] : []),
+      ], type)}
       onRefresh={() => void query.refetch()}
       onEditOptions={() => setPreview(false)}
       onClose={closeActiveTab}/>
@@ -114,7 +121,7 @@ export function ProductGlGridPage() {
       </tbody>
       </table>
       {totals && <p>All matching products — Opening: {totals.opening} · Debit: {totals.debit} · Credit: {totals.credit} · Closing: {totals.closing}</p>}
-      <p>Debit/credit are signed inward/outward movement buckets. Export contains only the displayed page.</p>
+      <p>Debit/credit are inward/outward movement buckets based on signed quantities. Export includes the current page rows and full-filter grand totals, not rows from other pages.</p>
     </article>}
     {report && <div className="dba-actions">
       <UiButton label="Previous" disabled={page <= 1 || query.isFetching} onClick={() => setPage(p=>Math.max(1,p-1))}/>
