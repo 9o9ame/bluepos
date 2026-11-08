@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Account;
+use App\Models\BusinessSetting;
+use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -26,6 +29,25 @@ final class InactiveCustomersReportTest extends TestCase
             ->assertJsonPath('data.0.ulid', $customer->json('ulid'))
             ->assertJsonPath('data.0.last_sale_date', null)
             ->assertJsonPath('data.0.days_inactive', null);
+        $this->getJson($base.'&include_never=1&having_balance_only=1')
+            ->assertOk()->assertJsonPath('meta.total', 0);
+
+        $equity = $this->postJson('/api/parties', [
+            'party_type' => 'account', 'code' => 'INACTIVE-EQ',
+            'name' => 'Inactive Equity',
+            'account_type_ulid' => $this->referenceAccountTypeUlid('0050'),
+        ])->assertCreated();
+        BusinessSetting::query()->forTenant(app(TenantContext::class)->tenantId())
+            ->update(['opening_balance_equity_account_id' => Account::query()
+                ->where('ulid', $equity->json('ulid'))->value('id')]);
+        $opening = $this->postJson('/api/parties/'.$customer->json('ulid').'/opening-balances?type=customer', [
+            'opening_date' => '2026-10-01', 'debit' => '150.0000',
+            'credit' => '0.0000', 'narration' => 'Inactive customer debt',
+        ])->assertCreated()->json('ulid');
+        $this->postJson('/api/parties/'.$customer->json('ulid').'/opening-balances/'.$opening.'/post?type=customer')
+            ->assertOk();
+        $this->getJson($base.'&include_never=1&having_balance_only=1')
+            ->assertOk()->assertJsonPath('meta.total', 1);
         $this->assertNoInternalIds($found->json());
         $this->getJson('/api/reports/accounts/inactive-customers?as_of=2026-11-08&min_days=31&max_days=1')
             ->assertUnprocessable();
