@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\PermissionController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\Reports\ProductLedgerController;
 use App\Http\Controllers\Api\Reports\ProductStockStatusController;
+use App\Http\Controllers\Api\Reports\DeadStockReportController;
 use App\Http\Controllers\Api\Reports\TrialBalanceController;
 use App\Http\Controllers\Api\Reports\BalanceSheetReportController;
 use App\Http\Controllers\Api\Reports\IncomeStatementReportController;
@@ -359,6 +360,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
 
     Route::middleware('entitled:inventory')->group(function () {
         Route::get('/reports/products/stock-status', ProductStockStatusController::class);
+        Route::get('/reports/products/dead-stock', DeadStockReportController::class);
         Route::get('/reports/products/ledger', ProductLedgerController::class);
         Route::get('/inventory/stock', [StockController::class, 'index']);
         Route::post('/inventory/stock/recalculate', [StockController::class, 'recalculate']);
