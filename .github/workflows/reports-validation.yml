@@ -75,6 +75,7 @@ jobs:
             tests/Feature/ProductDailyReportsTest.php \
             tests/Feature/OutstandingBalancesReportTest.php \
             tests/Feature/InactiveCustomersReportTest.php \
+            tests/Feature/SalesmanCommissionReportTest.php \
             tests/Feature/ProductLedgerReportTest.php \
             tests/Feature/PartyLedgerTest.php
 
