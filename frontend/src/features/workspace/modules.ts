@@ -533,6 +533,15 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-price-list',
+    title: 'Price List / Stock Position',
+    path: '/reports/products/price-list',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.inventory',
+    entitlement: 'inventory',
+  },
+  {
     key: 'report-stock-status',
     title: 'Stock Status',
     path: '/reports/products/stock-status',
