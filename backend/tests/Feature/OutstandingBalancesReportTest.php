@@ -48,7 +48,9 @@ final class OutstandingBalancesReportTest extends TestCase
             ->assertJsonPath('data.0.address', 'Sample Address')
             ->assertJsonPath('data.0.balance', '250.0000')
             ->assertJsonPath('data.0.current_due', null)
-            ->assertJsonPath('data.0.future_due', null);
+            ->assertJsonPath('data.0.future_due', null)
+            ->assertJsonPath('data.0.last_receipt_date', null)
+            ->assertJsonPath('data.0.received_amount', null);
         $this->assertNoInternalIds($current->json());
 
         $this->getJson('/api/reports/accounts/outstanding-balances?as_of=bad&party_type=customer')
