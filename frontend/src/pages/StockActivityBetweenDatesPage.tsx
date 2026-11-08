@@ -26,6 +26,11 @@ type Report = {
     warehouse: { ulid: string; name: string }
     current_page: number; last_page: number; total: number
     totals: Omit<Activity,'product'>
+    category_totals: Array<{
+      category: string; products: number
+      opening: string; purchases: string; purchase_returns: string
+      sales: string; sale_returns: string; other_movements: string; closing: string
+    }>
     definition: string; cost_basis: string
   }
 }
@@ -140,6 +145,18 @@ export function StockActivityBetweenDatesPage() {
           {report.data.length===0&&<tr><td colSpan={titlesByMode[mode].length}>No posted movements.</td></tr>}
         </tbody>
       </table>
+      {mode === 'quantity' && <>
+        <h2>Category Summary — All Matching Products</h2>
+        <table>
+          <thead><tr><th>Category</th><th>Products</th>{fields.map(field=>
+            <th key={field}>{field.replace(/_/g, ' ')}</th>)}</tr></thead>
+          <tbody>{report.meta.category_totals.map(category=>
+            <tr key={category.category}>
+              <td>{category.category}</td><td>{category.products}</td>
+              {fields.map(field=><td key={field}>{category[field]}</td>)}
+            </tr>)}</tbody>
+        </table>
+      </>}
       <p>All matching products: {fields.map(field=><span key={field}>{field.replace(/_/g,' ')}: {report.meta.totals[field]} · </span>)}</p>
       <p>{report.meta.definition} {mode !== 'quantity' ? report.meta.cost_basis : ''} Export contains current page only.</p>
     </article>}
