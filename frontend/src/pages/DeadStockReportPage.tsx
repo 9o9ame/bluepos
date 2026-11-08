@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../api/client'
 import { ReportViewerToolbar } from '../components/reports/ReportViewerToolbar'
 import { UiButton } from '../components/ui/UiButton'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { UiSelect } from '../components/ui/UiSelect'
 import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
@@ -96,7 +97,7 @@ export function DeadStockReportPage() {
   if (!preview) return <section className="dba-page">
     <header><h1>Dead Stock Report</h1><p>Reference: last stock activity before the selected period. Optional no-sale mode is available.</p></header>
     <div className="dba-options">
-      <label>As of Date <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)}/></label>
+      <label>As of Date <UiDatePicker type="date" value={asOf} onChange={e => setAsOf(e.target.value)}/></label>
       <label>Inactivity Type
         <UiSelect searchable={false} value={mode} onChange={value => setMode(value as 'any_activity' | 'sale_only')}
           options={[{value:'any_activity',label:'Last Stock Activity (reference)'},{value:'sale_only',label:'Last Outbound Sale'}]}/>
