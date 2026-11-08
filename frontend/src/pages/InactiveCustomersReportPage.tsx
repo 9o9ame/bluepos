@@ -5,6 +5,7 @@ import { ReportViewerToolbar } from '../components/reports/ReportViewerToolbar'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import { useAuth } from '../features/auth/AuthProvider'
 import './DailyBusinessActivityPage.css'
 import './DailyReportSheets.css'
 
@@ -35,6 +36,7 @@ function exportRows(format:'txt'|'csv'|'html',rows:CustomerRow[]){
   URL.revokeObjectURL(url)
 }
 export function InactiveCustomersReportPage(){
+  const { session } = useAuth()
   const {closeActiveTab}=useWorkspace()
   const [asOf,setAsOf]=useState(today())
   const [minDays,setMinDays]=useState(1)
@@ -47,7 +49,7 @@ export function InactiveCustomersReportPage(){
   const [zoom,setZoom]=useState(100)
   const paper=useRef<HTMLElement>(null)
   const query=useQuery({
-    queryKey:['reports','inactive-customers',asOf,minDays,maxDays,includeNever,selected,page],
+    queryKey:[session?.tenant.ulid,session?.branch.ulid,session?.warehouse.ulid,'reports','inactive-customers',asOf,minDays,maxDays,includeNever,selected,page],
     queryFn:()=>apiFetch<Result>('/api/reports/accounts/inactive-customers?'+new URLSearchParams({
       as_of:asOf,min_days:String(minDays),max_days:String(maxDays),
       include_never:includeNever?'1':'0',q:selected,page:String(page),per_page:'100',
