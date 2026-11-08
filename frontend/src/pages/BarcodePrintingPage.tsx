@@ -195,17 +195,18 @@ export function BarcodePrintingPage() {
   const [error, setError] = useState<string | null>(null)
 
   const categories = useQuery({
-    queryKey: ['categories'],
+    queryKey: [session?.tenant.ulid, 'barcode-print-categories'],
     queryFn: fetchCategories,
   })
 
   const brands = useQuery({
-    queryKey: ['brands'],
+    queryKey: [session?.tenant.ulid, 'barcode-print-brands'],
     queryFn: fetchBrands,
   })
 
   const productsQuery = useQuery({
-    queryKey: ['barcode-print-products', search, categoryUlid, brandUlid],
+    queryKey: [session?.tenant.ulid, session?.branch.ulid, session?.warehouse.ulid,
+      'barcode-print-products', search, categoryUlid, brandUlid],
     queryFn: () =>
       fetchProducts({
         q: search || undefined,
@@ -218,7 +219,7 @@ export function BarcodePrintingPage() {
   })
 
   const initialProductQuery = useQuery({
-    queryKey: ['barcode-print-initial-product', productUlid],
+    queryKey: [session?.tenant.ulid, 'barcode-print-initial-product', productUlid],
     queryFn: () => fetchProduct(productUlid ?? ''),
     enabled: Boolean(productUlid),
   })
@@ -329,14 +330,19 @@ export function BarcodePrintingPage() {
 
   function changeBarcode(line: PrintQueueLine, barcodeUlid: string) {
     const nextId = queueId(line.product.ulid, barcodeUlid)
+    if (nextId !== line.id && queue.some((row) => row.id === nextId)) {
+      setError('This barcode is already in the print queue.')
+      return
+    }
 
-    setQueue((current) =>
-      current.map((row) =>
-        row.id === line.id
-          ? { ...row, id: nextId, barcodeUlid }
-          : row,
-      ),
-    )
+    setError(null)
+    setQueue((current) => {
+      const duplicate = current.some((row) => row.id === nextId && row.id !== line.id)
+      if (duplicate) return current
+      return current.map((row) =>
+        row.id === line.id ? { ...row, id: nextId, barcodeUlid } : row,
+      )
+    })
 
     setSelectedQueueId(nextId)
   }
@@ -357,9 +363,19 @@ export function BarcodePrintingPage() {
       return
     }
 
+    if ((productsQuery.data?.meta.total ?? 0) > products.length) {
+      setError('Auto Fill is limited to the first 100 loaded products. Narrow your category, company or search filters before continuing; no partial batch was added.')
+      return
+    }
+
     const fromRaw = rangeFrom.trim()
     const toRaw = rangeTo.trim()
-    const qty = Math.max(1, Math.min(999, Number(multiplier) || 1))
+    const rawQty = Number(multiplier)
+    if (!Number.isSafeInteger(rawQty) || rawQty < 1 || rawQty > 999) {
+      setError('MF must be a whole number between 1 and 999.')
+      return
+    }
+    const qty = rawQty
 
     const matched = products.filter((product) => {
       if (!fromRaw && !toRaw) return true
@@ -386,6 +402,10 @@ export function BarcodePrintingPage() {
   }
 
   function addFilteredProducts() {
+    if ((productsQuery.data?.meta.total ?? 0) > products.length) {
+      setError('Only the first 100 matching products are loaded. Narrow filters before adding products; no incomplete batch was added.')
+      return
+    }
     if (products.length === 0) {
       setError('No products match the selected filter.')
       return
