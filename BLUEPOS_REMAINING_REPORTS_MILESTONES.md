@@ -161,3 +161,10 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 - Reused `TenantContext::branchId()` to limit **posted journal entries** in both existing accounting readers. No separate ledger or mutation created, no client-authoritative branch ID, and no change to frozen options/preview UI.
 - Added `PartyLedgerTest::test_ledger_detail_and_balance_summary_exclude_other_branch_journal_lines`: another branch's posted entry must not appear in current-branch detail, carry/closing totals, or bulk balance summary. Tests use `bluepos_test`.
 - Files: `backend/app/Accounting/AccountLedgerBuilder.php`, `backend/app/Accounting/PartyLedgerBalanceSummary.php`, `backend/tests/Feature/PartyLedgerTest.php`. No migration; main untouched. CI validation and final reference PDF/browser parity remain pending.
+
+## RR-8 posted-sale inactivity, area and branch regression — 2026-11-08
+
+- Added exact, case-insensitive `area` filter (trims input; matches the stored customer area) to existing `InactiveCustomersReportController` and canonical report options page. Existing posted-only, active tenant/branch activity reader is reused; no parallel sales data.
+- Added `InactiveCustomersReportTest::test_posted_sales_date_boundaries_area_and_active_branch_are_respected` covering an exactly 30-day-old posted sale, newer draft, newer posted sale on a different branch, future-dated posted sale, wrong area, and strict 29-day exclusion. Confirms public ULID only.
+- Existing `having_balance_only` remains based on posted journal entries within selected branch as of the report date. Never-sold customers remain optional; no draft sales considered.
+- Files: `InactiveCustomersReportController.php`, `InactiveCustomersReportPage.tsx`, `InactiveCustomersReportTest.php`. No migration; no `main` change. **CI validation required before accepting.**
