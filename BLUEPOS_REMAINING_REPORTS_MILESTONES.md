@@ -29,7 +29,7 @@
 | RR-0 | Reference reconciliation | Inventory PDFs/ZIPs/screenshots, compare existing routes/models/pages and frozen UI | No invented data, code/doc conflicts flagged, row/column matrix | **DONE** |
 | RR-1 | Baseline and shared report contracts | Reuse existing ReportViewerToolbar, report RBAC, option/preview/export patterns | Tenant, branch, warehouse, export permissions, ULID only, decimal strings, no mutations; design guard | **INSPECTED; executable regression pending** |
 | RR-2 | Stock Status + Price List / Reorder | Existing StockStatus report: signed reorder variance and optional print variants; new retail/purchase price view and category totals only where supported | Quantity, cost permission, category-group subtotal, zero/negative stock, fractions, conversions, 100+ pages pagination/print | **SIGNED REORDER VARIANCE IMPLEMENTED IN SOURCE — tests pending** |
-| RR-3 | Product GL grid | Product Opening/Debit/Credit/Closing by date, print/CSV, optionally category | Opening + signed movements = closing incl negatives, amendments, tenant/warehouse and dates, page-independent totals | NOT STARTED |
+| RR-3 | Product GL grid | Product Opening/Debit/Credit/Closing by date, print/CSV, optionally category | Opening + signed movements = closing incl negatives, amendments, tenant/warehouse and dates, page-independent totals | **IMPLEMENTED IN SOURCE; TESTS + BROWSER PENDING** |
 | RR-4 | Stock Activity Between Dates | Category stock balance, document-wise stock, sales-and-stock formats with source-linked qty/value | Three separate modes; posting reconciliation, signed returns, document linkage, no stock double count | NOT STARTED |
 | RR-5 | Daily/Monthly Product Profit/Loss | Product gross P/L: sale qty, revenue, movement-snapshot COGS, rates, amount/margin; day/month group options | Missing cost -> unavailable, not 0; returns, price discounts, precision; reconcile sales vs posted movement costs; distinguish net ledger statement | NOT STARTED |
 | RR-6 | Outstanding Balances (3 modes) | Ledger as-of positions, phone/address contact variant, current/future due only when supported | Posted journal balances match ledger, date cutoff, Dr/Cr sign, tenant RBAC, missing due/last sale blanks, no unauthorized PII | NOT STARTED |
@@ -69,3 +69,11 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 - Existing `ProductStockStatusReportPage` now displays signed `Vs Reorder` column; no changed global styling or frozen sales UI.
 - Updated frontend `ProductStockStatusRow` contract; existing focused `ProductStockStatusReportTest` now asserts negative/positive/zero-stock variance, preserving warehouse/tenant/cost checks.
 - **Status:** GitHub changes committed on `feature/reports`; PHPUnit, `ui:check`, typecheck, Vite build, print/browser review **NOT RUN** here. No new migration, no `main` changes. This is one subset of RR-2, not complete Price List/Reorder report acceptance.
+
+## RR-3 first implementation slice — 2026-11-08
+
+- Added `ProductGlGridController` and route `/api/reports/products/gl-grid`: immutable signed movements grouped by product with opening/debit/credit/closing as decimal strings, server tenant/branch/warehouse scope, from/to dates, search, SQL summary totals and 100-row pages.
+- Added `ProductGlGridPage` with date options, shared preview/print/export toolbar, signed quantity grid and page navigation; registered route and workspace module.
+- Added `ProductGlGridReportTest` covering negative movements, amendment reversal, date ordering, tenant scope and another warehouse. **Focused tests not executed yet.**
+- Changed files: `backend/app/Http/Controllers/Api/Reports/ProductGlGridController.php`, `backend/routes/api.php`, `frontend/src/pages/ProductGlGridPage.tsx`, `frontend/src/routes/index.tsx`, `frontend/src/features/workspace/modules.ts`, `backend/tests/Feature/ProductGlGridReportTest.php`.
+- Product GL source slice is not accepted until `bluepos_test` regression, frontend guards/typecheck/build and comparison with 4-page PDF are run.
