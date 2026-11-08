@@ -70,6 +70,7 @@ jobs:
           php artisan test \
             tests/Feature/ProductStockStatusReportTest.php \
             tests/Feature/DeadStockReportTest.php \
+            tests/Feature/PurchaseExpiryReferenceReportTest.php \
             tests/Feature/ProductGlGridReportTest.php \
             tests/Feature/StockActivityBetweenDatesReportTest.php \
             tests/Feature/ProductDailyReportsTest.php \
