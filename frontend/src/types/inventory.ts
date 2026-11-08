@@ -191,6 +191,13 @@ export type ProductStockStatusReport = {
       stock_value: string | null
       retail_stock_value: string
     }
+    category_totals: Array<{
+      category_ulid: string | null
+      category_name: string
+      products: number
+      quantity: string
+      stock_value: string | null
+    }>
   }
 }
 
