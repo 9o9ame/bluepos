@@ -16,9 +16,8 @@ final class DeadStockReportController extends Controller
     public function __construct(private readonly PermissionService $permissions) {}
 
     /**
-     * Dead stock means on-hand quantity > 0 and no outbound SALE movement
-     * in the selected elapsed-day period. Returns do not count as sales.
-     * This is NOT a no-movement report and does not infer unavailable sales.
+     * Reference report uses last stock activity (including purchases/transfers).
+     * Explicit sale-only mode preserves the earlier no-recent-sale definition.
      */
     public function __invoke(Request $request, TenantContext $context): array
     {
@@ -28,13 +27,19 @@ final class DeadStockReportController extends Controller
 
         $validated = $request->validate([
             'days' => ['sometimes', 'integer', 'min:1', 'max:3650'],
+            'as_of' => ['sometimes', 'date_format:Y-m-d'],
+            'activity_mode' => ['sometimes', 'in:any_activity,sale_only'],
             'q' => ['sometimes', 'string', 'max:180'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $days = (int) ($validated['days'] ?? 90);
-        $cutoff = CarbonImmutable::now()->subDays($days)->startOfDay();
+        $days = (int) ($validated['days'] ?? 180);
+        $mode = (string) ($validated['activity_mode'] ?? 'any_activity');
+        $asOf = isset($validated['as_of'])
+            ? CarbonImmutable::createFromFormat('Y-m-d', $validated['as_of'])->startOfDay()
+            : CarbonImmutable::now()->startOfDay();
+        $cutoff = $asOf->subDays($days)->startOfDay();
         $tenantId = $context->tenantId();
         $branchId = $context->branchId();
         $warehouseId = $context->warehouseId();
@@ -52,9 +57,10 @@ final class DeadStockReportController extends Controller
                 ->where('dead_stock_sales.tenant_id', $tenantId)
                 ->where('dead_stock_sales.branch_id', $branchId)
                 ->where('dead_stock_sales.warehouse_id', $warehouseId)
-                ->whereIn('dead_stock_sales.movement_type', ['sale', 'sale_amendment'])
-                ->where('dead_stock_sales.quantity', '<', 0)
-                ->where('dead_stock_sales.occurred_at', '>=', $cutoff))
+                ->when($mode === 'sale_only', fn ($query) => $query
+                    ->whereIn('dead_stock_sales.movement_type', ['sale', 'sale_amendment'])
+                    ->where('dead_stock_sales.quantity', '<', 0))
+                ->whereBetween('dead_stock_sales.occurred_at', [$cutoff, $asOf->endOfDay()]))
             ->with(['product.category', 'product.brand'])
             ->orderBy('product_id');
 
@@ -67,16 +73,19 @@ final class DeadStockReportController extends Controller
         }
 
         $page = $query->paginate((int) ($validated['per_page'] ?? 100));
-        $rows = collect($page->items())->map(function (StockBalance $balance) use ($tenantId, $branchId, $warehouseId, $canViewCost) {
+        $rows = collect($page->items())->map(function (StockBalance $balance) use ($tenantId, $branchId, $warehouseId, $canViewCost, $mode, $asOf) {
             $product = $balance->product;
-            $lastSale = DB::table('stock_movements')
+            $lastMovement = DB::table('stock_movements')
                 ->where('tenant_id', $tenantId)
                 ->where('branch_id', $branchId)
                 ->where('warehouse_id', $warehouseId)
                 ->where('product_id', $product->id)
-                ->whereIn('movement_type', ['sale', 'sale_amendment'])
-                ->where('quantity', '<', 0)
-                ->max('occurred_at');
+                ->when($mode === 'sale_only', fn ($query) => $query
+                    ->whereIn('movement_type', ['sale', 'sale_amendment'])
+                    ->where('quantity', '<', 0))
+                ->where('occurred_at', '<=', $asOf->endOfDay())
+                ->orderByDesc('occurred_at')->orderByDesc('id')
+                ->first(['occurred_at', 'reference_type', 'reference_ulid']);
 
             return [
                 'product' => [
@@ -88,8 +97,14 @@ final class DeadStockReportController extends Controller
                     'brand' => $product->brand?->name,
                 ],
                 'quantity' => bcadd((string) $balance->quantity, '0', 6),
-                'last_sale_at' => $lastSale,
-                'stock_value' => $canViewCost ? bcadd((string) $balance->stock_value, '0', 4) : null,
+                'last_activity_at' => $lastMovement?->occurred_at,
+                'last_transaction_type' => $lastMovement?->reference_type,
+                'last_transaction_ulid' => $lastMovement?->reference_ulid,
+                'days_inactive' => $lastMovement?->occurred_at
+                    ? (int) CarbonImmutable::parse($lastMovement->occurred_at)->startOfDay()->diffInDays($asOf)
+                    : null,
+                'average_cost' => $canViewCost ? bcadd((string) ($balance->average_cost ?? '0'), '0', 4) : null,
+                'stock_value' => $canViewCost ? bcadd((string) ($balance->stock_value ?? '0'), '0', 4) : null,
             ];
         })->values()->all();
 
@@ -98,7 +113,11 @@ final class DeadStockReportController extends Controller
             'meta' => [
                 'days' => $days,
                 'cutoff' => $cutoff->toDateString(),
-                'definition' => 'Positive stock without an outbound posted sale in the preceding selected days.',
+                'as_of' => $asOf->toDateString(),
+                'activity_mode' => $mode,
+                'definition' => $mode === 'any_activity'
+                    ? 'Positive stock without any posted stock movement in the selected elapsed-day period.'
+                    : 'Positive stock without an outbound posted sale in the selected elapsed-day period.',
                 'warehouse' => ['ulid' => $context->warehouse()->ulid, 'name' => $context->warehouse()->name],
                 'current_page' => $page->currentPage(),
                 'last_page' => $page->lastPage(),
