@@ -9,6 +9,14 @@ on:
       - 'backend/routes/api.php'
       - 'frontend/src/**'
       - '.github/workflows/reports-validation.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/app/Http/Controllers/Api/Reports/**'
+      - 'backend/tests/Feature/**ReportTest.php'
+      - 'backend/routes/api.php'
+      - 'frontend/src/**'
+      - '.github/workflows/reports-validation.yml'
   workflow_dispatch:
 
 permissions:
