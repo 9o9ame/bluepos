@@ -100,11 +100,12 @@ final class DeadStockReportTest extends TestCase
     private function balance(Product $product, int $warehouseId, string $quantity): void
     {
         $context = app(TenantContext::class);
-        StockBalance::query()->create([
+        StockBalance::query()->updateOrCreate([
             'tenant_id' => $context->tenantId(),
             'branch_id' => $context->branchId(),
             'warehouse_id' => $warehouseId,
             'product_id' => $product->id,
+        ], [
             'quantity' => $quantity,
             'average_cost' => '5.0000',
             'stock_value' => bcmul($quantity, '5.0000', 4),
@@ -124,7 +125,7 @@ final class DeadStockReportTest extends TestCase
             'unit_cost' => '5.0000',
             'total_cost' => '-5.0000',
             'reference_type' => 'sale',
-            'reference_ulid' => '01ARZ3NDEADSTOCKSAMPLE0000',
+            'reference_ulid' => (string) \Illuminate\Support\Str::ulid(),
             'occurred_at' => $occurredAt,
             'posted_by' => $context->userId(),
         ]);
