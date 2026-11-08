@@ -6,6 +6,7 @@ import { UiDateRangePicker } from '../components/ui/UiDateRangePicker'
 import { UiButton } from '../components/ui/UiButton'
 import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import { useAuth } from '../features/auth/AuthProvider'
 import './DailyBusinessActivityPage.css'
 import './DailyReportSheets.css'
 
@@ -48,6 +49,7 @@ function download(rows: string[][], kind: 'txt' | 'html' | 'csv') {
   URL.revokeObjectURL(objectUrl)
 }
 export function ProductGlGridPage() {
+  const { session } = useAuth()
   const { closeActiveTab } = useWorkspace()
   const [fromDate, setFromDate] = useState(today())
   const [toDate, setToDate] = useState(today())
@@ -58,7 +60,7 @@ export function ProductGlGridPage() {
   const [zoom, setZoom] = useState(100)
   const paper = useRef<HTMLElement>(null)
   const query = useQuery({
-    queryKey: ['reports', 'product-gl-grid', fromDate, toDate, appliedSearch, page],
+    queryKey: [session?.tenant.ulid,session?.branch.ulid,session?.warehouse.ulid,'reports', 'product-gl-grid', fromDate, toDate, appliedSearch, page],
     queryFn: () => apiFetch<GridResult>('/api/reports/products/gl-grid?' + new URLSearchParams({
       from_date: fromDate, to_date: toDate, q: appliedSearch, page: String(page), per_page: '100',
     }), {busy:'none'}),
