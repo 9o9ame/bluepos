@@ -60,6 +60,7 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
   const preview = params.get('view') === 'preview'
   const [from, setFrom] = useState(params.get('from') || localDate())
   const [to, setTo] = useState(params.get('to') || localDate())
+  const [period, setPeriod] = useState<'day' | 'month' | 'custom'>(params.get('period') === 'month' ? 'month' : 'custom')
   const [category, setCategory] = useState(params.get('category_ulid') || '')
   const [brand, setBrand] = useState(params.get('brand_ulid') || '')
   const [groupBy, setGroupBy] = useState(params.get('group_by') || 'category')
@@ -154,6 +155,21 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
               options={[{ value: 'category', label: 'Category' }, { value: 'brand', label: 'Company / Brand' }]} />
           </label>}
         </div>
+        {kind === 'profit' && <label className="desktop-field"><span>Period</span>
+          <UiSelect searchable={false} value={period}
+            options={[{value:'day',label:'Current Day'},{value:'month',label:'Current Month'},{value:'custom',label:'Custom (up to 31 days)'}]}
+            onChange={(value) => {
+              const selected = value as 'day' | 'month' | 'custom'
+              setPeriod(selected)
+              const date = localDate()
+              if (selected === 'day') { setFrom(date); setTo(date) }
+              if (selected === 'month') {
+                const [year, month] = date.split('-').map(Number)
+                setFrom(date.slice(0, 7) + '-01')
+                setTo(`${year}-${String(month).padStart(2, '0')}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`)
+              }
+            }}/>
+        </label>}
         <div className="dba-dates">
           <label><span>Date range (maximum 31 days)</span>
             <UiDateRangePicker
@@ -175,6 +191,7 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
           if (category) values.set('category_ulid', category)
           if (brand) values.set('brand_ulid', brand)
           if (kind === 'groups') values.set('group_by', groupBy)
+          if (kind === 'profit') values.set('period', period)
           openModule(pathFor[kind] + '?view=preview&' + values.toString())
         }}
       />
@@ -195,7 +212,8 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
     {query.isLoading && <UiSkeleton label="Loading product daily report…" />}
     {query.isError && <p role="alert">Unable to load product daily report.</p>}
     {report && <article className="dba-paper daily-report-sheet" ref={paperRef} style={{ zoom: zoom + '%' }}>
-      <header><h1>{titleFor[kind]}</h1><p>From {report.from} to {report.to}</p></header>
+      <header><h1>{kind === 'profit' && params.get('period') === 'month'
+        ? 'MONTHLY PROFIT LOSS SUMMARY BY PRODUCT' : titleFor[kind]}</h1><p>From {report.from} to {report.to}</p></header>
       <table>
         <thead><tr>{columns.map(column => <th key={column}>{column}</th>)}</tr></thead>
         <tbody>
