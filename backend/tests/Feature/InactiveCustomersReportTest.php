@@ -88,7 +88,7 @@ final class InactiveCustomersReportTest extends TestCase
 
         foreach ([
             ['2026-10-09', 'posted', $context->branchId(), $context->warehouseId(), 'POSTED-OLD'],
-            ['2026-11-07', 'draft', $context->branchId(), $context->warehouseId(), 'DRAFT-RECENT'],
+            ['2026-11-07', 'void', $context->branchId(), $context->warehouseId(), 'VOID-RECENT'],
             ['2026-11-07', 'posted', $otherBranch->id, $otherWarehouse->id, 'OTHER-BRANCH'],
             ['2026-11-09', 'posted', $context->branchId(), $context->warehouseId(), 'POSTED-FUTURE'],
         ] as [$date, $status, $branchId, $warehouseId, $documentNumber]) {
