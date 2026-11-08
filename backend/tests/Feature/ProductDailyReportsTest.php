@@ -69,6 +69,17 @@ class ProductDailyReportsTest extends TestCase
             ->assertOk()->assertJsonCount(0, 'rows');
     }
 
+    public function test_product_profit_supports_full_calendar_month_without_inventing_cost(): void
+    {
+        $this->signInOwner('monthly-product-profit')->assertOk();
+        $this->getJson('/api/reports/daily/profit-loss?from=2026-11-01&to=2026-11-30')
+            ->assertOk()
+            ->assertJsonPath('from', '2026-11-01')
+            ->assertJsonPath('to', '2026-11-30');
+        $this->getJson('/api/reports/daily/profit-loss?from=2026-10-01&to=2026-11-30')
+            ->assertUnprocessable();
+    }
+
     public function test_posted_sale_uses_actual_movement_cost_for_product_gross_profit(): void
     {
         $this->signInOwner('daily-profit-facts')->assertOk();
