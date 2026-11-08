@@ -24,7 +24,7 @@ type ProfitRow = { product: Item; sale_quantity: string; sale_amount: string; co
 type Report = {
   from: string; to: string; basis: string; limitations: string[]
   rows: StockRow[] | GroupRow[] | ProfitRow[]
-  totals?: { sale_amount: string; sale_quantity: string; purchase_amount?: string; purchase_quantity?: string; stock_change?: string; cost_amount?: string | null; gross_profit?: string | null }
+  totals?: { sale_amount: string; sale_quantity: string; purchase_amount?: string; purchase_quantity?: string; stock_change?: string; cost_amount?: string | null; gross_profit?: string | null; sale_rate?: string | null; cost_rate?: string | null; margin_percent?: string | null }
   group_by?: string
 }
 const pathFor: Record<Kind, string> = {
@@ -233,8 +233,10 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
             : <><td className="dba-amount">{display(report.totals.sale_quantity)}</td>
                 <td className="dba-amount">{display(report.totals.sale_amount)}</td>
                 <td className="dba-amount">{display(report.totals.cost_amount)}</td>
+                <td className="dba-amount">{display(report.totals.sale_rate)}</td>
+                <td className="dba-amount">{display(report.totals.cost_rate)}</td>
                 <td className="dba-amount">{display(report.totals.gross_profit)}</td>
-                <td>—</td></>}
+                <td className="dba-amount">{display(report.totals.margin_percent)}</td></>}
         </tr></tfoot>}
       </table>
       {report.limitations.map(note => <p key={note}>{note}</p>)}
