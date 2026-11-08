@@ -1,14 +1,6 @@
 name: Reports focused validation
 
 on:
-  push:
-    branches: [feature/reports]
-    paths:
-      - 'backend/app/Http/Controllers/Api/Reports/**'
-      - 'backend/tests/Feature/**ReportTest.php'
-      - 'backend/routes/api.php'
-      - 'frontend/src/**'
-      - '.github/workflows/reports-validation.yml'
   pull_request:
     branches: [main]
     paths:
@@ -18,6 +10,10 @@ on:
       - 'frontend/src/**'
       - '.github/workflows/reports-validation.yml'
   workflow_dispatch:
+
+concurrency:
+  group: reports-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
