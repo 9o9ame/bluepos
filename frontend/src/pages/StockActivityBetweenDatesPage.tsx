@@ -172,7 +172,7 @@ export function StockActivityBetweenDatesPage() {
       <header><h1>{mode === 'document_cost' ? 'DOCUMENT WISE STOCK (COST)' : mode === 'sales_stock'
         ? 'SALES AND STOCK STATEMENT' : 'STOCK ACTIVITY BETWEEN DATES'}</h1>
         <p>{report.meta.warehouse.name} · {report.meta.from_date} to {report.meta.to_date}</p>
-        <p>{report.meta.total} products · Page {report.meta.current_page} of {report.meta.last_page}</p>
+        <p>{report.meta.total} {mode === 'document_cost' ? 'movement rows' : 'products'} · Page {report.meta.current_page} of {report.meta.last_page}</p>
       </header>
       {mode === 'document_cost' && documentReport && <table>
         <thead><tr>{documentColumns.map(title=><th key={title}>{title}</th>)}</tr></thead>
