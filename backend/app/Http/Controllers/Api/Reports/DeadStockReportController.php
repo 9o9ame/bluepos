@@ -6,6 +6,7 @@ use App\Authz\PermissionService;
 use App\Exceptions\ApiException;
 use App\Http\Controllers\Controller;
 use App\Models\StockBalance;
+use App\Models\Product;
 use App\Tenancy\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ final class DeadStockReportController extends Controller
 
         $validated = $request->validate([
             'days' => ['sometimes', 'integer', 'min:1', 'max:3650'],
-            'as_of' => ['sometimes', 'date_format:Y-m-d'],
+            'as_of' => ['sometimes', 'date_format:Y-m-d', 'before_or_equal:today'],
             'activity_mode' => ['sometimes', 'in:any_activity,sale_only'],
             'q' => ['sometimes', 'string', 'max:180'],
             'page' => ['sometimes', 'integer', 'min:1'],
@@ -44,6 +45,11 @@ final class DeadStockReportController extends Controller
         $branchId = $context->branchId();
         $warehouseId = $context->warehouseId();
         $canViewCost = $this->permissions->can('inventory.view');
+        $isHistorical = $asOf->toDateString() !== CarbonImmutable::now()->toDateString();
+
+        if ($isHistorical) {
+            return $this->historicalReport($validated, $context, $asOf, $cutoff, $days, $mode);
+        }
 
         $query = StockBalance::query()
             ->forTenant($tenantId)
@@ -117,6 +123,7 @@ final class DeadStockReportController extends Controller
                 'cutoff' => $cutoff->toDateString(),
                 'as_of' => $asOf->toDateString(),
                 'activity_mode' => $mode,
+                'valuation_basis' => 'current_stock_balance',
                 'definition' => $mode === 'any_activity'
                     ? 'Positive stock without any posted stock movement in the selected elapsed-day period.'
                     : 'Positive stock without an outbound posted sale in the selected elapsed-day period.',
@@ -128,4 +135,121 @@ final class DeadStockReportController extends Controller
             ],
         ];
     }
+
+    /**
+     * Historical quantities must come from signed append-only movements, not
+     * today's stock_balances. Historical valuation cannot be inferred from
+     * current moving-average cost and is therefore deliberately unavailable.
+     *
+     * @param array<string, mixed> $validated
+     * @return array<string, mixed>
+     */
+    private function historicalReport(
+        array $validated,
+        TenantContext $context,
+        CarbonImmutable $asOf,
+        CarbonImmutable $cutoff,
+        int $days,
+        string $mode,
+    ): array {
+        $tenantId = $context->tenantId();
+        $branchId = $context->branchId();
+        $warehouseId = $context->warehouseId();
+        $asOfEnd = $asOf->endOfDay();
+
+        $historicalQuantities = DB::table('stock_movements')
+            ->where('tenant_id', $tenantId)
+            ->where('branch_id', $branchId)
+            ->where('warehouse_id', $warehouseId)
+            ->where('occurred_at', '<=', $asOfEnd)
+            ->groupBy('product_id')
+            ->select('product_id')
+            ->selectRaw('SUM(quantity) AS as_of_quantity')
+            ->havingRaw('SUM(quantity) > 0');
+
+        $query = Product::query()
+            ->forTenant($tenantId)
+            ->where('is_active', true)
+            ->joinSub($historicalQuantities, 'historical_stock', fn ($join) =>
+                $join->on('historical_stock.product_id', '=', 'products.id'))
+            ->whereNotExists(fn ($q) => $q->selectRaw('1')
+                ->from('stock_movements as historical_activity')
+                ->whereColumn('historical_activity.product_id', 'products.id')
+                ->where('historical_activity.tenant_id', $tenantId)
+                ->where('historical_activity.branch_id', $branchId)
+                ->where('historical_activity.warehouse_id', $warehouseId)
+                ->when($mode === 'sale_only', fn ($movements) => $movements
+                    ->whereIn('historical_activity.movement_type', ['sale', 'sale_amendment'])
+                    ->where('historical_activity.quantity', '<', 0))
+                ->whereBetween('historical_activity.occurred_at', [$cutoff, $asOfEnd]))
+            ->select(['products.*', 'historical_stock.as_of_quantity'])
+            ->with(['category', 'brand']);
+
+        if (isset($validated['q']) && trim($validated['q']) !== '') {
+            $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], trim($validated['q'])).'%';
+            $query->where(fn ($products) => $products
+                ->where('products.name', 'ilike', $term)
+                ->orWhere('products.sku', 'ilike', $term)
+                ->orWhere('products.product_number', 'ilike', $term));
+        }
+
+        $page = $query->orderBy('products.id')
+            ->paginate((int) ($validated['per_page'] ?? 100));
+        $rows = collect($page->items())->map(function (Product $product) use (
+            $tenantId, $branchId, $warehouseId, $asOf, $asOfEnd, $mode
+        ): array {
+            $last = DB::table('stock_movements')
+                ->where('tenant_id', $tenantId)
+                ->where('branch_id', $branchId)
+                ->where('warehouse_id', $warehouseId)
+                ->where('product_id', $product->id)
+                ->when($mode === 'sale_only', fn ($movements) => $movements
+                    ->whereIn('movement_type', ['sale', 'sale_amendment'])
+                    ->where('quantity', '<', 0))
+                ->where('occurred_at', '<=', $asOfEnd)
+                ->orderByDesc('occurred_at')
+                ->orderByDesc('id')
+                ->first(['occurred_at', 'reference_type', 'reference_ulid']);
+
+            return [
+                'product' => [
+                    'ulid' => $product->ulid,
+                    'product_number' => $product->product_number,
+                    'sku' => $product->sku,
+                    'name' => $product->name,
+                    'category' => $product->category?->name,
+                    'brand' => $product->brand?->name,
+                ],
+                'quantity' => bcadd((string) $product->getAttribute('as_of_quantity'), '0', 6),
+                'last_activity_at' => $last?->occurred_at,
+                'last_transaction_type' => $last?->reference_type,
+                'last_transaction_ulid' => $last?->reference_ulid,
+                'days_inactive' => $last?->occurred_at
+                    ? (int) CarbonImmutable::parse($last->occurred_at)->startOfDay()->diffInDays($asOf)
+                    : null,
+                'average_cost' => null,
+                'stock_value' => null,
+            ];
+        })->values()->all();
+
+        return [
+            'data' => $rows,
+            'meta' => [
+                'days' => $days,
+                'cutoff' => $cutoff->toDateString(),
+                'as_of' => $asOf->toDateString(),
+                'activity_mode' => $mode,
+                'valuation_basis' => 'historical_stock_movements_quantity_only',
+                'definition' => $mode === 'any_activity'
+                    ? 'Positive historical on-hand quantity without a stock movement in the selected inactivity period.'
+                    : 'Positive historical on-hand quantity without an outbound sale in the selected inactivity period.',
+                'warehouse' => ['ulid' => $context->warehouse()->ulid, 'name' => $context->warehouse()->name],
+                'current_page' => $page->currentPage(),
+                'last_page' => $page->lastPage(),
+                'total' => $page->total(),
+                'per_page' => $page->perPage(),
+            ],
+        ];
+    }
+
 }
