@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../api/client'
 import { ReportViewerToolbar } from '../components/reports/ReportViewerToolbar'
 import { UiButton } from '../components/ui/UiButton'
+import { UiDatePicker } from '../components/ui/UiDatePicker'
 import { UiSelect } from '../components/ui/UiSelect'
 import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
@@ -98,7 +99,7 @@ export function OutstandingBalancesReportPage(){
             {value:'current_future',label:'Current / Future Due (where known)'}]}
           onChange={value=>setMode(value as Mode)}/>
       </label>
-      <label>As Of <input type="date" value={asOf} onChange={e=>setAsOf(e.target.value)}/></label>
+      <label>As Of <UiDatePicker type="date" value={asOf} onChange={e=>setAsOf(e.target.value)}/></label>
       <label>Search Party <input value={search} onChange={e=>setSearch(e.target.value)} maxLength={180}/></label>
     </div>
     <div className="dba-actions">
