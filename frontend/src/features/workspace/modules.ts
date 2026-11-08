@@ -405,6 +405,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-salesman-commission',
+    title: 'Salesman Commissions',
+    path: '/reports/sales/salesman-commission',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
     key: 'report-inactive-customers',
     title: 'Inactive Customers',
     path: '/reports/accounts/inactive-customers',
@@ -839,6 +847,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
           menu: [
             { label: 'Customer / Vendor Ledger Options', icon: BookOpen, iconTone: 'info', status: 'ready', path: '/daily/ledger' },
             { label: 'Inactive Customers', icon: User, iconTone: 'warning', status: 'ready', path: '/reports/accounts/inactive-customers' },
+            { label: 'Salesman Commissions', icon: BadgePercent, iconTone: 'success', status: 'ready', path: '/reports/sales/salesman-commission' }
             { label: 'Customer Ledger', icon: User, iconTone: 'info', ...LATER },
             { label: 'Vendor Ledger', icon: Truck, iconTone: 'primary', ...LATER },
             { label: 'Aging Receivables', icon: CalendarClock, iconTone: 'warning', ...LATER },
