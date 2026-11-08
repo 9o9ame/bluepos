@@ -166,5 +166,5 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 
 - Added exact, case-insensitive `area` filter (trims input; matches the stored customer area) to existing `InactiveCustomersReportController` and canonical report options page. Existing posted-only, active tenant/branch activity reader is reused; no parallel sales data.
 - Added `InactiveCustomersReportTest::test_posted_sales_date_boundaries_area_and_active_branch_are_respected` covering an exactly 30-day-old posted sale, newer draft, newer posted sale on a different branch, future-dated posted sale, wrong area, and strict 29-day exclusion. Confirms public ULID only.
-- Existing `having_balance_only` remains based on posted journal entries within selected branch as of the report date. Never-sold customers remain optional; no draft sales considered.
+- Existing `having_balance_only` remains based on posted journal entries within selected branch as of the report date. Never-sold customers remain optional; only status=posted sales considered; void sales are excluded (SaleStatus has posted/void states).
 - Files: `InactiveCustomersReportController.php`, `InactiveCustomersReportPage.tsx`, `InactiveCustomersReportTest.php`. No migration; no `main` change. **CI validation required before accepting.**
