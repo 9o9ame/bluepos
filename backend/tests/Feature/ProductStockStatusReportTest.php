@@ -23,6 +23,7 @@ class ProductStockStatusReportTest extends TestCase
         $zeroUlid = $this->createProduct('Status Zero Product', '2.000000');
 
         $match = Product::query()->where('ulid', $matchUlid)->firstOrFail();
+        $match->update(['purchase_rate' => '7.5000']);
         $healthy = Product::query()->where('ulid', $healthyUlid)->firstOrFail();
 
         $this->balance($match, $context->warehouseId(), '3.000000', '10.0000');
@@ -69,6 +70,7 @@ class ProductStockStatusReportTest extends TestCase
         $this->assertSame('10.0000', $rows[$matchUlid]['average_cost']);
         $this->assertSame('30.0000', $rows[$matchUlid]['stock_value']);
         $this->assertSame('20.0000', $rows[$matchUlid]['retail_rate']);
+        $this->assertSame('7.5000', $rows[$matchUlid]['purchase_rate']);
         $this->assertSame('60.0000', $rows[$matchUlid]['retail_stock_value']);
         $this->assertSame('0.000000', $rows[$zeroUlid]['quantity']);
 
@@ -104,6 +106,7 @@ class ProductStockStatusReportTest extends TestCase
         $productUlid = $this->createProduct('Report Cost Protected', '1.000000');
         $product = Product::query()->where('ulid', $productUlid)->firstOrFail();
         $this->balance($product, app(TenantContext::class)->warehouseId(), '2.000000', '123.4500');
+        $product->update(['purchase_rate' => '77.5000']);
 
         $role = $this->postJson('/api/roles', [
             'name' => 'Inventory Report Only',
@@ -131,6 +134,7 @@ class ProductStockStatusReportTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.average_cost', null)
             ->assertJsonPath('data.0.stock_value', null)
+            ->assertJsonPath('data.0.purchase_rate', null)
             ->assertJsonPath('meta.totals.stock_value', null);
 
         $this->assertSame('2.000000', $report->json('data.0.quantity'));
