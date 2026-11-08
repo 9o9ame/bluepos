@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\Reports\InactiveCustomersReportController;
 use App\Http\Controllers\Api\Reports\SalesmanCommissionReportController;
 use App\Http\Controllers\Api\Reports\ProductStockStatusController;
 use App\Http\Controllers\Api\Reports\DeadStockReportController;
+use App\Http\Controllers\Api\Reports\PurchaseExpiryReferenceReportController;
 use App\Http\Controllers\Api\Reports\TrialBalanceController;
 use App\Http\Controllers\Api\Reports\BalanceSheetReportController;
 use App\Http\Controllers\Api\Reports\IncomeStatementReportController;
@@ -366,6 +367,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
     Route::middleware('entitled:inventory')->group(function () {
         Route::get('/reports/products/stock-status', ProductStockStatusController::class);
         Route::get('/reports/products/dead-stock', DeadStockReportController::class);
+        Route::get('/reports/products/purchase-expiry-reference', PurchaseExpiryReferenceReportController::class);
         Route::get('/reports/products/ledger', ProductLedgerController::class);
         Route::get('/reports/products/gl-grid', ProductGlGridController::class);
         Route::get('/reports/products/stock-activity', StockActivityBetweenDatesController::class);
