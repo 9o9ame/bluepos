@@ -148,3 +148,9 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 - Zero signed quantity yields unavailable unit rates; any unverified historical cost makes total cost rate and total margin unavailable instead of inventing values.
 - Added `ProductDailyReportsTest` assertions for weighted totals and missing-cost null treatment.
 - Source: `ProductDailyReportsController.php`, `ProductDailyReportPage.tsx`, `ProductDailyReportsTest.php`. No migration or `main` change. PDF visual acceptance remains pending; CI must pass before validation claim.
+
+## RR-6 as-of receipt/reversal regression — 2026-11-08
+
+- Fixed historical receipt view: posted reversal affects a receipt only when its **entry date is on/before the requested as-of date**, in the same authenticated tenant and branch. Future-dated reversals can no longer erase past receipt dates/amounts.
+- Added focused `OutstandingBalancesReportTest` that inserts a posted receiving voucher dated Oct 10 and a posted reversal dated Oct 20, checks that as-of Oct 15 retains the receipt and as-of Oct 25 suppresses it; normal posted journal balance remains signed via shared `AccountBalanceCalculator`.
+- No schema/migration, no direct accounting posting logic changed. Current/future due still unavailable without invoice-level due allocations; three report layouts unchanged. CI and screenshot acceptance remain separate.
