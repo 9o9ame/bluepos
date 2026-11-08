@@ -535,6 +535,15 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     entitlement: 'inventory',
   },
   {
+    key: 'report-product-gl-grid',
+    title: 'Product GL (Grid)',
+    path: '/reports/products/gl-grid',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.inventory',
+    entitlement: 'inventory',
+  },
+  {
     key: 'report-product-ledger',
     title: 'Product Ledger',
     path: '/reports/products/ledger',
