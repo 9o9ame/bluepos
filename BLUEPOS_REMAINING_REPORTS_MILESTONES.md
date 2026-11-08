@@ -168,3 +168,11 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 - Added `InactiveCustomersReportTest::test_posted_sales_date_boundaries_area_and_active_branch_are_respected` covering an exactly 30-day-old posted sale, newer draft, newer posted sale on a different branch, future-dated posted sale, wrong area, and strict 29-day exclusion. Confirms public ULID only.
 - Existing `having_balance_only` remains based on posted journal entries within selected branch as of the report date. Never-sold customers remain optional; only status=posted sales considered; void sales are excluded (SaleStatus has posted/void states).
 - Files: `InactiveCustomersReportController.php`, `InactiveCustomersReportPage.tsx`, `InactiveCustomersReportTest.php`. No migration; no `main` change. **CI validation required before accepting.**
+
+## RR-9 effective salesman selection and signed source totals — 2026-11-08
+
+- Posted sale/return register now filters salesman using the **latest effective immutable document snapshot**. The original sale's salesman FK may differ from a posted amendment; no original-FK-only filtering remains. Unassigned effective snapshots are excluded. Input `salesman_ulid` is tenant-scoped and validated before use.
+- Added all-filter signed `meta.totals.base_quantity` (6 decimals) and `line_amount_ex_tax_before_invoice_discount` (4 decimals), including returns with negative signs. Totals are computed before pagination so they are consistent across pages. Added public line ULIDs for stable row keys.
+- Updated the shared report viewer with explicitly labeled all-matching quantities and line amounts. Added focused test for single salesman selection, another salesman, unknown ULID, and totals.
+- **No commission percentage, per-unit rate, or payable commission is calculated**: verified rates, commission basis, invoice-discount allocation and financial approval are not available in current domain models. RR-9 full payable-commission parity remains blocked by those real dependencies; source-register integrity is separately testable.
+- Changed: `SalesmanCommissionReportController.php`, `SalesmanCommissionReportPage.tsx`, `SalesmanCommissionReportTest.php`. No migrations or `main` changes; CI validation pending.
