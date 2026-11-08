@@ -175,6 +175,9 @@ class ProductStockStatusController extends Controller
             'average_cost' => $canViewCost ? $balance?->average_cost : null,
             'stock_value' => $canViewCost ? $balance?->stock_value : null,
             'retail_rate' => $retail,
+            'purchase_rate' => $canViewCost ? $product->purchase_rate : null,
+            'secondary_conversion_factor' => $product->secondary_unit_id !== null
+                ? $product->secondary_conversion_factor : null,
             'retail_stock_value' => $retail !== null
                 ? bcmul($quantity, (string) $retail, 4)
                 : null,
