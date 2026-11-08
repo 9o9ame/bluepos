@@ -30,6 +30,7 @@ final class InactiveCustomersReportController extends Controller
             'max_days' => ['required', 'integer', 'gte:min_days', 'max:3650'],
             'include_never' => ['sometimes', 'boolean'],
             'having_balance_only' => ['sometimes', 'boolean'],
+            'area' => ['sometimes', 'string', 'max:120'],
             'q' => ['sometimes', 'string', 'max:180'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
@@ -80,6 +81,10 @@ final class InactiveCustomersReportController extends Controller
             });
         }
 
+        if (isset($input['area']) && trim($input['area']) !== '') {
+            $query->whereRaw('LOWER(BTRIM(customers.area)) = LOWER(?)', [trim($input['area'])]);
+        }
+
         if (isset($input['q']) && trim($input['q']) !== '') {
             $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], trim($input['q'])).'%';
             $query->where(fn ($q) => $q->where('customers.name', 'ilike', $term)
@@ -111,6 +116,7 @@ final class InactiveCustomersReportController extends Controller
             'max_days' => (int) $input['max_days'],
             'include_never' => ! empty($input['include_never']),
             'having_balance_only' => ! empty($input['having_balance_only']),
+            'area' => isset($input['area']) ? trim($input['area']) : null,
             'branch_ulid' => $context->branch()->ulid,
             'current_page' => $page->currentPage(), 'last_page' => $page->lastPage(),
             'per_page' => $page->perPage(), 'total' => $page->total(),
