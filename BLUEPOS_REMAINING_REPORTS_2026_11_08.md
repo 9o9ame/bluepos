@@ -1,6 +1,6 @@
 # BluePOS Reports — Remaining Reference Packs (2026-11-08)
 
-**Development branch:** `feature/reports`. **Status:** Reference inventory completed; implementations in this file NOT claimed complete. The November 8 source packs comprise ten ZIPs and four standalone JPEGs. Do not edit `main` directly. Read `PROJECT_UI_DESIGN_SYSTEM.md` before frontend work.
+**Development branch:** `feature/reports`. **Status:** Reference inventory completed. Dead Stock implementation added in source on this branch but execution/browser validation pending; other gaps are not claimed complete. The November 8 source packs comprise ten ZIPs and four standalone JPEGs. Do not edit `main` directly. Read `PROJECT_UI_DESIGN_SYSTEM.md` before frontend work.
 
 ## Reuse inventory and required gap check
 
@@ -17,7 +17,7 @@
 | Stock Status | `ProductStockStatusController`, `ProductStockStatusReportPage` | Existing implementation; adapt filter/print variants only, preserve average-cost permission and warehouse context |
 | Stock Activity Between Dates | Product ledger and `StockMovement` | New multi-product date-window movement report, signed quantities, opening/closing and immutable movement links |
 | Price List / Stock Position / Reorder | Existing stock-status report + product prices | New report-format options (sales/purchase price), brand/category/location filters, reorder variants; cost gated by `inventory.view` |
-| Dead Stock | Existing `StockBalance` / `StockMovement` | New configurable inactivity date/window and stock-on-hand report; distinguish no sales vs no movement |
+| Dead Stock | Existing `StockBalance` / `StockMovement` | **IMPLEMENTED IN SOURCE (tests pending):** scoped report at `/reports/products/dead-stock`, elapsed-day no-sale filter, positive stock, cost RBAC, grid/preview/export. Must validate PHP/TS and browser before accepting |
 | Expiry Stock | Product `track_expiry` + batch/expiry source (verify real schema) | New report only if persisted lot/expiry quantities support accurate results. Otherwise show unsupported/unavailable; do not fabricate expiry |
 | Barcode Printing | `BarcodePrintingPage`, existing label/print helpers | Existing feature; verify reference options, formats, selected product/quantity, tenant data and browser print behavior |
 
@@ -42,3 +42,9 @@
 5. **Acceptance:** compare option/preview/print/export against supplied references and previous accepted reports; run focused tests only on `bluepos_test`, UI guard/typecheck/build, and verify authorization, precision, tenant and warehouse isolation.
 
 **No runtime implementation, migration, or production deployment is represented by this inventory document.** Record each completion separately with changed files, passing test evidence and pending limitations.
+
+## 2026-11-08 First implementation slice — Dead Stock (UNTESTED)
+
+Added `backend/app/Http/Controllers/Api/Reports/DeadStockReportController.php`, `frontend/src/pages/DeadStockReportPage.tsx`, `backend/tests/Feature/DeadStockReportTest.php`; updated `backend/routes/api.php`, `frontend/src/routes/index.tsx`, `frontend/src/features/workspace/modules.ts`. No migration.
+
+Definition: positive current stock with no outbound sale / negative sale-amendment movements in the preceding 1–3650 days. Uses active server-selected tenant/branch/warehouse, read-only stock history, current stock balance, and hides stock value without `inventory.view`. Download is page-scoped and labeled. Does not count purchases, transfers or returns as sales. Requires focused PHP, UI guard, TS typecheck, Vite build and browser validation; no passing test claim.
