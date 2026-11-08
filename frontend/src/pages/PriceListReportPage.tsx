@@ -60,7 +60,7 @@ export function PriceListReportPage(){
     queryFn:()=>fetchProductStockStatusReport({
       q:selectedSearch||undefined,
       active_only:false,
-      low_stock:mode!=='prices',
+      below_reorder:mode!=='prices',
       page,per_page:100,
     }),
     enabled:preview,
