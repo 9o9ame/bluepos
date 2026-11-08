@@ -103,8 +103,10 @@ final class DeadStockReportController extends Controller
                 'days_inactive' => $lastMovement?->occurred_at
                     ? (int) CarbonImmutable::parse($lastMovement->occurred_at)->startOfDay()->diffInDays($asOf)
                     : null,
-                'average_cost' => $canViewCost ? bcadd((string) ($balance->average_cost ?? '0'), '0', 4) : null,
-                'stock_value' => $canViewCost ? bcadd((string) ($balance->stock_value ?? '0'), '0', 4) : null,
+                'average_cost' => $canViewCost && $balance->average_cost !== null
+                    ? bcadd((string) $balance->average_cost, '0', 4) : null,
+                'stock_value' => $canViewCost && $balance->stock_value !== null
+                    ? bcadd((string) $balance->stock_value, '0', 4) : null,
             ];
         })->values()->all();
 
