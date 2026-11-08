@@ -28,10 +28,15 @@ final class StockActivityBetweenDatesController extends Controller
             'q' => ['sometimes', 'string', 'max:180'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
+            'view' => ['sometimes', 'in:summary,documents'],
         ]);
         $from = CarbonImmutable::createFromFormat('Y-m-d', $input['from_date'])->startOfDay();
         $to = CarbonImmutable::createFromFormat('Y-m-d', $input['to_date'])->endOfDay();
         $canViewCost = $this->permissions->can('inventory.view');
+        if (($input['view'] ?? 'summary') === 'documents') {
+            return $this->documentMovements($input, $context, $from, $to, $canViewCost);
+        }
+
 
         $movements = DB::table('stock_movements')
             ->where('tenant_id', $context->tenantId())
@@ -156,4 +161,87 @@ final class StockActivityBetweenDatesController extends Controller
             'cost_basis' => 'Cost columns are signed historical stock-movement costs, not sale revenue or invoice selling amounts; null when any movement cost is missing or the user lacks cost permission.',
         ]];
     }
+
+    /**
+     * Actual document-linked movement rows, rather than aggregated product rows.
+     * Inventory costs are NEVER sale revenue. The source record stays immutable.
+     *
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    private function documentMovements(
+        array $input,
+        TenantContext $context,
+        CarbonImmutable $from,
+        CarbonImmutable $to,
+        bool $canViewCost,
+    ): array {
+        $query = DB::table('stock_movements as m')
+            ->join('products as p', function ($join) use ($context): void {
+                $join->on('p.id', '=', 'm.product_id')
+                    ->where('p.tenant_id', '=', $context->tenantId());
+            })
+            ->where('m.tenant_id', $context->tenantId())
+            ->where('m.branch_id', $context->branchId())
+            ->where('m.warehouse_id', $context->warehouseId())
+            ->whereBetween('m.occurred_at', [$from, $to]);
+
+        if (isset($input['q']) && trim($input['q']) !== '') {
+            $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], trim($input['q'])).'%';
+            $query->where(fn ($q) => $q->where('p.name', 'ilike', $term)
+                ->orWhere('p.sku', 'ilike', $term)
+                ->orWhere('p.product_number', 'ilike', $term));
+        }
+
+        $page = $query->select([
+            'm.ulid AS movement_ulid',
+            'm.occurred_at',
+            'm.movement_type',
+            'm.reference_type',
+            'm.reference_ulid',
+            'm.reference_line_ulid',
+            'm.quantity',
+            'm.total_cost',
+            'p.ulid AS product_ulid',
+            'p.product_number',
+            'p.sku',
+            'p.name AS product_name',
+        ])->orderBy('m.occurred_at')->orderBy('m.id')
+            ->paginate((int) ($input['per_page'] ?? 100));
+
+        return [
+            'data' => collect($page->items())->map(static fn ($movement): array => [
+                'movement_ulid' => $movement->movement_ulid,
+                'occurred_at' => $movement->occurred_at,
+                'movement_type' => $movement->movement_type,
+                'reference_type' => $movement->reference_type,
+                'reference_ulid' => $movement->reference_ulid,
+                'reference_line_ulid' => $movement->reference_line_ulid,
+                'product' => [
+                    'ulid' => $movement->product_ulid,
+                    'product_number' => $movement->product_number,
+                    'sku' => $movement->sku,
+                    'name' => $movement->product_name,
+                ],
+                'quantity' => bcadd((string) $movement->quantity, '0', 6),
+                'movement_cost' => $canViewCost && $movement->total_cost !== null
+                    ? bcadd((string) $movement->total_cost, '0', 4) : null,
+            ])->all(),
+            'meta' => [
+                'view' => 'documents',
+                'from_date' => $input['from_date'],
+                'to_date' => $input['to_date'],
+                'warehouse' => [
+                    'ulid' => $context->warehouse()->ulid,
+                    'name' => $context->warehouse()->name,
+                ],
+                'current_page' => $page->currentPage(),
+                'last_page' => $page->lastPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
+                'cost_basis' => 'Signed stock movement cost, not document selling amount. Hidden without inventory.view.',
+            ],
+        ];
+    }
+
 }
