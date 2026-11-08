@@ -34,6 +34,7 @@ use App\Http\Controllers\Api\Reports\ProductGlGridController;
 use App\Http\Controllers\Api\Reports\StockActivityBetweenDatesController;
 use App\Http\Controllers\Api\Reports\OutstandingBalancesReportController;
 use App\Http\Controllers\Api\Reports\InactiveCustomersReportController;
+use App\Http\Controllers\Api\Reports\SalesmanCommissionReportController;
 use App\Http\Controllers\Api\Reports\ProductStockStatusController;
 use App\Http\Controllers\Api\Reports\DeadStockReportController;
 use App\Http\Controllers\Api\Reports\TrialBalanceController;
@@ -370,6 +371,7 @@ Route::middleware(['auth:sanctum', 'tenant', 'throttle:auth'])->group(function (
         Route::get('/reports/products/stock-activity', StockActivityBetweenDatesController::class);
         Route::get('/reports/accounts/outstanding-balances', OutstandingBalancesReportController::class);
         Route::get('/reports/accounts/inactive-customers', InactiveCustomersReportController::class);
+        Route::get('/reports/sales/salesman-commission', SalesmanCommissionReportController::class);
         Route::get('/inventory/stock', [StockController::class, 'index']);
         Route::post('/inventory/stock/recalculate', [StockController::class, 'recalculate']);
 
