@@ -35,6 +35,7 @@ import { ProductGlGridPage } from '../pages/ProductGlGridPage'
 import { StockActivityBetweenDatesPage } from '../pages/StockActivityBetweenDatesPage'
 import { OutstandingBalancesReportPage } from '../pages/OutstandingBalancesReportPage'
 import { InactiveCustomersReportPage } from '../pages/InactiveCustomersReportPage'
+import { SalesmanCommissionReportPage } from '../pages/SalesmanCommissionReportPage'
 import { PriceListReportPage } from '../pages/PriceListReportPage'
 import { TrialBalanceReportPage } from '../pages/TrialBalanceReportPage'
 import { BalanceSheetReportPage } from '../pages/BalanceSheetReportPage'
@@ -150,6 +151,7 @@ export function AppRoutes() {
             <Route path="/reports/accounts/total-turnover" element={<TotalTurnoverReportPage />} />
             <Route path="/reports/accounts/outstanding-balances" element={<OutstandingBalancesReportPage />} />
             <Route path="/reports/accounts/inactive-customers" element={<InactiveCustomersReportPage />} />
+            <Route path="/reports/sales/salesman-commission" element={<SalesmanCommissionReportPage />} />
           </Route>
           <Route element={<RequirePermission permission="reports.inventory" />}>
             <Route path="/reports/daily/product-transactions" element={<NextReportsPage kind="product-transactions" />} />
