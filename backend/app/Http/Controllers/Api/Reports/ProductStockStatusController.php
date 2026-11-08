@@ -169,6 +169,9 @@ class ProductStockStatusController extends Controller
             ],
             'quantity' => $quantity,
             'reorder_level' => $product->reorder_level,
+            'reorder_variance' => $product->reorder_level === null
+                ? null
+                : bcsub($quantity, (string) $product->reorder_level, 6),
             'average_cost' => $canViewCost ? $balance?->average_cost : null,
             'stock_value' => $canViewCost ? $balance?->stock_value : null,
             'retail_rate' => $retail,
