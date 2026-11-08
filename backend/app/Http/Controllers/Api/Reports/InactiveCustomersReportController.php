@@ -29,6 +29,7 @@ final class InactiveCustomersReportController extends Controller
             'min_days' => ['required', 'integer', 'min:1', 'max:3650'],
             'max_days' => ['required', 'integer', 'gte:min_days', 'max:3650'],
             'include_never' => ['sometimes', 'boolean'],
+            'having_balance_only' => ['sometimes', 'boolean'],
             'q' => ['sometimes', 'string', 'max:180'],
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
@@ -61,6 +62,24 @@ final class InactiveCustomersReportController extends Controller
                 }
             });
 
+        if (! empty($input['having_balance_only'])) {
+            $query->whereExists(function ($sub) use ($context, $input): void {
+                $sub->selectRaw('1')
+                    ->from('accounts as inactive_accounts')
+                    ->join('journal_lines as inactive_lines', 'inactive_lines.account_id', '=', 'inactive_accounts.id')
+                    ->join('journal_entries as inactive_journals', 'inactive_journals.id', '=', 'inactive_lines.journal_entry_id')
+                    ->whereColumn('inactive_accounts.customer_id', 'customers.id')
+                    ->where('inactive_accounts.tenant_id', $context->tenantId())
+                    ->where('inactive_lines.tenant_id', $context->tenantId())
+                    ->where('inactive_journals.tenant_id', $context->tenantId())
+                    ->where('inactive_journals.branch_id', $context->branchId())
+                    ->where('inactive_journals.status', 'posted')
+                    ->where('inactive_journals.entry_date', '<=', $input['as_of'])
+                    ->groupBy('inactive_accounts.customer_id')
+                    ->havingRaw('COALESCE(SUM(inactive_lines.debit - inactive_lines.credit), 0) <> 0');
+            });
+        }
+
         if (isset($input['q']) && trim($input['q']) !== '') {
             $term = '%'.str_replace(['%', '_'], ['\\%', '\\_'], trim($input['q'])).'%';
             $query->where(fn ($q) => $q->where('customers.name', 'ilike', $term)
@@ -91,6 +110,7 @@ final class InactiveCustomersReportController extends Controller
             'min_days' => (int) $input['min_days'],
             'max_days' => (int) $input['max_days'],
             'include_never' => ! empty($input['include_never']),
+            'having_balance_only' => ! empty($input['having_balance_only']),
             'branch_ulid' => $context->branch()->ulid,
             'current_page' => $page->currentPage(), 'last_page' => $page->lastPage(),
             'per_page' => $page->perPage(), 'total' => $page->total(),
