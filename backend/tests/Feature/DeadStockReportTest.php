@@ -61,6 +61,37 @@ final class DeadStockReportTest extends TestCase
         $this->getJson('/api/reports/products/dead-stock?days=9999')->assertUnprocessable();
     }
 
+    public function test_historical_as_of_uses_signed_movements_not_current_balance_or_future_activity(): void
+    {
+        $this->signInOwner('dead-stock-historical')->assertOk();
+        $context = app(TenantContext::class);
+        $product = $this->product('Historical Dead Stock Product');
+        // Currently sold out, but at the historical cutoff the product
+        // had five units on hand and had not moved for sixty days.
+        $this->balance($product, $context->warehouseId(), '0.000000');
+        $this->sale($product, $context->warehouseId(), '2026-09-01 12:00:00', StockMovementType::Purchase);
+        $this->sale($product, $context->warehouseId(), '2026-11-02 12:00:00');
+
+        $historical = $this->getJson('/api/reports/products/dead-stock?as_of=2026-10-31&days=30&q=Historical%20Dead')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('meta.as_of', '2026-10-31')
+            ->assertJsonPath('meta.valuation_basis', 'historical_stock_movements_quantity_only')
+            ->assertJsonPath('data.0.product.ulid', $product->ulid)
+            ->assertJsonPath('data.0.quantity', '1.000000')
+            ->assertJsonPath('data.0.average_cost', null)
+            ->assertJsonPath('data.0.stock_value', null)
+            ->assertJsonPath('data.0.days_inactive', 60);
+        $this->assertNoInternalIds($historical->json());
+
+        // A sale after the selected date must never contaminate historical
+        // quantities, but should affect a later as-of query.
+        $this->getJson('/api/reports/products/dead-stock?as_of=2026-11-03&days=30&q=Historical%20Dead')
+            ->assertOk()->assertJsonPath('meta.total', 0);
+        $this->getJson('/api/reports/products/dead-stock?as_of=2027-01-01')
+            ->assertUnprocessable();
+    }
+
     public function test_dead_stock_restricts_cost_to_inventory_view_permission_and_is_tenant_scoped(): void
     {
         $owner = $this->signInOwner('dead-stock-secure')->assertOk();
