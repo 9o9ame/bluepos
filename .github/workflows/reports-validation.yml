@@ -1,0 +1,98 @@
+name: Reports focused validation
+
+on:
+  push:
+    branches: [feature/reports]
+    paths:
+      - 'backend/app/Http/Controllers/Api/Reports/**'
+      - 'backend/tests/Feature/**ReportTest.php'
+      - 'backend/routes/api.php'
+      - 'frontend/src/**'
+      - '.github/workflows/reports-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reports-backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bluepos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d bluepos_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '5432'
+      DB_DATABASE: bluepos_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+      TENANT_LOGIN_LOCATION_REQUIRED: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: bcmath, mbstring, pdo_pgsql, pgsql, gd, fileinfo, intl, zip
+          coverage: none
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Configure ephemeral test instance
+        run: |
+          cp .env.example .env
+          php artisan key:generate --force
+          php artisan migrate --env=testing --force
+      - name: Focused reports regression on bluepos_test
+        run: |
+          php artisan test \
+            tests/Feature/ProductStockStatusReportTest.php \
+            tests/Feature/DeadStockReportTest.php \
+            tests/Feature/ProductGlGridReportTest.php \
+            tests/Feature/StockActivityBetweenDatesReportTest.php \
+            tests/Feature/ProductDailyReportsTest.php \
+            tests/Feature/OutstandingBalancesReportTest.php \
+            tests/Feature/InactiveCustomersReportTest.php \
+            tests/Feature/ProductLedgerReportTest.php \
+            tests/Feature/PartyLedgerTest.php
+
+  reports-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Check canonical UI rules
+        run: npm run ui:check
+      - name: Check report navigation
+        run: npm run ui:navigation-check
+      - name: TypeScript typecheck
+        run: npm run typecheck
+      - name: Build frontend
+        run: npm run build
