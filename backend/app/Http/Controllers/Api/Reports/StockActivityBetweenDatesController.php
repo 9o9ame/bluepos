@@ -87,6 +87,25 @@ final class StockActivityBetweenDatesController extends Controller
         $selects = implode(', ', array_map(fn ($column) => 'COALESCE(SUM('.$column.'),0) AS '.$column, $columns));
         $totals = DB::query()->fromSub((clone $query)->reorder()->toBase(), 'filtered_products')
             ->selectRaw($selects)->first();
+        // Group the same filtered product-level movement summary into category
+        // subtotals. Keep all pages in scope; never add a parallel stock ledger.
+        $categoryRows = DB::query()
+            ->fromSub((clone $query)->reorder()->toBase(), 'filtered_category_products')
+            ->selectRaw('category_name, COUNT(*) AS products, '.$selects)
+            ->groupBy('category_name')
+            ->orderBy('category_name')
+            ->get();
+        $categoryTotals = $categoryRows->map(function ($row) use ($columns): array {
+            $summary = [
+                'category' => $row->category_name ?? 'Unassigned',
+                'products' => (int) $row->products,
+            ];
+            foreach ($columns as $column) {
+                $summary[$column] = bcadd((string) $row->{$column}, '0', 6);
+            }
+
+            return $summary;
+        })->all();
         $costColumns = ['purchase_cost', 'purchase_return_cost', 'sale_cost', 'sale_return_cost', 'closing_cost'];
         $costTotals = $canViewCost ? DB::query()
             ->fromSub((clone $query)->reorder()->toBase(), 'filtered_cost_products')
@@ -131,6 +150,7 @@ final class StockActivityBetweenDatesController extends Controller
             'warehouse' => ['ulid' => $context->warehouse()->ulid, 'name' => $context->warehouse()->name],
             'current_page' => $page->currentPage(), 'last_page' => $page->lastPage(),
             'total' => $page->total(), 'per_page' => $page->perPage(), 'totals' => $grand,
+            'category_totals' => $categoryTotals,
             'definition' => 'Signed posted quantities: closing = opening + purchases - purchase returns - sales + sale returns + other movements.',
             'cost_basis' => 'Cost columns are signed historical stock-movement costs, not sale revenue or invoice selling amounts; null when any movement cost is missing or the user lacks cost permission.',
         ]];
