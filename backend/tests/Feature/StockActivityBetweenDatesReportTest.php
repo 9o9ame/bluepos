@@ -50,11 +50,50 @@ final class StockActivityBetweenDatesReportTest extends TestCase
             ->assertJsonPath('data.0.sale_cost', '-4.0000')
             ->assertJsonPath('data.0.sale_return_cost', '2.0000')
             ->assertJsonPath('data.0.closing_cost', '9.0000')
-            ->assertJsonPath('meta.totals.closing', '9.000000');
+            ->assertJsonPath('meta.totals.closing', '9.000000')
+            ->assertJsonPath('meta.category_totals.0.category', 'Unassigned')
+            ->assertJsonPath('meta.category_totals.0.products', 1)
+            ->assertJsonPath('meta.category_totals.0.opening', '10.000000')
+            ->assertJsonPath('meta.category_totals.0.purchases', '5.000000')
+            ->assertJsonPath('meta.category_totals.0.purchase_returns', '1.000000')
+            ->assertJsonPath('meta.category_totals.0.sales', '4.000000')
+            ->assertJsonPath('meta.category_totals.0.sale_returns', '2.000000')
+            ->assertJsonPath('meta.category_totals.0.other_movements', '-3.000000')
+            ->assertJsonPath('meta.category_totals.0.closing', '9.000000');
         $this->assertNoInternalIds($result->json());
 
         $this->getJson('/api/reports/products/stock-activity?from_date=2026-10-31&to_date=2026-10-01')
             ->assertUnprocessable();
+    }
+
+    public function test_category_summary_and_grand_totals_cover_all_pages_not_just_first_page(): void
+    {
+        $this->signInOwner('stock-activity-pages')->assertOk();
+        $warehouseId = app(TenantContext::class)->warehouseId();
+        $first = $this->product('Activity Page Alpha');
+        $second = $this->product('Activity Page Beta');
+
+        $this->movement($first, $warehouseId, '2026-09-30 12:00:00', '5.000000', StockMovementType::OpeningBalance);
+        $this->movement($first, $warehouseId, '2026-10-01 12:00:00', '-2.250000', StockMovementType::Sale);
+        $this->movement($second, $warehouseId, '2026-09-30 12:00:00', '1.000000', StockMovementType::OpeningBalance);
+        $this->movement($second, $warehouseId, '2026-10-02 12:00:00', '3.500000', StockMovementType::Purchase);
+        $this->movement($second, $warehouseId, '2026-11-02 12:00:00', '100.000000', StockMovementType::Purchase);
+
+        $base = '/api/reports/products/stock-activity?from_date=2026-10-01&to_date=2026-10-31&q=Activity%20Page&per_page=1';
+        foreach ([1, 2] as $number) {
+            $response = $this->getJson($base.'&page='.$number)->assertOk()
+                ->assertJsonPath('meta.total', 2)
+                ->assertJsonPath('meta.last_page', 2)
+                ->assertJsonPath('meta.totals.opening', '6.000000')
+                ->assertJsonPath('meta.totals.purchases', '3.500000')
+                ->assertJsonPath('meta.totals.sales', '2.250000')
+                ->assertJsonPath('meta.totals.closing', '7.250000')
+                ->assertJsonPath('meta.category_totals.0.products', 2)
+                ->assertJsonPath('meta.category_totals.0.closing', '7.250000');
+
+            $this->assertCount(1, $response->json('data'));
+            $this->assertNoInternalIds($response->json());
+        }
     }
 
     public function test_stock_activity_is_tenant_scoped(): void
