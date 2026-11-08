@@ -6,6 +6,7 @@ import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import { useAuth } from '../features/auth/AuthProvider'
 import './DailyBusinessActivityPage.css'
 import './DailyReportSheets.css'
 
@@ -59,6 +60,7 @@ function download(format:'csv'|'txt'|'html',columns:string[],rows:string[][]){
   URL.revokeObjectURL(url)
 }
 export function OutstandingBalancesReportPage(){
+  const { session } = useAuth()
   const {closeActiveTab}=useWorkspace()
   const [asOf,setAsOf]=useState(isoToday())
   const [partyType,setPartyType]=useState<PartyType>('customer')
@@ -70,7 +72,7 @@ export function OutstandingBalancesReportPage(){
   const [zoom,setZoom]=useState(100)
   const paper=useRef<HTMLElement>(null)
   const query=useQuery({
-    queryKey:['reports','outstanding',asOf,partyType,mode,applied,page],
+    queryKey:[session?.tenant.ulid,session?.branch.ulid,session?.warehouse.ulid,'reports','outstanding',asOf,partyType,mode,applied,page],
     queryFn:()=>apiFetch<BalanceReport>('/api/reports/accounts/outstanding-balances?'+new URLSearchParams({
       as_of:asOf,party_type:partyType,mode,q:applied,page:String(page),per_page:'100',
     }),{busy:'none'}),
