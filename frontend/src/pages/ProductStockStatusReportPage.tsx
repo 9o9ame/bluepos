@@ -99,6 +99,13 @@ export function ProductStockStatusReportPage() {
       render: (row) => quantity(row.quantity),
     },
     {
+      key: 'reorder_variance',
+      header: 'Vs Reorder',
+      width: 100,
+      align: 'right',
+      render: (row) => row.reorder_variance === null ? '—' : quantity(row.reorder_variance),
+    },
+    {
       key: 'cost',
       header: 'Avg Cost',
       width: 98,
