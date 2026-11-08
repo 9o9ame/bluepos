@@ -37,7 +37,7 @@
 | RR-8 | Inactive Customers | Last sale date, adjustable inactivity, customer filters supported by schema | No sale vs cancelled/unposted, inclusivity, balance visibility RBAC | **SOURCE IMPLEMENTED; tests/browser pending** |
 | RR-9 | Salesman Commissions | Configured commission basis, salesman allocations, sales/returns, totals | Do not invent commission %; nullable rates until verified, discounts/cost RBAC, posted-only calculation | BLOCKED ON COMMISSION RULE/SOURCE VERIFICATION |
 | RR-10 | Dead Stock | On-hand positive stock, no outbound posted sale over selected days, preview/export | Tenant/warehouse, cost access, tests/browser validation | **SOURCE + FOCUSED CI VALIDATED; BROWSER/PDF ACCEPTANCE PENDING** |
-| RR-11 | Expiry Stock | Actual lot/batch expiry and remaining qty, aging/filter/print | Block if no reliable persisted expiry-by-lot; no fake dates | **BLOCKED: NO VERIFIED LOT-EXPIRY QUANTITY SOURCE** |
+| RR-11 | Expiry Stock | Actual lot/batch expiry and remaining qty, aging/filter/print | Block if no reliable persisted expiry-by-lot; no fake dates | **POSTED PURCHASE EXPIRY REFERENCE IN SOURCE; REMAINING-LOT STOCK BLOCKED** |
 | RR-12 | Barcode Printing | Reuse existing print engine, align reference options and selected quantity/format | Printer/browser preview and label measurements, no frozen Definition changes | **EXISTING FEATURE; REFERENCE BROWSER GAP CHECK PENDING** |
 | RR-13 | End-to-end validation and freeze | Focused PHPUnit (bluepos_test), `npm run ui:check`, `npm run typecheck`, `npm run build`, browser acceptance/print | All report totals, filters, 403/IDOR, warehouse/branch/tenant, exact decimals, CSV formula safety | PENDING |
 
@@ -187,3 +187,15 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 ### RR-10 CI result
 
 GitHub Actions Reports validation run **#79** passed focused backend reports tests on ephemeral `bluepos_test` and frontend UI checks, TypeScript and production build after historical quantity reconstruction. User browser/PDF acceptance remains pending. Historical moving-average valuation remains unavailable by design (null rather than a fabricated value).
+
+## RR-11 purchase-expiry reference implementation — 2026-11-08
+
+**Authoritative limitation:** `BLUEPOS_MASTER_CONTEXT.md` and `BLUEPOS_CURRENT_STATE.md` confirm that the existing stock balances and immutable movements are aggregated per tenant/branch/warehouse/product, **not per batch/expiry lot**. Purchase invoice lines store `batch_number` and `expiry_date`, but there is no reliable persisted remaining quantity by lot or sale/return/transfer allocation. An actual **Expired/Near Expiry Stock** remaining-quantity report is **blocked until inventory lot architecture exists**. Do not treat purchased quantity as available stock.
+
+**Safe interim deliverable:** Added a read-only **Purchase Expiry Reference (Not Remaining Stock)** report. API `GET /api/reports/products/purchase-expiry-reference` reads only posted purchase invoices within the authenticated tenant/branch/warehouse, uses the existing effective immutable purchase snapshot (including amendments), filters by expiry reference date/lookahead (1–7300 days), optional already expired rows, and product/batch search. Returns purchase/product/line ULIDs, batch, expiry, signed days, and **historical purchased base quantity**. `remaining_quantity` is always `null`, and explicit `report_type`, `remaining_stock_available: false` and limitation explain missing lot allocations. No cost/rate leaked, no money calculated, no stock mutations. Bounded to 500 source documents / 15,000 lines with an explicit 422 limit rather than an unsafe unbounded scan.
+
+- New: `backend/app/Http/Controllers/Api/Reports/PurchaseExpiryReferenceReportController.php`; `frontend/src/pages/PurchaseExpiryReferenceReportPage.tsx`; `backend/tests/Feature/PurchaseExpiryReferenceReportTest.php`.
+- Updated: `backend/routes/api.php`, `frontend/src/routes/index.tsx`, `frontend/src/features/workspace/modules.ts`, `.github/workflows/reports-validation.yml`.
+- Uses shared viewer toolbar; options/print/copy/search/CSV/HTML/TXT. The Reports menu explicitly says **Purchase Expiry Reference (Not Remaining Stock)** to avoid claiming the PDF's stock-availability semantics.
+- Tests cover draft exclusion, posted purchase inclusion, batch, exact base quantity, never reporting remaining stock, horizon, RBAC and tenant separation on isolated `bluepos_test`. CI pending.
+- **No migration or extra architecture layer was created**, and the frozen Invoice UI is unchanged. A later lot project must define append-only lot allocations for all stock posting paths (purchases, sales, sale returns, purchase returns, adjustments, transfers, amendments, opening stock), warehouse locking, quantities, FEFO validation and reconciliation before RR-11 remaining-stock quantity can be marked complete.
