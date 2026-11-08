@@ -29,6 +29,7 @@ import { PurchaseOrderPage } from '../pages/PurchaseOrderPage'
 import { PurchaseReturnsPage } from '../pages/PurchaseReturnsPage'
 import { ReportsPlaceholderPage } from '../pages/ReportsPlaceholderPage'
 import { ProductStockStatusReportPage } from '../pages/ProductStockStatusReportPage'
+import { DeadStockReportPage } from '../pages/DeadStockReportPage'
 import { ProductLedgerReportPage } from '../pages/ProductLedgerReportPage'
 import { TrialBalanceReportPage } from '../pages/TrialBalanceReportPage'
 import { BalanceSheetReportPage } from '../pages/BalanceSheetReportPage'
@@ -146,6 +147,7 @@ export function AppRoutes() {
           <Route element={<RequirePermission permission="reports.inventory" />}>
             <Route path="/reports/daily/product-transactions" element={<NextReportsPage kind="product-transactions" />} />
             <Route path="/reports/products/stock-status" element={<ProductStockStatusReportPage />} />
+            <Route path="/reports/products/dead-stock" element={<DeadStockReportPage />} />
             <Route path="/reports/products/ledger" element={<ProductLedgerReportPage />} />
           </Route>
           <Route path="/help/about" element={<HelpAboutPage />} />
