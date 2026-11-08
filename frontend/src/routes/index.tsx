@@ -32,6 +32,7 @@ import { ProductStockStatusReportPage } from '../pages/ProductStockStatusReportP
 import { DeadStockReportPage } from '../pages/DeadStockReportPage'
 import { ProductLedgerReportPage } from '../pages/ProductLedgerReportPage'
 import { ProductGlGridPage } from '../pages/ProductGlGridPage'
+import { StockActivityBetweenDatesPage } from '../pages/StockActivityBetweenDatesPage'
 import { TrialBalanceReportPage } from '../pages/TrialBalanceReportPage'
 import { BalanceSheetReportPage } from '../pages/BalanceSheetReportPage'
 import { IncomeStatementReportPage } from '../pages/IncomeStatementReportPage'
@@ -151,6 +152,7 @@ export function AppRoutes() {
             <Route path="/reports/products/dead-stock" element={<DeadStockReportPage />} />
             <Route path="/reports/products/ledger" element={<ProductLedgerReportPage />} />
             <Route path="/reports/products/gl-grid" element={<ProductGlGridPage />} />
+            <Route path="/reports/products/stock-activity" element={<StockActivityBetweenDatesPage />} />
           </Route>
           <Route path="/help/about" element={<HelpAboutPage />} />
           <Route path="/administration/account" element={<AccountPage />} />
