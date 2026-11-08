@@ -91,14 +91,46 @@ final class OutstandingBalancesReportController extends Controller
             }
         }
 
+        // Receipt/payment dates are derived from posted journals only; a posted
+        // reversal invalidates the original voucher. No invoice due dates are inferred.
+        $receiptTypes = $type === 'customer'
+            ? ['receiving_voucher', 'sale_payment']
+            : ['payment_voucher', 'purchase_payment'];
+        $entryAmountColumn = $type === 'customer' ? 'credit' : 'debit';
+        $receipts = $ids === [] ? collect() : DB::table('journal_lines as receipt_lines')
+            ->join('journal_entries as receipt_entries', 'receipt_entries.id', '=', 'receipt_lines.journal_entry_id')
+            ->where('receipt_lines.tenant_id', $context->tenantId())
+            ->where('receipt_entries.tenant_id', $context->tenantId())
+            ->where('receipt_entries.branch_id', $context->branchId())
+            ->where('receipt_entries.status', JournalStatus::Posted->value)
+            ->where('receipt_entries.entry_date', '<=', $input['as_of'])
+            ->whereIn('receipt_entries.document_type', $receiptTypes)
+            ->whereNull('receipt_entries.reverses_journal_entry_id')
+            ->whereNotExists(fn ($q) => $q->selectRaw('1')
+                ->from('journal_entries as reversal_entries')
+                ->whereColumn('reversal_entries.reverses_journal_entry_id', 'receipt_entries.id')
+                ->where('reversal_entries.tenant_id', $context->tenantId())
+                ->where('reversal_entries.status', JournalStatus::Posted->value))
+            ->whereIn('receipt_lines.account_id', $ids)
+            ->where('receipt_lines.'.$entryAmountColumn, '>', 0)
+            ->selectRaw('receipt_lines.account_id, MAX(receipt_entries.entry_date) AS last_receipt_date,
+                COALESCE(SUM(receipt_lines.'.$entryAmountColumn.'),0) AS received_total')
+            ->groupBy('receipt_lines.account_id')->get()->keyBy('account_id');
+        $asOfDate = \Carbon\CarbonImmutable::createFromFormat('Y-m-d', $input['as_of'])->startOfDay();
+
         $pageTotal = '0.0000';
-        $rows = collect($page->items())->map(function (Account $account) use ($balances, $lastSales, $type, &$pageTotal): array {
+        $rows = collect($page->items())->map(function (Account $account) use ($balances, $lastSales, $receipts, $asOfDate, $type, &$pageTotal): array {
             $party = $type === 'customer' ? $account->customer : $account->supplier;
             $balance = $balances->get($account->id);
             $signed = $this->calculator->money($this->calculator->signedEffect(
                 $account, (string) ($balance?->debit ?? '0'), (string) ($balance?->credit ?? '0'),
             ));
             $pageTotal = bcadd($pageTotal, $signed, 4);
+            $receipt = $receipts->get($account->id);
+            $lastReceipt = $receipt?->last_receipt_date
+                ? \Carbon\CarbonImmutable::parse($receipt->last_receipt_date)->toDateString() : null;
+            $daysSinceReceipt = $lastReceipt === null ? null
+                : (int) \Carbon\CarbonImmutable::parse($lastReceipt)->diffInDays($asOfDate);
 
             return [
                 'account_ulid' => $account->ulid,
@@ -114,6 +146,10 @@ final class OutstandingBalancesReportController extends Controller
                 'last_sale_date' => $type === 'customer'
                     ? $lastSales->get($account->customer_id)?->last_sale_date : null,
                 'balance' => $signed,
+                'last_receipt_date' => $lastReceipt,
+                'days_since_receipt' => $daysSinceReceipt,
+                'received_amount' => $receipt
+                    ? bcadd((string) $receipt->received_total, '0', 4) : null,
                 'current_due' => null,
                 'future_due' => null,
                 'due_unavailable_reason' => 'No verified invoice-level due-date allocation is available.',
