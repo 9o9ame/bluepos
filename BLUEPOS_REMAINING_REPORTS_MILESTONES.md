@@ -154,3 +154,10 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 - Fixed historical receipt view: posted reversal affects a receipt only when its **entry date is on/before the requested as-of date**, in the same authenticated tenant and branch. Future-dated reversals can no longer erase past receipt dates/amounts.
 - Added focused `OutstandingBalancesReportTest` that inserts a posted receiving voucher dated Oct 10 and a posted reversal dated Oct 20, checks that as-of Oct 15 retains the receipt and as-of Oct 25 suppresses it; normal posted journal balance remains signed via shared `AccountBalanceCalculator`.
 - No schema/migration, no direct accounting posting logic changed. Current/future due still unavailable without invoice-level due allocations; three report layouts unchanged. CI and screenshot acceptance remain separate.
+
+## RR-7 party ledger active-branch isolation — 2026-11-08
+
+- Inspected existing `PartyLedgerController`, `AccountLedgerBuilder`, `PartyLedgerBalanceSummary` and Vendor/Customer Ledger Options UI. The detail query and balance summary previously filtered by tenant but not by the active, server-resolved branch, allowing same-tenant journal entries from other branches to contaminate current-branch reports.
+- Reused `TenantContext::branchId()` to limit **posted journal entries** in both existing accounting readers. No separate ledger or mutation created, no client-authoritative branch ID, and no change to frozen options/preview UI.
+- Added `PartyLedgerTest::test_ledger_detail_and_balance_summary_exclude_other_branch_journal_lines`: another branch's posted entry must not appear in current-branch detail, carry/closing totals, or bulk balance summary. Tests use `bluepos_test`.
+- Files: `backend/app/Accounting/AccountLedgerBuilder.php`, `backend/app/Accounting/PartyLedgerBalanceSummary.php`, `backend/tests/Feature/PartyLedgerTest.php`. No migration; main untouched. CI validation and final reference PDF/browser parity remain pending.
