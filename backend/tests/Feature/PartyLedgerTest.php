@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Account;
 use App\Models\BusinessSetting;
+use App\Models\Branch;
 use App\Models\JournalEntry;
 use App\Models\JournalLine;
 use App\Models\PartyProfile;
@@ -531,6 +532,65 @@ class PartyLedgerTest extends TestCase
         }
 
         $this->fail('Missing unit '.$code);
+    }
+
+    public function test_ledger_detail_and_balance_summary_exclude_other_branch_journal_lines(): void
+    {
+        $this->signInOwner('ledger-branch-isolation')->assertOk();
+        $context = app(TenantContext::class);
+        $customerUlid = $this->postJson('/api/parties', [
+            'party_type' => 'customer',
+            'code' => 'LEDGER-BRANCH-CUSTOMER',
+            'name' => 'Ledger Branch Customer',
+            'account_type_ulid' => $this->referenceAccountTypeUlid('0011'),
+        ])->assertCreated()->json('ulid');
+        $leaf = Account::query()->forTenant($context->tenantId())
+            ->whereHas('customer', fn ($q) => $q->where('ulid', $customerUlid))
+            ->firstOrFail();
+
+        $otherBranch = Branch::query()->create([
+            'tenant_id' => $context->tenantId(),
+            'code' => 'LEDGER-OTHER',
+            'name' => 'Other Ledger Branch',
+            'status' => 'active',
+            'is_default' => false,
+        ]);
+        foreach ([
+            [$context->branchId(), '12.5000', 'BRANCH-OWN'],
+            [$otherBranch->id, '999.0000', 'BRANCH-OTHER'],
+        ] as [$branchId, $debit, $voucher]) {
+            $journal = JournalEntry::query()->create([
+                'tenant_id' => $context->tenantId(),
+                'branch_id' => $branchId,
+                'document_type' => 'journal_voucher',
+                'voucher_number' => $voucher,
+                'entry_date' => '2026-10-10',
+                'status' => 'posted',
+                'created_by' => $context->userId(),
+                'posted_by' => $context->userId(),
+                'posted_at' => now(),
+            ]);
+            JournalLine::query()->create([
+                'tenant_id' => $context->tenantId(),
+                'journal_entry_id' => $journal->id,
+                'account_id' => $leaf->id,
+                'debit' => $debit,
+                'credit' => '0.0000',
+                'sort_order' => 1,
+            ]);
+        }
+
+        $detail = $this->getJson('/api/parties/'.$customerUlid.'/ledger?type=customer')
+            ->assertOk()
+            ->assertJsonPath('pagination.total', 1)
+            ->assertJsonPath('rows.0.trans_no', 'BRANCH-OWN')
+            ->assertJsonPath('rows.0.debit', '12.5000')
+            ->assertJsonPath('totals.closing_balance', '12.5000');
+        $summary = $this->postJson('/api/parties/ledger-balances', [
+            'items' => [['type' => 'customer', 'ulid' => $customerUlid]],
+        ])->assertOk()->assertJsonPath('balances.customer:'.$customerUlid, '12.5000');
+        $this->assertNoInternalIds($detail->json());
+        $this->assertNoInternalIds($summary->json());
     }
 
     public function test_ledger_tenant_isolation(): void
