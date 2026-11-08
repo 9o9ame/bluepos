@@ -40,15 +40,6 @@ final class DeadStockReportController extends Controller
         $warehouseId = $context->warehouseId();
         $canViewCost = $this->permissions->can('inventory.view');
 
-        $saleMovements = fn () => DB::table('stock_movements as dead_stock_sales')
-            ->selectRaw('1')
-            ->whereColumn('dead_stock_sales.product_id', 'stock_balances.product_id')
-            ->where('dead_stock_sales.tenant_id', $tenantId)
-            ->where('dead_stock_sales.branch_id', $branchId)
-            ->where('dead_stock_sales.warehouse_id', $warehouseId)
-            ->whereIn('dead_stock_sales.movement_type', ['sale', 'sale_amendment'])
-            ->where('dead_stock_sales.quantity', '<', 0);
-
         $query = StockBalance::query()
             ->forTenant($tenantId)
             ->where('branch_id', $branchId)
