@@ -105,6 +105,7 @@ class PartyLedgerBalanceSummary
             ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
             ->where('journal_lines.tenant_id', $tenantId)
             ->where('journal_entries.tenant_id', $tenantId)
+            ->where('journal_entries.branch_id', $this->tenantContext->branchId())
             ->where('journal_entries.status', JournalStatus::Posted->value)
             ->whereIn('journal_lines.account_id', $accounts->pluck('id'))
             ->groupBy('journal_lines.account_id')
