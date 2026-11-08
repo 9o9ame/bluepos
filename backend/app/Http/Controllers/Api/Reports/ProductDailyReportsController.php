@@ -210,6 +210,10 @@ class ProductDailyReportsController extends Controller
                 'sale_amount' => $sale['sale_amount'],
                 'cost_amount' => $complete ? $cost : null,
                 'gross_profit' => $profit,
+                'sale_rate' => bccomp($sale['sale_quantity'], '0', 6) !== 0
+                    ? bcdiv($sale['sale_amount'], $sale['sale_quantity'], 4) : null,
+                'cost_rate' => $complete && bccomp($sale['sale_quantity'], '0', 6) !== 0
+                    ? bcdiv($cost, $sale['sale_quantity'], 4) : null,
                 'margin_percent' => $profit !== null && bccomp($sale['sale_amount'], '0', 4) !== 0
                     ? bcmul(bcdiv($profit, $sale['sale_amount'], 8), '100', 4) : null,
                 'cost_verified' => $complete,
