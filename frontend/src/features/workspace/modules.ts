@@ -841,7 +841,7 @@ export const RIBBON_GROUPS: Record<RibbonTabId, RibbonGroupDef[]> = {
             { label: 'Stock Activity Between Dates', icon: ArrowLeftRight, iconTone: 'info', status: 'ready', path: '/reports/products/stock-activity' },
             { label: 'Price List', icon: Tags, iconTone: 'warning', status: 'ready', path: '/reports/products/price-list' },
             { label: 'Dead Stock', icon: PackageX, iconTone: 'danger', status: 'ready', path: '/reports/products/dead-stock' },
-            { label: 'Purchase Expiry Reference (Not Remaining Stock)', icon: CalendarClock, iconTone: 'warning', status: 'ready', path: '/reports/products/purchase-expiry-reference' }
+            { label: 'Purchase Expiry Reference (Not Remaining Stock)', icon: CalendarClock, iconTone: 'warning', status: 'ready', path: '/reports/products/purchase-expiry-reference' },
             { label: 'Barcode Printing', icon: Barcode, iconTone: 'info', status: 'ready', path: '/definition/barcode-printing' },
           ],
         },
