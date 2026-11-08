@@ -69,7 +69,7 @@ final class StockActivityBetweenDatesController extends Controller
             })
             ->select([
                 'products.ulid', 'products.product_number', 'products.sku', 'products.name',
-                'categories.name AS category_name',
+                'categories.ulid AS category_ulid', 'categories.name AS category_name',
                 'activity.opening', 'activity.purchases', 'activity.purchase_returns',
                 'activity.sales', 'activity.sale_returns', 'activity.other_movements', 'activity.closing',
                 'activity.purchase_cost', 'activity.purchase_return_cost', 'activity.sale_cost',
@@ -91,12 +91,13 @@ final class StockActivityBetweenDatesController extends Controller
         // subtotals. Keep all pages in scope; never add a parallel stock ledger.
         $categoryRows = DB::query()
             ->fromSub((clone $query)->reorder()->toBase(), 'filtered_category_products')
-            ->selectRaw('category_name, COUNT(*) AS products, '.$selects)
-            ->groupBy('category_name')
+            ->selectRaw('category_ulid, category_name, COUNT(*) AS products, '.$selects)
+            ->groupBy('category_ulid', 'category_name')
             ->orderBy('category_name')
             ->get();
         $categoryTotals = $categoryRows->map(function ($row) use ($columns): array {
             $summary = [
+                'category_ulid' => $row->category_ulid,
                 'category' => $row->category_name ?? 'Unassigned',
                 'products' => (int) $row->products,
             ];
