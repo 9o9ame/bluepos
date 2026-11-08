@@ -6,6 +6,7 @@ import { UiButton } from '../components/ui/UiButton'
 import { UiSelect } from '../components/ui/UiSelect'
 import { UiSkeleton } from '../components/ui/UiSkeleton'
 import { useWorkspace } from '../features/workspace/WorkspaceProvider'
+import { useAuth } from '../features/auth/AuthProvider'
 import './DailyBusinessActivityPage.css'
 import './DailyReportSheets.css'
 
@@ -60,6 +61,7 @@ function exportReport(format: 'csv' | 'html' | 'txt', rows: DeadStockRow[]) {
 }
 
 export function DeadStockReportPage() {
+  const { session } = useAuth()
   const { closeActiveTab } = useWorkspace()
   const [days, setDays] = useState('90')
   const [search, setSearch] = useState('')
@@ -69,7 +71,7 @@ export function DeadStockReportPage() {
   const [zoom, setZoom] = useState(100)
   const paper = useRef<HTMLElement>(null)
   const query = useQuery({
-    queryKey: ['reports', 'dead-stock', days, querySearch, page],
+    queryKey: [session?.tenant.ulid,session?.branch.ulid,session?.warehouse.ulid,'reports', 'dead-stock', days, querySearch, page],
     queryFn: () => apiFetch<Result>('/api/reports/products/dead-stock?' + new URLSearchParams({
       days, q: querySearch, page: String(page), per_page: '100',
     }), { busy: 'none' }),
