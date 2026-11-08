@@ -13,7 +13,11 @@ import './DailyReportSheets.css'
 type DeadStockRow = {
   product: { ulid: string; product_number: string; sku: string | null; name: string; category: string | null; brand: string | null }
   quantity: string
-  last_sale_at: string | null
+  last_activity_at: string | null
+  last_transaction_type: string | null
+  last_transaction_ulid: string | null
+  days_inactive: number | null
+  average_cost: string | null
   stock_value: string | null
 }
 type Result = {
@@ -21,6 +25,8 @@ type Result = {
   meta: {
     days: number
     cutoff: string
+    as_of: string
+    activity_mode: 'any_activity' | 'sale_only'
     definition: string
     warehouse: { ulid: string; name: string }
     current_page: number
@@ -29,11 +35,14 @@ type Result = {
     per_page: number
   }
 }
-const headings = ['Product #', 'SKU', 'Product', 'Category', 'Brand', 'In Stock', 'Last Sale', 'Stock Value']
+const headings = ['Product #', 'SKU', 'Product', 'Category', 'Brand', 'In Stock', 'Last Activity', 'Last Document', 'Days', 'Cost Rate', 'Stock Value']
 function cells(row: DeadStockRow) {
   return [row.product.product_number, row.product.sku ?? '', row.product.name,
     row.product.category ?? '', row.product.brand ?? '', row.quantity,
-    row.last_sale_at?.slice(0, 10) ?? 'Never recorded', row.stock_value ?? 'Restricted']
+    row.last_activity_at?.slice(0, 10) ?? 'Never recorded',
+    [row.last_transaction_type, row.last_transaction_ulid].filter(Boolean).join(' · ') || '—',
+    row.days_inactive === null ? '—' : String(row.days_inactive),
+    row.average_cost ?? 'Restricted', row.stock_value ?? 'Restricted']
 }
 function safeCell(value: string) {
   const escaped = value.replace(/"/g, '""')
@@ -60,10 +69,14 @@ function exportReport(format: 'csv' | 'html' | 'txt', rows: DeadStockRow[]) {
   URL.revokeObjectURL(url)
 }
 
+const today = () => { const d = new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10) }
+
 export function DeadStockReportPage() {
   const { session } = useAuth()
   const { closeActiveTab } = useWorkspace()
-  const [days, setDays] = useState('90')
+  const [days, setDays] = useState('180')
+  const [asOf, setAsOf] = useState(today())
+  const [mode, setMode] = useState<'any_activity' | 'sale_only'>('any_activity')
   const [search, setSearch] = useState('')
   const [querySearch, setQuerySearch] = useState('')
   const [page, setPage] = useState(1)
@@ -71,18 +84,23 @@ export function DeadStockReportPage() {
   const [zoom, setZoom] = useState(100)
   const paper = useRef<HTMLElement>(null)
   const query = useQuery({
-    queryKey: [session?.tenant.ulid,session?.branch.ulid,session?.warehouse.ulid,'reports', 'dead-stock', days, querySearch, page],
+    queryKey: [session?.tenant.ulid,session?.branch.ulid,session?.warehouse.ulid,'reports', 'dead-stock', days, asOf, mode, querySearch, page],
     queryFn: () => apiFetch<Result>('/api/reports/products/dead-stock?' + new URLSearchParams({
-      days, q: querySearch, page: String(page), per_page: '100',
+      days, as_of: asOf, activity_mode: mode, q: querySearch, page: String(page), per_page: '100',
     }), { busy: 'none' }),
-    enabled: preview,
+    enabled: preview && Boolean(asOf),
   })
   const rows = query.data?.data ?? []
   const meta = query.data?.meta
 
   if (!preview) return <section className="dba-page">
-    <header><h1>Dead Stock Report</h1><p>Products with stock on hand and no outbound posted sales in the selected period.</p></header>
+    <header><h1>Dead Stock Report</h1><p>Reference: last stock activity before the selected period. Optional no-sale mode is available.</p></header>
     <div className="dba-options">
+      <label>As of Date <input type="date" value={asOf} onChange={e => setAsOf(e.target.value)}/></label>
+      <label>Inactivity Type
+        <UiSelect searchable={false} value={mode} onChange={value => setMode(value as 'any_activity' | 'sale_only')}
+          options={[{value:'any_activity',label:'Last Stock Activity (reference)'},{value:'sale_only',label:'Last Outbound Sale'}]}/>
+      </label>
       <label>Inactivity period
         <UiSelect searchable={false} value={days}
           options={[30, 60, 90, 180, 365, 730].map(n => ({value: String(n), label: n + ' days'}))}
@@ -95,7 +113,7 @@ export function DeadStockReportPage() {
     </div>
     <div className="dba-actions">
       <UiButton variant="default" label="Close" onClick={closeActiveTab}/>
-      <UiButton variant="info" label="View Report" onClick={() => {
+      <UiButton variant="info" label="View Report" disabled={!asOf} onClick={() => {
         setPage(1); setQuerySearch(search.trim()); setPreview(true)
       }}/>
     </div>
@@ -124,7 +142,7 @@ export function DeadStockReportPage() {
     {query.isError && <p role="alert">Unable to load dead stock. Check permissions or filters.</p>}
     {meta && <article className="dba-paper daily-report-sheet" ref={paper} style={{zoom: zoom + '%'}}>
       <header><h1>DEAD STOCK REPORT</h1>
-        <p>{meta.warehouse.name} · No sale for {meta.days} days (since {meta.cutoff})</p>
+        <p>{meta.warehouse.name} · As of {meta.as_of} · {meta.activity_mode === 'any_activity' ? 'No stock activity' : 'No outbound sale'} for {meta.days} days (since {meta.cutoff})</p>
         <p>Positive stock only · {meta.total} matching products · Page {meta.current_page} of {meta.last_page}</p>
       </header>
       <table><thead><tr>{headings.map(heading => <th key={heading}>{heading}</th>)}</tr></thead>
