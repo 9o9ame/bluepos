@@ -63,6 +63,9 @@ class ProductStockStatusReportTest extends TestCase
         $rows = collect($all->json('data'))->keyBy('product.ulid');
 
         $this->assertSame('3.000000', $rows[$matchUlid]['quantity']);
+        $this->assertSame('-2.000000', $rows[$matchUlid]['reorder_variance']);
+        $this->assertSame('7.000000', $rows[$healthyUlid]['reorder_variance']);
+        $this->assertSame('-2.000000', $rows[$zeroUlid]['reorder_variance']);
         $this->assertSame('10.0000', $rows[$matchUlid]['average_cost']);
         $this->assertSame('30.0000', $rows[$matchUlid]['stock_value']);
         $this->assertSame('20.0000', $rows[$matchUlid]['retail_rate']);
