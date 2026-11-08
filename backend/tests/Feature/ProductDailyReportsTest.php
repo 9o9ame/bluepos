@@ -108,7 +108,10 @@ class ProductDailyReportsTest extends TestCase
             ->assertJsonPath('rows.0.sale_rate', '100.0000')
             ->assertJsonPath('rows.0.cost_rate', '10.0000')
             ->assertJsonPath('rows.0.gross_profit', '180.0000')
-            ->assertJsonPath('totals.gross_profit', '180.0000');
+            ->assertJsonPath('totals.gross_profit', '180.0000')
+            ->assertJsonPath('totals.sale_rate', '100.0000')
+            ->assertJsonPath('totals.cost_rate', '10.0000')
+            ->assertJsonPath('totals.margin_percent', '90.0000');
         $this->assertNoInternalIds($response->json());
 
         $grouped = $this->getJson(
@@ -175,7 +178,9 @@ class ProductDailyReportsTest extends TestCase
             ->assertJsonPath('rows.0.cost_verified', false)
             ->assertJsonPath('rows.0.cost_amount', null)
             ->assertJsonPath('rows.0.gross_profit', null)
-            ->assertJsonPath('totals.gross_profit', null);
+            ->assertJsonPath('totals.gross_profit', null)
+            ->assertJsonPath('totals.cost_rate', null)
+            ->assertJsonPath('totals.margin_percent', null);
         $this->assertNoInternalIds($response->json());
     }
 
