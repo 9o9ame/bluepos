@@ -48,13 +48,9 @@ final class SalesmanCommissionReportController extends Controller
             throw new ApiException('REPORT_DATE_RANGE_TOO_LARGE', 'Select at most 31 days.', 422);
         }
 
-        $salesmanId = null;
-        if (! empty($data['salesman_ulid'])) {
-            $salesmanId = (int) \App\Models\PartyProfile::query()
-                ->forTenant($context->tenantId())
-                ->where('ulid', $data['salesman_ulid'])
-                ->value('id');
-        }
+        // Select against the latest effective snapshot, not the original sale's
+        // salesman FK: posted amendments can change the recorded assignment.
+        $selectedSalesmanUlid = $data['salesman_ulid'] ?? null;
 
         $sources = [
             [
@@ -62,9 +58,7 @@ final class SalesmanCommissionReportController extends Controller
                     ->where('branch_id', $context->branchId())
                     ->where('warehouse_id', $context->warehouseId())
                     ->where('status', SaleStatus::Posted->value)
-                    ->whereNotNull('salesman_party_profile_id')
-                    ->whereBetween('sale_date', [$data['from_date'], $data['to_date']])
-                    ->when($salesmanId !== null, fn ($q) => $q->where('salesman_party_profile_id', $salesmanId)),
+                    ->whereBetween('sale_date', [$data['from_date'], $data['to_date']]),
                 $this->saleSnapshots, 'sale', 'items', 'sale_date', '1',
             ],
             [
@@ -72,9 +66,7 @@ final class SalesmanCommissionReportController extends Controller
                     ->where('branch_id', $context->branchId())
                     ->where('warehouse_id', $context->warehouseId())
                     ->where('status', SaleReturnStatus::Posted->value)
-                    ->whereNotNull('salesman_party_profile_id')
-                    ->whereBetween('return_date', [$data['from_date'], $data['to_date']])
-                    ->when($salesmanId !== null, fn ($q) => $q->where('salesman_party_profile_id', $salesmanId)),
+                    ->whereBetween('return_date', [$data['from_date'], $data['to_date']]),
                 $this->returnSnapshots, 'sale_return', 'lines', 'return_date', '-1',
             ],
         ];
@@ -90,6 +82,10 @@ final class SalesmanCommissionReportController extends Controller
             foreach ($query->with(['latestRevision', 'salesmanParty'])->orderBy('id')->get() as $document) {
                 $snapshot = $reader->current($document);
                 $salesman = $snapshot['salesman'] ?? null;
+                if (! is_array($salesman) || empty($salesman['ulid'])
+                    || ($selectedSalesmanUlid !== null && $salesman['ulid'] !== $selectedSalesmanUlid)) {
+                    continue;
+                }
                 foreach ($snapshot[$linesKey] ?? [] as $line) {
                     $product = $line['product'] ?? null;
                     if (! is_array($product) || empty($product['ulid'])) {
@@ -104,6 +100,7 @@ final class SalesmanCommissionReportController extends Controller
                     $amount = bcmul($rawAmount, $sign, 4);
                     $rows[] = [
                         'document_ulid' => $document->ulid,
+                        'line_ulid' => $line['ulid'] ?? null,
                         'document_number' => $snapshot['document_number'] ?? $document->document_number,
                         'document_type' => $kind,
                         'date' => $document->{$dateKey}?->toDateString(),
@@ -131,6 +128,15 @@ final class SalesmanCommissionReportController extends Controller
         usort($rows, static fn (array $a, array $b) => [$a['date'], $a['document_number']]
             <=> [$b['date'], $b['document_number']]);
 
+        $totals = ['base_quantity' => '0.000000', 'line_amount_ex_tax_before_invoice_discount' => '0.0000'];
+        foreach ($rows as $row) {
+            $totals['base_quantity'] = bcadd($totals['base_quantity'], $row['base_quantity'], 6);
+            $totals['line_amount_ex_tax_before_invoice_discount'] = bcadd(
+                $totals['line_amount_ex_tax_before_invoice_discount'],
+                $row['line_amount_ex_tax_before_invoice_discount'], 4,
+            );
+        }
+
         $perPage = (int) ($data['per_page'] ?? 100);
         $page = max(1, (int) ($data['page'] ?? 1));
         $total = count($rows);
@@ -144,11 +150,16 @@ final class SalesmanCommissionReportController extends Controller
                 'warehouse' => [
                     'ulid' => $context->warehouse()->ulid, 'name' => $context->warehouse()->name,
                 ],
-                'total' => $total, 'current_page' => $page,
+                'total' => $total, 'totals' => $totals,
+                'selected_salesman_ulid' => $selectedSalesmanUlid,
+                'current_page' => $page,
                 'last_page' => $lastPage, 'per_page' => $perPage,
                 'commission_calculation_available' => false,
                 'limitations' => [
                     'Line amounts exclude line tax but do not allocate invoice-level discounts.',
+                    'Signed totals include posted sale returns; no commission payable is inferred.',
+                    'Salesman selection uses the latest effective posted document snapshot.',
+                    'At most 500 posted source documents can be processed per selected date range.',
                     'Costs, commission percentages, per-unit rates, and payable commissions are not available.',
                     'Source is posted effective sales/returns only, in the selected tenant, branch and warehouse.',
                 ],
