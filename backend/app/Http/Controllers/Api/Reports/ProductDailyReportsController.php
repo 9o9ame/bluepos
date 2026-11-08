@@ -226,6 +226,15 @@ class ProductDailyReportsController extends Controller
         usort($rows, static fn ($a, $b) => strcmp($a['product']['name'], $b['product']['name']));
         $totals['cost_amount'] = $allCostKnown ? $costTotal : null;
         $totals['gross_profit'] = $allCostKnown ? bcsub($totals['sale_amount'], $costTotal, 4) : null;
+        // Weighted aggregate unit rates and margin, not sums of per-product rates.
+        $hasQuantity = bccomp($totals['sale_quantity'], '0', 6) !== 0;
+        $totals['sale_rate'] = $hasQuantity
+            ? bcdiv($totals['sale_amount'], $totals['sale_quantity'], 4) : null;
+        $totals['cost_rate'] = $allCostKnown && $hasQuantity
+            ? bcdiv($costTotal, $totals['sale_quantity'], 4) : null;
+        $totals['margin_percent'] = $totals['gross_profit'] !== null
+            && bccomp($totals['sale_amount'], '0', 4) !== 0
+            ? bcmul(bcdiv($totals['gross_profit'], $totals['sale_amount'], 8), '100', 4) : null;
 
         return response()->json([
             'from' => $filters['from'], 'to' => $filters['to'],
