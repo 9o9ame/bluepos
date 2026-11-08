@@ -133,3 +133,11 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 - Quantity view now shows full-filter category subtotal table across all pages; document-wise cost and Sales & Stock source screens remain separate. Existing grand totals remain unchanged and full-filter scoped.
 - Focused `StockActivityBetweenDatesReportTest.php` added for category totals, two-page aggregation, fractional quantities, future-movement exclusion, and existing warehouse/tenant isolation.
 - Files: `backend/app/Http/Controllers/Api/Reports/StockActivityBetweenDatesController.php`, `frontend/src/pages/StockActivityBetweenDatesPage.tsx`, `backend/tests/Feature/StockActivityBetweenDatesReportTest.php`. No migration. **Validation and PDF/browser acceptance pending until CI reports completion.**
+
+## RR-4 Document-wise immutable movement detail — 2026-11-08
+
+- The Stock Activity API accepts `view=documents` and returns actual, paginated stock movement records with public movement/product/document ULIDs, recorded reference type and line ULID, signed quantity, signed historical movement cost (only with `inventory.view`), and occurred-at timestamp. This is **not** the old pseudo-document aggregate.
+- The existing Stock Activity UI's Document Wise mode now uses the detailed endpoint, shows document links/transaction type, and exports only the current page. Existing summary / category totals remain in other two modes.
+- Added `StockActivityBetweenDatesReportTest::test_document_view_returns_real_immutable_movements_not_aggregated_document_columns` for pagination, date exclusion, public-ULID safety, signed quantities/cost and invalid mode validation.
+- This still does not equate stock cost with sale revenue or present invoice value; sales-value reference parity requires linking posted sale snapshots. No migration or `main` changes.
+- Pending: CI focused tests, frontend checks and final browser/pdf parity. Files: `StockActivityBetweenDatesController.php`, `StockActivityBetweenDatesPage.tsx`, `StockActivityBetweenDatesReportTest.php`.
