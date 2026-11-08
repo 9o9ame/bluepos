@@ -141,3 +141,10 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 - Added `StockActivityBetweenDatesReportTest::test_document_view_returns_real_immutable_movements_not_aggregated_document_columns` for pagination, date exclusion, public-ULID safety, signed quantities/cost and invalid mode validation.
 - This still does not equate stock cost with sale revenue or present invoice value; sales-value reference parity requires linking posted sale snapshots. No migration or `main` changes.
 - Pending: CI focused tests, frontend checks and final browser/pdf parity. Files: `StockActivityBetweenDatesController.php`, `StockActivityBetweenDatesPage.tsx`, `StockActivityBetweenDatesReportTest.php`.
+
+## RR-5 weighted product gross-profit footer — 2026-11-08
+
+- Corrected Product Gross P/L report footer to match all 8 displayed columns, including **server-derived weighted sale rate, verified cost rate and margin percent**. Per-product rates are never summed.
+- Zero signed quantity yields unavailable unit rates; any unverified historical cost makes total cost rate and total margin unavailable instead of inventing values.
+- Added `ProductDailyReportsTest` assertions for weighted totals and missing-cost null treatment.
+- Source: `ProductDailyReportsController.php`, `ProductDailyReportPage.tsx`, `ProductDailyReportsTest.php`. No migration or `main` change. PDF visual acceptance remains pending; CI must pass before validation claim.
