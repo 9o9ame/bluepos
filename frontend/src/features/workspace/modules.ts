@@ -535,6 +535,15 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     entitlement: 'inventory',
   },
   {
+    key: 'report-stock-activity',
+    title: 'Stock Activity Between Dates',
+    path: '/reports/products/stock-activity',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.inventory',
+    entitlement: 'inventory',
+  },
+  {
     key: 'report-product-gl-grid',
     title: 'Product GL (Grid)',
     path: '/reports/products/gl-grid',
