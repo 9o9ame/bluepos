@@ -103,6 +103,12 @@ class ProductStockStatusReportTest extends TestCase
             ->assertJsonPath('meta.total', 1);
         $this->assertSame($matchUlid, $search->json('data.0.product.ulid'));
         $this->assertSame('3.000000', bcadd((string) $search->json('meta.totals.quantity'), '0', 6));
+        $match->update(['reorder_level' => '3.000000']);
+        $this->getJson('/api/reports/products/stock-status?below_reorder=1&q=Match')
+            ->assertOk()->assertJsonPath('meta.total', 0);
+        $match->update(['reorder_level' => '5.000000']);
+        $this->getJson('/api/reports/products/stock-status?below_reorder=1&q=Match')
+            ->assertOk()->assertJsonPath('meta.total', 1);
     }
 
     public function test_stock_status_hides_cost_without_inventory_permission(): void
