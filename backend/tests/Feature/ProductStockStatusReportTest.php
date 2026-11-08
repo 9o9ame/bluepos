@@ -111,6 +111,34 @@ class ProductStockStatusReportTest extends TestCase
             ->assertOk()->assertJsonPath('meta.total', 1);
     }
 
+    public function test_strict_below_reorder_handles_zero_threshold_missing_balance_and_fractional_negative_stock(): void
+    {
+        $this->signInOwner('stock-status-strict-reorder')->assertOk();
+        $context = app(TenantContext::class);
+
+        $zeroThreshold = $this->createProduct('Strict Reorder Zero Threshold', '0.000000');
+        $missingBalance = $this->createProduct('Strict Reorder Missing Balance', '2.500000');
+        $equal = $this->createProduct('Strict Reorder Equal Quantity', '2.500000');
+        $negative = $this->createProduct('Strict Reorder Negative Stock', '0.500000');
+
+        $this->balance(Product::query()->where('ulid', $equal)->firstOrFail(),
+            $context->warehouseId(), '2.500000', '1.0000');
+        $this->balance(Product::query()->where('ulid', $negative)->firstOrFail(),
+            $context->warehouseId(), '-0.125000', '1.0000');
+
+        $report = $this->getJson('/api/reports/products/stock-status?below_reorder=1&q=Strict%20Reorder')
+            ->assertOk()->assertJsonPath('meta.total', 2);
+        $rows = collect($report->json('data'))->keyBy('product.ulid');
+
+        $this->assertFalse($rows->has($zeroThreshold));
+        $this->assertFalse($rows->has($equal));
+        $this->assertSame('-2.500000', $rows[$missingBalance]['reorder_variance']);
+        $this->assertSame('-0.625000', $rows[$negative]['reorder_variance']);
+        $this->assertSame('-0.125000', $rows[$negative]['quantity']);
+        $this->assertSame('-0.125000', bcadd('0', $rows[$negative]['quantity'], 6));
+        $this->assertNoInternalIds($report->json());
+    }
+
     public function test_stock_status_hides_cost_without_inventory_permission(): void
     {
         $owner = $this->signInOwner('stock-status-cost')->assertOk();
