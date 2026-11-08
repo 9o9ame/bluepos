@@ -95,8 +95,7 @@ jobs:
         run: npm ci
       - name: Check canonical UI rules
         run: npm run ui:check
-      - name: Check report navigation
-        run: npm run ui:navigation-check
+      # Browser/Chrome navigation check runs during user acceptance on a supported desktop.
       - name: TypeScript typecheck
         run: npm run typecheck
       - name: Build frontend
