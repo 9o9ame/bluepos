@@ -5,11 +5,15 @@ namespace App\Accounting;
 use App\Enums\JournalStatus;
 use App\Models\Account;
 use App\Models\JournalLine;
+use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 
 class AccountLedgerBuilder
 {
-    public function __construct(private readonly AccountBalanceCalculator $balances) {}
+    public function __construct(
+        private readonly AccountBalanceCalculator $balances,
+        private readonly TenantContext $tenantContext,
+    ) {}
 
     /**
      * @return array{
@@ -87,6 +91,7 @@ class AccountLedgerBuilder
             ->where('journal_lines.account_id', $leaf->id)
             ->where('journal_lines.tenant_id', $leaf->tenant_id)
             ->where('journal_entries.tenant_id', $leaf->tenant_id)
+            ->where('journal_entries.branch_id', $this->tenantContext->branchId())
             ->where('journal_entries.status', JournalStatus::Posted->value)
             ->when(
                 ! $includeOpeningBalance,
