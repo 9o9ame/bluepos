@@ -169,6 +169,8 @@ export type ProductStockStatusRow = {
   average_cost: string | null
   stock_value: string | null
   retail_rate: string | null
+  purchase_rate: string | null
+  secondary_conversion_factor: string | null
   retail_stock_value: string | null
 }
 
