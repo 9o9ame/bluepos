@@ -5,7 +5,16 @@ on:
     branches: [main]
     paths:
       - 'backend/app/Http/Controllers/Api/Reports/**'
+      - 'backend/app/Accounting/**'
+      - 'backend/app/Models/StockMovement.php'
+      - 'backend/app/Models/StockBalance.php'
+      - 'backend/app/Actions/Purchases/BuildPurchaseEffectiveSnapshotAction.php'
+      - 'backend/app/Actions/Sales/BuildSaleEffectiveSnapshotAction.php'
       - 'backend/tests/Feature/**ReportTest.php'
+      - 'backend/tests/Feature/PartyLedgerTest.php'
+      - 'backend/tests/Feature/RemainingReportsAuthorizationTest.php'
+      - 'backend/tests/Feature/NextReportsTest.php'
+      - 'backend/tests/Feature/ReportHeadingTest.php'
       - 'backend/routes/api.php'
       - 'frontend/src/**'
       - '.github/workflows/reports-validation.yml'
@@ -78,7 +87,12 @@ jobs:
             tests/Feature/InactiveCustomersReportTest.php \
             tests/Feature/SalesmanCommissionReportTest.php \
             tests/Feature/ProductLedgerReportTest.php \
-            tests/Feature/PartyLedgerTest.php
+            tests/Feature/PartyLedgerTest.php \
+            tests/Feature/RemainingReportsAuthorizationTest.php \
+            tests/Feature/NextReportsTest.php \
+            tests/Feature/DailyActivitySummaryReportTest.php \
+            tests/Feature/TrialBalanceReportTest.php \
+            tests/Feature/ReportHeadingTest.php
 
   reports-frontend:
     runs-on: ubuntu-latest
