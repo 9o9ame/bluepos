@@ -405,6 +405,14 @@ export const WORKSPACE_MODULES: WorkspaceModule[] = [
     permission: 'reports.accounting',
   },
   {
+    key: 'report-inactive-customers',
+    title: 'Inactive Customers',
+    path: '/reports/accounts/inactive-customers',
+    ribbon: 'reports',
+    status: 'ready',
+    permission: 'reports.accounting',
+  },
+  {
     key: 'report-outstanding-balances',
     title: 'Outstanding Balances',
     path: '/reports/accounts/outstanding-balances',
