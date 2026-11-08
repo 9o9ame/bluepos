@@ -130,6 +130,27 @@ final class StockActivityBetweenDatesReportTest extends TestCase
         $this->getJson($base.'&view=invalid')->assertUnprocessable();
     }
 
+    public function test_document_stock_cost_is_hidden_without_inventory_view_permission(): void
+    {
+        $this->signInOwner('stock-document-cost-guard')->assertOk();
+        $product = $this->product('Cost Guard Document Item');
+        $this->movement($product, app(TenantContext::class)->warehouseId(),
+            '2026-10-07 12:00:00', '-1.250000', StockMovementType::Sale);
+
+        $this->restrictCurrentMembershipWithoutPermission('inventory.view');
+
+        $this->getJson('/api/reports/products/stock-activity?view=documents&from_date=2026-10-01&to_date=2026-10-31&q=Cost%20Guard')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonPath('data.0.product.ulid', $product->ulid)
+            ->assertJsonPath('data.0.quantity', '-1.250000')
+            ->assertJsonPath('data.0.movement_cost', null);
+
+        $this->restrictCurrentMembershipWithoutPermission('reports.inventory');
+        $this->getJson('/api/reports/products/stock-activity?view=documents&from_date=2026-10-01&to_date=2026-10-31')
+            ->assertForbidden();
+    }
+
     public function test_stock_activity_is_tenant_scoped(): void
     {
         $this->signInOwner('stock-activity-secret')->assertOk();
