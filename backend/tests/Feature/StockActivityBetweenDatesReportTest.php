@@ -96,6 +96,40 @@ final class StockActivityBetweenDatesReportTest extends TestCase
         }
     }
 
+    public function test_document_view_returns_real_immutable_movements_not_aggregated_document_columns(): void
+    {
+        $owner = $this->signInOwner('stock-activity-documents')->assertOk();
+        $context = app(TenantContext::class);
+        $product = $this->product('Document Activity Product');
+        $this->movement($product, $context->warehouseId(),
+            '2026-10-01 09:00:00', '2.500000', StockMovementType::Purchase);
+        $this->movement($product, $context->warehouseId(),
+            '2026-10-02 09:00:00', '-1.250000', StockMovementType::Sale);
+        $this->movement($product, $context->warehouseId(),
+            '2026-11-02 09:00:00', '100.000000', StockMovementType::Purchase);
+
+        $base = '/api/reports/products/stock-activity?view=documents&from_date=2026-10-01&to_date=2026-10-31&q=Document%20Activity&per_page=1';
+        $first = $this->getJson($base.'&page=1')->assertOk()
+            ->assertJsonPath('meta.view', 'documents')
+            ->assertJsonPath('meta.warehouse.ulid', $owner->json('warehouse.ulid'))
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('meta.last_page', 2)
+            ->assertJsonPath('data.0.product.ulid', $product->ulid)
+            ->assertJsonPath('data.0.movement_type', 'purchase')
+            ->assertJsonPath('data.0.reference_type', 'test')
+            ->assertJsonPath('data.0.quantity', '2.500000')
+            ->assertJsonPath('data.0.movement_cost', '2.5000');
+        $second = $this->getJson($base.'&page=2')->assertOk()
+            ->assertJsonPath('data.0.movement_type', 'sale')
+            ->assertJsonPath('data.0.quantity', '-1.250000')
+            ->assertJsonPath('data.0.movement_cost', '-1.2500');
+        $this->assertNotSame($first->json('data.0.movement_ulid'), $second->json('data.0.movement_ulid'));
+        $this->assertNoInternalIds($first->json());
+        $this->assertNoInternalIds($second->json());
+
+        $this->getJson($base.'&view=invalid')->assertUnprocessable();
+    }
+
     public function test_stock_activity_is_tenant_scoped(): void
     {
         $this->signInOwner('stock-activity-secret')->assertOk();
