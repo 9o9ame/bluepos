@@ -31,12 +31,26 @@ class ProductStockStatusController extends Controller
             'retail_stock_value' => '0.0000',
         ];
 
+        $categoryTotals = [];
+
         (clone $query)
             ->reorder('products.id')
-            ->chunk(500, function ($products) use (&$totals, $canViewCost): void {
+            ->chunk(500, function ($products) use (&$totals, &$categoryTotals, $canViewCost): void {
                 foreach ($products as $product) {
                     $balance = $product->stockBalances->first();
                     $quantity = bcadd((string) ($balance?->quantity ?? '0'), '0', 6);
+                    $key = (string) ($product->category?->ulid ?? 'unassigned');
+                    if (! isset($categoryTotals[$key])) {
+                        $categoryTotals[$key] = [
+                            'category_ulid' => $product->category?->ulid,
+                            'category_name' => $product->category?->name ?? 'Unassigned',
+                            'products' => 0,
+                            'quantity' => '0.000000',
+                            'stock_value' => $canViewCost ? '0.0000' : null,
+                        ];
+                    }
+                    $categoryTotals[$key]['products']++;
+                    $categoryTotals[$key]['quantity'] = bcadd($categoryTotals[$key]['quantity'], $quantity, 6);
                     $retail = $product->prices->first(
                         fn ($price) => $price->is_active && $price->price_type->value === 'retail',
                     )?->amount;
@@ -44,6 +58,11 @@ class ProductStockStatusController extends Controller
                     $totals['quantity'] = bcadd($totals['quantity'], $quantity, 6);
 
                     if ($canViewCost) {
+                        $categoryTotals[$key]['stock_value'] = bcadd(
+                            (string) $categoryTotals[$key]['stock_value'],
+                            (string) ($balance?->stock_value ?? '0'),
+                            4,
+                        );
                         $totals['stock_value'] = bcadd(
                             (string) $totals['stock_value'],
                             (string) ($balance?->stock_value ?? '0'),
@@ -79,6 +98,7 @@ class ProductStockStatusController extends Controller
                     'name' => $tenantContext->warehouse()->name,
                 ],
                 'totals' => $totals,
+                'category_totals' => array_values($categoryTotals),
             ],
         ];
     }
