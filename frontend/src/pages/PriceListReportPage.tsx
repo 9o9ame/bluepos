@@ -108,6 +108,12 @@ export function PriceListReportPage(){
         <tbody>{report.data.map(row=><tr key={row.product.ulid}>{values(row).map((value,i)=><td key={i}>{value}</td>)}</tr>)}
           {report.data.length===0&&<tr><td colSpan={columnSet.columns.length}>No products match.</td></tr>}</tbody>
       </table>
+      <h2>Category Subtotals — All Matching Products</h2>
+      <table><thead><tr><th>Category</th><th>Products</th><th>In Stock</th><th>Stock Value</th></tr></thead>
+        <tbody>{report.meta.category_totals.map(category=><tr key={category.category_ulid??'unassigned'}>
+          <td>{category.category_name}</td><td>{category.products}</td><td>{category.quantity}</td>
+          <td>{category.stock_value??'Restricted'}</td>
+        </tr>)}</tbody></table>
       <p>Base-unit stock totals: {report.meta.totals.quantity}. Purchase rate requires cost permission; no historical stock values are inferred.</p>
       <p>Conversion factors are displayed without assuming an unverified carton-unit mapping. Export contains the current page only.</p>
     </article>}
