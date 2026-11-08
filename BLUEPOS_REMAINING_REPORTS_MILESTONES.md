@@ -111,3 +111,10 @@ Backend tests only after change-specific test file is named; use `$env:APP_ENV='
 - **RR-11:** Inspected Product, StockMovement, StockBalance and attempted StockBatch/ProductBatch/InventoryLot model paths. No verified persisted batch-level expiration **quantity balance** found in scoped inspection. `track_expiry` flag alone cannot drive an accurate expiry report. Do not invent per-lot remaining stock or expiry dates; wait for schema/domain support and safe append-only inventory flow.
 - **RR-12:** Existing BarcodePrintingPage and existing helpers were identified; avoid duplicating code. Reference comparison and browser print acceptance pending.
 - **All changes are untested in this GitHub-only execution environment.** Existing frozen UI untouched. Do not merge or deploy until regression results are supplied and reviewed.
+
+## RR-2 strict reorder verification — 2026-11-08
+
+- Corrected `below_reorder` filtering: products without a warehouse stock balance count as zero stock and are included **only** when the configured reorder threshold is greater than zero. Existing-balance products must have `stock_balances.quantity < products.reorder_level` (strict inequality). An equal quantity is not below the threshold.
+- Added fractional/negative stock, missing balance, equal quantity and zero reorder threshold regression in `ProductStockStatusReportTest` using `bluepos_test` in CI.
+- Previous GitHub Actions reports validation run #37 passed its backend focused suite, UI design check, TypeScript and build. **This new change requires another CI result; browser PDF parity remains pending.**
+- Scope: `ProductStockStatusController.php`, `ProductStockStatusReportTest.php`; no migration, no main merge.
