@@ -27,7 +27,7 @@ type Report = {
     current_page: number; last_page: number; total: number
     totals: Omit<Activity,'product'>
     category_totals: Array<{
-      category: string; products: number
+      category_ulid: string | null; category: string; products: number
       opening: string; purchases: string; purchase_returns: string
       sales: string; sale_returns: string; other_movements: string; closing: string
     }>
@@ -151,7 +151,7 @@ export function StockActivityBetweenDatesPage() {
           <thead><tr><th>Category</th><th>Products</th>{fields.map(field=>
             <th key={field}>{field.replace(/_/g, ' ')}</th>)}</tr></thead>
           <tbody>{report.meta.category_totals.map(category=>
-            <tr key={category.category}>
+            <tr key={category.category_ulid ?? 'unassigned'}>
               <td>{category.category}</td><td>{category.products}</td>
               {fields.map(field=><td key={field}>{category[field]}</td>)}
             </tr>)}</tbody>
