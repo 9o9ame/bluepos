@@ -51,6 +51,49 @@ final class ProductGlGridReportTest extends TestCase
             ->assertUnprocessable();
     }
 
+    public function test_gl_grid_grand_totals_cover_all_pages_and_preserve_negative_stock(): void
+    {
+        $this->signInOwner('gl-grid-pagination')->assertOk();
+        $warehouseId = app(TenantContext::class)->warehouseId();
+        $first = $this->product('GL Pagination Alpha');
+        $second = $this->product('GL Pagination Beta');
+
+        $this->move($first, $warehouseId, '2026-09-30 12:00:00', '2.250000', StockMovementType::OpeningBalance);
+        $this->move($first, $warehouseId, '2026-10-01 12:00:00', '-4.500000', StockMovementType::Sale);
+        $this->move($second, $warehouseId, '2026-09-30 12:00:00', '1.000000', StockMovementType::OpeningBalance);
+        $this->move($second, $warehouseId, '2026-10-02 12:00:00', '3.125000', StockMovementType::Purchase);
+        // Future movements must not leak into the as-of closing balance.
+        $this->move($second, $warehouseId, '2026-11-02 12:00:00', '100.000000', StockMovementType::Purchase);
+
+        $base = '/api/reports/products/gl-grid?from_date=2026-10-01&to_date=2026-10-31&q=GL%20Pagination&per_page=1';
+        $firstPage = $this->getJson($base.'&page=1')->assertOk()
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('meta.last_page', 2)
+            ->assertJsonPath('meta.totals.opening', '3.250000')
+            ->assertJsonPath('meta.totals.debit', '3.125000')
+            ->assertJsonPath('meta.totals.credit', '4.500000')
+            ->assertJsonPath('meta.totals.closing', '1.875000');
+
+        $secondPage = $this->getJson($base.'&page=2')->assertOk()
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('meta.totals.closing', '1.875000');
+
+        $rows = collect([$firstPage->json('data.0'), $secondPage->json('data.0')])
+            ->keyBy('product.ulid');
+        $this->assertSame('-2.250000', $rows[$first->ulid]['closing']);
+        $this->assertSame('4.125000', $rows[$second->ulid]['closing']);
+
+        foreach ($rows as $row) {
+            $calculatedClosing = bcsub(
+                bcadd($row['opening'], $row['debit'], 6),
+                $row['credit'], 6,
+            );
+            $this->assertSame($calculatedClosing, $row['closing']);
+        }
+        $this->assertNoInternalIds($firstPage->json());
+        $this->assertNoInternalIds($secondPage->json());
+    }
+
     public function test_gl_grid_cannot_see_other_tenant(): void
     {
         $this->signInOwner('gl-grid-a')->assertOk();
