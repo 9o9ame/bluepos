@@ -431,6 +431,7 @@ export function fetchProductStockStatusReport(params?: {
   active_only?: boolean
   with_balance?: boolean
   low_stock?: boolean
+  below_reorder?: boolean
   page?: number
   per_page?: number
 }) {
@@ -439,6 +440,7 @@ export function fetchProductStockStatusReport(params?: {
   if (params?.active_only) search.set('active_only', '1')
   if (params?.with_balance) search.set('with_balance', '1')
   if (params?.low_stock) search.set('low_stock', '1')
+  if (params?.below_reorder) search.set('below_reorder', '1')
   if (params?.page) search.set('page', String(params.page))
   search.set('per_page', String(params?.per_page ?? 100))
 
