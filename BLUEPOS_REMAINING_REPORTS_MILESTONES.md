@@ -203,3 +203,11 @@ GitHub Actions Reports validation run **#79** passed focused backend reports tes
 ### RR-11 CI validation
 
 GitHub Actions reports run **#89** passed backend focused reports tests on isolated PostgreSQL `bluepos_test`, frontend design-system checks, TypeScript and production build. Initial frontend TypeScript missing-comma error was fixed before this green run. Reference register is validated in source; **real remaining-by-batch Expiry Stock report remains blocked** until inventory lot accounting is implemented and tested. No `main` merge or production deployment.
+
+## RR-12 Barcode Printing — safe batch and queue correctness (2026-11-08)
+
+- Inspected existing 38 KB BarcodePrintingPage, existing barcodePrint label engine and design system; reused existing frozen layout and shared printer capabilities, no new printer service or duplicated UI.
+- Corrected a **silent quantity mismatch**: queue allowed 1–999 labels per barcode, but print engine clamped each row to 100. The engine now respects all valid integer quantities through 999 and rejects unsupported jobs greater than 5,000 total labels with a visible error rather than silently omitting copies.
+- Auto Fill, Selected Category/Company/Products previously used only page 1 (maximum 100 products) and could silently produce incomplete output when the filtered product list had more pages. Actions now refuse incomplete partial batches with a clear prompt to narrow filters; automated multi-page selection is not yet supported.
+- Enforce a whole-number 1–999 multiplier; reject duplicate barcode swaps in the print queue. Barcode source query keys are tenant/branch/warehouse scoped and queue is cleared when authenticated context changes, avoiding cross-tenant print remnants in a persistent workspace.
+- Changed: `frontend/src/components/products/barcodePrint.ts`, `frontend/src/pages/BarcodePrintingPage.tsx`. No backend, schema, migrations, or frozen geometry changes. Browser label measurements and installed printer output remain pending user acceptance. Frontend CI validation pending.
