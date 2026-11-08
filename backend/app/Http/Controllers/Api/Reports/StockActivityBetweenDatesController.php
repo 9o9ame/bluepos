@@ -31,6 +31,7 @@ final class StockActivityBetweenDatesController extends Controller
         ]);
         $from = CarbonImmutable::createFromFormat('Y-m-d', $input['from_date'])->startOfDay();
         $to = CarbonImmutable::createFromFormat('Y-m-d', $input['to_date'])->endOfDay();
+        $canViewCost = $this->permissions->can('inventory.view');
 
         $movements = DB::table('stock_movements')
             ->where('tenant_id', $context->tenantId())
@@ -49,8 +50,14 @@ final class StockActivityBetweenDatesController extends Controller
                    'purchase','purchase_amendment','purchase_return','purchase_return_amendment',
                    'sale','sale_amendment','sale_return','sale_return_amendment'
                  ) THEN quantity ELSE 0 END), 0) AS other_movements,
-                 COALESCE(SUM(quantity), 0) AS closing",
-                [$from, $from, $from, $from, $from, $from],
+                 COALESCE(SUM(quantity), 0) AS closing,
+                 COALESCE(SUM(CASE WHEN occurred_at >= ? AND movement_type IN ('purchase','purchase_amendment') THEN total_cost ELSE 0 END), 0) AS purchase_cost,
+                 COALESCE(SUM(CASE WHEN occurred_at >= ? AND movement_type IN ('purchase_return','purchase_return_amendment') THEN total_cost ELSE 0 END), 0) AS purchase_return_cost,
+                 COALESCE(SUM(CASE WHEN occurred_at >= ? AND movement_type IN ('sale','sale_amendment') THEN total_cost ELSE 0 END), 0) AS sale_cost,
+                 COALESCE(SUM(CASE WHEN occurred_at >= ? AND movement_type IN ('sale_return','sale_return_amendment') THEN total_cost ELSE 0 END), 0) AS sale_return_cost,
+                 COALESCE(SUM(total_cost), 0) AS closing_cost,
+                 COALESCE(SUM(CASE WHEN total_cost IS NULL THEN 1 ELSE 0 END), 0) AS missing_cost_count",
+                [$from, $from, $from, $from, $from, $from, $from, $from, $from, $from],
             );
 
         $query = Product::query()
@@ -65,6 +72,8 @@ final class StockActivityBetweenDatesController extends Controller
                 'categories.name AS category_name',
                 'activity.opening', 'activity.purchases', 'activity.purchase_returns',
                 'activity.sales', 'activity.sale_returns', 'activity.other_movements', 'activity.closing',
+                'activity.purchase_cost', 'activity.purchase_return_cost', 'activity.sale_cost',
+                'activity.sale_return_cost', 'activity.closing_cost', 'activity.missing_cost_count',
             ]);
 
         if (isset($input['q']) && trim($input['q']) !== '') {
@@ -78,10 +87,16 @@ final class StockActivityBetweenDatesController extends Controller
         $selects = implode(', ', array_map(fn ($column) => 'COALESCE(SUM('.$column.'),0) AS '.$column, $columns));
         $totals = DB::query()->fromSub((clone $query)->reorder()->toBase(), 'filtered_products')
             ->selectRaw($selects)->first();
+        $costColumns = ['purchase_cost', 'purchase_return_cost', 'sale_cost', 'sale_return_cost', 'closing_cost'];
+        $costTotals = $canViewCost ? DB::query()
+            ->fromSub((clone $query)->reorder()->toBase(), 'filtered_cost_products')
+            ->selectRaw('COALESCE(SUM(missing_cost_count),0) AS missing_count, '
+                .implode(', ', array_map(fn ($c) => 'COALESCE(SUM('.$c.'),0) AS '.$c, $costColumns)))
+            ->first() : null;
         $page = $query->orderBy('products.product_number')->orderBy('products.id')
             ->paginate((int) ($input['per_page'] ?? 100));
 
-        $rows = collect($page->items())->map(function (Product $product) use ($columns): array {
+        $rows = collect($page->items())->map(function (Product $product) use ($columns, $costColumns, $canViewCost): array {
             $row = ['product' => [
                 'ulid' => $product->ulid,
                 'product_number' => $product->product_number,
@@ -92,6 +107,11 @@ final class StockActivityBetweenDatesController extends Controller
             foreach ($columns as $column) {
                 $row[$column] = bcadd((string) $product->getAttribute($column), '0', 6);
             }
+            foreach ($costColumns as $column) {
+                $row[$column] = $canViewCost && (int) $product->getAttribute('missing_cost_count') === 0
+                    ? bcadd((string) $product->getAttribute($column), '0', 4)
+                    : null;
+            }
             return $row;
         })->values()->all();
 
@@ -100,12 +120,19 @@ final class StockActivityBetweenDatesController extends Controller
             $grand[$column] = bcadd((string) ($totals?->{$column} ?? '0'), '0', 6);
         }
 
+        foreach ($costColumns as $column) {
+            $grand[$column] = $canViewCost && (int) ($costTotals?->missing_count ?? 0) === 0
+                ? bcadd((string) ($costTotals?->{$column} ?? '0'), '0', 4)
+                : null;
+        }
+
         return ['data' => $rows, 'meta' => [
             'from_date' => $input['from_date'], 'to_date' => $input['to_date'],
             'warehouse' => ['ulid' => $context->warehouse()->ulid, 'name' => $context->warehouse()->name],
             'current_page' => $page->currentPage(), 'last_page' => $page->lastPage(),
             'total' => $page->total(), 'per_page' => $page->perPage(), 'totals' => $grand,
             'definition' => 'Signed posted quantities: closing = opening + purchases - purchase returns - sales + sale returns + other movements.',
+            'cost_basis' => 'Cost columns are signed historical stock-movement costs, not sale revenue or invoice selling amounts; null when any movement cost is missing or the user lacks cost permission.',
         ]];
     }
 }
