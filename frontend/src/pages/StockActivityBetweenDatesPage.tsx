@@ -19,6 +19,27 @@ type Activity = {
   purchase_cost: string | null; purchase_return_cost: string | null
   sale_cost: string | null; sale_return_cost: string | null; closing_cost: string | null
 }
+type DocumentRow = {
+  movement_ulid: string
+  occurred_at: string
+  movement_type: string
+  reference_type: string
+  reference_ulid: string
+  reference_line_ulid: string | null
+  product: { ulid: string; product_number: string; sku: string | null; name: string }
+  quantity: string
+  movement_cost: string | null
+}
+type DocumentReport = {
+  data: DocumentRow[]
+  meta: {
+    view: 'documents'
+    from_date: string; to_date: string
+    warehouse: { ulid: string; name: string }
+    current_page: number; last_page: number; total: number
+    cost_basis: string
+  }
+}
 type Report = {
   data: Activity[]
   meta: {
@@ -34,6 +55,14 @@ type Report = {
     definition: string; cost_basis: string
   }
 }
+const documentColumns = ['Date','Reference Type','Document ULID','Movement Type',
+  'Product','Signed Qty','Movement Cost']
+const documentCells = (row: DocumentRow) => [
+  row.occurred_at.slice(0, 10),
+  row.reference_type, row.reference_ulid, row.movement_type,
+  (row.product.sku ?? row.product.product_number) + ' · ' + row.product.name,
+  row.quantity, row.movement_cost ?? 'Restricted / Unavailable',
+]
 const dateLocal = () => {
   const d = new Date()
   return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)
@@ -63,8 +92,8 @@ const cells = (row: Activity, mode: Mode) => {
 function csvCell(value:string) {
   return '"' + (/^\s*[=+\-@\t\r]/.test(value)?"'":'') + value.replace(/"/g,'""') + '"'
 }
-function download(format:'txt'|'html'|'csv', rows:Activity[], mode:Mode) {
-  const table = [titlesByMode[mode],...rows.map(row=>cells(row,mode))]
+function download(format:'txt'|'html'|'csv', rows: string[][]) {
+  const table = rows
   const value = format==='csv'?table.map(row=>row.map(csvCell).join(',')).join('\r\n')
     : format==='txt'?table.map(row=>row.join('\t')).join('\n')
       : '<!doctype html><meta charset="utf-8"><table><tbody>'+
@@ -91,13 +120,16 @@ export function StockActivityBetweenDatesPage() {
   const [zoom,setZoom]=useState(100)
   const paper=useRef<HTMLElement>(null)
   const query=useQuery({
-    queryKey:[session?.tenant.ulid,session?.branch.ulid,session?.warehouse.ulid,'reports','stock-activity',from,to,selectedSearch,page],
-    queryFn:()=>apiFetch<Report>('/api/reports/products/stock-activity?'+new URLSearchParams({
+    queryKey:[session?.tenant.ulid,session?.branch.ulid,session?.warehouse.ulid,'reports','stock-activity',mode,from,to,selectedSearch,page],
+    queryFn:()=>apiFetch<Report | DocumentReport>('/api/reports/products/stock-activity?'+new URLSearchParams({
       from_date:from,to_date:to,q:selectedSearch,page:String(page),per_page:'100',
+      view:mode==='document_cost'?'documents':'summary',
     }),{busy:'none'}),
     enabled:preview&&!!from&&!!to&&from<=to,
   })
   const report=query.data
+  const summary = report && 'category_totals' in report.meta ? report as Report : null
+  const documentReport = report && 'view' in report.meta ? report as DocumentReport : null
   if(!preview)return <section className="dba-page">
     <header><h1>Stock Activity Between Dates</h1><p>Posted stock movement reconciliation, by product.</p></header>
     <div className="dba-options">
@@ -128,7 +160,9 @@ export function StockActivityBetweenDatesPage() {
       zoom={zoom} onZoomChange={setZoom}
       onPrint={()=>window.print()}
       onCopy={async()=>{if(paper.current)await navigator.clipboard.writeText(paper.current.innerText)}}
-      onExport={format=>download(format,report?.data??[],mode)}
+      onExport={format => download(format, mode === 'document_cost'
+        ? [documentColumns, ...(documentReport?.data ?? []).map(documentCells)]
+        : [titlesByMode[mode], ...(summary?.data ?? []).map(row=>cells(row,mode))])}
       onRefresh={()=>void query.refetch()}
       onEditOptions={()=>setPreview(false)}
       onClose={closeActiveTab}/>
@@ -140,25 +174,36 @@ export function StockActivityBetweenDatesPage() {
         <p>{report.meta.warehouse.name} · {report.meta.from_date} to {report.meta.to_date}</p>
         <p>{report.meta.total} products · Page {report.meta.current_page} of {report.meta.last_page}</p>
       </header>
-      <table><thead><tr>{titlesByMode[mode].map(title=><th key={title}>{title}</th>)}</tr></thead>
-        <tbody>{report.data.map(row=><tr key={row.product.ulid}>{cells(row,mode).map((cell,i)=><td key={i}>{cell}</td>)}</tr>)}
-          {report.data.length===0&&<tr><td colSpan={titlesByMode[mode].length}>No posted movements.</td></tr>}
+      {mode === 'document_cost' && documentReport && <table>
+        <thead><tr>{documentColumns.map(title=><th key={title}>{title}</th>)}</tr></thead>
+        <tbody>{documentReport.data.map(row=><tr key={row.movement_ulid}>
+          {documentCells(row).map((value,i)=><td key={i}>{value}</td>)}
+        </tr>)}
+          {documentReport.data.length===0&&<tr><td colSpan={documentColumns.length}>No posted movements.</td></tr>}
         </tbody>
-      </table>
-      {mode === 'quantity' && <>
+      </table>}
+      {mode !== 'document_cost' && summary && <table>
+        <thead><tr>{titlesByMode[mode].map(title=><th key={title}>{title}</th>)}</tr></thead>
+        <tbody>{summary.data.map(row=><tr key={row.product.ulid}>
+          {cells(row,mode).map((value,i)=><td key={i}>{value}</td>)}
+        </tr>)}
+          {summary.data.length===0&&<tr><td colSpan={titlesByMode[mode].length}>No posted movements.</td></tr>}
+        </tbody>
+      </table>}
+      {mode === 'quantity' && summary && <>
         <h2>Category Summary — All Matching Products</h2>
         <table>
           <thead><tr><th>Category</th><th>Products</th>{fields.map(field=>
             <th key={field}>{field.replace(/_/g, ' ')}</th>)}</tr></thead>
-          <tbody>{report.meta.category_totals.map(category=>
+          <tbody>{summary.meta.category_totals.map(category=>
             <tr key={category.category_ulid ?? 'unassigned'}>
               <td>{category.category}</td><td>{category.products}</td>
               {fields.map(field=><td key={field}>{category[field]}</td>)}
             </tr>)}</tbody>
         </table>
       </>}
-      <p>All matching products: {fields.map(field=><span key={field}>{field.replace(/_/g,' ')}: {report.meta.totals[field]} · </span>)}</p>
-      <p>{report.meta.definition} {mode !== 'quantity' ? report.meta.cost_basis : ''} Export contains current page only.</p>
+      {summary && <p>All matching products: {fields.map(field=><span key={field}>{field.replace(/_/g,' ')}: {summary.meta.totals[field]} · </span>)}</p>}
+      <p>{summary?.meta.definition ?? 'Document-linked posted stock movements.'} {mode !== 'quantity' ? report.meta.cost_basis : ''} Export contains current page only.</p>
     </article>}
     {report&&<div className="dba-actions">
       <UiButton label="Previous" disabled={page<=1||query.isFetching} onClick={()=>setPage(p=>Math.max(1,p-1))}/>
