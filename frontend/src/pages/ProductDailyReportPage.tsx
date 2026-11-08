@@ -20,7 +20,7 @@ type StockRow = {
   sale_quantity: string | null; sale_amount: string | null; gross_profit: string | null
 }
 type GroupRow = { ulid: string | null; name: string; products: number; sale_quantity: string; sale_amount: string; purchase_quantity: string; purchase_amount: string; stock_change: string }
-type ProfitRow = { product: Item; sale_quantity: string; sale_amount: string; cost_amount: string | null; gross_profit: string | null; margin_percent: string | null; cost_verified: boolean }
+type ProfitRow = { product: Item; sale_quantity: string; sale_amount: string; cost_amount: string | null; gross_profit: string | null; margin_percent: string | null; sale_rate: string | null; cost_rate: string | null; cost_verified: boolean }
 type Report = {
   from: string; to: string; basis: string; limitations: string[]
   rows: StockRow[] | GroupRow[] | ProfitRow[]
@@ -86,7 +86,7 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
     ? ['Product', 'Opening Qty', 'Movement', 'Net Qty Change', 'Closing Qty', 'Sold Qty', 'Net Sale', 'Sales Cost', 'Gross Profit']
     : kind === 'groups'
       ? ['Group', 'Products', 'Purchases Qty', 'Purchase Amount ex Tax', 'Sales Qty', 'Sale Amount ex Tax', 'Net Stock Change']
-      : ['Product', 'Sale Qty', 'Sale Amount ex Tax', 'Cost Amount', 'Gross Profit', 'Margin %']
+      : ['Product', 'Sale Qty', 'Sale Amount ex Tax', 'Cost Amount', 'Sale Rate', 'Cost Rate', 'Gross Profit', 'Margin %']
   const tableRows = (): string[][] => {
     if (!report) return []
     if (kind === 'stock') return (report.rows as StockRow[]).map(row => [
@@ -101,6 +101,7 @@ export function ProductDailyReportPage({ kind }: { kind: Kind }) {
     ])
     return (report.rows as ProfitRow[]).map(row => [
       row.product.name, row.sale_quantity, row.sale_amount, row.cost_amount ?? 'Unavailable',
+      row.sale_rate ?? 'Unavailable', row.cost_rate ?? 'Unavailable',
       row.gross_profit ?? 'Unavailable', row.margin_percent ?? 'Unavailable',
     ])
   }
